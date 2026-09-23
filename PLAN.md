@@ -548,7 +548,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
-| 0 | À faire | | |
+| 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
 | 1 | À faire | | |
 | 2 | À faire | | |
 | 3 | À faire | | |
@@ -558,4 +558,4 @@ Tenir ce tableau à jour à chaque porte franchie.
 | 7 | À faire | | |
 | 8 | À faire | | |
 | 9 | À faire | | |
-| E | À faire | | Lot courant : E0 |
+| E | En cours | | E0 (glossaire, ADR 0001) et E1 (contrôle de langue) faits. Lot suivant : E2, avec la réécriture du README en phase 1.8. |
