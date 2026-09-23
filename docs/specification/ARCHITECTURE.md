@@ -183,7 +183,9 @@ class Plan:
 | Métriques | rendent **valeur + intervalle**, jamais un scalaire nu |
 | Erreurs | exceptions typées (`OrdreIncoherent`, `Infaisable`, `InvariantViole`) — jamais `Exception` |
 | Journaux | `structlog`, journalisation structurée, jamais de texte libre |
-| Style | `ruff` + `mypy --strict` sur `src/` |
+| Style | `ruff check` + `ruff format` + `mypy --strict` sur `src/` |
+| Language | **English** for code, API, docstrings, messages, tests and documentation. New code is English now; existing French is migrated batch by batch ([ADR 0001](../adr/0001-english-first.md), [glossary](../glossary.md)) |
+| Tolerances | declared once in `archlux/tolerances.py`, never as inline literals |
 
 ---
 

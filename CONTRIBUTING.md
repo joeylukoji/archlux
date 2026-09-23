@@ -17,6 +17,10 @@ et [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md).
    - `active` n'importe que `light.protocole`, jamais une implémentation.
 3. Une fonction **publique** sans docstring NumPy n'est pas terminée.
 4. Une graine d'aléa a **toujours** un paramètre explicite, sans défaut.
+5. **English-first.** All new code, docstrings, messages and documentation are
+   written in English, using the terms of `docs/glossary.md`. Existing French code
+   is migrated batch by batch; a rename and a refactor never share a commit
+   (`docs/adr/0001-english-first.md`).
 
 ## Comment travailler
 
@@ -57,6 +61,16 @@ en `1.2.0` doit rester reproductible en `1.2.x`.
 | `docs/` | Site MkDocs (`mkdocs build --strict`) |
 | `docs/specification/ARCHITECTURE.md` | Règles contraignantes |
 | `experiences/` | Scripts de reproduction des tableaux |
+
+## AI-assisted development
+
+The project is developed with coding agents (Claude Code, Cursor). Their routing rules
+are versioned so that any contributor gets the same workflow: `AGENTS.md`, `CLAUDE.md`,
+`.claude/agents/` and `.cursor/rules/`.
+
+The skills those agents load are **third-party** (see `skills-lock.json` for sources and
+hashes) and are **not** redistributed in this repository. Reinstall them with your agent
+tooling from `skills-lock.json`. Local session state (`session_memory.json`) is ignored.
 
 ## Licence
 

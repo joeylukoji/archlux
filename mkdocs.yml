@@ -84,6 +84,8 @@ nav:
   # peut pas lire en ligne finit par n'etre lue par personne.
   - Specification:
       - Architecture: specification/ARCHITECTURE.md
+      - Glossary (FR -> EN): glossary.md
+      - ADR 0001 English-first: adr/0001-english-first.md
       - Blueprint detaille: specification/Project_Architecture_Blueprint.md
       - Conventions de documentation: specification/DOCUMENTATION.md
       - Jalon 2: specification/MILESTONE-2.md
