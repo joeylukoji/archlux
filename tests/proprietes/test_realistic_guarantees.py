@@ -4,13 +4,13 @@ The output of ``legalize`` is checked by the **independent** checker of ``tests/
 by ``certify``: re-checking the proof with itself is precisely the blind spot that let a
 tautological load-bearing check through (AUDIT.md §3 n°1).
 
-Known failures are strict xfails that name the exception they expect, so that an
-unrelated breakage can never hide behind them.
+Since PLAN.md batch 1.3 no known failure is left here. A future one must be a strict
+xfail naming the exception it expects, so that an unrelated breakage cannot hide behind
+it.
 """
 
 from __future__ import annotations
 
-import pytest
 from hypothesis import given, settings
 
 import archlux
@@ -92,11 +92,6 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
         assert _independent_violations(iterate, ctx) == [], f"iterate {step}"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=TypeError,
-    reason="Daylight lacks the 'baies' keyword of Substitut — AUDIT.md §3 n°3, PLAN.md 1.3",
-)
 @_SETTINGS
 @given(scenario=realistic_scenarios())
 def test_daylight_objective_is_accepted_by_legalize(scenario: tuple[Plan, Contexte]) -> None:

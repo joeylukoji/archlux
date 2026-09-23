@@ -124,8 +124,7 @@ def _performance(plan: Plan, ctx: Contexte) -> Plan:
 
 def _daylight(plan: Plan, ctx: Contexte) -> Plan:
     objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
-    # mypy rejects Daylight as a Substitut: the defect of PLAN.md batch 1.3, statically.
-    return archlux.legalize(plan, ctx, objective=objective)  # type: ignore[arg-type]
+    return archlux.legalize(plan, ctx, objective=objective)
 
 
 MODES: dict[str, Mode] = {

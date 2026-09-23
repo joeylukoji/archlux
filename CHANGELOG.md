@@ -52,6 +52,15 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
   `frank_wolfe` has no caller left and is documented as legacy.
 
+#### Fixed — `Daylight` objective (batch 1.3)
+- `legalize(objective=Daylight(...))` raised `TypeError`: `Daylight` did not accept the
+  `baies` keyword of the `Substitut` protocol, which Frank-Wolfe always passes, yet
+  `isinstance(..., Substitut)` was true (it only checks method names). `Daylight` now
+  accepts and forwards `baies` in `evaluer`, `gradient`, `incertitude`, `__call__` and
+  the finite-difference gradient of the uncertainty; it is also frozen, like every
+  type. A conformance test compares the signatures of all five surrogates with the
+  protocol. Benchmark: 200 crashes out of 200 before.
+
 #### Added
 - `export.svg` draws walls: load-bearing walls thick and dark (class
   `wall-load-bearing`), other walls thin and grey (class `wall`). A room crossing a

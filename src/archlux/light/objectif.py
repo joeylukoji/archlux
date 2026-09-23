@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from archlux.erreurs import InvariantViole
-from archlux.light.protocole import Substitut
+from archlux.light.protocole import Baies, Substitut
 from archlux.types import Orientation
 
 __all__ = ["Daylight"]
@@ -23,7 +23,7 @@ __all__ = ["Daylight"]
 _EPS_SIGMA = 1e-5
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class Daylight:
     """Substitut dont :meth:`evaluer` rend la borne pessimiste ``μ − q σ``.
 
@@ -45,7 +45,9 @@ class Daylight:
         """Nom de l'indicateur modélisé, délégué au substitut enveloppé."""
         return self.substitut.indicateur
 
-    def evaluer(self, x: np.ndarray, orientation: Orientation) -> float:
+    def evaluer(
+        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    ) -> float:
         """Rendre ``μ̂ − q̂ σ̂`` si ``pessimiste``, sinon ``μ̂`` seul.
 
         Parameters
@@ -54,6 +56,8 @@ class Daylight:
             Vecteur de décision.
         orientation : Orientation
             Azimut.
+        baies : Baies or None, optional
+            Glazing, forwarded unchanged to the wrapped surrogate.
 
         Returns
         -------
@@ -67,27 +71,36 @@ class Daylight:
         ``μ − qσ`` reste le bon sens sous maximisation : l'incertitude
         détériore l'objectif. Ne pas envelopper un ASE positif brut.
         """
-        mu = float(self.substitut.evaluer(x, orientation))
+        mu = float(self.substitut.evaluer(x, orientation, baies=baies))
         if not self.pessimiste:
             return mu
-        return mu - self.q_chapeau * float(self.substitut.incertitude(x, orientation))
+        sigma = float(self.substitut.incertitude(x, orientation, baies=baies))
+        return mu - self.q_chapeau * sigma
 
-    def gradient(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
+    def gradient(
+        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    ) -> np.ndarray:
         """``∇μ − q̂ ∇σ``. ``∇σ`` par différences finies centrées (Nocedal §8.1)."""
-        grad_mu = np.asarray(self.substitut.gradient(x, orientation), dtype=float)
+        grad_mu = np.asarray(self.substitut.gradient(x, orientation, baies=baies), dtype=float)
         if not self.pessimiste:
             return grad_mu
-        return grad_mu - self.q_chapeau * self._gradient_incertitude(x, orientation)
+        return grad_mu - self.q_chapeau * self._gradient_incertitude(x, orientation, baies)
 
-    def incertitude(self, x: np.ndarray, orientation: Orientation) -> float:
+    def incertitude(
+        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    ) -> float:
         """Écart-type du substitut enveloppé, inchangé."""
-        return float(self.substitut.incertitude(x, orientation))
+        return float(self.substitut.incertitude(x, orientation, baies=baies))
 
-    def __call__(self, x: np.ndarray, orientation: Orientation) -> tuple[float, np.ndarray]:
+    def __call__(
+        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    ) -> tuple[float, np.ndarray]:
         """Rendre ``(J, ∇J)`` d'un coup, même convention que :meth:`evaluer`."""
-        return self.evaluer(x, orientation), self.gradient(x, orientation)
+        return self.evaluer(x, orientation, baies=baies), self.gradient(x, orientation, baies=baies)
 
-    def _gradient_incertitude(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
+    def _gradient_incertitude(
+        self, x: np.ndarray, orientation: Orientation, baies: Baies | None
+    ) -> np.ndarray:
         x0 = np.asarray(x, dtype=float).ravel()
         grad = np.empty_like(x0)
         for i in range(x0.size):
@@ -95,7 +108,7 @@ class Daylight:
             moins = x0.copy()
             plus[i] += _EPS_SIGMA
             moins[i] -= _EPS_SIGMA
-            haut = float(self.substitut.incertitude(plus, orientation))
-            bas = float(self.substitut.incertitude(moins, orientation))
+            haut = float(self.substitut.incertitude(plus, orientation, baies=baies))
+            bas = float(self.substitut.incertitude(moins, orientation, baies=baies))
             grad[i] = (haut - bas) / (2.0 * _EPS_SIGMA)
         return grad
