@@ -179,6 +179,26 @@ sert de périmètre à la phase 1.
 But : aucune garantie annoncée ne doit être fausse. C'est la phase la plus importante :
 tant qu'elle n'est pas finie, le projet ne peut être ni publié ni cité.
 
+**Instrument de mesure** : `benchmarks/guarantees/` (200 scénarios déterministes, 5 modes,
+contrôle indépendant). Chaque lot relance
+`python -m benchmarks.guarantees.measure --label after-1.x --seed 17` et son effet se lit
+dans `benchmarks/guarantees/README.md`. Référence (`baseline`, révision `95baabe`) :
+
+| Mode | Correct | Certificat mensonger | Refus | Plantage |
+|---|--:|--:|--:|--:|
+| classique, entrée valide | 200 | 0 | 0 | 0 |
+| classique + pavage, une faute de 25 cm (régime J7) | 200 | 0 | 0 | 0 |
+| classique + pavage, bruit de 3 cm partout (régime J8) | 0 | 1 | 199 | 0 |
+| performance, substitut analytique | 0 | **35** (murs traversés) | 165 (surfaces) | 0 |
+| performance, `Daylight` | 0 | 0 | 0 | **200** |
+
+**Constats nouveaux du banc**, ajoutés au périmètre :
+- 68 refus du régime J8 disent « Infaisable : origines non renseignées » : un refus sans
+  explication, contraire au principe du certificat de Farkas → lot 1.5 (et message en 3.4) ;
+- en régime J8, la réparation échoue sur 199 plans sur 200 : c'est cohérent avec les ~20 %
+  du jalon 8, en plus sévère parce que les surfaces minimales sont serrées ; à documenter,
+  pas à « corriger » en phase 1 (sujet de la phase 6.5).
+
 ### 1.1 Structure porteuse réellement contrainte et vérifiée (§3 n°1, §5.3)
 
 - **Modèle** : ajouter dans `Contexte` les incidences pièce ↔ mur porteur (option 1 de
@@ -265,6 +285,8 @@ tant qu'elle n'est pas finie, le projet ne peut être ni publié ni cité.
   (93,9 % sur plans corrompus, environ 20 % sur sorties de générateur).
 
 **Porte de sortie de la phase 1** :
+- banc `benchmarks/guarantees` : **0 certificat mensonger et 0 plantage dans tous les
+  modes** ; en mode performance, au moins 95 % de sorties correctes ;
 - tous les `xfail` de 0.7 et 0.8 retirés ;
 - la propriété « aucune sortie de `legalize` ne viole une garantie `[EXACT]` » tient sur
   2 000 exemples Hypothesis avec porteurs, `aires_min` et budget ;
