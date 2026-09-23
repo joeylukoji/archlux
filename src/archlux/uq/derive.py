@@ -133,9 +133,7 @@ def controler_derive(
     )
 
 
-def mesurer_derive(
-    predictions: np.ndarray, verites: np.ndarray, *, seed: int
-) -> RapportDerive:
+def mesurer_derive(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -> RapportDerive:
     """Écart moyen prédiction − vérité, et tendance sur l'ordre d'arrivée.
 
     Parameters

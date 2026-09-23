@@ -106,8 +106,8 @@ def geler_et_emettre(modele: object, *, horodatage: str | None = None) -> JetonC
     JetonCalibration
         Jeton dont l'empreinte devra encore correspondre à l'ouverture du jeu.
     """
-    instant = horodatage if horodatage is not None else datetime.now(UTC).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
+    instant = (
+        horodatage if horodatage is not None else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
     return emettre_jeton(_empreinte_modele(modele), instant)
 
@@ -169,9 +169,7 @@ class GestionDonnees:
             raise InvariantViole((f"répertoire de test absent : {dossier}",))
         return dossier
 
-    def pour_calibration(
-        self, jeton: JetonCalibration, modele: object | None = None
-    ) -> Path:
+    def pour_calibration(self, jeton: JetonCalibration, modele: object | None = None) -> Path:
         """Répertoire ``calibration/``, uniquement après gel du modèle.
 
         Parameters

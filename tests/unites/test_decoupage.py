@@ -26,11 +26,7 @@ def test_aucun_identifiant_partage() -> None:
 
 def test_proportions_soixante_vingt_vingt() -> None:
     decoupage = charger_decoupage(SPLITS)
-    total = (
-        len(decoupage.entrainement)
-        + len(decoupage.calibration)
-        + len(decoupage.test)
-    )
+    total = len(decoupage.entrainement) + len(decoupage.calibration) + len(decoupage.test)
     assert total == 90
     assert len(decoupage.entrainement) == 54
     assert len(decoupage.calibration) == 18

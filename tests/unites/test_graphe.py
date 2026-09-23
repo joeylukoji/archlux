@@ -38,9 +38,7 @@ class TestConstruireGraphe:
 
     def test_cycle_detecte(self) -> None:
         """« A à gauche de B à gauche de A » n'a pas de solution géométrique."""
-        ordre = OrdreRelatif(
-            horizontal=(("A", "B"), ("B", "A")), vertical=(), pieces=("A", "B")
-        )
+        ordre = OrdreRelatif(horizontal=(("A", "B"), ("B", "A")), vertical=(), pieces=("A", "B"))
         with pytest.raises(OrdreIncoherent) as capture:
             construire_graphe(ordre, ["A", "B"])
         assert capture.value.axe == "horizontal"
@@ -48,9 +46,7 @@ class TestConstruireGraphe:
 
     def test_cycle_vertical_detecte(self) -> None:
         """Le même défaut sur l'axe vertical est rapporté avec le bon axe."""
-        ordre = OrdreRelatif(
-            horizontal=(), vertical=(("A", "B"), ("B", "A")), pieces=("A", "B")
-        )
+        ordre = OrdreRelatif(horizontal=(), vertical=(("A", "B"), ("B", "A")), pieces=("A", "B"))
         with pytest.raises(OrdreIncoherent) as capture:
             construire_graphe(ordre, ["A", "B"])
         assert capture.value.axe == "vertical"
@@ -137,9 +133,7 @@ class TestDeduireOrdre:
         Un ordre non déterministe produirait des polytopes dont les lignes changent
         d'une exécution à l'autre, donc des prix duaux incomparables.
         """
-        plan = _plan(
-            _carre("c", 4.0, 0.0), _carre("a", 0.0, 0.0), _carre("b", 2.0, 3.0)
-        )
+        plan = _plan(_carre("c", 4.0, 0.0), _carre("a", 0.0, 0.0), _carre("b", 2.0, 3.0))
         assert deduire_ordre(plan) == deduire_ordre(plan)
 
     def test_l_ordre_deduit_est_accepte(self) -> None:

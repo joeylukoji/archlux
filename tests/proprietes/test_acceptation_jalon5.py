@@ -15,9 +15,7 @@ from archlux.uq.conforme import CalibrateurConforme
 from archlux.uq.fiabilite import stratifier_par_orientation
 
 
-def _tirer(
-    rng: np.random.Generator, n: int
-) -> tuple[list[np.ndarray], list[Orientation]]:
+def _tirer(rng: np.random.Generator, n: int) -> tuple[list[np.ndarray], list[Orientation]]:
     xs: list[np.ndarray] = []
     os_: list[Orientation] = []
     for _ in range(n):

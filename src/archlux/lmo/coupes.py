@@ -127,9 +127,7 @@ def _points_appui_hyperbole(
     return tuple(uniques)
 
 
-def _coupes_initiales(
-    poly: Polytope, ctx: Contexte, pieces: tuple[Piece, ...]
-) -> list[Coupe]:
+def _coupes_initiales(poly: Polytope, ctx: Contexte, pieces: tuple[Piece, ...]) -> list[Coupe]:
     """Tangentes d'enveloppe, avant la première résolution."""
     coupes: list[Coupe] = []
     for piece in pieces:
@@ -138,9 +136,7 @@ def _coupes_initiales(
             continue
         w_min, w_max = poly.bornes[poly.index[f"{piece.id}.w"]]
         h_min, h_max = poly.bornes[poly.index[f"{piece.id}.h"]]
-        for largeur, hauteur in _points_appui_hyperbole(
-            seuil, w_min, w_max, h_min, h_max
-        ):
+        for largeur, hauteur in _points_appui_hyperbole(seuil, w_min, w_max, h_min, h_max):
             coupes.append(coupe_surface(largeur, hauteur, seuil, piece=piece.id))
     return coupes
 
@@ -369,9 +365,7 @@ def _empiler_tangentes(
         largeur = float(x[poly.index[f"{identifiant}.w"]])
         hauteur = float(x[poly.index[f"{identifiant}.h"]])
         coupes.append(
-            coupe_surface(
-                largeur, hauteur, ctx.referentiel.a_min(piece.type), piece=identifiant
-            )
+            coupe_surface(largeur, hauteur, ctx.referentiel.a_min(piece.type), piece=identifiant)
         )
         comptes[identifiant] += 1
 
@@ -431,29 +425,21 @@ def resoudre_avec_surfaces(
     comptes: Counter[str] = Counter()
     courant = depart
     while True:
-        solution = resoudre(
-            domaine, c, depart=courant, coupes=coupes or None, duaux=duaux
-        )
+        solution = resoudre(domaine, c, depart=courant, coupes=coupes or None, duaux=duaux)
         if solution.statut != "optimal":
             return solution
         if not surfaces_violees(solution.x, domaine, ctx, pieces=pieces):
             return solution
         resserre = _resserrer_bornes(domaine, solution.x, ctx, pieces)
         if resserre is not domaine:
-            affine = resoudre(
-                resserre, c, depart=solution.x, coupes=coupes or None, duaux=duaux
-            )
+            affine = resoudre(resserre, c, depart=solution.x, coupes=coupes or None, duaux=duaux)
             if affine.statut == "optimal":
                 if not surfaces_violees(affine.x, resserre, ctx, pieces=pieces):
                     return affine
                 domaine = resserre
                 solution = affine
-        restantes = _identifiants_a_couper(
-            solution.x, domaine, ctx, pieces, comptes
-        )
+        restantes = _identifiants_a_couper(solution.x, domaine, ctx, pieces, comptes)
         if not restantes:
             return solution
-        _empiler_tangentes(
-            restantes, solution.x, domaine, ctx, pieces, coupes, comptes
-        )
+        _empiler_tangentes(restantes, solution.x, domaine, ctx, pieces, coupes, comptes)
         courant = solution.x

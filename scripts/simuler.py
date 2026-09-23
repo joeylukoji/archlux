@@ -1,4 +1,5 @@
 """Simuler le corpus : vérité terrain synthétique (Radiance hors chemin critique)."""
+
 from __future__ import annotations
 
 import csv

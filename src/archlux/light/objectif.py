@@ -83,15 +83,11 @@ class Daylight:
         """Écart-type du substitut enveloppé, inchangé."""
         return float(self.substitut.incertitude(x, orientation))
 
-    def __call__(
-        self, x: np.ndarray, orientation: Orientation
-    ) -> tuple[float, np.ndarray]:
+    def __call__(self, x: np.ndarray, orientation: Orientation) -> tuple[float, np.ndarray]:
         """Rendre ``(J, ∇J)`` d'un coup, même convention que :meth:`evaluer`."""
         return self.evaluer(x, orientation), self.gradient(x, orientation)
 
-    def _gradient_incertitude(
-        self, x: np.ndarray, orientation: Orientation
-    ) -> np.ndarray:
+    def _gradient_incertitude(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
         x0 = np.asarray(x, dtype=float).ravel()
         grad = np.empty_like(x0)
         for i in range(x0.size):

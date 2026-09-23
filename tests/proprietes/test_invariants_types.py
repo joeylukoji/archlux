@@ -9,8 +9,18 @@ import pytest
 from archlux import types as t
 
 TYPES_GELES = [
-    t.Piece, t.Mur, t.Ouverture, t.Plan, t.Orientation, t.Referentiel, t.Structure,
-    t.Contexte, t.PreuveGeometrique, t.BornePerformance, t.ModeleTrace, t.Manifeste,
+    t.Piece,
+    t.Mur,
+    t.Ouverture,
+    t.Plan,
+    t.Orientation,
+    t.Referentiel,
+    t.Structure,
+    t.Contexte,
+    t.PreuveGeometrique,
+    t.BornePerformance,
+    t.ModeleTrace,
+    t.Manifeste,
     t.Certificat,
 ]
 

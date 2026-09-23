@@ -74,9 +74,7 @@ class UncertaintyTimesDensity:
         scores = inc * dens
         disponibles = np.flatnonzero(_masque_disponibles(inc.size, exclus))
         if disponibles.size < n:
-            raise InvariantViole(
-                (f"trop peu de candidats libres ({disponibles.size}) pour n={n}",)
-            )
+            raise InvariantViole((f"trop peu de candidats libres ({disponibles.size}) pour n={n}",))
         ordre = disponibles[np.argsort(-scores[disponibles], kind="stable")]
         return np.asarray(ordre[:n], dtype=int)
 
@@ -97,9 +95,7 @@ class Aleatoire:
         inc, _dens = _valider(incertitudes, densites, n=n)
         disponibles = np.flatnonzero(_masque_disponibles(inc.size, exclus))
         if disponibles.size < n:
-            raise InvariantViole(
-                (f"trop peu de candidats libres ({disponibles.size}) pour n={n}",)
-            )
+            raise InvariantViole((f"trop peu de candidats libres ({disponibles.size}) pour n={n}",))
         rng = np.random.default_rng(seed)
         choix = rng.choice(disponibles, size=n, replace=False)
         return np.asarray(np.sort(choix), dtype=int)

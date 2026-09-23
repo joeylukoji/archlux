@@ -33,9 +33,7 @@ def test_feasibility_faisable() -> None:
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )
-    verdict = archlux.feasibility.is_feasible(
-        plan, Structure(murs_porteurs=()), CONTEXTE_DEFAUT
-    )
+    verdict = archlux.feasibility.is_feasible(plan, Structure(murs_porteurs=()), CONTEXTE_DEFAUT)
     assert verdict
     assert verdict.certificat is None
 

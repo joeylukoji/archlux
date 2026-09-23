@@ -103,9 +103,7 @@ def _est_rectangle(poly: Polygon) -> bool:
         return False
     minx, miny, maxx, maxy = poly.bounds
     candidat = box(minx, miny, maxx, maxy)
-    return bool(
-        abs(poly.area - candidat.area) <= _TOL_RECT and poly.equals(candidat)
-    )
+    return bool(abs(poly.area - candidat.area) <= _TOL_RECT and poly.equals(candidat))
 
 
 def _vers_piece(poly: Polygon, *, id: str, type_piece: str) -> Piece:
@@ -261,11 +259,7 @@ def _decouper(poly: Polygon) -> list[Polygon]:
         coupe = _meilleure_coupe_horizontale(poly)
     if coupe is None:
         raise InvariantViole(("aucune coupe guillotine reproductible trouvée",))
-    parties = [
-        g
-        for g in split(poly, coupe).geoms
-        if g.geom_type == "Polygon" and g.area > _EPS
-    ]
+    parties = [g for g in split(poly, coupe).geoms if g.geom_type == "Polygon" and g.area > _EPS]
     if len(parties) < 2:
         raise InvariantViole(("la coupe verticale n'a pas séparé le polygone",))
     parties.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
@@ -352,17 +346,12 @@ def decomposer(
         raise InvariantViole(("polygone non rectilinéaire : arête diagonale",))
     parties = _decouper(polygone)
     if len(parties) > max_rectangles:
-        raise InvariantViole(
-            (f"trop de rectangles ({len(parties)}) : max {max_rectangles}",)
-        )
+        raise InvariantViole((f"trop de rectangles ({len(parties)}) : max {max_rectangles}",))
     parties.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
     rectangles = tuple(
-        _vers_piece(p, id=f"{id}__{k}", type_piece=type_piece)
-        for k, p in enumerate(parties)
+        _vers_piece(p, id=f"{id}__{k}", type_piece=type_piece) for k, p in enumerate(parties)
     )
-    return PieceRectilineaire(
-        id=id, rectangles=rectangles, fusions=_detecter_fusions(rectangles)
-    )
+    return PieceRectilineaire(id=id, rectangles=rectangles, fusions=_detecter_fusions(rectangles))
 
 
 def recomposer(piece: PieceRectilineaire) -> Polygon:
@@ -453,9 +442,7 @@ def etendre_fusions(poly: Polytope, piece: PieceRectilineaire) -> Polytope:
             colonnes.append(poly.index[nom])
             valeurs.append(coef)
         b_extra.append(borne)
-    a_extra = sparse.coo_matrix(
-        (valeurs, (lignes, colonnes)), shape=(n_new, n_var)
-    ).tocsr()
+    a_extra = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(n_new, n_var)).tocsr()
     if poly.A_eq.shape[0]:
         a_eq = sparse.vstack([poly.A_eq, a_extra], format="csr")
         b_eq = np.concatenate([poly.b_eq, np.asarray(b_extra, dtype=float)])

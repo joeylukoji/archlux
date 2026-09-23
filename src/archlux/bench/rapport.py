@@ -41,9 +41,7 @@ class RapportBanc:
     strates: tuple[StrateOrientation, ...]
 
 
-def _secteur_par_degre(
-    degres: Iterable[float], *, n_secteurs: int
-) -> dict[float, str]:
+def _secteur_par_degre(degres: Iterable[float], *, n_secteurs: int) -> dict[float, str]:
     """Associer chaque azimut distinct à son secteur, via ``orient.stratifier``.
 
     ``stratifier`` rend des valeurs groupées, pas des indices : on l'interroge donc
@@ -53,9 +51,7 @@ def _secteur_par_degre(
     correspondance: dict[float, str] = {}
     for deg in degres:
         groupes = stratifier([deg], n_secteurs=n_secteurs)
-        correspondance[deg] = next(
-            nom for nom, valeurs in groupes.items() if valeurs.size
-        )
+        correspondance[deg] = next(nom for nom, valeurs in groupes.items() if valeurs.size)
     return correspondance
 
 
@@ -84,13 +80,9 @@ def report(
         {ligne.orientation_deg for ligne in resultat.lignes}, n_secteurs=n_secteurs
     )
 
-    par_secteur: dict[str, dict[str, list[float]]] = {
-        nom: defaultdict(list) for nom in noms
-    }
+    par_secteur: dict[str, dict[str, list[float]]] = {nom: defaultdict(list) for nom in noms}
     for ligne in resultat.lignes:
-        par_secteur[secteur_de[ligne.orientation_deg]][ligne.methode].append(
-            ligne.score
-        )
+        par_secteur[secteur_de[ligne.orientation_deg]][ligne.methode].append(ligne.score)
 
     strates: list[StrateOrientation] = []
     for nom in noms:
@@ -116,7 +108,5 @@ def report(
                 v = float(valeurs[0])
                 scores[methode] = Intervalle(valeur=v, bas=v, haut=v)
         n_plans = max((len(v) for v in par_secteur[nom].values()), default=0)
-        strates.append(
-            StrateOrientation(secteur=nom, n=n_plans, scores_par_methode=scores)
-        )
+        strates.append(StrateOrientation(secteur=nom, n=n_plans, scores_par_methode=scores))
     return RapportBanc(strates=tuple(strates))

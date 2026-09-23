@@ -17,8 +17,7 @@ from archlux.geom.polytope import Polytope
 __all__ = ["traduire_duaux"]
 
 _PHRASE = (
-    "{libelle} : relâchement unitaire ≈ {prix:+.2f} "
-    "(validité locale, quelques dizaines de cm)"
+    "{libelle} : relâchement unitaire ≈ {prix:+.2f} (validité locale, quelques dizaines de cm)"
 )
 
 

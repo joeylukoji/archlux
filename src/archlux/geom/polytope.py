@@ -107,9 +107,7 @@ class Polytope:
         O(nnz(A)).
         """
         if x.shape != (len(self.index),):
-            raise InvariantViole(
-                (f"vecteur de dimension {x.shape}, attendu ({len(self.index)},)",)
-            )
+            raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(self.index)},)",))
         if self.A.shape[0] and np.any(self.A @ x > self.b + tol):
             return False
         if self.A_eq.shape[0] and np.any(np.abs(self.A_eq @ x - self.b_eq) > tol):
@@ -146,9 +144,7 @@ def figer_contacts(poly: Polytope, x: np.ndarray, *, tol: float = 1e-7) -> Polyt
         contour figés dans ``bornes``.
     """
     if x.shape != (len(poly.index),):
-        raise InvariantViole(
-            (f"vecteur de dimension {x.shape}, attendu ({len(poly.index)},)",)
-        )
+        raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(poly.index)},)",))
     noms = {colonne: nom for nom, colonne in poly.index.items()}
     bornes: list[tuple[float, float]] = []
     for colonne, (lo, hi) in enumerate(poly.bornes):
@@ -183,9 +179,7 @@ def figer_contacts(poly: Polytope, x: np.ndarray, *, tol: float = 1e-7) -> Polyt
         a_eq = a_saturees.tocsr()
         b_eq = b_saturees
     origines = tuple(
-        libelle
-        for libelle, garder in zip(poly.origines, libres, strict=True)
-        if garder
+        libelle for libelle, garder in zip(poly.origines, libres, strict=True) if garder
     )
     return replace(
         poly,
@@ -327,23 +321,17 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
         _ajouter({f"{piece}.x": 1.0, f"{piece}.w": 1.0}, xmax, f"contour droit {piece}")
         _ajouter({f"{piece}.y": 1.0, f"{piece}.h": 1.0}, ymax, f"contour haut {piece}")
 
-    matrice = sparse.coo_matrix(
-        (valeurs, (lignes, colonnes)), shape=(len(origines), n_var)
-    ).tocsr()
+    matrice = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(origines), n_var)).tocsr()
 
     largeur_min = ctx.referentiel.largeur_min
-    _verifier_enveloppe_admissible(
-        largeur_min, xmax - xmin, ymax - ymin, ordre.pieces
-    )
+    _verifier_enveloppe_admissible(largeur_min, xmax - xmin, ymax - ymin, ordre.pieces)
     bornes_par_champ = {
         "x": (xmin, xmax),
         "y": (ymin, ymax),
         "w": (largeur_min, xmax - xmin),
         "h": (largeur_min, ymax - ymin),
     }
-    bornes = tuple(
-        bornes_par_champ[champ] for _ in ordre.pieces for champ in CHAMPS
-    )
+    bornes = tuple(bornes_par_champ[champ] for _ in ordre.pieces for champ in CHAMPS)
 
     return Polytope(
         A=matrice,
@@ -429,16 +417,10 @@ def devectoriser(x: np.ndarray, gabarit: Plan, index: dict[str, int]) -> Plan:
     O(n).
     """
     if x.shape != (len(index),):
-        raise InvariantViole(
-            (f"vecteur de dimension {x.shape}, attendu ({len(index)},)",)
-        )
-    manquantes = sorted(
-        piece.id for piece in gabarit.pieces if f"{piece.id}.x" not in index
-    )
+        raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(index)},)",))
+    manquantes = sorted(piece.id for piece in gabarit.pieces if f"{piece.id}.x" not in index)
     if manquantes:
-        raise InvariantViole(
-            (f"pièces absentes du polytope : {', '.join(manquantes)}",)
-        )
+        raise InvariantViole((f"pièces absentes du polytope : {', '.join(manquantes)}",))
     pieces = tuple(
         replace(
             piece,
@@ -501,9 +483,7 @@ def etendre_ecarts_l1(poly: Polytope, x_ref: np.ndarray) -> Polytope:
     """
     n_var = len(poly.index)
     if x_ref.shape != (n_var,):
-        raise InvariantViole(
-            (f"référence de dimension {x_ref.shape}, attendu ({n_var},)",)
-        )
+        raise InvariantViole((f"référence de dimension {x_ref.shape}, attendu ({n_var},)",))
     noms = sorted(poly.index, key=lambda nom: poly.index[nom])
     index = dict(poly.index)
     for rang, nom in enumerate(noms):
@@ -540,9 +520,7 @@ def etendre_ecarts_l1(poly: Polytope, x_ref: np.ndarray) -> Polytope:
         second.append(float(-x_ref[rang]))
         origines_extra.append(f"ecart moins {nom}")
 
-    extra = sparse.coo_matrix(
-        (valeurs, (lignes, colonnes)), shape=(2 * n_var, 2 * n_var)
-    ).tocsr()
+    extra = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(2 * n_var, 2 * n_var)).tocsr()
     matrice = sparse.vstack([a_pad, extra]).tocsr() if n_lignes else extra
     inf = float("inf")
     return Polytope(

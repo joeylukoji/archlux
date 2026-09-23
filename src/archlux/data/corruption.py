@@ -189,9 +189,5 @@ def corrompre(
         if applique == 0.0:
             continue
         pieces[rang] = piece
-        fautes.append(
-            Corruption(
-                mode=mode, piece_id=piece.id, amplitude=float(applique), axe=axe
-            )
-        )
+        fautes.append(Corruption(mode=mode, piece_id=piece.id, amplitude=float(applique), axe=axe))
     return replace(plan, pieces=tuple(pieces), certificat=None), tuple(fautes)

@@ -43,9 +43,7 @@ def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
     Frank-Wolfe travaille sur ``figer_contacts``, pas sur le relaxé d'ordre du
     point final.
     """
-    resultat = archlux.legalize(
-        plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True
-    )
+    resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
     assert isinstance(resultat.trace, Trace)
     assert resultat.trace.iteres
     poly = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT)
@@ -56,9 +54,7 @@ def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
 @given(plan=plans_valides())
 @settings(max_examples=20, deadline=None)
 def test_objectif_monotone(plan: Plan) -> None:
-    resultat = archlux.legalize(
-        plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True
-    )
+    resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
     assert isinstance(resultat.trace, Trace)
     for avant, apres in pairwise(resultat.trace.objectif):
         assert apres >= avant - 1e-9
@@ -149,4 +145,3 @@ def test_orientation_change_le_plan() -> None:
     l1 = archlux.legalize(plan, _ctx(180.0))
     xl1 = np.array([(p.x, p.y, p.w, p.h) for p in l1.pieces])
     assert not np.allclose(xs, xl1, atol=1e-3)
-

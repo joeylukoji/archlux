@@ -47,7 +47,5 @@ def deriver(seed: int, nom: str) -> int:
     >>> deriver(17, "calibration") == deriver(17, "permutation")
     False
     """
-    empreinte = hashlib.blake2b(
-        f"{seed}:{nom}".encode(), digest_size=_OCTETS
-    ).digest()
+    empreinte = hashlib.blake2b(f"{seed}:{nom}".encode(), digest_size=_OCTETS).digest()
     return int.from_bytes(empreinte, "big")

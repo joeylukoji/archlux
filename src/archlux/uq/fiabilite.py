@@ -20,9 +20,7 @@ _SIGMA_MIN = 1e-12
 _N_SECTEURS = 8
 
 
-def crps(
-    predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray
-) -> float:
+def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray) -> float:
     """CRPS gaussien moyen (Gneiting & Raftery), en unité de l'indicateur.
 
     Parameters
@@ -95,9 +93,11 @@ def diagramme_fiabilite(
     else:
         cibles = np.asarray(niveaux, dtype=float).ravel()
     scores = np.abs(verite - pred) / sigma
-    reference = scores if scores_calibration is None else np.asarray(
-        scores_calibration, dtype=float
-    ).ravel()
+    reference = (
+        scores
+        if scores_calibration is None
+        else np.asarray(scores_calibration, dtype=float).ravel()
+    )
     lignes: list[list[float]] = []
     for gamma in cibles:
         alpha = 1.0 - float(gamma)

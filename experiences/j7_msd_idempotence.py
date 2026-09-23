@@ -3,6 +3,7 @@
 Un plan deja valide doit ressortir inchange : l'optimum L1 est alors e = 0.
 Corpus non redistribue : passer le chemin du CSV en argument.
 """
+
 from __future__ import annotations
 
 import sys
@@ -50,5 +51,7 @@ Path("resultats/j7_msd_idempotence.md").write_text(
     f"temps : median {np.median(temps):.1f} ms, p90 {np.percentile(temps, 90):.1f} ms\n",
     encoding="utf-8",
 )
-print(f"n={n} avant={avant} apres={apres} echecs={echecs} "
-      f"depl_max={max(depl):.6f} temps_median={np.median(temps):.1f} ms")
+print(
+    f"n={n} avant={avant} apres={apres} echecs={echecs} "
+    f"depl_max={max(depl):.6f} temps_median={np.median(temps):.1f} ms"
+)

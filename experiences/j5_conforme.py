@@ -1,4 +1,5 @@
 """Couverture conforme de l'analytique contre SimulateurExact — jamais le réseau."""
+
 from __future__ import annotations
 
 from pathlib import Path

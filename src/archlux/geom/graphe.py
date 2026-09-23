@@ -206,9 +206,7 @@ def deduire_ordre(plan: Plan) -> OrdreRelatif:
     )
 
 
-def _graphe_axe(
-    aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe
-) -> nx.DiGraph:
+def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe) -> nx.DiGraph:
     """Assembler un graphe orienté acyclique pour un axe, ou lever."""
     graphe = nx.DiGraph()
     graphe.add_nodes_from(sorted(noeuds))

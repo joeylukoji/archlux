@@ -1,4 +1,5 @@
 """Point de contrôle du gradient — `MILESTONE-4.md` §7. Assert bloquant."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,9 +23,7 @@ for _ in range(36):
 dense = SubstitutDense()
 dense.ajuster(tuple(xs), np.array(ys), tuple(oris), seed=17, epoques=40, lr=0.12)
 sud = Orientation(deg=180.0)
-pts = np.stack(
-    [np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (5.0, 6.0, 7.0, 7.5)]
-)
+pts = np.stack([np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (5.0, 6.0, 7.0, 7.5)])
 rapport = valider_gradient(dense, pts, sud, seed=17, reference=SIM)
 assert rapport.accord_de_signe > 0.80, "NE PAS passer au jalon 5"
 Path("resultats/j4_gradient.md").write_text(

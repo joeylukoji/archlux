@@ -99,9 +99,7 @@ def _coupes_surface_plan(plan: Plan, ctx: Contexte) -> list[Coupe] | None:
     return coupes or None
 
 
-def _duaux_traduits(
-    duaux: np.ndarray | None, poly: Polytope
-) -> tuple[tuple[str, float], ...]:
+def _duaux_traduits(duaux: np.ndarray | None, poly: Polytope) -> tuple[tuple[str, float], ...]:
     """Apparier les duaux des lignes de ``A`` avec ``poly.origines``.
 
     ``duaux`` doit provenir d'un LP résolu sur **ce** polytope : l'appariement est
@@ -236,9 +234,7 @@ def legalize(
     True
     """
     if objective is not None and not isinstance(objective, Substitut):
-        raise TypeError(
-            "objective doit implémenter archlux.light.protocole.Substitut"
-        )
+        raise TypeError("objective doit implémenter archlux.light.protocole.Substitut")
 
     ordre = deduire_ordre(plan)
     poly = construire_polytope(ordre, ctx)
@@ -247,16 +243,12 @@ def legalize(
     if pavage:
         # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
         # du plan propose n'est pas recuperable — echec explicite, pas silencieux.
-        poly = etendre_pavage(
-            poly, deduire_trame(plan, ctx, budget_reparation=budget_reparation)
-        )
+        poly = etendre_pavage(poly, deduire_trame(plan, ctx, budget_reparation=budget_reparation))
     x_ref = vectoriser(plan, poly.index)
     poly_l1 = etendre_ecarts_l1(poly, x_ref)
     if budget is not None:
         n_geo = len(poly.index)
-        bornes = tuple(poly_l1.bornes[:n_geo]) + tuple(
-            (0.0, float(budget)) for _ in range(n_geo)
-        )
+        bornes = tuple(poly_l1.bornes[:n_geo]) + tuple((0.0, float(budget)) for _ in range(n_geo))
         poly_l1 = replace(poly_l1, bornes=bornes)
 
     sol = resoudre_avec_surfaces(
@@ -323,9 +315,6 @@ def legalize(
         duaux_fw = _duaux_traduits(resultat.duaux, poly_fw)
     return replace(
         performant,
-        certificat=Certificat(
-            geometrie=preuve_fw, performance=None, duaux=duaux_fw
-        ),
+        certificat=Certificat(geometrie=preuve_fw, performance=None, duaux=duaux_fw),
         trace=resultat.trace if trace else None,
     )
-

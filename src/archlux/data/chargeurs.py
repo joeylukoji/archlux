@@ -75,9 +75,7 @@ __all__ = [
     "etiqueter",
 ]
 
-TYPES_EXCLUS = frozenset(
-    {"SHAFT", "ELEVATOR", "STAIRCASE", "VOID", "BALCONY", "TERRACE"}
-)
+TYPES_EXCLUS = frozenset({"SHAFT", "ELEVATOR", "STAIRCASE", "VOID", "BALCONY", "TERRACE"})
 """Sous-types d'``area`` écartés : ils ne font pas partie du logement habitable.
 
 Les gaines et cages créent des **trous** dans l'union des pièces ; les balcons et
@@ -155,10 +153,7 @@ class StatistiquesChargement:
 
     def resume(self) -> str:
         """Rendre un résumé lisible, motifs triés par fréquence décroissante."""
-        lignes = [
-            f"lus {self.lus}, retenus {self.retenus} "
-            f"({100.0 * self.taux_retention:.1f} %)"
-        ]
+        lignes = [f"lus {self.lus}, retenus {self.retenus} ({100.0 * self.taux_retention:.1f} %)"]
         lignes.extend(f"  rejet {motif} : {n}" for motif, n in self.rejets.most_common())
         return "\n".join(lignes)
 
@@ -268,8 +263,7 @@ def _recoller(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
     recolles: list[Polygon] = []
     for poly in polygones:
         coords = [
-            (trame_x[float(x)], trame_y[float(y)])
-            for x, y in list(poly.exterior.coords)[:-1]
+            (trame_x[float(x)], trame_y[float(y)]) for x, y in list(poly.exterior.coords)[:-1]
         ]
         # Le recollage peut aplatir une arête : on retire les sommets consécutifs
         # devenus identiques, sinon shapely rend un polygone invalide.
@@ -314,9 +308,7 @@ def _segment_du_mur(poly: Polygon) -> LineString | None:
     )
 
 
-def _murs_depuis_polygones(
-    polygones: list[Polygon], epaisseurs: list[float]
-) -> tuple[Mur, ...]:
+def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) -> tuple[Mur, ...]:
     """Convertir des cloisons pleines en segments d'axe, identifiants stables."""
     murs: list[Mur] = []
     for rang, (poly, epaisseur) in enumerate(zip(polygones, epaisseurs, strict=True)):
@@ -336,9 +328,7 @@ def _murs_depuis_polygones(
     return tuple(murs)
 
 
-def _ouverture_depuis_baie(
-    baie: Polygon, murs: tuple[Mur, ...], rang: int
-) -> Ouverture | None:
+def _ouverture_depuis_baie(baie: Polygon, murs: tuple[Mur, ...], rang: int) -> Ouverture | None:
     """Projeter une baie sur le mur le plus proche, en coordonnées **relatives**."""
     if not murs:
         return None
@@ -364,9 +354,7 @@ def _ouverture_depuis_baie(
     largeur_rel = largeur / longueur
     if not 0.0 < largeur_rel <= 1.0 or not 0.0 <= s <= 1.0:
         return None
-    return Ouverture(
-        id=f"b{rang:04d}", mur_id=mur.id, s=s, largeur_rel=largeur_rel
-    )
+    return Ouverture(id=f"b{rang:04d}", mur_id=mur.id, s=s, largeur_rel=largeur_rel)
 
 
 def _contour_simple(pieces: list[Polygon]) -> tuple[tuple[float, float], ...] | None:
@@ -489,9 +477,7 @@ def charger_msd(
         raise InvariantViole((f"corpus MSD introuvable : {chemin}",))
     stats = statistiques if statistiques is not None else StatistiquesChargement()
     reglement = (
-        referentiel
-        if referentiel is not None
-        else Referentiel(aires_min=(), largeur_min=0.0)
+        referentiel if referentiel is not None else Referentiel(aires_min=(), largeur_min=0.0)
     )
     groupes = _lire_groupes(chemin, types_exclus)
 
@@ -554,9 +540,7 @@ def _convertir(
     if len(pieces_brutes) > max_pieces:
         return "trop de pieces avant decomposition"
 
-    angles, longueurs = _angles_et_longueurs(
-        murs_bruts or [forme for _, forme in pieces_brutes]
-    )
+    angles, longueurs = _angles_et_longueurs(murs_bruts or [forme for _, forme in pieces_brutes])
     if not angles:
         return "aucune arete exploitable"
     try:
@@ -565,9 +549,7 @@ def _convertir(
         return "aucune direction dominante"
 
     def redresser(forme: Polygon) -> Polygon:
-        return _caler(
-            affinity.rotate(forme, -theta, origin=(0.0, 0.0)), tolerance_calage
-        )
+        return _caler(affinity.rotate(forme, -theta, origin=(0.0, 0.0)), tolerance_calage)
 
     redressees = [redresser(forme) for _, forme in pieces_brutes]
     if any(not d.is_valid or d.area <= _EPS for d in redressees):
@@ -617,19 +599,15 @@ def _convertir(
     ouvertures = tuple(
         ouv
         for ouv in (
-            _ouverture_depuis_baie(redresser(b), murs, rang)
-            for rang, b in enumerate(baies_brutes)
+            _ouverture_depuis_baie(redresser(b), murs, rang) for rang, b in enumerate(baies_brutes)
         )
         if ouv is not None
     )
     poteaux = tuple(
-        (float(redresser(p).centroid.x), float(redresser(p).centroid.y))
-        for p in poteaux_bruts
+        (float(redresser(p).centroid.x), float(redresser(p).centroid.y)) for p in poteaux_bruts
     )
 
-    plan = Plan(
-        pieces=tuple(pieces), murs=murs, ouvertures=ouvertures, contour=contour
-    )
+    plan = Plan(pieces=tuple(pieces), murs=murs, ouvertures=ouvertures, contour=contour)
     contexte = Contexte(
         # MSD n'annote pas la portance : aucun mur n'est declare porteur.
         structure=Structure(murs_porteurs=(), poteaux=poteaux),
@@ -658,17 +636,11 @@ def _flux_simulations(chemin: Path) -> Iterator[dict[str, str]]:
     """Lire ``simulations.csv``, depuis le zip Zenodo ou depuis le CSV nu."""
     if chemin.suffix.lower() == ".zip":
         with zipfile.ZipFile(chemin) as archive:
-            noms = [
-                nom
-                for nom in archive.namelist()
-                if nom.lower().endswith("simulations.csv")
-            ]
+            noms = [nom for nom in archive.namelist() if nom.lower().endswith("simulations.csv")]
             if not noms:
                 raise InvariantViole((f"pas de simulations.csv dans {chemin}",))
             with archive.open(noms[0]) as brut:
-                enveloppe = io.TextIOWrapper(
-                    brut, encoding="utf-8", errors="replace", newline=""
-                )
+                enveloppe = io.TextIOWrapper(brut, encoding="utf-8", errors="replace", newline="")
                 yield from csv.DictReader(enveloppe)
         return
     with chemin.open(encoding="utf-8", errors="replace", newline="") as fichier:
@@ -713,9 +685,7 @@ def charger_etiquettes_sd(
     for ligne in _flux_simulations(chemin):
         if not connue:
             if colonne not in ligne:
-                raise InvariantViole(
-                    (f"colonne {colonne!r} absente des simulations",)
-                )
+                raise InvariantViole((f"colonne {colonne!r} absente des simulations",))
             connue = True
         try:
             valeur = float(ligne[colonne])

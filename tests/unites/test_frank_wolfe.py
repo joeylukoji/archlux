@@ -31,9 +31,7 @@ class ObjectifLineaire:
     c: np.ndarray
     indicateur: str = "sDA"
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
-    ) -> float:
+    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
         del orientation, baies
         return float(self.c @ x)
 

@@ -1,4 +1,5 @@
 """Préparer le corpus synthétique et écrire les splits. API publique + data."""
+
 from __future__ import annotations
 
 from pathlib import Path

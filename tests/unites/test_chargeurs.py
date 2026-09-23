@@ -87,10 +87,13 @@ def test_charge_un_appartement_tourne_et_le_redresse(tmp_path: Path) -> None:
     assert len(apparts) == 1
     appart = apparts[0]
     # L'angle est defini modulo 90 : 23 deg et 113 deg decrivent la meme trame.
-    assert min(
-        abs(appart.angle_redressement - _ANGLE),
-        abs(appart.angle_redressement - _ANGLE + 90.0),
-    ) < 0.5
+    assert (
+        min(
+            abs(appart.angle_redressement - _ANGLE),
+            abs(appart.angle_redressement - _ANGLE + 90.0),
+        )
+        < 0.5
+    )
     assert appart.contexte.orientation.deg == appart.angle_redressement
     assert len(appart.plan.pieces) == 2
     # Les baies sont relatives a leur mur, jamais absolues.

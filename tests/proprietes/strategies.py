@@ -52,9 +52,7 @@ _TYPES = st.sampled_from(["sejour", "chambre", "cuisine", "sdb", "couloir", "wc"
 
 def pieces() -> st.SearchStrategy[Piece]:
     """Pièces rectangulaires quelconques, dimensions strictement positives."""
-    return st.builds(
-        Piece, id=_IDS, type=_TYPES, x=_COORD, y=_COORD, w=_TAILLE, h=_TAILLE
-    )
+    return st.builds(Piece, id=_IDS, type=_TYPES, x=_COORD, y=_COORD, w=_TAILLE, h=_TAILLE)
 
 
 def murs() -> st.SearchStrategy[Mur]:
@@ -75,9 +73,7 @@ def _ouvertures(ids_murs: list[str]) -> st.SearchStrategy[Ouverture]:
         id=_IDS,
         mur_id=st.sampled_from(ids_murs),
         s=_UNITE,
-        largeur_rel=st.floats(
-            min_value=0.01, max_value=1.0, allow_nan=False, allow_infinity=False
-        ),
+        largeur_rel=st.floats(min_value=0.01, max_value=1.0, allow_nan=False, allow_infinity=False),
         hauteur_allege=st.floats(min_value=0.0, max_value=1.5, allow_nan=False),
         hauteur_linteau=st.floats(min_value=1.6, max_value=3.0, allow_nan=False),
     )
@@ -118,9 +114,7 @@ def _bornes() -> st.SearchStrategy[BornePerformance]:
 
 def _manifestes() -> st.SearchStrategy[Manifeste]:
     """Manifestes de reproductibilité, champs optionnels parfois renseignés."""
-    paires = st.lists(
-        st.tuples(st.text(max_size=12), st.text(max_size=12)), max_size=3
-    ).map(tuple)
+    paires = st.lists(st.tuples(st.text(max_size=12), st.text(max_size=12)), max_size=3).map(tuple)
     modeles = st.one_of(
         st.none(),
         st.builds(
@@ -175,12 +169,8 @@ def plans_quelconques(draw: st.DrawFn) -> Plan:
     """
     liste_murs = draw(st.lists(murs(), min_size=1, max_size=6, unique_by=lambda m: m.id))
     ids_murs = [m.id for m in liste_murs]
-    liste_pieces = draw(
-        st.lists(pieces(), min_size=1, max_size=6, unique_by=lambda p: p.id)
-    )
-    liste_ouv = draw(
-        st.lists(_ouvertures(ids_murs), max_size=5, unique_by=lambda o: o.id)
-    )
+    liste_pieces = draw(st.lists(pieces(), min_size=1, max_size=6, unique_by=lambda p: p.id))
+    liste_ouv = draw(st.lists(_ouvertures(ids_murs), max_size=5, unique_by=lambda o: o.id))
     contour = draw(st.lists(st.tuples(_COORD, _COORD), min_size=3, max_size=8))
     certificat = draw(st.one_of(st.none(), _certificats()))
     return Plan(

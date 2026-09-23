@@ -234,9 +234,7 @@ def _retouches(
     """
     nom, gauche, droite, bas, haut = incidence
     largeur, hauteur = forme
-    propositions: list[
-        tuple[tuple[str, int, int, int, int], tuple[slice, slice], bool]
-    ] = []
+    propositions: list[tuple[tuple[str, int, int, int, int], tuple[slice, slice], bool]] = []
     if gauche > 0:
         propositions.append(
             (
@@ -443,18 +441,12 @@ def deduire_trame(
     ancrees_y = {rang_y[v] for v in ys_contour}
 
     if support_min > 1:
-        lignes_x, bords_x, ancrees_x = _consolider(
-            lignes_x, bords_x, ancrees_x, support_min
-        )
-        lignes_y, bords_y, ancrees_y = _consolider(
-            lignes_y, bords_y, ancrees_y, support_min
-        )
+        lignes_x, bords_x, ancrees_x = _consolider(lignes_x, bords_x, ancrees_x, support_min)
+        lignes_y, bords_y, ancrees_y = _consolider(lignes_y, bords_y, ancrees_y, support_min)
 
     incidences = [
         (piece.id, gauche, droite, bas, haut)
-        for piece, (gauche, droite), (bas, haut) in zip(
-            plan.pieces, bords_x, bords_y, strict=True
-        )
+        for piece, (gauche, droite), (bas, haut) in zip(plan.pieces, bords_x, bords_y, strict=True)
     ]
 
     # Partition : chaque cellule **interieure au contour** couverte exactement une
@@ -481,12 +473,8 @@ def deduire_trame(
         )
         if repare is None:
             if trop:
-                raise InvariantViole(
-                    (f"chevauchement structurel : {trop} cellules en trop",)
-                )
-            raise InvariantViole(
-                (f"jour structurel : {manque} cellules non couvertes",)
-            )
+                raise InvariantViole((f"chevauchement structurel : {trop} cellules en trop",))
+            raise InvariantViole((f"jour structurel : {manque} cellules non couvertes",))
         incidences = repare
 
     # Dernier filet : la reparation comme la consolidation ne manipulent que des
@@ -556,9 +544,7 @@ def contraintes_pavage(
                 # Ancrage : chaque bord de la ligne est fixe sur le contour.
                 cible = lignes[ligne]
                 for piece_id, termes in membres:
-                    egalites.append(
-                        (f"contour {axe}={cible:.4f} {piece_id}", dict(termes), cible)
-                    )
+                    egalites.append((f"contour {axe}={cible:.4f} {piece_id}", dict(termes), cible))
                 continue
             reference_id, reference = membres[0]
             for piece_id, termes in membres[1:]:
@@ -609,9 +595,7 @@ def etendre_pavage(poly: Polytope, trame: Trame) -> Polytope:
             colonnes.append(poly.index[nom])
             valeurs.append(coef)
         seconds.append(borne)
-    a_extra = sparse.coo_matrix(
-        (valeurs, (lignes, colonnes)), shape=(len(egalites), n_var)
-    ).tocsr()
+    a_extra = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(egalites), n_var)).tocsr()
     if poly.A_eq.shape[0]:
         a_eq = sparse.vstack([poly.A_eq, a_extra], format="csr")
         b_eq = np.concatenate([poly.b_eq, np.asarray(seconds, dtype=float)])

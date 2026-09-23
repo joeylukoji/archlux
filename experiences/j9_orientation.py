@@ -26,6 +26,7 @@ l'oracle gele et non sur un sDA LM-83 (`docs/limites.md`).
 
 Usage : j9_orientation.py [plans.jsonl] [n_plans] [budget_m]
 """
+
 from __future__ import annotations
 
 import json
@@ -60,9 +61,7 @@ def main() -> None:
     budget = float(sys.argv[3]) if len(sys.argv) > 3 else 3.0
 
     lignes = [
-        json.loads(x)
-        for x in plans_src.read_text(encoding="utf-8").splitlines()
-        if x.strip()
+        json.loads(x) for x in plans_src.read_text(encoding="utf-8").splitlines() if x.strip()
     ]
     echelle = _echelle(lignes)
     substitut = SubstitutAnalytique(indicateur_vise="sDA")
@@ -88,9 +87,7 @@ def main() -> None:
             continue
         propose, contexte, diag = bati
         try:
-            valide = ax.legalize(
-                propose, contexte, pavage=True, budget_reparation=BUDGETS[-1]
-            )
+            valide = ax.legalize(propose, contexte, pavage=True, budget_reparation=BUDGETS[-1])
         except (ax.Infaisable, ax.InvariantViole):
             continue
         if not valide.certificat.geometrie.valide or len(valide.pieces) < 4:
@@ -103,9 +100,7 @@ def main() -> None:
             ctx_az = replace(contexte, orientation=Orientation(deg=float(azimut)))
             avant = _score(valide, ctx_az, substitut)
             try:
-                variante = ax.legalize(
-                    valide, ctx_az, objective=substitut, budget=budget
-                )
+                variante = ax.legalize(valide, ctx_az, objective=substitut, budget=budget)
             except (ax.Infaisable, ax.InvariantViole):
                 volets.append((valide, f"{azimut}° — pas de variante"))
                 continue
@@ -116,9 +111,7 @@ def main() -> None:
             )
             cotes = [min(q.w, q.h) for q in variante.pieces]
             aires = [q.aire for q in variante.pieces]
-            scores.append((
-                azimut, avant, apres, bouge, min(cotes), min(aires), max(aires)
-            ))
+            scores.append((azimut, avant, apres, bouge, min(cotes), min(aires), max(aires)))
             gain = 100 * (apres - avant) / max(abs(avant), 1e-9)
             volets.append((variante, f"{azimut}° — sDA {apres:.0f} ({gain:+.0f} %)"))
 

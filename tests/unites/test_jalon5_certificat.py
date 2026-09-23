@@ -163,9 +163,7 @@ class _FauxSubstitut:
     sigma: float
     indicateur: str = "sDA"
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
-    ) -> float:
+    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
         return self.mu
 
     def gradient(

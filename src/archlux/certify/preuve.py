@@ -90,9 +90,7 @@ def _disjoints(a: Piece, b: Piece) -> bool:
     arithmétique évite l'appel shapely sur la grande majorité des paires, ce qui tient
     le budget de certification du §9 sans rien changer au résultat.
     """
-    return (
-        a.x + a.w <= b.x or b.x + b.w <= a.x or a.y + a.h <= b.y or b.y + b.h <= a.y
-    )
+    return a.x + a.w <= b.x or b.x + b.w <= a.x or a.y + a.h <= b.y or b.y + b.h <= a.y
 
 
 def _chevauchements(pieces: tuple[Piece, ...]) -> tuple[bool, tuple[str, ...]]:
@@ -157,6 +155,7 @@ def _surfaces(pieces: tuple[Piece, ...], ctx: Contexte) -> tuple[bool, tuple[str
 
 def _meme_mur(a: Mur, b: Mur) -> bool:
     """Même géométrie à tolérance près, extrémités éventuellement permutées."""
+
     def proche(p: tuple[float, float], q: tuple[float, float]) -> bool:
         return abs(p[0] - q[0]) <= _TOLERANCE_MUR_M and abs(p[1] - q[1]) <= _TOLERANCE_MUR_M
 

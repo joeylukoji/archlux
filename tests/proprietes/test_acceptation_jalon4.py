@@ -64,15 +64,9 @@ def test_point_de_controle_gradient() -> None:
     dense.ajuster(tuple(xs), np.array(ys), tuple(oris), seed=8, epoques=50, lr=0.12)
     sud = Orientation(deg=180.0)
     points = np.stack(
-        [
-            np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5])
-            for c in (4.5, 5.5, 6.5, 7.5)
-        ]
+        [np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (4.5, 5.5, 6.5, 7.5)]
     )
-    rapport = valider_gradient(
-        dense, points, sud, seed=8, reference=_SIM, pas=0.10
-    )
+    rapport = valider_gradient(dense, points, sud, seed=8, reference=_SIM, pas=0.10)
     assert rapport.accord_de_signe > 0.80, (
-        "Le substitut n'indique pas la bonne direction. "
-        "NE PAS passer au jalon 5 avant correction."
+        "Le substitut n'indique pas la bonne direction. NE PAS passer au jalon 5 avant correction."
     )

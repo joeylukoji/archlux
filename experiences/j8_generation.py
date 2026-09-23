@@ -42,6 +42,7 @@ JSONL lu ici.
 
 Usage : j8_generation.py [plans.jsonl] [n_max] [etiquette]
 """
+
 from __future__ import annotations
 
 import csv as csvmod
@@ -100,12 +101,28 @@ LARGEURS = (0.0, 0.25, 1.00, 1.80)
 COTE_INTACT_M = 0.50
 
 CHAMPS = (
-    "plan_id", "programme", "graphe", "n_pieces", "mode", "budget", "largeur_min",
-    "valide_avant", "valide_apres", "n_pieces_apres", "cote_min_apres", "intact",
-    "cellules", "recouvrements_avant",
-    "part_jour_avant", "part_trou_avant", "morceaux_avant", "cote_m",
-    "deplacement_max_m", "deplacement_relatif",
-    "temps_ms", "statut",
+    "plan_id",
+    "programme",
+    "graphe",
+    "n_pieces",
+    "mode",
+    "budget",
+    "largeur_min",
+    "valide_avant",
+    "valide_apres",
+    "n_pieces_apres",
+    "cote_min_apres",
+    "intact",
+    "cellules",
+    "recouvrements_avant",
+    "part_jour_avant",
+    "part_trou_avant",
+    "morceaux_avant",
+    "cote_m",
+    "deplacement_max_m",
+    "deplacement_relatif",
+    "temps_ms",
+    "statut",
 )
 
 
@@ -124,18 +141,14 @@ def _echelle(lignes: list[dict]) -> float:
     """Facteur unite -> metre calant l'aire mediane generee sur celle de MSD."""
     aires = []
     for plan_json in lignes:
-        formes = [
-            box(x, y, x + w, y + h) for _, (x, y, w, h) in _boites(plan_json, 1.0)
-        ]
+        formes = [box(x, y, x + w, y + h) for _, (x, y, w, h) in _boites(plan_json, 1.0)]
         union = unary_union(formes)
         if not union.is_empty:
             aires.append(union.area)
     return float(np.sqrt(AIRE_CIBLE_M2 / np.median(aires)))
 
 
-def _construire(
-    plan_json: dict, echelle: float
-) -> tuple[Plan, Contexte, Diagnostic] | str:
+def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Contexte, Diagnostic] | str:
     """Plan archlux + diagnostic d'entree, ou le motif de rejet en clair."""
     boites = _boites(plan_json, echelle)
     if any(w < COTE_MIN_M or h < COTE_MIN_M for _, (_, _, w, h) in boites):
@@ -174,9 +187,7 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
     with brut.open(encoding="utf-8") as flux:
         rangs = list(csvmod.DictReader(flux))
     plans = {r["plan_id"] for r in rangs}
-    avant = sum(
-        r["valide_avant"] == "True" for r in rangs if r["mode"] == "base"
-    )
+    avant = sum(r["valide_avant"] == "True" for r in rangs if r["mode"] == "base")
     # Les tables principales portent sur la largeur nominale ; le balayage des
     # largeurs a sa propre table plus bas.
     nominal = f"{LARGEUR_DEFAUT:.2f}"
@@ -201,9 +212,7 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
         temps = np.median([float(r["temps_ms"]) for r in lot])
         depl = [float(r["deplacement_max_m"]) for r in lot if r["deplacement_max_m"]]
         rel = [float(r["deplacement_relatif"]) for r in lot if r["deplacement_relatif"]]
-        med_depl = (
-            f"{np.median(depl):.2f} m ({np.median(rel):.0%} du côté)" if depl else "—"
-        )
+        med_depl = f"{np.median(depl):.2f} m ({np.median(rel):.0%} du côté)" if depl else "—"
         etiquette = "`legalize` seul" if mode == "base" else "`pavage=True`"
         lignes.append(
             f"| {etiquette} | {budget or '—'} | {len(lot)} | "
@@ -215,9 +224,7 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
     # connexite : a budget fixe la reparation bornee corrige un nombre borne de
     # cellules, et la trame enfle en (2n-1)^2 quand aucun bord ne coincide.
     dernier = str(BUDGETS[-1])
-    lot_final = [
-        r for r in a_nominal if r["mode"] == "pavage" and r["budget"] == dernier
-    ]
+    lot_final = [r for r in a_nominal if r["mode"] == "pavage" and r["budget"] == dernier]
 
     # Balayage de la largeur minimale. C'est la table decisive : sans plancher
     # strictement positif, fermer un jour en reduisant une piece a zero est la
@@ -230,9 +237,9 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
     for largeur in sorted({*LARGEURS, LARGEUR_DEFAUT}):
         cle = f"{largeur:.2f}"
         lot = [
-            r for r in rangs
-            if r["mode"] == "pavage" and r["budget"] == dernier
-            and r["largeur_min"] == cle
+            r
+            for r in rangs
+            if r["mode"] == "pavage" and r["budget"] == dernier and r["largeur_min"] == cle
         ]
         if not lot:
             continue
@@ -261,9 +268,7 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
         rangs_k = par_n[k]
         ok = sum(x["valide_apres"] == "True" for x in rangs_k)
         cel = np.median([float(x["cellules"]) for x in rangs_k])
-        coupe.append(
-            f"| {k} | {len(rangs_k)} | {100 * ok / len(rangs_k):.1f} % | {cel:.0f} |"
-        )
+        coupe.append(f"| {k} | {len(rangs_k)} | {100 * ok / len(rangs_k):.1f} % | {cel:.0f} |")
 
     # Coupe par topologie du graphe d'acces. Le `door_mask` de HouseDiffusion en
     # derive : c'est une entree du modele, pas une mise en scene. Si le taux y
@@ -312,13 +317,12 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
         f"| cellules de la trame implicite | {np.median(cellules):.0f} | "
         f"{cellules.mean():.0f} | {np.quantile(cellules, 0.95):.0f} |\n\n"
         "## Réparation\n\n"
-        f"Référentiel `largeur_min = {LARGEUR_DEFAUT:.2f} m`.\n\n"
-        + "\n".join(lignes) + "\n\n"
+        f"Référentiel `largeur_min = {LARGEUR_DEFAUT:.2f} m`.\n\n" + "\n".join(lignes) + "\n\n"
         "## Ce que coûte — et rapporte — un plancher sur la largeur\n\n"
-        + "\n".join(largeurs) + "\n\n"
+        + "\n".join(largeurs)
+        + "\n\n"
         "## Réparation par taille de programme\n\n" + "\n".join(coupe) + "\n\n"
-        "## Réparation par topologie du graphe d'accès\n\n"
-        + "\n".join(topo) + "\n\n"
+        "## Réparation par topologie du graphe d'accès\n\n" + "\n".join(topo) + "\n\n"
         f"## Échecs\n\n{motifs}\n\n"
         f"## Rejets à la construction\n\n{rejets or 'aucun'}\n"
     )
@@ -377,13 +381,13 @@ def main() -> None:
                 )
                 try:
                     corrige = ax.legalize(
-                        plan, contexte_essai,
-                        pavage=(mode == "pavage"), budget_reparation=budget,
+                        plan,
+                        contexte_essai,
+                        pavage=(mode == "pavage"),
+                        budget_reparation=budget,
                     )
                     valide = corrige.certificat.geometrie.valide
-                    deplacement = (
-                        f"{corrige.certificat.geometrie.deplacement_max:.6f}"
-                    )
+                    deplacement = f"{corrige.certificat.geometrie.deplacement_max:.6f}"
                     n_apres = str(len(corrige.pieces))
                     petit = min(min(p.w, p.h) for p in corrige.pieces)
                     cote_min = f"{petit:.4f}"
@@ -399,34 +403,35 @@ def main() -> None:
                         if mode == "pavage" and "structurel" in str(echec)
                         else "invariant_viole"
                     )
-                ecrivain.writerow({
-                    "plan_id": plan_json["id"],
-                    "programme": "+".join(plan_json["programme"]),
-                    # Absent des premiers JSONL : le champ n'existait pas encore.
-                    "graphe": plan_json.get("graphe", "etoile"),
-                    "n_pieces": len(plan.pieces),
-                    "mode": mode,
-                    "budget": budget if mode == "pavage" else "",
-                    "largeur_min": f"{largeur:.2f}",
-                    "valide_avant": avant,
-                    "valide_apres": valide,
-                    "n_pieces_apres": n_apres,
-                    "cote_min_apres": cote_min,
-                    "intact": intact,
-                    "cellules": diagnostic.cellules,
-                    "recouvrements_avant": f"{diagnostic.recouvrements:.3f}",
-                    "part_jour_avant": f"{diagnostic.part_jour:.4f}",
-                    "part_trou_avant": f"{diagnostic.part_trou:.4f}",
-                    "morceaux_avant": diagnostic.morceaux,
-                    "cote_m": f"{diagnostic.cote:.3f}",
-                    "deplacement_max_m": deplacement,
-                    "deplacement_relatif": (
-                        f"{float(deplacement) / diagnostic.cote:.4f}"
-                        if deplacement else ""
-                    ),
-                    "temps_ms": f"{(time.perf_counter() - debut) * 1000:.3f}",
-                    "statut": statut,
-                })
+                ecrivain.writerow(
+                    {
+                        "plan_id": plan_json["id"],
+                        "programme": "+".join(plan_json["programme"]),
+                        # Absent des premiers JSONL : le champ n'existait pas encore.
+                        "graphe": plan_json.get("graphe", "etoile"),
+                        "n_pieces": len(plan.pieces),
+                        "mode": mode,
+                        "budget": budget if mode == "pavage" else "",
+                        "largeur_min": f"{largeur:.2f}",
+                        "valide_avant": avant,
+                        "valide_apres": valide,
+                        "n_pieces_apres": n_apres,
+                        "cote_min_apres": cote_min,
+                        "intact": intact,
+                        "cellules": diagnostic.cellules,
+                        "recouvrements_avant": f"{diagnostic.recouvrements:.3f}",
+                        "part_jour_avant": f"{diagnostic.part_jour:.4f}",
+                        "part_trou_avant": f"{diagnostic.part_trou:.4f}",
+                        "morceaux_avant": diagnostic.morceaux,
+                        "cote_m": f"{diagnostic.cote:.3f}",
+                        "deplacement_max_m": deplacement,
+                        "deplacement_relatif": (
+                            f"{float(deplacement) / diagnostic.cote:.4f}" if deplacement else ""
+                        ),
+                        "temps_ms": f"{(time.perf_counter() - debut) * 1000:.3f}",
+                        "statut": statut,
+                    }
+                )
     print("bruts ecrits :", sortie)
     resume = Path(f"resultats/j8_{etiquette}.md")
     resume.write_text(_resumer(sortie, echelle, rejets), encoding="utf-8")

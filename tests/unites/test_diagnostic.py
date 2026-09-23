@@ -52,9 +52,7 @@ def test_le_recouvrement_se_compte_dans_les_deux_sens() -> None:
 
 def test_un_contact_par_arete_ne_compte_pas_comme_recouvrement() -> None:
     """Deux pièces mitoyennes partagent une arête d'aire nulle, pas une surface."""
-    assert diagnostiquer(
-        _plan((0.0, 0.0, 3.0, 2.0), (3.0, 0.0, 2.0, 2.0))
-    ).recouvrements == 0.0
+    assert diagnostiquer(_plan((0.0, 0.0, 3.0, 2.0), (3.0, 0.0, 2.0, 2.0))).recouvrements == 0.0
 
 
 def test_un_jour_de_bord_n_est_pas_un_trou_interieur() -> None:
@@ -76,10 +74,10 @@ def test_un_trou_ferme_est_compte_deux_fois() -> None:
     """Un anneau de quatre pièces : le trou central compte en jour **et** en trou."""
     diag = diagnostiquer(
         _plan(
-            (0.0, 0.0, 3.0, 1.0),   # bas
-            (0.0, 2.0, 3.0, 1.0),   # haut
-            (0.0, 1.0, 1.0, 1.0),   # gauche
-            (2.0, 1.0, 1.0, 1.0),   # droite
+            (0.0, 0.0, 3.0, 1.0),  # bas
+            (0.0, 2.0, 3.0, 1.0),  # haut
+            (0.0, 1.0, 1.0, 1.0),  # gauche
+            (2.0, 1.0, 1.0, 1.0),  # droite
         )
     )
     assert diag.part_trou == pytest.approx(1.0 / 9.0)
@@ -93,9 +91,7 @@ def test_des_pieces_separees_forment_un_archipel() -> None:
     les rattrapera à budget raisonnable. C'est le régime observé sur les sorties
     de HouseDiffusion (`resultats/j8_*.md`).
     """
-    diag = diagnostiquer(
-        _plan((0.0, 0.0, 1.0, 1.0), (3.0, 0.0, 1.0, 1.0), (6.0, 0.0, 1.0, 1.0))
-    )
+    diag = diagnostiquer(_plan((0.0, 0.0, 1.0, 1.0), (3.0, 0.0, 1.0, 1.0), (6.0, 0.0, 1.0, 1.0)))
     assert diag.morceaux == 3
     assert diag.recouvrements == 0.0
 
@@ -139,8 +135,7 @@ def test_les_parts_sont_invariantes_d_echelle(facteur: float) -> None:
     boites = ((0.0, 0.0, 2.0, 2.0), (1.0, 2.0, 2.0, 2.0))
     reference = diagnostiquer(_plan(*boites))
     mis_a_l_echelle = diagnostiquer(
-        _plan(*((x * facteur, y * facteur, w * facteur, h * facteur)
-                for x, y, w, h in boites))
+        _plan(*((x * facteur, y * facteur, w * facteur, h * facteur) for x, y, w, h in boites))
     )
     assert mis_a_l_echelle.part_jour == pytest.approx(reference.part_jour)
     assert mis_a_l_echelle.part_trou == pytest.approx(reference.part_trou)

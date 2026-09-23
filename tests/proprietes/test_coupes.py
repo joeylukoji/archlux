@@ -22,9 +22,7 @@ from tests.proprietes.strategies import ordres_valides
     h=st.floats(min_value=0.5, max_value=20.0, allow_nan=False),
 )
 @settings(max_examples=200, deadline=None)
-def test_la_coupe_n_exclut_aucun_point_valide(
-    w0: float, h0: float, w: float, h: float
-) -> None:
+def test_la_coupe_n_exclut_aucun_point_valide(w0: float, h0: float, w: float, h: float) -> None:
     """Toute tangente à {wh ≥ a} laisse passer les points de produit suffisant.
 
     AM-GM : (w/w₀ + h/h₀)/2 ≥ √(wh / (w₀ h₀)). Sur l'hyperbole w₀ h₀ = a,

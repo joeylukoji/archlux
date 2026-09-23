@@ -238,9 +238,7 @@ class TestRefus:
         la laisser non testée jusque-là reviendrait à la découvrir en production.
         """
         poly = construire_polytope(ORDRE_AB, CTX)
-        ligne = sparse.csr_matrix(
-            ([1.0], ([0], [poly.index["A.x"]])), shape=(1, len(poly.index))
-        )
+        ligne = sparse.csr_matrix(([1.0], ([0], [poly.index["A.x"]])), shape=(1, len(poly.index)))
         point = vectoriser(PLAN_AB, poly.index)  # A.x vaut 0
 
         # Deux variantes du même polytope : seul le second membre change, de sorte que

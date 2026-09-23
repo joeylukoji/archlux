@@ -6,6 +6,7 @@ qui predise quoi que ce soit.
 
 Usage : j7_sd_par_piece.py <msd.csv> <sd.zip> [n].
 """
+
 from __future__ import annotations
 
 import sys
@@ -27,8 +28,11 @@ from archlux.light.analytique import SubstitutAnalytique
 from archlux.uq.conforme import CalibrateurConforme
 
 MSD = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
-SD = Path(sys.argv[2] if len(sys.argv) > 2 else
-          "D:/archlux-donnees/swiss-dwellings/swiss-dwellings-v3.0.0.zip")
+SD = Path(
+    sys.argv[2]
+    if len(sys.argv) > 2
+    else "D:/archlux-donnees/swiss-dwellings/swiss-dwellings-v3.0.0.zip"
+)
 CIBLE = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
 GRAINE = 17
 
@@ -46,9 +50,7 @@ def paires(lot: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     vrais: list[float] = []
     for appart in lot:
         poly = construire_polytope(deduire_ordre(appart.plan), appart.contexte)
-        parts = ana.evaluer_pieces(
-            vectoriser(appart.plan, poly.index), appart.contexte.orientation
-        )
+        parts = ana.evaluer_pieces(vectoriser(appart.plan, poly.index), appart.contexte.orientation)
         # Les sous-rectangles d'une piece portent le prefixe `pNNN` : on les recompose
         # pour retrouver la granularite de la simulation.
         somme: dict[int, float] = defaultdict(float)
@@ -104,8 +106,7 @@ lignes = ["| modele | MAE | MAE relative | R2 | rho de Spearman |", "|---|--:|--
 for nom, pred in modeles.items():
     mae, r2, rho = score(pred)
     lignes.append(
-        f"| {nom} | {mae:.3f} | {100 * mae / np.abs(y_te).mean():.1f} % | "
-        f"{r2:.3f} | {rho:+.3f} |"
+        f"| {nom} | {mae:.3f} | {100 * mae / np.abs(y_te).mean():.1f} % | {r2:.3f} | {rho:+.3f} |"
     )
     print(f"{nom:30s} MAE {mae:.3f}  R2 {r2:+.3f}  rho {rho:+.3f}")
 

@@ -84,11 +84,7 @@ class TestDuaux:
         c[POLY_AB.index["A.w"]] = -1.0
         sol = resoudre(POLY_AB, c=c, duaux=True)
         assert sol.duaux is not None
-        actives = {
-            POLY_AB.origines[i]
-            for i, prix in enumerate(sol.duaux)
-            if abs(prix) > 1e-9
-        }
+        actives = {POLY_AB.origines[i] for i, prix in enumerate(sol.duaux) if abs(prix) > 1e-9}
         assert actives, "aucune contrainte active alors que l'optimum est sur une face"
 
 
@@ -157,9 +153,7 @@ class TestStatutsRares:
         que ``solve`` puisse distinguer « domaine ouvert » de « programme impossible »
         au lieu de confondre les deux sous un booléen.
         """
-        ouvert = replace(
-            POLY_1, bornes=tuple((-np.inf, np.inf) for _ in POLY_1.bornes)
-        )
+        ouvert = replace(POLY_1, bornes=tuple((-np.inf, np.inf) for _ in POLY_1.bornes))
         sol = resoudre(ouvert, c=np.array([1.0, 0.0, 0.0, 0.0]))
         assert sol.statut in ("non_borne", "limite")
 

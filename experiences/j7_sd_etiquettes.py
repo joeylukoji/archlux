@@ -2,6 +2,7 @@
 
 Corpus non redistribue. Usage : j7_sd_etiquettes.py <msd.csv> <sd.zip> [n].
 """
+
 from __future__ import annotations
 
 import sys
@@ -24,8 +25,11 @@ from archlux.light.protocole import Baies
 from archlux.uq.conforme import CalibrateurConforme
 
 MSD = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
-SD = Path(sys.argv[2] if len(sys.argv) > 2 else
-          "D:/archlux-donnees/swiss-dwellings/swiss-dwellings-v3.0.0.zip")
+SD = Path(
+    sys.argv[2]
+    if len(sys.argv) > 2
+    else "D:/archlux-donnees/swiss-dwellings/swiss-dwellings-v3.0.0.zip"
+)
 CIBLE = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
 GRAINE = 17
 
@@ -84,16 +88,20 @@ pred_netb = np.array(
 def score(pred: np.ndarray, vrai: np.ndarray) -> str:
     err = vrai - pred
     mae = float(np.abs(err).mean())
-    return (f"MAE {mae:8.3f}   MAE rel {100 * mae / float(np.abs(vrai).mean()):6.1f} %   "
-            f"R2 {1 - err.var() / vrai.var():7.3f}")
+    return (
+        f"MAE {mae:8.3f}   MAE rel {100 * mae / float(np.abs(vrai).mean()):6.1f} %   "
+        f"R2 {1 - err.var() / vrai.var():7.3f}"
+    )
 
 
 cal = CalibrateurConforme(indicateur="sDA")
 p_ca = np.array([net.evaluer(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 s_ca = np.array([net.incertitude(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 cal.ajuster(p_ca, y_ca, s_ca, alpha=0.10)
-bornes = [cal.borne(float(p), float(net.incertitude(x, o)))
-          for p, x, o in zip(pred_net, x_te, o_te, strict=True)]
+bornes = [
+    cal.borne(float(p), float(net.incertitude(x, o)))
+    for p, x, o in zip(pred_net, x_te, o_te, strict=True)
+]
 couv = float(np.mean([b.borne_inf <= v <= b.borne_sup for b, v in zip(bornes, y_te, strict=True)]))
 largeur = float(np.mean([b.borne_sup - b.borne_inf for b in bornes]))
 

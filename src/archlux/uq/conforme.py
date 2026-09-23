@@ -176,9 +176,7 @@ def _echelle(incertitude: float) -> float:
         raise InvariantViole((f"incertitude non finie : {incertitude}",))
     if echelle <= 0.0:
         raise InvariantViole(
-            (
-                f"incertitude doit être > 0 pour publier une marge conforme : {echelle}",
-            )
+            (f"incertitude doit être > 0 pour publier une marge conforme : {echelle}",)
         )
     return max(echelle, _SIGMA_MIN)
 
@@ -319,9 +317,7 @@ class CalibrateurConforme:
         if sens not in (">=", "<="):
             raise InvariantViole((f"sens inconnu : {sens!r}",))
         if sens != attendu:
-            raise InvariantViole(
-                (f"sens {sens!r} incompatible avec indicateur {self.indicateur}",)
-            )
+            raise InvariantViole((f"sens {sens!r} incompatible avec indicateur {self.indicateur}",))
         marge = self.q * _echelle(incertitude)
         return _intervalle(
             prediction,

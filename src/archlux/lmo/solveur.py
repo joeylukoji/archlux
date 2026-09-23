@@ -178,9 +178,7 @@ def _est_faisable(poly: Polytope, coupes: list[Coupe] | None) -> bool:
     return _statut(solveur.Solve()) == "optimal"
 
 
-def _certificat_farkas(
-    poly: Polytope, coupes: list[Coupe] | None
-) -> np.ndarray:
+def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> np.ndarray:
     """Extraire une preuve d'infaisabilité par le **problème auxiliaire**.
 
     On relâche chaque inégalité ``a_i x ≤ b_i`` par une variable d'écart ``s_i ≥ 0``,
@@ -217,8 +215,7 @@ def _certificat_farkas(
     objectif = solveur.Objective()
 
     ecarts = [
-        solveur.NumVar(0.0, solveur.infinity(), f"ecart_{i}")
-        for i in range(len(contraintes))
+        solveur.NumVar(0.0, solveur.infinity(), f"ecart_{i}") for i in range(len(contraintes))
     ]
     for contrainte, ecart in zip(contraintes, ecarts, strict=True):
         contrainte.SetCoefficient(ecart, -1.0)

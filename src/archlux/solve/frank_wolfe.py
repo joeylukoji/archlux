@@ -71,16 +71,12 @@ def _restreindre_budget(poly: Polytope, centre: np.ndarray, rayon: float) -> Pol
         bas = max(lo, float(centre[i]) - rayon)
         haut = min(hi, float(centre[i]) + rayon)
         if bas > haut + 1e-12:
-            raise InvariantViole(
-                (f"budget {rayon} m incompatible avec les bornes en colonne {i}",)
-            )
+            raise InvariantViole((f"budget {rayon} m incompatible avec les bornes en colonne {i}",))
         nouvelles.append((bas, haut))
     return replace(poly, bornes=tuple(nouvelles))
 
 
-def _index_sommet(
-    sommets: list[np.ndarray], candidat: np.ndarray
-) -> int | None:
+def _index_sommet(sommets: list[np.ndarray], candidat: np.ndarray) -> int | None:
     """Indice d'un sommet déjà stocké, à tolérance près."""
     for rang, sommet in enumerate(sommets):
         if np.allclose(sommet, candidat, atol=1e-9, rtol=0.0):
@@ -103,13 +99,9 @@ def _enrichir_coupes(
     for identifiant in surfaces_violees(x, domaine, ctx, pieces=pieces):
         largeur = float(x[domaine.index[f"{identifiant}.w"]])
         hauteur = float(x[domaine.index[f"{identifiant}.h"]])
-        a_min = ctx.referentiel.a_min(
-            next(p.type for p in pieces if p.id == identifiant)
-        )
+        a_min = ctx.referentiel.a_min(next(p.type for p in pieces if p.id == identifiant))
         if largeur > 0.0 and hauteur > 0.0 and a_min > 0.0:
-            liste.append(
-                coupe_surface(largeur, hauteur, a_min, piece=identifiant)
-            )
+            liste.append(coupe_surface(largeur, hauteur, a_min, piece=identifiant))
 
 
 def _normaliser(poids: list[float]) -> None:
@@ -200,9 +192,7 @@ def frank_wolfe(
     domaine = poly if budget is None else _restreindre_budget(poly, depart, budget)
     x = np.asarray(depart, dtype=float).copy()
     if x.shape != (len(domaine.index),):
-        raise InvariantViole(
-            (f"départ de dimension {x.shape}, attendu ({len(domaine.index)},)",)
-        )
+        raise InvariantViole((f"départ de dimension {x.shape}, attendu ({len(domaine.index)},)",))
 
     sommets = [x.copy()]
     poids = [1.0]
@@ -354,4 +344,3 @@ def frank_wolfe(
         trace=Trace(iterations=tuple(historique)),
         duaux=duaux,
     )
-

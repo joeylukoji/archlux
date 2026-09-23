@@ -86,10 +86,7 @@ def test_accord_de_signe_point_de_controle(tmp_path: Path) -> None:
     reseau = _entraine(tmp_path)
     sud = Orientation(deg=180.0)
     points = np.stack(
-        [
-            np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5])
-            for c in (4.5, 5.5, 6.5, 7.5)
-        ]
+        [np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (4.5, 5.5, 6.5, 7.5)]
     )
     rapport = valider_gradient(
         reseau,

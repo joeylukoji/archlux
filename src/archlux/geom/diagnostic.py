@@ -143,20 +143,21 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
 
     formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in plan.pieces]
     n = len(formes)
-    recouvrements = sum(
-        1
-        for i in range(n)
-        for j in range(n)
-        if i != j and formes[i].intersection(formes[j]).area > _AIRE_MIN
-    ) / n
+    recouvrements = (
+        sum(
+            1
+            for i in range(n)
+            for j in range(n)
+            if i != j and formes[i].intersection(formes[j]).area > _AIRE_MIN
+        )
+        / n
+    )
 
     union = unary_union(formes)
     x0, y0, x1, y1 = union.bounds
     aire_boite = (x1 - x0) * (y1 - y0)
     parts = list(union.geoms) if isinstance(union, MultiPolygon) else [union]
-    aire_trous = sum(
-        Polygon(anneau).area for forme in parts for anneau in forme.interiors
-    )
+    aire_trous = sum(Polygon(anneau).area for forme in parts for anneau in forme.interiors)
 
     lignes_x = {p.x for p in plan.pieces} | {p.x + p.w for p in plan.pieces}
     lignes_y = {p.y for p in plan.pieces} | {p.y + p.h for p in plan.pieces}

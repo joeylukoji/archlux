@@ -202,9 +202,7 @@ class SimulateurExact:
         for i in range(vecteur.size // CHAMPS_PAR_PIECE):
             largeur = float(vecteur[i * CHAMPS_PAR_PIECE + 2])
             hauteur = float(vecteur[i * CHAMPS_PAR_PIECE + 3])
-            df, _, _ = _split_flux(
-                largeur, hauteur, orientation, self.wwr, avec_gradient=False
-            )
+            df, _, _ = _split_flux(largeur, hauteur, orientation, self.wwr, avec_gradient=False)
             aire = max(largeur, _EPS) * max(hauteur, _EPS)
             parts[i] += signe * self.ECHELLE_DF * df * aire
         return parts
@@ -234,11 +232,11 @@ class SimulateurExact:
             if avec_gradient:
                 d_aire_dw = max(hauteur, _EPS)
                 d_aire_dh = max(largeur, _EPS)
-                gradient[i * CHAMPS_PAR_PIECE + 2] += signe_extra * self.ECHELLE_DF * (
-                    d_df_dw * aire + df * d_aire_dw
+                gradient[i * CHAMPS_PAR_PIECE + 2] += (
+                    signe_extra * self.ECHELLE_DF * (d_df_dw * aire + df * d_aire_dw)
                 )
-                gradient[i * CHAMPS_PAR_PIECE + 3] += signe_extra * self.ECHELLE_DF * (
-                    d_df_dh * aire + df * d_aire_dh
+                gradient[i * CHAMPS_PAR_PIECE + 3] += (
+                    signe_extra * self.ECHELLE_DF * (d_df_dh * aire + df * d_aire_dh)
                 )
         valeur += signe_extra * self.ECHELLE_DF * extra
         return valeur, gradient

@@ -173,9 +173,7 @@ class SubstitutAnalytique:
         cos_t, sin_t = float(features[0]), float(features[1])
         cos2, sin2 = cos_t * cos_t, sin_t * sin_t
         profondeur_utile = (
-            self.FACTEUR_PROFONDEUR
-            * self.HAUTEUR_LINTEAU
-            * self._facteur_orientation(orientation)
+            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._facteur_orientation(orientation)
         )
         parts = np.zeros(n_pieces, dtype=float)
         for i in range(n_pieces):
@@ -187,9 +185,7 @@ class SubstitutAnalytique:
             profondeur = largeur * sin2 + hauteur * cos2
             penetration = min(profondeur, profondeur_utile)
             sudness = -pos_x * sin_t - pos_y * cos_t
-            parts[i] = (
-                facade_sud * penetration * math.exp(self.KAPPA_SUD * sudness)
-            )
+            parts[i] = facade_sud * penetration * math.exp(self.KAPPA_SUD * sudness)
         return parts
 
     def _facteur_orientation(self, orientation: Orientation) -> float:
@@ -210,9 +206,7 @@ class SubstitutAnalytique:
         cos2 = cos_t * cos_t
         sin2 = sin_t * sin_t
         profondeur_utile = (
-            self.FACTEUR_PROFONDEUR
-            * self.HAUTEUR_LINTEAU
-            * self._facteur_orientation(orientation)
+            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._facteur_orientation(orientation)
         )
 
         total = 0.0

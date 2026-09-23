@@ -52,9 +52,7 @@ def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:
     if n < 0:
         raise InvariantViole((f"n doit être ≥ 0, reçu {n}",))
     if n > TAILLE_MAX:
-        raise InvariantViole(
-            (f"n={n} > {TAILLE_MAX} coupes distinctes disponibles",)
-        )
+        raise InvariantViole((f"n={n} > {TAILLE_MAX} coupes distinctes disponibles",))
     rng = _rng(seed, "corpus")
     grilles_x = np.linspace(4.05, 7.95, _N_COUPES_X)
     grilles_y = np.linspace(3.05, 5.95, _N_COUPES_Y)

@@ -56,9 +56,7 @@ def _analytique(indicateur: Literal["sDA", "ASE", "UDI", "vue"]) -> SubstitutAna
     return SubstitutAnalytique(indicateur_vise=indicateur)
 
 
-def descripteurs(
-    x: np.ndarray, orientation: Orientation, baies: Baies | None = None
-) -> np.ndarray:
+def descripteurs(x: np.ndarray, orientation: Orientation, baies: Baies | None = None) -> np.ndarray:
     """Descripteurs continus : statistiques de pièces × harmoniques d'orientation.
 
     Inclut explicitement ``aire × sin 2θ``, terme présent dans le simulateur
@@ -156,9 +154,7 @@ class SubstitutDense:
             or self.W3 is None
         ):
             return 0
-        return int(
-            self.W1.size + self.b1.size + self.W2.size + self.b2.size + self.W3.size + 1
-        )
+        return int(self.W1.size + self.b1.size + self.W2.size + self.b2.size + self.W3.size + 1)
 
     def _normaliser(self, feat: np.ndarray) -> np.ndarray:
         if self.mu is None or self.sigma is None:
@@ -186,9 +182,10 @@ class SubstitutDense:
         self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
     ) -> float:
         """Analytique recalée + résidu appris. Sans poids : l'analytique seule."""
-        base = self.echelle_base * float(
-            _analytique(self.indicateur_vise).evaluer(x, orientation)
-        ) + self.decalage_base
+        base = (
+            self.echelle_base * float(_analytique(self.indicateur_vise).evaluer(x, orientation))
+            + self.decalage_base
+        )
         if self.W1 is None:
             return base
         feat = self._normaliser(descripteurs(x, orientation, baies))
@@ -264,10 +261,7 @@ class SubstitutDense:
             raise InvariantViole(("xs, ys et orientations doivent avoir la même longueur",))
         analytique = _analytique(self.indicateur_vise)
         brut = np.array(
-            [
-                float(analytique.evaluer(x, ori))
-                for x, ori in zip(xs, orientations, strict=True)
-            ]
+            [float(analytique.evaluer(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
         )
         cible_brute = np.asarray(ys, dtype=float).ravel()
         variance = float(np.var(brut))
@@ -281,10 +275,7 @@ class SubstitutDense:
         residus = cible_brute - (self.echelle_base * brut + self.decalage_base)
         fenestration = baies if baies is not None else (None,) * len(xs)
         feats = np.stack(
-            [
-                descripteurs(x, o, b)
-                for x, o, b in zip(xs, orientations, fenestration, strict=True)
-            ]
+            [descripteurs(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
         )
         self.mu = feats.mean(axis=0)
         self.sigma = feats.std(axis=0)

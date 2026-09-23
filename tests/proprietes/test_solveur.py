@@ -15,9 +15,7 @@ from tests.proprietes.strategies import contextes, ordres_valides, vecteurs_obje
 
 @given(ordre=ordres_valides(), ctx=contextes(), tirage=st.data())
 @settings(max_examples=150, deadline=None)
-def test_solution_est_admissible(
-    ordre: OrdreRelatif, ctx: Contexte, tirage: st.DataObject
-) -> None:
+def test_solution_est_admissible(ordre: OrdreRelatif, ctx: Contexte, tirage: st.DataObject) -> None:
     """Toute solution rendue optimale appartient au polytope.
 
     La vérification passe par ``Polytope.contient``, qui n'emprunte rien au solveur :
@@ -46,16 +44,12 @@ def test_le_demarrage_a_chaud_ne_change_pas_la_solution(
     chaud = resoudre(poly, c, depart=np.zeros(len(poly.index)))
     assert froid.statut == chaud.statut
     if froid.statut == "optimal":
-        assert froid.valeur == np.float64(chaud.valeur) or abs(
-            froid.valeur - chaud.valeur
-        ) < 1e-6
+        assert froid.valeur == np.float64(chaud.valeur) or abs(froid.valeur - chaud.valeur) < 1e-6
 
 
 @given(ordre=ordres_valides(), ctx=contextes())
 @settings(max_examples=100, deadline=None)
-def test_un_objectif_nul_rend_un_point_admissible(
-    ordre: OrdreRelatif, ctx: Contexte
-) -> None:
+def test_un_objectif_nul_rend_un_point_admissible(ordre: OrdreRelatif, ctx: Contexte) -> None:
     """Avec ``c = 0``, le LP se réduit à une question de faisabilité.
 
     C'est le mode qu'utilisera ``certify`` pour distinguer « programme impossible » de

@@ -45,13 +45,25 @@ _ESPACE = 12.0
 # Teintes par type de pièce. Un type inconnu retombe sur le gris : inventer une
 # couleur par hachage rendrait deux corpus incomparables d'un rendu à l'autre.
 _TEINTES = {
-    "living": "#c8d9ec", "living_room": "#c8d9ec", "living_dining": "#c3d6ea",
-    "salon": "#c8d9ec", "sejour": "#c8d9ec",
-    "kitchen": "#e8d9bd", "cuisine": "#e8d9bd", "kitchen_dining": "#e5d5b8",
-    "bedroom": "#d6e0cd", "chambre": "#d6e0cd", "room": "#d9e2d1",
-    "bathroom": "#d5dfe6", "sdb": "#d5dfe6",
-    "hallway": "#e4e0d8", "corridor": "#e4e0d8", "couloir": "#e4e0d8",
-    "dining": "#ded4e2", "office": "#dcdce6", "storage": "#e0dcd6",
+    "living": "#c8d9ec",
+    "living_room": "#c8d9ec",
+    "living_dining": "#c3d6ea",
+    "salon": "#c8d9ec",
+    "sejour": "#c8d9ec",
+    "kitchen": "#e8d9bd",
+    "cuisine": "#e8d9bd",
+    "kitchen_dining": "#e5d5b8",
+    "bedroom": "#d6e0cd",
+    "chambre": "#d6e0cd",
+    "room": "#d9e2d1",
+    "bathroom": "#d5dfe6",
+    "sdb": "#d5dfe6",
+    "hallway": "#e4e0d8",
+    "corridor": "#e4e0d8",
+    "couloir": "#e4e0d8",
+    "dining": "#ded4e2",
+    "office": "#dcdce6",
+    "storage": "#e0dcd6",
     "storeroom": "#e0dcd6",
 }
 _GRIS = "#dcdcdc"
@@ -60,7 +72,11 @@ _GRIS = "#dcdcdc"
 def _echapper(texte: str) -> str:
     """Neutraliser les cinq caractères que XML ne tolère pas dans un nœud texte."""
     for brut, entite in (
-        ("&", "&amp;"), ("<", "&lt;"), (">", "&gt;"), ('"', "&quot;"), ("'", "&apos;")
+        ("&", "&amp;"),
+        ("<", "&lt;"),
+        (">", "&gt;"),
+        ('"', "&quot;"),
+        ("'", "&apos;"),
     ):
         texte = texte.replace(brut, entite)
     return texte
@@ -118,8 +134,9 @@ def _panneau(
     ]
 
     if contour:
-        points = " ".join(f"{x:.2f},{y:.2f}" for x, y in map(
-            lambda p: vers_svg(p[0], p[1]), contour))
+        points = " ".join(
+            f"{x:.2f},{y:.2f}" for x, y in map(lambda p: vers_svg(p[0], p[1]), contour)
+        )
         parties.append(
             f'<polygon points="{points}" fill="none" stroke="#b04a4a" '
             'stroke-width="1.4" stroke-dasharray="6 4"/>'
@@ -138,7 +155,7 @@ def _panneau(
         parties.append(
             f'<text x="{centre_x:.2f}" y="{centre_y:.2f}" text-anchor="middle" '
             'font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">'
-            f'{_echapper(piece.type[:12])}</text>'
+            f"{_echapper(piece.type[:12])}</text>"
         )
     return parties
 
@@ -275,14 +292,10 @@ def planche(
     parties: list[str] = []
     for rang, (plan, titre) in enumerate(volets):
         colonne, rangee = rang % colonnes, rang // colonnes
-        parties += _panneau(
-            plan, vise, titre, etendue, colonne * pas_x, rangee * pas_y
-        )
+        parties += _panneau(plan, vise, titre, etendue, colonne * pas_x, rangee * pas_y)
     n_colonnes = min(len(volets), colonnes)
     n_rangees = (len(volets) + colonnes - 1) // colonnes
-    return _document(
-        n_colonnes * pas_x - _ESPACE, n_rangees * pas_y - _ESPACE, parties
-    )
+    return _document(n_colonnes * pas_x - _ESPACE, n_rangees * pas_y - _ESPACE, parties)
 
 
 def _hauteur(etendue: tuple[float, float, float, float]) -> float:

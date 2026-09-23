@@ -160,9 +160,9 @@ def test_lmo_n_importe_jamais_light() -> None:
     for fichier in _modules():
         if _paquet(fichier) != "lmo":
             continue
-        assert not any(
-            c.startswith("archlux.light") for c in _imports(fichier)
-        ), f"{_chemin_module(fichier)} importe light"
+        assert not any(c.startswith("archlux.light") for c in _imports(fichier)), (
+            f"{_chemin_module(fichier)} importe light"
+        )
 
 
 def test_solve_ne_depend_que_du_protocole_light() -> None:
@@ -183,9 +183,9 @@ def test_personne_n_importe_bench() -> None:
     for fichier in _modules():
         if _paquet(fichier) == "bench":
             continue
-        assert not any(
-            c.startswith("archlux.bench") for c in _imports(fichier)
-        ), f"{_chemin_module(fichier)} importe bench"
+        assert not any(c.startswith("archlux.bench") for c in _imports(fichier)), (
+            f"{_chemin_module(fichier)} importe bench"
+        )
 
 
 def test_le_noyau_n_importe_pas_torch() -> None:

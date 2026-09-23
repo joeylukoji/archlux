@@ -9,9 +9,7 @@ from archlux.erreurs import InvariantViole
 __all__ = ["intervalle_wilson"]
 
 
-def intervalle_wilson(
-    succes: int, n: int, *, z: float = 1.96
-) -> tuple[float, float]:
+def intervalle_wilson(succes: int, n: int, *, z: float = 1.96) -> tuple[float, float]:
     """Intervalle de confiance de Wilson pour une proportion.
 
     Contrairement à l'approximation normale, les bornes restent dans ``[0, 1]``

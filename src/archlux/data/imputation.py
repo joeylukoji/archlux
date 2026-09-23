@@ -24,8 +24,7 @@ def imputer_ouvertures(plan: Plan, *, ratio: float = RATIO_BAIE_DEFAUT) -> Plan:
     if not murs and len(plan.contour) >= 2:
         contour = (*plan.contour, plan.contour[0])
         murs = tuple(
-            Mur(id=f"contour-{i}", a=contour[i], b=contour[i + 1])
-            for i in range(len(plan.contour))
+            Mur(id=f"contour-{i}", a=contour[i], b=contour[i + 1]) for i in range(len(plan.contour))
         )
     for mur in murs:
         if mur.id in murs_occupes:

@@ -159,4 +159,3 @@ def test_budget_legalisation_performantielle(benchmark: Callable[..., object]) -
     assert moyenne_ms < BUDGETS_MS["legalisation_performantielle"], (
         f"{moyenne_ms:.2f} ms — budget légalisation performantielle dépassé"
     )
-  

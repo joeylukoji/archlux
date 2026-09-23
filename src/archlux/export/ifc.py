@@ -173,8 +173,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     id_proj = alloc()
     emit(
         id_proj,
-        f"IFCPROJECT('{_guid('project')}',#{id_owner},'archlux',$,$,$,$,"
-        f"(#{id_ctx}),#{id_units})",
+        f"IFCPROJECT('{_guid('project')}',#{id_owner},'archlux',$,$,$,$,(#{id_ctx}),#{id_units})",
     )
 
     id_site_ax = axis2(0.0, 0.0, 0.0)

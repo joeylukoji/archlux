@@ -255,9 +255,7 @@ def difference_angulaire(a: float, b: float) -> float:
     return float(ecart)
 
 
-def regression_circulaire_lineaire(
-    theta: np.ndarray, y: np.ndarray
-) -> ResultatRegression:
+def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> ResultatRegression:
     r"""Régression :math:`y \sim a\cos\theta + b\sin\theta + c`.
 
     Parameters
@@ -306,7 +304,4 @@ def stratifier(
     decale = (valeurs % 360.0 + largeur / 2.0) % 360.0
     indices = np.floor(decale / largeur).astype(int) % n_secteurs
     noms = _NOMS_HUIT if n_secteurs == 8 else tuple(str(i) for i in range(n_secteurs))
-    return {
-        nom: valeurs[indices == rang]
-        for rang, nom in enumerate(noms)
-    }
+    return {nom: valeurs[indices == rang] for rang, nom in enumerate(noms)}

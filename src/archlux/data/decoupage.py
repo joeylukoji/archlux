@@ -33,9 +33,7 @@ def _lignes(chemin: Path) -> tuple[str, ...]:
         if not identifiant or identifiant.startswith("#"):
             continue
         if identifiant in deja:
-            raise InvariantViole(
-                (f"identifiant répété dans {chemin.name} : {identifiant}",)
-            )
+            raise InvariantViole((f"identifiant répété dans {chemin.name} : {identifiant}",))
         deja.add(identifiant)
         vus.append(identifiant)
     return tuple(vus)
@@ -65,9 +63,7 @@ def charger_decoupage(chemin: Path) -> Decoupage:
     if s_calib & s_test:
         conflits.append("calibration ∩ test")
     if conflits:
-        raise InvariantViole(
-            (f"identifiants partagés entre jeux : {', '.join(conflits)}",)
-        )
+        raise InvariantViole((f"identifiants partagés entre jeux : {', '.join(conflits)}",))
     materiau = "\n".join((*train, "---", *calib, "---", *test)).encode()
     empreinte = hashlib.blake2b(materiau, digest_size=16).hexdigest()
     return Decoupage(

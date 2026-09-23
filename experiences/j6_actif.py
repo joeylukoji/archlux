@@ -1,4 +1,5 @@
 """Comparer acquisition active vs aleatoire — budget egal, calibration independante."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -40,7 +41,12 @@ def _campagne(acquire: object, graine: int) -> float:
     ys0 = np.array([sim.evaluer(x, o) for x, o in zip(xs0, os0, strict=True)])
     net.ajuster(xs0, ys0, os0, seed=graine, epoques=25, lr=0.12)
     rapport = Loop(
-        net, sim, acquire, budget=24, batch=4, seed=graine  # type: ignore[arg-type]
+        net,
+        sim,
+        acquire,
+        budget=24,
+        batch=4,
+        seed=graine,  # type: ignore[arg-type]
     ).run(
         props,
         oris,

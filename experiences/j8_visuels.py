@@ -14,6 +14,7 @@ dossier qui ne montrerait que ce qui marche ne servirait à rien.
 
 Usage : j8_visuels.py [plans.jsonl] [etiquette] [n_par_categorie]
 """
+
 from __future__ import annotations
 
 import json
@@ -34,9 +35,7 @@ BUDGET = BUDGETS[-1]
 RACINE = Path("resultats/visuels") / ETIQUETTE
 
 
-def _fiche(
-    plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: float
-) -> str:
+def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: float) -> str:
     """Métriques d'un plan, avant et après, en Markdown."""
     lignes = [
         f"# {plan_id}",
@@ -87,11 +86,7 @@ def _fiche(
 
 
 def main() -> None:
-    lignes = [
-        json.loads(x)
-        for x in PLANS.read_text(encoding="utf-8").splitlines()
-        if x.strip()
-    ]
+    lignes = [json.loads(x) for x in PLANS.read_text(encoding="utf-8").splitlines() if x.strip()]
     echelle = _echelle(lignes)
     compte: dict[str, int] = {}
     index: list[tuple[str, str, str, str]] = []
@@ -104,19 +99,13 @@ def main() -> None:
         preuve = verifier_exactement(plan, contexte)
         corrige, statut = None, "réparé"
         try:
-            corrige = ax.legalize(
-                plan, contexte, pavage=True, budget_reparation=BUDGET
-            )
+            corrige = ax.legalize(plan, contexte, pavage=True, budget_reparation=BUDGET)
             if not corrige.certificat.geometrie.valide:
                 statut = "corrigé mais invalide"
         except ax.Infaisable:
             statut = "infaisable (prouvé)"
         except ax.InvariantViole as echec:
-            statut = (
-                "trame irrécupérable"
-                if "structurel" in str(echec)
-                else "invariant violé"
-            )
+            statut = "trame irrécupérable" if "structurel" in str(echec) else "invariant violé"
         # Quota par issue : un dossier qui ne montrerait que les reussites
         # donnerait une image fausse du jalon.
         if compte.get(statut, 0) >= PAR_CATEGORIE:
@@ -125,10 +114,7 @@ def main() -> None:
 
         dossier = RACINE / statut.replace(" ", "-").replace("(", "").replace(")", "")
         dossier.mkdir(parents=True, exist_ok=True)
-        avant = (
-            f"{len(plan.pieces)} pièces, jour {diag.part_jour:.0%}, "
-            f"{diag.morceaux} morceaux"
-        )
+        avant = f"{len(plan.pieces)} pièces, jour {diag.part_jour:.0%}, {diag.morceaux} morceaux"
         if corrige is None:
             # Un seul panneau. Redessiner le plan d'entree a droite se lirait
             # « rien n'a change », alors qu'aucun plan n'a ete produit du tout.
@@ -160,8 +146,7 @@ def main() -> None:
     table = [
         f"# Comparaisons avant / après — conditionnement `{ETIQUETTE}`",
         "",
-        f"Budget de réparation {BUDGET}. Au plus {PAR_CATEGORIE} plans par issue, "
-        "échecs compris.",
+        f"Budget de réparation {BUDGET}. Au plus {PAR_CATEGORIE} plans par issue, échecs compris.",
         "",
         "| issue | plan | jour avant | morceaux avant | fiche |",
         "|---|---|--:|--:|---|",

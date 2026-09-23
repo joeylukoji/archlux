@@ -27,9 +27,7 @@ def test_sud_vaut_mieux_que_nord_a_geometrie_egale() -> None:
     """La règle de profondeur utile est modulée par le secteur (8 pas de 45°)."""
     substitut = SubstitutAnalytique()
     x = np.array([0.0, 0.0, 4.0, 5.0])
-    assert substitut.evaluer(x, Orientation(deg=180.0)) > substitut.evaluer(
-        x, Orientation(deg=0.0)
-    )
+    assert substitut.evaluer(x, Orientation(deg=180.0)) > substitut.evaluer(x, Orientation(deg=0.0))
 
 
 def test_gradient_coherent_avec_differences_finies() -> None:
@@ -64,9 +62,7 @@ def test_piece_profonde_sature() -> None:
     sud = Orientation(deg=180.0)
     peu_profond = np.array([0.0, 0.0, 4.0, 6.0])
     plus_profond = np.array([0.0, 0.0, 4.0, 9.0])
-    assert substitut.evaluer(plus_profond, sud) <= substitut.evaluer(
-        peu_profond, sud
-    ) + 1e-9
+    assert substitut.evaluer(plus_profond, sud) <= substitut.evaluer(peu_profond, sud) + 1e-9
 
 
 def test_incertitude_constante_documentee() -> None:

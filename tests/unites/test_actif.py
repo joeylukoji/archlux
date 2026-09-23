@@ -42,9 +42,7 @@ class _OracleRegion:
 
     indicateur: str = "sDA"
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
-    ) -> float:
+    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
         del orientation, baies
         z = float(np.asarray(x, dtype=float).ravel()[0])
         bruit = 0.05 if abs(z) <= 2.0 else 2.0
@@ -74,9 +72,7 @@ class _ModeleLocal:
     ys: list[float] = field(default_factory=list)
     _sigma: float = 1.0
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
-    ) -> float:
+    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
         del orientation, baies
         if not self.ys:
             return 0.0

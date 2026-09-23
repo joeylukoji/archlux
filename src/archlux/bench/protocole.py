@@ -52,6 +52,5 @@ def compare(
     if not plans:
         raise InvariantViole(("plans vide : aucune moyenne à calculer",))
     return tuple(
-        sum(float(evaluate_by(plan, methode)) for plan in plans) / len(plans)
-        for methode in methods
+        sum(float(evaluate_by(plan, methode)) for plan in plans) / len(plans) for methode in methods
     )

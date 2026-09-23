@@ -184,9 +184,7 @@ def vecteur_vers_jetons(
     if baies is not None and not baies.vide:
         murs_par_id = {mur.id: mur for mur in baies.murs}
         extra = [
-            _jeton_ouverture(
-                ouv, murs_par_id[ouv.mur_id], float(n), aire_totale, orientation
-            )
+            _jeton_ouverture(ouv, murs_par_id[ouv.mur_id], float(n), aire_totale, orientation)
             for ouv in baies.ouvertures
             if ouv.mur_id in murs_par_id
         ]

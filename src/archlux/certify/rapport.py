@@ -66,10 +66,7 @@ def _section_performance(borne: BornePerformance | None) -> str:
                 f"(predit {_fmt(borne.valeur)}, "
                 f"marge {_fmt(borne.valeur - borne.borne_inf)})"
             )
-        corps = (
-            f"{ligne}\n"
-            f"  calibration : {borne.n_calibration} évaluations de l'oracle gelé"
-        )
+        corps = f"{ligne}\n  calibration : {borne.n_calibration} évaluations de l'oracle gelé"
     return f"PERFORMANCE                        {bandeau}\n{corps}"
 
 

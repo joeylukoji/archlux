@@ -82,9 +82,7 @@ def _incertitudes_acquisition(
     dist2 = np.sum((cand[:, None, :] - ref[None, :, :]) ** 2, axis=2)
     dist = np.sqrt(np.min(dist2, axis=1))
     echelle = float(np.median(dist) + 1e-9)
-    return np.asarray(
-        np.maximum(base, 1e-12) * (1.0 + dist / echelle), dtype=float
-    )
+    return np.asarray(np.maximum(base, 1e-12) * (1.0 + dist / echelle), dtype=float)
 
 
 def _largeur_moyenne(
@@ -161,9 +159,7 @@ class Loop:
         if not 0.0 < self.alpha < 1.0:
             raise InvariantViole((f"alpha hors ]0, 1[ : {self.alpha}",))
         if not 0.0 <= self.part_calibration < 1.0:
-            raise InvariantViole(
-                (f"part_calibration hors [0, 1[ : {self.part_calibration}",)
-            )
+            raise InvariantViole((f"part_calibration hors [0, 1[ : {self.part_calibration}",))
 
     def _calibrer(
         self,
@@ -174,24 +170,14 @@ class Loop:
     ) -> None:
         """Ajuster le quantile conforme sur le jeu de calibration, et lui seul."""
         preds = np.array(
-            [
-                float(self.substitut.evaluer(x, o))
-                for x, o in zip(xs, orientations, strict=True)
-            ]
+            [float(self.substitut.evaluer(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
         sigmas = np.array(
-            [
-                float(self.substitut.incertitude(x, o))
-                for x, o in zip(xs, orientations, strict=True)
-            ]
+            [float(self.substitut.incertitude(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
-        calibrateur.ajuster(
-            preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha
-        )
+        calibrateur.ajuster(preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha)
 
-    def _repartir(
-        self, n_acquis: int, rng: np.random.Generator, *, independante: bool
-    ) -> set[int]:
+    def _repartir(self, n_acquis: int, rng: np.random.Generator, *, independante: bool) -> set[int]:
         """Rangs du lot courant à verser en calibration plutôt qu'en entraînement.
 
         Le tirage est **interne au lot** : il ne dépend donc pas de l'ordre
@@ -267,17 +253,13 @@ class Loop:
                 )
             if len(calibration) < n_min:
                 raise InvariantViole(
-                    (
-                        f"calibration n={len(calibration)} < {n_min} requis "
-                        f"pour alpha={self.alpha}",
-                    )
+                    (f"calibration n={len(calibration)} < {n_min} requis pour alpha={self.alpha}",)
                 )
             xs_cal = [np.asarray(x, dtype=float).copy() for x in calibration]
             os_cal = list(calibration_orientations)
         # Vérités du jeu indépendant : simulées une fois, hors budget d'acquisition.
         ys_cal: list[float] = [
-            float(self.simulateur.evaluer(x, o))
-            for x, o in zip(xs_cal, os_cal, strict=True)
+            float(self.simulateur.evaluer(x, o)) for x, o in zip(xs_cal, os_cal, strict=True)
         ]
 
         dens = densite_noyau(_empiler(propositions), _empiler(reference_optimiseur))
@@ -295,9 +277,7 @@ class Loop:
             n_prendre = min(self.batch, restantes, len(propositions) - len(exclus))
             if n_prendre < 1:
                 break
-            inc = _incertitudes_acquisition(
-                self.substitut, propositions, orientations, xs_lab
-            )
+            inc = _incertitudes_acquisition(self.substitut, propositions, orientations, xs_lab)
             idxs = self.acquire.selectionner(
                 inc,
                 dens,
@@ -308,9 +288,7 @@ class Loop:
             acquis = [int(i) for i in idxs]
             # Répartir AVANT tout ajustement : c'est ce qui empêche matériellement
             # ``ajuster`` de voir un point de calibration.
-            vers_calibration = self._repartir(
-                len(acquis), rng, independante=independante
-            )
+            vers_calibration = self._repartir(len(acquis), rng, independante=independante)
             for rang, i in enumerate(acquis):
                 x = np.asarray(propositions[i], dtype=float).copy()
                 o = orientations[i]
@@ -342,9 +320,7 @@ class Loop:
             if len(xs_cal) >= n_min:
                 try:
                     self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
-                    historique.append(
-                        _largeur_moyenne(calibrateur, self.substitut, hold_x, hold_o)
-                    )
+                    historique.append(_largeur_moyenne(calibrateur, self.substitut, hold_x, hold_o))
                 except InvariantViole as echec:
                     # Scores dégénérés en début de campagne : conserver le calibrateur
                     # courant et retenter au cycle suivant. Le rattrapage est tracé —
@@ -369,9 +345,7 @@ class Loop:
                     )
                 )
             self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
-            historique.append(
-                _largeur_moyenne(calibrateur, self.substitut, hold_x, hold_o)
-            )
+            historique.append(_largeur_moyenne(calibrateur, self.substitut, hold_x, hold_o))
 
         largeur = historique[-1] if historique else float("nan")
         return RapportActif(

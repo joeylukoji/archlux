@@ -61,9 +61,7 @@ def test_df_augmente_avec_le_wwr() -> None:
 def test_simulateur_suit_le_wwr() -> None:
     x = np.array([0.0, 0.0, 6.0, 4.0])
     sud = Orientation(deg=180.0)
-    assert SimulateurExact(wwr=0.40).evaluer(x, sud) > SimulateurExact(wwr=0.20).evaluer(
-        x, sud
-    )
+    assert SimulateurExact(wwr=0.40).evaluer(x, sud) > SimulateurExact(wwr=0.20).evaluer(x, sud)
 
 
 def test_gradient_coherent_avec_le_split_flux() -> None:

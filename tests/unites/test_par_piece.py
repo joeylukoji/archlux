@@ -103,8 +103,9 @@ def test_une_piece_plus_grande_recoit_plus(classe: type) -> None:
     orientation = Orientation(deg=180.0)
     petite = np.array([0.0, 0.0, 3.0, 3.0, 5.0, 0.0, 3.0, 3.0])
     grande = np.array([0.0, 0.0, 6.0, 3.0, 5.0, 0.0, 3.0, 3.0])
-    assert substitut.evaluer_pieces(grande, orientation)[0] > (
-        substitut.evaluer_pieces(petite, orientation)[0]
+    assert (
+        substitut.evaluer_pieces(grande, orientation)[0]
+        > (substitut.evaluer_pieces(petite, orientation)[0])
     )
 
 

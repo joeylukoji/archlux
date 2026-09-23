@@ -63,6 +63,4 @@ def test_la_reduction_ne_grossit_jamais(ordre: OrdreRelatif) -> None:
     complet = construire_graphe(ordre, list(ordre.pieces))
     reduit = reduction_transitive(complet)
     for axe in ("horizontal", "vertical"):
-        assert getattr(reduit, axe).number_of_edges() <= getattr(
-            complet, axe
-        ).number_of_edges()
+        assert getattr(reduit, axe).number_of_edges() <= getattr(complet, axe).number_of_edges()

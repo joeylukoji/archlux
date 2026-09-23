@@ -100,19 +100,13 @@ def _verifier_plages(plan: Plan) -> None:
     for piece in plan.pieces:
         for champ, valeur in (("w", piece.w), ("h", piece.h)):
             if valeur <= 0.0:
-                violations.append(
-                    f"piece {piece.id} : {champ} = {valeur} ; attendu > 0"
-                )
+                violations.append(f"piece {piece.id} : {champ} = {valeur} ; attendu > 0")
     for mur in plan.murs:
         if mur.epaisseur <= 0.0:
-            violations.append(
-                f"mur {mur.id} : epaisseur = {mur.epaisseur} ; attendu > 0"
-            )
+            violations.append(f"mur {mur.id} : epaisseur = {mur.epaisseur} ; attendu > 0")
     for ouverture in plan.ouvertures:
         if not 0.0 <= ouverture.s <= 1.0:
-            violations.append(
-                f"ouverture {ouverture.id} : s = {ouverture.s} ; attendu dans [0, 1]"
-            )
+            violations.append(f"ouverture {ouverture.id} : s = {ouverture.s} ; attendu dans [0, 1]")
         if not 0.0 < ouverture.largeur_rel <= 1.0:
             violations.append(
                 f"ouverture {ouverture.id} : largeur_rel = {ouverture.largeur_rel} ;"
@@ -249,8 +243,7 @@ def _certificat_depuis_dict(donnees: Any) -> Certificat | None:
         geometrie=_preuve_depuis_dict(donnees["geometrie"]),
         performance=None if performance is None else _borne_depuis_dict(performance),
         duaux=tuple(
-            (str(libelle), _reel(cout, f"dual {libelle}"))
-            for libelle, cout in donnees["duaux"]
+            (str(libelle), _reel(cout, f"dual {libelle}")) for libelle, cout in donnees["duaux"]
         ),
         manifeste=None if manifeste is None else _manifeste_depuis_dict(manifeste),
     )
@@ -347,9 +340,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
     """
     version = donnees.get("schema")
     if version != VERSION_SCHEMA:
-        raise InvariantViole(
-            (f"schéma JSON {version!r} inconnu, attendu {VERSION_SCHEMA!r}",)
-        )
+        raise InvariantViole((f"schéma JSON {version!r} inconnu, attendu {VERSION_SCHEMA!r}",))
     try:
         plan = Plan(
             pieces=tuple(
@@ -378,9 +369,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                     id=str(o["id"]),
                     mur_id=str(o["mur_id"]),
                     s=_reel(o["s"], f"ouverture {o['id']}.s"),
-                    largeur_rel=_reel(
-                        o["largeur_rel"], f"ouverture {o['id']}.largeur_rel"
-                    ),
+                    largeur_rel=_reel(o["largeur_rel"], f"ouverture {o['id']}.largeur_rel"),
                     hauteur_allege=_reel(
                         o["hauteur_allege"], f"ouverture {o['id']}.hauteur_allege"
                     ),
@@ -390,9 +379,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                 )
                 for o in donnees["ouvertures"]
             ),
-            contour=tuple(
-                _point(pt, f"contour[{i}]") for i, pt in enumerate(donnees["contour"])
-            ),
+            contour=tuple(_point(pt, f"contour[{i}]") for i, pt in enumerate(donnees["contour"])),
             certificat=_certificat_depuis_dict(donnees["certificat"]),
         )
     except (KeyError, TypeError, ValueError) as cause:

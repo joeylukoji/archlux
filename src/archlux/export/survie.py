@@ -12,9 +12,7 @@ from archlux.types import Plan
 __all__ = ["survival_rate"]
 
 
-def survival_rate(
-    plans: Sequence[Plan], *, z: float = 1.96
-) -> tuple[float, tuple[float, float]]:
+def survival_rate(plans: Sequence[Plan], *, z: float = 1.96) -> tuple[float, tuple[float, float]]:
     """Proportion de plans exportables + intervalle de Wilson.
 
     Parameters

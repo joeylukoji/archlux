@@ -1,4 +1,5 @@
 """Comparer analytique vs appris par le simulateur — jamais par le réseau."""
+
 from __future__ import annotations
 
 from pathlib import Path

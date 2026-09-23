@@ -39,8 +39,10 @@ def test_L_se_decoupe_en_deux_par_coupe_verticale_gauche() -> None:
     assert recomposer(piece).equals(_L())
     # La coupe en x=1 produit (0,0,1,3) et (1,0,1,1) — ordre déterministe.
     a, b = piece.rectangles
-    assert { (round(a.x, 9), round(a.y, 9), round(a.w, 9), round(a.h, 9)),
-             (round(b.x, 9), round(b.y, 9), round(b.w, 9), round(b.h, 9)) } == {
+    assert {
+        (round(a.x, 9), round(a.y, 9), round(a.w, 9), round(a.h, 9)),
+        (round(b.x, 9), round(b.y, 9), round(b.w, 9), round(b.h, 9)),
+    } == {
         (0.0, 0.0, 1.0, 3.0),
         (1.0, 0.0, 1.0, 1.0),
     }
@@ -196,9 +198,20 @@ def test_max_rectangles_par_defaut_reste_a_quatre() -> None:
     # Peigne a trois dents : demande 6 rectangles, donc refuse au plafond par defaut.
     peigne = Polygon(
         [
-            (0.0, 0.0), (6.0, 0.0), (6.0, 1.0), (5.0, 1.0), (5.0, 2.0),
-            (4.0, 2.0), (4.0, 1.0), (3.0, 1.0), (3.0, 2.0), (2.0, 2.0),
-            (2.0, 1.0), (1.0, 1.0), (1.0, 2.0), (0.0, 2.0),
+            (0.0, 0.0),
+            (6.0, 0.0),
+            (6.0, 1.0),
+            (5.0, 1.0),
+            (5.0, 2.0),
+            (4.0, 2.0),
+            (4.0, 1.0),
+            (3.0, 1.0),
+            (3.0, 2.0),
+            (2.0, 2.0),
+            (2.0, 1.0),
+            (1.0, 1.0),
+            (1.0, 2.0),
+            (0.0, 2.0),
         ]
     )
     with pytest.raises(InvariantViole, match="trop de rectangles"):

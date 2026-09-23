@@ -168,9 +168,7 @@ def test_legalize_trace_remonte_les_iteres() -> None:
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )
-    q = archlux.legalize(
-        plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique(), trace=True
-    )
+    q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique(), trace=True)
     assert isinstance(q.trace, Trace)
     assert q.trace.iteres
     assert q.certificat is not None
@@ -193,9 +191,7 @@ def test_budget_zero_reste_au_point_l1() -> None:
         contour=CONTEXTE_DEFAUT.contour,
     )
     l1 = archlux.legalize(plan, CONTEXTE_DEFAUT)
-    bloque = archlux.legalize(
-        plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique(), budget=0.0
-    )
+    bloque = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique(), budget=0.0)
     xl1 = np.array([(p.x, p.y, p.w, p.h) for p in l1.pieces])
     xb = np.array([(p.x, p.y, p.w, p.h) for p in bloque.pieces])
     assert np.allclose(xl1, xb, atol=1e-6)
