@@ -108,7 +108,11 @@ def _panneau(
     decalage_x: float,
     decalage_y: float = 0.0,
 ) -> list[str]:
-    """Un panneau : cadre, contour en tirets, pièces, titre. Coordonnées SVG."""
+    """Un panneau : cadre, contour en tirets, pièces, murs, titre. Coordonnées SVG.
+
+    Load-bearing walls are drawn thick and dark (class ``wall-load-bearing``), other
+    walls thin and grey (class ``wall``).
+    """
     x0, y0, x1, y1 = etendue
     largeur_m = max(x1 - x0, 1e-9)
     hauteur_m = max(y1 - y0, 1e-9)
@@ -156,6 +160,18 @@ def _panneau(
             f'<text x="{centre_x:.2f}" y="{centre_y:.2f}" text-anchor="middle" '
             'font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">'
             f"{_echapper(piece.type[:12])}</text>"
+        )
+
+    # Walls last, on top of rooms: a load-bearing wall crossed by a room must be visible.
+    for wall in plan.murs:
+        (xa, ya), (xb, yb) = vers_svg(*wall.a), vers_svg(*wall.b)
+        css_class, colour, width = (
+            ("wall-load-bearing", "#1f1f1f", 4.0) if wall.porteur else ("wall", "#6b6b6b", 1.5)
+        )
+        parties.append(
+            f'<line class="{css_class}" x1="{xa:.2f}" y1="{ya:.2f}" x2="{xb:.2f}" '
+            f'y2="{yb:.2f}" stroke="{colour}" stroke-width="{width}" '
+            'stroke-linecap="square"/>'
         )
     return parties
 
