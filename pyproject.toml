@@ -36,6 +36,7 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
     "interrogate>=1.7",
+    "pre-commit>=3.7",
 ]
 docs = ["mkdocs>=1.6", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 
@@ -62,6 +63,9 @@ markers = [
 line-length = 100
 src = ["src", "tests"]
 target-version = "py311"
+
+[tool.ruff.format]
+line-ending = "lf"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "D", "ANN", "RUF"]
@@ -111,3 +115,9 @@ ignore-nested-functions = true
 
 [tool.coverage.run]
 source = ["src/archlux"]
+
+[tool.coverage.report]
+# Ratchet: never regress below the measured level. Raised at each PLAN.md phase
+# gate until 95 % (phase 4).
+precision = 1
+fail_under = 83.9
