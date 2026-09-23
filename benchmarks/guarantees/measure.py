@@ -14,11 +14,15 @@ Every output is checked by the independent checker of ``tests/checkers.py``, nev
 
 - ``ok``: a plan came out and keeps every guarantee;
 - ``false_certificate``: a plan came out, its certificate says *valid*, and the
-  independent checker finds a violation — the worst outcome, a proof that lies;
-- ``invalid_but_flagged``: a plan came out with violations, but its certificate says
-  so (not valid);
-- ``refused``: ``legalize`` raised a typed ``ArchluxError`` (an honest refusal);
+  independent checker finds a violation. The worst outcome: a proof that lies;
+- ``invalid_but_flagged``: a plan came out with violations, and its certificate says so;
+- ``refused_infeasible``: ``legalize`` raised ``Infaisable``, an honest refusal;
+- ``refused_invariant``: ``legalize`` raised another ``ArchluxError`` (typically
+  ``InvariantViole``: the proof caught a defective solver output). Safe, but a defect;
 - ``crash``: any other exception.
+
+Input preparation (corruption, noise) happens before and outside the measured call, so
+that a failure there is never counted against ``legalize``.
 """
 
 from __future__ import annotations
@@ -32,14 +36,16 @@ import time
 import zlib
 from collections import Counter
 from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any, Literal
 
-from benchmarks.guarantees.scenarios import Scenario, generate, perturb
+from benchmarks.guarantees.scenarios import Scenario, WallKind, generate, perturb
 from tests import checkers
 
 import archlux
 from archlux.data.corruption import corrompre
-from archlux.erreurs import ArchluxError
+from archlux.erreurs import ArchluxError, Infaisable
 from archlux.export.svg import comparer
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
@@ -49,48 +55,103 @@ HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results"
 GALLERY_PER_MODE = 3
 
-Mode = Callable[[Scenario], tuple[Plan, Plan]]
-"""Scenario -> (input given to legalize, output of legalize)."""
+Outcome = Literal[
+    "ok",
+    "false_certificate",
+    "invalid_but_flagged",
+    "refused_infeasible",
+    "refused_invariant",
+    "crash",
+]
+OUTCOMES: tuple[Outcome, ...] = (
+    "ok",
+    "false_certificate",
+    "invalid_but_flagged",
+    "refused_infeasible",
+    "refused_invariant",
+    "crash",
+)
 
 
-def _classic(s: Scenario) -> tuple[Plan, Plan]:
-    return s.plan, archlux.legalize(s.plan, s.context)
+@dataclass(frozen=True, slots=True)
+class Mode:
+    """One way of calling ``legalize`` on one family of scenarios."""
+
+    description: str
+    family: WallKind
+    prepare: Callable[[Scenario], Plan]
+    run: Callable[[Plan, Contexte], Plan]
 
 
-def _classic_one_fault_tiling(s: Scenario) -> tuple[Plan, Plan]:
-    """The AUDIT.md J7 regime: one room off by up to 25 cm, the grid still exists."""
+@dataclass(slots=True)
+class Case:
+    """The measured outcome of one scenario in one mode."""
+
+    scenario: str
+    ms: float
+    outcome: Outcome
+    kinds: list[str] = field(default_factory=list)
+    detail: str = ""
+
+
+def _as_is(s: Scenario) -> Plan:
+    return s.plan
+
+
+def _one_fault(s: Scenario) -> Plan:
+    """AUDIT.md J7 regime: one room off by up to 25 cm, the grid still exists."""
     corrupted, _ = corrompre(s.plan, seed=zlib.crc32(s.name.encode()), amplitude=0.25)
-    return corrupted, archlux.legalize(corrupted, s.context, pavage=True)
+    return corrupted
 
 
-def _classic_perturbed_tiling(s: Scenario) -> tuple[Plan, Plan]:
-    """The AUDIT.md J8 regime: every coordinate moved, no shared grid line survives."""
+def _noisy(s: Scenario) -> Plan:
+    """AUDIT.md J8 regime: every coordinate moved, no shared grid line survives."""
     # crc32, not hash(): str hashes change between processes (PYTHONHASHSEED).
-    noisy = perturb(s.plan, seed=zlib.crc32(s.name.encode()))
-    return noisy, archlux.legalize(noisy, s.context, pavage=True)
+    return perturb(s.plan, seed=zlib.crc32(s.name.encode()))
 
 
-def _performance_analytic(s: Scenario) -> tuple[Plan, Plan]:
-    return s.plan, archlux.legalize(s.plan, s.context, objective=SubstitutAnalytique())
+def _classic(plan: Plan, ctx: Contexte) -> Plan:
+    return archlux.legalize(plan, ctx)
 
 
-def _performance_daylight(s: Scenario) -> tuple[Plan, Plan]:
+def _classic_tiling(plan: Plan, ctx: Contexte) -> Plan:
+    return archlux.legalize(plan, ctx, pavage=True)
+
+
+def _performance(plan: Plan, ctx: Contexte) -> Plan:
+    return archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+
+
+def _daylight(plan: Plan, ctx: Contexte) -> Plan:
     objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
-    return s.plan, archlux.legalize(s.plan, s.context, objective=objective)
+    # mypy rejects Daylight as a Substitut: the defect of PLAN.md batch 1.3, statically.
+    return archlux.legalize(plan, ctx, objective=objective)  # type: ignore[arg-type]
 
 
-MODES: dict[str, tuple[str, Mode]] = {
-    "classic": ("classic, valid input", _classic),
-    "classic_one_fault": (
-        "classic + tiling, one room off by up to 25 cm",
-        _classic_one_fault_tiling,
+MODES: dict[str, Mode] = {
+    "classic": Mode("classic, valid input", "full", _as_is, _classic),
+    "classic_one_fault": Mode(
+        "classic + tiling, one room off by up to 25 cm", "full", _one_fault, _classic_tiling
     ),
-    "classic_noisy": (
-        "classic + tiling, every coordinate moved by up to 3 cm",
-        _classic_perturbed_tiling,
+    "classic_noisy": Mode(
+        "classic + tiling, every coordinate moved by up to 3 cm", "full", _noisy, _classic_tiling
     ),
-    "performance": ("performance (analytic surrogate), valid input", _performance_analytic),
-    "daylight": ("performance (Daylight objective), valid input", _performance_daylight),
+    "performance": Mode(
+        "performance (analytic surrogate), valid input", "full", _as_is, _performance
+    ),
+    "daylight": Mode("performance (Daylight objective), valid input", "full", _as_is, _daylight),
+    "partial_one_fault": Mode(
+        "partial load-bearing wall; classic + tiling, one room off by up to 25 cm",
+        "partial",
+        _one_fault,
+        _classic_tiling,
+    ),
+    "partial_performance": Mode(
+        "partial load-bearing wall; performance (analytic surrogate), valid input",
+        "partial",
+        _as_is,
+        _performance,
+    ),
 }
 
 
@@ -113,135 +174,171 @@ def _git_revision() -> str:
     return git("rev-parse", "--short", "HEAD") + ("-dirty" if changed else "")
 
 
-def _run_case(scenario: Scenario, mode: Mode) -> dict[str, object]:
+def _refusal(scenario: Scenario, start: float, outcome: Outcome, error: Exception) -> Case:
+    return Case(
+        scenario=scenario.name,
+        ms=round((time.perf_counter() - start) * 1000, 2),
+        outcome=outcome,
+        detail=f"{type(error).__name__}: {error}"[:200],
+    )
+
+
+def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] | None]:
+    """Measure one call; also return (input, output) when a plan came out."""
+    given = mode.prepare(scenario)  # outside the measured call on purpose
     start = time.perf_counter()
     try:
-        given, result = mode(scenario)
+        result = mode.run(given, scenario.context)
+    except Infaisable as error:
+        return _refusal(scenario, start, "refused_infeasible", error), None
     except ArchluxError as error:
-        outcome, detail = "refused", f"{type(error).__name__}: {error}"
-        given = result = None
+        return _refusal(scenario, start, "refused_invariant", error), None
     except Exception as error:  # a crash is exactly what this benchmark must record
-        outcome, detail = "crash", f"{type(error).__name__}: {error}"
-        given = result = None
-    elapsed_ms = (time.perf_counter() - start) * 1000
+        return _refusal(scenario, start, "crash", error), None
+    elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
 
-    row: dict[str, object] = {"scenario": scenario.name, "ms": round(elapsed_ms, 2)}
-    if result is None:
-        return row | {"outcome": outcome, "detail": detail[:200], "kinds": []}
     found = checkers.violations(result, scenario.context)
     certified = bool(result.certificat and result.certificat.geometrie.valide)
-    if not found:
-        outcome = "ok"
-    elif certified:
-        outcome = "false_certificate"
-    else:
-        outcome = "invalid_but_flagged"
-    row |= {
-        "outcome": outcome,
-        "kinds": sorted({v.kind for v in found}),
-        "detail": "; ".join(v.detail for v in found)[:200],
-    }
-    row["_plans"] = (given, result)  # kept in memory for the gallery, never serialized
-    return row
+    outcome: Outcome = (
+        "ok" if not found else "false_certificate" if certified else "invalid_but_flagged"
+    )
+    case = Case(
+        scenario=scenario.name,
+        ms=elapsed_ms,
+        outcome=outcome,
+        kinds=sorted({v.kind for v in found}),
+        detail="; ".join(v.detail for v in found)[:200],
+    )
+    return case, (given, result)
 
 
-def _summary(rows: list[dict[str, object]]) -> dict[str, object]:
-    outcomes = Counter(str(r["outcome"]) for r in rows)
-    kinds = Counter(k for r in rows for k in r["kinds"])
+def _summary(cases: list[Case]) -> dict[str, Any]:
+    outcomes = Counter(case.outcome for case in cases)
+    kinds = Counter(kind for case in cases for kind in case.kinds)
     return {
-        "n": len(rows),
-        "outcomes": dict(sorted(outcomes.items())),
-        "violations_by_kind": {k: kinds.get(k, 0) for k in checkers.KINDS},
-        "median_ms": round(statistics.median(float(r["ms"]) for r in rows), 2),
+        "n": len(cases),
+        "outcomes": {outcome: outcomes.get(outcome, 0) for outcome in OUTCOMES},
+        "violations_by_kind": {kind: kinds.get(kind, 0) for kind in checkers.KINDS},
+        "median_ms": round(statistics.median(case.ms for case in cases), 2),
     }
 
 
 def _gallery(
-    label: str, mode: str, rows: list[dict[str, object]], context_of: dict[str, Contexte]
+    label: str,
+    key: str,
+    measured: list[tuple[Case, tuple[Plan, Plan] | None]],
+    context_of: dict[str, Contexte],
 ) -> list[str]:
     folder = RESULTS / label
-    folder.mkdir(parents=True, exist_ok=True)
-    written = []
-    worst = [r for r in rows if r["outcome"] in ("false_certificate", "invalid_but_flagged")]
-    for row in worst[:GALLERY_PER_MODE]:
-        given, result = row["_plans"]
-        name = f"{mode}-{row['scenario']}.svg"
+    written: list[str] = []
+    for case, plans in measured:
+        if plans is None or case.outcome == "ok" or len(written) >= GALLERY_PER_MODE:
+            continue
+        folder.mkdir(parents=True, exist_ok=True)
+        given, result = plans
+        name = f"{key}-{case.scenario}.svg"
         svg = comparer(
             given,
             result,
-            contour=context_of[str(row["scenario"])].contour,
-            titres=("input", f"output — {row['outcome']}: {', '.join(row['kinds'])}"),
+            contour=context_of[case.scenario].contour,
+            titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
         (folder / name).write_text(svg, encoding="utf-8")
         written.append(name)
     return written
 
 
-def measure(label: str, n: int, seed: int) -> dict[str, object]:
-    """Run every mode on ``n`` scenarios and store the result under ``label``."""
-    scenarios = [generate(seed=seed, index=i) for i in range(n)]
-    context_of = {s.name: s.context for s in scenarios}
-    report: dict[str, object] = {
+def measure(label: str, n: int, seed: int) -> dict[str, Any]:
+    """Run every mode on ``n`` scenarios per family and store the result under ``label``."""
+    families: tuple[WallKind, ...] = ("full", "partial")
+    scenarios = {
+        family: [generate(seed=seed, index=i, wall=family) for i in range(n)] for family in families
+    }
+    context_of = {s.name: s.context for family in scenarios.values() for s in family}
+    modes: dict[str, Any] = {}
+    for key, mode in MODES.items():
+        measured = [_run_case(s, mode) for s in scenarios[mode.family]]
+        cases = [case for case, _ in measured]
+        modes[key] = {
+            "description": mode.description,
+            "summary": _summary(cases),
+            "gallery": _gallery(label, key, measured, context_of),
+            "cases": [asdict(case) for case in cases],
+        }
+    report: dict[str, Any] = {
         "label": label,
         "date": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "revision": _git_revision(),
         "archlux": archlux.__version__,
         "seed": seed,
         "n": n,
-        "modes": {},
+        "modes": modes,
     }
-    for key, (description, mode) in MODES.items():
-        rows = [_run_case(s, mode) for s in scenarios]
-        report["modes"][key] = {
-            "description": description,
-            "summary": _summary(rows),
-            "gallery": _gallery(label, key, rows, context_of),
-            "cases": [{k: v for k, v in r.items() if not k.startswith("_")} for r in rows],
-        }
     RESULTS.mkdir(exist_ok=True)
     (RESULTS / f"{label}.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
     write_readme()
     return report
 
 
-def _cell(summary: dict[str, object], outcome: str) -> str:
-    count = summary["outcomes"].get(outcome, 0)
-    return f"{count} ({100 * count / summary['n']:.1f} %)"
+def _count(summary: dict[str, Any], outcome: str) -> int | None:
+    """Count of ``outcome``; ``None`` if the run predates that outcome."""
+    stored: dict[str, int] = summary["outcomes"]
+    return int(stored[outcome]) if outcome in stored else None
+
+
+def _refused(summary: dict[str, Any]) -> int:
+    """All refusals; runs before the split stored them as a single ``refused``."""
+    stored: dict[str, int] = summary["outcomes"]
+    keys = ("refused", "refused_infeasible", "refused_invariant")
+    return sum(int(stored.get(key, 0)) for key in keys)
+
+
+def _cell(count: int | None, n: int) -> str:
+    return "n/a" if count is None else f"{count} ({100 * count / n:.1f} %)"
 
 
 def write_readme() -> None:
     """Regenerate README.md from every stored run, oldest first."""
     runs = sorted(
         (json.loads(p.read_text(encoding="utf-8")) for p in RESULTS.glob("*.json")),
-        key=lambda r: r["date"],
+        key=lambda r: str(r["date"]),
     )
     lines = [
         "# Guarantee benchmark",
         "",
-        "Generated by `python -m benchmarks.guarantees.measure --label <name>`; do not edit.",
-        "See the docstring of `measure.py` for the protocol and the meaning of each outcome.",
-        "**`false_certificate` must reach 0**: it counts plans certified valid that break a",
+        "Generated by `python -m benchmarks.guarantees.measure --label <name> --seed 17`;",
+        "do not edit. The docstring of `measure.py` defines the protocol and each outcome.",
+        "**`false certificate` must reach 0**: it counts plans certified valid that break a",
         "guarantee according to the independent checker (`tests/checkers.py`).",
+        "`of which invariant` counts refusals where the proof caught a defective solver",
+        "output (safe, but a defect); `n/a` marks runs made before that split.",
         "",
     ]
-    for key, (description, _) in MODES.items():
+    for key, mode in MODES.items():
         lines += [
-            f"## {key} — {description}",
+            f"## {key}: {mode.description}",
             "",
-            "| run | revision | n | ok | false certificate | refused | crash | "
-            "overlap | coverage | area | wall | median ms |",
-            "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
+            "| run | revision | n | ok | false certificate | invalid, flagged | refused | "
+            "of which invariant | crash | overlap | coverage | area | wall | median ms |",
+            "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
         ]
         for run in runs:
-            mode = run["modes"].get(key)
-            if mode is None:
+            stored = run["modes"].get(key)
+            if stored is None:
                 continue
-            s, v = mode["summary"], mode["summary"]["violations_by_kind"]
-            gallery = f" ([cases]({run['label']}/))" if mode["gallery"] else ""
+            s = stored["summary"]
+            v, n = s["violations_by_kind"], int(s["n"])
+            gallery = f" ([cases]({run['label']}/))" if stored["gallery"] else ""
             lines.append(
-                f"| {run['label']}{gallery} | `{run['revision']}` | {s['n']} | {_cell(s, 'ok')} | "
-                f"{_cell(s, 'false_certificate')} | {_cell(s, 'refused')} | {_cell(s, 'crash')} | "
-                f"{v['overlap']} | {v['coverage']} | {v['area']} | {v['wall']} | {s['median_ms']} |"
+                f"| {run['label']}{gallery} | `{run['revision']}` | {n} "
+                f"| {_cell(_count(s, 'ok'), n)} "
+                f"| {_cell(_count(s, 'false_certificate'), n)} "
+                f"| {_cell(_count(s, 'invalid_but_flagged'), n)} "
+                f"| {_cell(_refused(s), n)} "
+                f"| {_cell(_count(s, 'refused_invariant'), n)} "
+                f"| {_cell(_count(s, 'crash'), n)} "
+                f"| {v['overlap']} | {v['coverage']} | {v['area']} | {v['wall']} "
+                f"| {s['median_ms']} |"
             )
         lines.append("")
     (HERE / "README.md").write_text("\n".join(lines), encoding="utf-8")
@@ -249,14 +346,15 @@ def write_readme() -> None:
 
 def main() -> None:
     """Command-line entry point."""
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--label", required=True, help="name of this run, e.g. baseline")
-    parser.add_argument("--n", type=int, default=200, help="number of scenarios")
+    parser.add_argument("--n", type=int, default=200, help="number of scenarios per family")
     parser.add_argument("--seed", type=int, required=True, help="series seed (no default)")
     args = parser.parse_args()
     report = measure(args.label, args.n, args.seed)
-    for key, mode in report["modes"].items():
-        print(f"{key:14s} {mode['summary']['outcomes']}")
+    for key, stored in report["modes"].items():
+        nonzero = {k: v for k, v in stored["summary"]["outcomes"].items() if v}
+        print(f"{key:20s} {nonzero}")
 
 
 if __name__ == "__main__":

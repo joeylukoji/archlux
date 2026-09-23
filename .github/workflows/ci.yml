@@ -20,6 +20,8 @@ jobs:
         run: pre-commit run --all-files --show-diff-on-failure
       - name: Types
         run: mypy src/
+      - name: Types (guarantee benchmark)
+        run: mypy --strict --explicit-package-bases benchmarks/guarantees/measure.py benchmarks/guarantees/scenarios.py
       - name: Couverture des docstrings
         run: interrogate -f 95 src/archlux
       - name: Doctests (DOCUMENTATION.md §6)

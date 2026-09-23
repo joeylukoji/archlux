@@ -6,8 +6,10 @@ constrains it:
 - the outline is a rectangle of 10-16 m by 7-12 m;
 - rooms come from recursive guillotine cuts on a 10 cm grid, so the plan tiles its
   outline exactly and every room side is at least ``MIN_SIDE_M``;
-- the **first cut spans the whole building** and is declared load-bearing, like a real
-  bearing partition (refend);
+- ``wall="full"`` (default): the **first cut spans the whole building** and is declared
+  load-bearing, like a real bearing partition (refend);
+- ``wall="partial"``: the last cut that does **not** span the building is declared
+  load-bearing, so rooms can pass beyond its end (the case a full wall cannot test);
 - every room type present gets a minimum area between 70 % and 100 % of its smallest
   room, so the input is valid and the constraint is tight.
 
@@ -17,6 +19,7 @@ constrains it:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 
@@ -51,15 +54,23 @@ def _cut(
     return (x, y, w, offset), (x, y + offset, w, h - offset), "h", y + offset
 
 
-def generate(seed: int, index: int) -> Scenario:
-    """Scenario number ``index`` of the series defined by ``seed``."""
+WallKind = Literal["full", "partial"]
+Segment = tuple[tuple[float, float], tuple[float, float]]
+
+
+def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
+    """Scenario number ``index`` of the series defined by ``seed``.
+
+    The wall choice draws no random number: both families share the same rooms, and the
+    ``"full"`` family is bit-for-bit the one of earlier benchmark runs.
+    """
     rng = np.random.default_rng([seed, index])
     width = GRID_M * int(rng.integers(100, 161))
     height = GRID_M * int(rng.integers(70, 121))
     target_rooms = int(rng.integers(4, 9))
 
     rects = [(0.0, 0.0, width, height)]
-    first_cut: tuple[str, float] | None = None
+    cuts: list[Segment] = []
     while len(rects) < target_rooms:
         splittable = [r for r in rects if max(r[2], r[3]) >= 2 * MIN_SIDE_M]
         if not splittable:
@@ -68,8 +79,13 @@ def generate(seed: int, index: int) -> Scenario:
         rects.remove(largest)
         a, b, axis, position = _cut(rng, largest)
         rects += [a, b]
-        first_cut = first_cut or (axis, position)
-    assert first_cut is not None, "outline too small to split"
+        x, y, w, h = largest
+        cuts.append(
+            ((position, y), (position, y + h))
+            if axis == "v"
+            else ((x, position), (x + w, position))
+        )
+    assert cuts, "outline too small to split"
 
     kinds = ["sejour", *(str(rng.choice(ROOM_TYPES)) for _ in rects[1:])]
     rooms = tuple(
@@ -77,13 +93,13 @@ def generate(seed: int, index: int) -> Scenario:
         for i, (kind, (x, y, w, h)) in enumerate(zip(kinds, rects, strict=True))
     )
 
-    axis, position = first_cut
-    ends = (
-        ((position, 0.0), (position, height))
-        if axis == "v"
-        else ((0.0, position), (width, position))
-    )
-    wall = Mur(id="refend", a=ends[0], b=ends[1], porteur=True)
+    def spans_building(segment: Segment) -> bool:
+        (xa, ya), (xb, yb) = segment
+        return abs(xb - xa) + abs(yb - ya) in (width, height)
+
+    partial = [c for c in cuts if not spans_building(c)]
+    ends = partial[-1] if wall == "partial" and partial else cuts[0]
+    bearing = Mur(id="refend", a=ends[0], b=ends[1], porteur=True)
 
     smallest: dict[str, float] = {}
     for room in rooms:
@@ -91,7 +107,7 @@ def generate(seed: int, index: int) -> Scenario:
     ratio = float(rng.uniform(0.7, 1.0))
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
     context = Contexte(
-        structure=Structure(murs_porteurs=(wall,)),
+        structure=Structure(murs_porteurs=(bearing,)),
         orientation=Orientation(deg=float(rng.uniform(0.0, 360.0))),
         contour=outline,
         referentiel=Referentiel(
@@ -99,8 +115,9 @@ def generate(seed: int, index: int) -> Scenario:
             largeur_min=1.0,
         ),
     )
-    plan = Plan(pieces=rooms, murs=(wall,), ouvertures=(), contour=outline)
-    return Scenario(name=f"s{seed}-{index:04d}", plan=plan, context=context)
+    plan = Plan(pieces=rooms, murs=(bearing,), ouvertures=(), contour=outline)
+    suffix = "p" if wall == "partial" else ""
+    return Scenario(name=f"s{seed}-{index:04d}{suffix}", plan=plan, context=context)
 
 
 def perturb(plan: Plan, *, seed: int, amplitude_m: float = 0.03) -> Plan:
