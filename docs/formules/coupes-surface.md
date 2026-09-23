@@ -99,8 +99,10 @@ area. That is what happened until 0.10 (AUDIT.md §3 n°6).
 
 Frank-Wolfe therefore works on an **inner** approximation
 (`lmo.coupes.inner_area_constraints`). Around the start \((w_0, h_0)\), take nodes
-\(w_k = f_k w_0\), \(f_k \in \{0.6, 0.8, 1, 1.25, 1.6\}\) (those that fit the bounds),
-and \(h_k = a / w_k\). Keep
+\(w_k = f_k w_0\), \(f_k = 1.25^k\) for \(k = -6, \dots, 6\) (about 0.26 to 3.8), and
+\(h_k = a / w_k\). Nodes are not filtered by the variable bounds (the region is
+intersected with them anyway): filtering froze rooms whose height a contact had fixed.
+Keep
 
 \[
 w \ge w_{\text{first}}, \qquad h \ge \frac{a}{w_{\text{last}}}, \qquad
@@ -121,10 +123,10 @@ convex combination of such points, keeps the minimum area.
 
 **Cost of the approximation.** Between two nodes of ratio \(r = w_{k+1}/w_k\), the
 chord asks for at most \(\frac{(r-1)^2}{4r}\) more area than the minimum (maximum of
-\(w\,\ell(w)/a - 1\), reached at the geometric mean of the nodes): +1.25 % for the
-nodes around the start (\(r = 1.25\)), +1.53 % and +2.08 % for the outer ones
-(\(r = 1.28\), \(r = 4/3\)), checked numerically. This is the price of keeping the
-domain linear. A single corner \(w \ge w_0, h \ge h_0\) would have been
+\(w\,\ell(w)/a - 1\), reached at the midpoint \((w_k + w_{k+1})/2\) of the nodes). With
+\(r = 1.25\) everywhere this is a uniform +1.25 %, checked numerically. This is the
+price of keeping the domain linear; the other price is the spread, since a room cannot
+change its aspect ratio by more than about 15. A single corner \(w \ge w_0, h \ge h_0\) would have been
 sound too, but it freezes the shape of a room whose area is tight; the chords let it
 trade width for height within the spread.
 

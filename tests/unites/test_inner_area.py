@@ -9,11 +9,15 @@ convex combination, above the minimum area.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 import archlux
+from archlux.erreurs import InvariantViole
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import Polytope, construire_polytope, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
@@ -51,24 +55,56 @@ def _satisfies_new_rows(poly: Polytope, inner: Polytope, w: float, h: float) -> 
     return ok_rows and w >= w_lo - 1e-12 and h >= h_lo - 1e-12
 
 
-@settings(max_examples=300, deadline=None)
+def _boundary_height(poly: Polytope, inner: Polytope, w: float) -> float | None:
+    """Lowest h admitted for room ``r`` at width ``w`` (None if w is below the bound)."""
+    iw, ih = inner.index["r.w"], inner.index["r.h"]
+    if w < inner.bornes[iw][0]:
+        return None
+    n_old = poly.A.shape[0]
+    rows, rhs = inner.A[n_old:].toarray(), inner.b[n_old:]
+    # Row: slope * w - h <= rhs  <=>  h >= slope * w - rhs.
+    floors = [row[iw] * w - bound for row, bound in zip(rows, rhs, strict=True)]
+    return max([inner.bornes[ih][0], *floors])
+
+
+@settings(max_examples=400, deadline=None, derandomize=True)
 @given(
     w0=st.floats(1.0, 8.0),
     aspect=st.floats(0.3, 3.0),
     slack=st.floats(1.0, 1.5),
-    w=st.floats(0.5, 10.0),
-    h=st.floats(0.5, 6.0),
+    position=st.floats(0.0, 1.0),
+    above=st.floats(0.0, 0.01),
 )
 def test_every_point_of_the_inner_region_keeps_the_minimum_area(
-    w0: float, aspect: float, slack: float, w: float, h: float
+    w0: float, aspect: float, slack: float, position: float, above: float
 ) -> None:
-    """Soundness: rows added for a room never admit an area below its minimum."""
-    h0 = min(max(w0 * aspect, 0.6), 6.0)  # within the base polytope (width >= 0.5)
+    """Soundness, sampled where a defect would show: just above the region's boundary."""
+    h0 = min(max(w0 * aspect, 0.6), 6.0)
     a_min = w0 * h0 / slack
     poly, x0, ctx, plan = _setup(w0, h0, a_min)
     inner = inner_area_constraints(poly, x0, ctx, plan.pieces)
-    if _satisfies_new_rows(poly, inner, w, h):
-        assert w * h >= a_min * (1 - 1e-9)
+    w_lo = inner.bornes[inner.index["r.w"]][0]
+    w = w_lo + position * (4.0 * w0 - w_lo)
+    floor = _boundary_height(poly, inner, w)
+    assert floor is not None
+    h = floor * (1.0 + above)
+    assert _satisfies_new_rows(poly, inner, w, h)
+    assert w * h >= a_min * (1 - 1e-9)
+
+
+def test_the_soundness_check_detects_a_weakened_region() -> None:
+    """Guard: rows built for 97 % of the area must be caught by the boundary sampling."""
+    poly, x0, ctx, plan = _setup(4.0, 3.0, 12.0)
+    weak_ctx = Contexte(
+        structure=ctx.structure,
+        orientation=ctx.orientation,
+        contour=ctx.contour,
+        referentiel=Referentiel(aires_min=(("chambre", 12.0 * 0.97),), largeur_min=0.5),
+    )
+    inner = inner_area_constraints(poly, x0, weak_ctx, plan.pieces)
+    w = 4.0 * 1.25**0.5  # between two nodes
+    floor = _boundary_height(poly, inner, w)
+    assert floor is not None and w * floor < 12.0
 
 
 @settings(max_examples=200, deadline=None)
@@ -88,6 +124,23 @@ def test_a_room_at_its_minimum_area_can_still_change_shape() -> None:
     assert _satisfies_new_rows(poly, inner, wider, 12.0 / wider * 1.01)
     narrower = 4.0 / 1.2
     assert _satisfies_new_rows(poly, inner, narrower, 12.0 / narrower * 1.01)
+
+
+def test_a_room_whose_height_is_fixed_can_still_narrow() -> None:
+    """Review M1: a contact freezing h used to leave only w >= w0 instead of w >= a/h0."""
+    poly, x0, ctx, plan = _setup(4.0, 6.0, 20.0)  # full height, 24 m² for 20 m² required
+    ih = poly.index["r.h"]
+    frozen = list(poly.bornes)
+    frozen[ih] = (6.0, 6.0)
+    poly = replace(poly, bornes=tuple(frozen))
+    inner = inner_area_constraints(poly, x0, ctx, plan.pieces)
+    assert _satisfies_new_rows(poly, inner, 3.45, 6.0)  # 20.7 m² >= 20 m², narrower
+
+
+def test_a_start_below_the_minimum_area_is_refused() -> None:
+    poly, x0, ctx, plan = _setup(4.0, 3.0, 12.5)  # 12 m² for 12.5 required
+    with pytest.raises(InvariantViole, match="minimum area r"):
+        inner_area_constraints(poly, x0, ctx, plan.pieces)
 
 
 def test_rooms_without_minimum_area_get_no_row() -> None:

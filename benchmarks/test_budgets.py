@@ -186,3 +186,43 @@ def test_budget_performance_legalization_with_minimum_areas(benchmark: Benchmark
     plan = _plan_15_pieces()
     benchmark(archlux.legalize, plan, CTX_15_AREAS, objective=SubstitutAnalytique())
     _assert_within_budget(benchmark, "legalisation_performantielle")
+
+
+@pytest.mark.budget
+@pytest.mark.parametrize(
+    ("columns", "rows", "limit_ms"), [(5, 3, 500), (10, 5, 1000), (10, 10, 2000)]
+)
+def test_performance_mode_scales_with_tight_minimum_areas(
+    columns: int, rows: int, limit_ms: float
+) -> None:
+    """Performance mode scales with tight minimum areas (AUDIT.md §5.6).
+
+    At 15, 50 and 100 rooms with a_min = 11 m² for 12 m² rooms, the performance mode
+    raised InvariantViole at every size. It must now return a valid plan, within a time
+    that grows reasonably (limits are loose for slow CI machines).
+    """
+    import time
+
+    from tests import checkers
+
+    from archlux.light.analytique import SubstitutAnalytique
+
+    width, height = 3.0 * columns, 4.0 * rows
+    outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
+    rooms = tuple(
+        Piece(id=f"p{i}_{j}", type="sejour", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
+        for i in range(columns)
+        for j in range(rows)
+    )
+    ctx = Contexte(
+        structure=Structure(murs_porteurs=()),
+        orientation=Orientation(deg=20.0),
+        contour=outline,
+        referentiel=Referentiel(aires_min=(("sejour", 11.0),), largeur_min=1.0),
+    )
+    plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
+    start = time.perf_counter()
+    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    assert checkers.violations(result, ctx) == []
+    assert elapsed_ms < limit_ms, f"{len(rooms)} rooms: {elapsed_ms:.0f} ms > {limit_ms} ms"

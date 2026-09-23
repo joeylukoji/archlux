@@ -37,11 +37,18 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   minimum; `legalize` then raised `InvariantViole` (benchmark: 167 of 200 in
   performance mode). It now works on an **inner** polyhedral approximation
   (`lmo.coupes.inner_area_constraints`: chords of the hyperbola around the start),
-  included in `{w h >= a}`: every iterate keeps every minimum area. The price is at
-  most (r-1)^2/(4r) of extra area between nodes of ratio r (1.25 % to 2.08 %).
+  included in `{w h >= a}`: every iterate keeps every minimum area. Nodes follow
+  1.25^k, k = -6..6, so each chord asks for at most (r-1)^2/(4r) = 1.25 % of extra
+  area, and a room can change its aspect ratio by a factor of about 15.
+- After review: nodes are no longer filtered by the variable bounds, which froze the
+  width of a room whose height a contact had fixed (no gain in 7 of 120 scenarios); a
+  start below a minimum area by more than the proof tolerance is refused.
 - Frank-Wolfe no longer needs tangent cuts, which disabled the LP warm start.
-- New performance budget with tight minimum areas (15 rooms: about 50 ms of 500).
-- `api._coupes_surface_plan` removed (unused).
+- New performance budget with tight minimum areas (15 rooms: about 50 ms of 500), and a
+  scaling test at 15, 50 and 100 rooms (all used to raise `InvariantViole`).
+- Property test: every Frank-Wolfe iterate passes the independent checker.
+- `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
+  `frank_wolfe` has no caller left and is documented as legacy.
 
 #### Added
 - `export.svg` draws walls: load-bearing walls thick and dark (class

@@ -38,8 +38,11 @@ affirmer.
 ## Branche performantielle (`objective=Substitut`)
 
 Après l'étape 8, le point L1 devient \(x_0\). Les contacts saturés passent
-en égalités (`figer_contacts`) : Frank-Wolfe reste un pavage. Puis
-[Frank-Wolfe](frank-wolfe.md) maximise le substitut, **même oracle LP**,
+en égalités (`figer_contacts`) : Frank-Wolfe reste un pavage. Then the minimum areas
+are replaced by an **inner** polyhedral approximation
+(`inner_area_constraints`, see [coupes de surface](coupes-surface.md)): every point of
+the domain, hence every iterate, keeps every minimum area, and no tangent cut is needed.
+Puis [Frank-Wolfe](frank-wolfe.md) maximise le substitut, **même oracle LP**,
 `depart=x` à chaque tour. La sortie est revérifiée exactement ; un itéré
 invalide lève `InvariantViole` — pas de repli silencieux vers L1.
 Le score du substitut est borné **hors** de `legalize` : calibrer, puis

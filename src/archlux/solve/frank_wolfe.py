@@ -154,10 +154,13 @@ def frank_wolfe(
     away_steps : bool, optional
         Pas d'écartement : accélère la convergence sur les optima situés sur une face.
     coupes : sequence of Coupe or None, optional
-        Coupes de surface reportées depuis la légalisation classique.
+        **Legacy, no caller since 0.10.** Outer tangent cuts; they do not guarantee
+        minimum areas and disable the LP warm start. Pass a domain built with
+        :func:`archlux.lmo.coupes.inner_area_constraints` instead. Removal planned in
+        PLAN.md phase 4.
     pieces, ctx : optional
-        Si fournis, des coupes Kelley sont ajoutées dès qu'une surface minimale
-        est violée en cours de route.
+        **Legacy**, same status: with them, Kelley cuts are added when a minimum area
+        is broken on the way.
 
     Returns
     -------

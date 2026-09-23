@@ -244,7 +244,7 @@ def _gallery(
             walls=context_of[case.scenario].structure.murs_porteurs,
             titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
-        (folder / name).write_text(_with_final_newline(svg), encoding="utf-8")
+        _write(folder / name, svg)
         written.append(name)
     return written
 
@@ -276,8 +276,7 @@ def measure(label: str, n: int, seed: int) -> dict[str, Any]:
         "modes": modes,
     }
     RESULTS.mkdir(exist_ok=True)
-    report_text = _with_final_newline(json.dumps(report, indent=1))
-    (RESULTS / f"{label}.json").write_text(report_text, encoding="utf-8")
+    _write(RESULTS / f"{label}.json", json.dumps(report, indent=1))
     write_readme()
     return report
 
@@ -353,12 +352,16 @@ def write_readme() -> None:
                 f"| {s['median_ms']} |"
             )
         lines.append("")
-    (HERE / "README.md").write_text(_with_final_newline("\n".join(lines)), encoding="utf-8")
+    _write(HERE / "README.md", "\n".join(lines))
 
 
-def _with_final_newline(text: str) -> str:
-    """Exactly one final newline, as the pre-commit end-of-file hook requires."""
-    return text.rstrip("\n") + "\n"
+def _write(path: Path, text: str) -> None:
+    """Write UTF-8 with LF endings and exactly one final newline, on every platform.
+
+    Without ``newline``, Windows writes CRLF; without the final newline, the pre-commit
+    hooks rewrite every output after each run.
+    """
+    path.write_text(text.rstrip("\n") + "\n", encoding="utf-8", newline="\n")
 
 
 def main() -> None:

@@ -15,6 +15,8 @@ from hypothesis import given, settings
 
 import archlux
 from archlux.erreurs import ArchluxError
+from archlux.geom.graphe import deduire_ordre
+from archlux.geom.polytope import construire_polytope, devectoriser
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.types import Contexte, Plan
@@ -71,6 +73,23 @@ def test_performance_legalization_keeps_every_guarantee(
     plan, ctx = scenario
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
     assert _independent_violations(result, ctx) == []
+
+
+@_SETTINGS
+@given(scenario=realistic_scenarios())
+def test_every_frank_wolfe_iterate_keeps_every_guarantee(
+    scenario: tuple[Plan, Contexte],
+) -> None:
+    """Not only the output: every intermediate plan of Frank-Wolfe is valid (PLAN.md 1.2).
+
+    This is what makes an interrupted run usable, a claim of the README."""
+    plan, ctx = scenario
+    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)
+    assert result.trace is not None
+    index = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx).index
+    for step, x in enumerate(result.trace.iteres):
+        iterate = devectoriser(x, result, index)
+        assert _independent_violations(iterate, ctx) == [], f"iterate {step}"
 
 
 @pytest.mark.xfail(

@@ -384,7 +384,7 @@ But : structure à 10/10. Chaque bloc passe par la séquence
 | **`types`** | Entités pures | Sortir `trace` de `Plan` (`legalize_trace` renvoie `(Plan, Trace)`) ; déplacer `ModeleTrace` et `Manifeste` vers `bench` ; `CHAMPS_VECTEUR` et `vectoriser(plan)` | M4, M8 |
 | **`geom`** | SRP | `pavage.py` → `trame.py` (inférence et réparation) + `pavage.py` (contraintes) ; `deduire_trame` découpée sous CC 10 ; `diagnostic.py` → `data/` | M10, M11 |
 | **`lmo`** | Cache explicite | Cache de modèles injectable (objet `CacheLP`, pas un global indexé par `id()`), sûr entre fils d'exécution | §6 `lmo` |
-| **`solve`** | Objet paramètre, Stratégie | `ContraintesSurface(coupes, pieces, ctx)` ; extraire `_pas_away`, `_recherche_lineaire`, `_mettre_a_jour_poids` ; pas de calcul sous forme de **Stratégie** injectable | M7, Q-M9 |
+| **`solve`** | Objet paramètre, Stratégie | supprimer le chemin legacy `coupes`/`pieces`/`ctx` et `_enrichir_coupes` (sans appelant depuis le lot 1.2) ; extraire `_pas_away`, `_recherche_lineaire`, `_mettre_a_jour_poids` ; pas de calcul sous forme de **Stratégie** injectable | M7, Q-M9 |
 | **`light`** | Registre, protocole | **Registre d'indicateurs** (nom, sens, unité, plage), qui supprime les `if nom == "ASE"` ; `SubstitutDense` découpé en modèle / entraîneur / sérialiseur ; protocole `Empreintable` | M6, §5.7 |
 | **`orient`** | Une seule source de vérité | Une fonction `secteur(deg, n, *, centre)` utilisée par `light`, `uq`, `bench` | M3 |
 | **`uq`** | Protocole | Plus de réflexion sur `W1..b3` ; `nan` silencieux remplacé par une exception ou un journal | M6, Q-M4 |

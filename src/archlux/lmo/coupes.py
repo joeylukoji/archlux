@@ -63,6 +63,7 @@ from scipy import sparse
 
 from archlux.erreurs import InvariantViole
 from archlux.lmo.solveur import resoudre
+from archlux.tolerances import AREA_PROOF_M2
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
@@ -449,8 +450,12 @@ def resoudre_avec_surfaces(
         courant = solution.x
 
 
-INNER_AREA_SPREAD: tuple[float, ...] = (0.6, 0.8, 1.0, 1.25, 1.6)
-"""Widths, relative to the start, of the hyperbola points joined by chords."""
+INNER_AREA_SPREAD: tuple[float, ...] = tuple(1.25**k for k in range(-6, 7))
+"""Widths, relative to the start, of the hyperbola points joined by chords.
+
+A geometric sequence of ratio 1.25 from about 0.26 to 3.8: every chord then asks for the
+same extra area, (1.25 - 1)^2 / (4 * 1.25) = 1.25 %, and a room can change its aspect
+ratio by a factor of about 15 before the approximation stops it."""
 
 
 def inner_area_constraints(
@@ -470,8 +475,10 @@ def inner_area_constraints(
     the minimum area, and so does every convex combination of such points.
 
     For each room with ``a > 0`` and start dimensions ``(w0, h0)``, take the nodes
-    ``w_k = f_k w0`` (``f_k`` in ``spread``, always including 1) that fit the width
-    and height bounds, and ``h_k = a / w_k`` on the hyperbola. Keep
+    ``w_k = f_k w0`` (``f_k`` in ``spread``, always including 1) and ``h_k = a / w_k`` on
+    the hyperbola. Nodes are not filtered by the variable bounds: the region is
+    intersected with them anyway, and filtering would freeze a room whose height a
+    contact has fixed (it would keep ``w >= w0`` instead of ``w >= a / h0``). Keep
 
     - ``w >= w_first`` and ``h >= a / w_last`` (bounds), and
     - ``h >= h_k + s_k (w - w_k)`` for each chord ``[w_k, w_{k+1}]``, slope ``s_k``
@@ -484,11 +491,13 @@ def inner_area_constraints(
     a / w``. The region is convex and included in ``{w h >= a}``.
 
     The start stays admissible: ``w0`` is a node, so the rows only require
-    ``h0 >= a / w0``. If the start sits a hair below ``a`` (within the proof tolerance),
-    ``a`` is lowered to ``w0 h0`` for that room rather than excluding the start.
+    ``h0 >= a / w0``. If the start sits below ``a`` by less than the proof tolerance
+    (``tolerances.AREA_PROOF_M2``), ``a`` is lowered to ``w0 h0`` for that room rather
+    than excluding the start; any larger deficit is refused.
 
     Compared with a single corner ``w >= w0, h >= h0``, the chords let a room trade
-    width for height within ``spread`` instead of freezing its shape.
+    width for height within ``spread`` instead of freezing its shape. Each chord of
+    node ratio ``r`` asks for at most ``(r - 1)^2 / (4 r)`` extra area, at its midpoint.
 
     Parameters
     ----------
@@ -508,6 +517,12 @@ def inner_area_constraints(
     Polytope
         ``poly`` with tighter bounds and one row per chord, labelled
         ``"minimum area <room>: chord <k>"``.
+
+    Raises
+    ------
+    InvariantViole
+        The start is below a minimum area by more than the proof tolerance: it is not
+        a valid legalized plan.
     """
     bornes = list(poly.bornes)
     rows: list[int] = []
@@ -521,16 +536,16 @@ def inner_area_constraints(
         w0, h0 = float(x[iw]), float(x[ih])
         if a_min <= 0.0 or w0 <= 0.0 or h0 <= 0.0:
             continue
+        if w0 * h0 < a_min - AREA_PROOF_M2:
+            raise InvariantViole(
+                (f"minimum area {piece.id}: start {w0 * h0:.9f} m² below {a_min:.9f} m²",)
+            )
+        # A start within the proof tolerance below a_min keeps its own area as target.
         area = min(a_min, w0 * h0)
         (w_lo, w_hi), (h_lo, h_hi) = bornes[iw], bornes[ih]
-        nodes = sorted(
-            {w0}
-            | {
-                w0 * factor
-                for factor in spread
-                if w_lo <= w0 * factor <= w_hi and h_lo <= area / (w0 * factor) <= h_hi
-            }
-        )
+        # Nodes are not filtered by the bounds: the region is intersected with them
+        # anyway, and filtering froze rooms whose height is fixed by a contact.
+        nodes = sorted({w0} | {w0 * factor for factor in spread if factor > 0.0})
         bornes[iw] = (max(w_lo, nodes[0]), w_hi)
         bornes[ih] = (max(h_lo, area / nodes[-1]), h_hi)
         for k, (w_left, w_right) in enumerate(pairwise(nodes)):
