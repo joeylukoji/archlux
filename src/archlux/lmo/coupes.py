@@ -53,11 +53,13 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
+from itertools import pairwise
 from math import sqrt
 from typing import TYPE_CHECKING
 
 import numpy as np
 import structlog
+from scipy import sparse
 
 from archlux.erreurs import InvariantViole
 from archlux.lmo.solveur import resoudre
@@ -68,9 +70,11 @@ if TYPE_CHECKING:
     from archlux.types import Contexte, Piece
 
 __all__ = [
+    "INNER_AREA_SPREAD",
     "MAX_COUPES_PAR_PIECE",
     "Coupe",
     "coupe_surface",
+    "inner_area_constraints",
     "resoudre_avec_surfaces",
     "surfaces_violees",
 ]
@@ -443,3 +447,107 @@ def resoudre_avec_surfaces(
             return solution
         _empiler_tangentes(restantes, solution.x, domaine, ctx, pieces, coupes, comptes)
         courant = solution.x
+
+
+INNER_AREA_SPREAD: tuple[float, ...] = (0.6, 0.8, 1.0, 1.25, 1.6)
+"""Widths, relative to the start, of the hyperbola points joined by chords."""
+
+
+def inner_area_constraints(
+    poly: Polytope,
+    x: np.ndarray,
+    ctx: Contexte,
+    pieces: tuple[Piece, ...],
+    *,
+    spread: tuple[float, ...] = INNER_AREA_SPREAD,
+) -> Polytope:
+    """Add an **inner** linear approximation of every minimum area ``w h >= a``.
+
+    Tangent cuts (:func:`coupe_surface`) are an *outer* approximation: their vertices
+    can lie below the hyperbola, so a convex combination of a valid point and such a
+    vertex can break the minimum area. That is how Frank-Wolfe went below ``a_min``
+    (AUDIT.md §3 n°6). This function does the opposite: every point it keeps satisfies
+    the minimum area, and so does every convex combination of such points.
+
+    For each room with ``a > 0`` and start dimensions ``(w0, h0)``, take the nodes
+    ``w_k = f_k w0`` (``f_k`` in ``spread``, always including 1) that fit the width
+    and height bounds, and ``h_k = a / w_k`` on the hyperbola. Keep
+
+    - ``w >= w_first`` and ``h >= a / w_last`` (bounds), and
+    - ``h >= h_k + s_k (w - w_k)`` for each chord ``[w_k, w_{k+1}]``, slope ``s_k``
+      (rows ``s_k w - h <= s_k w_k - h_k``).
+
+    Soundness. ``h = a / w`` is convex, so it lies below each of its chords: on
+    ``[w_first, w_last]`` the piecewise-linear interpolant is at least ``a / w``. That
+    interpolant is itself convex, hence the maximum of its (extended) chords, so the
+    rows above describe exactly its epigraph. Beyond ``w_last``, ``h >= a / w_last >
+    a / w``. The region is convex and included in ``{w h >= a}``.
+
+    The start stays admissible: ``w0`` is a node, so the rows only require
+    ``h0 >= a / w0``. If the start sits a hair below ``a`` (within the proof tolerance),
+    ``a`` is lowered to ``w0 h0`` for that room rather than excluding the start.
+
+    Compared with a single corner ``w >= w0, h >= h0``, the chords let a room trade
+    width for height within ``spread`` instead of freezing its shape.
+
+    Parameters
+    ----------
+    poly : Polytope
+        Domain to restrict.
+    x : numpy.ndarray
+        Start point, typically the classic legalization result.
+    ctx : Contexte
+        Provides the minimum area of each room type.
+    pieces : tuple of Piece
+        Rooms, for their types.
+    spread : tuple of float, optional
+        Relative node widths.
+
+    Returns
+    -------
+    Polytope
+        ``poly`` with tighter bounds and one row per chord, labelled
+        ``"minimum area <room>: chord <k>"``.
+    """
+    bornes = list(poly.bornes)
+    rows: list[int] = []
+    cols: list[int] = []
+    vals: list[float] = []
+    rhs: list[float] = []
+    labels: list[str] = []
+    for piece in pieces:
+        a_min = ctx.referentiel.a_min(piece.type)
+        iw, ih = poly.index[f"{piece.id}.w"], poly.index[f"{piece.id}.h"]
+        w0, h0 = float(x[iw]), float(x[ih])
+        if a_min <= 0.0 or w0 <= 0.0 or h0 <= 0.0:
+            continue
+        area = min(a_min, w0 * h0)
+        (w_lo, w_hi), (h_lo, h_hi) = bornes[iw], bornes[ih]
+        nodes = sorted(
+            {w0}
+            | {
+                w0 * factor
+                for factor in spread
+                if w_lo <= w0 * factor <= w_hi and h_lo <= area / (w0 * factor) <= h_hi
+            }
+        )
+        bornes[iw] = (max(w_lo, nodes[0]), w_hi)
+        bornes[ih] = (max(h_lo, area / nodes[-1]), h_hi)
+        for k, (w_left, w_right) in enumerate(pairwise(nodes)):
+            h_left, h_right = area / w_left, area / w_right
+            slope = (h_right - h_left) / (w_right - w_left)
+            line = len(labels)
+            rows += [line, line]
+            cols += [iw, ih]
+            vals += [slope, -1.0]
+            rhs.append(slope * w_left - h_left)
+            labels.append(f"minimum area {piece.id}: chord {k}")
+
+    extra = sparse.coo_matrix((vals, (rows, cols)), shape=(len(labels), poly.A.shape[1])).tocsr()
+    return replace(
+        poly,
+        A=sparse.vstack([poly.A, extra], format="csr"),
+        b=np.concatenate([poly.b, np.asarray(rhs, dtype=float)]),
+        bornes=tuple(bornes),
+        origines=(*poly.origines, *labels),
+    )

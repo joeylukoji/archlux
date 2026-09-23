@@ -163,3 +163,26 @@ def test_budget_legalisation_performantielle(benchmark: BenchmarkFixture) -> Non
     objectif = SubstitutAnalytique()
     benchmark(archlux.legalize, plan, CTX_15, objective=objectif)
     _assert_within_budget(benchmark, "legalisation_performantielle")
+
+
+CTX_15_AREAS = Contexte(
+    structure=CTX_15.structure,
+    orientation=Orientation(deg=20.0),
+    contour=CTX_15.contour,
+    referentiel=Referentiel(aires_min=(("sejour", 11.0),), largeur_min=1.0),
+)
+"""The realistic case the budgets missed (AUDIT.md Q-C2): tight minimum areas."""
+
+
+@pytest.mark.budget
+def test_budget_performance_legalization_with_minimum_areas(benchmark: BenchmarkFixture) -> None:
+    """Frank-Wolfe with tight minimum areas stays under the 500 ms budget.
+
+    Until PLAN.md batch 1.2 this case raised InvariantViole, and the tangent cuts it
+    needed disabled the LP warm start on every iteration.
+    """
+    from archlux.light.analytique import SubstitutAnalytique
+
+    plan = _plan_15_pieces()
+    benchmark(archlux.legalize, plan, CTX_15_AREAS, objective=SubstitutAnalytique())
+    _assert_within_budget(benchmark, "legalisation_performantielle")

@@ -35,7 +35,7 @@ from archlux.geom.polytope import (
 )
 from archlux.geom.rectilineaire import PieceRectilineaire, etendre_fusions
 from archlux.light.protocole import Baies, Substitut
-from archlux.lmo.coupes import Coupe, coupe_surface, resoudre_avec_surfaces
+from archlux.lmo.coupes import inner_area_constraints, resoudre_avec_surfaces
 from archlux.lmo.solveur import SolutionLP
 from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.types import Certificat, Contexte, Plan
@@ -86,17 +86,6 @@ def _origines_actives(sol: SolutionLP, origines: tuple[str, ...]) -> tuple[str, 
         for libelle, poids in zip(origines, certificat, strict=True)
         if abs(float(poids)) > _DUAL_SEUIL
     )
-
-
-def _coupes_surface_plan(plan: Plan, ctx: Contexte) -> list[Coupe] | None:
-    """Tangentes AM-GM au point légalisé, pour que Frank-Wolfe ne descende pas sous ``a_min``."""
-    coupes: list[Coupe] = []
-    for piece in plan.pieces:
-        a_min = ctx.referentiel.a_min(piece.type)
-        if a_min <= 0.0 or piece.w <= 0.0 or piece.h <= 0.0:
-            continue
-        coupes.append(coupe_surface(piece.w, piece.h, a_min, piece=piece.id))
-    return coupes or None
 
 
 def _duaux_traduits(duaux: np.ndarray | None, poly: Polytope) -> tuple[tuple[str, float], ...]:
@@ -284,7 +273,10 @@ def legalize(
         )
 
     x0 = vectoriser(corrige, poly.index)
-    poly_fw = figer_contacts(poly, x0)
+    # Inner approximation of the minimum areas, added *after* freezing contacts so that
+    # a tight room is not frozen into an equality: every point of this domain, hence
+    # every Frank-Wolfe iterate, keeps every minimum area (PLAN.md batch 1.2).
+    poly_fw = inner_area_constraints(figer_contacts(poly, x0), x0, ctx, corrige.pieces)
     resultat = frank_wolfe(
         poly_fw,
         objective,
@@ -296,9 +288,6 @@ def legalize(
         # eclairement reel (`docs/formules/jetons.md`).
         baies=Baies(murs=corrige.murs, ouvertures=corrige.ouvertures),
         budget=budget,
-        coupes=_coupes_surface_plan(corrige, ctx),
-        pieces=corrige.pieces,
-        ctx=ctx,
     )
     performant = replace(
         devectoriser(resultat.x, corrige, poly.index),

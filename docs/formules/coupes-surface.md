@@ -89,6 +89,48 @@ Tangentes initiales : le carré et les intersections de l'hyperbole avec
 | Projeter avant d'écrire la coupe | Passer \(wh\ge a\) à GLOP comme produit |
 | Laisser `a_min=0` sans coupe | Croire qu'après 10 coupes le sommet LP est *sur* l'hyperbole : d'où le resserrement de bornes |
 
+## Inner approximation, for Frank-Wolfe
+
+Tangent cuts are an **outer** approximation of \(K = \{(w, h) : wh \ge a\}\): the
+classic legalization uses them, then checks the result exactly. Frank-Wolfe cannot:
+its iterates are convex combinations of a valid start and LP vertices, and a vertex of
+an outer approximation may lie below the hyperbola, so the mix can break the minimum
+area. That is what happened until 0.10 (AUDIT.md §3 n°6).
+
+Frank-Wolfe therefore works on an **inner** approximation
+(`lmo.coupes.inner_area_constraints`). Around the start \((w_0, h_0)\), take nodes
+\(w_k = f_k w_0\), \(f_k \in \{0.6, 0.8, 1, 1.25, 1.6\}\) (those that fit the bounds),
+and \(h_k = a / w_k\). Keep
+
+\[
+w \ge w_{\text{first}}, \qquad h \ge \frac{a}{w_{\text{last}}}, \qquad
+h \ge h_k + s_k (w - w_k) \quad \text{for each chord } [w_k, w_{k+1}],
+\quad s_k = \frac{h_{k+1} - h_k}{w_{k+1} - w_k}.
+\]
+
+**Soundness.** \(h = a/w\) is convex on \(w > 0\), so it lies below each of its chords:
+on \([w_{\text{first}}, w_{\text{last}}]\) the piecewise-linear interpolant \(\ell\)
+satisfies \(\ell(w) \ge a/w\). \(\ell\) is convex (interpolant of a convex function),
+hence equal to the maximum of its extended chords, so the chord rows describe exactly
+its epigraph. Beyond \(w_{\text{last}}\), \(h \ge a/w_{\text{last}} > a/w\). The kept
+region is a convex polyhedron included in \(K\): every point of the domain, and every
+convex combination of such points, keeps the minimum area.
+
+**The start stays admissible**, since \(w_0\) is a node: the rows only require
+\(h_0 \ge a/w_0\).
+
+**Cost of the approximation.** Between two nodes of ratio \(r = w_{k+1}/w_k\), the
+chord asks for at most \(\frac{(r-1)^2}{4r}\) more area than the minimum (maximum of
+\(w\,\ell(w)/a - 1\), reached at the geometric mean of the nodes): +1.25 % for the
+nodes around the start (\(r = 1.25\)), +1.53 % and +2.08 % for the outer ones
+(\(r = 1.28\), \(r = 4/3\)), checked numerically. This is the price of keeping the
+domain linear. A single corner \(w \ge w_0, h \ge h_0\) would have been
+sound too, but it freezes the shape of a room whose area is tight; the chords let it
+trade width for height within the spread.
+
+Since Frank-Wolfe no longer needs tangent cuts, its LP calls keep the warm start
+(the cuts used to disable it, AUDIT.md Q-C2).
+
 ## Source
 
 - Boyd & Vandenberghe (2004), §3.1.5–3.1.6.

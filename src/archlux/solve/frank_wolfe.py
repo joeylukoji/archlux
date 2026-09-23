@@ -176,13 +176,13 @@ def frank_wolfe(
 
     Warnings
     --------
-    Les **surfaces minimales ne sont pas garanties**. Une coupe ajoutée en cours de
-    route par ``pieces``/``ctx`` est, par construction, violée par l'itéré courant :
-    celui-ci sort alors du domaine coupé, ``gap`` peut devenir négatif et déclencher un
-    arrêt prématuré, et ``x`` peut rester sous ``a_min``. Les coupes ne font ici que
-    *freiner* la dérive ; c'est
-    :func:`archlux.certify.preuve.verifier_exactement`, appelée par
-    :func:`archlux.api.legalize` sur le plan final, qui tranche.
+    Minimum areas are guaranteed **only if** ``poly`` already contains an inner
+    approximation of them (:func:`archlux.lmo.coupes.inner_area_constraints`), which is
+    what :func:`archlux.api.legalize` passes: every point of such a domain keeps every
+    minimum area, hence every iterate does. The legacy ``coupes``/``pieces``/``ctx``
+    path adds *outer* tangent cuts on the way; a cut added mid-run is violated by the
+    current iterate, ``gap`` may turn negative and ``x`` may stay below ``a_min``. That
+    path is kept for compatibility and is no longer used by ``legalize``.
 
     Complexity
     ----------

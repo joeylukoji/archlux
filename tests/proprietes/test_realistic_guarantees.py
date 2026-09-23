@@ -14,7 +14,7 @@ import pytest
 from hypothesis import given, settings
 
 import archlux
-from archlux.erreurs import ArchluxError, InvariantViole
+from archlux.erreurs import ArchluxError
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.types import Contexte, Plan
@@ -63,14 +63,6 @@ def test_legalize_never_certifies_a_broken_guarantee(scenario: tuple[Plan, Conte
         assert _independent_violations(result, ctx) == []
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=(AssertionError, InvariantViole),
-    reason=(
-        "Frank-Wolfe goes below minimum areas and legalize refuses (InvariantViole) — "
-        "AUDIT.md §3 n°6; fixed in PLAN.md 1.2 and 1.5 (walls fixed in 1.1)"
-    ),
-)
 @_SETTINGS
 @given(scenario=realistic_scenarios())
 def test_performance_legalization_keeps_every_guarantee(

@@ -31,12 +31,25 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `export.svg.rendre/comparer/planche` take `walls=` to draw the load-bearing structure
   even when the plan does not repeat it.
 
+#### Fixed — minimum areas in performance mode (batch 1.2)
+- **Frank-Wolfe went below minimum areas.** It mixed a valid start with vertices of an
+  *outer* approximation of `w h >= a` (tangent cuts), so iterates could break the
+  minimum; `legalize` then raised `InvariantViole` (benchmark: 167 of 200 in
+  performance mode). It now works on an **inner** polyhedral approximation
+  (`lmo.coupes.inner_area_constraints`: chords of the hyperbola around the start),
+  included in `{w h >= a}`: every iterate keeps every minimum area. The price is at
+  most (r-1)^2/(4r) of extra area between nodes of ratio r (1.25 % to 2.08 %).
+- Frank-Wolfe no longer needs tangent cuts, which disabled the LP warm start.
+- New performance budget with tight minimum areas (15 rooms: about 50 ms of 500).
+- `api._coupes_surface_plan` removed (unused).
+
 #### Added
 - `export.svg` draws walls: load-bearing walls thick and dark (class
   `wall-load-bearing`), other walls thin and grey (class `wall`). A room crossing a
   load-bearing wall is now visible. First tests of `export.svg` (it had none).
 - `UnsupportedInput` (`ArchluxError`): raised for an oblique load-bearing wall instead of
   ignoring it.
+- `tests/test_hygiene.py`: no invisible control character in tracked text files.
 - `benchmarks/guarantees/`: a before/after benchmark of the exact guarantees, measured by
   the independent checker of `tests/checkers.py` on 200 deterministic scenarios and five
   modes; it counts false certificates (plans certified valid that break a guarantee).

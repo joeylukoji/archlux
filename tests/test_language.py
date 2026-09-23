@@ -22,6 +22,8 @@ MIGRATED: tuple[str, ...] = (
     "tests/checkers.py",
     "tests/unites/test_svg.py",
     "tests/unites/test_load_bearing.py",
+    "tests/unites/test_inner_area.py",
+    "tests/test_hygiene.py",
     "benchmarks/guarantees/scenarios.py",
     "benchmarks/guarantees/measure.py",
     "benchmarks/guarantees/test_scenarios.py",
