@@ -34,10 +34,14 @@ CONTACT_M: Final = 1e-9
 
 SNAP_M: Final = 1e-7
 """Gap under which a contact is frozen or a rectangle edge is snapped
-(``geom.polytope.figer_contacts``, ``geom.rectilineaire._TOL_RECT``)."""
+(``geom.polytope.figer_contacts``, ``geom.rectilineaire._TOL_RECT``); also the tolerance
+under which a load-bearing wall counts as axis-aligned, or as a point to ignore
+(``geom.graphe``)."""
 
 WALL_M: Final = 1e-7
-"""Distance under which two wall end points coincide (``certify.preuve``)."""
+"""Wall tolerance of the proof (``certify.preuve``): two wall end points closer than this
+coincide, and a room is shrunk by this much before testing whether a load-bearing wall
+crosses its interior (so a room merely bounded by the wall is accepted)."""
 
 CUTS_LENGTH_M: Final = 1e-6
 """Length tolerance of the cutting-plane loop (``lmo.coupes._TOLERANCE_LONGUEUR``)."""

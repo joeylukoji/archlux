@@ -186,15 +186,11 @@ class TestVectorisation:
 
 
 class TestStructurePorteuse:
-    """État actuel de `A_eq` — voir ADR-7."""
+    """`A_eq` shape — see ADR-7 and tests/unites/test_load_bearing.py."""
 
     def test_a_eq_est_vide_mais_bien_dimensionnee(self) -> None:
-        """Aucun mur porteur n'est encore lié à une pièce, mais la forme est correcte.
-
-        ``construire_polytope(ordre, ctx)`` ne reçoit pas le plan proposé : l'incidence
-        pièce ↔ mur porteur n'est pas calculable depuis cette signature. La structure est
-        donc vérifiée en aval par ``certify.preuve``, jamais silencieusement ignorée.
-        """
+        """Load-bearing walls are inequality rows (``OrdreRelatif.wall_sides``), not
+        equalities: ``A_eq`` stays empty but correctly shaped (ADR-7)."""
         poly = construire_polytope(ORDRE_AB, CTX)
         assert poly.A_eq.shape == (0, len(poly.index))
         assert poly.b_eq.shape == (0,)

@@ -241,6 +241,7 @@ def _gallery(
             given,
             result,
             contour=context_of[case.scenario].contour,
+            walls=context_of[case.scenario].structure.murs_porteurs,
             titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
         (folder / name).write_text(svg, encoding="utf-8")

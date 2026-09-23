@@ -39,8 +39,10 @@ raster, et un substitut à entrée raster a un gradient nul presque partout
 
 ## Ce que MSD apporte à `archlux`
 
-- **Murs porteurs annotés** → `Structure.murs_porteurs`, donc des égalités `A_eq`
-  réelles et un `structure_preservee` qui veut dire quelque chose.
+- **No load-bearing annotation.** MSD separators are only `WALL` or `COLUMN`, so
+  `Structure.murs_porteurs` stays empty on this corpus (see `data/chargeurs.py`);
+  the load-bearing guarantee is exercised by the synthetic benchmark instead
+  (`benchmarks/guarantees`). Columns are loaded but not constrained (ADR-7).
 - **Géométrie non-Manhattan** → exerce `geom.rectilineaire.decomposer` sur autre
   chose qu'un cas de test.
 - **Orientation cardinale conservée** → `Orientation` cesse d'être tirée au sort.

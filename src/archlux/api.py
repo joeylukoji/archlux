@@ -178,6 +178,8 @@ def legalize(
     ------
     OrdreIncoherent, SeparationManquante
         Propagées depuis la construction du graphe.
+    UnsupportedInput
+        An oblique load-bearing wall: it cannot be kept by a linear side constraint.
     Infaisable
         Le programme ne tient pas dans l'enveloppe. L'exception porte ``origines`` et,
         lorsque le conflit est imputable à des lignes de ``A``, ``certificat_farkas``.

@@ -139,6 +139,20 @@ recherche ouverte, mesurée et publiée par le projet (dérive, banc d'essai).
 Si la dérive est détectée, le certificat affiche `NON EVALUABLE` plutôt qu'un
 intervalle trompeur.
 
+## Load-bearing structure: what is and is not certified
+
+Since 0.10 (ADR-7), the certificate proves that **no room crosses a load-bearing wall**,
+and the solver keeps every room on its side of each wall. It does not certify more:
+
+- **Columns** (`Structure.poteaux`) are not constrained or checked: a column inside a
+  room is normal in housing, and nothing is claimed about them.
+- **Openings on interior partitions do not follow a moved room**: walls are not decision
+  variables. Openings on facades stay put because the outline is fixed.
+- **Oblique load-bearing walls are refused** (`UnsupportedInput`) rather than ignored:
+  no linear side constraint keeps a rectangle off an oblique segment exactly.
+- Each room keeps **one** side of each wall, read from the proposed plan: a valid
+  arrangement on another side of a partial wall is not explored.
+
 ## `NON EVALUABLE`
 
 Le champ **`NON EVALUABLE`** couvre les articles dont la vérification exige une

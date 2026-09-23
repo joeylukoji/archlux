@@ -36,11 +36,20 @@ Vandenberghe, 2004, §2.2.4).
   on peut contourner \(B\) par deux chemins dont le segment n'est pas admissible).
 - Graphe réduit transitivement *avant* l'assemblage.
 - Load-bearing walls are fixed obstacles. Each room keeps the side of each wall it
-  had in the proposed plan (`OrdreRelatif.porteurs`): one inequality per room and
+  had in the proposed plan (`OrdreRelatif.wall_sides`): one inequality per room and
   wall, \(x + w \le c\) (left), \(x \ge c\) (right), \(y + h \le c\) (below) or
-  \(y \ge c\) (above), where \(c\) is the wall line or the end of a partial wall. A
-  room that crosses a wall is sent to the side of its centre. Oblique load-bearing
-  walls are refused (`UnsupportedInput`). \(A_{\mathrm{eq}}\) stays empty.
+  \(y \ge c\) (above), where \(c\) is the wall line or the end of a partial wall.
+  The half-plane kept is the one the proposed room penetrates **least**, among those
+  with room left before the outline: for a room clear of the wall this is the axis of
+  the largest gap (the rule between two rooms); for a room crossing it, the smallest
+  correction, which may go around the end of a partial wall. Zero-length walls are
+  ignored; oblique load-bearing walls are refused (`UnsupportedInput`).
+  \(A_{\mathrm{eq}}\) stays empty.
+- **Deliberate over-constraint.** A room beyond the end of a partial wall could also
+  be kept off it by another half-plane; only one is kept, so Frank-Wolfe cannot move
+  the room from one valid side to another. This is the price of convexity, exactly as
+  for the relative order between two rooms: safe, never a false certificate, but it
+  restricts the search.
 
 ## Ce qui n'est pas dans \(A\)
 

@@ -53,6 +53,7 @@ from __future__ import annotations
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
+from archlux.tolerances import WALL_M
 from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
 
 __all__ = ["verifier_exactement"]
@@ -60,7 +61,7 @@ __all__ = ["verifier_exactement"]
 TOLERANCE_JOUR_M2 = 1e-6
 """Tolérance de surface pour la détection des jours, en mètres carrés."""
 
-_TOLERANCE_MUR_M = 1e-7
+_TOLERANCE_MUR_M = WALL_M
 _TOLERANCE_AIRE_M2 = 1e-9
 
 

@@ -15,13 +15,14 @@ Dérivation du jeu entre rectangles, acyclicité et réduction transitive :
 from __future__ import annotations
 
 import itertools
+import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 import networkx as nx
 
 from archlux.erreurs import OrdreIncoherent, SeparationManquante, UnsupportedInput
-from archlux.tolerances import CONTACT_M
+from archlux.tolerances import CONTACT_M, SNAP_M
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -41,7 +42,7 @@ Axe = Literal["horizontal", "vertical"]
 Side = Literal["left", "right", "below", "above"]
 _AXES: tuple[Axe, ...] = ("horizontal", "vertical")
 
-TOLERANCE_CONTACT = 1e-9
+TOLERANCE_CONTACT = CONTACT_M
 """Jeu en deçà duquel deux pièces sont réputées jointives, en mètres (1 nanomètre).
 
 Sans cette tolérance, deux pièces qui se touchent exactement passent pour recouvrantes :
@@ -85,14 +86,14 @@ class OrdreRelatif:
         ``(a, b)`` signifie « ``a`` est en dessous de ``b`` ».
     pieces : tuple of str
         Identifiants concernés, **triés**, pour un parcours déterministe.
-    porteurs : tuple of WallSide
+    wall_sides : tuple of WallSide
         Side of every load-bearing wall each room stays on. Empty without structure.
     """
 
     horizontal: tuple[tuple[str, str], ...]
     vertical: tuple[tuple[str, str], ...]
     pieces: tuple[str, ...]
-    porteurs: tuple[WallSide, ...] = ()
+    wall_sides: tuple[WallSide, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,7 +185,7 @@ def deduire_ordre(plan: Plan, structure: Structure | None = None) -> OrdreRelati
     structure : Structure, optional
         Load-bearing structure. Each wall is treated as a fixed obstacle: every room gets
         the side it stays on (:class:`WallSide`), read from the plan like the order
-        between two rooms. A room that crosses a wall is sent to the side of its centre.
+        between two rooms. A room that crosses a wall gets the smallest correction.
 
     Returns
     -------
@@ -232,10 +233,16 @@ def deduire_ordre(plan: Plan, structure: Structure | None = None) -> OrdreRelati
         else:
             vertical.append((id_a, id_b) if (ya, id_a) < (yb, id_b) else (id_b, id_a))
 
-    porteurs = (
+    envelope: Envelope | None = None
+    if plan.contour:
+        xs = [x for x, _ in plan.contour]
+        ys = [y for _, y in plan.contour]
+        envelope = (min(xs), min(ys), max(xs), max(ys))
+    wall_sides = (
         tuple(
-            _wall_side(par_id[room_id], wall)
+            _wall_side(par_id[room_id], wall, envelope)
             for wall in sorted(structure.murs_porteurs, key=lambda m: m.id)
+            if wall.longueur > SNAP_M  # a point has no side; the proof ignores it too
             for room_id in identifiants
         )
         if structure is not None
@@ -245,17 +252,29 @@ def deduire_ordre(plan: Plan, structure: Structure | None = None) -> OrdreRelati
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
         pieces=tuple(identifiants),
-        porteurs=porteurs,
+        wall_sides=wall_sides,
     )
 
 
-def _wall_side(room: Piece, wall: Mur) -> WallSide:
-    """Side of ``wall`` that ``room`` stays on, by the rule used between two rooms.
+Envelope = tuple[float, float, float, float]
+"""Axis-aligned bounding box ``(xmin, ymin, xmax, ymax)`` of the target outline."""
 
-    The wall is a degenerate rectangle. If the room is disjoint from it along some axis,
-    the axis of the larger gap wins, exactly as in :func:`deduire_ordre`. If the room
-    crosses the wall, it is sent across the wall's line to the side of its centre: the
-    smallest correction, never around the wall's end.
+
+def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
+    """Side of ``wall`` that ``room`` stays on: the half-plane it penetrates least.
+
+    The wall is a fixed obstacle; each of its four half-planes (left of, right of,
+    below the lower end, above the upper end) keeps the room off the segment. The one
+    the room penetrates least is kept:
+
+    - a room disjoint from the wall penetrates some half-plane negatively, and the
+      least penetrated is the axis of the largest gap: the rule used between two rooms
+      in :func:`deduire_ordre`;
+    - a room crossing the wall gets the smallest correction, which may go *around* the
+      end of a partial wall (1 cm over the end moves the room 1 cm, not across the wall).
+
+    A half-plane with no room between the wall and the outline (``envelope``) is never
+    kept: a full-span wall ends on the outline, so nothing fits beyond its ends.
 
     Raises
     ------
@@ -263,26 +282,23 @@ def _wall_side(room: Piece, wall: Mur) -> WallSide:
         The wall is oblique: no linear side constraint describes it exactly.
     """
     (xa, ya), (xb, yb) = wall.a, wall.b
-    vertical, horizontal = abs(xa - xb) <= CONTACT_M, abs(ya - yb) <= CONTACT_M
+    vertical, horizontal = abs(xa - xb) <= SNAP_M, abs(ya - yb) <= SNAP_M
     if not (vertical or horizontal):
         raise UnsupportedInput(
             f"load-bearing wall {wall.id} is oblique; only axis-aligned load-bearing "
             "walls can be kept exactly"
         )
     x0, x1, y0, y1 = min(xa, xb), max(xa, xb), min(ya, yb), max(ya, yb)
-    gap_x = max(x0 - (room.x + room.w), room.x - x1)
-    gap_y = max(y0 - (room.y + room.h), room.y - y1)
-    cx, cy = room.centre
-
-    crosses = gap_x < -CONTACT_M and gap_y < -CONTACT_M
-    # A crossing room goes back over the wall's line; otherwise the larger gap wins.
-    along_x = vertical if crosses else gap_x >= gap_y
-    if along_x:
-        side: Side = "left" if cx < (x0 + x1) / 2 else "right"
-        bound = x0 if side == "left" else x1
-    else:
-        side = "below" if cy < (y0 + y1) / 2 else "above"
-        bound = y0 if side == "below" else y1
+    ex0, ey0, ex1, ey1 = envelope if envelope is not None else (-math.inf,) * 2 + (math.inf,) * 2
+    # (penetration, side, bound, room left between that half-plane's bound and the outline)
+    options: list[tuple[float, Side, float, float]] = [
+        (room.x + room.w - x0, "left", x0, x0 - ex0),
+        (x1 - room.x, "right", x1, ex1 - x1),
+        (room.y + room.h - y0, "below", y0, y0 - ey0),
+        (y1 - room.y, "above", y1, ey1 - y1),
+    ]
+    reachable = [option for option in options if option[3] > CONTACT_M] or options
+    _, side, bound, _ = min(reachable, key=lambda option: option[0])
     return WallSide(room=room.id, wall=wall.id, side=side, bound=bound)
 
 

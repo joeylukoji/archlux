@@ -52,3 +52,13 @@ def test_a_vertical_wall_is_drawn_vertically() -> None:
 def test_comparison_draws_walls_in_both_panels() -> None:
     svg = comparer(_plan(_BEARING), _plan(_BEARING))
     assert len(_lines(svg, "wall-load-bearing")) == 2
+
+
+def test_structure_walls_are_drawn_even_if_the_plan_omits_them() -> None:
+    """A plan need not repeat its load-bearing structure; the drawing must still show it."""
+    svg = comparer(_plan(), _plan(), walls=(_BEARING,))
+    assert len(_lines(svg, "wall-load-bearing")) == 2
+
+
+def test_a_wall_declared_twice_is_drawn_once_per_panel() -> None:
+    assert len(_lines(rendre(_plan(_BEARING), walls=(_BEARING,)), "wall-load-bearing")) == 1

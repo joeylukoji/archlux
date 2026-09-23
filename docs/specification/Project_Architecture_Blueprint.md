@@ -337,31 +337,42 @@ ici — déterminisme, rien d'appris — est intacte, et un test de propriété 
 exécution que froid et chaud rendent la même solution. `vider_cache()` rend le départ à
 froid explicite pour les mesures.
 
-### ADR-7 — `A_eq` reste vide : la structure porteuse n'est pas liable depuis `(ordre, ctx)`
+### ADR-7 — Load-bearing walls: side inequalities read from the proposed plan
 
-**Question ouverte, à trancher avant l'étape 6.**
+- **Status:** decided (2026-09-23, PLAN.md batch 1.1). Supersedes the open question of
+  milestone 2.
 
-`MILESTONE-2.md` §3 demande « des lignes dans `A_eq` pour les murs porteurs ». Or
-`construire_polytope(ordre, ctx)` ne reçoit **pas** le plan proposé : figer un mur porteur
-demande de savoir *quelle pièce* borde *quel mur*, c'est-à-dire une incidence pièce ↔ mur
-que ni `ordre` ni `ctx` ne portent. `ctx.structure` donne la liste des murs, pas leur
-rattachement.
+**Context.** `MILESTONE-2.md` §3 asked for `A_eq` rows tying rooms to load-bearing walls.
+They were never written; the proof then compared each wall with itself — walls are not
+decision variables — so `structure_preservee` was always true, and rooms crossed
+load-bearing walls under a valid certificate (AUDIT.md §3 n°1; 35 of 200 benchmark cases
+in performance mode).
 
-État actuel : `A_eq` a la forme `(0, 4n)` — vide, mais correctement dimensionnée, et
-`contient` sait déjà traiter des égalités non vides (testé). **La structure n'est pas
-ignorée pour autant** : `certify.preuve` vérifie `structure_preservee` indépendamment,
-donc une violation lève `InvariantViole` au lieu de passer.
+**Decision.**
 
-Trois issues possibles, par coût croissant :
+1. A load-bearing wall is a **fixed obstacle**, not an equality. Each room keeps one
+   side of each wall — `x + w <= c`, `x >= c`, `y + h <= c` or `y >= c` — read from the
+   proposed plan by `deduire_ordre(plan, structure=...)` (`OrdreRelatif.wall_sides`),
+   the half-plane the room penetrates least among those with room before the outline.
+   `construire_polytope(ordre, ctx)` keeps its signature: the incidence travels in the
+   order, like the relative order between rooms.
+2. Equalities were rejected: they would pin rooms to walls and forbid a room from
+   being bounded by a wall on one side only, or from not touching it at all.
+3. The proof checks the guarantee directly: no room interior contains a stretch of a
+   load-bearing wall (geometric test, oblique walls included).
+4. Oblique load-bearing walls raise `UnsupportedInput`: no single linear side row
+   describes them, and ignoring them silently is what this ADR removes.
+5. **Columns** (`Structure.poteaux`) are fixed data and are not constrained: a column
+   inside a room is normal in housing. Nothing about them is certified.
+6. **Openings** are relative to walls (`Ouverture.mur_id`), and walls are not decision
+   variables: an opening on a facade stays put (the outline is fixed), but an opening on
+   an interior partition does **not** follow a moved room. The README claim "windows
+   follow" is withdrawn (PLAN.md 1.8).
 
-| Option | Coût | Remarque |
-|---|---|---|
-| Précalculer l'incidence dans `Contexte` | Faible | `ctx` gagne un champ `incidences: tuple[tuple[str, str], ...]` ; la signature du §3 est préservée |
-| Passer le plan proposé à `construire_polytope` | Moyen | Contredit la signature du §3 |
-| Laisser `certify` seul garant | Nul | Le solveur peut alors produire un plan rejeté, donc échouer là où il aurait pu réussir |
-
-Recommandation : la première. Elle garde la signature imposée et met l'incidence là où
-elle appartient — dans le contexte, avec la structure.
+**Consequences.** Classic, tiling and performance modes inherit the rows since they
+share the polytope. The benchmark reports 0 false certificates after this batch. The
+choice of a single half-plane is a deliberate over-constraint, as for the order between
+rooms (see `docs/formules/polytope-separe.md`).
 
 ### ADR-6 — Les plages du §6 sont vérifiées à la frontière, pas dans les constructeurs
 

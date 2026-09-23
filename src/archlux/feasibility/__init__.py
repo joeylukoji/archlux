@@ -60,6 +60,8 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
     ------
     OrdreIncoherent, SeparationManquante
         Entrée mal formée (propagées depuis la construction du graphe).
+    UnsupportedInput
+        An oblique load-bearing wall (propagated from :func:`archlux.legalize`).
 
     Guarantees
     ----------

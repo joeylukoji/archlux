@@ -34,7 +34,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from archlux.types import Plan, Point
+    from archlux.types import Mur, Plan, Point
 
 __all__ = ["comparer", "planche", "rendre"]
 
@@ -107,6 +107,7 @@ def _panneau(
     etendue: tuple[float, float, float, float],
     decalage_x: float,
     decalage_y: float = 0.0,
+    walls: tuple[Mur, ...] = (),
 ) -> list[str]:
     """Un panneau : cadre, contour en tirets, pièces, murs, titre. Coordonnées SVG.
 
@@ -163,7 +164,8 @@ def _panneau(
         )
 
     # Walls last, on top of rooms: a load-bearing wall crossed by a room must be visible.
-    for wall in plan.murs:
+    declared = {wall.id for wall in plan.murs}
+    for wall in plan.murs + tuple(w for w in walls if w.id not in declared):
         (xa, ya), (xb, yb) = vers_svg(*wall.a), vers_svg(*wall.b)
         css_class, colour, width = (
             ("wall-load-bearing", "#1f1f1f", 4.0) if wall.porteur else ("wall", "#6b6b6b", 1.5)
@@ -176,7 +178,13 @@ def _panneau(
     return parties
 
 
-def rendre(plan: Plan, *, contour: tuple[Point, ...] = (), titre: str = "") -> str:
+def rendre(
+    plan: Plan,
+    *,
+    contour: tuple[Point, ...] = (),
+    titre: str = "",
+    walls: tuple[Mur, ...] = (),
+) -> str:
     """Rendre un plan en SVG autonome.
 
     Parameters
@@ -187,6 +195,9 @@ def rendre(plan: Plan, *, contour: tuple[Point, ...] = (), titre: str = "") -> s
         Contour visé, tracé en tirets. Défaut : celui du plan.
     titre : str, optional
         Libellé porté en haut du panneau.
+    walls : tuple of Mur, optional
+        Extra walls to draw, typically ``ctx.structure.murs_porteurs``: a plan does not
+        have to repeat its load-bearing structure, but a drawing should show it.
 
     Returns
     -------
@@ -205,7 +216,7 @@ def rendre(plan: Plan, *, contour: tuple[Point, ...] = (), titre: str = "") -> s
     """
     vise = contour or plan.contour
     etendue = _etendue((plan,), (vise,) if vise else ())
-    parties = _panneau(plan, vise, titre, etendue, 0.0)
+    parties = _panneau(plan, vise, titre, etendue, 0.0, walls=walls)
     hauteur = _hauteur(etendue)
     return _document(_LARGEUR_PANNEAU, hauteur, parties)
 
@@ -216,6 +227,7 @@ def comparer(
     *,
     contour: tuple[Point, ...] = (),
     titres: tuple[str, str] = ("avant", "après"),
+    walls: tuple[Mur, ...] = (),
 ) -> str:
     """Rendre deux plans côte à côte, **à la même échelle**.
 
@@ -227,6 +239,8 @@ def comparer(
         Contour visé, commun aux deux panneaux. Défaut : celui d'``avant``.
     titres : tuple of str, optional
         Libellés des deux panneaux.
+    walls : tuple of Mur, optional
+        Extra walls drawn in both panels (see :func:`rendre`).
 
     Returns
     -------
@@ -249,7 +263,7 @@ def comparer(
     >>> svg.count("<rect") >= 4        # deux cadres, deux pièces
     True
     """
-    return planche(((avant, titres[0]), (apres, titres[1])), contour=contour)
+    return planche(((avant, titres[0]), (apres, titres[1])), contour=contour, walls=walls)
 
 
 def planche(
@@ -257,6 +271,7 @@ def planche(
     *,
     contour: tuple[Point, ...] = (),
     colonnes: int = 4,
+    walls: tuple[Mur, ...] = (),
 ) -> str:
     """Rendre une **série** de variantes en grille, toutes à la même échelle.
 
@@ -268,6 +283,8 @@ def planche(
         Contour visé, commun à tous les volets. Défaut : celui du premier plan.
     colonnes : int, optional
         Volets par rangée.
+    walls : tuple of Mur, optional
+        Extra walls drawn in every panel (see :func:`rendre`).
 
     Returns
     -------
@@ -308,7 +325,9 @@ def planche(
     parties: list[str] = []
     for rang, (plan, titre) in enumerate(volets):
         colonne, rangee = rang % colonnes, rang // colonnes
-        parties += _panneau(plan, vise, titre, etendue, colonne * pas_x, rangee * pas_y)
+        parties += _panneau(
+            plan, vise, titre, etendue, colonne * pas_x, rangee * pas_y, walls=walls
+        )
     n_colonnes = min(len(volets), colonnes)
     n_rangees = (len(volets) + colonnes - 1) // colonnes
     return _document(n_colonnes * pas_x - _ESPACE, n_rangees * pas_y - _ESPACE, parties)

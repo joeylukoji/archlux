@@ -23,6 +23,13 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   linear row per room and wall. Classic, tiling and performance modes all inherit it.
 - A plan no longer has to repeat the structure in `plan.murs`; a declared wall of the
   same id must still match it.
+- After review: the side kept is the half-plane the room penetrates **least** among
+  those with room before the outline. A room overflowing the end of a partial wall by
+  1 cm is moved 1 cm past the end, no longer sent across the wall (false refusals:
+  7 of 200 in the partial-wall benchmark mode). Zero-length walls are ignored and
+  nearly axis-aligned walls (noise below 1e-7 m) are accepted.
+- `export.svg.rendre/comparer/planche` take `walls=` to draw the load-bearing structure
+  even when the plan does not repeat it.
 
 #### Added
 - `export.svg` draws walls: load-bearing walls thick and dark (class

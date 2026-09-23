@@ -241,7 +241,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
     - séparation horizontale ``x_a + w_a − x_b ≤ 0`` par arête de ``g.horizontal`` ;
     - séparation verticale ``y_a + h_a − y_b ≤ 0`` ;
     - load-bearing walls: one row per room and wall, keeping the room on its side
-      (``ordre.porteurs``, see :class:`archlux.geom.graphe.WallSide`);
+      (``ordre.wall_sides``, see :class:`archlux.geom.graphe.WallSide`);
     - contour ``x_i + w_i ≤ x_max``, ``y_i + h_i ≤ y_max`` ;
     - bords bas et gauche, et largeurs minimales ``w_i ≥ ℓ_min``, **via ``bornes``**.
 
@@ -330,7 +330,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
         "below": ({"y": 1.0, "h": 1.0}, 1.0),  # y + h <= bound
         "above": ({"y": -1.0}, -1.0),  # -y <= -bound
     }
-    for side in ordre.porteurs:
+    for side in ordre.wall_sides:
         terms, sign = wall_rows[side.side]
         _ajouter(
             {f"{side.room}.{field}": coefficient for field, coefficient in terms.items()},
@@ -353,7 +353,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
     return Polytope(
         A=matrice,
         b=np.array(second_membre, dtype=float),
-        # Empty but well shaped. Load-bearing walls are inequality rows (ordre.porteurs),
+        # Empty but well shaped. Load-bearing walls are inequality rows (ordre.wall_sides),
         # not equalities: a room only has to stay on its side of a wall.
         A_eq=sparse.csr_matrix((0, n_var)),
         b_eq=np.zeros(0, dtype=float),
