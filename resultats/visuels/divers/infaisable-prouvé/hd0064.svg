@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="380" viewBox="0 0 380 380">
+  <rect width="380" height="380" fill="#f7f6f3"/>
+  <rect x="1.0" y="1" width="378.0" height="378.0" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">infaisable (prouvé) — 7 pièces, jour 17%, 3 morceaux</text>
+  <polygon points="28.00,352.00 109.40,352.00 109.40,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="28.00" y="104.61" width="55.86" height="196.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="55.93" y="202.77" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="28.00" y="308.91" width="55.86" height="43.09" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="55.93" y="330.45" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="85.46" y="213.14" width="23.94" height="87.78" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="97.43" y="257.03" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="28.00" y="28.00" width="55.86" height="75.01" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="55.93" y="65.51" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="79.07" y="28.00" width="17.56" height="100.55" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="87.85" y="78.28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="91.84" y="123.76" width="17.56" height="49.48" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="100.62" y="148.50" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="85.46" y="206.76" width="17.56" height="17.56" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="94.24" y="215.54" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">hallway</text>
+</svg>

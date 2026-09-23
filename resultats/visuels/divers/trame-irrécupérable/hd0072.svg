@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="231" viewBox="0 0 380 231">
+  <rect width="380" height="231" fill="#f7f6f3"/>
+  <rect x="1.0" y="1" width="378.0" height="228.7" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">trame irrécupérable — 7 pièces, jour 41%, 2 morceaux</text>
+  <polygon points="28.00,202.72 352.00,202.72 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="28.00" y="109.42" width="120.44" height="93.30" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="88.22" y="156.07" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="143.35" y="109.42" width="39.02" height="93.30" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="162.86" y="156.07" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="184.06" y="68.71" width="66.16" height="93.30" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="217.14" y="115.36" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="245.13" y="61.93" width="106.87" height="100.08" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="298.57" y="111.97" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="299.41" y="28.00" width="52.59" height="39.02" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="325.71" y="47.51" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="299.41" y="28.00" width="52.59" height="32.23" fill="#e0dcd6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="325.71" y="44.12" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">storage</text>
+  <rect x="258.70" y="34.79" width="45.80" height="25.45" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="281.60" y="47.51" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">hallway</text>
+</svg>

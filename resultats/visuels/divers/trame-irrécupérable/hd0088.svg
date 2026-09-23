@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="271" viewBox="0 0 380 271">
+  <rect width="380" height="271" fill="#f7f6f3"/>
+  <rect x="1.0" y="1" width="378.0" height="269.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">trame irrécupérable — 9 pièces, jour 19%, 2 morceaux</text>
+  <polygon points="28.00,243.30 352.00,243.30 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="228.67" y="28.00" width="123.33" height="131.69" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="290.34" y="93.85" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="220.31" y="153.42" width="131.69" height="64.80" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="286.15" y="185.82" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="211.95" y="153.42" width="131.69" height="64.80" fill="#ded4e2" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="277.79" y="185.82" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">dining</text>
+  <rect x="28.00" y="145.06" width="190.22" height="98.25" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="123.11" y="194.18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="36.36" y="69.81" width="114.97" height="73.16" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="93.85" y="106.39" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="36.36" y="61.45" width="123.33" height="81.52" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="98.03" y="102.21" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="153.42" y="111.61" width="64.80" height="31.35" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="185.82" y="127.29" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="153.42" y="86.53" width="64.80" height="56.44" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="185.82" y="114.75" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="195.23" y="86.53" width="31.35" height="56.44" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="210.90" y="114.75" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">hallway</text>
+</svg>

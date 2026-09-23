@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="283" viewBox="0 0 380 283">
+  <rect width="380" height="283" fill="#f7f6f3"/>
+  <rect x="1.0" y="1" width="378.0" height="281.0" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">infaisable (prouvé) — 6 pièces, jour 38%, 2 morceaux</text>
+  <polygon points="28.00,255.02 352.00,255.02 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="28.00" y="28.00" width="174.12" height="103.59" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="115.06" y="79.80" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="177.88" y="133.80" width="24.24" height="68.33" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="190.00" y="167.96" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="195.51" y="124.98" width="147.67" height="130.04" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="269.35" y="190.00" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="336.57" y="89.71" width="15.43" height="41.88" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="344.29" y="110.65" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="257.22" y="28.00" width="77.14" height="77.14" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="295.80" y="66.57" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="204.33" y="28.00" width="59.51" height="15.43" fill="#e0dcd6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="234.08" y="35.71" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">storage</text>
+</svg>

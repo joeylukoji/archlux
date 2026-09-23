@@ -1,0 +1,3 @@
+modele,plan_id,valide_avant,valide_apres,deplacement_max_m,temps_ms,seed
+guillotine,1,True,True,0.0,9.06570000370266,17
+chevauchement,2,False,True,1.0,3.7808999986737035,17

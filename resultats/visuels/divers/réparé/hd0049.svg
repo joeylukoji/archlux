@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="772" height="361" viewBox="0 0 772 361">
+  <rect width="772" height="361" fill="#f7f6f3"/>
+  <rect x="1.0" y="1" width="378.0" height="359.4" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">avant — 6 pièces, jour 23%, 6 morceaux</text>
+  <polygon points="28.00,333.35 352.00,333.35 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="28.00" y="65.29" width="314.68" height="184.14" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="185.34" y="157.37" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="28.00" y="251.77" width="53.61" height="16.32" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="54.81" y="259.93" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="214.47" y="261.09" width="137.53" height="72.26" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="283.24" y="297.22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="242.45" y="28.00" width="100.23" height="34.96" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="292.56" y="45.48" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="167.86" y="28.00" width="53.61" height="34.96" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="194.66" y="45.48" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="93.27" y="251.77" width="100.23" height="16.32" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="143.38" y="259.93" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">hallway</text>
+  <rect x="393.0" y="1" width="378.0" height="359.4" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="420.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">après — réparé, déplacement 6.23 m</text>
+  <polygon points="420.00,333.35 744.00,333.35 744.00,28.00 420.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="420.00" y="62.96" width="324.00" height="198.13" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="582.00" y="162.03" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="420.00" y="261.09" width="65.27" height="72.26" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="452.63" y="297.22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="606.47" y="261.09" width="137.53" height="72.26" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="675.24" y="297.22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="634.45" y="28.00" width="109.55" height="34.96" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="689.22" y="45.48" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="420.00" y="28.00" width="214.45" height="34.96" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="527.22" y="45.48" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
+  <rect x="485.27" y="261.09" width="121.21" height="72.26" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="545.87" y="297.22" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">hallway</text>
+</svg>

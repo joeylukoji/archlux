@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "Si vous utilisez ce logiciel, merci de citer la version étiquetée ci-dessous."
+title: "archlux"
+type: software
+abstract: >-
+  Correction géométrique exacte de plans de logement générés, avec substituts
+  d'éclairement sous borne conforme. La géométrie est prouvée ; la performance
+  lumineuse est bornée, jamais confondue avec une preuve. La borne vaut pour
+  l'oracle gelé employé, pas pour un sDA LM-83.
+version: "1.0.0"
+date-released: "2026-09-09"
+license: Apache-2.0
+repository-code: "https://github.com/ORG/archlux"
+url: "https://github.com/ORG/archlux"
+keywords:
+  - floor-plan
+  - daylight
+  - conformal-prediction
+  - frank-wolfe
+  - bim
+authors:
+  - name: "archlux contributors"
+preferred-citation:
+  type: software
+  title: "archlux: geometric legalization of generated floor plans with conformally bounded daylight surrogates"
+  version: "1.0.0"
+  year: 2026
+  url: "https://github.com/ORG/archlux"
+  authors:
+    - name: "archlux contributors"

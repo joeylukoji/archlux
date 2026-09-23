@@ -1,0 +1,93 @@
+site_name: archlux
+docs_dir: docs
+strict: true
+
+theme:
+  name: material
+  language: fr
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers: { python: { paths: [src] } }
+
+nav:
+  - Accueil: index.md
+  - Installation: installation.md
+  - Galerie:
+      - Corriger un plan: galerie/01-corriger-un-plan.md
+      - Comparer deux methodes: galerie/02-comparer-deux-methodes.md
+      - Detecter une infaisabilite: galerie/03-detecter-une-infaisabilite.md
+      - Lire un certificat: galerie/04-lire-un-certificat.md
+      - Diagnostic dual: galerie/05-diagnostic-dual.md
+  - Tutoriels:
+      - Premiers pas: tutoriels/premiers-pas.md
+      - Legalisation performantielle: tutoriels/legalisation-performantielle.md
+      - Calibrer un substitut: tutoriels/calibrer-un-substitut.md
+      - Entrainer un substitut: tutoriels/entrainer-un-substitut.md
+  - Concepts:
+      - Les deux garanties: concepts/deux-garanties.md
+      - Le polytope: concepts/polytope.md
+      - L'oracle partage: concepts/oracle-partage.md
+      - Pourquoi pas une image: concepts/pourquoi-pas-une-image.md
+      - Prediction conforme: concepts/prediction-conforme.md
+  - Formules:
+      - Catalogue: formules/index.md
+      - Ordre relatif: formules/ordre-relatif.md
+      - Polytope: formules/polytope-separe.md
+      - Epigraphe L1: formules/epigraphe-l1.md
+      - Coupes de surface: formules/coupes-surface.md
+      - Pavage exact: formules/pavage.md
+      - Farkas et duaux: formules/farkas.md
+      - Preuve exacte: formules/preuve-exacte.md
+      - Pipeline: formules/pipeline.md
+      - Circulaire: formules/circulaire.md
+      - Substitut analytique: formules/substitut-analytique.md
+      - Split-flux: formules/split-flux.md
+      - Rectilineaire (jalon 6): formules/rectilineaire.md
+      - Apprentissage actif: formules/apprentissage-actif.md
+      - Export BIM: formules/export-bim.md
+      - Banc d'essai: formules/banc-essai.md
+      - Frank-Wolfe: formules/frank-wolfe.md
+      - Jetons: formules/jetons.md
+      - Validation du gradient: formules/validation-gradient.md
+      - Statistique (jalon 5): formules/statistique.md
+      - Bibliographie: formules/sources.md
+  - Reference:
+      - API: reference/index.md
+      - Schema JSON: reference/schema-json.md
+  - Donnees:
+      - Corpus: donnees/index.md
+      - Verite terrain: donnees/verite-terrain.md
+      - Synthetique: donnees/synthetique.md
+      - MSD: donnees/msd.md
+      - Swiss Dwellings: donnees/swiss-dwellings.md
+      - CubiCasa5K: donnees/cubicasa.md
+      - Imputation: donnees/imputation.md
+  - Publication 1.0: publication-1.0.md
+  - Limites: limites.md
+  - Contribuer: contribution.md
+  # Documents contraignants, publies avec le site : une regle d'architecture qu'on ne
+  # peut pas lire en ligne finit par n'etre lue par personne.
+  - Specification:
+      - Architecture: specification/ARCHITECTURE.md
+      - Blueprint detaille: specification/Project_Architecture_Blueprint.md
+      - Conventions de documentation: specification/DOCUMENTATION.md
+      - Jalon 2: specification/MILESTONE-2.md
+      - Jalon 3: specification/MILESTONE-3.md
+      - Jalon 4: specification/MILESTONE-4.md
+      - Jalon 5: specification/MILESTONE-5.md
+      - Jalon 6: specification/MILESTONE-6.md

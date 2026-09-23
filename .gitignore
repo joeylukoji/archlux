@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.benchmarks/
+.coverage
+coverage.xml
+htmlcov/
+
+# Built documentation
+site/
+
+# Data that cannot be redistributed (see docs/donnees/)
+donnees/
+
+# Temporary experiment outputs
+resultats/_tmp_*/
+!resultats/.gitkeep
+
+# Local agent session state
+session_memory.json
+
+# Third-party agent skills: reinstalled from skills-lock.json, not redistributed
+.claude/skills/
+.cursor/skills/
+.agents/skills/
+.claude/settings.local.json

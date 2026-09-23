@@ -1,0 +1,142 @@
+"""Exceptions typees du projet.
+
+Ce module est une **extension** de l'arborescence de ``ARCHITECTURE.md`` §11 : les
+exceptions y sont exigees (§7, « exceptions typees -- jamais ``Exception`` ») sans qu'un
+fichier leur soit assigne. Elles sont isolees ici plutot que dans :mod:`archlux.types`
+pour une raison de dependance : ``Infaisable`` transporte un polytope et un certificat de
+Farkas, objets de la couche ``geom``/``lmo``. Les referencer depuis ``types`` creerait un
+cycle. Ici, les champs sont types en ``object`` et la dependance reste nulle.
+
+``erreurs`` ne depend de **rien** : comme ``types``, il est en amont de toutes les couches.
+"""
+
+from __future__ import annotations
+
+__all__ = [
+    "ArchluxError",
+    "CalibrationVerrouillee",
+    "Infaisable",
+    "InvariantViole",
+    "ModeleModifie",
+    "OrdreIncoherent",
+    "SeparationManquante",
+    "SubstitutInvalide",
+]
+
+
+class ArchluxError(Exception):
+    """Racine de toutes les exceptions du projet.
+
+    Aucun code du projet ne leve ``Exception`` nue ni ne l'attrape.
+    """
+
+
+class OrdreIncoherent(ArchluxError):
+    """L'ordre relatif contient un cycle : ``A`` a gauche de ``B`` a gauche de ``A``.
+
+    Parameters
+    ----------
+    cycle : tuple of str
+        Les identifiants de pieces formant le cycle, dans l'ordre.
+    axe : {"horizontal", "vertical"}
+        L'axe sur lequel le cycle a ete detecte.
+    """
+
+    def __init__(self, cycle: tuple[str, ...], axe: str) -> None:
+        """Retenir le cycle et son axe, et composer le message lisible."""
+        self.cycle = cycle
+        self.axe = axe
+        super().__init__(f"cycle {axe} : {' -> '.join(cycle)}")
+
+
+class SeparationManquante(ArchluxError):
+    """Une paire de pieces n'est separee sur aucun axe : le chevauchement est possible.
+
+    Parameters
+    ----------
+    paire : tuple of str
+        Les deux identifiants de pieces concernes.
+    """
+
+    def __init__(self, paire: tuple[str, str]) -> None:
+        """Retenir la paire de pieces non separee."""
+        self.paire = paire
+        super().__init__(f"aucune separation entre {paire[0]} et {paire[1]}")
+
+
+class Infaisable(ArchluxError):
+    """Le programme ne tient pas dans l'enveloppe : aucun plan valide n'existe.
+
+    L'exception **porte la preuve de l'infaisabilite**, jamais un simple message : un
+    certificat de Farkas identifie le sous-ensemble de contraintes en conflit.
+
+    Parameters
+    ----------
+    certificat_farkas : object
+        Vecteur dual du probleme auxiliaire (``numpy.ndarray``), non type ici pour
+        maintenir ``erreurs`` sans dependance.
+    origines : tuple of str
+        Libelles lisibles des contraintes en conflit, issus de ``Polytope.origines``.
+    """
+
+    def __init__(self, certificat_farkas: object, origines: tuple[str, ...] = ()) -> None:
+        """Retenir le certificat de Farkas et les origines en conflit."""
+        self.certificat_farkas = certificat_farkas
+        self.origines = origines
+        detail = " ; ".join(origines) if origines else "origines non renseignees"
+        super().__init__(f"programme infaisable : {detail}")
+
+
+class InvariantViole(ArchluxError):
+    """Le solveur a rendu une sortie que la verification exacte rejette.
+
+    C'est un **bogue interne**, jamais une entree utilisateur invalide. Il n'est jamais
+    rattrape silencieusement : `ARCHITECTURE.md` interdit de faire confiance au solveur.
+
+    Parameters
+    ----------
+    violations : tuple of str
+        Messages lisibles produits par :func:`archlux.certify.preuve.verifier_exactement`.
+    """
+
+    def __init__(self, violations: tuple[str, ...]) -> None:
+        """Retenir la liste des violations relevees par la verification exacte."""
+        self.violations = violations
+        super().__init__("invariant viole : " + " ; ".join(violations))
+
+
+class CalibrationVerrouillee(ArchluxError):
+    """Acces au jeu de calibration sans jeton emis apres le gel du modele.
+
+    Garde-fou de la seule erreur silencieuse capable d'invalider une publication : un jeu
+    de calibration vu a l'entrainement rend la couverture conforme fausse sans qu'aucun
+    test ne le signale.
+    """
+
+    def __init__(self, detail: str = "jeton absent, invalide, ou antérieur au gel") -> None:
+        """Composer le message de refus d'acces au jeu de calibration."""
+        super().__init__(detail)
+
+
+class ModeleModifie(CalibrationVerrouillee):
+    """Les poids ont changé après ``geler_et_emettre`` : le jeton ne déverrouille plus.
+
+    Sous-classe de :class:`CalibrationVerrouillee` : c'est la même barrière, avec la
+    cause précise (empreinte divergente plutôt que signature invalide).
+    """
+
+    def __init__(self, detail: str = "poids du modèle modifiés après le gel") -> None:
+        """Composer le message d'empreinte de poids divergente."""
+        super().__init__(detail)
+
+
+class SubstitutInvalide(ArchluxError):
+    """Le gradient d'un substitut ne correspond pas a ses differences finies.
+
+    Levee par :func:`archlux.light.validation.valider_gradient`. Un substitut dont le
+    gradient est faux fait converger l'optimiseur vers du bruit, sans erreur visible.
+    """
+
+    def __init__(self, detail: str = "gradient du substitut inexploitable") -> None:
+        """Composer le message de gradient de substitut inexploitable."""
+        super().__init__(detail)

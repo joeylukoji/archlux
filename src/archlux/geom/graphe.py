@@ -1,0 +1,305 @@
+"""Ordre relatif des pièces → graphe de contraintes de séparation.
+
+Traduit « la pièce A est à gauche de la pièce B » en l'inégalité ``x_A + w_A ≤ x_B``.
+
+**Règle fondatrice.** Pour chaque paire de pièces, **au moins une** séparation (gauche,
+droite, dessus, dessous) doit exister. Sans elle, le chevauchement reste possible et
+aucun ajout de contrainte ultérieur ne le rattrape.
+
+Dépendances autorisées : ``types``, ``erreurs``. Rien d'autre (`ARCHITECTURE.md` §5).
+
+Dérivation du jeu entre rectangles, acyclicité et réduction transitive :
+``docs/formules/ordre-relatif.md``.
+"""
+
+from __future__ import annotations
+
+import itertools
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal
+
+import networkx as nx
+
+from archlux.erreurs import OrdreIncoherent, SeparationManquante
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from archlux.types import Plan
+
+__all__ = [
+    "GrapheContraintes",
+    "OrdreRelatif",
+    "construire_graphe",
+    "deduire_ordre",
+    "reduction_transitive",
+]
+
+Axe = Literal["horizontal", "vertical"]
+_AXES: tuple[Axe, ...] = ("horizontal", "vertical")
+
+TOLERANCE_CONTACT = 1e-9
+"""Jeu en deçà duquel deux pièces sont réputées jointives, en mètres (1 nanomètre).
+
+Sans cette tolérance, deux pièces qui se touchent exactement passent pour recouvrantes :
+``1.0 + 3.47`` vaut ``4.470000000000001`` en binaire, pas ``4.47``. Le cas est loin d'être
+rare — il survient dès qu'un mur sépare deux pièces adjacentes, c'est-à-dire partout.
+"""
+
+
+@dataclass(frozen=True, slots=True)
+class OrdreRelatif:
+    """Ordre partiel des pièces sur les deux axes.
+
+    Attributes
+    ----------
+    horizontal : tuple of (str, str)
+        ``(a, b)`` signifie « ``a`` est à gauche de ``b`` ».
+    vertical : tuple of (str, str)
+        ``(a, b)`` signifie « ``a`` est en dessous de ``b`` ».
+    pieces : tuple of str
+        Identifiants concernés, **triés**, pour un parcours déterministe.
+    """
+
+    horizontal: tuple[tuple[str, str], ...]
+    vertical: tuple[tuple[str, str], ...]
+    pieces: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class GrapheContraintes:
+    """Deux graphes orientés acycliques, un par axe.
+
+    Le `dataclass` est gelé, mais un ``DiGraph`` reste mutable : **traiter les deux
+    graphes comme immuables**. :func:`reduction_transitive` rend un nouvel objet plutôt
+    que de modifier celui-ci, et rien dans le projet ne doit ajouter d'arête après coup —
+    la validation d'acyclicité et de séparation a lieu à la construction, une fois.
+    """
+
+    horizontal: nx.DiGraph
+    vertical: nx.DiGraph
+
+    def a_separation(self, a: str, b: str) -> bool:
+        """Dire si la paire ``(a, b)`` est séparée sur au moins un axe.
+
+        Parameters
+        ----------
+        a, b : str
+            Identifiants de pièces.
+
+        Returns
+        -------
+        bool
+            ``True`` si une arête relie ``a`` et ``b`` dans l'un des deux graphes, dans
+            l'un ou l'autre sens.
+
+        Notes
+        -----
+        À interroger sur le graphe **complet**, avant réduction transitive : après
+        réduction, une paire séparée par transitivité n'a plus d'arête directe. C'est
+        licite géométriquement — la contrainte reste impliquée — mais cette méthode
+        répondrait ``False``.
+
+        Complexity
+        ----------
+        O(1) amorti.
+        """
+        return any(
+            graphe.has_edge(a, b) or graphe.has_edge(b, a)
+            for graphe in (self.horizontal, self.vertical)
+        )
+
+    def fermeture(self) -> frozenset[tuple[str, str, str]]:
+        """Fermeture transitive des deux graphes, en triplets ``(axe, a, b)``.
+
+        Returns
+        -------
+        frozenset of (str, str, str)
+            Tous les couples atteignables, par axe. C'est l'information d'ordre réelle,
+            indépendante du fait qu'une arête soit explicite ou impliquée.
+
+        Complexity
+        ----------
+        O(n·m) par axe.
+        """
+        triplets: set[tuple[str, str, str]] = set()
+        for axe in _AXES:
+            cloture = nx.transitive_closure_dag(getattr(self, axe))
+            triplets.update((axe, a, b) for a, b in cloture.edges)
+        return frozenset(triplets)
+
+
+def deduire_ordre(plan: Plan) -> OrdreRelatif:
+    """Extraire l'ordre relatif d'un plan proposé, en comparant les centres.
+
+    C'est ici qu'est appliqué le principe fondateur : **le générateur décide l'ordre**.
+    Cette fonction lit cette décision et ne la remet jamais en cause ; le solveur ne
+    changera ensuite que les dimensions.
+
+    Pour chaque paire, l'axe retenu est celui sur lequel les pièces sont **réellement
+    disjointes**, celui du plus grand jeu si les deux le sont. Ce n'est qu'à défaut —
+    les pièces se chevauchent sur les deux axes, c'est-à-dire le défaut que ``legalize``
+    existe pour corriger — que l'axe du plus grand écart entre centres tranche.
+
+    L'ordre du choix n'est pas une préférence de style. Retenir l'axe du plus grand écart
+    de centres alors que les pièces se recouvrent sur cet axe produit une contrainte que
+    le plan d'origine viole : ``legalize`` déplacerait des murs sur un plan sans défaut.
+
+    Le **sens** de l'arête suit toujours l'ordre des centres, jamais celui des bords :
+    c'est ce qui garantit l'acyclicité, quel que soit l'axe retenu pour chaque paire.
+
+    Parameters
+    ----------
+    plan : Plan
+        Plan proposé, éventuellement invalide.
+
+    Returns
+    -------
+    OrdreRelatif
+        Ordre partiel déduit, ``pieces`` trié, arêtes en ordre déterministe.
+
+    Guarantees
+    ----------
+    - **Acyclique par construction.** Sur chaque axe, l'arête suit l'ordre total de la
+      clé ``(coordonnée du centre, identifiant)`` ; un sous-ensemble d'un ordre total ne
+      peut pas contenir de cycle.
+    - **Toute paire séparée**, puisque chaque paire reçoit exactement une arête.
+
+    Complexity
+    ----------
+    O(n²) comparaisons de centres, n = nombre de pièces.
+
+    Examples
+    --------
+    >>> from archlux.geom.graphe import deduire_ordre
+    >>> from archlux.types import Piece, Plan
+    >>> gauche = Piece(id="A", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0)
+    >>> droite = Piece(id="B", type="sejour", x=5.0, y=0.0, w=1.0, h=1.0)
+    >>> deduire_ordre(Plan((gauche, droite), (), (), ())).horizontal
+    (('A', 'B'),)
+    """
+    par_id = {piece.id: piece for piece in plan.pieces}
+    identifiants = sorted(par_id)
+    horizontal: list[tuple[str, str]] = []
+    vertical: list[tuple[str, str]] = []
+
+    for id_a, id_b in itertools.combinations(identifiants, 2):
+        a, b = par_id[id_a], par_id[id_b]
+        (xa, ya), (xb, yb) = a.centre, b.centre
+        # Jeu entre les deux pièces sur chaque axe : positif si elles sont disjointes.
+        jeu_x = max(b.x - (a.x + a.w), a.x - (b.x + b.w))
+        jeu_y = max(b.y - (a.y + a.h), a.y - (b.y + b.h))
+        if jeu_x >= -TOLERANCE_CONTACT or jeu_y >= -TOLERANCE_CONTACT:
+            horizontale = jeu_x >= jeu_y
+        else:
+            horizontale = abs(xb - xa) >= abs(yb - ya)
+        if horizontale:
+            # Clé (centre, id) : un ordre total, donc aucun cycle possible sur cet axe.
+            horizontal.append((id_a, id_b) if (xa, id_a) < (xb, id_b) else (id_b, id_a))
+        else:
+            vertical.append((id_a, id_b) if (ya, id_a) < (yb, id_b) else (id_b, id_a))
+
+    return OrdreRelatif(
+        horizontal=tuple(horizontal),
+        vertical=tuple(vertical),
+        pieces=tuple(identifiants),
+    )
+
+
+def _graphe_axe(
+    aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe
+) -> nx.DiGraph:
+    """Assembler un graphe orienté acyclique pour un axe, ou lever."""
+    graphe = nx.DiGraph()
+    graphe.add_nodes_from(sorted(noeuds))
+    for a, b in aretes:
+        if a not in graphe or b not in graphe:
+            raise OrdreIncoherent(cycle=(a, b), axe=axe)
+        graphe.add_edge(a, b)
+    if not nx.is_directed_acyclic_graph(graphe):
+        cycle = nx.find_cycle(graphe)
+        raise OrdreIncoherent(cycle=tuple(a for a, _ in cycle), axe=axe)
+    return graphe
+
+
+def construire_graphe(ordre: OrdreRelatif, pieces: Sequence[str]) -> GrapheContraintes:
+    """Assembler les deux graphes orientés et valider l'ordre.
+
+    Parameters
+    ----------
+    ordre : OrdreRelatif
+        Ordre partiel, typiquement issu de :func:`deduire_ordre`.
+    pieces : sequence of str
+        Ensemble **faisant autorité** des pièces attendues. Une arête portant un
+        identifiant absent de cet ensemble est refusée : mieux vaut échouer que
+        contraindre une pièce fantôme.
+
+    Returns
+    -------
+    GrapheContraintes
+        Graphes horizontal et vertical, acycliques, toutes paires séparées.
+
+    Raises
+    ------
+    OrdreIncoherent
+        Un cycle existe sur l'un des axes (« A à gauche de B à gauche de A »), ou une
+        arête désigne une pièce inconnue.
+    SeparationManquante
+        Une paire de pièces n'est séparée sur aucun axe. C'est la seule erreur de ce
+        module qui laisse passer un chevauchement si on l'ignore.
+
+    Guarantees
+    ----------
+    - Géométrique : **exacte**. Si cette fonction rend un graphe, alors tout point
+      satisfaisant ses inégalités est sans chevauchement — à ordre relatif fixé.
+
+    Complexity
+    ----------
+    O(n² + m), m = nombre d'arêtes. Le terme quadratique vient du contrôle de
+    séparation, qui doit examiner toutes les paires.
+    """
+    graphe = GrapheContraintes(
+        horizontal=_graphe_axe(ordre.horizontal, pieces, "horizontal"),
+        vertical=_graphe_axe(ordre.vertical, pieces, "vertical"),
+    )
+    for a, b in itertools.combinations(sorted(pieces), 2):
+        if not graphe.a_separation(a, b):
+            raise SeparationManquante(paire=(a, b))
+    return graphe
+
+
+def reduction_transitive(g: GrapheContraintes) -> GrapheContraintes:
+    """Retirer les arêtes impliquées par transitivité, sans changer la fermeture.
+
+    **Cette étape n'est pas optionnelle.** 15 pièces donnent ~210 contraintes brutes et
+    ~30 après réduction. Le solveur est appelé 50 fois par légalisation performantielle
+    au jalon 3 : le gain se multiplie par 50.
+
+    Parameters
+    ----------
+    g : GrapheContraintes
+        Graphes acycliques, tels que rendus par :func:`construire_graphe`.
+
+    Returns
+    -------
+    GrapheContraintes
+        Nouveaux graphes, de fermeture transitive identique, mêmes nœuds.
+
+    Guarantees
+    ----------
+    - **Aucune information d'ordre n'est perdue** : ``fermeture()`` est inchangée. Les
+      contraintes retirées restent impliquées par celles qui demeurent.
+
+    Complexity
+    ----------
+    O(n·m) par axe (``networkx.transitive_reduction``).
+    """
+    reduits: dict[str, nx.DiGraph] = {}
+    for axe in _AXES:
+        origine: nx.DiGraph = getattr(g, axe)
+        reduit = nx.transitive_reduction(origine)
+        # `transitive_reduction` ne reporte pas les nœuds isolés : une pièce séparée sur
+        # le seul autre axe disparaîtrait du graphe, et le polytope perdrait ses bornes.
+        reduit.add_nodes_from(origine.nodes)
+        reduits[axe] = reduit
+    return GrapheContraintes(horizontal=reduits["horizontal"], vertical=reduits["vertical"])

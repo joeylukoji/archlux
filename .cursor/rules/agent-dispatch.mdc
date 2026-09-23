@@ -1,0 +1,17 @@
+---
+description: Dispatch automatique des skills/agents selon le type de tâche
+alwaysApply: true
+---
+
+# Dispatch agents
+
+Au lancement de chaque tâche, lire `AGENTS.md` et invoquer uniquement les skills concernés (fichiers dans `.cursor/skills/` et `.agents/skills/`).
+
+Séquence minimale :
+
+1. Classer la tâche avec la table de `AGENTS.md`.
+2. Lire le `SKILL.md` de chaque skill retenu avant d'agir.
+3. Respecter `ARCHITECTURE.md`.
+4. Après un diff Python non trivial, enchaîner `review-and-refactor`.
+
+Ne pas charger tous les skills. Ne pas implémenter pendant `request-refactor-plan`.

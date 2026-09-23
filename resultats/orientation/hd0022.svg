@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1556" height="667" viewBox="0 0 1556 667">
+  <rect width="1556" height="667" fill="#f7f6f3"/>
+  <rect x="1.0" y="1.0" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">0° — sDA 75 (+22 %)</text>
+  <polygon points="28.00,299.32 352.00,299.32 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="207.65" y="28.00" width="129.77" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="272.54" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="28.00" y="28.00" width="179.65" height="200.80" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="117.83" y="128.40" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="28.00" y="228.80" width="179.65" height="70.51" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="117.83" y="264.06" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="337.42" y="28.00" width="14.58" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="344.71" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+  <rect x="393.0" y="1.0" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="420.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">45° — sDA 130 (+5 %)</text>
+  <polygon points="420.00,299.32 744.00,299.32 744.00,28.00 420.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="434.58" y="28.00" width="150.84" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="510.00" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="420.00" y="28.00" width="14.58" height="211.26" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="427.29" y="133.63" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="420.00" y="239.26" width="14.58" height="60.06" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="427.29" y="269.29" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="585.42" y="28.00" width="158.58" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="664.71" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+  <rect x="785.0" y="1.0" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="812.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">90° — sDA 153 (+13 %)</text>
+  <polygon points="812.00,299.32 1136.00,299.32 1136.00,28.00 812.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="921.69" y="28.00" width="114.41" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="978.89" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="812.00" y="28.00" width="109.69" height="195.62" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="866.84" y="125.81" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="812.00" y="223.62" width="109.69" height="75.69" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="866.84" y="261.47" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="1036.10" y="28.00" width="99.90" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1086.05" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+  <rect x="1177.0" y="1.0" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="1204.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">135° — sDA 109 (+27 %)</text>
+  <polygon points="1204.00,299.32 1528.00,299.32 1528.00,28.00 1204.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="1383.65" y="28.00" width="73.23" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1420.27" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="1204.00" y="28.00" width="179.65" height="102.40" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1293.83" y="79.20" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="1204.00" y="130.40" width="179.65" height="168.92" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1293.83" y="214.86" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="1456.88" y="28.00" width="71.12" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1492.44" y="163.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+  <rect x="1.0" y="340.3" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="357.3" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">180° — sDA 56 (+30 %)</text>
+  <polygon points="28.00,638.63 352.00,638.63 352.00,367.32 28.00,367.32" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="207.65" y="367.32" width="129.77" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="272.54" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="28.00" y="367.32" width="179.65" height="114.63" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="117.83" y="424.63" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="28.00" y="481.95" width="179.65" height="156.69" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="117.83" y="560.29" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="337.42" y="367.32" width="14.58" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="344.71" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+  <rect x="393.0" y="340.3" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="420.0" y="357.3" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">225° — sDA 70 (+29 %)</text>
+  <polygon points="420.00,638.63 744.00,638.63 744.00,367.32 420.00,367.32" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="599.65" y="367.32" width="129.77" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="664.54" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="420.00" y="367.32" width="179.65" height="102.40" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="509.83" y="418.52" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="420.00" y="469.71" width="179.65" height="168.92" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="509.83" y="554.17" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="729.42" y="367.32" width="14.58" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="736.71" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+  <rect x="785.0" y="340.3" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="812.0" y="357.3" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">270° — sDA 85 (+18 %)</text>
+  <polygon points="812.00,638.63 1136.00,638.63 1136.00,367.32 812.00,367.32" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="925.73" y="367.32" width="109.68" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="980.57" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="812.00" y="367.32" width="113.73" height="189.47" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="868.87" y="462.05" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="812.00" y="556.79" width="113.73" height="81.85" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="868.87" y="597.71" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="1035.42" y="367.32" width="100.58" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1085.71" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+  <rect x="1177.0" y="340.3" width="378.0" height="325.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="1204.0" y="357.3" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">315° — sDA 101 (+21 %)</text>
+  <polygon points="1204.00,638.63 1528.00,638.63 1528.00,367.32 1204.00,367.32" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="1383.65" y="367.32" width="129.77" height="271.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1448.54" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
+  <rect x="1204.00" y="367.32" width="179.65" height="211.26" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1293.83" y="472.95" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">kitchen</text>
+  <rect x="1204.00" y="578.58" width="179.65" height="60.06" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1293.83" y="608.61" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bedroom</text>
+  <rect x="1513.42" y="367.32" width="14.58" height="271.32" fill="#dcdce6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="1520.71" y="502.98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">office</text>
+</svg>

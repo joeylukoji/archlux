@@ -1,0 +1,331 @@
+r"""Interface publique : une seule fonction, un paramètre qui change tout.
+
+``objective=None`` donne la légalisation classique ; un ``Substitut`` donne la
+légalisation performantielle. **Une fonction, un paramètre.**
+
+Pipeline classique
+------------------
+1. Déduire l'ordre (le générateur décide l'ordre).
+2. Construire le polytope (séparations linéaires).
+3. Étendre par l'épigraphe L1 (Bertsimas–Tsitsiklis §1.3).
+4. Minimiser :math:`\\sum e_i` sous coupes de surface (Kelley / AM-GM).
+5. Dévectoriser, revérifier **indépendamment**, attacher le certificat.
+
+Chaîne complète, hypothèses et contre-indications : ``docs/formules/pipeline.md``.
+"""
+
+from __future__ import annotations
+
+from dataclasses import replace
+
+import numpy as np
+
+from archlux.certify.dual import traduire_duaux
+from archlux.certify.preuve import verifier_exactement
+from archlux.erreurs import Infaisable, InvariantViole
+from archlux.geom.graphe import deduire_ordre
+from archlux.geom.pavage import deduire_trame, etendre_pavage
+from archlux.geom.polytope import (
+    Polytope,
+    construire_polytope,
+    devectoriser,
+    etendre_ecarts_l1,
+    figer_contacts,
+    vectoriser,
+)
+from archlux.geom.rectilineaire import PieceRectilineaire, etendre_fusions
+from archlux.light.protocole import Baies, Substitut
+from archlux.lmo.coupes import Coupe, coupe_surface, resoudre_avec_surfaces
+from archlux.lmo.solveur import SolutionLP
+from archlux.solve.frank_wolfe import frank_wolfe
+from archlux.types import Certificat, Contexte, Plan
+
+__all__ = ["gradient_distance", "legalize"]
+
+_DUAL_SEUIL = 1e-9
+
+
+def gradient_distance(x_propose: np.ndarray) -> np.ndarray:
+    r"""Vecteur de coûts de l'épigraphe L1 : zéros sur :math:`x`, uns sur :math:`e`.
+
+    .. math::
+
+        c = (0,\\ldots,0, 1,\\ldots,1) \\in \\mathbb{R}^{2n},
+        \\qquad \\min\\, c^\\top (x,e) = \\min \\sum_i e_i.
+
+    ``x_propose`` fixe uniquement la dimension :math:`n` ; les :math:`\\hat{x}_i`
+    entrent dans les contraintes d':func:`etendre_ecarts_l1`, pas dans ``c``.
+
+    Parameters
+    ----------
+    x_propose : numpy.ndarray
+        Plan proposé, vectorisé, dimension n.
+
+    Returns
+    -------
+    numpy.ndarray
+        Vecteur ``c`` de dimension ``2n``.
+
+    Notes
+    -----
+    Épigraphe : ``docs/formules/epigraphe-l1.md``.
+    """
+    n_var = int(x_propose.shape[0])
+    couts = np.zeros(2 * n_var, dtype=float)
+    couts[n_var:] = 1.0
+    return couts
+
+
+def _origines_actives(sol: SolutionLP, origines: tuple[str, ...]) -> tuple[str, ...]:
+    """Libellés dont le certificat de Farkas est non nul."""
+    certificat = sol.certificat_farkas
+    if certificat is None:
+        return origines
+    return tuple(
+        libelle
+        for libelle, poids in zip(origines, certificat, strict=True)
+        if abs(float(poids)) > _DUAL_SEUIL
+    )
+
+
+def _coupes_surface_plan(plan: Plan, ctx: Contexte) -> list[Coupe] | None:
+    """Tangentes AM-GM au point légalisé, pour que Frank-Wolfe ne descende pas sous ``a_min``."""
+    coupes: list[Coupe] = []
+    for piece in plan.pieces:
+        a_min = ctx.referentiel.a_min(piece.type)
+        if a_min <= 0.0 or piece.w <= 0.0 or piece.h <= 0.0:
+            continue
+        coupes.append(coupe_surface(piece.w, piece.h, a_min, piece=piece.id))
+    return coupes or None
+
+
+def _duaux_traduits(
+    duaux: np.ndarray | None, poly: Polytope
+) -> tuple[tuple[str, float], ...]:
+    """Apparier les duaux des lignes de ``A`` avec ``poly.origines``.
+
+    ``duaux`` doit provenir d'un LP résolu sur **ce** polytope : l'appariement est
+    positionnel, et ``origines`` ne couvre que ``A``, jamais ``A_eq`` ni les coupes.
+    """
+    if duaux is None:
+        return ()
+    return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL)
+
+
+def legalize(
+    plan: Plan,
+    ctx: Contexte,
+    *,
+    objective: Substitut | None = None,
+    budget: float | None = None,
+    trace: bool = False,
+    fusions: tuple[PieceRectilineaire, ...] = (),
+    pavage: bool = False,
+    budget_reparation: int = 4,
+) -> Plan:
+    """Corriger un plan vers le plan valide le plus proche, ou le plus performant.
+
+    Avec ``objective=None``, minimise le déplacement L1 des variables de décision.
+    Un ``Substitut`` enchaîne Frank-Wolfe depuis ce point, sans sortir du polytope.
+
+    Parameters
+    ----------
+    plan : Plan
+        Plan proposé, éventuellement invalide. Une pièce en L doit déjà être
+        décomposée en sous-rectangles (:func:`~archlux.geom.rectilineaire.decomposer`).
+    ctx : Contexte
+        Structure porteuse, orientation, contour, référentiel.
+    objective : Substitut or None, optional
+        Objectif à maximiser. ``None`` = proximité géométrique.
+    budget : float or None, optional
+        En mode classique, plafond de chaque écart e_i. En mode performantiel,
+        boîte autour du point L1 (norme infinie), en plus du plafond L1.
+    trace : bool, optional
+        Si vrai, attache la trace Frank-Wolfe à ``resultat.trace`` (non sérialisée).
+    fusions : tuple of PieceRectilineaire, optional
+        Égalités de solidarisation ajoutées à ``A_eq`` avant le LP.
+    pavage : bool, optional
+        Imposer que l'union des pièces **pave exactement** le contour. Sans cela,
+        les séparations du polytope étant des inégalités, un plan troué reste le
+        point le plus proche de lui-même : l'optimum L1 le laisse tel quel et la
+        vérification exacte le rejette. Avec, un jour cesse d'être représentable.
+
+        À activer dès que l'entrée peut porter un **jour** — c'est le cas des
+        sorties de modèles génératifs. Mesuré sur 4 796 corruptions de 300 plans
+        MSD réels (`resultats/j7_reparation.md`) : la réparation passe de 35,9 %
+        à 93,0 %, et sur les jours seuls de 10,0 % à 97,6 %.
+
+        Exige que la trame du plan proposé soit récupérable
+        (:func:`~archlux.geom.pavage.deduire_trame`) ; sinon ``InvariantViole``
+        nomme les cellules fautives. Défaut ``False`` : contrat 1.x inchangé.
+    budget_reparation : int, optional
+        Nombre de crans de réparation accordés à la récupération de trame, passé
+        tel quel à :func:`~archlux.geom.pavage.deduire_trame`. Sans effet si
+        ``pavage`` est faux.
+
+        Le défaut ``4`` est calé sur des plans **corrompus**, où la faute est une
+        cote fausse et se résorbe en un ou deux crans. Une sortie de modèle
+        génératif relève d'un autre régime : ses pièces ne partagent aucune ligne,
+        la trame compte des dizaines de cellules et le budget devient le facteur
+        limitant. ``0`` interdit toute réparation et n'accepte qu'une trame déjà
+        cohérente ; un appelant qui doit préserver le programme pièce par pièce
+        s'en sert pour refuser plutôt que d'absorber une pièce dans sa voisine.
+
+    Returns
+    -------
+    Plan
+        Plan valide portant son ``certificat``.
+
+    Raises
+    ------
+    OrdreIncoherent, SeparationManquante
+        Propagées depuis la construction du graphe.
+    Infaisable
+        Le programme ne tient pas dans l'enveloppe. L'exception porte ``origines`` et,
+        lorsque le conflit est imputable à des lignes de ``A``, ``certificat_farkas``.
+        Levée avant le LP si ``largeur_min`` excède déjà l'enveloppe.
+    InvariantViole
+        Sortie du solveur rejetée par la vérification exacte, ou statut LP inattendu.
+        Le cas le plus fréquent est une surface minimale encore violée après épuisement
+        des coupes de Kelley : le LP se dit « optimal », la vérification exacte non.
+    TypeError
+        ``objective`` fourni n'implémente pas :class:`~archlux.light.protocole.Substitut`.
+
+    Guarantees
+    ----------
+    - Géométrique : **exacte**. ``resultat.certificat.geometrie.valide`` est
+      revérifié par :func:`archlux.certify.preuve.verifier_exactement` avant
+      retour — le solveur n'est jamais cru sur parole.
+    - Performance : **aucune** en mode classique (``objective is None``). Avec un
+      substitut, ``performance`` reste ``None`` ici : attacher la borne via
+      :func:`archlux.certify.borne.construire_borne` (``api`` n'importe pas ``uq``).
+
+    Complexity
+    ----------
+    Mode classique : un LP par itération de Kelley, au plus
+    ``MAX_COUPES_PAR_PIECE`` par pièce, < 20 ms pour 15 pièces.
+    Mode performantiel : jusqu'à 50 LP à chaud, < 500 ms
+    (`ARCHITECTURE.md` §9).
+
+    Notes
+    -----
+    Pipeline et sources : ``docs/formules/pipeline.md``.
+
+    Examples
+    --------
+    >>> from archlux.types import (
+    ...     Contexte, Orientation, Piece, Plan, Referentiel, Structure,
+    ... )
+    >>> plan = Plan(
+    ...     pieces=(
+    ...         Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+    ...         Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+    ...     ),
+    ...     murs=(),
+    ...     ouvertures=(),
+    ...     contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
+    ... )
+    >>> ctx = Contexte(
+    ...     structure=Structure(murs_porteurs=()),
+    ...     orientation=Orientation(deg=0.0),
+    ...     contour=plan.contour,
+    ...     referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+    ... )
+    >>> q = legalize(plan, ctx)
+    >>> q.certificat.geometrie.valide
+    True
+    """
+    if objective is not None and not isinstance(objective, Substitut):
+        raise TypeError(
+            "objective doit implémenter archlux.light.protocole.Substitut"
+        )
+
+    ordre = deduire_ordre(plan)
+    poly = construire_polytope(ordre, ctx)
+    for piece_l in fusions:
+        poly = etendre_fusions(poly, piece_l)
+    if pavage:
+        # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
+        # du plan propose n'est pas recuperable — echec explicite, pas silencieux.
+        poly = etendre_pavage(
+            poly, deduire_trame(plan, ctx, budget_reparation=budget_reparation)
+        )
+    x_ref = vectoriser(plan, poly.index)
+    poly_l1 = etendre_ecarts_l1(poly, x_ref)
+    if budget is not None:
+        n_geo = len(poly.index)
+        bornes = tuple(poly_l1.bornes[:n_geo]) + tuple(
+            (0.0, float(budget)) for _ in range(n_geo)
+        )
+        poly_l1 = replace(poly_l1, bornes=bornes)
+
+    sol = resoudre_avec_surfaces(
+        poly_l1,
+        gradient_distance(x_ref),
+        ctx,
+        plan.pieces,
+        duaux=True,
+    )
+    if sol.statut == "infaisable":
+        raise Infaisable(
+            certificat_farkas=sol.certificat_farkas,
+            origines=_origines_actives(sol, poly_l1.origines),
+        )
+    if sol.statut != "optimal":
+        raise InvariantViole((f"statut LP inattendu : {sol.statut}",))
+
+    corrige = replace(
+        devectoriser(sol.x, plan, poly_l1.index),
+        contour=ctx.contour,
+    )
+    preuve = verifier_exactement(corrige, ctx, reference=plan)
+    if not preuve.valide:
+        raise InvariantViole(preuve.violations)
+    # sol a été résolu sur poly_l1 : les duaux alignent poly_l1.A / origines, pas poly.
+    duaux = _duaux_traduits(sol.duaux, poly_l1)
+    if objective is None:
+        return replace(
+            corrige,
+            certificat=Certificat(geometrie=preuve, performance=None, duaux=duaux),
+        )
+
+    x0 = vectoriser(corrige, poly.index)
+    poly_fw = figer_contacts(poly, x0)
+    resultat = frank_wolfe(
+        poly_fw,
+        objective,
+        ctx.orientation,
+        x0,
+        # La fenestration ne fait pas partie du vecteur de decision : elle est
+        # constante pendant l'optimisation et se transmet telle quelle. Sans elle,
+        # le substitut ne voit que des rectangles et ne peut rien predire de l'
+        # eclairement reel (`docs/formules/jetons.md`).
+        baies=Baies(murs=corrige.murs, ouvertures=corrige.ouvertures),
+        budget=budget,
+        coupes=_coupes_surface_plan(corrige, ctx),
+        pieces=corrige.pieces,
+        ctx=ctx,
+    )
+    performant = replace(
+        devectoriser(resultat.x, corrige, poly.index),
+        contour=ctx.contour,
+    )
+    preuve_fw = verifier_exactement(performant, ctx, reference=plan)
+    if not preuve_fw.valide:
+        raise InvariantViole(preuve_fw.violations)
+    # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont
+    # les seuls appariables avec poly_fw.origines. À défaut, on garde ceux de la passe
+    # L1 — ils décrivent un autre polytope, mais sont au moins étiquetés correctement.
+    # Attention : figer_contacts a déplacé les lignes saturées dans A_eq, qui n'est pas
+    # dualisée ; ce diagnostic est donc souvent vide (voir lmo.solveur.resoudre).
+    duaux_fw = duaux
+    if resultat.duaux is not None:
+        duaux_fw = _duaux_traduits(resultat.duaux, poly_fw)
+    return replace(
+        performant,
+        certificat=Certificat(
+            geometrie=preuve_fw, performance=None, duaux=duaux_fw
+        ),
+        trace=resultat.trace if trace else None,
+    )
+

@@ -1,0 +1,110 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "archlux"
+version = "1.0.0"
+description = "Corriger un plan genere vers la validite geometrique en preservant sa performance lumineuse."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "archlux" }]
+
+# NOYAU : aucune dependance d'apprentissage. Voir ARCHITECTURE.md §5.
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "networkx>=3.2",
+    "shapely>=2.0",
+    "ortools>=9.8",
+    "structlog>=24.1",
+]
+
+[project.optional-dependencies]
+# torch n'apparait QUE dans cet extra. Le noyau ne doit jamais l'importer.
+appris = ["torch>=2.2"]
+ml = ["torch>=2.2"]
+sim = []  # (Radiance) hors chemin critique ; la CI utilise SimulateurExact
+bim = ["ifcopenshell>=0.7"]
+stats = []  # scipy déjà dans le noyau ; extra réservé aux outils optionnels du banc
+dev = [
+    "pytest>=8.0",
+    "pytest-benchmark>=4.0",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "interrogate>=1.7",
+]
+docs = ["mkdocs>=1.6", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/archlux"]
+
+[tool.pytest.ini_options]
+# benchmarks/ est inclus : sans lui, `pytest -m budget` de la CI ne collecte rien et le
+# job « budgets » passe au vert sans avoir rien mesuré.
+testpaths = ["tests", "benchmarks"]
+# Rend `tests.proprietes.strategies` importable : les stratégies Hypothesis sont
+# partagées entre jalons, elles ne peuvent pas vivre dans un seul fichier de test.
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = [
+    "budget: contrat de performance du ARCHITECTURE.md §9 (echec = build casse)",
+    "reference: cas de reference geles, compares octet a octet",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "D", "ANN", "RUF"]
+ignore = [
+    "D203",
+    "D213",
+    # D401 impose l'impératif anglais et signale tout infinitif français comme fautif.
+    # `DOCUMENTATION.md` §4 exige « l'impératif ou l'indicatif présent » en français :
+    # la règle mesure ici la mauvaise langue. Le gabarit reste vérifié en revue.
+    "D401",
+    # RUF002 signale la typographie mathématique des docstrings (`−`, `≥`, `α`, `θ`).
+    # C'est la notation employée par `ARCHITECTURE.md` lui-même (« couverture ≥ 1−α ») ;
+    # la remplacer par de l'ASCII dégraderait la documentation du projet.
+    # RUF001 reste actif : l'ambiguïté dans du code, elle, est un vrai risque.
+    "RUF002",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "ANN"]
+"experiences/*" = ["D", "ANN"]
+"scripts/*" = ["D", "ANN"]
+# `json_io` est la frontière avec des données non typées : `Any` y décrit exactement ce
+# qui entre, une valeur JSON quelconque. Le typage reprend ses droits dès la sortie des
+# fonctions, qui rendent toutes des types du modèle.
+"src/archlux/io/json_io.py" = ["ANN401"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.mypy]
+# Pas de `python_version` épinglé : les stubs de numpy utilisent la syntaxe `type` de
+# 3.12, et forcer 3.11 fait échouer mypy sur numpy avant d'avoir analysé une seule ligne
+# du projet. La compatibilité 3.11 est couverte par la matrice pytest de la CI.
+files = ["src"]
+strict = true
+warn_unreachable = true
+disallow_any_explicit = false
+
+[[tool.mypy.overrides]]
+module = ["ortools.*", "networkx.*", "shapely.*", "scipy.*", "torch.*"]
+ignore_missing_imports = true
+
+[tool.interrogate]
+fail-under = 95
+exclude = ["tests", "experiences", "benchmarks"]
+ignore-nested-functions = true
+
+[tool.coverage.run]
+source = ["src/archlux"]
