@@ -1,6 +1,6 @@
 """Exact guarantees under a context that actually constrains the plan (PLAN.md 0.8).
 
-The output of ``legalize`` is checked by an **independent** checker written here, never
+The output of ``legalize`` is checked by the **independent** checker of ``tests/checkers.py``, never
 by ``certify``: re-checking the proof with itself is precisely the blind spot that let a
 tautological load-bearing check through (AUDIT.md §3 n°1).
 
@@ -18,59 +18,17 @@ from archlux.erreurs import InvariantViole
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.types import Contexte, Plan
+from tests import checkers
 from tests.proprietes.strategies import realistic_scenarios
 
-_TOL = 1e-6
 # One failure per test, so that ``xfail(raises=...)`` sees a plain exception rather than
 # an ExceptionGroup of several distinct bugs.
 _SETTINGS = settings(max_examples=60, deadline=None, derandomize=True, report_multiple_bugs=False)
 
 
-def _outline_area(ctx: Contexte) -> float:
-    xs = [x for x, _ in ctx.contour]
-    ys = [y for _, y in ctx.contour]
-    return (max(xs) - min(xs)) * (max(ys) - min(ys))
-
-
 def _independent_violations(result: Plan, ctx: Contexte) -> list[str]:
-    """Tiling, minimum areas and load-bearing walls, checked from coordinates only.
-
-    The outline is the axis-aligned rectangle of the test context; rooms are rectangles.
-    Pairwise disjoint rooms whose areas add up to the outline area tile it exactly.
-    """
-    violations: list[str] = []
-    rooms = result.pieces
-
-    for i, a in enumerate(rooms):
-        for b in rooms[i + 1 :]:
-            dx = min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
-            dy = min(a.y + a.h, b.y + b.h) - max(a.y, b.y)
-            if dx > _TOL and dy > _TOL:
-                violations.append(f"{a.id} overlaps {b.id}")
-    total = sum(room.w * room.h for room in rooms)
-    if abs(total - _outline_area(ctx)) > _TOL:
-        violations.append(f"rooms cover {total:.6f} m² of a {_outline_area(ctx):.6f} m² outline")
-
-    for room in rooms:
-        minimum = ctx.referentiel.a_min(room.type)
-        if room.w * room.h < minimum - _TOL:
-            violations.append(f"{room.id}: area {room.w * room.h:.6f} < {minimum:.6f}")
-
-    for wall in ctx.structure.murs_porteurs:
-        (xa, ya), (xb, yb) = wall.a, wall.b
-        vertical, horizontal = abs(xa - xb) < _TOL, abs(ya - yb) < _TOL
-        assert vertical or horizontal, f"checker only handles axis-aligned walls: {wall}"
-        for room in rooms:
-            x0, x1, y0, y1 = room.x, room.x + room.w, room.y, room.y + room.h
-            if vertical:
-                crosses = x0 + _TOL < xa < x1 - _TOL
-                overlap = min(y1, max(ya, yb)) - max(y0, min(ya, yb))
-            else:
-                crosses = y0 + _TOL < ya < y1 - _TOL
-                overlap = min(x1, max(xa, xb)) - max(x0, min(xa, xb))
-            if crosses and overlap > _TOL:
-                violations.append(f"{room.id} crosses load-bearing wall {wall.id}")
-    return violations
+    """Details of the violations found by the shared independent checker."""
+    return [violation.detail for violation in checkers.violations(result, ctx)]
 
 
 @_SETTINGS

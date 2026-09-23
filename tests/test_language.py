@@ -19,6 +19,11 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/_version.py",
     "src/archlux/tolerances.py",
     "tests/test_language.py",
+    "tests/checkers.py",
+    "tests/unites/test_svg.py",
+    "benchmarks/guarantees/scenarios.py",
+    "benchmarks/guarantees/measure.py",
+    "benchmarks/guarantees/test_scenarios.py",
     "tests/docs/test_examples.py",
     "tests/proprietes/test_realistic_guarantees.py",
     "tests/unites/test_tolerances.py",
@@ -46,39 +51,37 @@ _ACCENTED = re.compile(
     + chr(0x178)
     + "]"
 )
+_WORDS = (
+    "l" + "e",
+    "l" + "a",
+    "l" + "es",
+    "d" + "es",
+    "u" + "ne",
+    "e" + "st",
+    "s" + "ont",
+    "p" + "our",
+    "a" + "vec",
+    "d" + "ans",
+    "s" + "ans",
+    "m" + "ais",
+    "d" + "onc",
+    "q" + "ui",
+    "q" + "ue",
+    "p" + "as",
+    "s" + "ur",
+    "a" + "ux",
+    "d" + "u",
+    "c" + "ette",
+    "l" + "eur",
+    "f" + "ait",
+    "d" + "e",
+    "e" + "t",
+    "u" + "n",
+)
+# Lower case or capitalized (`et`, `Et`), never all capitals: `ET` is the usual alias of
+# xml.etree.ElementTree, not the French conjunction.
 _FRENCH_WORDS = re.compile(
-    r"\b("
-    + "|".join(
-        (
-            "l" + "e",
-            "l" + "a",
-            "l" + "es",
-            "d" + "es",
-            "u" + "ne",
-            "e" + "st",
-            "s" + "ont",
-            "p" + "our",
-            "a" + "vec",
-            "d" + "ans",
-            "s" + "ans",
-            "m" + "ais",
-            "d" + "onc",
-            "q" + "ui",
-            "q" + "ue",
-            "p" + "as",
-            "s" + "ur",
-            "a" + "ux",
-            "d" + "u",
-            "c" + "ette",
-            "l" + "eur",
-            "f" + "ait",
-            "d" + "e",
-            "e" + "t",
-            "u" + "n",
-        )
-    )
-    + r")\b",
-    re.IGNORECASE,
+    r"\b(?:" + "|".join(f"[{w[0]}{w[0].upper()}]{w[1:]}" for w in _WORDS) + r")\b"
 )
 _CODE_OR_PATH = re.compile(r"`[^`]*`|[\w./-]+\.(?:md|py|json|csv|toml|yml)\b")
 _LATIN_CITATION = re.compile(r"\bet al\.")
@@ -113,4 +116,6 @@ def test_the_checker_detects_french() -> None:
     assert not _french_markers("The solver returns a valid plan.")
     assert not _french_markers("reads `docs/tutoriels/premiers-pas.md` again")
     assert _french_markers("def test_l" + "e_certificat_affiche_l" + "a_version() -> None:")
+    assert not _french_markers("import xml.etree.ElementTree as ET")
+    assert _french_markers("E" + "t l" + "e reste")
     assert not _french_markers("Fannjiang et al. (2022) use a 12 m " + chr(0xD7) + " 9 m grid.")

@@ -8,6 +8,16 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 1 (in progress)
+
+#### Added
+- `export.svg` draws walls: load-bearing walls thick and dark (class
+  `wall-load-bearing`), other walls thin and grey (class `wall`). A room crossing a
+  load-bearing wall is now visible. First tests of `export.svg` (it had none).
+- `benchmarks/guarantees/`: a before/after benchmark of the exact guarantees, measured by
+  the independent checker of `tests/checkers.py` on 200 deterministic scenarios and five
+  modes; it counts false certificates (plans certified valid that break a guarantee).
+
 ### Remediation — PLAN.md phase 0 (new entries are written in English)
 
 #### Changed
