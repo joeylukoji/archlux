@@ -596,7 +596,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | En cours | | Lot 1.1 (murs porteurs) terminé : 0 certificat mensonger au banc. Lot suivant : 1.2 (surfaces minimales en mode performance). |
+| 1 | En cours | | Lots 1.1 (murs porteurs) et 1.2 (surfaces en mode performance) terminés : 0 certificat mensonger, mode performance 200/200 au banc. Lot suivant : 1.3 (`Daylight`). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |
