@@ -99,7 +99,7 @@ area. That is what happened until 0.10 (AUDIT.md §3 n°6).
 
 Frank-Wolfe therefore works on an **inner** approximation
 (`lmo.coupes.inner_area_constraints`). Around the start \((w_0, h_0)\), take nodes
-\(w_k = f_k w_0\), \(f_k = 1.25^k\) for \(k = -6, \dots, 6\) (about 0.26 to 3.8), and
+\(w_k = f_k w_0\), \(f_k = 1.1^k\) for \(k = -24, \dots, 24\) (about 0.10 to 9.85), and
 \(h_k = a / w_k\). Nodes are not filtered by the variable bounds (the region is
 intersected with them anyway): filtering froze rooms whose height a contact had fixed.
 Keep
@@ -124,11 +124,18 @@ convex combination of such points, keeps the minimum area.
 **Cost of the approximation.** Between two nodes of ratio \(r = w_{k+1}/w_k\), the
 chord asks for at most \(\frac{(r-1)^2}{4r}\) more area than the minimum (maximum of
 \(w\,\ell(w)/a - 1\), reached at the midpoint \((w_k + w_{k+1})/2\) of the nodes). With
-\(r = 1.25\) everywhere this is a uniform +1.25 %, checked numerically. This is the
-price of keeping the domain linear; the other price is the spread, since a room cannot
-change its aspect ratio by more than about 15. A single corner \(w \ge w_0, h \ge h_0\) would have been
-sound too, but it freezes the shape of a room whose area is tight; the chords let it
-trade width for height within the spread.
+\(r = 1.1\) everywhere this is a uniform +0.23 %. The other price is the spread: a room's
+width stays between about 0.10 and 9.85 times its start.
+
+Measured effect on optimization, 200 benchmark scenarios, against a reference grid of
+235 nodes (ratio 1.02): the default grid reaches a median 0.9985 of the reference gain,
+and at least 0.95 of it in 96 % of the scenarios, for +4 ms median per call. A coarser
+grid (ratio 1.25, 13 nodes) reached 0.95 in only 81 % of them. The remaining outliers do
+not decrease monotonically with finer grids: they come from the path Frank-Wolfe takes
+on a non-concave objective, not from the approximation.
+
+A single corner \(w \ge w_0, h \ge h_0\) would have been sound too, but it freezes the
+shape of a room whose area is tight; the chords let it trade width for height.
 
 Since Frank-Wolfe no longer needs tangent cuts, its LP calls keep the warm start
 (the cuts used to disable it, AUDIT.md Q-C2).

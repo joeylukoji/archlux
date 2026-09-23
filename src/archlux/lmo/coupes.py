@@ -450,12 +450,14 @@ def resoudre_avec_surfaces(
         courant = solution.x
 
 
-INNER_AREA_SPREAD: tuple[float, ...] = tuple(1.25**k for k in range(-6, 7))
+INNER_AREA_SPREAD: tuple[float, ...] = tuple(1.1**k for k in range(-24, 25))
 """Widths, relative to the start, of the hyperbola points joined by chords.
 
-A geometric sequence of ratio 1.25 from about 0.26 to 3.8: every chord then asks for the
-same extra area, (1.25 - 1)^2 / (4 * 1.25) = 1.25 %, and a room can change its aspect
-ratio by a factor of about 15 before the approximation stops it."""
+A geometric sequence of ratio 1.1, from about 0.10 to 9.85 times the start width: every
+chord asks for the same extra area, (1.1 - 1)^2 / (4 * 1.1) = 0.23 %. Measured on the
+200 benchmark scenarios against a 235-node reference (ratio 1.02): median 0.9985 of the
+reference gain, at least 0.95 of it in 96 % of scenarios, for +4 ms median; the coarser
+1.25-ratio grid reached 0.95 in only 81 % of them."""
 
 
 def inner_area_constraints(

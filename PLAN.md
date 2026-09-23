@@ -242,11 +242,14 @@ minimales (cordes de l'hyperbole, `lmo.coupes.inner_area_constraints`) : tout it
 Frank-Wolfe respecte toutes les surfaces, par construction. Banc : mode performance
 33 → **200/200** (mur plein) et 41 → **200/200** (mur partiel). Le démarrage à chaud du
 LP est rétabli (plus de coupes tangentes), avec un budget de 50 ms sur 500.
-**Coût mesuré**, sur les 33 scénarios qui réussissaient déjà avant : objectif identique en
-médiane (rapport 1,0000), gain médian sur la légalisation classique de 4,3 % → 3,9 %, pire
-cas −12 %, meilleur +2 %. Le repli « rendre le plan classique au lieu de lever » prévu
-ci-dessous n'est plus nécessaire tant que le banc reste à 0 refus `refused_invariant` en
-mode performance.
+**Coût mesuré après revue** (grille de raison 1,1, 49 nœuds) : (a) sur les 33 scénarios qui
+réussissaient avant le lot, gain médian sur la légalisation classique 4,3 % → 4,6 %,
+objectif après/avant entre 0,99 et 1,02 ; (b) sur les 200 scénarios, face à une grille de
+référence de 235 nœuds : médiane 0,9985 du gain de référence, ≥ 0,95 dans 96 % des cas,
++4 ms. La première version (5 nœuds filtrés par les bornes) perdait tout gain dans 7 cas
+sur 120 : la revue l'a trouvé. Le repli « rendre le plan classique au lieu de lever »
+prévu ci-dessous n'est plus nécessaire tant que le banc reste à 0 refus
+`refused_invariant` en mode performance.
 
 ### 1.3 `Daylight` conforme au protocole (§3 n°3)
 

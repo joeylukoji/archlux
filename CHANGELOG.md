@@ -38,8 +38,10 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   performance mode). It now works on an **inner** polyhedral approximation
   (`lmo.coupes.inner_area_constraints`: chords of the hyperbola around the start),
   included in `{w h >= a}`: every iterate keeps every minimum area. Nodes follow
-  1.25^k, k = -6..6, so each chord asks for at most (r-1)^2/(4r) = 1.25 % of extra
-  area, and a room can change its aspect ratio by a factor of about 15.
+  1.1^k, k = -24..24 (width 0.10 to 9.85 times the start), so each chord asks for at
+  most (r-1)^2/(4r) = 0.23 % of extra area. Against a 235-node reference grid on the
+  200 benchmark scenarios: median 0.9985 of the reference gain, >= 0.95 of it in 96 %
+  of scenarios, +4 ms median.
 - After review: nodes are no longer filtered by the variable bounds, which froze the
   width of a room whose height a contact had fixed (no gain in 7 of 120 scenarios); a
   start below a minimum area by more than the proof tolerance is refused.
