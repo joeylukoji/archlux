@@ -213,6 +213,17 @@ dans `benchmarks/guarantees/README.md`. Référence (`baseline`, révision `95ba
   non-régression sur la grille 5×3 avec un porteur à x = 6 (le cas mesuré dans l'audit).
 - **Doc** : corriger `types.py:92-93` et l'ADR-7.
 
+**État du lot 1.1 : terminé (2026-09-23).** Contraintes de côté (inégalités, pas
+égalités : ADR-7 réécrit), preuve géométrique réelle, murs obliques refusés
+(`UnsupportedInput`). Banc : certificats mensongers 35 → **0** en mode performance ;
+mode « mur partiel + une faute » 196/200. Revue `review-and-refactor` faite ; ses
+3 points majeurs et 10 mineurs sont corrigés. Suites identifiées :
+- *la trame du pavage est reconstruite sans connaître les murs porteurs* : 2 refus
+  honnêtes sur 200 (mur partiel + faute) → faire des murs porteurs des lignes imposées
+  de `deduire_trame` (à traiter avec 1.5) ;
+- poteaux non contraints, ouvertures des cloisons intérieures non suivies : décisions
+  documentées (ADR-7, `limites.md`), README corrigé en 1.8.
+
 ### 1.2 Frank-Wolfe qui respecte les surfaces minimales (§3 n°6, Q-C1, §5.6)
 
 - Appliquer `_resserrer_bornes` au domaine **avant** la première itération. Le domaine
@@ -571,7 +582,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | À faire | | |
+| 1 | En cours | | Lot 1.1 (murs porteurs) terminé : 0 certificat mensonger au banc. Lot suivant : 1.2 (surfaces minimales en mode performance). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |
