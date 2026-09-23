@@ -1,0 +1,9978 @@
+{
+ "label": "after-1.3",
+ "date": "2026-09-23T20:33:12+00:00",
+ "revision": "703ed19",
+ "archlux": "0.10.0.dev0",
+ "seed": 17,
+ "n": 200,
+ "modes": {
+  "classic": {
+   "description": "classic, valid input",
+   "summary": {
+    "n": 200,
+    "outcomes": {
+     "ok": 200,
+     "false_certificate": 0,
+     "invalid_but_flagged": 0,
+     "refused_infeasible": 0,
+     "refused_invariant": 0,
+     "crash": 0
+    },
+    "violations_by_kind": {
+     "overlap": 0,
+     "coverage": 0,
+     "area": 0,
+     "wall": 0
+    },
+    "median_ms": 4.69
+   },
+   "gallery": [],
+   "cases": [
+    {
+     "scenario": "s17-0000",
+     "ms": 9.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0001",
+     "ms": 6.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0002",
+     "ms": 3.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0003",
+     "ms": 5.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0004",
+     "ms": 4.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0005",
+     "ms": 6.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0006",
+     "ms": 6.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0007",
+     "ms": 4.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0008",
+     "ms": 8.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0009",
+     "ms": 6.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0010",
+     "ms": 6.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0011",
+     "ms": 3.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0012",
+     "ms": 4.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0013",
+     "ms": 3.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0014",
+     "ms": 3.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0015",
+     "ms": 3.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0016",
+     "ms": 3.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0017",
+     "ms": 5.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0018",
+     "ms": 5.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0019",
+     "ms": 2.92,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0020",
+     "ms": 3.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0021",
+     "ms": 4.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0022",
+     "ms": 6.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0023",
+     "ms": 2.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0024",
+     "ms": 5.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0025",
+     "ms": 5.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0026",
+     "ms": 4.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0027",
+     "ms": 6.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0028",
+     "ms": 4.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0029",
+     "ms": 2.88,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0030",
+     "ms": 4.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0031",
+     "ms": 3.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0032",
+     "ms": 4.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0033",
+     "ms": 2.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0034",
+     "ms": 3.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0035",
+     "ms": 2.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0036",
+     "ms": 3.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0037",
+     "ms": 5.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0038",
+     "ms": 4.26,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0039",
+     "ms": 3.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0040",
+     "ms": 6.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0041",
+     "ms": 3.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0042",
+     "ms": 4.79,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0043",
+     "ms": 6.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0044",
+     "ms": 5.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0045",
+     "ms": 5.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0046",
+     "ms": 5.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0047",
+     "ms": 4.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0048",
+     "ms": 2.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0049",
+     "ms": 6.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0050",
+     "ms": 3.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0051",
+     "ms": 4.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0052",
+     "ms": 4.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0053",
+     "ms": 4.54,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0054",
+     "ms": 5.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0055",
+     "ms": 5.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0056",
+     "ms": 4.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0057",
+     "ms": 3.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0058",
+     "ms": 3.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0059",
+     "ms": 4.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0060",
+     "ms": 8.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0061",
+     "ms": 3.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0062",
+     "ms": 4.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0063",
+     "ms": 4.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0064",
+     "ms": 2.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0065",
+     "ms": 5.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0066",
+     "ms": 4.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0067",
+     "ms": 5.96,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0068",
+     "ms": 5.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0069",
+     "ms": 3.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0070",
+     "ms": 4.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0071",
+     "ms": 4.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0072",
+     "ms": 5.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0073",
+     "ms": 6.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0074",
+     "ms": 5.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0075",
+     "ms": 6.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0076",
+     "ms": 4.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0077",
+     "ms": 4.27,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0078",
+     "ms": 3.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0079",
+     "ms": 7.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0080",
+     "ms": 3.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0081",
+     "ms": 5.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0082",
+     "ms": 3.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0083",
+     "ms": 4.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0084",
+     "ms": 3.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0085",
+     "ms": 3.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0086",
+     "ms": 5.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0087",
+     "ms": 4.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0088",
+     "ms": 5.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0089",
+     "ms": 3.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0090",
+     "ms": 5.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0091",
+     "ms": 4.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0092",
+     "ms": 4.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0093",
+     "ms": 7.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0094",
+     "ms": 4.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0095",
+     "ms": 4.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0096",
+     "ms": 5.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0097",
+     "ms": 3.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0098",
+     "ms": 2.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0099",
+     "ms": 3.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0100",
+     "ms": 4.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0101",
+     "ms": 5.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0102",
+     "ms": 3.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0103",
+     "ms": 3.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0104",
+     "ms": 3.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0105",
+     "ms": 7.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0106",
+     "ms": 6.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0107",
+     "ms": 3.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0108",
+     "ms": 3.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0109",
+     "ms": 5.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0110",
+     "ms": 3.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0111",
+     "ms": 4.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0112",
+     "ms": 2.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0113",
+     "ms": 2.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0114",
+     "ms": 3.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0115",
+     "ms": 3.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0116",
+     "ms": 7.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0117",
+     "ms": 5.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0118",
+     "ms": 4.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0119",
+     "ms": 3.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0120",
+     "ms": 3.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0121",
+     "ms": 3.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0122",
+     "ms": 3.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0123",
+     "ms": 4.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0124",
+     "ms": 4.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0125",
+     "ms": 4.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0126",
+     "ms": 4.63,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0127",
+     "ms": 2.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0128",
+     "ms": 7.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0129",
+     "ms": 5.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0130",
+     "ms": 3.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0131",
+     "ms": 6.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0132",
+     "ms": 4.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0133",
+     "ms": 8.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0134",
+     "ms": 5.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0135",
+     "ms": 4.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0136",
+     "ms": 6.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0137",
+     "ms": 5.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0138",
+     "ms": 5.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0139",
+     "ms": 4.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0140",
+     "ms": 4.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0141",
+     "ms": 2.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0142",
+     "ms": 2.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0143",
+     "ms": 4.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0144",
+     "ms": 4.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0145",
+     "ms": 4.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0146",
+     "ms": 2.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0147",
+     "ms": 6.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0148",
+     "ms": 5.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0149",
+     "ms": 6.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0150",
+     "ms": 5.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0151",
+     "ms": 5.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0152",
+     "ms": 4.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0153",
+     "ms": 4.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0154",
+     "ms": 5.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0155",
+     "ms": 4.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0156",
+     "ms": 8.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0157",
+     "ms": 5.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0158",
+     "ms": 5.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0159",
+     "ms": 6.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0160",
+     "ms": 7.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0161",
+     "ms": 5.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0162",
+     "ms": 4.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0163",
+     "ms": 3.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0164",
+     "ms": 3.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0165",
+     "ms": 3.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0166",
+     "ms": 4.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0167",
+     "ms": 4.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0168",
+     "ms": 3.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0169",
+     "ms": 4.27,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0170",
+     "ms": 4.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0171",
+     "ms": 3.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0172",
+     "ms": 5.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0173",
+     "ms": 6.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0174",
+     "ms": 5.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0175",
+     "ms": 4.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0176",
+     "ms": 4.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0177",
+     "ms": 2.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0178",
+     "ms": 2.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0179",
+     "ms": 5.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0180",
+     "ms": 8.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0181",
+     "ms": 6.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0182",
+     "ms": 6.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0183",
+     "ms": 5.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0184",
+     "ms": 6.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0185",
+     "ms": 5.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0186",
+     "ms": 5.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0187",
+     "ms": 5.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0188",
+     "ms": 5.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0189",
+     "ms": 3.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0190",
+     "ms": 5.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0191",
+     "ms": 4.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0192",
+     "ms": 2.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0193",
+     "ms": 5.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0194",
+     "ms": 3.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0195",
+     "ms": 7.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0196",
+     "ms": 3.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0197",
+     "ms": 4.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0198",
+     "ms": 3.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0199",
+     "ms": 4.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    }
+   ]
+  },
+  "classic_one_fault": {
+   "description": "classic + tiling, one room off by up to 25 cm",
+   "summary": {
+    "n": 200,
+    "outcomes": {
+     "ok": 200,
+     "false_certificate": 0,
+     "invalid_but_flagged": 0,
+     "refused_infeasible": 0,
+     "refused_invariant": 0,
+     "crash": 0
+    },
+    "violations_by_kind": {
+     "overlap": 0,
+     "coverage": 0,
+     "area": 0,
+     "wall": 0
+    },
+    "median_ms": 5.3
+   },
+   "gallery": [],
+   "cases": [
+    {
+     "scenario": "s17-0000",
+     "ms": 5.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0001",
+     "ms": 5.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0002",
+     "ms": 5.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0003",
+     "ms": 5.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0004",
+     "ms": 6.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0005",
+     "ms": 6.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0006",
+     "ms": 6.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0007",
+     "ms": 5.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0008",
+     "ms": 4.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0009",
+     "ms": 5.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0010",
+     "ms": 5.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0011",
+     "ms": 3.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0012",
+     "ms": 6.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0013",
+     "ms": 3.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0014",
+     "ms": 3.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0015",
+     "ms": 4.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0016",
+     "ms": 3.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0017",
+     "ms": 7.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0018",
+     "ms": 5.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0019",
+     "ms": 3.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0020",
+     "ms": 3.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0021",
+     "ms": 5.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0022",
+     "ms": 5.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0023",
+     "ms": 3.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0024",
+     "ms": 7.88,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0025",
+     "ms": 7.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0026",
+     "ms": 5.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0027",
+     "ms": 6.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0028",
+     "ms": 4.54,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0029",
+     "ms": 3.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0030",
+     "ms": 5.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0031",
+     "ms": 4.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0032",
+     "ms": 6.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0033",
+     "ms": 3.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0034",
+     "ms": 4.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0035",
+     "ms": 3.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0036",
+     "ms": 3.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0037",
+     "ms": 5.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0038",
+     "ms": 4.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0039",
+     "ms": 3.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0040",
+     "ms": 4.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0041",
+     "ms": 3.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0042",
+     "ms": 4.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0043",
+     "ms": 5.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0044",
+     "ms": 6.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0045",
+     "ms": 5.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0046",
+     "ms": 5.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0047",
+     "ms": 5.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0048",
+     "ms": 3.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0049",
+     "ms": 5.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0050",
+     "ms": 4.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0051",
+     "ms": 10.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0052",
+     "ms": 6.92,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0053",
+     "ms": 5.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0054",
+     "ms": 5.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0055",
+     "ms": 5.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0056",
+     "ms": 6.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0057",
+     "ms": 6.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0058",
+     "ms": 3.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0059",
+     "ms": 4.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0060",
+     "ms": 5.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0061",
+     "ms": 3.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0062",
+     "ms": 5.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0063",
+     "ms": 4.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0064",
+     "ms": 4.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0065",
+     "ms": 5.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0066",
+     "ms": 3.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0067",
+     "ms": 4.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0068",
+     "ms": 4.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0069",
+     "ms": 3.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0070",
+     "ms": 5.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0071",
+     "ms": 7.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0072",
+     "ms": 7.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0073",
+     "ms": 6.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0074",
+     "ms": 4.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0075",
+     "ms": 6.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0076",
+     "ms": 5.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0077",
+     "ms": 4.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0078",
+     "ms": 5.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0079",
+     "ms": 5.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0080",
+     "ms": 3.88,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0081",
+     "ms": 7.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0082",
+     "ms": 3.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0083",
+     "ms": 5.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0084",
+     "ms": 3.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0085",
+     "ms": 4.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0086",
+     "ms": 5.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0087",
+     "ms": 5.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0088",
+     "ms": 5.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0089",
+     "ms": 4.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0090",
+     "ms": 5.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0091",
+     "ms": 5.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0092",
+     "ms": 4.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0093",
+     "ms": 10.16,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0094",
+     "ms": 6.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0095",
+     "ms": 6.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0096",
+     "ms": 3.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0097",
+     "ms": 3.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0098",
+     "ms": 3.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0099",
+     "ms": 4.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0100",
+     "ms": 6.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0101",
+     "ms": 6.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0102",
+     "ms": 5.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0103",
+     "ms": 4.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0104",
+     "ms": 4.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0105",
+     "ms": 6.13,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0106",
+     "ms": 5.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0107",
+     "ms": 6.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0108",
+     "ms": 5.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0109",
+     "ms": 7.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0110",
+     "ms": 4.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0111",
+     "ms": 5.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0112",
+     "ms": 4.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0113",
+     "ms": 3.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0114",
+     "ms": 4.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0115",
+     "ms": 5.13,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0116",
+     "ms": 6.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0117",
+     "ms": 7.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0118",
+     "ms": 6.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0119",
+     "ms": 4.79,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0120",
+     "ms": 5.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0121",
+     "ms": 4.63,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0122",
+     "ms": 4.27,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0123",
+     "ms": 7.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0124",
+     "ms": 6.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0125",
+     "ms": 6.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0126",
+     "ms": 5.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0127",
+     "ms": 3.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0128",
+     "ms": 6.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0129",
+     "ms": 5.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0130",
+     "ms": 5.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0131",
+     "ms": 7.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0132",
+     "ms": 3.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0133",
+     "ms": 6.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0134",
+     "ms": 6.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0135",
+     "ms": 4.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0136",
+     "ms": 8.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0137",
+     "ms": 5.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0138",
+     "ms": 7.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0139",
+     "ms": 5.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0140",
+     "ms": 4.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0141",
+     "ms": 3.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0142",
+     "ms": 4.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0143",
+     "ms": 5.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0144",
+     "ms": 6.96,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0145",
+     "ms": 6.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0146",
+     "ms": 3.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0147",
+     "ms": 6.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0148",
+     "ms": 4.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0149",
+     "ms": 5.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0150",
+     "ms": 8.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0151",
+     "ms": 6.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0152",
+     "ms": 5.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0153",
+     "ms": 5.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0154",
+     "ms": 6.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0155",
+     "ms": 5.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0156",
+     "ms": 6.26,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0157",
+     "ms": 4.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0158",
+     "ms": 55.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0159",
+     "ms": 4.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0160",
+     "ms": 10.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0161",
+     "ms": 5.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0162",
+     "ms": 3.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0163",
+     "ms": 4.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0164",
+     "ms": 3.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0165",
+     "ms": 5.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0166",
+     "ms": 5.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0167",
+     "ms": 6.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0168",
+     "ms": 4.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0169",
+     "ms": 4.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0170",
+     "ms": 4.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0171",
+     "ms": 5.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0172",
+     "ms": 6.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0173",
+     "ms": 8.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0174",
+     "ms": 6.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0175",
+     "ms": 6.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0176",
+     "ms": 6.89,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0177",
+     "ms": 3.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0178",
+     "ms": 3.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0179",
+     "ms": 5.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0180",
+     "ms": 5.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0181",
+     "ms": 6.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0182",
+     "ms": 6.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0183",
+     "ms": 7.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0184",
+     "ms": 4.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0185",
+     "ms": 4.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0186",
+     "ms": 5.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0187",
+     "ms": 5.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0188",
+     "ms": 5.63,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0189",
+     "ms": 4.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0190",
+     "ms": 5.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0191",
+     "ms": 5.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0192",
+     "ms": 3.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0193",
+     "ms": 6.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0194",
+     "ms": 4.63,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0195",
+     "ms": 6.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0196",
+     "ms": 4.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0197",
+     "ms": 5.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0198",
+     "ms": 4.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0199",
+     "ms": 6.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    }
+   ]
+  },
+  "classic_noisy": {
+   "description": "classic + tiling, every coordinate moved by up to 3 cm",
+   "summary": {
+    "n": 200,
+    "outcomes": {
+     "ok": 1,
+     "false_certificate": 0,
+     "invalid_but_flagged": 0,
+     "refused_infeasible": 89,
+     "refused_invariant": 110,
+     "crash": 0
+    },
+    "violations_by_kind": {
+     "overlap": 0,
+     "coverage": 0,
+     "area": 0,
+     "wall": 0
+    },
+    "median_ms": 3.99
+   },
+   "gallery": [],
+   "cases": [
+    {
+     "scenario": "s17-0000",
+     "ms": 3.79,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0001",
+     "ms": 7.36,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r3|r1 ; separation horizontale r3|r5 ; separation horizontale r3|r6 ; separation horizontale r4|r1 ; separation verticale r0|r2 ; separation v"
+    },
+    {
+     "scenario": "s17-0002",
+     "ms": 4.39,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0003",
+     "ms": 5.13,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,12 m\u00b2"
+    },
+    {
+     "scenario": "s17-0004",
+     "ms": 3.96,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0005",
+     "ms": 5.81,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,13 m\u00b2"
+    },
+    {
+     "scenario": "s17-0006",
+     "ms": 2.26,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 9 cellules en trop"
+    },
+    {
+     "scenario": "s17-0007",
+     "ms": 7.03,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0008",
+     "ms": 1.85,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0009",
+     "ms": 5.21,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0010",
+     "ms": 2.5,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0011",
+     "ms": 4.74,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,04 m\u00b2"
+    },
+    {
+     "scenario": "s17-0012",
+     "ms": 9.68,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0013",
+     "ms": 5.67,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0014",
+     "ms": 4.59,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0015",
+     "ms": 5.76,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r1|r0 ; separation horizontale r2|r3 ; separation horizontale r3|r0 ; separation verticale r2|r1 ; separation verticale r3|r1 ; contour droit "
+    },
+    {
+     "scenario": "s17-0016",
+     "ms": 1.62,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jour structurel : 1 cellules non couvertes"
+    },
+    {
+     "scenario": "s17-0017",
+     "ms": 3.13,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 9 cellules en trop"
+    },
+    {
+     "scenario": "s17-0018",
+     "ms": 2.04,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 6 cellules en trop"
+    },
+    {
+     "scenario": "s17-0019",
+     "ms": 4.19,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0020",
+     "ms": 6.09,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0021",
+     "ms": 6.81,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0022",
+     "ms": 8.79,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0023",
+     "ms": 4.51,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0024",
+     "ms": 2.8,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0025",
+     "ms": 8.27,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0026",
+     "ms": 5.12,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0027",
+     "ms": 1.7,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 1 cellules en trop"
+    },
+    {
+     "scenario": "s17-0028",
+     "ms": 6.64,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,06 m\u00b2"
+    },
+    {
+     "scenario": "s17-0029",
+     "ms": 5.03,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0030",
+     "ms": 6.9,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,16 m\u00b2"
+    },
+    {
+     "scenario": "s17-0031",
+     "ms": 5.96,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0032",
+     "ms": 7.55,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0033",
+     "ms": 5.51,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0034",
+     "ms": 2.2,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 6 cellules en trop"
+    },
+    {
+     "scenario": "s17-0035",
+     "ms": 4.7,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0036",
+     "ms": 5.13,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0037",
+     "ms": 1.56,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jour structurel : 3 cellules non couvertes"
+    },
+    {
+     "scenario": "s17-0038",
+     "ms": 5.72,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0039",
+     "ms": 2.17,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0040",
+     "ms": 1.72,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0041",
+     "ms": 4.38,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0042",
+     "ms": 4.21,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0043",
+     "ms": 2.05,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0044",
+     "ms": 1.93,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 7 cellules en trop"
+    },
+    {
+     "scenario": "s17-0045",
+     "ms": 2.49,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 8 cellules en trop"
+    },
+    {
+     "scenario": "s17-0046",
+     "ms": 7.97,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,08 m\u00b2"
+    },
+    {
+     "scenario": "s17-0047",
+     "ms": 1.84,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0048",
+     "ms": 3.5,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0049",
+     "ms": 1.78,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 7 cellules en trop"
+    },
+    {
+     "scenario": "s17-0050",
+     "ms": 4.48,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0051",
+     "ms": 2.16,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0052",
+     "ms": 1.71,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 14 cellules en trop"
+    },
+    {
+     "scenario": "s17-0053",
+     "ms": 6.83,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r2 ; separation horizontale r4|r0 ; separation horizontale r5|r0 ; separation verticale r1|r2 ; separation verticale r1|r3 ; separation ver"
+    },
+    {
+     "scenario": "s17-0054",
+     "ms": 2.26,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0055",
+     "ms": 5.82,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r2 ; separation horizontale r3|r4 ; separation verticale r1|r2 ; separation verticale r3|r0 ; separation verticale r4|r0 ; contour haut r0 "
+    },
+    {
+     "scenario": "s17-0056",
+     "ms": 1.82,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 1 cellules en trop"
+    },
+    {
+     "scenario": "s17-0057",
+     "ms": 4.07,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,06 m\u00b2"
+    },
+    {
+     "scenario": "s17-0058",
+     "ms": 5.16,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0059",
+     "ms": 1.7,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0060",
+     "ms": 8.26,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0061",
+     "ms": 4.1,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0062",
+     "ms": 2.2,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0063",
+     "ms": 8.03,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,09 m\u00b2"
+    },
+    {
+     "scenario": "s17-0064",
+     "ms": 5.55,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,00 m\u00b2"
+    },
+    {
+     "scenario": "s17-0065",
+     "ms": 5.97,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0066",
+     "ms": 5.45,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,05 m\u00b2"
+    },
+    {
+     "scenario": "s17-0067",
+     "ms": 4.33,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0068",
+     "ms": 2.03,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0069",
+     "ms": 3.8,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0070",
+     "ms": 6.22,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0071",
+     "ms": 7.7,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r4 ; separation horizontale r2|r1 ; separation horizontale r3|r1 ; separation horizontale r3|r4 ; separation verticale r1|r4 ; separation v"
+    },
+    {
+     "scenario": "s17-0072",
+     "ms": 2.56,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 1 cellules en trop"
+    },
+    {
+     "scenario": "s17-0073",
+     "ms": 1.8,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0074",
+     "ms": 4.44,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0075",
+     "ms": 10.19,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r2|r3 ; separation horizontale r3|r4 ; separation horizontale r3|r5 ; separation horizontale r6|r7 ; separation horizontale r7|r0 ; separation"
+    },
+    {
+     "scenario": "s17-0076",
+     "ms": 5.69,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0077",
+     "ms": 1.86,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 9 cellules en trop"
+    },
+    {
+     "scenario": "s17-0078",
+     "ms": 3.83,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0079",
+     "ms": 1.89,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0080",
+     "ms": 4.38,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r2 ; separation horizontale r0|r3 ; separation horizontale r1|r3 ; separation verticale r0|r1 ; separation verticale r2|r3 ; contour haut r"
+    },
+    {
+     "scenario": "s17-0081",
+     "ms": 7.75,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r2|r4 ; separation horizontale r2|r6 ; separation horizontale r2|r7 ; separation horizontale r3|r7 ; separation horizontale r4|r5 ; separation"
+    },
+    {
+     "scenario": "s17-0082",
+     "ms": 4.51,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,05 m\u00b2"
+    },
+    {
+     "scenario": "s17-0083",
+     "ms": 6.5,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,11 m\u00b2"
+    },
+    {
+     "scenario": "s17-0084",
+     "ms": 4.57,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0085",
+     "ms": 1.33,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0086",
+     "ms": 7.08,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0087",
+     "ms": 6.03,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0088",
+     "ms": 6.56,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0089",
+     "ms": 6.59,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r2|r1 ; separation horizontale r2|r4 ; separation horizontale r3|r0 ; separation horizontale r3|r4 ; separation verticale r1|r4 ; separation v"
+    },
+    {
+     "scenario": "s17-0090",
+     "ms": 1.65,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 7 cellules en trop"
+    },
+    {
+     "scenario": "s17-0091",
+     "ms": 7.39,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0092",
+     "ms": 6.42,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,06 m\u00b2"
+    },
+    {
+     "scenario": "s17-0093",
+     "ms": 6.26,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0094",
+     "ms": 1.83,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0095",
+     "ms": 1.82,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 17 cellules en trop"
+    },
+    {
+     "scenario": "s17-0096",
+     "ms": 4.11,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0097",
+     "ms": 3.91,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0098",
+     "ms": 4.59,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0099",
+     "ms": 5.56,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r1|r0 ; separation horizontale r2|r3 ; separation horizontale r3|r0 ; separation verticale r1|r2 ; separation verticale r1|r3 ; separation ver"
+    },
+    {
+     "scenario": "s17-0100",
+     "ms": 1.78,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0101",
+     "ms": 5.54,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0102",
+     "ms": 4.83,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0103",
+     "ms": 3.54,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0104",
+     "ms": 3.92,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0105",
+     "ms": 8.19,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0106",
+     "ms": 7.52,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r1|r0 ; separation horizontale r2|r0 ; separation horizontale r2|r5 ; separation horizontale r2|r6 ; separation verticale r0|r3 ; separation v"
+    },
+    {
+     "scenario": "s17-0107",
+     "ms": 1.34,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0108",
+     "ms": 3.4,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0109",
+     "ms": 1.42,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 1 cellules en trop"
+    },
+    {
+     "scenario": "s17-0110",
+     "ms": 3.17,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0111",
+     "ms": 1.55,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jour structurel : 7 cellules non couvertes"
+    },
+    {
+     "scenario": "s17-0112",
+     "ms": 4.02,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,01 m\u00b2"
+    },
+    {
+     "scenario": "s17-0113",
+     "ms": 4.87,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0114",
+     "ms": 4.45,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r1 ; separation horizontale r0|r2 ; separation verticale r2|r1 ; separation verticale r3|r1 ; contour droit r1 ; contour droit r3"
+    },
+    {
+     "scenario": "s17-0115",
+     "ms": 1.58,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0116",
+     "ms": 5.94,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0117",
+     "ms": 2.41,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0118",
+     "ms": 2.23,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 9 cellules en trop"
+    },
+    {
+     "scenario": "s17-0119",
+     "ms": 4.19,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0120",
+     "ms": 7.81,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r1|r2 ; separation horizontale r4|r2 ; separation horizontale r5|r0 ; separation horizontale r5|r2 ; separation verticale r1|r4 ; separation v"
+    },
+    {
+     "scenario": "s17-0121",
+     "ms": 5.42,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,01 m\u00b2"
+    },
+    {
+     "scenario": "s17-0122",
+     "ms": 4.34,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0123",
+     "ms": 8.23,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r2|r3 ; separation horizontale r4|r6 ; separation horizontale r5|r6 ; separation horizontale r5|r7 ; separation horizontale r6|r1 ; separation"
+    },
+    {
+     "scenario": "s17-0124",
+     "ms": 1.97,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0125",
+     "ms": 1.84,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 15 cellules en trop"
+    },
+    {
+     "scenario": "s17-0126",
+     "ms": 1.81,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 7 cellules en trop"
+    },
+    {
+     "scenario": "s17-0127",
+     "ms": 1.06,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0128",
+     "ms": 7.53,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,04 m\u00b2"
+    },
+    {
+     "scenario": "s17-0129",
+     "ms": 1.72,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 10 cellules en trop"
+    },
+    {
+     "scenario": "s17-0130",
+     "ms": 4.37,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,05 m\u00b2"
+    },
+    {
+     "scenario": "s17-0131",
+     "ms": 1.75,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0132",
+     "ms": 4.95,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0133",
+     "ms": 1.92,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 6 cellules en trop"
+    },
+    {
+     "scenario": "s17-0134",
+     "ms": 1.34,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 1 cellules en trop"
+    },
+    {
+     "scenario": "s17-0135",
+     "ms": 3.28,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0136",
+     "ms": 1.85,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 10 cellules en trop"
+    },
+    {
+     "scenario": "s17-0137",
+     "ms": 6.84,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,11 m\u00b2"
+    },
+    {
+     "scenario": "s17-0138",
+     "ms": 2.26,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0139",
+     "ms": 3.71,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0140",
+     "ms": 1.51,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jour structurel : 11 cellules non couvertes"
+    },
+    {
+     "scenario": "s17-0141",
+     "ms": 4.47,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,08 m\u00b2"
+    },
+    {
+     "scenario": "s17-0142",
+     "ms": 4.33,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,02 m\u00b2"
+    },
+    {
+     "scenario": "s17-0143",
+     "ms": 1.46,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0144",
+     "ms": 1.59,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0145",
+     "ms": 1.86,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0146",
+     "ms": 4.91,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r2|r0 ; separation horizontale r3|r0 ; separation horizontale r3|r1 ; separation verticale r0|r1 ; separation verticale r2|r3 ; contour droit "
+    },
+    {
+     "scenario": "s17-0147",
+     "ms": 5.32,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jour structurel : 12 cellules non couvertes"
+    },
+    {
+     "scenario": "s17-0148",
+     "ms": 5.2,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0149",
+     "ms": 1.84,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0150",
+     "ms": 2.18,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0151",
+     "ms": 1.46,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 1 cellules en trop"
+    },
+    {
+     "scenario": "s17-0152",
+     "ms": 1.17,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0153",
+     "ms": 1.25,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jour structurel : 4 cellules non couvertes"
+    },
+    {
+     "scenario": "s17-0154",
+     "ms": 6.93,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r2|r1 ; separation horizontale r5|r0 ; separation horizontale r6|r0 ; separation horizontale r6|r1 ; separation verticale r0|r1 ; separation v"
+    },
+    {
+     "scenario": "s17-0155",
+     "ms": 1.89,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 8 cellules en trop"
+    },
+    {
+     "scenario": "s17-0156",
+     "ms": 2.17,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 8 cellules en trop"
+    },
+    {
+     "scenario": "s17-0157",
+     "ms": 4.08,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r1 ; separation horizontale r0|r2 ; separation horizontale r0|r3 ; separation verticale r1|r2 ; contour haut r0 ; contour droit r1 ; contou"
+    },
+    {
+     "scenario": "s17-0158",
+     "ms": 4.7,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,06 m\u00b2"
+    },
+    {
+     "scenario": "s17-0159",
+     "ms": 1.3,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jour structurel : 4 cellules non couvertes"
+    },
+    {
+     "scenario": "s17-0160",
+     "ms": 6.25,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,06 m\u00b2"
+    },
+    {
+     "scenario": "s17-0161",
+     "ms": 4.02,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0162",
+     "ms": 3.27,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0163",
+     "ms": 3.5,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,03 m\u00b2"
+    },
+    {
+     "scenario": "s17-0164",
+     "ms": 5.6,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r2 ; separation horizontale r0|r3 ; separation verticale r2|r3 ; contour droit r1 ; contour haut r3"
+    },
+    {
+     "scenario": "s17-0165",
+     "ms": 5.03,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0166",
+     "ms": 1.81,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0167",
+     "ms": 1.9,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0168",
+     "ms": 4.02,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0169",
+     "ms": 1.56,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0170",
+     "ms": 1.42,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0171",
+     "ms": 5.18,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r1 ; separation horizontale r1|r3 ; separation verticale r2|r3 ; separation verticale r2|r4 ; contour droit r2 ; contour haut r3 ; contour "
+    },
+    {
+     "scenario": "s17-0172",
+     "ms": 1.84,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 12 cellules en trop"
+    },
+    {
+     "scenario": "s17-0173",
+     "ms": 1.78,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0174",
+     "ms": 1.43,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 1 cellules en trop"
+    },
+    {
+     "scenario": "s17-0175",
+     "ms": 1.42,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0176",
+     "ms": 1.43,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 2 cellules en trop"
+    },
+    {
+     "scenario": "s17-0177",
+     "ms": 3.64,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0178",
+     "ms": 3.31,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,12 m\u00b2"
+    },
+    {
+     "scenario": "s17-0179",
+     "ms": 5.6,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,11 m\u00b2"
+    },
+    {
+     "scenario": "s17-0180",
+     "ms": 2.11,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 8 cellules en trop"
+    },
+    {
+     "scenario": "s17-0181",
+     "ms": 3.1,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 6 cellules en trop"
+    },
+    {
+     "scenario": "s17-0182",
+     "ms": 2.37,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0183",
+     "ms": 1.91,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 12 cellules en trop"
+    },
+    {
+     "scenario": "s17-0184",
+     "ms": 6.15,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,02 m\u00b2"
+    },
+    {
+     "scenario": "s17-0185",
+     "ms": 5.37,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,00 m\u00b2"
+    },
+    {
+     "scenario": "s17-0186",
+     "ms": 6.11,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r4 ; separation horizontale r0|r5 ; separation horizontale r2|r3 ; separation verticale r0|r2 ; separation verticale r1|r3 ; separation ver"
+    },
+    {
+     "scenario": "s17-0187",
+     "ms": 6.99,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0188",
+     "ms": 1.65,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 11 cellules en trop"
+    },
+    {
+     "scenario": "s17-0189",
+     "ms": 4.03,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r1 ; separation horizontale r0|r2 ; separation verticale r1|r2 ; separation verticale r1|r3 ; contour droit r1 ; contour droit r3"
+    },
+    {
+     "scenario": "s17-0190",
+     "ms": 1.67,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 5 cellules en trop"
+    },
+    {
+     "scenario": "s17-0191",
+     "ms": 1.84,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 11 cellules en trop"
+    },
+    {
+     "scenario": "s17-0192",
+     "ms": 3.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0193",
+     "ms": 1.9,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 6 cellules en trop"
+    },
+    {
+     "scenario": "s17-0194",
+     "ms": 3.89,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    },
+    {
+     "scenario": "s17-0195",
+     "ms": 1.61,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 8 cellules en trop"
+    },
+    {
+     "scenario": "s17-0196",
+     "ms": 3.51,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : jours : aire non couverte 0,03 m\u00b2"
+    },
+    {
+     "scenario": "s17-0197",
+     "ms": 1.92,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 4 cellules en trop"
+    },
+    {
+     "scenario": "s17-0198",
+     "ms": 1.29,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : chevauchement structurel : 3 cellules en trop"
+    },
+    {
+     "scenario": "s17-0199",
+     "ms": 6.49,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : origines non renseignees"
+    }
+   ]
+  },
+  "performance": {
+   "description": "performance (analytic surrogate), valid input",
+   "summary": {
+    "n": 200,
+    "outcomes": {
+     "ok": 200,
+     "false_certificate": 0,
+     "invalid_but_flagged": 0,
+     "refused_infeasible": 0,
+     "refused_invariant": 0,
+     "crash": 0
+    },
+    "violations_by_kind": {
+     "overlap": 0,
+     "coverage": 0,
+     "area": 0,
+     "wall": 0
+    },
+    "median_ms": 16.3
+   },
+   "gallery": [],
+   "cases": [
+    {
+     "scenario": "s17-0000",
+     "ms": 9.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0001",
+     "ms": 22.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0002",
+     "ms": 12.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0003",
+     "ms": 23.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0004",
+     "ms": 11.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0005",
+     "ms": 14.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0006",
+     "ms": 31.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0007",
+     "ms": 35.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0008",
+     "ms": 35.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0009",
+     "ms": 11.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0010",
+     "ms": 88.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0011",
+     "ms": 9.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0012",
+     "ms": 15.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0013",
+     "ms": 8.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0014",
+     "ms": 7.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0015",
+     "ms": 8.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0016",
+     "ms": 8.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0017",
+     "ms": 39.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0018",
+     "ms": 28.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0019",
+     "ms": 10.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0020",
+     "ms": 25.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0021",
+     "ms": 16.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0022",
+     "ms": 24.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0023",
+     "ms": 14.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0024",
+     "ms": 20.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0025",
+     "ms": 33.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0026",
+     "ms": 9.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0027",
+     "ms": 58.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0028",
+     "ms": 20.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0029",
+     "ms": 10.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0030",
+     "ms": 13.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0031",
+     "ms": 31.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0032",
+     "ms": 14.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0033",
+     "ms": 8.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0034",
+     "ms": 21.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0035",
+     "ms": 7.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0036",
+     "ms": 15.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0037",
+     "ms": 24.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0038",
+     "ms": 13.16,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0039",
+     "ms": 9.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0040",
+     "ms": 26.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0041",
+     "ms": 7.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0042",
+     "ms": 9.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0043",
+     "ms": 14.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0044",
+     "ms": 31.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0045",
+     "ms": 24.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0046",
+     "ms": 16.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0047",
+     "ms": 19.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0048",
+     "ms": 7.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0049",
+     "ms": 20.26,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0050",
+     "ms": 10.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0051",
+     "ms": 14.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0052",
+     "ms": 15.7,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0053",
+     "ms": 15.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0054",
+     "ms": 20.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0055",
+     "ms": 17.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0056",
+     "ms": 19.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0057",
+     "ms": 19.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0058",
+     "ms": 8.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0059",
+     "ms": 14.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0060",
+     "ms": 36.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0061",
+     "ms": 8.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0062",
+     "ms": 20.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0063",
+     "ms": 16.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0064",
+     "ms": 8.26,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0065",
+     "ms": 16.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0066",
+     "ms": 21.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0067",
+     "ms": 13.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0068",
+     "ms": 16.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0069",
+     "ms": 7.92,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0070",
+     "ms": 8.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0071",
+     "ms": 13.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0072",
+     "ms": 55.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0073",
+     "ms": 29.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0074",
+     "ms": 14.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0075",
+     "ms": 30.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0076",
+     "ms": 12.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0077",
+     "ms": 15.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0078",
+     "ms": 8.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0079",
+     "ms": 54.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0080",
+     "ms": 7.96,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0081",
+     "ms": 28.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0082",
+     "ms": 10.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0083",
+     "ms": 28.63,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0084",
+     "ms": 9.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0085",
+     "ms": 11.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0086",
+     "ms": 23.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0087",
+     "ms": 12.89,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0088",
+     "ms": 22.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0089",
+     "ms": 34.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0090",
+     "ms": 13.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0091",
+     "ms": 19.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0092",
+     "ms": 11.7,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0093",
+     "ms": 13.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0094",
+     "ms": 22.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0095",
+     "ms": 14.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0096",
+     "ms": 12.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0097",
+     "ms": 12.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0098",
+     "ms": 11.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0099",
+     "ms": 23.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0100",
+     "ms": 21.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0101",
+     "ms": 29.92,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0102",
+     "ms": 13.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0103",
+     "ms": 11.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0104",
+     "ms": 15.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0105",
+     "ms": 41.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0106",
+     "ms": 20.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0107",
+     "ms": 18.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0108",
+     "ms": 11.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0109",
+     "ms": 28.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0110",
+     "ms": 7.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0111",
+     "ms": 12.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0112",
+     "ms": 12.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0113",
+     "ms": 7.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0114",
+     "ms": 7.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0115",
+     "ms": 9.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0116",
+     "ms": 32.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0117",
+     "ms": 39.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0118",
+     "ms": 25.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0119",
+     "ms": 8.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0120",
+     "ms": 19.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0121",
+     "ms": 12.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0122",
+     "ms": 11.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0123",
+     "ms": 24.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0124",
+     "ms": 14.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0125",
+     "ms": 82.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0126",
+     "ms": 42.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0127",
+     "ms": 7.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0128",
+     "ms": 26.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0129",
+     "ms": 24.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0130",
+     "ms": 9.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0131",
+     "ms": 49.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0132",
+     "ms": 9.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0133",
+     "ms": 51.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0134",
+     "ms": 16.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0135",
+     "ms": 13.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0136",
+     "ms": 29.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0137",
+     "ms": 14.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0138",
+     "ms": 17.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0139",
+     "ms": 11.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0140",
+     "ms": 16.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0141",
+     "ms": 8.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0142",
+     "ms": 14.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0143",
+     "ms": 19.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0144",
+     "ms": 14.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0145",
+     "ms": 32.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0146",
+     "ms": 7.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0147",
+     "ms": 32.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0148",
+     "ms": 10.27,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0149",
+     "ms": 79.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0150",
+     "ms": 38.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0151",
+     "ms": 63.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0152",
+     "ms": 10.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0153",
+     "ms": 11.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0154",
+     "ms": 17.94,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0155",
+     "ms": 13.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0156",
+     "ms": 38.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0157",
+     "ms": 12.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0158",
+     "ms": 23.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0159",
+     "ms": 12.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0160",
+     "ms": 28.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0161",
+     "ms": 14.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0162",
+     "ms": 8.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0163",
+     "ms": 7.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0164",
+     "ms": 12.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0165",
+     "ms": 21.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0166",
+     "ms": 29.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0167",
+     "ms": 39.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0168",
+     "ms": 16.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0169",
+     "ms": 20.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0170",
+     "ms": 22.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0171",
+     "ms": 21.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0172",
+     "ms": 97.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0173",
+     "ms": 29.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0174",
+     "ms": 27.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0175",
+     "ms": 35.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0176",
+     "ms": 16.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0177",
+     "ms": 15.16,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0178",
+     "ms": 9.27,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0179",
+     "ms": 83.7,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0180",
+     "ms": 49.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0181",
+     "ms": 27.7,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0182",
+     "ms": 19.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0183",
+     "ms": 29.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0184",
+     "ms": 17.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0185",
+     "ms": 12.92,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0186",
+     "ms": 18.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0187",
+     "ms": 61.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0188",
+     "ms": 85.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0189",
+     "ms": 16.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0190",
+     "ms": 28.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0191",
+     "ms": 41.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0192",
+     "ms": 8.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0193",
+     "ms": 31.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0194",
+     "ms": 10.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0195",
+     "ms": 28.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0196",
+     "ms": 7.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0197",
+     "ms": 33.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0198",
+     "ms": 8.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0199",
+     "ms": 14.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    }
+   ]
+  },
+  "daylight": {
+   "description": "performance (Daylight objective), valid input",
+   "summary": {
+    "n": 200,
+    "outcomes": {
+     "ok": 200,
+     "false_certificate": 0,
+     "invalid_but_flagged": 0,
+     "refused_infeasible": 0,
+     "refused_invariant": 0,
+     "crash": 0
+    },
+    "violations_by_kind": {
+     "overlap": 0,
+     "coverage": 0,
+     "area": 0,
+     "wall": 0
+    },
+    "median_ms": 16.75
+   },
+   "gallery": [],
+   "cases": [
+    {
+     "scenario": "s17-0000",
+     "ms": 11.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0001",
+     "ms": 24.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0002",
+     "ms": 14.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0003",
+     "ms": 25.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0004",
+     "ms": 12.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0005",
+     "ms": 16.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0006",
+     "ms": 42.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0007",
+     "ms": 35.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0008",
+     "ms": 28.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0009",
+     "ms": 11.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0010",
+     "ms": 83.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0011",
+     "ms": 9.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0012",
+     "ms": 13.94,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0013",
+     "ms": 7.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0014",
+     "ms": 7.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0015",
+     "ms": 8.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0016",
+     "ms": 7.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0017",
+     "ms": 39.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0018",
+     "ms": 26.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0019",
+     "ms": 7.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0020",
+     "ms": 26.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0021",
+     "ms": 14.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0022",
+     "ms": 28.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0023",
+     "ms": 14.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0024",
+     "ms": 21.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0025",
+     "ms": 29.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0026",
+     "ms": 10.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0027",
+     "ms": 65.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0028",
+     "ms": 22.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0029",
+     "ms": 9.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0030",
+     "ms": 14.88,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0031",
+     "ms": 33.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0032",
+     "ms": 14.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0033",
+     "ms": 9.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0034",
+     "ms": 21.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0035",
+     "ms": 7.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0036",
+     "ms": 11.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0037",
+     "ms": 24.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0038",
+     "ms": 13.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0039",
+     "ms": 9.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0040",
+     "ms": 30.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0041",
+     "ms": 8.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0042",
+     "ms": 8.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0043",
+     "ms": 15.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0044",
+     "ms": 25.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0045",
+     "ms": 23.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0046",
+     "ms": 15.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0047",
+     "ms": 19.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0048",
+     "ms": 7.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0049",
+     "ms": 21.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0050",
+     "ms": 10.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0051",
+     "ms": 13.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0052",
+     "ms": 16.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0053",
+     "ms": 17.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0054",
+     "ms": 26.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0055",
+     "ms": 17.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0056",
+     "ms": 20.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0057",
+     "ms": 18.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0058",
+     "ms": 8.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0059",
+     "ms": 14.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0060",
+     "ms": 40.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0061",
+     "ms": 9.16,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0062",
+     "ms": 21.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0063",
+     "ms": 17.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0064",
+     "ms": 7.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0065",
+     "ms": 14.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0066",
+     "ms": 19.16,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0067",
+     "ms": 12.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0068",
+     "ms": 18.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0069",
+     "ms": 8.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0070",
+     "ms": 8.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0071",
+     "ms": 10.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0072",
+     "ms": 45.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0073",
+     "ms": 32.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0074",
+     "ms": 17.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0075",
+     "ms": 30.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0076",
+     "ms": 13.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0077",
+     "ms": 14.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0078",
+     "ms": 8.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0079",
+     "ms": 61.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0080",
+     "ms": 7.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0081",
+     "ms": 29.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0082",
+     "ms": 7.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0083",
+     "ms": 26.18,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0084",
+     "ms": 7.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0085",
+     "ms": 12.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0086",
+     "ms": 25.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0087",
+     "ms": 17.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0088",
+     "ms": 24.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0089",
+     "ms": 36.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0090",
+     "ms": 16.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0091",
+     "ms": 22.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0092",
+     "ms": 12.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0093",
+     "ms": 16.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0094",
+     "ms": 21.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0095",
+     "ms": 15.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0096",
+     "ms": 11.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0097",
+     "ms": 12.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0098",
+     "ms": 12.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0099",
+     "ms": 25.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0100",
+     "ms": 22.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0101",
+     "ms": 30.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0102",
+     "ms": 12.96,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0103",
+     "ms": 12.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0104",
+     "ms": 17.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0105",
+     "ms": 51.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0106",
+     "ms": 25.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0107",
+     "ms": 19.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0108",
+     "ms": 10.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0109",
+     "ms": 34.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0110",
+     "ms": 7.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0111",
+     "ms": 10.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0112",
+     "ms": 14.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0113",
+     "ms": 8.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0114",
+     "ms": 7.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0115",
+     "ms": 10.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0116",
+     "ms": 34.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0117",
+     "ms": 39.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0118",
+     "ms": 26.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0119",
+     "ms": 8.89,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0120",
+     "ms": 19.79,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0121",
+     "ms": 15.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0122",
+     "ms": 9.54,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0123",
+     "ms": 25.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0124",
+     "ms": 13.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0125",
+     "ms": 88.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0126",
+     "ms": 46.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0127",
+     "ms": 7.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0128",
+     "ms": 31.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0129",
+     "ms": 29.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0130",
+     "ms": 10.63,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0131",
+     "ms": 50.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0132",
+     "ms": 9.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0133",
+     "ms": 60.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0134",
+     "ms": 14.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0135",
+     "ms": 13.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0136",
+     "ms": 26.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0137",
+     "ms": 13.7,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0138",
+     "ms": 15.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0139",
+     "ms": 10.79,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0140",
+     "ms": 19.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0141",
+     "ms": 8.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0142",
+     "ms": 10.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0143",
+     "ms": 12.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0144",
+     "ms": 14.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0145",
+     "ms": 41.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0146",
+     "ms": 8.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0147",
+     "ms": 40.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0148",
+     "ms": 10.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0149",
+     "ms": 79.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0150",
+     "ms": 42.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0151",
+     "ms": 70.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0152",
+     "ms": 11.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0153",
+     "ms": 13.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0154",
+     "ms": 17.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0155",
+     "ms": 11.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0156",
+     "ms": 43.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0157",
+     "ms": 13.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0158",
+     "ms": 26.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0159",
+     "ms": 15.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0160",
+     "ms": 31.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0161",
+     "ms": 8.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0162",
+     "ms": 8.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0163",
+     "ms": 6.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0164",
+     "ms": 12.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0165",
+     "ms": 24.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0166",
+     "ms": 28.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0167",
+     "ms": 38.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0168",
+     "ms": 14.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0169",
+     "ms": 22.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0170",
+     "ms": 23.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0171",
+     "ms": 22.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0172",
+     "ms": 88.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0173",
+     "ms": 31.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0174",
+     "ms": 23.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0175",
+     "ms": 33.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0176",
+     "ms": 17.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0177",
+     "ms": 14.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0178",
+     "ms": 11.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0179",
+     "ms": 80.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0180",
+     "ms": 46.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0181",
+     "ms": 25.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0182",
+     "ms": 19.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0183",
+     "ms": 26.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0184",
+     "ms": 13.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0185",
+     "ms": 12.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0186",
+     "ms": 24.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0187",
+     "ms": 57.89,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0188",
+     "ms": 85.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0189",
+     "ms": 16.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0190",
+     "ms": 28.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0191",
+     "ms": 42.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0192",
+     "ms": 8.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0193",
+     "ms": 31.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0194",
+     "ms": 9.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0195",
+     "ms": 31.13,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0196",
+     "ms": 10.92,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0197",
+     "ms": 37.78,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0198",
+     "ms": 11.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0199",
+     "ms": 18.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    }
+   ]
+  },
+  "partial_one_fault": {
+   "description": "partial load-bearing wall; classic + tiling, one room off by up to 25 cm",
+   "summary": {
+    "n": 200,
+    "outcomes": {
+     "ok": 196,
+     "false_certificate": 0,
+     "invalid_but_flagged": 0,
+     "refused_infeasible": 2,
+     "refused_invariant": 2,
+     "crash": 0
+    },
+    "violations_by_kind": {
+     "overlap": 0,
+     "coverage": 0,
+     "area": 0,
+     "wall": 0
+    },
+    "median_ms": 5.33
+   },
+   "gallery": [],
+   "cases": [
+    {
+     "scenario": "s17-0000p",
+     "ms": 4.13,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0001p",
+     "ms": 5.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0002p",
+     "ms": 4.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0003p",
+     "ms": 5.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0004p",
+     "ms": 4.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0005p",
+     "ms": 7.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0006p",
+     "ms": 7.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0007p",
+     "ms": 6.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0008p",
+     "ms": 6.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0009p",
+     "ms": 5.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0010p",
+     "ms": 6.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0011p",
+     "ms": 6.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0012p",
+     "ms": 6.88,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0013p",
+     "ms": 3.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0014p",
+     "ms": 3.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0015p",
+     "ms": 3.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0016p",
+     "ms": 3.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0017p",
+     "ms": 6.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0018p",
+     "ms": 6.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0019p",
+     "ms": 5.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0020p",
+     "ms": 5.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0021p",
+     "ms": 6.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0022p",
+     "ms": 7.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0023p",
+     "ms": 3.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0024p",
+     "ms": 6.62,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0025p",
+     "ms": 6.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0026p",
+     "ms": 4.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0027p",
+     "ms": 6.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0028p",
+     "ms": 4.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0029p",
+     "ms": 3.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0030p",
+     "ms": 6.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0031p",
+     "ms": 5.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0032p",
+     "ms": 5.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0033p",
+     "ms": 3.79,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0034p",
+     "ms": 6.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0035p",
+     "ms": 4.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0036p",
+     "ms": 3.4,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0037p",
+     "ms": 5.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0038p",
+     "ms": 4.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0039p",
+     "ms": 4.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0040p",
+     "ms": 6.54,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0041p",
+     "ms": 4.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0042p",
+     "ms": 4.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0043p",
+     "ms": 6.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0044p",
+     "ms": 6.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0045p",
+     "ms": 6.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0046p",
+     "ms": 5.96,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0047p",
+     "ms": 8.26,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0048p",
+     "ms": 4.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0049p",
+     "ms": 6.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0050p",
+     "ms": 4.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0051p",
+     "ms": 6.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0052p",
+     "ms": 6.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0053p",
+     "ms": 18.72,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : surface r3 : 18,98 m\u00b2 < 18,98 m\u00b2"
+    },
+    {
+     "scenario": "s17-0054p",
+     "ms": 4.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0055p",
+     "ms": 4.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0056p",
+     "ms": 6.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0057p",
+     "ms": 5.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0058p",
+     "ms": 4.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0059p",
+     "ms": 4.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0060p",
+     "ms": 6.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0061p",
+     "ms": 4.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0062p",
+     "ms": 6.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0063p",
+     "ms": 4.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0064p",
+     "ms": 3.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0065p",
+     "ms": 5.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0066p",
+     "ms": 5.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0067p",
+     "ms": 5.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0068p",
+     "ms": 4.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0069p",
+     "ms": 3.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0070p",
+     "ms": 5.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0071p",
+     "ms": 4.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0072p",
+     "ms": 6.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0073p",
+     "ms": 5.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0074p",
+     "ms": 6.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0075p",
+     "ms": 7.39,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0076p",
+     "ms": 5.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0077p",
+     "ms": 6.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0078p",
+     "ms": 3.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0079p",
+     "ms": 5.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0080p",
+     "ms": 3.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0081p",
+     "ms": 6.88,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0082p",
+     "ms": 3.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0083p",
+     "ms": 6.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0084p",
+     "ms": 5.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0085p",
+     "ms": 4.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0086p",
+     "ms": 6.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0087p",
+     "ms": 5.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0088p",
+     "ms": 6.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0089p",
+     "ms": 5.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0090p",
+     "ms": 4.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0091p",
+     "ms": 24.9,
+     "outcome": "refused_invariant",
+     "kinds": [],
+     "detail": "InvariantViole: invariant viole : surface r3 : 8,59 m\u00b2 < 8,59 m\u00b2"
+    },
+    {
+     "scenario": "s17-0092p",
+     "ms": 5.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0093p",
+     "ms": 6.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0094p",
+     "ms": 6.16,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0095p",
+     "ms": 7.48,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r0|r4 ; separation horizontale r1|r6 ; separation horizontale r2|r6 ; separation horizontale r3|r6 ; separation horizontale r3|r7 ; separation"
+    },
+    {
+     "scenario": "s17-0096p",
+     "ms": 5.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0097p",
+     "ms": 4.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0098p",
+     "ms": 3.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0099p",
+     "ms": 4.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0100p",
+     "ms": 5.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0101p",
+     "ms": 5.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0102p",
+     "ms": 4.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0103p",
+     "ms": 4.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0104p",
+     "ms": 5.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0105p",
+     "ms": 6.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0106p",
+     "ms": 5.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0107p",
+     "ms": 4.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0108p",
+     "ms": 4.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0109p",
+     "ms": 6.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0110p",
+     "ms": 3.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0111p",
+     "ms": 6.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0112p",
+     "ms": 4.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0113p",
+     "ms": 4.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0114p",
+     "ms": 5.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0115p",
+     "ms": 4.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0116p",
+     "ms": 5.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0117p",
+     "ms": 6.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0118p",
+     "ms": 5.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0119p",
+     "ms": 4.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0120p",
+     "ms": 5.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0121p",
+     "ms": 4.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0122p",
+     "ms": 4.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0123p",
+     "ms": 7.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0124p",
+     "ms": 8.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0125p",
+     "ms": 6.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0126p",
+     "ms": 6.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0127p",
+     "ms": 3.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0128p",
+     "ms": 5.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0129p",
+     "ms": 6.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0130p",
+     "ms": 3.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0131p",
+     "ms": 7.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0132p",
+     "ms": 3.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0133p",
+     "ms": 6.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0134p",
+     "ms": 5.54,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0135p",
+     "ms": 3.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0136p",
+     "ms": 14.8,
+     "outcome": "refused_infeasible",
+     "kinds": [],
+     "detail": "Infaisable: programme infaisable : separation horizontale r1|r2 ; separation horizontale r1|r3 ; separation horizontale r6|r4 ; separation horizontale r7|r1 ; separation verticale r4|r1 ; separation v"
+    },
+    {
+     "scenario": "s17-0137p",
+     "ms": 6.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0138p",
+     "ms": 7.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0139p",
+     "ms": 5.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0140p",
+     "ms": 4.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0141p",
+     "ms": 3.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0142p",
+     "ms": 3.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0143p",
+     "ms": 6.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0144p",
+     "ms": 12.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0145p",
+     "ms": 8.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0146p",
+     "ms": 3.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0147p",
+     "ms": 5.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0148p",
+     "ms": 4.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0149p",
+     "ms": 5.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0150p",
+     "ms": 7.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0151p",
+     "ms": 5.1,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0152p",
+     "ms": 3.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0153p",
+     "ms": 6.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0154p",
+     "ms": 6.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0155p",
+     "ms": 6.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0156p",
+     "ms": 5.89,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0157p",
+     "ms": 3.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0158p",
+     "ms": 5.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0159p",
+     "ms": 4.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0160p",
+     "ms": 5.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0161p",
+     "ms": 4.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0162p",
+     "ms": 3.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0163p",
+     "ms": 3.26,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0164p",
+     "ms": 3.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0165p",
+     "ms": 5.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0166p",
+     "ms": 6.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0167p",
+     "ms": 6.77,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0168p",
+     "ms": 3.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0169p",
+     "ms": 4.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0170p",
+     "ms": 4.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0171p",
+     "ms": 4.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0172p",
+     "ms": 5.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0173p",
+     "ms": 5.79,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0174p",
+     "ms": 5.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0175p",
+     "ms": 4.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0176p",
+     "ms": 6.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0177p",
+     "ms": 3.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0178p",
+     "ms": 4.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0179p",
+     "ms": 4.83,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0180p",
+     "ms": 5.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0181p",
+     "ms": 6.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0182p",
+     "ms": 7.88,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0183p",
+     "ms": 6.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0184p",
+     "ms": 5.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0185p",
+     "ms": 4.86,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0186p",
+     "ms": 4.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0187p",
+     "ms": 6.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0188p",
+     "ms": 5.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0189p",
+     "ms": 3.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0190p",
+     "ms": 5.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0191p",
+     "ms": 4.94,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0192p",
+     "ms": 3.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0193p",
+     "ms": 7.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0194p",
+     "ms": 3.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0195p",
+     "ms": 6.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0196p",
+     "ms": 5.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0197p",
+     "ms": 4.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0198p",
+     "ms": 3.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0199p",
+     "ms": 8.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    }
+   ]
+  },
+  "partial_performance": {
+   "description": "partial load-bearing wall; performance (analytic surrogate), valid input",
+   "summary": {
+    "n": 200,
+    "outcomes": {
+     "ok": 200,
+     "false_certificate": 0,
+     "invalid_but_flagged": 0,
+     "refused_infeasible": 0,
+     "refused_invariant": 0,
+     "crash": 0
+    },
+    "violations_by_kind": {
+     "overlap": 0,
+     "coverage": 0,
+     "area": 0,
+     "wall": 0
+    },
+    "median_ms": 14.1
+   },
+   "gallery": [],
+   "cases": [
+    {
+     "scenario": "s17-0000p",
+     "ms": 7.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0001p",
+     "ms": 19.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0002p",
+     "ms": 16.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0003p",
+     "ms": 30.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0004p",
+     "ms": 8.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0005p",
+     "ms": 22.16,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0006p",
+     "ms": 38.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0007p",
+     "ms": 18.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0008p",
+     "ms": 22.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0009p",
+     "ms": 11.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0010p",
+     "ms": 70.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0011p",
+     "ms": 13.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0012p",
+     "ms": 19.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0013p",
+     "ms": 7.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0014p",
+     "ms": 7.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0015p",
+     "ms": 7.93,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0016p",
+     "ms": 7.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0017p",
+     "ms": 47.91,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0018p",
+     "ms": 37.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0019p",
+     "ms": 7.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0020p",
+     "ms": 13.64,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0021p",
+     "ms": 14.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0022p",
+     "ms": 24.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0023p",
+     "ms": 14.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0024p",
+     "ms": 81.03,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0025p",
+     "ms": 15.73,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0026p",
+     "ms": 12.8,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0027p",
+     "ms": 23.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0028p",
+     "ms": 11.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0029p",
+     "ms": 7.27,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0030p",
+     "ms": 32.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0031p",
+     "ms": 35.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0032p",
+     "ms": 20.57,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0033p",
+     "ms": 8.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0034p",
+     "ms": 13.41,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0035p",
+     "ms": 8.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0036p",
+     "ms": 9.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0037p",
+     "ms": 13.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0038p",
+     "ms": 14.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0039p",
+     "ms": 10.25,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0040p",
+     "ms": 61.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0041p",
+     "ms": 7.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0042p",
+     "ms": 9.07,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0043p",
+     "ms": 14.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0044p",
+     "ms": 15.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0045p",
+     "ms": 17.58,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0046p",
+     "ms": 14.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0047p",
+     "ms": 24.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0048p",
+     "ms": 8.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0049p",
+     "ms": 38.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0050p",
+     "ms": 11.13,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0051p",
+     "ms": 15.94,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0052p",
+     "ms": 29.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0053p",
+     "ms": 16.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0054p",
+     "ms": 11.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0055p",
+     "ms": 12.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0056p",
+     "ms": 23.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0057p",
+     "ms": 14.27,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0058p",
+     "ms": 8.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0059p",
+     "ms": 14.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0060p",
+     "ms": 27.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0061p",
+     "ms": 9.22,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0062p",
+     "ms": 24.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0063p",
+     "ms": 10.54,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0064p",
+     "ms": 8.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0065p",
+     "ms": 11.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0066p",
+     "ms": 11.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0067p",
+     "ms": 10.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0068p",
+     "ms": 23.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0069p",
+     "ms": 8.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0070p",
+     "ms": 9.96,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0071p",
+     "ms": 11.2,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0072p",
+     "ms": 28.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0073p",
+     "ms": 21.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0074p",
+     "ms": 8.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0075p",
+     "ms": 22.85,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0076p",
+     "ms": 12.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0077p",
+     "ms": 14.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0078p",
+     "ms": 8.14,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0079p",
+     "ms": 22.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0080p",
+     "ms": 7.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0081p",
+     "ms": 17.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0082p",
+     "ms": 8.21,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0083p",
+     "ms": 13.69,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0084p",
+     "ms": 7.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0085p",
+     "ms": 8.9,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0086p",
+     "ms": 27.82,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0087p",
+     "ms": 12.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0088p",
+     "ms": 33.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0089p",
+     "ms": 10.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0090p",
+     "ms": 12.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0091p",
+     "ms": 14.33,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0092p",
+     "ms": 11.29,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0093p",
+     "ms": 37.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0094p",
+     "ms": 25.42,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0095p",
+     "ms": 14.04,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0096p",
+     "ms": 13.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0097p",
+     "ms": 18.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0098p",
+     "ms": 7.23,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0099p",
+     "ms": 18.87,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0100p",
+     "ms": 24.52,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0101p",
+     "ms": 14.11,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0102p",
+     "ms": 9.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0103p",
+     "ms": 16.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0104p",
+     "ms": 15.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0105p",
+     "ms": 12.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0106p",
+     "ms": 20.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0107p",
+     "ms": 9.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0108p",
+     "ms": 8.96,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0109p",
+     "ms": 15.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0110p",
+     "ms": 7.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0111p",
+     "ms": 11.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0112p",
+     "ms": 11.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0113p",
+     "ms": 7.98,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0114p",
+     "ms": 7.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0115p",
+     "ms": 9.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0116p",
+     "ms": 18.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0117p",
+     "ms": 25.74,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0118p",
+     "ms": 14.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0119p",
+     "ms": 9.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0120p",
+     "ms": 20.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0121p",
+     "ms": 8.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0122p",
+     "ms": 9.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0123p",
+     "ms": 13.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0124p",
+     "ms": 14.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0125p",
+     "ms": 25.6,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0126p",
+     "ms": 29.49,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0127p",
+     "ms": 7.13,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0128p",
+     "ms": 13.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0129p",
+     "ms": 22.5,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0130p",
+     "ms": 10.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0131p",
+     "ms": 71.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0132p",
+     "ms": 9.17,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0133p",
+     "ms": 30.71,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0134p",
+     "ms": 22.61,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0135p",
+     "ms": 7.67,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0136p",
+     "ms": 29.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0137p",
+     "ms": 12.68,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0138p",
+     "ms": 14.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0139p",
+     "ms": 10.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0140p",
+     "ms": 11.89,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0141p",
+     "ms": 8.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0142p",
+     "ms": 7.35,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0143p",
+     "ms": 12.97,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0144p",
+     "ms": 14.31,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0145p",
+     "ms": 40.53,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0146p",
+     "ms": 8.02,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0147p",
+     "ms": 47.24,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0148p",
+     "ms": 15.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0149p",
+     "ms": 64.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0150p",
+     "ms": 22.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0151p",
+     "ms": 44.26,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0152p",
+     "ms": 9.45,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0153p",
+     "ms": 10.34,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0154p",
+     "ms": 14.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0155p",
+     "ms": 13.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0156p",
+     "ms": 26.08,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0157p",
+     "ms": 8.95,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0158p",
+     "ms": 14.81,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0159p",
+     "ms": 11.47,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0160p",
+     "ms": 33.32,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0161p",
+     "ms": 7.84,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0162p",
+     "ms": 7.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0163p",
+     "ms": 6.59,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0164p",
+     "ms": 7.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0165p",
+     "ms": 21.76,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0166p",
+     "ms": 32.79,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0167p",
+     "ms": 44.99,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0168p",
+     "ms": 7.7,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0169p",
+     "ms": 20.94,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0170p",
+     "ms": 29.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0171p",
+     "ms": 16.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0172p",
+     "ms": 30.3,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0173p",
+     "ms": 45.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0174p",
+     "ms": 15.0,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0175p",
+     "ms": 22.55,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0176p",
+     "ms": 13.15,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0177p",
+     "ms": 16.48,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0178p",
+     "ms": 7.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0179p",
+     "ms": 74.01,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0180p",
+     "ms": 43.19,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0181p",
+     "ms": 14.43,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0182p",
+     "ms": 14.09,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0183p",
+     "ms": 24.38,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0184p",
+     "ms": 10.44,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0185p",
+     "ms": 11.66,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0186p",
+     "ms": 10.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0187p",
+     "ms": 13.65,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0188p",
+     "ms": 28.37,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0189p",
+     "ms": 8.13,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0190p",
+     "ms": 27.36,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0191p",
+     "ms": 39.51,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0192p",
+     "ms": 11.06,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0193p",
+     "ms": 28.72,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0194p",
+     "ms": 10.12,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0195p",
+     "ms": 16.75,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0196p",
+     "ms": 8.05,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0197p",
+     "ms": 21.28,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0198p",
+     "ms": 9.56,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    },
+    {
+     "scenario": "s17-0199p",
+     "ms": 17.46,
+     "outcome": "ok",
+     "kinds": [],
+     "detail": ""
+    }
+   ]
+  }
+ }
+}
