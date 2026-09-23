@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="772" height="276" viewBox="0 0 772 276">
+  <rect width="772" height="276" fill="#f7f6f3"/>
+  <rect x="1.0" y="1.0" width="378.0" height="273.6" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">input</text>
+  <polygon points="28.00,247.62 352.00,247.62 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="28.00" y="28.00" width="200.05" height="104.38" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="128.03" y="80.19" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sejour</text>
+  <rect x="228.05" y="204.13" width="123.95" height="43.49" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="290.03" y="225.88" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <rect x="228.05" y="28.00" width="123.95" height="176.13" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="290.03" y="116.07" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <rect x="28.00" y="132.38" width="156.56" height="115.25" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="106.28" y="190.00" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <rect x="184.56" y="132.38" width="43.49" height="115.25" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="206.31" y="190.00" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sdb</text>
+  <line class="wall-load-bearing" x1="228.05" y1="247.62" x2="228.05" y2="28.00" stroke="#1f1f1f" stroke-width="4.0" stroke-linecap="square"/>
+  <rect x="393.0" y="1.0" width="378.0" height="273.6" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="420.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">output — false_certificate: wall</text>
+  <polygon points="420.00,247.62 744.00,247.62 744.00,28.00 420.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="420.00" y="28.00" width="241.76" height="65.65" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="540.88" y="60.83" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sejour</text>
+  <rect x="661.76" y="171.45" width="82.24" height="76.18" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="702.88" y="209.53" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <rect x="661.76" y="28.00" width="82.24" height="143.45" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="702.88" y="99.72" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <rect x="420.00" y="93.65" width="87.16" height="153.97" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="463.58" y="170.64" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <rect x="507.16" y="93.65" width="154.60" height="153.97" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="584.46" y="170.64" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sdb</text>
+  <line class="wall-load-bearing" x1="620.05" y1="247.62" x2="620.05" y2="28.00" stroke="#1f1f1f" stroke-width="4.0" stroke-linecap="square"/>
+</svg>

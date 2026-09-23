@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="772" height="253" viewBox="0 0 772 253">
+  <rect width="772" height="253" fill="#f7f6f3"/>
+  <rect x="1.0" y="1.0" width="378.0" height="251.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">input</text>
+  <polygon points="28.23,224.87 350.93,224.87 350.93,28.80 28.23,28.80" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="28.00" y="28.00" width="81.56" height="196.54" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="68.78" y="126.27" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sejour</text>
+  <rect x="109.99" y="28.04" width="46.95" height="196.25" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="133.46" y="126.17" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">cuisine</text>
+  <rect x="157.44" y="117.22" width="194.56" height="108.08" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="254.72" y="171.26" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">couloir</text>
+  <rect x="157.10" y="29.44" width="193.57" height="87.75" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="253.88" y="73.31" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">couloir</text>
+  <line class="wall-load-bearing" x1="109.92" y1="224.87" x2="109.92" y2="28.80" stroke="#1f1f1f" stroke-width="4.0" stroke-linecap="square"/>
+  <rect x="393.0" y="1.0" width="378.0" height="251.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="420.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">output — false_certificate: wall</text>
+  <polygon points="420.23,224.87 742.93,224.87 742.93,28.80 420.23,28.80" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="420.23" y="28.80" width="81.76" height="196.07" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="461.11" y="126.84" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sejour</text>
+  <rect x="501.99" y="28.80" width="47.11" height="196.07" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="525.54" y="126.84" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">cuisine</text>
+  <rect x="549.10" y="116.80" width="193.83" height="108.08" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="646.01" y="170.84" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">couloir</text>
+  <rect x="549.10" y="28.80" width="193.83" height="87.99" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="646.01" y="72.80" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">couloir</text>
+  <line class="wall-load-bearing" x1="501.92" y1="224.87" x2="501.92" y2="28.80" stroke="#1f1f1f" stroke-width="4.0" stroke-linecap="square"/>
+</svg>

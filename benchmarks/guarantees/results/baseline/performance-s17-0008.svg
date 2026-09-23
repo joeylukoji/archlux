@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="772" height="320" viewBox="0 0 772 320">
+  <rect width="772" height="320" fill="#f7f6f3"/>
+  <rect x="1.0" y="1.0" width="378.0" height="318.4" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="28.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">input</text>
+  <polygon points="28.00,292.44 352.00,292.44 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="28.00" y="28.00" width="221.56" height="64.32" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="138.78" y="60.16" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sejour</text>
+  <rect x="28.00" y="92.32" width="61.94" height="200.12" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="58.97" y="192.38" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">couloir</text>
+  <rect x="89.94" y="92.32" width="159.62" height="78.62" fill="#dcdcdc" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="169.75" y="131.63" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">wc</text>
+  <rect x="249.56" y="166.18" width="102.44" height="126.26" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="300.78" y="229.31" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">cuisine</text>
+  <rect x="249.56" y="28.00" width="102.44" height="138.18" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="300.78" y="97.09" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sdb</text>
+  <rect x="89.94" y="170.94" width="52.41" height="121.50" fill="#dcdcdc" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="116.15" y="231.69" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">wc</text>
+  <rect x="142.35" y="170.94" width="107.21" height="121.50" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="195.96" y="231.69" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <line class="wall-load-bearing" x1="249.56" y1="292.44" x2="249.56" y2="28.00" stroke="#1f1f1f" stroke-width="4.0" stroke-linecap="square"/>
+  <rect x="393.0" y="1.0" width="378.0" height="318.4" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
+  <text x="420.0" y="18.0" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">output — false_certificate: wall</text>
+  <polygon points="420.00,292.44 744.00,292.44 744.00,28.00 420.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <rect x="420.00" y="28.00" width="234.83" height="66.79" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="537.41" y="61.39" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sejour</text>
+  <rect x="420.00" y="94.79" width="51.43" height="197.65" fill="#e4e0d8" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="445.72" y="193.61" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">couloir</text>
+  <rect x="471.43" y="94.79" width="183.40" height="81.11" fill="#dcdcdc" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="563.13" y="135.34" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">wc</text>
+  <rect x="654.83" y="158.94" width="89.17" height="133.50" fill="#e8d9bd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="699.41" y="225.69" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">cuisine</text>
+  <rect x="654.83" y="28.00" width="89.17" height="130.94" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="699.41" y="93.47" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">sdb</text>
+  <rect x="471.43" y="175.90" width="91.32" height="116.54" fill="#dcdcdc" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="517.09" y="234.17" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">wc</text>
+  <rect x="562.75" y="175.90" width="92.08" height="116.54" fill="#d6e0cd" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
+  <text x="608.79" y="234.17" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">chambre</text>
+  <line class="wall-load-bearing" x1="641.56" y1="292.44" x2="641.56" y2="28.00" stroke="#1f1f1f" stroke-width="4.0" stroke-linecap="square"/>
+</svg>
