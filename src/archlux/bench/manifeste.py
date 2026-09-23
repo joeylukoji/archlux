@@ -10,7 +10,7 @@ import datetime as dt
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
-from archlux import __version__
+from archlux._version import __version__
 from archlux.types import Manifeste, ModeleTrace
 
 __all__ = ["emettre"]

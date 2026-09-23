@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from types import ModuleType
 
+from archlux._version import __version__
 from archlux.api import legalize
 from archlux.erreurs import (
     ArchluxError,
@@ -49,8 +50,6 @@ from archlux.types import (
     Referentiel,
     Structure,
 )
-
-__version__ = "1.0.0"
 
 # Groupé par rôle et non trié alphabétiquement : la structure de cette liste *est* la
 # carte de l'API publique. Un tri alphabétique mêlerait exceptions et modèle de données.

@@ -26,6 +26,8 @@ AUTORISE: dict[str, frozenset[str]] = {
     # main (`ARCHITECTURE.md` §7).
     "types": frozenset({"erreurs"}),
     "erreurs": frozenset(),
+    # Source unique de la version : feuille, n'importe rien.
+    "_version": frozenset(),
     "geom": frozenset({"types", "erreurs"}),
     "lmo": frozenset({"types", "erreurs", "geom"}),
     "solve": frozenset({"types", "erreurs", "geom", "lmo", "light.protocole"}),
@@ -120,9 +122,19 @@ def test_les_couches_respectent_les_dependances(fichier: Path) -> None:
     autorise = AUTORISE[paquet]
     exemptions = EXEMPTIONS.get(paquet, frozenset())
     for cible in sorted(_imports(fichier)):
+        if cible == "archlux":
+            # `from archlux import X` exécute `archlux/__init__.py`, donc charge `api`
+            # et, par lui, toute la chaîne légalisation. Aucun module interne n'en a
+            # le droit : la version vient de `archlux._version`.
+            raise AssertionError(
+                f"{_chemin_module(fichier)} importe le paquet racine `archlux` : "
+                "interdit à l'intérieur de la bibliothèque (importer le module précis)."
+            )
         if not cible.startswith("archlux.") or cible in exemptions:
             continue
         reste = cible.removeprefix("archlux.")
+        if reste == "_version":
+            continue  # feuille sans dépendance, importable par tous
         paquet_cible = reste.split(".")[0]
         if paquet_cible == paquet:
             continue  # import interne au paquet

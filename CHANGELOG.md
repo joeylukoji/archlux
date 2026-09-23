@@ -8,6 +8,26 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 0 (new entries are written in English)
+
+#### Changed
+- **Version rolled back to `0.9.0`.** `1.0.0` promised a stable, usable API while the
+  README quick start did not run and the performance mode failed on realistic plans
+  (see `AUDIT.md`). `1.0.0` will be tagged at the end of PLAN.md phase 5.
+- **Single source of truth for the version**: `src/archlux/_version.py`, read by hatch
+  (`dynamic = ["version"]`). The certificate header used installed metadata and could
+  print a stale `0.0.0`; it now prints the source version.
+
+#### Fixed
+- `export.ifc` and `bench.manifeste` imported the root package (`from archlux import
+  __version__`), which loaded the whole legalization chain. They now import
+  `archlux._version`.
+- `tests/test_dependances.py` ignored `from archlux import ...`; importing the root
+  package from inside the library is now rejected.
+
+#### Added
+- `LICENSE` (Apache-2.0 text), `.gitattributes` (LF line endings), git history.
+
 ### RUPTURE — le protocole `Substitut` recoit les baies
 
 `evaluer`, `gradient` et `incertitude` prennent un argument **nomme et optionnel**

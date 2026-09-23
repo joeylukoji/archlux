@@ -7,8 +7,7 @@ preuve ou d'une prédiction.
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
-
+from archlux._version import __version__
 from archlux.types import BornePerformance, Certificat, Manifeste, PreuveGeometrique
 
 __all__ = ["rendre"]
@@ -20,10 +19,8 @@ _HORS_PERIMETRE = (
 
 
 def _version() -> str:
-    try:
-        return version("archlux")
-    except PackageNotFoundError:
-        return "1.0.0"
+    """Version of the source code, never stale install metadata."""
+    return __version__
 
 
 def _fmt(valeur: float, digits: int = 2) -> str:

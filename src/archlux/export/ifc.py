@@ -7,7 +7,7 @@ import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 
-from archlux import __version__
+from archlux._version import __version__
 from archlux.erreurs import ArchluxError
 from archlux.export.pathologie import diagnostiquer
 from archlux.types import Plan
