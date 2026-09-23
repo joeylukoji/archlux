@@ -19,8 +19,8 @@ htmlcov/
 # Built documentation
 site/
 
-# Data that cannot be redistributed (see docs/donnees/)
-donnees/
+# Data that cannot be redistributed (see docs/donnees/). Anchored: must not hide docs/donnees/.
+/donnees/
 
 # Temporary experiment outputs
 resultats/_tmp_*/
