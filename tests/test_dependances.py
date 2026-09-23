@@ -28,6 +28,8 @@ AUTORISE: dict[str, frozenset[str]] = {
     "erreurs": frozenset(),
     # Source unique de la version : feuille, n'importe rien.
     "_version": frozenset(),
+    # Registre des tolérances : feuille, n'importe rien.
+    "tolerances": frozenset(),
     "geom": frozenset({"types", "erreurs"}),
     "lmo": frozenset({"types", "erreurs", "geom"}),
     "solve": frozenset({"types", "erreurs", "geom", "lmo", "light.protocole"}),
@@ -133,8 +135,8 @@ def test_les_couches_respectent_les_dependances(fichier: Path) -> None:
         if not cible.startswith("archlux.") or cible in exemptions:
             continue
         reste = cible.removeprefix("archlux.")
-        if reste == "_version":
-            continue  # feuille sans dépendance, importable par tous
+        if reste in {"_version", "tolerances"}:
+            continue  # feuilles sans dépendance, importables par tous
         paquet_cible = reste.split(".")[0]
         if paquet_cible == paquet:
             continue  # import interne au paquet
