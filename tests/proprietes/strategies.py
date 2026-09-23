@@ -40,6 +40,7 @@ __all__ = [
     "pieces",
     "plans_quelconques",
     "plans_valides",
+    "realistic_scenarios",
     "vecteurs_objectifs",
 ]
 
@@ -328,3 +329,49 @@ def vecteurs_objectifs(dimension: int) -> st.SearchStrategy[np.ndarray]:
         min_size=dimension,
         max_size=dimension,
     ).map(lambda valeurs: np.array(valeurs, dtype=float))
+
+
+@st.composite
+def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Contexte]:
+    """Valid plan plus a context that actually constrains it (PLAN.md, task 0.8).
+
+    Every other strategy uses ``aires_min=()`` and no load-bearing wall, which is how the
+    critical defects of AUDIT.md §3 went unnoticed. Here:
+
+    - one load-bearing wall lies on a real partition of the plan (a room edge that is
+      not on the outline), so the input respects it;
+    - each room type present gets a minimum area between 50 % and 100 % of its smallest
+      room, the tight case included, so the input satisfies every minimum;
+    - the orientation is arbitrary.
+
+    The input is therefore valid under its own context: any violation in the output is
+    introduced by ``legalize``.
+    """
+    plan = draw(plans_valides())
+    largeur, hauteur = (c / 100.0 for c in CONTOUR_DEFAUT_CM)
+
+    edges: list[tuple[tuple[float, float], tuple[float, float]]] = []
+    for room in plan.pieces:
+        right, top = room.x + room.w, room.y + room.h
+        if right < largeur - 1e-9:
+            edges.append(((right, room.y), (right, top)))
+        if top < hauteur - 1e-9:
+            edges.append(((room.x, top), (right, top)))
+    walls: tuple[Mur, ...] = ()
+    if edges:
+        a, b = draw(st.sampled_from(edges))
+        walls = (Mur(id="lb0", a=a, b=b, porteur=True),)
+
+    smallest: dict[str, float] = {}
+    for room in plan.pieces:
+        smallest[room.type] = min(smallest.get(room.type, float("inf")), room.w * room.h)
+    ratio = draw(st.floats(min_value=0.5, max_value=1.0, allow_nan=False))
+    minimum_areas = tuple(sorted((kind, ratio * area) for kind, area in smallest.items()))
+
+    context = Contexte(
+        structure=Structure(murs_porteurs=walls),
+        orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
+        contour=CONTEXTE_DEFAUT.contour,
+        referentiel=Referentiel(aires_min=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
+    )
+    return Plan(pieces=plan.pieces, murs=walls, ouvertures=(), contour=plan.contour), context
