@@ -100,7 +100,17 @@ def _git_revision() -> str:
             ["git", *args], capture_output=True, text=True, cwd=HERE, check=False
         ).stdout.strip()
 
-    return git("rev-parse", "--short", "HEAD") + ("-dirty" if git("status", "--porcelain") else "")
+    # Dirty = a tracked file differs from HEAD, the benchmark's own outputs excepted.
+    changed = git(
+        "status",
+        "--porcelain",
+        "--untracked-files=no",
+        "--",
+        ":/",
+        ":(exclude,top)benchmarks/guarantees/results",
+        ":(exclude,top)benchmarks/guarantees/README.md",
+    )
+    return git("rev-parse", "--short", "HEAD") + ("-dirty" if changed else "")
 
 
 def _run_case(scenario: Scenario, mode: Mode) -> dict[str, object]:
