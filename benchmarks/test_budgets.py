@@ -29,7 +29,7 @@ from archlux.types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from pytest_benchmark.fixture import BenchmarkFixture
 
 BUDGETS_MS = {
     "polytope": 5.0,
@@ -40,6 +40,21 @@ BUDGETS_MS = {
     "certification": 5.0,
 }
 """Référence : 15 pièces ; 50 itérations pour le mode performantiel."""
+
+
+def _assert_within_budget(benchmark: BenchmarkFixture, budget: str) -> None:
+    """Fail if the measured mean exceeds ``BUDGETS_MS[budget]``.
+
+    With ``--benchmark-disable`` the function runs once and ``benchmark.stats`` is
+    ``None``: nothing was measured, so the budget is reported as skipped rather than
+    silently passed. An unmeasured budget is not a met budget.
+    """
+    if benchmark.stats is None:
+        pytest.skip(f"benchmarks disabled: budget '{budget}' not measured")
+    mean_ms = benchmark.stats["mean"] * 1000
+    limit_ms = BUDGETS_MS[budget]
+    assert mean_ms < limit_ms, f"{mean_ms:.2f} ms > {limit_ms} ms — budget §9 '{budget}' exceeded"
+
 
 CTX_15 = Contexte(
     structure=Structure(murs_porteurs=()),
@@ -71,25 +86,23 @@ def _poly_15() -> object:
 
 
 @pytest.mark.budget
-def test_budget_lp_a_froid(benchmark: Callable[..., object]) -> None:
+def test_budget_lp_a_froid(benchmark: BenchmarkFixture) -> None:
     """Un appel LP à froid < 10 ms : construction du modèle **comprise**."""
     poly = _poly_15()
     c = np.ones(len(poly.index))  # type: ignore[attr-defined]
     vider_cache()
     benchmark(resoudre, poly, c)
-    moyenne_ms = benchmark.stats["mean"] * 1000  # type: ignore[attr-defined]
-    assert moyenne_ms < BUDGETS_MS["lp_froid"], f"{moyenne_ms:.2f} ms — budget §9 dépassé"
+    _assert_within_budget(benchmark, "lp_froid")
 
 
 @pytest.mark.budget
-def test_budget_lp_a_chaud(benchmark: Callable[..., object]) -> None:
+def test_budget_lp_a_chaud(benchmark: BenchmarkFixture) -> None:
     """Un appel LP à chaud < 3 ms : le modèle est réutilisé, seul l'objectif change."""
     poly = _poly_15()
     n = len(poly.index)  # type: ignore[attr-defined]
     froid = resoudre(poly, np.ones(n))
     benchmark(resoudre, poly, -np.ones(n), depart=froid.x)
-    moyenne_ms = benchmark.stats["mean"] * 1000  # type: ignore[attr-defined]
-    assert moyenne_ms < BUDGETS_MS["lp_chaud"], f"{moyenne_ms:.2f} ms — budget §9 dépassé"
+    _assert_within_budget(benchmark, "lp_chaud")
 
 
 @pytest.mark.budget
@@ -122,7 +135,7 @@ def test_warm_start_est_plus_rapide() -> None:
 
 
 @pytest.mark.budget
-def test_budget_polytope(benchmark: Callable[..., object]) -> None:
+def test_budget_polytope(benchmark: BenchmarkFixture) -> None:
     """Construction du polytope < 5 ms pour 15 pièces.
 
     L'ordre est déduit **hors mesure** : le budget du §9 porte sur l'assemblage du
@@ -130,32 +143,23 @@ def test_budget_polytope(benchmark: Callable[..., object]) -> None:
     """
     ordre = deduire_ordre(_plan_15_pieces())
     benchmark(construire_polytope, ordre, CTX_15)
-    moyenne_ms = benchmark.stats["mean"] * 1000  # type: ignore[attr-defined]
-    assert moyenne_ms < BUDGETS_MS["polytope"], (
-        f"{moyenne_ms:.2f} ms > {BUDGETS_MS['polytope']} ms — budget §9 dépassé"
-    )
+    _assert_within_budget(benchmark, "polytope")
 
 
 @pytest.mark.budget
-def test_budget_legalisation_classique(benchmark: Callable[..., object]) -> None:
+def test_budget_legalisation_classique(benchmark: BenchmarkFixture) -> None:
     """Pipeline complet ``legalize`` < 20 ms pour 15 pièces (`ARCHITECTURE.md` §9)."""
     plan = _plan_15_pieces()
     benchmark(archlux.legalize, plan, CTX_15)
-    moyenne_ms = benchmark.stats["mean"] * 1000  # type: ignore[attr-defined]
-    assert moyenne_ms < BUDGETS_MS["legalisation_classique"], (
-        f"{moyenne_ms:.2f} ms — budget légalisation classique dépassé"
-    )
+    _assert_within_budget(benchmark, "legalisation_classique")
 
 
 @pytest.mark.budget
-def test_budget_legalisation_performantielle(benchmark: Callable[..., object]) -> None:
+def test_budget_legalisation_performantielle(benchmark: BenchmarkFixture) -> None:
     """Frank-Wolfe + substitut analytique < 500 ms (`ARCHITECTURE.md` §9)."""
     from archlux.light.analytique import SubstitutAnalytique
 
     plan = _plan_15_pieces()
     objectif = SubstitutAnalytique()
     benchmark(archlux.legalize, plan, CTX_15, objective=objectif)
-    moyenne_ms = benchmark.stats["mean"] * 1000  # type: ignore[attr-defined]
-    assert moyenne_ms < BUDGETS_MS["legalisation_performantielle"], (
-        f"{moyenne_ms:.2f} ms — budget légalisation performantielle dépassé"
-    )
+    _assert_within_budget(benchmark, "legalisation_performantielle")
