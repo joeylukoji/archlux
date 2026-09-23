@@ -11,8 +11,8 @@ output (safe, but a defect); `n/a` marks runs made before that split.
 
 | run | revision | n | ok | false certificate | invalid, flagged | refused | of which invariant | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| baseline | `95baabe` | 200 | 200 (100.0 %) | n/a | n/a | 0 (0.0 %) | n/a | n/a | 0 | 0 | 0 | 0 | 5.28 |
-| after-1.1 | `9ab3148` | 200 | 200 (100.0 %) | n/a | n/a | 0 (0.0 %) | n/a | n/a | 0 | 0 | 0 | 0 | 3.34 |
+| baseline | `95baabe` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 5.28 |
+| after-1.1 | `9ab3148` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 3.34 |
 | after-1.1b | `5263a47` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 4.69 |
 | after-1.1-review | `aac5e4a` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 4.75 |
 
@@ -20,8 +20,8 @@ output (safe, but a defect); `n/a` marks runs made before that split.
 
 | run | revision | n | ok | false certificate | invalid, flagged | refused | of which invariant | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| baseline | `95baabe` | 200 | 200 (100.0 %) | n/a | n/a | 0 (0.0 %) | n/a | n/a | 0 | 0 | 0 | 0 | 6.08 |
-| after-1.1 | `9ab3148` | 200 | 200 (100.0 %) | n/a | n/a | 0 (0.0 %) | n/a | n/a | 0 | 0 | 0 | 0 | 4.04 |
+| baseline | `95baabe` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 6.08 |
+| after-1.1 | `9ab3148` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 4.04 |
 | after-1.1b | `5263a47` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 5.88 |
 | after-1.1-review | `aac5e4a` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 5.47 |
 
@@ -29,8 +29,8 @@ output (safe, but a defect); `n/a` marks runs made before that split.
 
 | run | revision | n | ok | false certificate | invalid, flagged | refused | of which invariant | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| baseline ([cases](baseline/)) | `95baabe` | 200 | n/a | 1 (0.5 %) | n/a | 199 (99.5 %) | n/a | n/a | 0 | 0 | 0 | 1 | 4.5 |
-| after-1.1 | `9ab3148` | 200 | 1 (0.5 %) | n/a | n/a | 199 (99.5 %) | n/a | n/a | 0 | 0 | 0 | 0 | 2.88 |
+| baseline ([cases](baseline/)) | `95baabe` | 200 | 0 (0.0 %) | 1 (0.5 %) | 0 (0.0 %) | 199 (99.5 %) | n/a | 0 (0.0 %) | 0 | 0 | 0 | 1 | 4.5 |
+| after-1.1 | `9ab3148` | 200 | 1 (0.5 %) | 0 (0.0 %) | 0 (0.0 %) | 199 (99.5 %) | n/a | 0 (0.0 %) | 0 | 0 | 0 | 0 | 2.88 |
 | after-1.1b | `5263a47` | 200 | 1 (0.5 %) | 0 (0.0 %) | 0 (0.0 %) | 199 (99.5 %) | 110 (55.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 4.01 |
 | after-1.1-review | `aac5e4a` | 200 | 1 (0.5 %) | 0 (0.0 %) | 0 (0.0 %) | 199 (99.5 %) | 110 (55.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 4.01 |
 
@@ -38,8 +38,8 @@ output (safe, but a defect); `n/a` marks runs made before that split.
 
 | run | revision | n | ok | false certificate | invalid, flagged | refused | of which invariant | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| baseline ([cases](baseline/)) | `95baabe` | 200 | n/a | 35 (17.5 %) | n/a | 165 (82.5 %) | n/a | n/a | 0 | 0 | 0 | 35 | 14.9 |
-| after-1.1 | `9ab3148` | 200 | 33 (16.5 %) | n/a | n/a | 167 (83.5 %) | n/a | n/a | 0 | 0 | 0 | 0 | 13.48 |
+| baseline ([cases](baseline/)) | `95baabe` | 200 | 0 (0.0 %) | 35 (17.5 %) | 0 (0.0 %) | 165 (82.5 %) | n/a | 0 (0.0 %) | 0 | 0 | 0 | 35 | 14.9 |
+| after-1.1 | `9ab3148` | 200 | 33 (16.5 %) | 0 (0.0 %) | 0 (0.0 %) | 167 (83.5 %) | n/a | 0 (0.0 %) | 0 | 0 | 0 | 0 | 13.48 |
 | after-1.1b | `5263a47` | 200 | 33 (16.5 %) | 0 (0.0 %) | 0 (0.0 %) | 167 (83.5 %) | 167 (83.5 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 13.69 |
 | after-1.1-review | `aac5e4a` | 200 | 33 (16.5 %) | 0 (0.0 %) | 0 (0.0 %) | 167 (83.5 %) | 167 (83.5 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 13.11 |
 
@@ -47,8 +47,8 @@ output (safe, but a defect); `n/a` marks runs made before that split.
 
 | run | revision | n | ok | false certificate | invalid, flagged | refused | of which invariant | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| baseline | `95baabe` | 200 | n/a | n/a | n/a | 0 (0.0 %) | n/a | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.99 |
-| after-1.1 | `9ab3148` | 200 | n/a | n/a | n/a | 0 (0.0 %) | n/a | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.89 |
+| baseline | `95baabe` | 200 | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.99 |
+| after-1.1 | `9ab3148` | 200 | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.89 |
 | after-1.1b | `5263a47` | 200 | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.2 |
 | after-1.1-review | `aac5e4a` | 200 | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.25 |
 

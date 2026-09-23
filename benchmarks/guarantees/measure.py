@@ -281,10 +281,20 @@ def measure(label: str, n: int, seed: int) -> dict[str, Any]:
     return report
 
 
+_SPLIT = ("refused_infeasible", "refused_invariant")
+"""Outcomes introduced when refusals were split; unknown for earlier runs."""
+
+
 def _count(summary: dict[str, Any], outcome: str) -> int | None:
-    """Count of ``outcome``; ``None`` if the run predates that outcome."""
+    """Count of ``outcome``; ``None`` if the run predates that outcome.
+
+    Earlier runs stored only non-zero outcomes, so a missing key means zero, except for
+    the split refusal outcomes, which they did not distinguish.
+    """
     stored: dict[str, int] = summary["outcomes"]
-    return int(stored[outcome]) if outcome in stored else None
+    if outcome in _SPLIT and "refused" in stored:  # an earlier run with refusals
+        return None
+    return int(stored.get(outcome, 0))
 
 
 def _refused(summary: dict[str, Any]) -> int:
