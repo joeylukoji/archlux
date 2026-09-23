@@ -10,27 +10,32 @@ guarantee according to the independent checker (`tests/checkers.py`).
 | run | revision | n | ok | false certificate | refused | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | baseline | `95baabe` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 5.28 |
+| after-1.1 | `9ab3148` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 3.34 |
 
 ## classic_one_fault — classic + tiling, one room off by up to 25 cm
 
 | run | revision | n | ok | false certificate | refused | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | baseline | `95baabe` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 6.08 |
+| after-1.1 | `9ab3148` | 200 | 200 (100.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 4.04 |
 
 ## classic_noisy — classic + tiling, every coordinate moved by up to 3 cm
 
 | run | revision | n | ok | false certificate | refused | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | baseline ([cases](baseline/)) | `95baabe` | 200 | 0 (0.0 %) | 1 (0.5 %) | 199 (99.5 %) | 0 (0.0 %) | 0 | 0 | 0 | 1 | 4.5 |
+| after-1.1 | `9ab3148` | 200 | 1 (0.5 %) | 0 (0.0 %) | 199 (99.5 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 2.88 |
 
 ## performance — performance (analytic surrogate), valid input
 
 | run | revision | n | ok | false certificate | refused | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | baseline ([cases](baseline/)) | `95baabe` | 200 | 0 (0.0 %) | 35 (17.5 %) | 165 (82.5 %) | 0 (0.0 %) | 0 | 0 | 0 | 35 | 14.9 |
+| after-1.1 | `9ab3148` | 200 | 33 (16.5 %) | 0 (0.0 %) | 167 (83.5 %) | 0 (0.0 %) | 0 | 0 | 0 | 0 | 13.48 |
 
 ## daylight — performance (Daylight objective), valid input
 
 | run | revision | n | ok | false certificate | refused | crash | overlap | coverage | area | wall | median ms |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | baseline | `95baabe` | 200 | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.99 |
+| after-1.1 | `9ab3148` | 200 | 0 (0.0 %) | 0 (0.0 %) | 0 (0.0 %) | 200 (100.0 %) | 0 | 0 | 0 | 0 | 5.89 |
