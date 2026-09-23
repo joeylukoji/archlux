@@ -1,4 +1,4 @@
-"""Une seule source de vérité pour la version (PLAN.md, tâche 0.3)."""
+"""A single source of truth for the version (PLAN.md, task 0.3)."""
 
 from __future__ import annotations
 
