@@ -258,6 +258,14 @@ prévu ci-dessous n'est plus nécessaire tant que le banc reste à 0 refus
 - Remplacer la vérification `isinstance(x, Substitut)` par un contrôle de signature
   (`inspect.signature`) dans un test de conformité, appliqué à **tous** les substituts.
 
+**État du lot 1.3 : terminé (2026-09-23).** `Daylight` accepte et transmet `baies` ;
+test de conformité des signatures sur les cinq substituts ; `Daylight` gelé. Banc :
+200 plantages → **200/200 corrects**. Il n'y a plus ni certificat mensonger ni
+plantage dans aucun mode. **Réserve de fond, non traitée ici** (audit §5.5) :
+l'incertitude σ est constante dans les trois substituts livrés, donc
+`Daylight = μ − qσ` a le même optimum que `μ` et le garde-fou est inopérant.
+Traité en phase 6.3 (σ variable par ensemble ou régression quantile).
+
 ### 1.4 Frank-Wolfe honnête sur ce qu'il garantit (§5.1)
 
 - `gap` initialisé à `inf` ; gap recalculé **au `x` rendu** ; `iterations` sans décalage.
@@ -596,7 +604,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | En cours | | Lots 1.1 (murs porteurs) et 1.2 (surfaces en mode performance) terminés : 0 certificat mensonger, mode performance 200/200 au banc. Lot suivant : 1.3 (`Daylight`). |
+| 1 | En cours | | Lots 1.1 (murs), 1.2 (surfaces) et 1.3 (`Daylight`) terminés : 0 certificat mensonger et 0 plantage dans tous les modes du banc. Lot suivant : 1.4 (Frank-Wolfe honnête : gap, statut d'arrêt, budget). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |
