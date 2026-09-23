@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 .venv/
+venv/
+.tox/
+.nox/
 dist/
 build/
 *.egg-info/
@@ -13,6 +16,7 @@ build/
 .hypothesis/
 .benchmarks/
 .coverage
+.coverage.*
 coverage.xml
 htmlcov/
 
@@ -24,7 +28,6 @@ site/
 
 # Temporary experiment outputs
 resultats/_tmp_*/
-!resultats/.gitkeep
 
 # Local agent session state
 session_memory.json

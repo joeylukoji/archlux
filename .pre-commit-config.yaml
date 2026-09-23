@@ -1,4 +1,4 @@
-# Run `pre-commit install` once; the same checks run in CI.
+# Run `pre-commit install` once. CI runs these hooks too (`pre-commit run --all-files`).
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.10

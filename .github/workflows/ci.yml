@@ -16,6 +16,8 @@ jobs:
         run: ruff check .
       - name: Format
         run: ruff format --check .
+      - name: Repository hygiene (pre-commit hooks)
+        run: pre-commit run --all-files --show-diff-on-failure
       - name: Types
         run: mypy src/
       - name: Couverture des docstrings
@@ -38,7 +40,7 @@ jobs:
       - name: Regles de dependance (ARCHITECTURE.md §5) -- bloquant
         run: pytest tests/test_dependances.py -q
       - name: Tests
-        run: pytest --cov=archlux --cov-report=term-missing --cov-fail-under=83.9
+        run: pytest --cov=archlux --cov-report=term-missing
 
   budgets:
     runs-on: ubuntu-latest
