@@ -237,6 +237,17 @@ mode « mur partiel + une faute » 196/200. Revue `review-and-refactor` faite ; 
   le tableau de scalabilité de l'audit (15/50/100/150 pièces, `a_min = 11`) doit réussir
   partout.
 
+**État du lot 1.2 : terminé (2026-09-23).** Approximation **intérieure** des surfaces
+minimales (cordes de l'hyperbole, `lmo.coupes.inner_area_constraints`) : tout itéré de
+Frank-Wolfe respecte toutes les surfaces, par construction. Banc : mode performance
+33 → **200/200** (mur plein) et 41 → **200/200** (mur partiel). Le démarrage à chaud du
+LP est rétabli (plus de coupes tangentes), avec un budget de 50 ms sur 500.
+**Coût mesuré**, sur les 33 scénarios qui réussissaient déjà avant : objectif identique en
+médiane (rapport 1,0000), gain médian sur la légalisation classique de 4,3 % → 3,9 %, pire
+cas −12 %, meilleur +2 %. Le repli « rendre le plan classique au lieu de lever » prévu
+ci-dessous n'est plus nécessaire tant que le banc reste à 0 refus `refused_invariant` en
+mode performance.
+
 ### 1.3 `Daylight` conforme au protocole (§3 n°3)
 
 - Ajouter `*, baies=None` à `evaluer`, `gradient`, `incertitude`, puis le propager.
