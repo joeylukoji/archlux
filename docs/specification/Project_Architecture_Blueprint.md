@@ -193,7 +193,7 @@ qu'il lui est **interdit** de savoir.
 | `lmo.coupes` | `Coupe` | Aucun point admissible exclu (convexité) | La lumière |
 | `light.protocole` | *(interface)* | Trois méthodes, entrée vectorielle | `geom`, `lmo`, `solve` |
 | `light.appris` | valeur, ∇, σ | Rien en soi — la garantie vient de `uq` | La géométrie |
-| `solve` | `ResultatFW` | Validité à chaque itéré ; gap certifié | L'implémentation du substitut |
+| `solve` | `FrankWolfeResult` | Validité à chaque itéré ; gap certifié | L'implémentation du substitut |
 | `orient` | Encodages, statistiques | Continuité en 0°/360° | Le reste du plan |
 | `uq.conforme` | `BornePerformance` | Couverture ≥ 1−α **sous échangeabilité** | La géométrie |
 | `certify.preuve` | `PreuveGeometrique` | Exactitude par inspection finie | Toute probabilité |

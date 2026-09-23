@@ -62,13 +62,13 @@ def _depart_faisable() -> np.ndarray:
 def test_tous_les_iteres_sont_dans_le_polytope() -> None:
     objectif = ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 1.0]))
     resultat = frank_wolfe(POLY, objectif, NORD, _depart_faisable(), max_iter=8)
-    assert resultat.trace.iteres
-    assert all(POLY.contient(point, tol=1e-7) for point in resultat.trace.iteres)
+    assert resultat.trace.iterates
+    assert all(POLY.contient(point, tol=1e-7) for point in resultat.trace.iterates)
 
 
 def test_objectif_non_decroissant() -> None:
     objectif = ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 1.0]))
-    valeurs = frank_wolfe(POLY, objectif, NORD, _depart_faisable(), max_iter=8).trace.objectif
+    valeurs = frank_wolfe(POLY, objectif, NORD, _depart_faisable(), max_iter=8).trace.values
     for avant, apres in pairwise(valeurs):
         assert apres >= avant - 1e-9
 
@@ -81,7 +81,7 @@ def test_gap_majore_l_ecart_a_l_optimum_lineaire() -> None:
     resultat = frank_wolfe(POLY, objectif, NORD, x0, max_iter=10, away_steps=False)
     optimum = resoudre(POLY, -c, depart=x0)
     assert optimum.statut == "optimal"
-    ecart = float(c @ optimum.x) - resultat.valeur
+    ecart = float(c @ optimum.x) - resultat.value
     assert ecart <= resultat.gap + 1e-6
 
 

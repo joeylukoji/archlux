@@ -65,6 +65,23 @@ been migrated is a breaking change.
 | invariant violé / `InvariantViole` | invariant violation / `InvariantViolation` |
 | vérifier exactement | verify exactly |
 
+## Frank-Wolfe (`solve`)
+
+| French | English |
+|---|---|
+| `ResultatFW` | `FrankWolfeResult` |
+| itéré | iterate |
+| sommet (FW, away) | vertex (FW, away) |
+| pas | step |
+| poids (des sommets) | weights |
+| valeur (du substitut) | value |
+| écart de dualité / gap | gap (see batch 1.4: stationarity gap) |
+| trace, `iteres`, `ecarts`, `objectif` | trace, `iterates`, `gaps`, `values` |
+| `temps_lp_ms`, `n_coupes` | `lp_ms`, `n_cuts` |
+| `depart` | `start` |
+| `duaux` | `duals` |
+| baies (paramètre) | `glazing` (the protocol keyword stays `baies` until batch E6 of `light`) |
+
 ## Daylight and uncertainty
 
 | French | English |

@@ -18,6 +18,9 @@ ROOT = Path(__file__).resolve().parents[1]
 MIGRATED: tuple[str, ...] = (
     "src/archlux/_version.py",
     "src/archlux/tolerances.py",
+    "src/archlux/solve/trace.py",
+    "src/archlux/solve/frank_wolfe.py",
+    "tests/unites/test_trace_aliases.py",
     "tests/test_language.py",
     "tests/checkers.py",
     "tests/unites/test_svg.py",

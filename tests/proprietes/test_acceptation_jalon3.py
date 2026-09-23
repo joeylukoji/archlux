@@ -45,10 +45,10 @@ def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
     """
     resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
     assert isinstance(resultat.trace, Trace)
-    assert resultat.trace.iteres
+    assert resultat.trace.iterates
     poly = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT)
-    poly_fw = figer_contacts(poly, resultat.trace.iteres[0])
-    assert all(poly_fw.contient(point, tol=1e-6) for point in resultat.trace.iteres)
+    poly_fw = figer_contacts(poly, resultat.trace.iterates[0])
+    assert all(poly_fw.contient(point, tol=1e-6) for point in resultat.trace.iterates)
 
 
 @given(plan=plans_valides())
@@ -56,7 +56,7 @@ def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
 def test_objectif_monotone(plan: Plan) -> None:
     resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
     assert isinstance(resultat.trace, Trace)
-    for avant, apres in pairwise(resultat.trace.objectif):
+    for avant, apres in pairwise(resultat.trace.values):
         assert apres >= avant - 1e-9
 
 

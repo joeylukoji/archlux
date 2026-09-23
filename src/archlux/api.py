@@ -282,11 +282,10 @@ def legalize(
         objective,
         ctx.orientation,
         x0,
-        # La fenestration ne fait pas partie du vecteur de decision : elle est
-        # constante pendant l'optimisation et se transmet telle quelle. Sans elle,
-        # le substitut ne voit que des rectangles et ne peut rien predire de l'
-        # eclairement reel (`docs/formules/jetons.md`).
-        baies=Baies(murs=corrige.murs, ouvertures=corrige.ouvertures),
+        # Glazing is not part of the decision vector: it is constant during the
+        # optimization and passed through unchanged. Without it the surrogate only sees
+        # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
+        glazing=Baies(murs=corrige.murs, ouvertures=corrige.ouvertures),
         budget=budget,
     )
     performant = replace(
@@ -302,8 +301,8 @@ def legalize(
     # Attention : figer_contacts a déplacé les lignes saturées dans A_eq, qui n'est pas
     # dualisée ; ce diagnostic est donc souvent vide (voir lmo.solveur.resoudre).
     duaux_fw = duaux
-    if resultat.duaux is not None:
-        duaux_fw = _duaux_traduits(resultat.duaux, poly_fw)
+    if resultat.duals is not None:
+        duaux_fw = _duaux_traduits(resultat.duals, poly_fw)
     return replace(
         performant,
         certificat=Certificat(geometrie=preuve_fw, performance=None, duaux=duaux_fw),

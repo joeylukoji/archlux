@@ -87,7 +87,7 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)
     assert result.trace is not None
     index = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx).index
-    for step, x in enumerate(result.trace.iteres):
+    for step, x in enumerate(result.trace.iterates):
         iterate = devectoriser(x, result, index)
         assert _independent_violations(iterate, ctx) == [], f"iterate {step}"
 

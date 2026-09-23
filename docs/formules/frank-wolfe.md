@@ -50,7 +50,7 @@ vecteurs \(c\).
 
 ## Code
 
-`frank_wolfe` → `ResultatFW` (`x`, `valeur`, `gap`, `trace`).
+`frank_wolfe` → `FrankWolfeResult` (`x`, `value`, `gap`, `trace`, `duals`).
 `Trace.iteres` / `Trace.objectif` pour les critères d'acceptation.
 
 ## Cas d'utilisation

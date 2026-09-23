@@ -1,15 +1,14 @@
-"""Frank-Wolfe : maximiser un substitut sur le polytope, sans jamais sortir du valide.
+"""Frank-Wolfe: maximize a surrogate over the polytope, never leaving the valid set.
 
-L'algorithme est choisi pour une raison structurelle, pas de commodité : son oracle
-linéaire **est** le solveur de légalisation. Chaque itération résout exactement le même
-LP qu'une légalisation classique, avec un autre vecteur de coûts. Il n'y a donc qu'un
-solveur dans tout le projet, et chaque itéré est un plan valide — pas de projection, pas
-d'étape intermédiaire illégale.
+The algorithm is chosen for a structural reason, not for convenience: its linear oracle
+**is** the legalization solver. Each iteration solves exactly the LP of a classic
+legalization, with another cost vector. There is therefore a single solver in the whole
+project, and every iterate is a valid plan: no projection, no illegal intermediate step.
 
-Dépendances : ``types``, ``geom``, ``lmo``, et le **protocole** ``light.protocole``.
-Jamais une implémentation concrète de substitut.
+Dependencies: ``types``, ``geom``, ``lmo``, and the **protocol** ``light.protocole``.
+Never a concrete surrogate implementation.
 
-Formules : ``docs/formules/frank-wolfe.md``.
+Formulas: ``docs/formules/frank-wolfe.md``.
 """
 
 from __future__ import annotations
@@ -31,319 +30,320 @@ if TYPE_CHECKING:
     from archlux.light.protocole import Baies, Substitut
     from archlux.types import Contexte, Orientation, Piece
 
-__all__ = ["ResultatFW", "frank_wolfe"]
+__all__ = ["FrankWolfeResult", "frank_wolfe"]
 
-_POIDS_MIN = 1e-12
+_MIN_WEIGHT = 1e-12
 
 
 @dataclass(frozen=True, slots=True)
-class ResultatFW:
-    """Itéré final, garanties d'optimalité et trace.
+class FrankWolfeResult:
+    """Final iterate, optimality diagnostics and trace.
 
     Attributes
     ----------
     gap : float
-        Gap de dualité de Frank-Wolfe. **Borne supérieure certifiée** sur l'écart à
-        l'optimum du substitut — une garantie d'optimisation, à ne pas confondre avec
-        la garantie de performance lumineuse, qui est probabiliste. La borne n'est
-        certifiée que si le substitut est concave ; sinon c'est un diagnostic.
+        Frank-Wolfe gap. A **certified upper bound** on the distance to the optimum of
+        the surrogate only if the surrogate is concave; otherwise a diagnostic. Not to be
+        confused with the daylight performance guarantee, which is probabilistic.
     iterations : int
-        Longueur de ``trace.iterations``, **entrée initiale ``k = -1`` comprise** : le
-        nombre de pas effectivement franchis vaut ``iterations - 1``.
-    duaux : numpy.ndarray or None
-        Prix duaux du dernier LP, alignés sur les lignes de ``poly.A``. Les égalités
-        produites par :func:`archlux.geom.polytope.figer_contacts` n'y figurent pas :
-        le diagnostic dual d'une passe performantielle est donc souvent vide.
+        Length of ``trace.iterations``, **initial entry ``k = -1`` included**: the number
+        of steps actually taken is ``iterations - 1``.
+    duals : numpy.ndarray or None
+        Dual prices of the last LP, aligned with the rows of ``poly.A``. Equalities made
+        by :func:`archlux.geom.polytope.figer_contacts` are not included, so the dual
+        diagnosis of a performance run is often empty.
     """
 
     x: np.ndarray
-    valeur: float
+    value: float
     gap: float
     iterations: int
     trace: Trace
-    duaux: np.ndarray | None = None
+    duals: np.ndarray | None = None
 
 
-def _restreindre_budget(poly: Polytope, centre: np.ndarray, rayon: float) -> Polytope:
-    """Intersection du polytope avec la boîte ``‖x − centre‖_∞ ≤ rayon``."""
-    nouvelles: list[tuple[float, float]] = []
+def _restrict_to_budget(poly: Polytope, centre: np.ndarray, radius: float) -> Polytope:
+    """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``."""
+    bounds: list[tuple[float, float]] = []
     for i, (lo, hi) in enumerate(poly.bornes):
-        bas = max(lo, float(centre[i]) - rayon)
-        haut = min(hi, float(centre[i]) + rayon)
-        if bas > haut + 1e-12:
-            raise InvariantViole((f"budget {rayon} m incompatible avec les bornes en colonne {i}",))
-        nouvelles.append((bas, haut))
-    return replace(poly, bornes=tuple(nouvelles))
+        low = max(lo, float(centre[i]) - radius)
+        high = min(hi, float(centre[i]) + radius)
+        if low > high + 1e-12:
+            raise InvariantViole((f"budget {radius} m incompatible with the bounds of column {i}",))
+        bounds.append((low, high))
+    return replace(poly, bornes=tuple(bounds))
 
 
-def _index_sommet(sommets: list[np.ndarray], candidat: np.ndarray) -> int | None:
-    """Indice d'un sommet déjà stocké, à tolérance près."""
-    for rang, sommet in enumerate(sommets):
-        if np.allclose(sommet, candidat, atol=1e-9, rtol=0.0):
-            return rang
+def _vertex_index(vertices: list[np.ndarray], candidate: np.ndarray) -> int | None:
+    """Index of an already stored vertex, up to tolerance."""
+    for rank, vertex in enumerate(vertices):
+        if np.allclose(vertex, candidate, atol=1e-9, rtol=0.0):
+            return rank
     return None
 
 
-def _enrichir_coupes(
-    liste: list[Coupe],
+def _add_cuts(
+    cuts: list[Coupe],
     x: np.ndarray,
-    domaine: Polytope,
+    domain: Polytope,
     ctx: Contexte | None,
-    pieces: tuple[Piece, ...] | None,
+    rooms: tuple[Piece, ...] | None,
 ) -> None:
-    """Ajouter des tangentes AM-GM si une pièce passe sous ``a_min``."""
-    if ctx is None or not pieces:
+    """Add AM-GM tangents when a room goes below ``a_min`` (legacy path)."""
+    if ctx is None or not rooms:
         return
-    if len(liste) >= MAX_COUPES_PAR_PIECE * len(pieces):
+    if len(cuts) >= MAX_COUPES_PAR_PIECE * len(rooms):
         return
-    for identifiant in surfaces_violees(x, domaine, ctx, pieces=pieces):
-        largeur = float(x[domaine.index[f"{identifiant}.w"]])
-        hauteur = float(x[domaine.index[f"{identifiant}.h"]])
-        a_min = ctx.referentiel.a_min(next(p.type for p in pieces if p.id == identifiant))
-        if largeur > 0.0 and hauteur > 0.0 and a_min > 0.0:
-            liste.append(coupe_surface(largeur, hauteur, a_min, piece=identifiant))
+    for room_id in surfaces_violees(x, domain, ctx, pieces=rooms):
+        width = float(x[domain.index[f"{room_id}.w"]])
+        height = float(x[domain.index[f"{room_id}.h"]])
+        a_min = ctx.referentiel.a_min(next(r.type for r in rooms if r.id == room_id))
+        if width > 0.0 and height > 0.0 and a_min > 0.0:
+            cuts.append(coupe_surface(width, height, a_min, piece=room_id))
 
 
-def _normaliser(poids: list[float]) -> None:
-    """Ramener la somme des poids à 1, en place.
+def _normalize(weights: list[float]) -> None:
+    """Scale the weights so that they sum to 1, in place.
 
-    Le filtrage des masses numériquement nulles a lieu **avant** l'appel, chez
-    l'appelant, qui seul peut retirer le sommet correspondant en même temps : élaguer
-    les poids ici désynchroniserait les deux listes.
+    Numerically null masses are filtered **before** the call, by the caller, which alone
+    can drop the matching vertex at the same time: pruning weights here would
+    desynchronize the two lists.
     """
-    total = sum(poids)
+    total = sum(weights)
     if total <= 0.0:
         return
-    for rang, masse in enumerate(poids):
-        poids[rang] = masse / total
+    for rank, mass in enumerate(weights):
+        weights[rank] = mass / total
 
 
 def frank_wolfe(
     poly: Polytope,
-    substitut: Substitut,
+    surrogate: Substitut,
     orientation: Orientation,
-    depart: np.ndarray,
+    start: np.ndarray,
     *,
     max_iter: int = 50,
     tol: float = 1e-4,
     budget: float | None = None,
     away_steps: bool = True,
-    coupes: Sequence[Coupe] | None = None,
-    pieces: tuple[Piece, ...] | None = None,
+    cuts: Sequence[Coupe] | None = None,
+    rooms: tuple[Piece, ...] | None = None,
     ctx: Contexte | None = None,
-    baies: Baies | None = None,
-) -> ResultatFW:
-    """Maximiser ``substitut`` sur le polytope, en partant de ``depart``.
+    glazing: Baies | None = None,
+) -> FrankWolfeResult:
+    """Maximize ``surrogate`` over the polytope, starting from ``start``.
 
     Parameters
     ----------
     poly : Polytope
-        Domaine admissible ; tous les itérés y restent.
-    substitut : Substitut
-        Objectif. Le solveur ne sait pas s'il est analytique, appris ou simulé.
+        Admissible domain; every iterate stays in it.
+    surrogate : Substitut
+        Objective. The solver does not know whether it is analytic, learned or simulated.
     orientation : Orientation
-        Azimut du plan.
-    depart : numpy.ndarray
-        Itéré initial — typiquement le résultat de la légalisation classique.
+        Azimuth of the plan.
+    start : numpy.ndarray
+        Initial iterate, typically the result of the classic legalization.
     max_iter : int, optional
-        Nombre maximal d'itérations.
+        Maximum number of iterations.
     tol : float, optional
-        Arrêt lorsque le gap de dualité passe sous ce seuil.
+        Stop when the Frank-Wolfe gap falls below this threshold.
     budget : float or None, optional
-        Déplacement maximal autorisé, en mètres, par rapport à ``depart``.
+        Maximum displacement allowed, in metres, relative to ``start``.
     away_steps : bool, optional
-        Pas d'écartement : accélère la convergence sur les optima situés sur une face.
-    coupes : sequence of Coupe or None, optional
+        Away steps: speed up convergence when the optimum lies on a face.
+    cuts : sequence of Coupe or None, optional
         **Legacy, no caller since 0.10.** Outer tangent cuts; they do not guarantee
         minimum areas and disable the LP warm start. Pass a domain built with
         :func:`archlux.lmo.coupes.inner_area_constraints` instead. Removal planned in
         PLAN.md phase 4.
-    pieces, ctx : optional
+    rooms, ctx : optional
         **Legacy**, same status: with them, Kelley cuts are added when a minimum area
         is broken on the way.
+    glazing : Baies or None, optional
+        Windows, constant during optimization; passed to the surrogate as ``baies``.
 
     Returns
     -------
-    ResultatFW
-        Itéré final et gap certifié.
+    FrankWolfeResult
+        Final iterate and gap.
 
     Guarantees
     ----------
-    - Géométrique : **exacte** à chaque itération vis-à-vis de ``poly`` — tout itéré
-      est une combinaison convexe de ``depart`` et de sommets du polytope, donc sans
-      chevauchement ni jour.
-    - Optimisation : ``gap`` borne l'écart à l'optimum **du substitut** si celui-ci
-      est concave.
-    - Performance lumineuse : **aucune ici**. Elle est produite par
-      :mod:`archlux.uq` et n'est que probabiliste.
+    - Geometric: **exact** at every iteration with respect to ``poly``: every iterate is
+      a convex combination of ``start`` and vertices of the polytope, hence without
+      overlap or gap.
+    - Optimization: ``gap`` bounds the distance to the optimum **of the surrogate** only
+      if the surrogate is concave.
+    - Daylight performance: **none here**. It is produced by :mod:`archlux.uq` and is
+      only probabilistic.
 
     Warnings
     --------
     Minimum areas are guaranteed **only if** ``poly`` already contains an inner
     approximation of them (:func:`archlux.lmo.coupes.inner_area_constraints`), which is
     what :func:`archlux.api.legalize` passes: every point of such a domain keeps every
-    minimum area, hence every iterate does. The legacy ``coupes``/``pieces``/``ctx``
-    path adds *outer* tangent cuts on the way; a cut added mid-run is violated by the
-    current iterate, ``gap`` may turn negative and ``x`` may stay below ``a_min``. That
-    path is kept for compatibility and is no longer used by ``legalize``.
+    minimum area, hence every iterate does. The legacy ``cuts``/``rooms``/``ctx`` path
+    adds *outer* tangent cuts on the way; a cut added mid-run is violated by the current
+    iterate, ``gap`` may turn negative and ``x`` may stay below ``a_min``. That path is
+    kept for compatibility and is no longer used by ``legalize``.
 
     Complexity
     ----------
-    ``max_iter`` appels LP, **tous à chaud** via ``depart=``. Omettre ce paramètre
-    coûte un facteur 3 à 5. Budget : < 500 ms pour 15 pièces et 50 itérations.
+    ``max_iter`` LP calls, **all warm** via ``depart=``. Omitting it costs a factor 3 to
+    5. Budget: < 500 ms for 15 rooms and 50 iterations.
     """
-    domaine = poly if budget is None else _restreindre_budget(poly, depart, budget)
-    x = np.asarray(depart, dtype=float).copy()
-    if x.shape != (len(domaine.index),):
-        raise InvariantViole((f"départ de dimension {x.shape}, attendu ({len(domaine.index)},)",))
+    domain = poly if budget is None else _restrict_to_budget(poly, start, budget)
+    x = np.asarray(start, dtype=float).copy()
+    if x.shape != (len(domain.index),):
+        raise InvariantViole((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
 
-    sommets = [x.copy()]
-    poids = [1.0]
-    liste_coupes: list[Coupe] = list(coupes) if coupes else []
-    n_coupes = len(liste_coupes)
+    vertices = [x.copy()]
+    weights = [1.0]
+    active_cuts: list[Coupe] = list(cuts) if cuts else []
+    n_cuts = len(active_cuts)
     gap = 0.0
-    valeur = float(substitut.evaluer(x, orientation, baies=baies))
-    historique: list[Iteration] = [
+    value = float(surrogate.evaluer(x, orientation, baies=glazing))
+    history: list[Iteration] = [
         Iteration(
             k=-1,
-            valeur=valeur,
+            value=value,
             gap=float("inf"),
-            pas=0.0,
+            step=0.0,
             away_step=False,
-            temps_lp_ms=0.0,
-            n_coupes=n_coupes,
+            lp_ms=0.0,
+            n_cuts=n_cuts,
             x=x.copy(),
         )
     ]
-    dernier_oracle = None
+    last_oracle = None
 
     for k in range(max_iter):
-        gradient = np.asarray(substitut.gradient(x, orientation, baies=baies), dtype=float)
+        gradient = np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float)
         oracle = resoudre(
-            domaine,
+            domain,
             -gradient,
             depart=x,
-            coupes=liste_coupes or None,
+            coupes=active_cuts or None,
             duaux=(k == max_iter - 1),
         )
-        dernier_oracle = oracle
+        last_oracle = oracle
         if oracle.statut != "optimal":
             break
-        sommet_fw = oracle.x
-        gap = float(gradient @ (sommet_fw - x))
+        fw_vertex = oracle.x
+        gap = float(gradient @ (fw_vertex - x))
         if gap <= tol:
-            historique.append(
+            history.append(
                 Iteration(
                     k=k,
-                    valeur=valeur,
+                    value=value,
                     gap=gap,
-                    pas=0.0,
+                    step=0.0,
                     away_step=False,
-                    temps_lp_ms=oracle.temps_ms,
-                    n_coupes=n_coupes,
+                    lp_ms=oracle.temps_ms,
+                    n_cuts=n_cuts,
                     x=x.copy(),
                 )
             )
             break
 
         away = False
-        direction = sommet_fw - x
+        direction = fw_vertex - x
         gamma_max = 1.0
-        indice_away: int | None = None
-        if away_steps and len(sommets) > 1:
-            scores = [float(gradient @ sommet) for sommet in sommets]
-            indice_away = int(np.argmin(scores))
-            sommet_away = sommets[indice_away]
-            direction_away = x - sommet_away
+        away_index: int | None = None
+        if away_steps and len(vertices) > 1:
+            scores = [float(gradient @ vertex) for vertex in vertices]
+            away_index = int(np.argmin(scores))
+            away_vertex = vertices[away_index]
+            away_direction = x - away_vertex
             if (
-                float(gradient @ direction_away) > float(gradient @ direction)
-                and poids[indice_away] < 1.0 - _POIDS_MIN
+                float(gradient @ away_direction) > float(gradient @ direction)
+                and weights[away_index] < 1.0 - _MIN_WEIGHT
             ):
-                direction = direction_away
-                gamma_max = poids[indice_away] / (1.0 - poids[indice_away])
+                direction = away_direction
+                gamma_max = weights[away_index] / (1.0 - weights[away_index])
                 away = True
 
         gamma = min(2.0 / (k + 2), gamma_max)
         for _ in range(12):
-            candidat = x + gamma * direction
-            valeur_nouvelle = float(substitut.evaluer(candidat, orientation, baies=baies))
-            if valeur_nouvelle >= valeur - 1e-12:
-                valeur = valeur_nouvelle
-                x = candidat
+            candidate = x + gamma * direction
+            new_value = float(surrogate.evaluer(candidate, orientation, baies=glazing))
+            if new_value >= value - 1e-12:
+                value = new_value
+                x = candidate
                 break
             gamma *= 0.5
         else:
-            historique.append(
+            history.append(
                 Iteration(
                     k=k,
-                    valeur=valeur,
+                    value=value,
                     gap=gap,
-                    pas=0.0,
+                    step=0.0,
                     away_step=away,
-                    temps_lp_ms=oracle.temps_ms,
-                    n_coupes=n_coupes,
+                    lp_ms=oracle.temps_ms,
+                    n_cuts=n_cuts,
                     x=x.copy(),
                 )
             )
             break
 
-        if away and indice_away is not None:
-            for rang in range(len(poids)):
-                poids[rang] *= 1.0 + gamma
-            poids[indice_away] -= gamma
+        if away and away_index is not None:
+            for rank in range(len(weights)):
+                weights[rank] *= 1.0 + gamma
+            weights[away_index] -= gamma
         else:
-            for rang in range(len(poids)):
-                poids[rang] *= 1.0 - gamma
-            deja = _index_sommet(sommets, sommet_fw)
-            if deja is None:
-                sommets.append(sommet_fw.copy())
-                poids.append(gamma)
+            for rank in range(len(weights)):
+                weights[rank] *= 1.0 - gamma
+            existing = _vertex_index(vertices, fw_vertex)
+            if existing is None:
+                vertices.append(fw_vertex.copy())
+                weights.append(gamma)
             else:
-                poids[deja] += gamma
+                weights[existing] += gamma
 
-        conserves_s: list[np.ndarray] = []
-        conserves_p: list[float] = []
-        for sommet, masse in zip(sommets, poids, strict=True):
-            if masse > _POIDS_MIN:
-                conserves_s.append(sommet)
-                conserves_p.append(masse)
-        sommets, poids = conserves_s, conserves_p
-        _normaliser(poids)
-        _enrichir_coupes(liste_coupes, x, domaine, ctx, pieces)
-        n_coupes = len(liste_coupes)
+        kept_vertices: list[np.ndarray] = []
+        kept_weights: list[float] = []
+        for vertex, mass in zip(vertices, weights, strict=True):
+            if mass > _MIN_WEIGHT:
+                kept_vertices.append(vertex)
+                kept_weights.append(mass)
+        vertices, weights = kept_vertices, kept_weights
+        _normalize(weights)
+        _add_cuts(active_cuts, x, domain, ctx, rooms)
+        n_cuts = len(active_cuts)
 
-        historique.append(
+        history.append(
             Iteration(
                 k=k,
-                valeur=valeur,
+                value=value,
                 gap=gap,
-                pas=gamma,
+                step=gamma,
                 away_step=away,
-                temps_lp_ms=oracle.temps_ms,
-                n_coupes=n_coupes,
+                lp_ms=oracle.temps_ms,
+                n_cuts=n_cuts,
                 x=x.copy(),
             )
         )
 
-    duaux = None
-    if dernier_oracle is not None and dernier_oracle.duaux is not None:
-        duaux = dernier_oracle.duaux
-    elif dernier_oracle is not None and dernier_oracle.statut == "optimal":
+    duals = None
+    if last_oracle is not None and last_oracle.duaux is not None:
+        duals = last_oracle.duaux
+    elif last_oracle is not None and last_oracle.statut == "optimal":
         extra = resoudre(
-            domaine,
-            -np.asarray(substitut.gradient(x, orientation, baies=baies), dtype=float),
+            domain,
+            -np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float),
             depart=x,
-            coupes=liste_coupes or None,
+            coupes=active_cuts or None,
             duaux=True,
         )
         if extra.statut == "optimal":
-            duaux = extra.duaux
+            duals = extra.duaux
 
-    return ResultatFW(
+    return FrankWolfeResult(
         x=x,
-        valeur=valeur,
+        value=value,
         gap=gap,
-        iterations=len(historique),
-        trace=Trace(iterations=tuple(historique)),
-        duaux=duaux,
+        iterations=len(history),
+        trace=Trace(iterations=tuple(history)),
+        duals=duals,
     )

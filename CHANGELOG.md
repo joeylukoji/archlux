@@ -52,6 +52,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
   `frank_wolfe` has no caller left and is documented as legacy.
 
+#### Changed — `solve` migrated to English (track E, batch E9; no behaviour change)
+- `ResultatFW` -> `FrankWolfeResult` (`valeur` -> `value`, `duaux` -> `duals`);
+  `frank_wolfe(poly, surrogate, orientation, start, ..., cuts=, rooms=, glazing=)`;
+  `Iteration` fields `value`, `step`, `lp_ms`, `n_cuts`; `Trace.iterates`, `gaps`,
+  `values`, `total_lp_ms`. The French names of `Trace` (reachable through
+  `Plan.trace`) remain as deprecated aliases until 1.0.0. Outputs are byte-for-byte
+  identical (SHA-256 over 200 Frank-Wolfe runs and all their iterates).
+
 #### Fixed — `Daylight` objective (batch 1.3)
 - `legalize(objective=Daylight(...))` raised `TypeError`: `Daylight` did not accept the
   `baies` keyword of the `Substitut` protocol, which Frank-Wolfe always passes, yet

@@ -170,7 +170,7 @@ def test_legalize_trace_remonte_les_iteres() -> None:
     )
     q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique(), trace=True)
     assert isinstance(q.trace, Trace)
-    assert q.trace.iteres
+    assert q.trace.iterates
     assert q.certificat is not None
     assert q.certificat.geometrie.valide
 
