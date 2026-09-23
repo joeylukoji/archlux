@@ -14,7 +14,7 @@ import pytest
 from hypothesis import given, settings
 
 import archlux
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import ArchluxError, InvariantViole
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.types import Contexte, Plan
@@ -49,12 +49,26 @@ def test_classic_legalization_keeps_every_guarantee(scenario: tuple[Plan, Contex
     assert _independent_violations(result, ctx) == []
 
 
+@_SETTINGS
+@given(scenario=realistic_scenarios())
+def test_legalize_never_certifies_a_broken_guarantee(scenario: tuple[Plan, Contexte]) -> None:
+    """The central promise: either an honest, typed refusal or a plan that keeps every
+    exact guarantee. Never a certificate that lies (PLAN.md phase 1 exit criterion)."""
+    plan, ctx = scenario
+    for objective in (None, SubstitutAnalytique()):
+        try:
+            result = archlux.legalize(plan, ctx, objective=objective)
+        except ArchluxError:
+            continue  # refusing is allowed; lying is not
+        assert _independent_violations(result, ctx) == []
+
+
 @pytest.mark.xfail(
     strict=True,
     raises=(AssertionError, InvariantViole),
     reason=(
-        "Frank-Wolfe goes below minimum areas (InvariantViole) and crosses load-bearing "
-        "walls unnoticed — AUDIT.md §3 n°1 and n°6; fixed in PLAN.md 1.1, 1.2 and 1.5"
+        "Frank-Wolfe goes below minimum areas and legalize refuses (InvariantViole) — "
+        "AUDIT.md §3 n°6; fixed in PLAN.md 1.2 and 1.5 (walls fixed in 1.1)"
     ),
 )
 @_SETTINGS
