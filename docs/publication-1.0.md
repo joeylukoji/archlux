@@ -7,11 +7,11 @@ conditions de recevabilité des revues (historique public, usage tiers).
 
 | Livrable | État |
 |---|---|
-| Version `1.0.0` (`pyproject.toml`, `__version__`) | oui |
-| API gelée + `test_api_publique_stable` | oui |
-| `CHANGELOG.md` section `1.0.0` | oui |
+| Version `1.0.0` (`_version.py`, source unique) | **non** : `0.10.0.dev0`, 1.0.0 reportée (PLAN.md phase 5) |
+| API gelée + `test_api_publique_stable` | test présent ; gel reporté (renommage anglais, ADR 0001) |
+| `CHANGELOG.md` section `1.0.0` | section retirée (jamais publiée) |
 | `CITATION.cff` | oui (URL / DOI à finaliser) |
-| Licence Apache-2.0 | oui |
+| Licence Apache-2.0 (fichier `LICENSE`) | oui (ajouté en phase 0) |
 | Docs MkDocs (`mkdocs build --strict`) | oui |
 | `CONTRIBUTING.md` | oui |
 | Tests CI (dépendances, torch hors noyau) | oui |

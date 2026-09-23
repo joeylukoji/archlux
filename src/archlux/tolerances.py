@@ -1,13 +1,18 @@
-"""Single registry of numerical tolerances (PLAN.md, task 0.9).
+"""Registry of numerical tolerances (PLAN.md, task 0.9).
 
 Tolerances are part of what a certificate means: "no overlap" is only ever true up to
 some epsilon, and two modules that disagree on that epsilon can disagree on validity.
-This module names every geometric tolerance once, with its unit and its meaning.
+This module names geometric tolerances once, with their unit and meaning.
 
 Status (phase 0): the registry **documents** the values currently hard-coded across the
 library; modules do not import it yet. PLAN.md phase 1.5 migrates every usage here and
 resolves the inconsistencies listed below. This module imports nothing, so every layer
 may depend on it.
+
+Not registered yet (inventoried in phase 1.5): ``geom.diagnostic._AIRE_MIN``, the
+``tol`` defaults of ``Polytope.contient`` and ``lmo.coupes.satisfait``, the pivot of
+``geom.rectilineaire``, ``lmo.coupes._TOLERANCE_BORNE``, ``api._DUAL_SEUIL``, the
+``seuil`` of ``certify.dual`` and ``geom.pavage._EPS``.
 
 Known inconsistencies (to be resolved in phase 1.5)
 ----------------------------------------------------

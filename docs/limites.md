@@ -163,7 +163,7 @@ juridique** ni une attestation de conformité administrative.
 
 > Un plan produit par ce système est une proposition, jamais un document de projet.
 
-API **1.0.0** gelée (`archlux.__all__`) ; checklist hors code :
+API **non gelée** : version de développement `0.10.0.dev0`, la 1.0.0 est reportée à la fin de la phase 5 de `PLAN.md` ; checklist hors code :
 [publication 1.0](publication-1.0.md).
 
 **Voir aussi :** [Les deux garanties](concepts/deux-garanties.md),

@@ -5,4 +5,4 @@ stamps an output. It imports nothing, so any layer may depend on it without load
 rest of the library.
 """
 
-__version__ = "0.9.0"
+__version__ = "0.10.0.dev0"

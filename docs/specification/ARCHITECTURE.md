@@ -185,7 +185,7 @@ class Plan:
 | Journaux | `structlog`, journalisation structurée, jamais de texte libre |
 | Style | `ruff check` + `ruff format` + `mypy --strict` sur `src/` |
 | Language | **English** for code, API, docstrings, messages, tests and documentation. New code is English now; existing French is migrated batch by batch ([ADR 0001](../adr/0001-english-first.md), [glossary](../glossary.md)) |
-| Tolerances | declared once in `archlux/tolerances.py`, never as inline literals |
+| Tolerances | target rule, enforced from PLAN.md 1.5: declared once in `archlux/tolerances.py`, never as inline literals |
 
 ---
 

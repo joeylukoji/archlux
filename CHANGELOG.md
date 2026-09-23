@@ -11,22 +11,41 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 ### Remediation — PLAN.md phase 0 (new entries are written in English)
 
 #### Changed
-- **Version rolled back to `0.9.0`.** `1.0.0` promised a stable, usable API while the
-  README quick start did not run and the performance mode failed on realistic plans
-  (see `AUDIT.md`). `1.0.0` will be tagged at the end of PLAN.md phase 5.
+- **Development version `0.10.0.dev0`.** `1.0.0` (never published) is withdrawn: it
+  promised a stable, usable API while the README quick start did not run and the
+  performance mode failed on realistic plans (see `AUDIT.md`). `0.9.0` is not reused
+  either, since it already names an earlier state. 1.0.0 will be tagged at the end of
+  PLAN.md phase 5.
 - **Single source of truth for the version**: `src/archlux/_version.py`, read by hatch
   (`dynamic = ["version"]`). The certificate header used installed metadata and could
   print a stale `0.0.0`; it now prints the source version.
+- **English-first project** (ADR 0001, `docs/glossary.md`): new code is English; the
+  existing French code is migrated batch by batch.
 
 #### Fixed
-- `export.ifc` and `bench.manifeste` imported the root package (`from archlux import
-  __version__`), which loaded the whole legalization chain. They now import
-  `archlux._version`.
-- `tests/test_dependances.py` ignored `from archlux import ...`; importing the root
-  package from inside the library is now rejected.
+- `export.ifc` and `bench.manifeste` imported the root package, which loaded the whole
+  legalization chain; they now import `archlux._version`.
+- `tests/test_dependances.py` ignored `from archlux import ...`; it now rejects it,
+  rejects relative imports, and checks that the leaf modules import nothing.
+- Seven `docs/donnees/` pages were never versioned (an unanchored ignore pattern);
+  `mkdocs build --strict` failed on a clean checkout.
+- Budget tests crashed under `--benchmark-disable`; an unmeasured budget is now skipped.
 
 #### Added
-- `LICENSE` (Apache-2.0 text), `.gitattributes` (LF line endings), git history.
+- `LICENSE` (Apache-2.0), `.gitattributes` (LF), git history, pre-commit hooks.
+- CI: `ruff format --check`, pre-commit hooks, coverage ratchet (84 %); ruff and
+  hypothesis versions pinned.
+- `archlux/tolerances.py`: registry of the numerical tolerances in use (usages are
+  migrated in phase 1.5).
+- Tests that execute the user-facing documentation examples (6 pages broken today,
+  recorded as strict xfails).
+- Property tests under realistic contexts (load-bearing wall, tight minimum areas)
+  with an independent checker. They reproduce three audit defects, recorded as strict
+  xfails: performance mode goes below minimum areas, crosses load-bearing walls
+  unnoticed, and rejects `Daylight`.
+- A strict xfail pinning an inconsistency found while building the registry: the
+  cutting-plane loop tolerates 1e-6 m² under a minimum area, the proof only 1e-9 m².
+- Language check on files already migrated to English.
 
 ### RUPTURE — le protocole `Substitut` recoit les baies
 
@@ -322,7 +341,11 @@ mathematique mise a jour.
 - `feasibility` : le certificat de Farkas n'est jamais verifie contre les conditions du
   lemme ; c'est un certificat par confiance envers le solveur.
 
-## [1.0.0] — 2026-09-09
+## [1.0.0] — 2026-09-09 — WITHDRAWN, never published
+
+> Withdrawn on 2026-09-23: the README quick start did not run and several announced
+> guarantees did not hold (AUDIT.md). The number is not reused; development continues
+> as `0.10.0.dev0` and 1.0.0 will be a new release.
 
 Gel de l'API publique (jalon 6, étape 7). Toute rupture devient `2.0`.
 

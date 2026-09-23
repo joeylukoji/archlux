@@ -389,7 +389,7 @@ une géométrie sans lui.**
 > [`docs/donnees/verite-terrain.md`](docs/donnees/verite-terrain.md).
 
 ```
-CERTIFICAT — plan T3-065-a          archlux 1.0.0     graine 17
+CERTIFICAT — plan T3-065-a          archlux 0.10.0    graine 17
 
 GEOMETRIE                                       [EXACT]
   Chevauchement            aucun         verifie
@@ -413,7 +413,7 @@ NON EVALUABLE
 | `[EXACT]` / `[PREDICTION]` | La distinction de nature, rendue visible |
 | `calibration : N simulations` | Une borne conforme calculée sur 50 points ne vaut pas une borne calculée sur 1 284 — le nombre voyage avec la borne |
 | `NON EVALUABLE` | Les articles dont la vérification exige une information absente du plan. **Un oracle qui ne déclare jamais « non évaluable » ment sur sa couverture** |
-| `archlux 1.0.0` + graine | Traçabilité : un certificat doit rester reproductible |
+| `archlux <version>` + graine | Traçabilité : un certificat doit rester reproductible |
 
 ---
 
@@ -627,7 +627,7 @@ Toute exécution produit un **manifeste**, sans exception. Exemple de **format**
 
 ```json
 {
-  "archlux": "1.0.0",
+  "archlux": "0.10.0.dev0",
   "horodatage": "2026-08-27T14:32:11Z",
   "graine": 17,
   "empreinte_donnees": "sha256:9c2f...",
@@ -708,13 +708,13 @@ Une fonction publique sans docstring est une fonction non terminée.
   year   = {2026},
   url    = {https://github.com/ORG/archlux},
   doi    = {10.5281/zenodo.XXXXXXX},
-  version = {1.0.0}
+  version = {0.10.0.dev0}
 }
 ```
 
 **Citer une version étiquetée, jamais « le dépôt ».** Un certificat doit rester traçable
 à une version exacte de la bibliothèque et de sa calibration. Voir aussi
-[`CITATION.cff`](CITATION.cff) (version **1.0.0**).
+[`CITATION.cff`](CITATION.cff) (version de développement **0.10.0.dev0** ; aucune version n'est encore publiée).
 
 ---
 
