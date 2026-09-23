@@ -26,9 +26,8 @@ AUTORISE: dict[str, frozenset[str]] = {
     # main (`ARCHITECTURE.md` §7).
     "types": frozenset({"erreurs"}),
     "erreurs": frozenset(),
-    # Source unique de la version : feuille, n'importe rien.
+    # Leaves importable by every layer; they import nothing (see LEAVES below).
     "_version": frozenset(),
-    # Registre des tolérances : feuille, n'importe rien.
     "tolerances": frozenset(),
     "geom": frozenset({"types", "erreurs"}),
     "lmo": frozenset({"types", "erreurs", "geom"}),
@@ -71,6 +70,12 @@ AUTORISE: dict[str, frozenset[str]] = {
         {"types", "erreurs", "geom", "lmo", "solve", "light.protocole", "certify", "io"}
     ),
 }
+
+LEAVES: dict[str, frozenset[str]] = {
+    "_version": frozenset(),
+    "tolerances": frozenset({"__future__", "typing"}),
+}
+"""Modules importable by every layer, with the only imports they may make themselves."""
 
 # torch n'est tolérable que dans light.appris, et en import paresseux.
 TORCH_TOLERE = frozenset({"light.appris"})
@@ -125,18 +130,18 @@ def test_les_couches_respectent_les_dependances(fichier: Path) -> None:
     exemptions = EXEMPTIONS.get(paquet, frozenset())
     for cible in sorted(_imports(fichier)):
         if cible == "archlux":
-            # `from archlux import X` exécute `archlux/__init__.py`, donc charge `api`
-            # et, par lui, toute la chaîne légalisation. Aucun module interne n'en a
-            # le droit : la version vient de `archlux._version`.
+            # `from archlux import X` runs `archlux/__init__.py`, which loads `api` and
+            # the whole legalization chain. No internal module may do that: the version
+            # comes from `archlux._version`.
             raise AssertionError(
-                f"{_chemin_module(fichier)} importe le paquet racine `archlux` : "
-                "interdit à l'intérieur de la bibliothèque (importer le module précis)."
+                f"{_chemin_module(fichier)} imports the root package `archlux`: "
+                "forbidden inside the library (import the precise module instead)."
             )
         if not cible.startswith("archlux.") or cible in exemptions:
             continue
         reste = cible.removeprefix("archlux.")
-        if reste in {"_version", "tolerances"}:
-            continue  # feuilles sans dépendance, importables par tous
+        if reste in LEAVES:
+            continue  # dependency-free leaves, importable by every layer
         paquet_cible = reste.split(".")[0]
         if paquet_cible == paquet:
             continue  # import interne au paquet
@@ -204,3 +209,24 @@ def test_les_exemptions_restent_rares_et_nommees() -> None:
     """
     total = sum(len(v) for v in EXEMPTIONS.values())
     assert total <= 2, "toute nouvelle dérogation exige une ADR dans le blueprint"
+
+
+@pytest.mark.parametrize("leaf", sorted(LEAVES))
+def test_leaves_import_nothing_else(leaf: str) -> None:
+    """A leaf may be imported by every layer only because it depends on nothing."""
+    arbre = ast.parse((RACINE / f"{leaf}.py").read_text(encoding="utf-8"))
+    imported: set[str] = set()
+    for noeud in ast.walk(arbre):
+        if isinstance(noeud, ast.Import):
+            imported.update(alias.name.split(".")[0] for alias in noeud.names)
+        elif isinstance(noeud, ast.ImportFrom):
+            imported.add((noeud.module or "").split(".")[0])
+    assert imported <= LEAVES[leaf], f"{leaf} imports {sorted(imported - LEAVES[leaf])}"
+
+
+@pytest.mark.parametrize("fichier", _modules(), ids=_chemin_module)
+def test_no_relative_imports(fichier: Path) -> None:
+    """Relative imports escape the layer check above, which only reads absolute ones."""
+    arbre = ast.parse(fichier.read_text(encoding="utf-8"))
+    relative = [n.lineno for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom) and n.level]
+    assert not relative, f"{_chemin_module(fichier)}: relative imports at lines {relative}"

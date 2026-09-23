@@ -30,24 +30,30 @@ USER_FACING = (
 )
 _PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
-KNOWN_BROKEN: dict[str, str] = {
+KNOWN_BROKEN: dict[str, tuple[type[BaseException], str]] = {
     "README.md": (
+        FileNotFoundError,
         "reads a missing 'sortie_generateur.json'; calls APIs that do not exist "
         "(Structure.from_dxf, ax.referentiel, Daylight(metric=), "
-        "data.generator_outputs, Contexte.sweep_orientation) — AUDIT.md §3 n°2"
+        "data.generator_outputs, Contexte.sweep_orientation) — AUDIT.md §3 n°2",
     ),
-    "docs/index.md": "reads a missing 'sortie_generateur.json'",
-    "docs/tutoriels/premiers-pas.md": "reads a missing 'sortie_generateur.json'",
-    "docs/tutoriels/calibrer-un-substitut.md": "uses 'modele' without defining it",
-    "docs/tutoriels/entrainer-un-substitut.md": "uses 'xs' without defining it",
+    "docs/index.md": (FileNotFoundError, "reads a missing 'sortie_generateur.json'"),
+    "docs/tutoriels/premiers-pas.md": (
+        FileNotFoundError,
+        "reads a missing 'sortie_generateur.json'",
+    ),
+    "docs/tutoriels/calibrer-un-substitut.md": (NameError, "uses 'modele' undefined"),
+    "docs/tutoriels/entrainer-un-substitut.md": (NameError, "uses 'xs' undefined"),
     "docs/concepts/oracle-partage.md": (
+        NameError,
         "illustrative fragment ('lmo', 'poly' undefined): make it runnable or "
-        "present it as pseudo-code"
+        "present it as pseudo-code",
     ),
 }
-"""Relative page path -> why it does not run yet (state of 2026-09-23).
+"""Relative page path -> (expected exception, why it does not run yet), 2026-09-23.
 
-Fixed in PLAN.md phase 1.8, where the README and tutorials are rewritten."""
+Naming the exception keeps an unrelated breakage from hiding behind the xfail. Fixed in
+PLAN.md phase 1.8, where the README and tutorials are rewritten."""
 
 
 def _pages() -> list[Path]:
@@ -61,8 +67,8 @@ def _id(page: Path) -> str:
 def _params() -> list[object]:
     params: list[object] = []
     for page in _pages():
-        reason = KNOWN_BROKEN.get(_id(page))
-        marks = [pytest.mark.xfail(reason=reason, strict=True)] if reason else []
+        known = KNOWN_BROKEN.get(_id(page))
+        marks = [pytest.mark.xfail(raises=known[0], reason=known[1], strict=True)] if known else []
         params.append(pytest.param(page, id=_id(page), marks=marks))
     return params
 
@@ -78,3 +84,10 @@ def test_documentation_examples_run(
     for index, source in enumerate(blocks, start=1):
         code = compile(source, f"{_id(page)} [block {index}/{len(blocks)}]", "exec")
         exec(code, namespace)  # executing our own documentation is the point
+
+
+def test_known_broken_pages_still_exist() -> None:
+    """A renamed or deleted page must not leave an orphan entry behind."""
+    collected = {_id(page) for page in _pages()}
+    orphans = sorted(set(KNOWN_BROKEN) - collected)
+    assert not orphans, f"KNOWN_BROKEN lists pages that are no longer collected: {orphans}"

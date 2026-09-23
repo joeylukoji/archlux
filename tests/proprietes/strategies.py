@@ -199,15 +199,25 @@ CONTEXTE_DEFAUT = Contexte(
 
 
 def _decouper(
-    draw: st.DrawFn, x: int, y: int, w: int, h: int, profondeur: int, minimum: int
+    draw: st.DrawFn,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    profondeur: int,
+    minimum: int,
+    force_split: bool = False,
 ) -> list[tuple[int, int, int, int]]:
     """Découper récursivement un rectangle en guillotine, en centimètres.
 
     Les coupes sont entières : additionner des centimètres reste exact, là où des coupes
     flottantes laisseraient des jours de l'ordre de 1e-16 entre pièces voisines.
+
+    ``force_split`` makes the first cut mandatory (when the rectangle allows one), so
+    that the plan has at least two rooms.
     """
     axes = [axe for axe, taille in (("v", w), ("h", h)) if taille >= 2 * minimum]
-    if profondeur == 0 or not axes or not draw(st.booleans()):
+    if profondeur == 0 or not axes or (not force_split and not draw(st.booleans())):
         return [(x, y, w, h)]
     axe = draw(st.sampled_from(axes))
     if axe == "v":
@@ -220,7 +230,7 @@ def _decouper(
 
 
 @st.composite
-def plans_valides(draw: st.DrawFn, profondeur: int = 3) -> Plan:
+def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = False) -> Plan:
     """Plans géométriquement valides, accordés à :data:`CONTEXTE_DEFAUT`.
 
     Construits par **découpes en guillotine** : le contour est coupé récursivement en
@@ -239,7 +249,9 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3) -> Plan:
     """
     largeur, hauteur = CONTOUR_DEFAUT_CM
     minimum = int(LARGEUR_MIN_DEFAUT * 100)
-    rectangles = _decouper(draw, 0, 0, largeur, hauteur, profondeur, minimum)
+    rectangles = _decouper(
+        draw, 0, 0, largeur, hauteur, profondeur, minimum, force_split=force_split
+    )
     pieces = tuple(
         Piece(
             id=f"p{i}",
@@ -347,20 +359,19 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Contexte]:
     The input is therefore valid under its own context: any violation in the output is
     introduced by ``legalize``.
     """
-    plan = draw(plans_valides())
-    largeur, hauteur = (c / 100.0 for c in CONTOUR_DEFAUT_CM)
+    plan = draw(plans_valides(force_split=True))
+    width, height = (c / 100.0 for c in CONTOUR_DEFAUT_CM)
 
     edges: list[tuple[tuple[float, float], tuple[float, float]]] = []
     for room in plan.pieces:
         right, top = room.x + room.w, room.y + room.h
-        if right < largeur - 1e-9:
+        if right < width - 1e-9:
             edges.append(((right, room.y), (right, top)))
-        if top < hauteur - 1e-9:
+        if top < height - 1e-9:
             edges.append(((room.x, top), (right, top)))
-    walls: tuple[Mur, ...] = ()
-    if edges:
-        a, b = draw(st.sampled_from(edges))
-        walls = (Mur(id="lb0", a=a, b=b, porteur=True),)
+    # At least two rooms (force_split), hence at least one interior edge.
+    a, b = draw(st.sampled_from(edges))
+    walls = (Mur(id="lb0", a=a, b=b, porteur=True),)
 
     smallest: dict[str, float] = {}
     for room in plan.pieces:
