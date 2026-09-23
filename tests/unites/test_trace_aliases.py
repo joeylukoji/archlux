@@ -20,7 +20,8 @@ _TRACE = Trace(
             x=np.full(4, float(k)),
         )
         for k in range(-1, 3)
-    )
+    ),
+    status="max_iter",
 )
 
 

@@ -52,6 +52,23 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
   `frank_wolfe` has no caller left and is documented as legacy.
 
+#### Fixed — Frank-Wolfe reports what it achieved (batch 1.4)
+- The gap started at 0, so a run whose first LP failed read as "optimum reached"; it
+  now starts at infinity.
+- On a run ending at `max_iter`, the gap described the previous point; it is now
+  computed at the returned point (one extra LP, which also gives the duals).
+- New `FrankWolfeResult.status` and `Trace.status`: `converged`, `line_search_failed`,
+  `lp_not_optimal` or `max_iter`. `iterations` counts iterations, not the initial entry.
+- The gap is documented as a stationarity measure: no shipped surrogate is concave, so
+  it never bounds the distance to the optimum.
+- **The displacement budget was spent twice**: the Frank-Wolfe box was centred on the
+  L1 point, so the total move from the proposal reached up to twice the budget
+  (measured: 0.55 m for 0.3 m). It is now centred on the proposed plan
+  (`solve.frank_wolfe.restrict_to_budget`), and `verifier_exactement(..., budget=)`
+  makes a plan moved beyond it invalid; `legalize` passes the budget to the proof.
+- The certification budget of ARCHITECTURE.md §9 (5 ms, 15 rooms) is measured at last:
+  about 1.5 ms.
+
 #### Changed — `solve` migrated to English (track E, batch E9; no behaviour change)
 - `ResultatFW` -> `FrankWolfeResult` (`valeur` -> `value`, `duaux` -> `duals`);
   `frank_wolfe(poly, surrogate, orientation, start, ..., cuts=, rooms=, glazing=)`;

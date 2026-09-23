@@ -122,4 +122,4 @@ source = ["src/archlux"]
 # Ratchet, single source of the threshold (CI reads it): never regress below the measured level. Raised at each PLAN.md phase
 # gate until 95 % (phase 4).
 precision = 1
-fail_under = 85.9
+fail_under = 87.9

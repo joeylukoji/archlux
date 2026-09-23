@@ -8,12 +8,21 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     import numpy as np
 
-__all__ = ["Iteration", "Trace"]
+__all__ = ["Iteration", "StopStatus", "Trace"]
+
+StopStatus = Literal["converged", "line_search_failed", "lp_not_optimal", "max_iter"]
+"""Why Frank-Wolfe stopped.
+
+- ``converged``: the gap fell below the tolerance;
+- ``line_search_failed``: no step along the chosen direction improved the surrogate;
+- ``lp_not_optimal``: the linear oracle did not return an optimum;
+- ``max_iter``: the iteration budget ran out.
+"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,9 +49,10 @@ def _deprecated(old: str, new: str) -> None:
 
 @dataclass(frozen=True, slots=True)
 class Trace:
-    """Sequence of iterations, with the total time spent in the oracle."""
+    """Sequence of iterations, the stop status, and the time spent in the oracle."""
 
     iterations: tuple[Iteration, ...]
+    status: StopStatus
 
     @property
     def total_lp_ms(self) -> float:

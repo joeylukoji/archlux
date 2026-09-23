@@ -22,7 +22,7 @@ from archlux.erreurs import InvariantViole
 from archlux.geom.polytope import Polytope
 from archlux.lmo.coupes import MAX_COUPES_PAR_PIECE, Coupe, coupe_surface, surfaces_violees
 from archlux.lmo.solveur import resoudre
-from archlux.solve.trace import Iteration, Trace
+from archlux.solve.trace import Iteration, StopStatus, Trace
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from archlux.light.protocole import Baies, Substitut
     from archlux.types import Contexte, Orientation, Piece
 
-__all__ = ["FrankWolfeResult", "frank_wolfe"]
+__all__ = ["FrankWolfeResult", "frank_wolfe", "restrict_to_budget"]
 
 _MIN_WEIGHT = 1e-12
 
@@ -42,12 +42,15 @@ class FrankWolfeResult:
     Attributes
     ----------
     gap : float
-        Frank-Wolfe gap. A **certified upper bound** on the distance to the optimum of
-        the surrogate only if the surrogate is concave; otherwise a diagnostic. Not to be
-        confused with the daylight performance guarantee, which is probabilistic.
+        Frank-Wolfe gap ``<grad f(x), s - x>`` **at the returned x**, ``inf`` if no LP
+        succeeded. It is a first-order **stationarity** measure. It bounds the distance
+        to the optimum only for a concave surrogate, and none of the shipped surrogates
+        is concave (AUDIT.md §5.1): never read it as an optimality certificate.
+    status : StopStatus
+        Why the run stopped (see :data:`archlux.solve.trace.StopStatus`).
     iterations : int
-        Length of ``trace.iterations``, **initial entry ``k = -1`` included**: the number
-        of steps actually taken is ``iterations - 1``.
+        Number of Frank-Wolfe iterations run (the initial entry ``k = -1`` of the trace
+        is not counted).
     duals : numpy.ndarray or None
         Dual prices of the last LP, aligned with the rows of ``poly.A``. Equalities made
         by :func:`archlux.geom.polytope.figer_contacts` are not included, so the dual
@@ -57,13 +60,18 @@ class FrankWolfeResult:
     x: np.ndarray
     value: float
     gap: float
+    status: StopStatus
     iterations: int
     trace: Trace
     duals: np.ndarray | None = None
 
 
-def _restrict_to_budget(poly: Polytope, centre: np.ndarray, radius: float) -> Polytope:
-    """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``."""
+def restrict_to_budget(poly: Polytope, centre: np.ndarray, radius: float) -> Polytope:
+    """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``.
+
+    ``centre`` must be the **proposed** plan, so that the budget is spent once over
+    the whole legalization, not once per pass.
+    """
     bounds: list[tuple[float, float]] = []
     for i, (lo, hi) in enumerate(poly.bornes):
         low = max(lo, float(centre[i]) - radius)
@@ -148,7 +156,9 @@ def frank_wolfe(
     tol : float, optional
         Stop when the Frank-Wolfe gap falls below this threshold.
     budget : float or None, optional
-        Maximum displacement allowed, in metres, relative to ``start``.
+        Maximum displacement allowed, in metres, relative to ``start``. When ``start``
+        is not the proposed plan, restrict ``poly`` with :func:`restrict_to_budget`
+        around the proposal instead, as :func:`archlux.api.legalize` does.
     away_steps : bool, optional
         Away steps: speed up convergence when the optimum lies on a face.
     cuts : sequence of Coupe or None, optional
@@ -172,8 +182,9 @@ def frank_wolfe(
     - Geometric: **exact** at every iteration with respect to ``poly``: every iterate is
       a convex combination of ``start`` and vertices of the polytope, hence without
       overlap or gap.
-    - Optimization: ``gap`` bounds the distance to the optimum **of the surrogate** only
-      if the surrogate is concave.
+    - Optimization: ``gap`` is a stationarity measure at the returned point; it bounds
+      the distance to the optimum of the surrogate only if the surrogate is concave,
+      which no shipped surrogate is. ``status`` says why the run stopped.
     - Daylight performance: **none here**. It is produced by :mod:`archlux.uq` and is
       only probabilistic.
 
@@ -192,7 +203,7 @@ def frank_wolfe(
     ``max_iter`` LP calls, **all warm** via ``depart=``. Omitting it costs a factor 3 to
     5. Budget: < 500 ms for 15 rooms and 50 iterations.
     """
-    domain = poly if budget is None else _restrict_to_budget(poly, start, budget)
+    domain = poly if budget is None else restrict_to_budget(poly, start, budget)
     x = np.asarray(start, dtype=float).copy()
     if x.shape != (len(domain.index),):
         raise InvariantViole((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
@@ -201,7 +212,8 @@ def frank_wolfe(
     weights = [1.0]
     active_cuts: list[Coupe] = list(cuts) if cuts else []
     n_cuts = len(active_cuts)
-    gap = 0.0
+    gap = float("inf")  # no LP has succeeded yet: nothing is known
+    status: StopStatus = "max_iter"
     value = float(surrogate.evaluer(x, orientation, baies=glazing))
     history: list[Iteration] = [
         Iteration(
@@ -228,10 +240,12 @@ def frank_wolfe(
         )
         last_oracle = oracle
         if oracle.statut != "optimal":
+            status = "lp_not_optimal"
             break
         fw_vertex = oracle.x
         gap = float(gradient @ (fw_vertex - x))
         if gap <= tol:
+            status = "converged"
             history.append(
                 Iteration(
                     k=k,
@@ -273,6 +287,7 @@ def frank_wolfe(
                 break
             gamma *= 0.5
         else:
+            status = "line_search_failed"
             history.append(
                 Iteration(
                     k=k,
@@ -326,7 +341,15 @@ def frank_wolfe(
         )
 
     duals = None
-    if last_oracle is not None and last_oracle.duaux is not None:
+    if status == "max_iter" and last_oracle is not None:
+        # The last step moved x after its LP: the gap and duals of that LP describe the
+        # previous point. Solve once more at the returned x.
+        final_gradient = np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float)
+        final = resoudre(domain, -final_gradient, depart=x, coupes=active_cuts or None, duaux=True)
+        if final.statut == "optimal":
+            gap = float(final_gradient @ (final.x - x))
+            duals = final.duaux
+    elif last_oracle is not None and last_oracle.duaux is not None:
         duals = last_oracle.duaux
     elif last_oracle is not None and last_oracle.statut == "optimal":
         extra = resoudre(
@@ -343,7 +366,8 @@ def frank_wolfe(
         x=x,
         value=value,
         gap=gap,
-        iterations=len(history),
-        trace=Trace(iterations=tuple(history)),
+        status=status,
+        iterations=len(history) - 1,
+        trace=Trace(iterations=tuple(history), status=status),
         duals=duals,
     )

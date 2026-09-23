@@ -226,3 +226,16 @@ def test_performance_mode_scales_with_tight_minimum_areas(
     elapsed_ms = (time.perf_counter() - start) * 1000
     assert checkers.violations(result, ctx) == []
     assert elapsed_ms < limit_ms, f"{len(rooms)} rooms: {elapsed_ms:.0f} ms > {limit_ms} ms"
+
+
+@pytest.mark.budget
+def test_budget_certification(benchmark: BenchmarkFixture) -> None:
+    """The exact proof of a 15-room plan stays under 5 ms (ARCHITECTURE.md §9).
+
+    Declared in BUDGETS_MS since milestone 2 but never measured (AUDIT.md §5.6).
+    """
+    from archlux.certify.preuve import verifier_exactement
+
+    plan = _plan_15_pieces()
+    benchmark(verifier_exactement, plan, CTX_15, reference=plan)
+    _assert_within_budget(benchmark, "certification")

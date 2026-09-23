@@ -37,7 +37,7 @@ from archlux.geom.rectilineaire import PieceRectilineaire, etendre_fusions
 from archlux.light.protocole import Baies, Substitut
 from archlux.lmo.coupes import inner_area_constraints, resoudre_avec_surfaces
 from archlux.lmo.solveur import SolutionLP
-from archlux.solve.frank_wolfe import frank_wolfe
+from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.types import Certificat, Contexte, Plan
 
 __all__ = ["gradient_distance", "legalize"]
@@ -261,7 +261,7 @@ def legalize(
         devectoriser(sol.x, plan, poly_l1.index),
         contour=ctx.contour,
     )
-    preuve = verifier_exactement(corrige, ctx, reference=plan)
+    preuve = verifier_exactement(corrige, ctx, reference=plan, budget=budget)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)
     # sol a été résolu sur poly_l1 : les duaux alignent poly_l1.A / origines, pas poly.
@@ -277,6 +277,10 @@ def legalize(
     # a tight room is not frozen into an equality: every point of this domain, hence
     # every Frank-Wolfe iterate, keeps every minimum area (PLAN.md batch 1.2).
     poly_fw = inner_area_constraints(figer_contacts(poly, x0), x0, ctx, corrige.pieces)
+    if budget is not None:
+        # Centred on the *proposed* plan, not on x0: the budget is spent once over the
+        # whole legalization (AUDIT.md §5.8 measured up to twice the budget).
+        poly_fw = restrict_to_budget(poly_fw, x_ref, budget)
     resultat = frank_wolfe(
         poly_fw,
         objective,
@@ -286,13 +290,12 @@ def legalize(
         # optimization and passed through unchanged. Without it the surrogate only sees
         # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
         glazing=Baies(murs=corrige.murs, ouvertures=corrige.ouvertures),
-        budget=budget,
     )
     performant = replace(
         devectoriser(resultat.x, corrige, poly.index),
         contour=ctx.contour,
     )
-    preuve_fw = verifier_exactement(performant, ctx, reference=plan)
+    preuve_fw = verifier_exactement(performant, ctx, reference=plan, budget=budget)
     if not preuve_fw.valide:
         raise InvariantViole(preuve_fw.violations)
     # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont

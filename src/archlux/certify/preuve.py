@@ -53,7 +53,7 @@ from __future__ import annotations
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
-from archlux.tolerances import WALL_M
+from archlux.tolerances import SNAP_M, WALL_M
 from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
 
 __all__ = ["verifier_exactement"]
@@ -214,7 +214,7 @@ def _deplacement_max(plan: Plan, reference: Plan | None) -> float:
 
 
 def verifier_exactement(
-    plan: Plan, ctx: Contexte, *, reference: Plan | None = None
+    plan: Plan, ctx: Contexte, *, reference: Plan | None = None, budget: float | None = None
 ) -> PreuveGeometrique:
     """Vérifier qu'un plan est valide, sans rien emprunter au solveur.
 
@@ -226,6 +226,9 @@ def verifier_exactement(
         Contour, structure porteuse et référentiel.
     reference : Plan or None, optional
         Plan proposé, pour ``deplacement_max``. ``None`` rend ``0.0``.
+    budget : float or None, optional
+        Maximum displacement allowed from ``reference``, in metres. When given, a
+        larger ``deplacement_max`` (beyond ``SNAP_M``) makes the plan invalid.
 
     Returns
     -------
@@ -245,14 +248,17 @@ def verifier_exactement(
     jours, v_jours = _jours(plan.pieces, ctx.contour)
     surfaces_ok, v_surf = _surfaces(plan.pieces, ctx)
     structure_ok, v_struct = _structure(plan, ctx)
-    violations = v_chev + v_jours + v_surf + v_struct
-    valide = (not chevauche) and (not jours) and surfaces_ok and structure_ok
+    moved = _deplacement_max(plan, reference)
+    budget_ok = budget is None or moved <= budget + SNAP_M
+    v_budget = () if budget_ok else (f"budget: max displacement {moved:.6f} m > {budget} m",)
+    violations = v_chev + v_jours + v_surf + v_struct + v_budget
+    valide = (not chevauche) and (not jours) and surfaces_ok and structure_ok and budget_ok
     return PreuveGeometrique(
         valide=valide,
         chevauchement=chevauche,
         jours=jours,
         surfaces_ok=surfaces_ok,
         structure_preservee=structure_ok,
-        deplacement_max=_deplacement_max(plan, reference),
+        deplacement_max=moved,
         violations=violations,
     )

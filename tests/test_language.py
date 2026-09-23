@@ -21,6 +21,7 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/solve/trace.py",
     "src/archlux/solve/frank_wolfe.py",
     "tests/unites/test_trace_aliases.py",
+    "tests/unites/test_frank_wolfe_honesty.py",
     "tests/test_language.py",
     "tests/checkers.py",
     "tests/unites/test_svg.py",

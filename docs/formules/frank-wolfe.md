@@ -27,13 +27,29 @@ g_k=\langle\nabla f(x_k),s_k-x_k\rangle
 
 majore \(f^\star-f(x_k)\) **lorsque \(f\) est concave**.
 
+**What the gap means here.** None of the shipped surrogates is concave: the analytic one
+is a product of a bilinear term and a convex exponential (AUDIT.md §5.1). For a
+non-concave \(f\) the gap is only a first-order **stationarity** measure (it vanishes at
+stationary points, Lacoste-Julien 2016), never a bound on \(f^\star - f(x)\). The code
+therefore reports:
+
+- `gap` computed **at the returned point** (one extra LP when the run ends on
+  `max_iter`), and \(+\infty\) if no LP succeeded, so that a failure never reads as
+  "optimum reached";
+- `status`, why the run stopped: `converged` (\(g \le\) `tol`), `line_search_failed`
+  (no step along the direction improved \(f\)), `lp_not_optimal`, or `max_iter`.
+
 ## Hypothèses
 
 - \(x_0\in P\) (en pratique : sortie L1 du jalon 2).
 - Chaque appel passe `depart=x` : le modèle GLOP est réutilisé
   (`ARCHITECTURE.md` §10).
 - Les itérés sont des combinaisons convexes de sommets, donc dans \(P\).
-- Un budget \(\Delta\) se traduit par la boîte \(\lVert x-x_0\rVert_\infty\le\Delta\).
+- A budget \(\Delta\) is the box \(\lVert x-\hat x\rVert_\infty\le\Delta\) around the
+  **proposed** plan \(\hat x\), shared by the classic pass and Frank-Wolfe, so that it
+  is spent once. Centring it on the L1 point \(x_0\) allowed up to \(2\Delta\) in total
+  (measured: 0.55 m for \(\Delta = 0.3\) m). The proof checks
+  \(\max \lvert x - \hat x\rvert \le \Delta\).
 - Après L1, `figer_contacts` transforme les séparations saturées en égalités
   et colle \(x,y\) aux bords saturés du contour : Frank-Wolfe reste un pavage
   (pas de jour) tout en bougeant les cloisons internes. Les largeurs minimales
@@ -50,15 +66,16 @@ vecteurs \(c\).
 
 ## Code
 
-`frank_wolfe` → `FrankWolfeResult` (`x`, `value`, `gap`, `trace`, `duals`).
-`Trace.iteres` / `Trace.objectif` pour les critères d'acceptation.
+`frank_wolfe` → `FrankWolfeResult` (`x`, `value`, `gap`, `status`, `iterations`,
+`trace`, `duals`). `Trace.iterates` / `Trace.values` / `Trace.status` for the acceptance
+criteria (the French names `iteres` / `objectif` remain as deprecated aliases).
 
 ## Cas d'utilisation
 
 | Faire | Ne pas faire |
 |---|---|
 | Brancher n'importe quel `Substitut` | Importer `light.analytique` depuis `solve` |
-| Lire `gap` comme borne d'optimisation | Le confondre avec une couverture \(1-\alpha\) |
+| Read `gap` with `status` as a stationarity diagnostic | Read `gap` as a bound on the optimum (no shipped surrogate is concave), or confuse it with a coverage \(1-\alpha\) |
 
 ## Source
 
