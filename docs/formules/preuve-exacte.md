@@ -52,8 +52,21 @@ est inconnu (`Referentiel.a_min`).
 
 ### Structure
 
-Chaque mur porteur de `ctx.structure` apparaît dans le plan, même `id`, mêmes
-extrémités à \(10^{-7}\,\mathrm{m}\) près (ordre des points indifférent).
+No room crosses a load-bearing wall of `ctx.structure`: for every wall segment
+\(S\) and room \(R\),
+
+\[
+\operatorname{length}\bigl(S \cap \operatorname{int}_{\varepsilon}(R)\bigr) \le \varepsilon,
+\qquad \varepsilon = 10^{-7}\,\mathrm{m},
+\]
+
+where \(\operatorname{int}_{\varepsilon}(R)\) is the room shrunk by \(\varepsilon\) on every
+side, so that a room *bounded* by the wall is accepted. The test is geometric and holds
+for oblique walls. A wall declared in the plan with the same `id` must also match the
+structure (same end points, order irrelevant). Columns are not checked.
+
+*Before 0.10 this predicate only compared each wall with itself (walls are not decision
+variables), so it was always true (AUDIT.md §3 n°1).*
 
 ### Déplacement
 

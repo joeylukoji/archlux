@@ -35,9 +35,12 @@ Vandenberghe, 2004, §2.2.4).
 - Ordre relatif fixé (sinon le domaine des plans valides n'est **pas** convexe :
   on peut contourner \(B\) par deux chemins dont le segment n'est pas admissible).
 - Graphe réduit transitivement *avant* l'assemblage.
-- \(A_{\mathrm{eq}}\) est vide au jalon 2 (ADR-7 : lier une pièce à un mur
-  porteur exige une incidence que cette signature ne calcule pas). La structure
-  est vérifiée en aval par `certify.preuve`, jamais ignorée.
+- Load-bearing walls are fixed obstacles. Each room keeps the side of each wall it
+  had in the proposed plan (`OrdreRelatif.porteurs`): one inequality per room and
+  wall, \(x + w \le c\) (left), \(x \ge c\) (right), \(y + h \le c\) (below) or
+  \(y \ge c\) (above), where \(c\) is the wall line or the end of a partial wall. A
+  room that crosses a wall is sent to the side of its centre. Oblique load-bearing
+  walls are refused (`UnsupportedInput`). \(A_{\mathrm{eq}}\) stays empty.
 
 ## Ce qui n'est pas dans \(A\)
 

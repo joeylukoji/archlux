@@ -21,6 +21,7 @@ __all__ = [
     "OrdreIncoherent",
     "SeparationManquante",
     "SubstitutInvalide",
+    "UnsupportedInput",
 ]
 
 
@@ -139,4 +140,17 @@ class SubstitutInvalide(ArchluxError):
 
     def __init__(self, detail: str = "gradient du substitut inexploitable") -> None:
         """Composer le message de gradient de substitut inexploitable."""
+        super().__init__(detail)
+
+
+class UnsupportedInput(ArchluxError):
+    """The input is well formed but outside what the library can handle exactly.
+
+    Raised instead of silently ignoring part of the input. Example: an oblique
+    load-bearing wall, which cannot be written as a linear side constraint on
+    axis-aligned rooms.
+    """
+
+    def __init__(self, detail: str) -> None:
+        """Compose the message of an unsupported input."""
         super().__init__(detail)

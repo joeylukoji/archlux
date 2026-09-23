@@ -10,10 +10,26 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Remediation — PLAN.md phase 1 (in progress)
 
+#### Fixed — load-bearing walls (batch 1.1, certificate behaviour change)
+- **The structure predicate verified nothing.** It compared each load-bearing wall with
+  itself; walls are not decision variables, so it was always true and a room could
+  cross a load-bearing wall under a certificate reading "structure preserved: yes"
+  (benchmark baseline: 35 false certificates out of 200 in performance mode).
+  `certify.preuve` now rejects any room whose interior contains a stretch of a
+  load-bearing wall, oblique walls included.
+- **The solver now keeps every room on its side of every load-bearing wall**, treated
+  as a fixed obstacle: `deduire_ordre(plan, structure=...)` reads the side from the
+  proposed plan (`OrdreRelatif.porteurs`, `WallSide`) and `construire_polytope` adds one
+  linear row per room and wall. Classic, tiling and performance modes all inherit it.
+- A plan no longer has to repeat the structure in `plan.murs`; a declared wall of the
+  same id must still match it.
+
 #### Added
 - `export.svg` draws walls: load-bearing walls thick and dark (class
   `wall-load-bearing`), other walls thin and grey (class `wall`). A room crossing a
   load-bearing wall is now visible. First tests of `export.svg` (it had none).
+- `UnsupportedInput` (`ArchluxError`): raised for an oblique load-bearing wall instead of
+  ignoring it.
 - `benchmarks/guarantees/`: a before/after benchmark of the exact guarantees, measured by
   the independent checker of `tests/checkers.py` on 200 deterministic scenarios and five
   modes; it counts false certificates (plans certified valid that break a guarantee).

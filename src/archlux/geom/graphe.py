@@ -20,22 +20,25 @@ from typing import TYPE_CHECKING, Literal
 
 import networkx as nx
 
-from archlux.erreurs import OrdreIncoherent, SeparationManquante
+from archlux.erreurs import OrdreIncoherent, SeparationManquante, UnsupportedInput
+from archlux.tolerances import CONTACT_M
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from archlux.types import Plan
+    from archlux.types import Mur, Piece, Plan, Structure
 
 __all__ = [
     "GrapheContraintes",
     "OrdreRelatif",
+    "WallSide",
     "construire_graphe",
     "deduire_ordre",
     "reduction_transitive",
 ]
 
 Axe = Literal["horizontal", "vertical"]
+Side = Literal["left", "right", "below", "above"]
 _AXES: tuple[Axe, ...] = ("horizontal", "vertical")
 
 TOLERANCE_CONTACT = 1e-9
@@ -45,6 +48,29 @@ Sans cette tolérance, deux pièces qui se touchent exactement passent pour reco
 ``1.0 + 3.47`` vaut ``4.470000000000001`` en binaire, pas ``4.47``. Le cas est loin d'être
 rare — il survient dès qu'un mur sépare deux pièces adjacentes, c'est-à-dire partout.
 """
+
+
+@dataclass(frozen=True, slots=True)
+class WallSide:
+    """A room stays on one side of a load-bearing wall, treated as a fixed obstacle.
+
+    It is the relative order between a room and a wall, read from the proposed plan like
+    the order between two rooms, and it becomes one linear row of the polytope:
+
+    ============  ==================
+    ``side``      constraint
+    ============  ==================
+    ``left``      ``x + w <= bound``
+    ``right``     ``x >= bound``
+    ``below``     ``y + h <= bound``
+    ``above``     ``y >= bound``
+    ============  ==================
+    """
+
+    room: str
+    wall: str
+    side: Side
+    bound: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,11 +85,14 @@ class OrdreRelatif:
         ``(a, b)`` signifie « ``a`` est en dessous de ``b`` ».
     pieces : tuple of str
         Identifiants concernés, **triés**, pour un parcours déterministe.
+    porteurs : tuple of WallSide
+        Side of every load-bearing wall each room stays on. Empty without structure.
     """
 
     horizontal: tuple[tuple[str, str], ...]
     vertical: tuple[tuple[str, str], ...]
     pieces: tuple[str, ...]
+    porteurs: tuple[WallSide, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,7 +158,7 @@ class GrapheContraintes:
         return frozenset(triplets)
 
 
-def deduire_ordre(plan: Plan) -> OrdreRelatif:
+def deduire_ordre(plan: Plan, structure: Structure | None = None) -> OrdreRelatif:
     """Extraire l'ordre relatif d'un plan proposé, en comparant les centres.
 
     C'est ici qu'est appliqué le principe fondateur : **le générateur décide l'ordre**.
@@ -152,6 +181,10 @@ def deduire_ordre(plan: Plan) -> OrdreRelatif:
     ----------
     plan : Plan
         Plan proposé, éventuellement invalide.
+    structure : Structure, optional
+        Load-bearing structure. Each wall is treated as a fixed obstacle: every room gets
+        the side it stays on (:class:`WallSide`), read from the plan like the order
+        between two rooms. A room that crosses a wall is sent to the side of its centre.
 
     Returns
     -------
@@ -199,11 +232,58 @@ def deduire_ordre(plan: Plan) -> OrdreRelatif:
         else:
             vertical.append((id_a, id_b) if (ya, id_a) < (yb, id_b) else (id_b, id_a))
 
+    porteurs = (
+        tuple(
+            _wall_side(par_id[room_id], wall)
+            for wall in sorted(structure.murs_porteurs, key=lambda m: m.id)
+            for room_id in identifiants
+        )
+        if structure is not None
+        else ()
+    )
     return OrdreRelatif(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
         pieces=tuple(identifiants),
+        porteurs=porteurs,
     )
+
+
+def _wall_side(room: Piece, wall: Mur) -> WallSide:
+    """Side of ``wall`` that ``room`` stays on, by the rule used between two rooms.
+
+    The wall is a degenerate rectangle. If the room is disjoint from it along some axis,
+    the axis of the larger gap wins, exactly as in :func:`deduire_ordre`. If the room
+    crosses the wall, it is sent across the wall's line to the side of its centre: the
+    smallest correction, never around the wall's end.
+
+    Raises
+    ------
+    UnsupportedInput
+        The wall is oblique: no linear side constraint describes it exactly.
+    """
+    (xa, ya), (xb, yb) = wall.a, wall.b
+    vertical, horizontal = abs(xa - xb) <= CONTACT_M, abs(ya - yb) <= CONTACT_M
+    if not (vertical or horizontal):
+        raise UnsupportedInput(
+            f"load-bearing wall {wall.id} is oblique; only axis-aligned load-bearing "
+            "walls can be kept exactly"
+        )
+    x0, x1, y0, y1 = min(xa, xb), max(xa, xb), min(ya, yb), max(ya, yb)
+    gap_x = max(x0 - (room.x + room.w), room.x - x1)
+    gap_y = max(y0 - (room.y + room.h), room.y - y1)
+    cx, cy = room.centre
+
+    crosses = gap_x < -CONTACT_M and gap_y < -CONTACT_M
+    # A crossing room goes back over the wall's line; otherwise the larger gap wins.
+    along_x = vertical if crosses else gap_x >= gap_y
+    if along_x:
+        side: Side = "left" if cx < (x0 + x1) / 2 else "right"
+        bound = x0 if side == "left" else x1
+    else:
+        side = "below" if cy < (y0 + y1) / 2 else "above"
+        bound = y0 if side == "below" else y1
+    return WallSide(room=room.id, wall=wall.id, side=side, bound=bound)
 
 
 def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe) -> nx.DiGraph:

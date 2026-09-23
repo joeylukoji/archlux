@@ -35,8 +35,10 @@ Surfaces
 
 Structure
 ---------
-Chaque mur porteur de :math:`\\mathrm{ctx}` apparaît dans le plan, identifié par
-``id``, avec les mêmes extrémités (tolérance métrique).
+No room interior contains a stretch of a load-bearing wall of :math:`\\mathrm{ctx}`
+(rooms shrunk by a metric tolerance, so that a room bounded by the wall is accepted;
+oblique walls included). A wall the plan declares with the same ``id`` must match the
+structure. Columns (``Structure.poteaux``) are fixed data and are not checked.
 
 Déplacement
 -----------
@@ -48,7 +50,7 @@ Dérivation, tolérances et cas d'usage : ``docs/formules/preuve-exacte.md``.
 
 from __future__ import annotations
 
-from shapely.geometry import Polygon, box
+from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
 from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
@@ -163,13 +165,30 @@ def _meme_mur(a: Mur, b: Mur) -> bool:
 
 
 def _structure(plan: Plan, ctx: Contexte) -> tuple[bool, tuple[str, ...]]:
-    """Murs porteurs inchangés."""
-    par_id = {mur.id: mur for mur in plan.murs}
+    """No room crosses a load-bearing wall, and no load-bearing wall was moved.
+
+    A crossing is any stretch of the wall inside a room's interior, the room being shrunk
+    by ``_TOLERANCE_MUR_M`` so that a room merely bounded by the wall is accepted. The
+    test is geometric (shapely), so it holds for oblique walls too.
+
+    A plan does not have to repeat the structure in ``plan.murs``: load-bearing walls
+    belong to the context. If it does declare a wall of the same id, that wall must
+    match the structure, otherwise it was moved.
+    """
+    declared = {mur.id: mur for mur in plan.murs}
     violations: list[str] = []
-    for mur in ctx.structure.murs_porteurs:
-        actuel = par_id.get(mur.id)
-        if actuel is None or not _meme_mur(mur, actuel):
-            violations.append(f"structure : mur porteur {mur.id} déplacé ou absent")
+    tol = _TOLERANCE_MUR_M
+    for wall in ctx.structure.murs_porteurs:
+        stated = declared.get(wall.id)
+        if stated is not None and not _meme_mur(wall, stated):
+            violations.append(f"structure: load-bearing wall {wall.id} moved")
+        line = LineString([wall.a, wall.b])
+        for room in plan.pieces:
+            if room.w <= 2 * tol or room.h <= 2 * tol:
+                continue  # a degenerate room has no interior to cross
+            interior = box(room.x + tol, room.y + tol, room.x + room.w - tol, room.y + room.h - tol)
+            if line.intersection(interior).length > tol:
+                violations.append(f"structure: room {room.id} crosses load-bearing wall {wall.id}")
     return (not violations, tuple(violations))
 
 

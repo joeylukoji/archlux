@@ -89,8 +89,9 @@ class Mur:
     Attributes
     ----------
     porteur : bool
-        Un mur porteur est figé : ``geom`` l'écrit dans ``A_eq``, et
-        ``certify.preuve`` vérifie qu'il est inchangé en sortie.
+        A load-bearing wall is fixed: ``geom`` keeps every room on its side (one
+        inequality per room, see :class:`archlux.geom.graphe.WallSide`), and
+        ``certify.preuve`` checks that no room crosses it.
     """
 
     id: str

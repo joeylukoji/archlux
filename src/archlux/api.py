@@ -236,7 +236,7 @@ def legalize(
     if objective is not None and not isinstance(objective, Substitut):
         raise TypeError("objective doit implémenter archlux.light.protocole.Substitut")
 
-    ordre = deduire_ordre(plan)
+    ordre = deduire_ordre(plan, structure=ctx.structure)
     poly = construire_polytope(ordre, ctx)
     for piece_l in fusions:
         poly = etendre_fusions(poly, piece_l)
