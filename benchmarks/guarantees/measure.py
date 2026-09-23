@@ -244,7 +244,7 @@ def _gallery(
             walls=context_of[case.scenario].structure.murs_porteurs,
             titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
-        (folder / name).write_text(svg, encoding="utf-8")
+        (folder / name).write_text(_with_final_newline(svg), encoding="utf-8")
         written.append(name)
     return written
 
@@ -276,7 +276,8 @@ def measure(label: str, n: int, seed: int) -> dict[str, Any]:
         "modes": modes,
     }
     RESULTS.mkdir(exist_ok=True)
-    (RESULTS / f"{label}.json").write_text(json.dumps(report, indent=1), encoding="utf-8")
+    report_text = _with_final_newline(json.dumps(report, indent=1))
+    (RESULTS / f"{label}.json").write_text(report_text, encoding="utf-8")
     write_readme()
     return report
 
@@ -352,7 +353,12 @@ def write_readme() -> None:
                 f"| {s['median_ms']} |"
             )
         lines.append("")
-    (HERE / "README.md").write_text("\n".join(lines), encoding="utf-8")
+    (HERE / "README.md").write_text(_with_final_newline("\n".join(lines)), encoding="utf-8")
+
+
+def _with_final_newline(text: str) -> str:
+    """Exactly one final newline, as the pre-commit end-of-file hook requires."""
+    return text.rstrip("\n") + "\n"
 
 
 def main() -> None:
