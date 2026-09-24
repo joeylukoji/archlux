@@ -28,7 +28,7 @@ from shapely.ops import split, unary_union
 
 from archlux.erreurs import InvariantViole
 from archlux.geom.polytope import Polytope
-from archlux.types import Piece
+from archlux.types import Piece, Referentiel
 
 __all__ = [
     "FUSION_DROIT",
@@ -38,6 +38,7 @@ __all__ = [
     "contraintes_fusion",
     "decomposer",
     "etendre_fusions",
+    "minimum_area_shares",
     "overlap_constraints",
     "recomposer",
 ]
@@ -409,6 +410,57 @@ def contraintes_fusion(
         else:
             raise InvariantViole((f"nature de fusion inconnue : {nature!r}",))
     return tuple(egalites)
+
+
+def minimum_area_shares(
+    rooms: tuple[Piece, ...],
+    fusions: tuple[PieceRectilineaire, ...],
+    referentiel: Referentiel,
+) -> dict[str, float]:
+    """Split the minimum area of each fused room across its sub-rectangles.
+
+    ``w h >= a`` is handled per rectangle by the solver (:mod:`archlux.lmo.coupes`),
+    but the minimum of a fused room applies to the union of its sub-rectangles, whose
+    area ``Σ w_k h_k`` is not a convex constraint. Each sub-rectangle ``k`` gets the
+    share ``a · (w_k h_k) / Σ_j w_j h_j`` of the room minimum ``a``, in proportion to
+    its area in ``rooms``.
+
+    Parameters
+    ----------
+    rooms : tuple of Piece
+        Rooms of the plan whose proportions set the shares (the proposed plan, or the
+        start point of an optimization).
+    fusions : tuple of PieceRectilineaire
+        Fused rooms; their sub-rectangles are found in ``rooms`` by id.
+    referentiel : Referentiel
+        Minimum area by room type; a fused room takes the largest minimum of the types
+        of its sub-rectangles.
+
+    Returns
+    -------
+    dict of str to float
+        Minimum area of every sub-rectangle found in ``rooms``; other rooms are absent.
+
+    Guarantees
+    ----------
+    - Geometric: **exact** (sound). The shares add up to the room minimum, so
+      sub-rectangles that meet their shares and do not overlap cover at least the
+      minimum. It is an inner approximation: a plan moving area from one arm of the L
+      to the other beyond the proposed proportions may be refused although valid.
+    """
+    by_id = {room.id: room for room in rooms}
+    shares: dict[str, float] = {}
+    for piece in fusions:
+        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+        if not members:
+            continue
+        minimum = max(referentiel.a_min(member.type) for member in members)
+        total = sum(member.w * member.h for member in members)
+        if total <= 0.0:
+            raise InvariantViole((f"fused room {piece.id} has no area",))
+        for member in members:
+            shares[member.id] = minimum * (member.w * member.h) / total
+    return shares
 
 
 _Row = tuple[str, dict[str, float], float]

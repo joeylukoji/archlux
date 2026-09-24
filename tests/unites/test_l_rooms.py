@@ -14,10 +14,11 @@ import pytest
 from shapely.geometry import Polygon
 
 import archlux
+from archlux.certify.proof import verify_exactly
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
 from archlux.geom.rectilineaire import PieceRectilineaire, decomposer, etendre_fusions
-from archlux.types import Contexte, Mur, Piece, Plan, Structure
+from archlux.types import Contexte, Mur, Piece, Plan, Referentiel, Structure
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
@@ -83,3 +84,55 @@ def test_fused_polytope_excludes_a_slid_foot(foot_y: float, shape: str) -> None:
     slid = replace(plan, pieces=(bar, replace(foot, y=foot_y)))
 
     assert not poly.contient(vectoriser(slid, poly.index)), shape
+
+
+def _small_l() -> tuple[Plan, PieceRectilineaire]:
+    """Bar [0, 1] x [0, 3] (3 m²) and foot [1, 2] x [0, 1] (1 m²): 4 m² in total."""
+    outline = Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)])
+    room = decomposer(outline, id="l", type_piece="kitchen")
+    plan = Plan(pieces=room.rectangles, murs=(), ouvertures=(), contour=CONTEXTE_DEFAUT.contour)
+    return plan, room
+
+
+def _kitchen_minimum(area: float) -> Contexte:
+    return replace(
+        CONTEXTE_DEFAUT, referentiel=Referentiel(aires_min=(("kitchen", area),), largeur_min=1.0)
+    )
+
+
+def test_proof_accepts_an_l_whose_union_meets_the_minimum_area() -> None:
+    plan, room = _small_l()
+
+    proof = verify_exactly(plan, _kitchen_minimum(3.5), fusions=(room,))
+
+    assert proof.surfaces_ok, proof.violations
+
+
+def test_proof_refuses_an_l_whose_union_misses_the_minimum_area() -> None:
+    plan, room = _small_l()
+
+    proof = verify_exactly(plan, _kitchen_minimum(4.5), fusions=(room,))
+
+    assert not proof.surfaces_ok
+    assert any(v.startswith("area l:") for v in proof.violations), proof.violations
+
+
+def _tiling_with_small_l() -> tuple[Plan, PieceRectilineaire]:
+    """The 4 m² L of :func:`_small_l` inside a valid 12 x 9 tiling."""
+    plan, room = _small_l()
+    rest = (
+        Piece(id="r1", type="living", x=2.0, y=0.0, w=10.0, h=1.0),
+        Piece(id="r2", type="living", x=1.0, y=1.0, w=11.0, h=2.0),
+        Piece(id="r3", type="living", x=0.0, y=3.0, w=12.0, h=6.0),
+    )
+    return replace(plan, pieces=plan.pieces + rest), room
+
+
+def test_legalize_keeps_an_l_whose_union_meets_the_minimum_area() -> None:
+    """Each sub-rectangle (3 and 1 m²) is below 3.5 m², the room (4 m²) is not."""
+    plan, room = _tiling_with_small_l()
+
+    legal = archlux.legalize(plan, _kitchen_minimum(3.5), fusions=(room,))
+
+    assert legal.certificat is not None and legal.certificat.geometrie.valide
+    assert legal.certificat.geometrie.deplacement_max == pytest.approx(0.0, abs=1e-6)

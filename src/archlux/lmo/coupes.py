@@ -51,7 +51,7 @@ Dérivation pas à pas, cas d'usage et DOI : ``docs/formules/coupes-surface.md``
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from itertools import pairwise
 from math import sqrt
@@ -143,11 +143,23 @@ def _points_appui_hyperbole(
     return tuple(uniques)
 
 
-def _coupes_initiales(poly: Polytope, ctx: Contexte, pieces: tuple[Piece, ...]) -> list[Coupe]:
+def _minimum_areas(
+    ctx: Contexte, pieces: tuple[Piece, ...], minima: Mapping[str, float] | None
+) -> dict[str, float]:
+    """Minimum area of each room: ``minima`` if it names the room, else its type's."""
+    overrides = minima or {}
+    return {
+        piece.id: overrides.get(piece.id, ctx.referentiel.a_min(piece.type)) for piece in pieces
+    }
+
+
+def _coupes_initiales(
+    poly: Polytope, need: Mapping[str, float], pieces: tuple[Piece, ...]
+) -> list[Coupe]:
     """Tangentes d'enveloppe, avant la première résolution."""
     coupes: list[Coupe] = []
     for piece in pieces:
-        seuil = ctx.referentiel.a_min(piece.type)
+        seuil = need[piece.id]
         if seuil <= 0.0:
             continue
         w_min, w_max = poly.bornes[poly.index[f"{piece.id}.w"]]
@@ -250,6 +262,7 @@ def surfaces_violees(
     ctx: Contexte,
     *,
     pieces: tuple[Piece, ...],
+    minima: Mapping[str, float] | None = None,
 ) -> tuple[str, ...]:
     """Lister les pièces dont ``w h`` est strictement sous ``a_min``.
 
@@ -263,16 +276,29 @@ def surfaces_violees(
         Fournit ``referentiel.a_min``.
     pieces : tuple of Piece
         Identifiants et types — le polytope ne porte pas le programme.
+    minima : mapping of str to float, optional
+        Minimum area per room id, overriding the type's (the sub-rectangles of a fused
+        room, :func:`archlux.geom.rectilineaire.minimum_area_shares`).
 
     Returns
     -------
     tuple of str
         Identifiants triés.
     """
+    return _short_of_area(x, poly, _minimum_areas(ctx, pieces, minima), pieces)
+
+
+def _short_of_area(
+    x: np.ndarray | Sequence[float],
+    poly: Polytope,
+    need: Mapping[str, float],
+    pieces: tuple[Piece, ...],
+) -> tuple[str, ...]:
+    """Rooms whose ``w h`` is strictly below ``need``, sorted."""
     vecteur = np.asarray(x, dtype=float)
     violees: list[str] = []
     for piece in pieces:
-        seuil = ctx.referentiel.a_min(piece.type)
+        seuil = need[piece.id]
         if seuil <= 0.0:
             continue
         largeur = float(vecteur[poly.index[f"{piece.id}.w"]])
@@ -316,7 +342,7 @@ def _cible_sur_hyperbole(
 def _resserrer_bornes(
     poly: Polytope,
     x: np.ndarray,
-    ctx: Contexte,
+    need: Mapping[str, float],
     pieces: tuple[Piece, ...],
     *,
     margin: float = AREA_TARGET_MARGIN_M2,
@@ -333,7 +359,7 @@ def _resserrer_bornes(
     bornes = list(poly.bornes)
     change = False
     for piece in pieces:
-        seuil = ctx.referentiel.a_min(piece.type)
+        seuil = need[piece.id]
         if seuil <= 0.0:
             continue
         idx_w = poly.index[f"{piece.id}.w"]
@@ -360,13 +386,13 @@ def _resserrer_bornes(
 def _identifiants_a_couper(
     x: np.ndarray,
     poly: Polytope,
-    ctx: Contexte,
+    need: Mapping[str, float],
     pieces: tuple[Piece, ...],
     comptes: Counter[str],
 ) -> list[str]:
     """Pièces encore sous ``a_min`` et sous le plafond de coupes."""
     restantes: list[str] = []
-    for identifiant in surfaces_violees(x, poly, ctx, pieces=pieces):
+    for identifiant in _short_of_area(x, poly, need, pieces):
         if comptes[identifiant] >= MAX_COUPES_PAR_PIECE:
             _LOG.warning("coupe.limite", piece=identifiant)
             continue
@@ -378,26 +404,18 @@ def _empiler_tangentes(
     restantes: list[str],
     x: np.ndarray,
     poly: Polytope,
-    ctx: Contexte,
-    pieces: tuple[Piece, ...],
+    need: Mapping[str, float],
     coupes: list[Coupe],
     comptes: Counter[str],
     *,
     margin: float = AREA_TARGET_MARGIN_M2,
 ) -> None:
     """Ajouter une tangente Kelley par pièce restante (Kelley, 1960)."""
-    par_id = {piece.id: piece for piece in pieces}
     for identifiant in restantes:
-        piece = par_id[identifiant]
         largeur = float(x[poly.index[f"{identifiant}.w"]])
         hauteur = float(x[poly.index[f"{identifiant}.h"]])
         coupes.append(
-            coupe_surface(
-                largeur,
-                hauteur,
-                _target(ctx.referentiel.a_min(piece.type), margin),
-                piece=identifiant,
-            )
+            coupe_surface(largeur, hauteur, _target(need[identifiant], margin), piece=identifiant)
         )
         comptes[identifiant] += 1
 
@@ -410,6 +428,7 @@ def resoudre_avec_surfaces(
     *,
     depart: np.ndarray | None = None,
     duaux: bool = False,
+    minima: Mapping[str, float] | None = None,
 ) -> SolutionLP:
     """Résoudre le LP en ajoutant les tangentes de surface jusqu'à satisfaction.
 
@@ -427,6 +446,10 @@ def resoudre_avec_surfaces(
         Warm start du premier appel.
     duaux : bool, optional
         Extraire les duaux du dernier LP.
+    minima : mapping of str to float, optional
+        Minimum area per room id, overriding the type's. The sub-rectangles of a fused
+        room get their share of the room's minimum
+        (:func:`archlux.geom.rectilineaire.minimum_area_shares`).
 
     Returns
     -------
@@ -452,24 +475,25 @@ def resoudre_avec_surfaces(
     -----
     Dérivation, sources et cas d'usage : ``docs/formules/coupes-surface.md``.
     """
-    first = _solve_with_area_cuts(poly, c, ctx, pieces, depart, duaux, AREA_TARGET_MARGIN_M2)
-    if _meets_areas(first, poly, ctx, pieces):
+    need = _minimum_areas(ctx, pieces, minima)
+    first = _solve_with_area_cuts(poly, c, need, pieces, depart, duaux, AREA_TARGET_MARGIN_M2)
+    if _meets_areas(first, poly, need, pieces):
         return first
     # The margin needs room the plan may not have (minimum areas that fill the outline
     # exactly, review of batch 1.5): aim at the exact minimum before giving up.
-    exact = _solve_with_area_cuts(poly, c, ctx, pieces, depart, duaux, 0.0)
-    if _meets_areas(exact, poly, ctx, pieces) or first.statut != "optimal":
+    exact = _solve_with_area_cuts(poly, c, need, pieces, depart, duaux, 0.0)
+    if _meets_areas(exact, poly, need, pieces) or first.statut != "optimal":
         return exact
     return first
 
 
 def _meets_areas(
-    solution: SolutionLP, poly: Polytope, ctx: Contexte, pieces: tuple[Piece, ...]
+    solution: SolutionLP, poly: Polytope, need: Mapping[str, float], pieces: tuple[Piece, ...]
 ) -> bool:
     """An optimal point inside the polytope (up to SNAP_M) with no area in deficit."""
     return (
         solution.statut == "optimal"
-        and not surfaces_violees(solution.x, poly, ctx, pieces=pieces)
+        and not _short_of_area(solution.x, poly, need, pieces)
         and poly.contient(solution.x, tol=SNAP_M)
     )
 
@@ -477,7 +501,7 @@ def _meets_areas(
 def _solve_with_area_cuts(
     poly: Polytope,
     c: np.ndarray,
-    ctx: Contexte,
+    need: Mapping[str, float],
     pieces: tuple[Piece, ...],
     depart: np.ndarray | None,
     duaux: bool,
@@ -485,7 +509,7 @@ def _solve_with_area_cuts(
 ) -> SolutionLP:
     """The Kelley loop of :func:`resoudre_avec_surfaces`, aiming ``margin`` above minima."""
     domaine = poly
-    coupes: list[Coupe] = _coupes_initiales(domaine, ctx, pieces)
+    coupes: list[Coupe] = _coupes_initiales(domaine, need, pieces)
     comptes: Counter[str] = Counter()
     courant = depart
     while True:
@@ -498,22 +522,20 @@ def _solve_with_area_cuts(
                 # about the real system; a feasible answer goes on to the exact proof.
                 return resoudre(poly, c, depart=courant, coupes=coupes or None, duaux=duaux)
             return solution
-        if not surfaces_violees(solution.x, domaine, ctx, pieces=pieces):
+        if not _short_of_area(solution.x, domaine, need, pieces):
             return solution
-        resserre = _resserrer_bornes(domaine, solution.x, ctx, pieces, margin=margin)
+        resserre = _resserrer_bornes(domaine, solution.x, need, pieces, margin=margin)
         if resserre is not domaine:
             affine = resoudre(resserre, c, depart=solution.x, coupes=coupes or None, duaux=duaux)
             if affine.statut == "optimal":
-                if not surfaces_violees(affine.x, resserre, ctx, pieces=pieces):
+                if not _short_of_area(affine.x, resserre, need, pieces):
                     return affine
                 domaine = resserre
                 solution = affine
-        restantes = _identifiants_a_couper(solution.x, domaine, ctx, pieces, comptes)
+        restantes = _identifiants_a_couper(solution.x, domaine, need, pieces, comptes)
         if not restantes:
             return solution
-        _empiler_tangentes(
-            restantes, solution.x, domaine, ctx, pieces, coupes, comptes, margin=margin
-        )
+        _empiler_tangentes(restantes, solution.x, domaine, need, coupes, comptes, margin=margin)
         courant = solution.x
 
 
@@ -534,6 +556,7 @@ def inner_area_constraints(
     pieces: tuple[Piece, ...],
     *,
     spread: tuple[float, ...] = INNER_AREA_SPREAD,
+    minima: Mapping[str, float] | None = None,
 ) -> Polytope:
     """Add an **inner** linear approximation of every minimum area ``w h >= a``.
 
@@ -580,6 +603,9 @@ def inner_area_constraints(
         Rooms, for their types.
     spread : tuple of float, optional
         Relative node widths.
+    minima : mapping of str to float, optional
+        Minimum area per room id, overriding the type's (the shares of a fused room,
+        :func:`archlux.geom.rectilineaire.minimum_area_shares`).
 
     Returns
     -------
@@ -599,8 +625,9 @@ def inner_area_constraints(
     vals: list[float] = []
     rhs: list[float] = []
     labels: list[str] = []
+    need = _minimum_areas(ctx, pieces, minima)
     for piece in pieces:
-        a_min = ctx.referentiel.a_min(piece.type)
+        a_min = need[piece.id]
         iw, ih = poly.index[f"{piece.id}.w"], poly.index[f"{piece.id}.h"]
         w0, h0 = float(x[iw]), float(x[ih])
         if a_min <= 0.0 or w0 <= 0.0 or h0 <= 0.0:
