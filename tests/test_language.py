@@ -46,6 +46,8 @@ MIGRATED: tuple[str, ...] = (
     "tests/unites/test_tolerances.py",
     "tests/unites/test_version.py",
     "tests/unites/test_tiling_grid.py",
+    "tests/unites/test_l_rooms.py",
+    "tests/proprietes/test_l_room_guarantees.py",
     "docs/adr/0001-english-first.md",
     "README.md",
 )

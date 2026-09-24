@@ -15,6 +15,12 @@ des pièces  alignées.
 
 Hors branche dédiée : passer ``fusions=`` à :func:`archlux.api.legalize` pour
 imposer les égalités de solidarisation.
+
+Shape and area of a fused room (PLAN.md batch 1.7): :func:`overlap_constraints` keeps
+the order of the sub-rectangle ends along each shared edge and a minimum shared length,
+so an L cannot slide into a Z or split; :func:`minimum_area_shares` splits the room's
+minimum area across its sub-rectangles for the solver, while the proof checks it on the
+union (:func:`archlux.certify.proof.verify_exactly`).
 """
 
 from __future__ import annotations
@@ -28,7 +34,7 @@ from shapely.ops import split, unary_union
 
 from archlux.erreurs import InvariantViole
 from archlux.geom.polytope import Polytope
-from archlux.types import Piece
+from archlux.types import Piece, Referentiel
 
 __all__ = [
     "FUSION_DROIT",
@@ -38,6 +44,8 @@ __all__ = [
     "contraintes_fusion",
     "decomposer",
     "etendre_fusions",
+    "minimum_area_shares",
+    "overlap_constraints",
     "recomposer",
 ]
 
@@ -410,45 +418,208 @@ def contraintes_fusion(
     return tuple(egalites)
 
 
-def etendre_fusions(poly: Polytope, piece: PieceRectilineaire) -> Polytope:
-    """Ajouter les égalités de fusion au polytope (``A_eq``, ``b_eq``).
+def minimum_area_shares(
+    rooms: tuple[Piece, ...],
+    fusions: tuple[PieceRectilineaire, ...],
+    referentiel: Referentiel,
+) -> dict[str, float]:
+    """Split the minimum area of each fused room across its sub-rectangles.
+
+    ``w h >= a`` is handled per rectangle by the solver (:mod:`archlux.lmo.coupes`),
+    but the minimum of a fused room applies to the union of its sub-rectangles, whose
+    area ``Σ w_k h_k`` is not a convex constraint. Each sub-rectangle ``k`` gets the
+    share ``a · (w_k h_k) / Σ_j w_j h_j`` of the room minimum ``a``, in proportion to
+    its area in ``rooms``.
+
+    Parameters
+    ----------
+    rooms : tuple of Piece
+        Rooms of the plan whose proportions set the shares (the proposed plan, or the
+        start point of an optimization).
+    fusions : tuple of PieceRectilineaire
+        Fused rooms; their sub-rectangles are found in ``rooms`` by id.
+    referentiel : Referentiel
+        Minimum area by room type; a fused room takes the largest minimum of the types
+        of its sub-rectangles.
+
+    Returns
+    -------
+    dict of str to float
+        Minimum area of every sub-rectangle found in ``rooms``; other rooms are absent.
+
+    Guarantees
+    ----------
+    - Geometric: **exact** (sound). The shares add up to the room minimum, so
+      sub-rectangles that meet their shares and do not overlap cover at least the
+      minimum. It is an inner approximation: a plan moving area from one arm of the L
+      to the other beyond the proposed proportions may be refused although valid.
+    """
+    by_id = {room.id: room for room in rooms}
+    shares: dict[str, float] = {}
+    for piece in fusions:
+        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+        if not members:
+            continue
+        minimum = max(referentiel.a_min(member.type) for member in members)
+        total = sum(member.w * member.h for member in members)
+        if total <= 0.0:
+            raise InvariantViole((f"fused room {piece.id} has no area",))
+        for member in members:
+            shares[member.id] = minimum * (member.w * member.h) / total
+    return shares
+
+
+_Row = tuple[str, dict[str, float], float]
+"""A labelled affine row ``(label, {variable: coefficient}, right-hand side)``."""
+
+
+def _interval(room: Piece, axis: str) -> tuple[float, float, dict[str, float], dict[str, float]]:
+    """Proposed interval of ``room`` on ``axis`` and the affine forms of its two ends."""
+    position, size = ("y", "h") if axis == "y" else ("x", "w")
+    low = float(getattr(room, position))
+    high = low + float(getattr(room, size))
+    low_form = {f"{room.id}.{position}": 1.0}
+    return low, high, low_form, {**low_form, f"{room.id}.{size}": 1.0}
+
+
+def _difference(left: dict[str, float], right: dict[str, float]) -> dict[str, float]:
+    """Affine form ``left - right``."""
+    terms = dict(left)
+    for name, coefficient in right.items():
+        terms[name] = terms.get(name, 0.0) - coefficient
+    return terms
+
+
+def overlap_constraints(
+    piece: PieceRectilineaire, index: dict[str, int], *, min_contact: float = 0.0
+) -> tuple[tuple[_Row, ...], tuple[_Row, ...]]:
+    """Keep the shape of a fused room on the axis orthogonal to each shared edge.
+
+    A fusion glues one edge line (:func:`contraintes_fusion`) but lets the two
+    sub-rectangles slide along it: an L could turn into a T, a Z, or two detached
+    pieces (AUDIT.md §5.2). For each fusion, with ``[a0, a1]`` and ``[b0, b1]`` the
+    intervals of the two sub-rectangles along the shared edge:
+
+    - ends that coincide in the decomposition (within ``SNAP_M``) stay equal;
+    - other ends keep their order, non-strictly (``a0 < b0`` gives ``a0 <= b0``);
+    - the shared edge keeps a length of at least ``min_contact``:
+      ``min(a1, b1) - max(a0, b0) >= min_contact``, linear since the order is fixed.
+
+    The generator decides the order, the solver the dimensions: an L stays an L (or
+    degenerates into a rectangle when its step closes), a T stays a T or an L.
+
+    Parameters
+    ----------
+    piece : PieceRectilineaire
+        Fused room; its rectangles give the order to keep.
+    index : dict of str to int
+        Variables of the polytope.
+    min_contact : float, optional
+        Minimum length of every shared edge, in metres.
+
+    Returns
+    -------
+    tuple
+        ``(equalities, inequalities)``: rows ``Σ a_k v_k = b`` and ``Σ a_k v_k <= b``.
+
+    Raises
+    ------
+    InvariantViole
+        A variable is missing from ``index``, or the fusion kind is unknown.
+    """
+    equalities: list[_Row] = []
+    inequalities: list[_Row] = []
+    for i, j, kind in piece.fusions:
+        if kind not in (FUSION_DROIT, FUSION_HAUT):
+            raise InvariantViole((f"unknown fusion kind: {kind!r}",))
+        a, b = piece.rectangles[i], piece.rectangles[j]
+        axis = "y" if kind == FUSION_DROIT else "x"
+        a0, a1, a_low, a_high = _interval(a, axis)
+        b0, b1, b_low, b_high = _interval(b, axis)
+        pair = f"{a.id}|{b.id}"
+        for end, (va, vb, fa, fb) in (
+            ("low", (a0, b0, a_low, b_low)),
+            ("high", (a1, b1, a_high, b_high)),
+        ):
+            if abs(va - vb) <= _TOL_RECT:
+                equalities.append((f"fusion {pair}: aligned {end} ends", _difference(fa, fb), 0.0))
+            elif va < vb:
+                inequalities.append((f"fusion {pair}: {end} end order", _difference(fa, fb), 0.0))
+            else:
+                inequalities.append((f"fusion {pair}: {end} end order", _difference(fb, fa), 0.0))
+        max_low = a_low if a0 >= b0 else b_low
+        min_high = a_high if a1 <= b1 else b_high
+        inequalities.append(
+            (f"fusion {pair}: minimum contact", _difference(max_low, min_high), -min_contact)
+        )
+    for _, terms, _ in (*equalities, *inequalities):
+        for name in terms:
+            if name not in index:
+                raise InvariantViole((f"variable missing from the index: {name}",))
+    return tuple(equalities), tuple(inequalities)
+
+
+def _rows(rows: tuple[_Row, ...], index: dict[str, int]) -> tuple[sparse.csr_matrix, np.ndarray]:
+    """Sparse matrix and right-hand side of labelled rows."""
+    lines: list[int] = []
+    columns: list[int] = []
+    values: list[float] = []
+    for rank, (_, terms, _) in enumerate(rows):
+        for name, coefficient in terms.items():
+            if coefficient != 0.0:
+                lines.append(rank)
+                columns.append(index[name])
+                values.append(coefficient)
+    matrix = sparse.coo_matrix((values, (lines, columns)), shape=(len(rows), len(index))).tocsr()
+    return matrix, np.asarray([rhs for _, _, rhs in rows], dtype=float)
+
+
+def etendre_fusions(
+    poly: Polytope, piece: PieceRectilineaire, *, min_contact: float = 0.0
+) -> Polytope:
+    """Add the fusion equalities and the overlap constraints of a fused room.
 
     Parameters
     ----------
     poly : Polytope
-        Système déjà assemblé pour les sous-rectangles.
+        System already assembled for the sub-rectangles.
     piece : PieceRectilineaire
-        Fusions à imposer. Les ids des sous-rectangles doivent figurer dans
-        ``poly.index``.
+        Fusions to impose. The ids of the sub-rectangles must be in ``poly.index``.
+    min_contact : float, optional
+        Minimum length of every shared edge, in metres
+        (:func:`overlap_constraints`). :func:`archlux.api.legalize` passes
+        ``referentiel.largeur_min``.
 
     Returns
     -------
     Polytope
-        Nouvelle instance ; ``origines`` inchangées (les fusions sont des égalités,
-        pas des inégalités dualisées).
+        New instance: fusion equalities and aligned ends in ``A_eq`` (labelled in
+        ``origines_eq``), end order and minimum contact in ``A`` (labelled in
+        ``origines``).
     """
-    egalites = contraintes_fusion(piece, poly.index)
-    if not egalites:
+    fusions = tuple(
+        (f"fusion {label}", terms, rhs)
+        for label, terms, rhs in contraintes_fusion(piece, poly.index)
+    )
+    aligned, ordered = overlap_constraints(piece, poly.index, min_contact=min_contact)
+    equalities = fusions + aligned
+    if not equalities and not ordered:
         return poly
-    n_var = len(poly.index)
-    n_new = len(egalites)
-    lignes: list[int] = []
-    colonnes: list[int] = []
-    valeurs: list[float] = []
-    b_extra: list[float] = []
-    labels: list[str] = []
-    for rang, (libelle, termes, borne) in enumerate(egalites):
-        for nom, coef in termes.items():
-            lignes.append(rang)
-            colonnes.append(poly.index[nom])
-            valeurs.append(coef)
-        b_extra.append(borne)
-        labels.append(f"fusion {libelle}")
-    a_extra = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(n_new, n_var)).tocsr()
-    if poly.A_eq.shape[0]:
-        a_eq = sparse.vstack([poly.A_eq, a_extra], format="csr")
-        b_eq = np.concatenate([poly.b_eq, np.asarray(b_extra, dtype=float)])
-    else:
-        a_eq = a_extra
-        b_eq = np.asarray(b_extra, dtype=float)
-    return replace(poly, A_eq=a_eq, b_eq=b_eq, origines_eq=poly.labels_eq() + tuple(labels))
+    a_eq, b_eq, a, b = poly.A_eq, poly.b_eq, poly.A, poly.b
+    if equalities:
+        extra, rhs = _rows(equalities, poly.index)
+        a_eq = sparse.vstack([poly.A_eq, extra], format="csr") if poly.A_eq.shape[0] else extra
+        b_eq = np.concatenate([poly.b_eq, rhs]) if poly.A_eq.shape[0] else rhs
+    if ordered:
+        extra, rhs = _rows(ordered, poly.index)
+        a = sparse.vstack([poly.A, extra], format="csr") if poly.A.shape[0] else extra
+        b = np.concatenate([poly.b, rhs]) if poly.A.shape[0] else rhs
+    return replace(
+        poly,
+        A=a,
+        b=b,
+        A_eq=a_eq,
+        b_eq=b_eq,
+        origines=(*poly.origines, *(label for label, _, _ in ordered)),
+        origines_eq=poly.labels_eq() + tuple(label for label, _, _ in equalities),
+    )

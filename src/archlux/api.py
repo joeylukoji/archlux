@@ -36,7 +36,11 @@ from archlux.geom.polytope import (
     figer_contacts,
     vectoriser,
 )
-from archlux.geom.rectilineaire import PieceRectilineaire, etendre_fusions
+from archlux.geom.rectilineaire import (
+    PieceRectilineaire,
+    etendre_fusions,
+    minimum_area_shares,
+)
 from archlux.light.protocole import Baies, Substitut, point_prediction
 from archlux.lmo.coupes import inner_area_constraints, resoudre_avec_surfaces
 from archlux.lmo.solveur import SolutionLP
@@ -154,7 +158,11 @@ def legalize(
     trace : bool, optional
         Si vrai, attache la trace Frank-Wolfe à ``resultat.trace`` (non sérialisée).
     fusions : tuple of PieceRectilineaire, optional
-        Égalités de solidarisation ajoutées à ``A_eq`` avant le LP.
+        Fused rooms (L, T, U, Z) decomposed into sub-rectangles. Their shared edges
+        become equalities of ``A_eq``; on the orthogonal axis, the order of the
+        sub-rectangle ends is kept and every shared edge keeps at least
+        ``referentiel.largeur_min`` of length, so an L cannot turn into a Z or split
+        (:func:`~archlux.geom.rectilineaire.overlap_constraints`).
     pavage : bool, optional
         Imposer que l'union des pièces **pave exactement** le contour. Sans cela,
         les séparations du polytope étant des inégalités, un plan troué reste le
@@ -286,7 +294,7 @@ def legalize(
     )
     poly = construire_polytope(ordre, ctx)
     for piece_l in fusions:
-        poly = etendre_fusions(poly, piece_l)
+        poly = etendre_fusions(poly, piece_l, min_contact=ctx.referentiel.largeur_min)
     if trame is not None:
         poly = etendre_pavage(poly, trame)
     x_ref = vectoriser(plan, poly.index)
@@ -302,6 +310,7 @@ def legalize(
         ctx,
         plan.pieces,
         duaux=True,
+        minima=minimum_area_shares(plan.pieces, fusions, ctx.referentiel),
     )
     if sol.statut == "infaisable":
         check = (
@@ -321,7 +330,7 @@ def legalize(
         devectoriser(sol.x, plan, poly_l1.index),
         contour=ctx.contour,
     )
-    preuve = verify_exactly(corrige, ctx, reference=plan, budget=budget)
+    preuve = verify_exactly(corrige, ctx, reference=plan, budget=budget, fusions=fusions)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)
     # sol a été résolu sur poly_l1 : les duaux alignent poly_l1.A / origines, pas poly.
@@ -336,7 +345,13 @@ def legalize(
     # Inner approximation of the minimum areas, added *after* freezing contacts so that
     # a tight room is not frozen into an equality: every point of this domain, hence
     # every Frank-Wolfe iterate, keeps every minimum area (PLAN.md batch 1.2).
-    poly_fw = inner_area_constraints(figer_contacts(poly, x0), x0, ctx, corrige.pieces)
+    poly_fw = inner_area_constraints(
+        figer_contacts(poly, x0),
+        x0,
+        ctx,
+        corrige.pieces,
+        minima=minimum_area_shares(corrige.pieces, fusions, ctx.referentiel),
+    )
     if budget is not None:
         # Centred on the *proposed* plan, not on x0: the budget is spent once over the
         # whole legalization (AUDIT.md §5.8 measured up to twice the budget).
@@ -350,7 +365,7 @@ def legalize(
         devectoriser(resultat.x, corrige, poly.index),
         contour=ctx.contour,
     )
-    preuve_fw = verify_exactly(performant, ctx, reference=plan, budget=budget)
+    preuve_fw = verify_exactly(performant, ctx, reference=plan, budget=budget, fusions=fusions)
     if not preuve_fw.valide:
         raise InvariantViole(preuve_fw.violations)
     # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont

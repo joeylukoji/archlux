@@ -28,7 +28,9 @@ conjunction characterizes a tiling of :math:`C`.
 
 Areas
 -----
-:math:`w_p h_p \\ge a_{\\min}(\\mathrm{type}(p))` for every room.
+:math:`w_p h_p \\ge a_{\\min}(\\mathrm{type}(p))` for every room. A fused room (L, T, U,
+Z), decomposed into sub-rectangles :math:`R_k`, is checked as a whole:
+:math:`\\lambda(\\bigcup_k R_k) \\ge a_{\\min}`, the union being a single polygon.
 
 Structure
 ---------
@@ -52,6 +54,7 @@ from fractions import Fraction
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
+from archlux.geom.rectilineaire import PieceRectilineaire
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
 from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
 
@@ -141,10 +144,63 @@ def _gaps(
     return (bool(violations), tuple(violations))
 
 
-def _areas(rooms: tuple[Piece, ...], ctx: Contexte) -> tuple[bool, tuple[str, ...]]:
-    """Area ``w h`` against ``a_min`` of the room type."""
+def _share_an_edge(a: Piece, b: Piece) -> bool:
+    """Edges within ``SNAP_M`` of each other, sharing more than ``SNAP_M`` of length."""
+
+    def touch(a0: float, a1: float, b0: float, b1: float) -> bool:
+        return abs(a1 - b0) <= SNAP_M or abs(b1 - a0) <= SNAP_M
+
+    def overlap(a0: float, a1: float, b0: float, b1: float) -> bool:
+        return min(a1, b1) - max(a0, b0) > SNAP_M
+
+    ax, ay, bx, by = (a.x, a.x + a.w), (a.y, a.y + a.h), (b.x, b.x + b.w), (b.y, b.y + b.h)
+    return (touch(*ax, *bx) and overlap(*ay, *by)) or (touch(*ay, *by) and overlap(*ax, *bx))
+
+
+def _edge_connected(members: list[Piece]) -> bool:
+    """Whether the sub-rectangles form one piece through shared edges (not corners)."""
+    reached = {0}
+    frontier = [0]
+    while frontier:
+        current = members[frontier.pop()]
+        for k, other in enumerate(members):
+            if k not in reached and _share_an_edge(current, other):
+                reached.add(k)
+                frontier.append(k)
+    return len(reached) == len(members)
+
+
+def _fused_area(room_id: str, members: list[Piece], ctx: Contexte) -> tuple[str, ...]:
+    """Area of the recomposed polygon of a fused room against its minimum.
+
+    The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
+    not form a single polygon (detached, or touching at a corner only) are not one
+    room, and have no area to compare.
+    """
+    minimum = max(ctx.referentiel.a_min(member.type) for member in members)
+    if not _edge_connected(members):
+        return (f"area {room_id}: sub-rectangles do not form one polygon",)
+    area = float(unary_union([_rectangle(member) for member in members]).area)
+    if minimum > 0.0 and area + _AREA_TOLERANCE_M2 < minimum:
+        return (f"area {room_id}: {_format_m2(area)} < {_format_m2(minimum)}",)
+    return ()
+
+
+def _areas(
+    rooms: tuple[Piece, ...], ctx: Contexte, fusions: tuple[PieceRectilineaire, ...] = ()
+) -> tuple[bool, tuple[str, ...]]:
+    """Area ``w h`` against ``a_min`` of the room type; fused rooms as a whole."""
+    by_id = {room.id: room for room in rooms}
+    fused: set[str] = set()
     violations: list[str] = []
+    for piece in fusions:
+        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+        fused.update(member.id for member in members)
+        if members:
+            violations.extend(_fused_area(piece.id, members, ctx))
     for room in rooms:
+        if room.id in fused:
+            continue
         minimum = ctx.referentiel.a_min(room.type)
         if minimum <= 0.0:
             continue
@@ -384,7 +440,12 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
 
 
 def verify_exactly(
-    plan: Plan, ctx: Contexte, *, reference: Plan | None = None, budget: float | None = None
+    plan: Plan,
+    ctx: Contexte,
+    *,
+    reference: Plan | None = None,
+    budget: float | None = None,
+    fusions: tuple[PieceRectilineaire, ...] = (),
 ) -> PreuveGeometrique:
     """Check that a plan is valid, borrowing nothing from the solver.
 
@@ -400,6 +461,11 @@ def verify_exactly(
         Maximum displacement allowed from ``reference``, in metres. When given, a
         larger ``deplacement_max`` (beyond ``SNAP_M``) makes the plan invalid. Without
         ``reference`` the displacement is 0 and the budget cannot be violated.
+    fusions : tuple of PieceRectilineaire, optional
+        Rooms decomposed into sub-rectangles (L, T, U, Z), as passed to
+        :func:`archlux.api.legalize`. The minimum area of such a room applies to the
+        union of its sub-rectangles found in ``plan`` (by id), which must form a single
+        polygon; no sub-rectangle is checked on its own.
 
     Returns
     -------
@@ -433,7 +499,7 @@ def verify_exactly(
             geos_flag, geos_gaps = _gaps(plan.pieces, ctx.contour)
             gaps = gaps or geos_flag
             v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
-    areas_ok, v_areas = _areas(plan.pieces, ctx)
+    areas_ok, v_areas = _areas(plan.pieces, ctx, fusions)
     structure_ok, v_structure = _structure(plan, ctx)
     moved = max_displacement(plan, reference)
     budget_ok = budget is None or moved <= budget + SNAP_M
