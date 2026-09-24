@@ -596,7 +596,7 @@ ne lit ni les deux autres.
 | Jalon | Contenu | Ce qui fonctionne | État |
 |:--:|---|---|:--:|
 | 1 | `types`, entrées/sorties JSON | Aller-retour de plans | ✅ |
-| **2** | `geom`, `lmo`, `certify.preuve` | **Légalisation classique + preuve** | ✅ |
+| **2** | `geom`, `lmo`, `certify.proof` | **Légalisation classique + preuve** | ✅ |
 | **3** | `light.analytique`, `orient`, `solve` | Légalisation performantielle **sans apprentissage** | ✅ |
 | **4** | `light.jetons`, `light.base`, `light.validation` | Perceptron `numpy` + **point de contrôle** du gradient contre `SimulateurExact` | ✅ |
 | 5 | `uq`, `certify.borne`, `certify.dual` | Certificat complet, diagnostic, couverture sur oracle gelé | ✅ |

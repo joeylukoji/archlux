@@ -1,6 +1,6 @@
 # Vérification exacte
 
-**Code :** `certify.preuve.verifier_exactement`.
+**Code :** `certify.proof.verify_exactly`.
 
 Indépendante du solveur : si GLOP a un bogue, c'est cette inspection qui le
 montre (`ARCHITECTURE.md` : ne jamais croire le solveur).

@@ -52,6 +52,16 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
   `frank_wolfe` has no caller left and is documented as legacy.
 
+#### Changed — `certify.preuve` migrated to English (track E, batch E10; no behaviour change)
+- New module `archlux.certify.proof`: `verify_exactly`, `GAP_TOLERANCE_M2`,
+  `max_displacement`; violation messages in English (`overlap a|b: ...`,
+  `gap: uncovered area ...`, `area r: ... < ...`, four decimals instead of two, which
+  had displayed a real deficit as "10,35 m² < 10,35 m²").
+- `archlux.certify.preuve.verifier_exactement`, `preuve.TOLERANCE_JOUR_M2` and
+  `archlux.certify.verifier_exactement` remain as deprecated aliases until 1.0.0.
+- `PreuveGeometrique` field names are unchanged (JSON schema, batch E5). Proof
+  verdicts and legalized plans are identical (SHA-256 over 360 checks and 120 runs).
+
 #### Fixed — the solver is never looser than the proof (batch 1.5a)
 - The cutting-plane loop accepted a room 1e-6 m² short of its minimum area, the proof
   only 1e-9 m²: plans were refused with messages such as "surface r4 : 10,35 m² <

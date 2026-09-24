@@ -12,7 +12,7 @@ from pathlib import Path
 
 import archlux as ax
 from archlux.bench.graines import deriver
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.data.chargeurs import charger_msd
 from archlux.data.corruption import MODES, corrompre
 
@@ -48,7 +48,7 @@ with sortie.open("w", newline="", encoding="utf-8") as flux:
                 )
                 if not fautes:
                     continue
-                avant = verifier_exactement(abime, appart.contexte).valide
+                avant = verify_exactly(abime, appart.contexte).valide
                 for pavage in (False, True):
                     debut = time.perf_counter()
                     statut, valide, depl = "ok", False, ""

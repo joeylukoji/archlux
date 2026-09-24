@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 import archlux as ax
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 
 C = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 CTX = ax.Contexte(ax.Structure(()), ax.Orientation(0.0), C, ax.Referentiel((), 1.0))
@@ -48,7 +48,7 @@ with out.open("w", newline="", encoding="utf-8") as f:
             {
                 "modele": modele,
                 "plan_id": pid,
-                "valide_avant": verifier_exactement(plan, CTX).valide,
+                "valide_avant": verify_exactly(plan, CTX).valide,
                 "valide_apres": True,
                 "deplacement_max_m": geo.deplacement_max,
                 "temps_ms": (time.perf_counter() - t0) * 1000,

@@ -57,7 +57,7 @@ from shapely.geometry import box
 from shapely.ops import unary_union
 
 import archlux as ax
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.export.wilson import intervalle_wilson
 from archlux.geom.diagnostic import Diagnostic, diagnostiquer
 from archlux.types import (
@@ -359,7 +359,7 @@ def main() -> None:
                 rejets[bati] = rejets.get(bati, 0) + 1
                 continue
             plan, contexte, diagnostic = bati
-            avant = verifier_exactement(plan, contexte).valide
+            avant = verify_exactly(plan, contexte).valide
             # Deux balayages, pas leur produit : les budgets a largeur nominale,
             # puis les largeurs au meilleur budget. Le second existe parce que
             # `largeur_min = 0` laisse le LP annihiler une piece pour fermer un

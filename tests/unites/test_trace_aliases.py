@@ -60,3 +60,16 @@ def test_old_iteration_names_warn_and_return_the_same_data(old: str, new: str) -
     with pytest.warns(DeprecationWarning, match=f"Iteration.{old} is deprecated"):
         legacy = getattr(step, old)
     assert legacy == getattr(step, new)
+
+
+def test_the_old_proof_names_still_work_and_warn() -> None:
+    """ADR 0001: certify.preuve and certify.verifier_exactement until 1.0.0."""
+    import archlux.certify as certify
+    from archlux.certify import preuve, proof
+
+    with pytest.warns(DeprecationWarning, match="preuve.verifier_exactement is deprecated"):
+        assert preuve.verifier_exactement is proof.verify_exactly
+    with pytest.warns(DeprecationWarning, match="certify.verifier_exactement is deprecated"):
+        assert certify.verifier_exactement is proof.verify_exactly
+    with pytest.warns(DeprecationWarning, match="TOLERANCE_JOUR_M2 is deprecated"):
+        assert preuve.TOLERANCE_JOUR_M2 == proof.GAP_TOLERANCE_M2

@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 import archlux as ax
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.export.svg import comparer, rendre
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -96,7 +96,7 @@ def main() -> None:
         if isinstance(bati, str):
             continue
         plan, contexte, diag = bati
-        preuve = verifier_exactement(plan, contexte)
+        preuve = verify_exactly(plan, contexte)
         corrige, statut = None, "réparé"
         try:
             corrige = ax.legalize(plan, contexte, pavage=True, budget_reparation=BUDGET)

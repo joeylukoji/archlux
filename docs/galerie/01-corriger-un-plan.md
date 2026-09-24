@@ -40,7 +40,7 @@ True
 ```
 
 Le séjour passe de 7 m à 6 m de large ; la chambre ne bouge pas. Aucun chevauchement,
-aucun jour. La preuve est **exacte** : `certify.preuve` recompte les aires, indépendamment
+aucun jour. La preuve est **exacte** : `certify.proof` recompte les aires, indépendamment
 du solveur.
 
 **Ce qu'il faut retenir.** `legalize` minimise le déplacement L1 sous le polytope des

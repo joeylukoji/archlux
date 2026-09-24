@@ -238,7 +238,7 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
     construction — aucun chevauchement, aucun jour — sans qu'aucune vérification
     géométrique ne soit nécessaire côté générateur.
 
-    C'est le point important : un générateur qui appellerait ``verifier_exactement`` pour
+    C'est le point important : un générateur qui appellerait ``verify_exactly`` pour
     filtrer ses sorties rendrait tautologique tout test de validité.
 
     Notes

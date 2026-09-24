@@ -5,7 +5,7 @@ Les cas sont des géométries calculables à la main, pas des oracles du solveur
 
 from __future__ import annotations
 
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.types import (
     Contexte,
     Mur,
@@ -29,22 +29,22 @@ class TestChevauchement:
         """Deux carrés 2×2 dont l'intersection fait 1 m²."""
         a = Piece(id="cuisine", type="cuisine", x=0.0, y=0.0, w=2.0, h=2.0)
         b = Piece(id="sdb", type="sdb", x=1.0, y=0.0, w=2.0, h=2.0)
-        preuve = verifier_exactement(_plan(a, b), CTX)
+        preuve = verify_exactly(_plan(a, b), CTX)
         assert preuve.chevauchement is True
         assert preuve.valide is False
-        assert any("chevauchement cuisine|sdb" in v for v in preuve.violations)
+        assert any("overlap cuisine|sdb" in v for v in preuve.violations)
 
     def test_deux_pieces_disjointes_ne_se_chevauchent_pas(self) -> None:
         a = Piece(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
         b = Piece(id="b", type="sejour", x=3.0, y=0.0, w=2.0, h=2.0)
-        assert verifier_exactement(_plan(a, b), CTX).chevauchement is False
+        assert verify_exactly(_plan(a, b), CTX).chevauchement is False
 
 
 class TestJours:
     def test_detecte_un_jour(self) -> None:
         """Une pièce 2×2 dans 12×9 laisse un jour d'aire 108 − 4 = 104 m²."""
         p = Piece(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
-        preuve = verifier_exactement(_plan(p), CTX)
+        preuve = verify_exactly(_plan(p), CTX)
         assert preuve.jours is True
         assert preuve.valide is False
 
@@ -58,7 +58,7 @@ class TestSurfaces:
             referentiel=Referentiel(aires_min=(("sdb", 5.0),), largeur_min=1.0),
         )
         p = Piece(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=2.0)
-        preuve = verifier_exactement(_plan(p), ctx)
+        preuve = verify_exactly(_plan(p), ctx)
         assert preuve.surfaces_ok is False
 
 
@@ -77,5 +77,5 @@ class TestStructure:
             ouvertures=(),
             contour=CTX.contour,
         )
-        preuve = verifier_exactement(plan, ctx)
+        preuve = verify_exactly(plan, ctx)
         assert preuve.structure_preservee is False

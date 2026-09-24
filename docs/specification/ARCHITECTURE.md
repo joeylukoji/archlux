@@ -260,7 +260,7 @@ archlux/
 | Jalon | Contenu | Livrable |
 |---|---|---|
 | 1 | `types`, `io` | aller-retour JSON |
-| **2** | **`geom`, `lmo`, `certify.preuve`** | **légalisation classique — voir `MILESTONE-2.md`** |
+| **2** | **`geom`, `lmo`, `certify.proof`** | **légalisation classique — voir `MILESTONE-2.md`** |
 | **3** | **`light.analytique`, `orient`, `solve`** | **légalisation performantielle sans apprentissage — `MILESTONE-3.md`** |
 | 4 | `light.appris`, `light.validation` | substitut entraîné + validation du gradient contre `SimulateurExact` (Radiance) — `MILESTONE-4.md` |
 | 5 | `uq`, `certify.borne`, `certify.dual` | certificat complet — `MILESTONE-5.md` |

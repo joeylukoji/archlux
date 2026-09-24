@@ -45,7 +45,7 @@ jamais dans le vecteur de coûts `c = (0, …, 0, 1, …, 1)`.
 
 ## Vérification
 
-Le solveur n'est pas cru. `certify.preuve` recompte aires d'intersection (Shapely /
+Le solveur n'est pas cru. `certify.proof` recompte aires d'intersection (Shapely /
 GEOS), écart d'aire union–contour, surfaces et murs porteurs. `valide` est la
 conjonction de quatre booléens, aucun n'est probabiliste.
 

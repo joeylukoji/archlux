@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import archlux as ax
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.erreurs import InvariantViole
 from archlux.geom.pavage import deduire_trame
 from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
@@ -256,9 +256,9 @@ def test_legalize_avec_pavage_ferme_un_jour() -> None:
     """
     abime = _pavage_2x2(largeur_sw=4.5)
     ctx = _ctx()
-    assert not verifier_exactement(abime, ctx).valide
+    assert not verify_exactly(abime, ctx).valide
 
-    with pytest.raises(ax.InvariantViole, match="jours"):
+    with pytest.raises(ax.InvariantViole, match="gap"):
         ax.legalize(abime, ctx)
 
     corrige = ax.legalize(abime, ctx, pavage=True)
@@ -297,7 +297,7 @@ def test_pavage_est_invariant_par_translation_des_lignes() -> None:
     b = deduire_trame(decale, ctx)
     assert [inc[1:] for inc in a.incidences] == [inc[1:] for inc in b.incidences]
     assert a.lignes_x != b.lignes_x
-    assert verifier_exactement(decale, ctx).valide
+    assert verify_exactly(decale, ctx).valide
 
 
 def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:

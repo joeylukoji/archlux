@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 
 import archlux as ax
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.data.chargeurs import StatistiquesChargement, charger_msd
 
 CSV = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
@@ -25,7 +25,7 @@ depl: list[float] = []
 temps: list[float] = []
 tailles: list[int] = []
 for appart in charger_msd(CSV, statistiques=stats, limite=CIBLE):
-    avant += verifier_exactement(appart.plan, appart.contexte).valide
+    avant += verify_exactly(appart.plan, appart.contexte).valide
     tailles.append(len(appart.plan.pieces))
     debut = time.perf_counter()
     try:

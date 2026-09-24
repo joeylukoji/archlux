@@ -21,7 +21,7 @@ from dataclasses import replace
 import numpy as np
 
 from archlux.certify.dual import traduire_duaux
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.erreurs import Infaisable, InvariantViole
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.pavage import deduire_trame, etendre_pavage
@@ -184,7 +184,7 @@ def legalize(
     Guarantees
     ----------
     - Géométrique : **exacte**. ``resultat.certificat.geometrie.valide`` est
-      revérifié par :func:`archlux.certify.preuve.verifier_exactement` avant
+      revérifié par :func:`archlux.certify.proof.verify_exactly` avant
       retour — le solveur n'est jamais cru sur parole.
     - Performance : **aucune** en mode classique (``objective is None``). Avec un
       substitut, ``performance`` reste ``None`` ici : attacher la borne via
@@ -262,7 +262,7 @@ def legalize(
         devectoriser(sol.x, plan, poly_l1.index),
         contour=ctx.contour,
     )
-    preuve = verifier_exactement(corrige, ctx, reference=plan, budget=budget)
+    preuve = verify_exactly(corrige, ctx, reference=plan, budget=budget)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)
     # sol a été résolu sur poly_l1 : les duaux alignent poly_l1.A / origines, pas poly.
@@ -296,7 +296,7 @@ def legalize(
         devectoriser(resultat.x, corrige, poly.index),
         contour=ctx.contour,
     )
-    preuve_fw = verifier_exactement(performant, ctx, reference=plan, budget=budget)
+    preuve_fw = verify_exactly(performant, ctx, reference=plan, budget=budget)
     if not preuve_fw.valide:
         raise InvariantViole(preuve_fw.violations)
     # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont

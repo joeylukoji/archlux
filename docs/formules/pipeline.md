@@ -29,7 +29,7 @@ silencieux). Si le LP est infaisable → `Infaisable` avec
 4. `gradient_distance` — \(c=(0_n,1_n)\).
 5. `resoudre_avec_surfaces` — GLOP + Kelley + bornes.
 6. `devectoriser` — murs et baies suivent (baie relative au mur).
-7. `verifier_exactement(..., reference=plan)` — \(\delta_\infty\).
+7. `verify_exactly(..., reference=plan)` — \(\delta_\infty\).
 8. `Certificat(geometrie=..., performance=None, duaux=...)`.
 
 `performance is None` : en mode classique il n'y a **rien de probabiliste** à

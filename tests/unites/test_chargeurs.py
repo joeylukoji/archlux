@@ -15,7 +15,7 @@ from shapely import affinity
 from shapely.geometry import Polygon, box
 
 import archlux as ax
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.data.chargeurs import (
     StatistiquesChargement,
     _recoller,
@@ -127,7 +127,7 @@ def test_legalize_est_idempotent_sur_un_plan_reel_valide(tmp_path: Path) -> None
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
     appart = next(iter(charger_msd(csv)))
-    assert verifier_exactement(appart.plan, appart.contexte).valide
+    assert verify_exactly(appart.plan, appart.contexte).valide
 
     corrige = ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)
     preuve = corrige.certificat.geometrie

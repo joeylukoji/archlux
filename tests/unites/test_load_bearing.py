@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import archlux
-from archlux.certify.preuve import verifier_exactement
+from archlux.certify.proof import verify_exactly
 from archlux.erreurs import UnsupportedInput
 from archlux.geom.graphe import WallSide, deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
@@ -134,7 +134,7 @@ def test_the_polytope_excludes_a_plan_crossing_the_wall() -> None:
 def test_the_proof_rejects_a_room_crossing_a_load_bearing_wall() -> None:
     ctx = _ctx(_FULL)
     crossing = _plan(_room("a", 0, 0, 7, 6), _room("b", 7, 0, 3, 6), walls=(_FULL,))
-    proof = verifier_exactement(crossing, ctx)
+    proof = verify_exactly(crossing, ctx)
     assert not proof.structure_preservee and not proof.valide
     assert any("a" in v and "w" in v and "crosses" in v for v in proof.violations)
 
@@ -142,7 +142,7 @@ def test_the_proof_rejects_a_room_crossing_a_load_bearing_wall() -> None:
 def test_the_proof_accepts_rooms_bounded_by_the_wall() -> None:
     ctx = _ctx(_FULL)
     plan = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6), walls=(_FULL,))
-    assert verifier_exactement(plan, ctx).structure_preservee
+    assert verify_exactly(plan, ctx).structure_preservee
 
 
 @pytest.mark.parametrize(("overlap", "accepted"), [(5e-8, True), (1e-3, False)])
@@ -152,19 +152,19 @@ def test_the_proof_tolerates_solver_noise_but_not_a_real_crossing(
     """Review minor 4: an LP output a hair past the wall line (< WALL_M) is not a false
     refusal; a millimetre is a crossing."""
     plan = _plan(_room("a", 0, 0, 6 + overlap, 6), _room("b", 6 + overlap, 0, 4 - overlap, 6))
-    assert verifier_exactement(plan, _ctx(_FULL)).structure_preservee is accepted
+    assert verify_exactly(plan, _ctx(_FULL)).structure_preservee is accepted
 
 
 def test_the_proof_checks_oblique_walls_too() -> None:
     oblique = Mur(id="o", a=(0.0, 0.0), b=(10.0, 6.0), porteur=True)
     plan = _plan(_room("a", 0, 0, 10, 6), walls=(oblique,))
-    assert not verifier_exactement(plan, _ctx(oblique)).structure_preservee
+    assert not verify_exactly(plan, _ctx(oblique)).structure_preservee
 
 
 def test_the_proof_no_longer_requires_the_plan_to_repeat_the_structure() -> None:
     """Walls are context: a plan without ``murs`` is judged on crossings only."""
     plan = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6))
-    assert verifier_exactement(plan, _ctx(_FULL)).structure_preservee
+    assert verify_exactly(plan, _ctx(_FULL)).structure_preservee
 
 
 # --- End to end: both modes keep the wall ----------------------------------------------

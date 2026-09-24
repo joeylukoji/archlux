@@ -97,7 +97,7 @@ class InvariantViole(ArchluxError):
     Parameters
     ----------
     violations : tuple of str
-        Messages lisibles produits par :func:`archlux.certify.preuve.verifier_exactement`.
+        Messages lisibles produits par :func:`archlux.certify.proof.verify_exactly`.
     """
 
     def __init__(self, violations: tuple[str, ...]) -> None:

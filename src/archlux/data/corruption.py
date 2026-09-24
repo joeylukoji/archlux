@@ -3,7 +3,7 @@
 Pourquoi ce module existe
 -------------------------
 Un corpus réel est **déjà valide** : 398 appartements MSD sur 400 passent
-``verifier_exactement``. Mesurer « taux de validité avant / après ``legalize`` »
+``verify_exactly``. Mesurer « taux de validité avant / après ``legalize`` »
 sur ces plans ne dit donc rien. Il faut des entrées invalides dont on **connaît
 la faute**, ce qu'aucun corpus ne fournit.
 

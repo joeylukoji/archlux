@@ -125,7 +125,7 @@ been migrated is a breaking change.
 | `derive.py` | `drift.py` | | `fiabilite.py` | `reliability.py` |
 | `gestion.py` | `registry.py` | | `boucle.py` | `loop.py` |
 | `densite.py` | `density.py` | | `selection.py` | `selection.py` |
-| `preuve.py` | `proof.py` | | `borne.py` | `bound.py` |
+| `preuve.py` | `proof.py` (done: batch E10, old module kept as a deprecated shim) | | `borne.py` | `bound.py` |
 | `rapport.py` | `report.py` | | `dual.py` | `dual.py` |
 | `chargeurs.py` | `loaders.py` | | `decoupage.py` | `splits.py` |
 | `synthese.py` | `synthetic.py` | | `corruption.py` | `corruption.py` |

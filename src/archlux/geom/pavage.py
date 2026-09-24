@@ -5,7 +5,7 @@ Le problème
 Le polytope d'ordre est un **relaxé** : ``x_a + w_a ≤ x_b`` interdit le
 chevauchement, jamais le trou. Si l'entrée porte un jour, le plan troué est déjà
 le point le plus proche de lui-même : l'optimum L1 le laisse tel quel, et
-``certify.preuve`` le rejette. Mesuré sur MSD sans ce module : ``legalize`` répare
+``certify.proof`` le rejette. Mesuré sur MSD sans ce module : ``legalize`` répare
 68 % des chevauchements et 10 % des jours.
 
 Le résultat qui débloque

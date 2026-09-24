@@ -289,7 +289,7 @@ def resoudre(
     ----------
     - Géométrique : **exacte** si ``statut == "optimal"`` — la solution appartient au
       polytope à la tolérance du solveur près. Cette appartenance est **revérifiée
-      indépendamment** par :mod:`archlux.certify.preuve` avant tout retour à
+      indépendamment** par :mod:`archlux.certify.proof` avant tout retour à
       l'utilisateur : le solveur n'est jamais cru sur parole.
     - **Le démarrage à chaud ne change pas la solution**, seulement le temps. Sans cela,
       un certificat dépendrait de l'ordre des appels.

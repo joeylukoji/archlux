@@ -26,7 +26,7 @@ Ce que le rendu montre, et pourquoi
   intact : c'est l'erreur que cette contrainte interdit.
 
 Ce module ne mesure rien et ne prouve rien : voir
-:mod:`archlux.geom.diagnostic` et :mod:`archlux.certify.preuve`.
+:mod:`archlux.geom.diagnostic` et :mod:`archlux.certify.proof`.
 """
 
 from __future__ import annotations

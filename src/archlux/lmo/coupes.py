@@ -434,7 +434,7 @@ def resoudre_avec_surfaces(
       l'autre). L'optimum rendu est donc celui du domaine resserré, pas du domaine
       exact, et il peut être strictement moins bon.
 
-    Dans les deux cas, seule :func:`archlux.certify.preuve.verifier_exactement` tranche.
+    Dans les deux cas, seule :func:`archlux.certify.proof.verify_exactly` tranche.
     Les duaux rendus sont ceux des lignes de ``A``, inchangées par le resserrement : la
     pression exercée par les surfaces minimales n'y apparaît pas.
 

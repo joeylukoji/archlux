@@ -2,7 +2,7 @@
 
 Pourquoi ce module existe
 -------------------------
-:func:`~archlux.certify.preuve.verifier_exactement` rend un verdict et nomme les
+:func:`~archlux.certify.proof.verify_exactly` rend un verdict et nomme les
 violations. C'est ce qu'il faut pour certifier ; ce n'est pas ce qu'il faut pour
 **caractériser un corpus d'entrées**. « invalide » ne distingue pas un plan dont
 une cloison a glissé de deux centimètres d'un plan dont les pièces flottent en

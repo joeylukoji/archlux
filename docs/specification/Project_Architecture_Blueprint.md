@@ -135,7 +135,7 @@ Contexte ─────┼─────────────────�
               │                          ▼
               │                   devectoriser ──► Plan candidat
               ▼                                        │
-        certify.verifier_exactement  ◄─────────────────┘
+        certify.verify_exactly  ◄─────────────────┘
                     │
         invalide ───┴──► raise InvariantViole    (bogue interne, jamais silencieux)
                     │
@@ -144,7 +144,7 @@ Contexte ─────┼─────────────────�
         Plan + Certificat(geometrie=preuve, performance=None, duaux=traduits)
 ```
 
-**Le point non négociable** est la boucle de retour vers `verifier_exactement` : la
+**Le point non négociable** est la boucle de retour vers `verify_exactly` : la
 sortie du solveur n'est jamais rendue à l'utilisateur sans avoir été revérifiée par une
 implémentation **séparée et naïve**. Si GLOP a un bug, c'est cette vérification qui
 l'attrape — et elle lève, elle ne corrige pas.
@@ -167,7 +167,7 @@ Plan légalisé classiquement ──► x₀
    └─────────┤
              │ gap < tol ou k = max_iter
              ▼
-        certify.verifier_exactement  (identique)  +  uq.borner  (nouveau)
+        certify.verify_exactly  (identique)  +  uq.borner  (nouveau)
              │
              ▼
    Plan + Certificat(geometrie=preuve EXACTE, performance=borne PROBABILISTE)
@@ -196,7 +196,7 @@ qu'il lui est **interdit** de savoir.
 | `solve` | `FrankWolfeResult` | Validité à chaque itéré ; gap certifié | L'implémentation du substitut |
 | `orient` | Encodages, statistiques | Continuité en 0°/360° | Le reste du plan |
 | `uq.conforme` | `BornePerformance` | Couverture ≥ 1−α **sous échangeabilité** | La géométrie |
-| `certify.preuve` | `PreuveGeometrique` | Exactitude par inspection finie | Toute probabilité |
+| `certify.proof` | `PreuveGeometrique` | Exactitude par inspection finie | Toute probabilité |
 | `certify.dual` | `(libellé, coût)` | Traduction fidèle via `origines` | — |
 | `bench` | Découpages, manifestes | Reproductibilité | — |
 
@@ -423,7 +423,7 @@ dans `io`, la mise en forme dans `certify`. Le coût est réel et assumé : deux
 | Jalon | Modules | Livrable | État du squelette |
 |:--:|---|---|---|
 | 1 | `types`, `erreurs`, `io`, `bench.{graines,manifeste}` | Aller-retour JSON | **Terminé** — propriété d'aller-retour verte sur 200 cas |
-| **2** | `geom`, `lmo`, `certify.preuve`, `api` | **Légalisation classique + preuve** | Étapes 1 à 3 faites (`geom.graphe`, `geom.polytope`, `lmo.solveur`) ; étapes 4 à 7 à venir |
+| **2** | `geom`, `lmo`, `certify.proof`, `api` | **Légalisation classique + preuve** | Étapes 1 à 3 faites (`geom.graphe`, `geom.polytope`, `lmo.solveur`) ; étapes 4 à 7 à venir |
 | 3 | `light.analytique`, `orient`, `solve` | Performantiel **sans apprentissage** | Contrats écrits |
 | 4 | `light.appris`, `light.validation`, `uq.gestion` | Substitut entraîné + gradient validé | Contrats écrits |
 | 5 | `uq.conforme`, `uq.derive`, `certify.{borne,dual,rapport}` | Certificat complet | Contrats écrits |

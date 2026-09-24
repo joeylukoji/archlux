@@ -241,7 +241,7 @@ def _recoller(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
     :math:`0{,}209\\,\\mathrm{m}` de mur, :math:`0{,}067\\,\\mathrm{m}` d'écart entre
     pièces ; 1,7 % seulement sont jointives). Le modèle d'``archlux`` suppose au
     contraire des cloisons d'épaisseur nulle et un pavage exact du contour —
-    ``certify.preuve`` rejette tout écart d'aire.
+    ``certify.proof`` rejette tout écart d'aire.
 
     On quantifie donc les abscisses et les ordonnées de tous les sommets de
     l'appartement sur une trame commune : deux bords distants de moins de
@@ -362,7 +362,7 @@ def _contour_simple(pieces: list[Polygon]) -> tuple[tuple[float, float], ...] | 
 
     Un plan dont l'union est un ``MultiPolygon`` (appartement en deux morceaux) ou
     percée d'un anneau intérieur n'est pas représentable : ``Plan.contour`` est un
-    anneau unique, et ``certify.preuve`` compare une aire d'union à l'aire de **ce**
+    anneau unique, et ``certify.proof`` compare une aire d'union à l'aire de **ce**
     contour. Boucher le trou en silence fabriquerait un « jour » inexistant.
     """
     union = unary_union(pieces)
@@ -433,7 +433,7 @@ def charger_msd(
         la décomposition d'une pièce en L — or un sous-rectangle est un artefact de
         découpe, pas une pièce : une bande de 1,2 m y est parfaitement normale. Le
         plan réel sort alors de son propre polytope, ``legalize`` élargit les bandes
-        pour respecter le seuil, le pavage se déchire, et ``certify.preuve`` rejette
+        pour respecter le seuil, le pavage se déchire, et ``certify.proof`` rejette
         pour « jour ». Mesuré : 87 % d'échecs sur MSD avec le défaut, 0 % sans.
     max_pieces : int, optional
         Plafond de **sous-rectangles** par appartement, après décomposition.
@@ -469,7 +469,7 @@ def charger_msd(
     Notes
     -----
     La géométrie rendue est **exacte au sens du corpus**, pas légalisée : elle peut
-    parfaitement violer ``verifier_exactement``. C'est précisément ce qu'un banc
+    parfaitement violer ``verify_exactly``. C'est précisément ce qu'un banc
     d'essai doit mesurer avant correction.
     """
     chemin = Path(chemin)

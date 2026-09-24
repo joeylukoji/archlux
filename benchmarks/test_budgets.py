@@ -234,8 +234,8 @@ def test_budget_certification(benchmark: BenchmarkFixture) -> None:
 
     Declared in BUDGETS_MS since milestone 2 but never measured (AUDIT.md §5.6).
     """
-    from archlux.certify.preuve import verifier_exactement
+    from archlux.certify.proof import verify_exactly
 
     plan = _plan_15_pieces()
-    benchmark(verifier_exactement, plan, CTX_15, reference=plan)
+    benchmark(verify_exactly, plan, CTX_15, reference=plan)
     _assert_within_budget(benchmark, "certification")

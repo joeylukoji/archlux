@@ -36,7 +36,7 @@ under which a load-bearing wall counts as axis-aligned, or as a point to ignore
 (``geom.graphe``)."""
 
 WALL_M: Final = 1e-7
-"""Wall tolerance of the proof (``certify.preuve``): two wall end points closer than this
+"""Wall tolerance of the proof (``certify.proof``): two wall end points closer than this
 coincide, and a room is shrunk by this much before testing whether a load-bearing wall
 crosses its interior (so a room merely bounded by the wall is accepted)."""
 
@@ -46,14 +46,14 @@ CUTS_LENGTH_M: Final = 1e-6
 # --- Areas (square metres) -----------------------------------------------------------
 
 OVERLAP_M2: Final = 1e-9
-"""Intersection area under which two rooms do not overlap (``certify.preuve``,
+"""Intersection area under which two rooms do not overlap (``certify.proof``,
 ``export.pathologie``)."""
 
 GAP_M2: Final = 1e-6
-"""Uncovered area under which the outline counts as tiled (``certify.preuve``)."""
+"""Uncovered area under which the outline counts as tiled (``certify.proof``)."""
 
 AREA_PROOF_M2: Final = 1e-9
-"""Shortfall under a minimum area tolerated by the proof (``certify.preuve``)."""
+"""Shortfall under a minimum area tolerated by the proof (``certify.proof``)."""
 
 AREA_TARGET_MARGIN_M2: Final = 1e-6
 """Margin above a minimum area that cuts and bound tightening aim at (``lmo.coupes``).

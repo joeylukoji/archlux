@@ -16,7 +16,7 @@ Les pages `formules/` expliquent *quelle égalité* est codée, et d'où elle vi
 | Objectif L1 | `geom.polytope`, `api` | [Épigraphe L1](epigraphe-l1.md) | exacte (reformulation) |
 | Surfaces | `lmo.coupes` | [Coupes de surface](coupes-surface.md) | exacte (appui convexe) |
 | Oracle LP | `lmo.solveur` | [Simplexe, duaux, Farkas](farkas.md) | exacte (LP) |
-| Preuve | `certify.preuve` | [Vérification exacte](preuve-exacte.md) | exacte (inspection) |
+| Preuve | `certify.proof` | [Vérification exacte](preuve-exacte.md) | exacte (inspection) |
 | Chaîne | `api.legalize` | [Pipeline](pipeline.md) | exacte en sortie |
 | Orientation | `orient.circulaire` | [Statistiques circulaires](circulaire.md) | exacte (trigo) |
 | Substitut J3 | `light.analytique` | [Substitut analytique](substitut-analytique.md) | **sans garantie** |

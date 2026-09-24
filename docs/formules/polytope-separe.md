@@ -61,7 +61,7 @@ erreur de modèle, pas un détail d'implémentation.
 
 | Faire | Ne pas faire |
 |---|---|
-| `contient(x)` comme oracle **indépendant** du solveur | Faire confiance à `statut == "optimal"` sans `contient` ni `verifier_exactement` |
+| `contient(x)` comme oracle **indépendant** du solveur | Faire confiance à `statut == "optimal"` sans `contient` ni `verify_exactly` |
 | Garder `origines[i]` = libellé de la ligne \(i\) de \(A\) | Numéroter les duaux par indice de ligne nu |
 | Vectoriser / dévectoriser via `index` | Stocker une baie en coordonnées absolues (elle se désynchronise du mur) |
 
