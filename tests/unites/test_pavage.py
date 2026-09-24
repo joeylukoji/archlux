@@ -12,7 +12,7 @@ import pytest
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import GridNotRecoverable, InvariantViole
+from archlux.erreurs import GridNotRecoverable, UnsupportedInput
 from archlux.geom.pavage import deduire_trame
 from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
 
@@ -314,7 +314,7 @@ def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:
 def test_plan_sans_piece_est_refuse() -> None:
     """Erreur typee, jamais un IndexError nu."""
     vide = Plan(pieces=(), murs=(), ouvertures=(), contour=_RECT)
-    with pytest.raises(InvariantViole, match="sans piece"):
+    with pytest.raises(UnsupportedInput, match="no room"):
         deduire_trame(vide, _ctx())
 
 

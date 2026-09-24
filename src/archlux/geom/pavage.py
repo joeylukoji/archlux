@@ -69,7 +69,7 @@ from scipy import sparse
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
-from archlux.erreurs import GridNotRecoverable, InvariantViole
+from archlux.erreurs import GridNotRecoverable, InvariantViole, UnsupportedInput
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -400,10 +400,14 @@ def deduire_trame(
         The cells do not form a partition: an empty cell (structural gap) or a cell
         covered twice (structural overlap). The fault is then not a coordinate
         offset but the order itself, and no partition move will repair it.
+    UnsupportedInput
+        An input the grid cannot describe: no room, an empty or invalid outline, fewer
+        than two grid lines on an axis, a room flat after grouping (thinner than
+        ``tolerance``), or two outline edges closer than ``tolerance`` (one grid line
+        cannot lie exactly on both). ``GridNotRecoverable`` is a subclass.
     InvariantViole
-        Empty plan, room degenerate after grouping, non-rectangular outline, or grid
-        not covering the outline (to be reclassified as input limits, PLAN.md
-        phase 3).
+        Only on an internal defect: a room left degenerate by consolidation or repair,
+        which both refuse such moves by construction.
 
     Notes
     -----
@@ -411,9 +415,9 @@ def deduire_trame(
     vérification de partition, soit ``O(n·p·q)`` au pire.
     """
     if not plan.pieces:
-        raise InvariantViole(("plan sans piece : aucune trame",))
+        raise UnsupportedInput("tiling grid: the plan has no room")
     if not ctx.contour:
-        raise InvariantViole(("contour vide : trame non ancrable",))
+        raise UnsupportedInput("tiling grid: the outline is empty, the grid has no anchor")
 
     xs = [p.x for p in plan.pieces] + [p.x + p.w for p in plan.pieces]
     ys = [p.y for p in plan.pieces] + [p.y + p.h for p in plan.pieces]
@@ -427,21 +431,31 @@ def deduire_trame(
     # A line that carries an outline vertex *is* the outline: the group mean would
     # drift with the room edges grouped with it, and the anchoring equalities would
     # then pin the rooms off the outline, leaving an uncovered strip.
-    for valeur in xs_contour:
-        lignes_x[rang_x[valeur]] = valeur
-    for valeur in ys_contour:
-        lignes_y[rang_y[valeur]] = valeur
+    for axe, lignes, rang, valeurs in (
+        ("x", lignes_x, rang_x, xs_contour),
+        ("y", lignes_y, rang_y, ys_contour),
+    ):
+        portees: dict[int, float] = {}
+        for valeur in valeurs:
+            ligne = rang[valeur]
+            if portees.setdefault(ligne, valeur) != valeur:
+                raise UnsupportedInput(
+                    f"tiling grid: outline edges {portees[ligne]} and {valeur} in {axe} "
+                    f"are closer than the grouping tolerance {tolerance} m"
+                )
+            lignes[ligne] = valeur
     if len(lignes_x) < 2 or len(lignes_y) < 2:
-        raise InvariantViole(("trame degeneree : moins de deux lignes sur un axe",))
+        raise UnsupportedInput("tiling grid: fewer than two grid lines on an axis")
 
     bords_x = [(rang_x[p.x], rang_x[p.x + p.w]) for p in plan.pieces]
     bords_y = [(rang_y[p.y], rang_y[p.y + p.h]) for p in plan.pieces]
-    for (gauche, droite), piece in zip(bords_x, plan.pieces, strict=True):
-        if gauche >= droite:
-            raise InvariantViole((f"piece {piece.id} plate en x",))
-    for (bas, haut), piece in zip(bords_y, plan.pieces, strict=True):
-        if bas >= haut:
-            raise InvariantViole((f"piece {piece.id} plate en y",))
+    for axe, bords in (("x", bords_x), ("y", bords_y)):
+        for (debut, fin), piece in zip(bords, plan.pieces, strict=True):
+            if debut >= fin:
+                raise UnsupportedInput(
+                    f"tiling grid: room {piece.id} is flat in {axe} (thinner than the "
+                    f"grouping tolerance {tolerance} m, or of negative size)"
+                )
 
     # Les lignes qui portent un sommet du contour sont figees : l'enveloppe est une
     # donnee d'entree, elle ne bouge pas. Elles echappent donc a la consolidation.
@@ -462,7 +476,7 @@ def deduire_trame(
     # pas rectangulaire : exiger le pavage de la boite englobante serait faux.
     enveloppe = Polygon(ctx.contour)
     if not enveloppe.is_valid:
-        raise InvariantViole(("contour invalide : pavage non verifiable",))
+        raise UnsupportedInput("tiling grid: the outline is not a valid polygon")
     centres_x = 0.5 * (np.asarray(lignes_x[:-1]) + np.asarray(lignes_x[1:]))
     centres_y = 0.5 * (np.asarray(lignes_y[:-1]) + np.asarray(lignes_y[1:]))
     maille_x, maille_y = np.meshgrid(centres_x, centres_y, indexing="ij")

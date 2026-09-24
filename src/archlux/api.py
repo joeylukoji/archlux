@@ -196,6 +196,8 @@ def legalize(
         Propagées depuis la construction du graphe.
     UnsupportedInput
         An oblique load-bearing wall: it cannot be kept by a linear side constraint.
+        With ``pavage``, also an input the grid cannot describe (no room, empty or
+        invalid outline, flat room, outline edges closer than the grouping tolerance).
     GridNotRecoverable
         With ``pavage``: the rooms do not fall into the cells of the recovered grid
         (an input limit, subclass of ``UnsupportedInput``).

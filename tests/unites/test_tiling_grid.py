@@ -13,6 +13,7 @@ from dataclasses import replace
 import pytest
 
 import archlux
+from archlux.erreurs import UnsupportedInput
 from archlux.geom.pavage import deduire_trame
 from archlux.types import Contexte, Mur, Orientation, Piece, Plan, Referentiel, Structure
 from tests import checkers
@@ -113,3 +114,49 @@ def test_outer_grid_lines_lie_exactly_on_the_outline() -> None:
     assert grid.lignes_x[-1] == WIDTH
     assert grid.lignes_y[0] == 0.0
     assert grid.lignes_y[-1] == HEIGHT
+
+
+STEPPED_OUTLINE = (
+    (0.0, 0.0),
+    (WIDTH, 0.0),
+    (WIDTH, 3.0),
+    (WIDTH + 0.004, 3.0),
+    (WIDTH + 0.004, HEIGHT),
+    (0.0, HEIGHT),
+)
+
+INPUT_LIMITS = {
+    "empty plan": (_plan(), _context()),
+    "empty outline": (_plan(_room("a", 0.0, 0.0, WIDTH, HEIGHT), outline=()), _context(())),
+    # Every room and the outline are flat in y: fewer than two grid lines.
+    "flat grid": (
+        _plan(_room("a", 0.0, 0.0, WIDTH, 0.0), outline=((0.0, 0.0), (WIDTH, 0.0))),
+        _context(((0.0, 0.0), (WIDTH, 0.0))),
+    ),
+    # A room thinner than the grouping tolerance collapses onto one grid line.
+    "flat room": (
+        _plan(_room("a", 0.0, 0.0, WIDTH, HEIGHT), _room("sliver", 0.0, 0.0, 0.005, HEIGHT)),
+        _context(),
+    ),
+    # A self-intersecting outline has no inside: the partition cannot be checked.
+    "invalid outline": (
+        _plan(
+            _room("a", 0.0, 0.0, WIDTH, HEIGHT),
+            outline=((0.0, 0.0), (WIDTH, HEIGHT), (WIDTH, 0.0), (0.0, HEIGHT)),
+        ),
+        _context(((0.0, 0.0), (WIDTH, HEIGHT), (WIDTH, 0.0), (0.0, HEIGHT))),
+    ),
+    # A 4 mm step in the outline: both outline edges fall on one grid line, which
+    # cannot lie exactly on both.
+    "outline step below tolerance": (
+        _plan(_room("a", 0.0, 0.0, WIDTH, HEIGHT), outline=STEPPED_OUTLINE),
+        _context(STEPPED_OUTLINE),
+    ),
+}
+
+
+@pytest.mark.parametrize("case", sorted(INPUT_LIMITS))
+def test_an_input_the_grid_cannot_describe_is_a_typed_refusal(case: str) -> None:
+    plan, ctx = INPUT_LIMITS[case]
+    with pytest.raises(UnsupportedInput):
+        deduire_trame(plan, ctx)
