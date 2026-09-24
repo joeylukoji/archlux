@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "archlux"
 dynamic = ["version"]
-description = "Corriger un plan genere vers la validite geometrique en preservant sa performance lumineuse."
+description = "Repair a generated floor plan into a geometrically valid one while keeping its daylight."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
