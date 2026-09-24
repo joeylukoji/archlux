@@ -303,6 +303,29 @@ avec budget et un contrôle indépendant du budget. **Reporté au lot 1.5** : le
   sur le domaine d'origine (Q-M6).
 - Remplacer les 25 tolérances dispersées par `tolerances.py`, en harmonisant 1e-9 et 1e-7.
 
+**État du lot 1.5 : terminé (2026-09-24).** Trois sous-lots et une revue.
+1.5a : la boucle de coupes accepte à la tolérance de la preuve (`AREA_PROOF_M2`) et vise
+`a_min + 1e-6` pour les seules pièces en déficit ; le reliquat « X m² < X m² » disparaît.
+1.5b : pavage prouvé en `Fraction` sur contour rectangulaire (identification des arêtes
+à `SNAP_M`, puis inclusion, disjonction, somme des aires), puis bornage exact du plan
+brut (chevauchements ≤ `OVERLAP_M2`, débord et borne de Bonferroni du non-couvert ≤
+`GAP_M2`) ; GEOS reste pour les autres contours. 1.5c : chaque refus de `legalize` est
+nommé et typé (`GridNotRecoverable`, `UnsupportedInput`), le certificat de Farkas couvre
+aussi `A_eq` et il est vérifié en rationnels (`verified`) ; « infaisable pour cet ordre
+relatif ». Revue : 2 majeurs corrigés (programmes serrés refusés 37 fois sur 40 ;
+identification qui effaçait jusqu'à 1e-7·L m²), 6 mineurs corrigés. Banc
+`after-1.5-review` : 0 faux certificat, 0 plantage sur 1 600 cas.
+**Reporté** : (i) 28 plans bruités sur 200 laissent une bande non couverte après pavage
+(lignes extérieures de la trame non ancrées au contour), lot dédié avant la porte de
+phase 1 ; (ii) la trame ignore les murs porteurs (2 refus en `partial_one_fault`) ;
+(iii) les infaisabilités dues aux surfaces ne citent pas la surface et ne sont pas
+vérifiables (les coupes n'entrent pas dans le certificat ; il faudra des coupes au
+minimum exact, étiquetées) → phase 3.4 ; (iv) tolérances encore littérales hors `certify`
+et `lmo.coupes` → au fil des lots ; (v) `GridNotRecoverable` et `UnsupportedInput`
+absents de `archlux.__all__`, et plan vide, contour non rectangulaire ou pièce dégénérée
+encore en `InvariantViole` dans `pavage` → phase 3 ; (vi) double `DeprecationWarning`
+sur `from archlux.certify import verifier_exactement` → phase 3.
+
 ### 1.6 Borne probabiliste qui dit son régime (§5.3)
 
 - `BornePerformance.regime: Literal["echangeable", "selectionne"]`.
@@ -617,7 +640,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | En cours | | Lots 1.1 à 1.4 terminés : 0 certificat mensonger, 0 plantage et 0 dépassement de budget dans tous les modes du banc. Lot suivant : 1.5 (preuve exacte en rationnels, Farkas vérifié, tolérances unifiées). |
+| 1 | En cours | | Lots 1.1 à 1.5 terminés : 0 certificat mensonger, 0 plantage et 0 dépassement de budget dans tous les modes du banc ; pavage prouvé en rationnels, Farkas vérifié exactement. Lot suivant : 1.6 (borne probabiliste qui dit son régime). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |
@@ -626,4 +649,4 @@ Tenir ce tableau à jour à chaque porte franchie.
 | 7 | À faire | | |
 | 8 | À faire | | |
 | 9 | À faire | | |
-| E | En cours | | E0, E1 et E9 (`solve`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E2, avec la réécriture du README en phase 1.8. |
+| E | En cours | | E0, E1, E9 (`solve`) et E10 (`certify.preuve` → `certify.proof`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E2, avec la réécriture du README en phase 1.8. |
