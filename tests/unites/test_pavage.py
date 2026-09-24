@@ -12,7 +12,7 @@ import pytest
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import GridNotRecoverable, InvariantViole
 from archlux.geom.pavage import deduire_trame
 from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
 
@@ -142,7 +142,7 @@ def _trois_pieces_sur_quatre() -> Plan:
 
 def test_jour_structurel_est_detecte_sans_budget() -> None:
     """`budget_reparation=0` : la partition est verifiee, jamais retouchee."""
-    with pytest.raises(InvariantViole, match="jour structurel"):
+    with pytest.raises(GridNotRecoverable, match="uncovered"):
         deduire_trame(_trois_pieces_sur_quatre(), _ctx(), budget_reparation=0)
 
 
@@ -178,7 +178,7 @@ def test_le_budget_borne_la_reparation() -> None:
         ouvertures=(),
         contour=_RECT,
     )
-    with pytest.raises(InvariantViole, match="structurel"):
+    with pytest.raises(GridNotRecoverable):
         deduire_trame(plan, _ctx(), budget_reparation=1)
 
 
@@ -195,7 +195,7 @@ def test_toute_trame_rendue_est_une_partition_valide(budget: int, degat: float) 
     plan = _pavage_2x2(largeur_sw=max(0.5, 5.0 - degat))
     try:
         trame = deduire_trame(plan, _ctx(), budget_reparation=budget)
-    except InvariantViole:
+    except GridNotRecoverable:
         return  # refus explicite : c'est l'autre branche du contrat
     grille = np.zeros((len(trame.lignes_x) - 1, len(trame.lignes_y) - 1), dtype=int)
     for nom, gauche, droite, bas, haut in trame.incidences:
@@ -244,7 +244,7 @@ def test_chevauchement_structurel_est_refuse() -> None:
         ouvertures=(),
         contour=_RECT,
     )
-    with pytest.raises(InvariantViole, match="chevauchement structurel"):
+    with pytest.raises(GridNotRecoverable, match="covered twice"):
         deduire_trame(plan, _ctx())
 
 

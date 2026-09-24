@@ -69,7 +69,7 @@ from scipy import sparse
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import GridNotRecoverable, InvariantViole
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -472,9 +472,7 @@ def deduire_trame(
             else None
         )
         if repare is None:
-            if trop:
-                raise InvariantViole((f"chevauchement structurel : {trop} cellules en trop",))
-            raise InvariantViole((f"jour structurel : {manque} cellules non couvertes",))
+            raise GridNotRecoverable(excess=trop, missing=manque)
         incidences = repare
 
     # Dernier filet : la reparation comme la consolidation ne manipulent que des
@@ -589,12 +587,14 @@ def etendre_pavage(poly: Polytope, trame: Trame) -> Polytope:
     colonnes: list[int] = []
     valeurs: list[float] = []
     seconds: list[float] = []
-    for rang, (_libelle, termes, borne) in enumerate(egalites):
+    labels: list[str] = []
+    for rang, (libelle, termes, borne) in enumerate(egalites):
         for nom, coef in termes.items():
             lignes.append(rang)
             colonnes.append(poly.index[nom])
             valeurs.append(coef)
         seconds.append(borne)
+        labels.append(f"tiling {libelle}")
     a_extra = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(egalites), n_var)).tocsr()
     if poly.A_eq.shape[0]:
         a_eq = sparse.vstack([poly.A_eq, a_extra], format="csr")
@@ -602,4 +602,4 @@ def etendre_pavage(poly: Polytope, trame: Trame) -> Polytope:
     else:
         a_eq = a_extra
         b_eq = np.asarray(seconds, dtype=float)
-    return replace(poly, A_eq=a_eq, b_eq=b_eq)
+    return replace(poly, A_eq=a_eq, b_eq=b_eq, origines_eq=poly.labels_eq() + tuple(labels))

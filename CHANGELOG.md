@@ -52,6 +52,26 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
   `frank_wolfe` has no caller left and is documented as legacy.
 
+#### Fixed — infeasibility is named, checked, and never inferred from tightened bounds (batch 1.5c)
+- The Farkas auxiliary problem relaxes the equalities of `A_eq` too, and every equality
+  carries a label (`Polytope.origines_eq`): 68 of 200 noisy benchmark plans were
+  refused with "origines non renseignees"; they now name their conflicting constraints
+  (tiling rows, frozen contacts). New `SolutionLP.certificat_farkas_eq`.
+- `certify.farkas.verify_infeasibility` checks a certificate in exact rational
+  arithmetic; `Infaisable.verified` and `CertificatFaisabilite.verified` report it, and
+  the messages say "infeasible for this relative order". 88 of 89 benchmark
+  certificates verify; a forged or feasible one never does.
+- The area cutting loop no longer concludes "infeasible" on bounds it tightened itself
+  (8 benchmark cases); it solves the original domain first.
+- Without a certificate, `legalize` no longer lists every constraint as conflicting.
+
+#### Changed — typed refusal for an unrecoverable tiling grid (batch 1.5c)
+- `deduire_trame` raises `GridNotRecoverable` (an `UnsupportedInput`) instead of
+  `InvariantViole` when the plan is too far from a tiling: an input limit, not an
+  internal error. Experiments classified it by reading the message text; they now
+  catch the type. The benchmark separates `refused_unsupported` from
+  `refused_invariant`.
+
 #### Changed — the tiling is proved in exact rational arithmetic (batch 1.5b)
 - For an axis-aligned rectangular outline, `verify_exactly` decides overlaps and gaps
   with `certify.proof.rational_tiling`: edges closer than `SNAP_M` (1e-7 m) are

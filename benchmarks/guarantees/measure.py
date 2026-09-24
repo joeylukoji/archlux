@@ -17,6 +17,8 @@ Every output is checked by the independent checker of ``tests/checkers.py``, nev
   independent checker finds a violation. The worst outcome: a proof that lies;
 - ``invalid_but_flagged``: a plan came out with violations, and its certificate says so;
 - ``refused_infeasible``: ``legalize`` raised ``Infaisable``, an honest refusal;
+- ``refused_unsupported``: ``legalize`` raised ``UnsupportedInput`` (for instance a
+  tiling grid that cannot be recovered): an input outside what the library handles;
 - ``refused_invariant``: ``legalize`` raised another ``ArchluxError`` (typically
   ``InvariantViole``: the proof caught a defective solver output). Safe, but a defect;
 - ``crash``: any other exception.
@@ -45,7 +47,7 @@ from tests import checkers
 
 import archlux
 from archlux.data.corruption import corrompre
-from archlux.erreurs import ArchluxError, Infaisable
+from archlux.erreurs import ArchluxError, Infaisable, UnsupportedInput
 from archlux.export.svg import comparer
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
@@ -60,6 +62,7 @@ Outcome = Literal[
     "false_certificate",
     "invalid_but_flagged",
     "refused_infeasible",
+    "refused_unsupported",
     "refused_invariant",
     "crash",
 ]
@@ -68,6 +71,7 @@ OUTCOMES: tuple[Outcome, ...] = (
     "false_certificate",
     "invalid_but_flagged",
     "refused_infeasible",
+    "refused_unsupported",
     "refused_invariant",
     "crash",
 )
@@ -210,6 +214,8 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
         result = mode.run(given, scenario.context)
     except Infaisable as error:
         return _refusal(scenario, start, "refused_infeasible", error), None
+    except UnsupportedInput as error:
+        return _refusal(scenario, start, "refused_unsupported", error), None
     except ArchluxError as error:
         return _refusal(scenario, start, "refused_invariant", error), None
     except Exception as error:  # a crash is exactly what this benchmark must record
@@ -302,7 +308,7 @@ def measure(label: str, n: int, seed: int) -> dict[str, Any]:
     return report
 
 
-_SPLIT = ("refused_infeasible", "refused_invariant")
+_SPLIT = ("refused_infeasible", "refused_unsupported", "refused_invariant")
 """Outcomes introduced when refusals were split; unknown for earlier runs."""
 
 
@@ -315,13 +321,15 @@ def _count(summary: dict[str, Any], outcome: str) -> int | None:
     stored: dict[str, int] = summary["outcomes"]
     if outcome in _SPLIT and "refused" in stored:  # an earlier run with refusals
         return None
+    if outcome == "refused_unsupported" and outcome not in stored:
+        return None  # runs before batch 1.5c counted these among refused_invariant
     return int(stored.get(outcome, 0))
 
 
 def _refused(summary: dict[str, Any]) -> int:
     """All refusals; runs before the split stored them as a single ``refused``."""
     stored: dict[str, int] = summary["outcomes"]
-    keys = ("refused", "refused_infeasible", "refused_invariant")
+    keys = ("refused", "refused_infeasible", "refused_unsupported", "refused_invariant")
     return sum(int(stored.get(key, 0)) for key in keys)
 
 
@@ -342,8 +350,10 @@ def write_readme() -> None:
         "do not edit. The docstring of `measure.py` defines the protocol and each outcome.",
         "**`false certificate` must reach 0**: it counts plans certified valid that break a",
         "guarantee according to the independent checker (`tests/checkers.py`).",
-        "`of which invariant` counts refusals where the proof caught a defective solver",
-        "output (safe, but a defect); `n/a` marks runs made before that split.",
+        "`of which unsupported` counts inputs outside what the library handles (e.g. a",
+        "tiling grid that cannot be recovered); `of which invariant` counts refusals where",
+        "the proof caught a defective solver output (safe, but a defect); `n/a` marks runs",
+        "made before these splits.",
         "",
     ]
     for key, mode in MODES.items():
@@ -351,8 +361,9 @@ def write_readme() -> None:
             f"## {key}: {mode.description}",
             "",
             "| run | revision | n | ok | false certificate | invalid, flagged | refused | "
-            "of which invariant | crash | overlap | coverage | area | wall | budget | median ms |",
-            "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
+            "of which unsupported | of which invariant | crash | overlap | coverage | area "
+            "| wall | budget | median ms |",
+            "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
         ]
         for run in runs:
             stored = run["modes"].get(key)
@@ -367,6 +378,7 @@ def write_readme() -> None:
                 f"| {_cell(_count(s, 'false_certificate'), n)} "
                 f"| {_cell(_count(s, 'invalid_but_flagged'), n)} "
                 f"| {_cell(_refused(s), n)} "
+                f"| {_cell(_count(s, 'refused_unsupported'), n)} "
                 f"| {_cell(_count(s, 'refused_invariant'), n)} "
                 f"| {_cell(_count(s, 'crash'), n)} "
                 f"| {v['overlap']} | {v['coverage']} | {v['area']} | {v['wall']} "

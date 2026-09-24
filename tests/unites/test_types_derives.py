@@ -109,7 +109,7 @@ class TestExceptions:
 
     def test_infaisable_sans_origines_le_dit(self) -> None:
         """Le message ne prétend pas à un diagnostic qu'il n'a pas."""
-        assert "origines non renseignees" in str(Infaisable(certificat_farkas=None))
+        assert "no constraint identified" in str(Infaisable(certificat_farkas=None))
 
 
 class TestEcritureRobuste:

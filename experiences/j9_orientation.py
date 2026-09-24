@@ -88,7 +88,7 @@ def main() -> None:
         propose, contexte, diag = bati
         try:
             valide = ax.legalize(propose, contexte, pavage=True, budget_reparation=BUDGETS[-1])
-        except (ax.Infaisable, ax.InvariantViole):
+        except ax.ArchluxError:
             continue
         if not valide.certificat.geometrie.valide or len(valide.pieces) < 4:
             continue
@@ -101,7 +101,7 @@ def main() -> None:
             avant = _score(valide, ctx_az, substitut)
             try:
                 variante = ax.legalize(valide, ctx_az, objective=substitut, budget=budget)
-            except (ax.Infaisable, ax.InvariantViole):
+            except ax.ArchluxError:
                 volets.append((valide, f"{azimut}° — pas de variante"))
                 continue
             apres = _score(variante, ctx_az, substitut)

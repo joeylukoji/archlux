@@ -449,6 +449,12 @@ def resoudre_avec_surfaces(
     while True:
         solution = resoudre(domaine, c, depart=courant, coupes=coupes or None, duaux=duaux)
         if solution.statut != "optimal":
+            if domaine is not poly:
+                # Tightened bounds are not an outer approximation: an infeasible verdict
+                # on them says nothing about the original problem (AUDIT.md §5.2). Solve
+                # the original domain, so that an infeasibility certificate, if any, is
+                # about the real system; a feasible answer goes on to the exact proof.
+                return resoudre(poly, c, depart=courant, coupes=coupes or None, duaux=duaux)
             return solution
         if not surfaces_violees(solution.x, domaine, ctx, pieces=pieces):
             return solution

@@ -70,6 +70,9 @@ class SolutionLP:
     statut: Literal["optimal", "infaisable", "non_borne", "limite"]
     duaux: np.ndarray | None = None
     certificat_farkas: np.ndarray | None = None
+    certificat_farkas_eq: np.ndarray | None = None
+    """Farkas multipliers of the rows of ``A_eq`` (free sign, same convention as
+    ``certificat_farkas``), set only when ``statut == "infaisable"``."""
     iterations: int = 0
     temps_ms: float = 0.0
 
@@ -178,7 +181,7 @@ def _est_faisable(poly: Polytope, coupes: list[Coupe] | None) -> bool:
     return _statut(solveur.Solve()) == "optimal"
 
 
-def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> np.ndarray:
+def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.ndarray, np.ndarray]:
     """Extraire une preuve d'infaisabilité par le **problème auxiliaire**.
 
     On relâche chaque inégalité ``a_i x ≤ b_i`` par une variable d'écart ``s_i ≥ 0``,
@@ -190,10 +193,18 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> np.ndarray
     Les coupes sont relâchées elles aussi. Sans cela, une coupe impossible rend le
     problème auxiliaire lui-même infaisable, et ses duaux ne veulent plus rien dire.
 
+    Equalities of ``A_eq`` (tiling, fusions, frozen contacts) are relaxed too, by two
+    slacks each; otherwise a conflict among them left the auxiliary problem without an
+    optimum and the certificate empty ("origines non renseignees": 68 of 200 noisy
+    benchmark plans before batch 1.5c).
+
     Returns
     -------
-    numpy.ndarray
-        Un multiplicateur **positif** par ligne de ``A``. Croisé avec ``origines``, il
+    tuple of numpy.ndarray
+        ``(y, z)``: one **non-negative** multiplier per row of ``A``, and one free
+        multiplier per row of ``A_eq``, in the same sign convention.
+
+        ``y``: un multiplicateur **positif** par ligne de ``A``. Croisé avec ``origines``, il
         dit **quelles contraintes s'excluent**, ce qu'un simple « infaisable » ne dit
         pas. Exemple réel : ``separation horizontale A|B`` et ``contour droit B`` valent
         1, les autres 0 — deux pièces de 2 m au minimum ne tiennent pas dans 3 m.
@@ -221,6 +232,17 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> np.ndarray
         contrainte.SetCoefficient(ecart, -1.0)
         objectif.SetCoefficient(ecart, 1.0)
 
+    # Equality rows were created right after the rows of A (see _construire_modele).
+    n_rows = len(contraintes)
+    equalities = solveur.constraints()[n_rows : n_rows + poly.A_eq.shape[0]]
+    for rank, equality in enumerate(equalities):
+        above = solveur.NumVar(0.0, solveur.infinity(), f"eq_plus_{rank}")
+        below = solveur.NumVar(0.0, solveur.infinity(), f"eq_minus_{rank}")
+        equality.SetCoefficient(above, 1.0)
+        equality.SetCoefficient(below, -1.0)
+        objectif.SetCoefficient(above, 1.0)
+        objectif.SetCoefficient(below, 1.0)
+
     # Les coupes sont relâchées dans l'autre sens : elles s'écrivent ``≥``.
     for rang, coupe in enumerate(coupes or ()):
         relache = solveur.NumVar(0.0, solveur.infinity(), f"ecart_coupe_{rang}")
@@ -232,8 +254,11 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> np.ndarray
 
     objectif.SetMinimization()
     if _statut(solveur.Solve()) != "optimal":
-        return np.zeros(len(contraintes), dtype=float)
-    return -np.array([c.dual_value() for c in contraintes], dtype=float)
+        return np.zeros(len(contraintes), dtype=float), np.zeros(len(equalities), dtype=float)
+    return (
+        -np.array([c.dual_value() for c in contraintes], dtype=float),
+        -np.array([c.dual_value() for c in equalities], dtype=float),
+    )
 
 
 def resoudre(
@@ -349,11 +374,13 @@ def resoudre(
                 iterations=solveur.iterations(),
                 temps_ms=(time.perf_counter() - debut) * 1000.0,
             )
+        farkas, farkas_eq = _certificat_farkas(poly, coupes)
         return SolutionLP(
             x=np.zeros(n_var),
             valeur=float("inf"),
             statut=statut,
-            certificat_farkas=_certificat_farkas(poly, coupes),
+            certificat_farkas=farkas,
+            certificat_farkas_eq=farkas_eq,
             iterations=solveur.iterations(),
             temps_ms=(time.perf_counter() - debut) * 1000.0,
         )

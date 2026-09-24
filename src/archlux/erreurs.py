@@ -15,6 +15,7 @@ from __future__ import annotations
 __all__ = [
     "ArchluxError",
     "CalibrationVerrouillee",
+    "GridNotRecoverable",
     "Infaisable",
     "InvariantViole",
     "ModeleModifie",
@@ -77,15 +78,37 @@ class Infaisable(ArchluxError):
         Vecteur dual du probleme auxiliaire (``numpy.ndarray``), non type ici pour
         maintenir ``erreurs`` sans dependance.
     origines : tuple of str
-        Libelles lisibles des contraintes en conflit, issus de ``Polytope.origines``.
+        Libelles lisibles des contraintes en conflit, issus de ``Polytope.origines``
+        et, since batch 1.5c, of ``Polytope.origines_eq`` (tiling, fusions, contacts).
+    verified : bool or None
+        Whether the certificate was checked in exact arithmetic
+        (:func:`archlux.certify.farkas.verify_infeasibility`); ``None`` if no check
+        was run (for instance a conflict detected before any LP).
+
+    Notes
+    -----
+    The proof is about the polytope of **this relative order**, read from the proposed
+    plan: another order might admit a valid plan (AUDIT.md §5.2).
     """
 
-    def __init__(self, certificat_farkas: object, origines: tuple[str, ...] = ()) -> None:
+    def __init__(
+        self,
+        certificat_farkas: object,
+        origines: tuple[str, ...] = (),
+        *,
+        verified: bool | None = None,
+    ) -> None:
         """Retenir le certificat de Farkas et les origines en conflit."""
         self.certificat_farkas = certificat_farkas
         self.origines = origines
-        detail = " ; ".join(origines) if origines else "origines non renseignees"
-        super().__init__(f"programme infaisable : {detail}")
+        self.verified = verified
+        detail = " ; ".join(origines) if origines else "no constraint identified"
+        status = {
+            True: " [certificate verified exactly]",
+            False: " [certificate NOT verified]",
+            None: "",
+        }[verified]
+        super().__init__(f"programme infaisable pour cet ordre relatif : {detail}{status}")
 
 
 class InvariantViole(ArchluxError):
@@ -154,3 +177,28 @@ class UnsupportedInput(ArchluxError):
     def __init__(self, detail: str) -> None:
         """Compose the message of an unsupported input."""
         super().__init__(detail)
+
+
+class GridNotRecoverable(UnsupportedInput):
+    """The tiling grid of the plan cannot be recovered within the repair budget.
+
+    Raised by :func:`archlux.geom.pavage.deduire_trame` when the proposed plan is too
+    far from a tiling: some grid cells stay covered twice (``excess``) or not at all
+    (``missing``) after the bounded repair. An input limit, not an internal error:
+    until batch 1.5c it was raised as ``InvariantViole`` and callers sorted it by
+    reading the message text.
+
+    Parameters
+    ----------
+    excess, missing : int
+        Grid cells covered twice, and cells left uncovered.
+    """
+
+    def __init__(self, excess: int, missing: int) -> None:
+        """Compose the message from the cell counts."""
+        self.excess = excess
+        self.missing = missing
+        super().__init__(
+            f"tiling grid not recoverable: {excess} cells covered twice, {missing} "
+            "uncovered; raise budget_reparation or fix the plan"
+        )

@@ -13,17 +13,28 @@ __all__ = ["CertificatFaisabilite", "Verdict", "is_feasible"]
 
 @dataclass(frozen=True, slots=True)
 class CertificatFaisabilite:
-    """Preuve d'inexistence (Farkas) — nature **exacte**, jamais probabiliste."""
+    """Preuve d'inexistence (Farkas), never probabilistic.
+
+    Exact when ``verified`` is True: the certificate was checked in rational arithmetic
+    (:func:`archlux.certify.farkas.verify_infeasibility`). It is about the relative order
+    read from the proposed plan: another order might admit a valid plan.
+    """
 
     origines: tuple[str, ...]
     certificat_farkas: object
+    verified: bool | None = None
 
     def expliquer(self) -> str:
         """Rendre le conflit en une phrase lisible."""
+        status = {
+            True: " Certificate verified exactly.",
+            False: " Certificate NOT verified: treat as a solver diagnosis, not a proof.",
+            None: "",
+        }[self.verified]
         if not self.origines:
-            return "Infaisable : origines non renseignées."
+            return f"Infeasible for this relative order: no constraint identified.{status}"
         causes = ", ".join(self.origines)
-        return f"Infaisable : contraintes en cause : [{causes}]."
+        return f"Infeasible for this relative order: conflicting constraints [{causes}].{status}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +88,7 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
             certificat=CertificatFaisabilite(
                 origines=err.origines,
                 certificat_farkas=err.certificat_farkas,
+                verified=err.verified,
             ),
         )
     return Verdict(faisable=True, certificat=None)

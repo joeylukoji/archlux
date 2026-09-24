@@ -59,7 +59,8 @@ def test_feasibility_infaisable_explique() -> None:
     assert not verdict
     assert verdict.certificat is not None
     texte = verdict.certificat.expliquer()
-    assert texte.startswith("Infaisable")
+    assert texte.startswith("Infeasible for this relative order")
+    assert "verified exactly" in texte
     assert verdict.certificat.origines
 
 

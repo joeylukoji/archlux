@@ -15,6 +15,7 @@ from archlux.bench.graines import deriver
 from archlux.certify.proof import verify_exactly
 from archlux.data.chargeurs import charger_msd
 from archlux.data.corruption import MODES, corrompre
+from archlux.erreurs import GridNotRecoverable
 
 CSV = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
 CIBLE = int(sys.argv[2]) if len(sys.argv) > 2 else 300
@@ -60,10 +61,10 @@ with sortie.open("w", newline="", encoding="utf-8") as flux:
                         depl = f"{q.certificat.geometrie.deplacement_max:.6f}"
                     except ax.Infaisable:
                         statut = "infaisable"
-                    except ax.InvariantViole as echec:
-                        statut = (
-                            "trame" if pavage and "structurel" in str(echec) else "invariant_viole"
-                        )
+                    except GridNotRecoverable:
+                        statut = "trame"
+                    except ax.InvariantViole:
+                        statut = "invariant_viole"
                     ecrivain.writerow(
                         {
                             "plan_id": appart.identifiant,

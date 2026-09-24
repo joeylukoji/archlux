@@ -21,6 +21,7 @@ from dataclasses import replace
 import numpy as np
 
 from archlux.certify.dual import traduire_duaux
+from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.erreurs import Infaisable, InvariantViole
 from archlux.geom.graphe import deduire_ordre
@@ -76,16 +77,26 @@ def gradient_distance(x_propose: np.ndarray) -> np.ndarray:
     return couts
 
 
-def _origines_actives(sol: SolutionLP, origines: tuple[str, ...]) -> tuple[str, ...]:
-    """Libellés dont le certificat de Farkas est non nul."""
-    certificat = sol.certificat_farkas
-    if certificat is None:
-        return origines
-    return tuple(
-        libelle
-        for libelle, poids in zip(origines, certificat, strict=True)
-        if abs(float(poids)) > _DUAL_SEUIL
-    )
+def _origines_actives(sol: SolutionLP, poly: Polytope) -> tuple[str, ...]:
+    """Labels of the rows, inequalities and equalities, with a non-zero Farkas weight.
+
+    Without a certificate nothing is identified; listing every constraint, as before
+    batch 1.5c, wrongly presented all of them as conflicting.
+    """
+    labels: list[str] = []
+    if sol.certificat_farkas is not None:
+        labels += [
+            label
+            for label, weight in zip(poly.origines, sol.certificat_farkas, strict=True)
+            if abs(float(weight)) > _DUAL_SEUIL
+        ]
+    if sol.certificat_farkas_eq is not None:
+        labels += [
+            label
+            for label, weight in zip(poly.labels_eq(), sol.certificat_farkas_eq, strict=True)
+            if abs(float(weight)) > _DUAL_SEUIL
+        ]
+    return tuple(labels)
 
 
 def _duaux_traduits(duaux: np.ndarray | None, poly: Polytope) -> tuple[tuple[str, float], ...]:
@@ -144,7 +155,7 @@ def legalize(
         à 93,0 %, et sur les jours seuls de 10,0 % à 97,6 %.
 
         Exige que la trame du plan proposé soit récupérable
-        (:func:`~archlux.geom.pavage.deduire_trame`) ; sinon ``InvariantViole``
+        (:func:`~archlux.geom.pavage.deduire_trame`) ; sinon ``GridNotRecoverable``
         nomme les cellules fautives. Défaut ``False`` : contrat 1.x inchangé.
     budget_reparation : int, optional
         Nombre de crans de réparation accordés à la récupération de trame, passé
@@ -251,9 +262,15 @@ def legalize(
         duaux=True,
     )
     if sol.statut == "infaisable":
+        check = (
+            verify_infeasibility(poly_l1, sol.certificat_farkas, sol.certificat_farkas_eq)
+            if sol.certificat_farkas is not None
+            else None
+        )
         raise Infaisable(
             certificat_farkas=sol.certificat_farkas,
-            origines=_origines_actives(sol, poly_l1.origines),
+            origines=_origines_actives(sol, poly_l1),
+            verified=None if check is None else check.verified,
         )
     if sol.statut != "optimal":
         raise InvariantViole((f"statut LP inattendu : {sol.statut}",))

@@ -66,6 +66,37 @@ rien dire.
 Le vecteur a une entrée par ligne de \(A\). Croisé avec `origines`, il devient un
 libellé métier : `separation horizontale a|b`, `contour droit b`.
 
+## Equalities and exact verification (batch 1.5c)
+
+**Equalities are relaxed too.** The auxiliary problem relaxes each row of \(A_{eq}\)
+(tiling, fusions, frozen contacts) with two slacks. Before, a conflict among those
+equalities left it without an optimum and the certificate empty: 68 of 200 noisy
+benchmark plans were refused with "origines non renseignees". Each equality now carries
+a label (`Polytope.origines_eq`), and the refusal names every row with a non-zero weight.
+
+**The certificate is checked, not believed.** Let \(y \ge 0\) be the multipliers of
+\(Ax \le b\) and \(z\) those of \(A_{eq}x = b_{eq}\). Every admissible \(x\) satisfies
+
+\[
+r^\top x \le \beta, \qquad r = A^\top y + A_{eq}^\top z, \qquad
+\beta = b^\top y + b_{eq}^\top z .
+\]
+
+With bounds \(l \le x \le u\),
+\(\min_{l \le x \le u} r^\top x = \sum_j \min(r_j l_j, r_j u_j)\). If this minimum exceeds
+\(\beta\), no admissible \(x\) exists. `certify.farkas.verify_infeasibility` computes it
+in exact rational arithmetic (a float multiplier is an exact rational), so a verified
+certificate is a proof even if the solver rounded; a noisy one can fail to verify, never
+verify a feasible system. On the noisy benchmark, 88 of 89 certificates verify.
+
+**Scope.** The certificate proves that the polytope of **this relative order** is empty.
+Another order might admit a valid plan: `Infaisable` and `is_feasible` say so.
+
+**Tightened domains.** The area cutting loop tightens variable bounds, which is not an
+outer approximation; an infeasible verdict on a tightened domain said nothing about the
+real problem (8 occurrences on the benchmark). The loop now solves the original domain
+before concluding.
+
 ## Cas d'utilisation
 
 | Faire | Ne pas faire |

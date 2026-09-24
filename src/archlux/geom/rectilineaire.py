@@ -436,12 +436,14 @@ def etendre_fusions(poly: Polytope, piece: PieceRectilineaire) -> Polytope:
     colonnes: list[int] = []
     valeurs: list[float] = []
     b_extra: list[float] = []
-    for rang, (_libelle, termes, borne) in enumerate(egalites):
+    labels: list[str] = []
+    for rang, (libelle, termes, borne) in enumerate(egalites):
         for nom, coef in termes.items():
             lignes.append(rang)
             colonnes.append(poly.index[nom])
             valeurs.append(coef)
         b_extra.append(borne)
+        labels.append(f"fusion {libelle}")
     a_extra = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(n_new, n_var)).tocsr()
     if poly.A_eq.shape[0]:
         a_eq = sparse.vstack([poly.A_eq, a_extra], format="csr")
@@ -449,4 +451,4 @@ def etendre_fusions(poly: Polytope, piece: PieceRectilineaire) -> Polytope:
     else:
         a_eq = a_extra
         b_eq = np.asarray(b_extra, dtype=float)
-    return replace(poly, A_eq=a_eq, b_eq=b_eq)
+    return replace(poly, A_eq=a_eq, b_eq=b_eq, origines_eq=poly.labels_eq() + tuple(labels))

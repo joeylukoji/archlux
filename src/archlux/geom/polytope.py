@@ -78,6 +78,15 @@ class Polytope:
     bornes: tuple[tuple[float, float], ...]
     index: dict[str, int]
     origines: tuple[str, ...]
+    origines_eq: tuple[str, ...] = ()
+    """Label of each row of ``A_eq`` (tiling, fusion, frozen contact). Needed to name
+    the constraints of an infeasibility certificate; see :meth:`labels_eq`."""
+
+    def labels_eq(self) -> tuple[str, ...]:
+        """One label per row of ``A_eq``; rows added without a label get a generic one."""
+        n_rows = self.A_eq.shape[0]
+        labels = self.origines_eq[:n_rows]
+        return labels + tuple(f"equality {k}" for k in range(len(labels), n_rows))
 
     def contient(self, x: np.ndarray, tol: float = 1e-9) -> bool:
         """Dire si le point ``x`` satisfait toutes les contraintes, à ``tol`` près.
@@ -181,6 +190,9 @@ def figer_contacts(poly: Polytope, x: np.ndarray, *, tol: float = 1e-7) -> Polyt
     origines = tuple(
         libelle for libelle, garder in zip(poly.origines, libres, strict=True) if garder
     )
+    frozen = tuple(
+        f"contact {libelle}" for libelle, fige in zip(poly.origines, saturees, strict=True) if fige
+    )
     return replace(
         poly,
         A=a_libres.tocsr(),
@@ -189,6 +201,7 @@ def figer_contacts(poly: Polytope, x: np.ndarray, *, tol: float = 1e-7) -> Polyt
         b_eq=np.asarray(b_eq, dtype=float),
         bornes=tuple(bornes),
         origines=origines,
+        origines_eq=poly.labels_eq() + frozen,
     )
 
 
@@ -547,4 +560,5 @@ def etendre_ecarts_l1(poly: Polytope, x_ref: np.ndarray) -> Polytope:
         bornes=tuple(poly.bornes) + tuple((0.0, inf) for _ in range(n_var)),
         index=index,
         origines=tuple(poly.origines) + tuple(origines_extra),
+        origines_eq=poly.labels_eq(),
     )

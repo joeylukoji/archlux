@@ -21,12 +21,14 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/solve/__init__.py",
     "src/archlux/certify/__init__.py",
     "src/archlux/certify/proof.py",
+    "src/archlux/certify/farkas.py",
     "src/archlux/certify/preuve.py",
     "src/archlux/solve/trace.py",
     "src/archlux/solve/frank_wolfe.py",
     "tests/unites/test_trace_aliases.py",
     "tests/unites/test_frank_wolfe_honesty.py",
     "tests/unites/test_rational_proof.py",
+    "tests/unites/test_farkas.py",
     "tests/test_language.py",
     "tests/checkers.py",
     "tests/unites/test_svg.py",
@@ -98,6 +100,8 @@ _FRENCH_WORDS = re.compile(
 )
 _CODE_OR_PATH = re.compile(r"`[^`]*`|[\w./-]+\.(?:md|py|json|csv|toml|yml)\b")
 _LATIN_CITATION = re.compile(r"\bet al\.")
+_LATEX_COMMAND = re.compile(r"\\+[A-Za-z]+")
+"""``\\le``, ``\\qquad``, ``\\top``: LaTeX commands in formulas, not words."""
 
 
 _ALLOWED_MARKER = "lang-ok:"
@@ -109,7 +113,8 @@ def _french_markers(line: str) -> list[str]:
     if _ALLOWED_MARKER in line and line.split(_ALLOWED_MARKER, 1)[1].strip():
         return []
     # Underscores join words in identifiers: split them so that French names are seen.
-    prose = _LATIN_CITATION.sub(" ", _CODE_OR_PATH.sub(" ", line)).replace("_", " ")
+    prose = _LATEX_COMMAND.sub(" ", _CODE_OR_PATH.sub(" ", line))
+    prose = _LATIN_CITATION.sub(" ", prose).replace("_", " ")
     return _ACCENTED.findall(prose) + _FRENCH_WORDS.findall(prose)
 
 
@@ -137,6 +142,8 @@ def test_the_checker_detects_french() -> None:
     assert not _french_markers("reads `docs/tutoriels/premiers-pas.md` again")
     assert _french_markers("def test_l" + "e_certificat_affiche_l" + "a_version() -> None:")
     assert not _french_markers("import xml.etree.ElementTree as ET")
+    assert not _french_markers(r"r^\top x \le \beta, \qquad")
+    assert _french_markers("L" + r"e \le")  # the word before the command is seen
     assert not _french_markers("def pas(self):  # lang-ok: deprecated alias")
     assert _french_markers("def pas(self):  # lang-ok:")  # a reason is mandatory
     assert _french_markers("E" + "t l" + "e reste")

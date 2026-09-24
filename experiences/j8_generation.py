@@ -58,6 +58,7 @@ from shapely.ops import unary_union
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
+from archlux.erreurs import GridNotRecoverable
 from archlux.export.wilson import intervalle_wilson
 from archlux.geom.diagnostic import Diagnostic, diagnostiquer
 from archlux.types import (
@@ -397,12 +398,10 @@ def main() -> None:
                     intact = str(bool(valide and petit >= COTE_INTACT_M))
                 except ax.Infaisable:
                     statut = "infaisable"
-                except ax.InvariantViole as echec:
-                    statut = (
-                        "trame"
-                        if mode == "pavage" and "structurel" in str(echec)
-                        else "invariant_viole"
-                    )
+                except GridNotRecoverable:
+                    statut = "trame"
+                except ax.InvariantViole:
+                    statut = "invariant_viole"
                 ecrivain.writerow(
                     {
                         "plan_id": plan_json["id"],
