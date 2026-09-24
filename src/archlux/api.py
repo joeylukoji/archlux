@@ -154,7 +154,11 @@ def legalize(
     trace : bool, optional
         Si vrai, attache la trace Frank-Wolfe à ``resultat.trace`` (non sérialisée).
     fusions : tuple of PieceRectilineaire, optional
-        Égalités de solidarisation ajoutées à ``A_eq`` avant le LP.
+        Fused rooms (L, T, U, Z) decomposed into sub-rectangles. Their shared edges
+        become equalities of ``A_eq``; on the orthogonal axis, the order of the
+        sub-rectangle ends is kept and every shared edge keeps at least
+        ``referentiel.largeur_min`` of length, so an L cannot turn into a Z or split
+        (:func:`~archlux.geom.rectilineaire.overlap_constraints`).
     pavage : bool, optional
         Imposer que l'union des pièces **pave exactement** le contour. Sans cela,
         les séparations du polytope étant des inégalités, un plan troué reste le
@@ -273,7 +277,7 @@ def legalize(
     ordre = deduire_ordre(plan, structure=ctx.structure)
     poly = construire_polytope(ordre, ctx)
     for piece_l in fusions:
-        poly = etendre_fusions(poly, piece_l)
+        poly = etendre_fusions(poly, piece_l, min_contact=ctx.referentiel.largeur_min)
     if pavage:
         # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
         # du plan propose n'est pas recuperable — echec explicite, pas silencieux.
