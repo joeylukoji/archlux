@@ -72,6 +72,48 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   catch the type. The benchmark separates `refused_unsupported` from
   `refused_invariant`.
 
+#### Changed — documentation aligned with the code (batch 1.8, track E batch E2)
+- `README.md` rewritten in English. Its first paragraph states the regime: 93.9 % of
+  corrupted MSD plans repaired (`resultats/j7_reparation.md`), about 20 % of
+  HouseDiffusion outputs (`resultats/j8_generation.md`), figures measured before batch
+  1.1 and to be measured again. Every example uses the current API and is executed by
+  `tests/docs/test_examples.py`; every README line of the AUDIT.md §5.8 table is fixed.
+  The Pareto front and non-Manhattan geometry move to the roadmap. A short,
+  non-normative `README.fr.md` is added.
+- `ARCHITECTURE.md` §1, 2, 3, 9, 11 match the code (one relative order, shipped
+  surrogates, deterministic but not pure layers, what the budget tests measure, current
+  tree); false statements of `Project_Architecture_Blueprint.md` are fixed.
+- `light.SimulateurExact` is renamed `light.SplitFluxOracle`: a frozen closed-form
+  split-flux oracle, neither a simulation nor ground truth. `SimulateurExact` and
+  `ExactSimulator` remain as deprecated aliases (`DeprecationWarning`) until 1.0.0.
+
+#### Fixed — L-shaped rooms keep their shape and their area (batch 1.7)
+- Fusion equalities used to glue only the shared edge line, so the sub-rectangles of
+  an L could slide along it and the L could become a T, a Z, or split.
+  `geom.rectilineaire.etendre_fusions` now also keeps, on the orthogonal axis, the
+  order of the sub-rectangle ends (aligned ends stay aligned) and a minimum
+  shared-edge length (`overlap_constraints`; `legalize` passes
+  `referentiel.largeur_min`).
+- The minimum area of a fused room applies to the union of its sub-rectangles, not to
+  each of them: `certify.proof.verify_exactly(..., fusions=)` checks it on the
+  edge-connected union, and the solver gives each sub-rectangle a proportional share of
+  the room minimum (`minimum_area_shares`, new `minima=` keyword of
+  `lmo.coupes.resoudre_avec_surfaces`, `surfaces_violees` and
+  `inner_area_constraints`). The shares are conservative: a false refusal is possible,
+  a false certificate is not. New keyword-only parameters, defaults unchanged.
+
+#### Fixed — tiling mode anchors its grid on the outline
+- The outer grid lines are anchored exactly on the outline. They used to take the mean
+  of the room edges grouped with them, so a few millimetres of noise left an uncovered
+  strip that the proof rejected as `InvariantViole`. The relative order and the
+  load-bearing sides are now read from the plan snapped onto its recovered grid (new
+  `geom.pavage.snap_to_grid`), so they can no longer contradict the tiling equalities.
+  Guarantee benchmark: `classic_noisy` 1 → 118 ok (the other 82 are
+  `GridNotRecoverable`), `partial_one_fault` 198 → 200 ok, no false certificate.
+- `deduire_trame` raises `UnsupportedInput` instead of `InvariantViole` for an empty
+  plan, an empty or invalid outline, a degenerate grid, a room flat after grouping,
+  and outline edges closer than the grouping tolerance.
+
 #### Changed — a probabilistic bound states its regime (batch 1.6, breaking)
 - `BornePerformance.regime` is mandatory: `"exchangeable"` (plan exchangeable with the
   calibration set, coverage guaranteed) or `"selected"` (plan chosen by the optimizer,
