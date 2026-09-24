@@ -81,6 +81,35 @@ Norme \(\ell_\infty\) sur les quatre cotes, max sur les pièces de même `id` :
 
 `reference=None` rend \(0\).
 
+## Exact rational proof of the tiling (rectangular outlines)
+
+Since batch 1.5b, when the outline is an axis-aligned rectangle \(C\), overlaps and
+gaps are no longer decided by GEOS areas with tolerances, but proved in exact rational
+arithmetic (`certify.proof.rational_tiling`):
+
+1. **Identification.** Edge coordinates closer than \(\varepsilon = 10^{-7}\) m
+   (`SNAP_M`) are identified, each group being anchored on its smallest value. This is
+   the **only** tolerance: it applies to lengths, whatever the size of the rooms, and
+   absorbs both decimal inputs (\(0.1 + 0.2 \ne 0.3\) in binary floating point) and the
+   LP noise.
+2. **Exact check.** Every coordinate is then an exact `Fraction` (a binary float is an
+   exact rational) and three conditions are tested with no tolerance: (i) every room
+   lies in \(C\); (ii) the interiors of any two rooms are disjoint; (iii)
+   \(\sum_i \lambda(R_i) = \lambda(C)\).
+
+**Theorem.** (i) and (ii) give
+\(\lambda(\bigcup_i R_i) = \sum_i \lambda(R_i) \le \lambda(C)\); with (iii), the part of
+\(C\) left uncovered has measure \(\lambda(C) - \sum_i \lambda(R_i) = 0\). The rooms tile
+\(C\) up to a null set: no gap, no overlap.
+
+When rooms overlap, (iii) no longer measures coverage; the gap diagnosis then comes from
+GEOS, so that the report stays complete (the plan is invalid either way). Outlines that
+are not rectangles keep the GEOS area checks and their tolerances.
+
+**Measured agreement.** On 800 plans of the guarantee benchmark (valid, corrupted, noisy
+and legalized), the rational proof and the former GEOS check give identical overlap and
+gap verdicts. The certification of 15 rooms takes about 0.8 ms (1.5 ms with GEOS).
+
 ## Cas d'utilisation
 
 | Faire | Ne pas faire |

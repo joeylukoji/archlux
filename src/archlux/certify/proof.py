@@ -47,13 +47,15 @@ Derivation, tolerances and use cases: ``docs/formules/preuve-exacte.md``.
 
 from __future__ import annotations
 
+from fractions import Fraction
+
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
 from archlux.tolerances import SNAP_M, WALL_M
 from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
 
-__all__ = ["GAP_TOLERANCE_M2", "verify_exactly"]
+__all__ = ["GAP_TOLERANCE_M2", "max_displacement", "rational_tiling", "verify_exactly"]
 
 GAP_TOLERANCE_M2 = 1e-6
 """Area tolerance of the uncovered-gap and overhang detection, in square metres."""
@@ -187,6 +189,110 @@ def _structure(plan: Plan, ctx: Contexte) -> tuple[bool, tuple[str, ...]]:
     return (not violations, tuple(violations))
 
 
+def _rectangular_outline(
+    outline: tuple[tuple[float, float], ...],
+) -> tuple[Fraction, Fraction, Fraction, Fraction] | None:
+    """Exact bounds of an axis-aligned rectangular outline, ``None`` for any other shape.
+
+    Every vertex lies on the bounding box and the polygon fills it: collinear vertices
+    along an edge are accepted, an L-shaped outline is not.
+    """
+    polygon = _outline_polygon(outline)
+    if polygon is None:
+        return None
+    x0, y0, x1, y1 = polygon.bounds
+    on_box = all(x in (x0, x1) or y in (y0, y1) for x, y in outline)
+    if not on_box or abs(polygon.area - (x1 - x0) * (y1 - y0)) > 1e-12 * polygon.area:
+        return None
+    return Fraction(x0), Fraction(y0), Fraction(x1), Fraction(y1)
+
+
+def _identify(values: list[Fraction], tolerance: Fraction) -> dict[Fraction, Fraction]:
+    """Map each value to the first value of its group; a group spans at most ``tolerance``.
+
+    Two edges closer than the tolerance become the same line. Groups are anchored on
+    their first value, so they never chain: every member is within the tolerance of the
+    anchor.
+    """
+    mapping: dict[Fraction, Fraction] = {}
+    anchor: Fraction | None = None
+    for value in sorted(set(values)):
+        if anchor is None or value - anchor > tolerance:
+            anchor = value
+        mapping[value] = anchor
+    return mapping
+
+
+def rational_tiling(plan: Plan, ctx: Contexte) -> tuple[str, ...] | None:
+    """Prove, in exact rational arithmetic, that the rooms tile a rectangular outline.
+
+    Edges closer than ``SNAP_M`` (1e-7 m) are identified: that is the only tolerance,
+    on lengths, and it does not depend on the size of the rooms. Every coordinate is
+    then an exact ``Fraction`` (a binary float is an exact rational), and the check is:
+
+    1. every room lies inside the outline;
+    2. the interiors of any two rooms are disjoint;
+    3. the sum of the room areas equals the area of the outline.
+
+    **Theorem.** 1 and 2 give ``λ(∪ R_i) = Σ λ(R_i) ≤ λ(C)``; with 3, the part of ``C``
+    left uncovered has area ``λ(C) − Σ λ(R_i) = 0``: the rooms tile ``C`` up to a null
+    set (no gap, no overlap).
+
+    Parameters
+    ----------
+    plan : Plan
+        Plan to check.
+    ctx : Contexte
+        Provides the outline.
+
+    Returns
+    -------
+    tuple of str or None
+        Violation messages (empty: exact tiling), or ``None`` when the outline is not an
+        axis-aligned rectangle, in which case :func:`verify_exactly` falls back on the
+        GEOS area checks and their tolerances.
+    """
+    bounds = _rectangular_outline(ctx.contour)
+    if bounds is None:
+        return None
+    ox0, oy0, ox1, oy1 = bounds
+    raw = [
+        (
+            room.id,
+            Fraction(room.x),
+            Fraction(room.x) + Fraction(room.w),
+            Fraction(room.y),
+            Fraction(room.y) + Fraction(room.h),
+        )
+        for room in plan.pieces
+    ]
+    tolerance = Fraction(SNAP_M)
+    same_x = _identify([ox0, ox1, *(v for r in raw for v in (r[1], r[2]))], tolerance)
+    same_y = _identify([oy0, oy1, *(v for r in raw for v in (r[3], r[4]))], tolerance)
+    ox0, ox1, oy0, oy1 = same_x[ox0], same_x[ox1], same_y[oy0], same_y[oy1]
+    boxes = [(rid, same_x[a], same_x[b], same_y[c], same_y[d]) for rid, a, b, c, d in raw]
+
+    violations: list[str] = []
+    for rid, x0, x1, y0, y1 in boxes:
+        if x1 <= x0 or y1 <= y0:
+            violations.append(f"gap: room {rid} is thinner than the identification tolerance")
+        elif x0 < ox0 or x1 > ox1 or y0 < oy0 or y1 > oy1:
+            violations.append(f"gap: room {rid} lies partly outside the outline")
+    for i, (a, ax0, ax1, ay0, ay1) in enumerate(boxes):
+        for b, bx0, bx1, by0, by1 in boxes[i + 1 :]:
+            dx, dy = min(ax1, bx1) - max(ax0, bx0), min(ay1, by1) - max(ay0, by0)
+            if dx > 0 and dy > 0:
+                pair = "|".join(sorted((a, b)))
+                violations.append(f"overlap {pair}: {float(dx * dy):.6g} m² (exact)")
+    if not violations:
+        covered = sum(((x1 - x0) * (y1 - y0) for _, x0, x1, y0, y1 in boxes), Fraction(0))
+        outline_area = (ox1 - ox0) * (oy1 - oy0)
+        if covered != outline_area:
+            missing = float(outline_area - covered)
+            violations.append(f"gap: uncovered area {missing:.6g} m² (exact)")
+    return tuple(violations)
+
+
 def max_displacement(plan: Plan, reference: Plan | None) -> float:
     """L-infinity over (x, y, w, h) of the rooms sharing an identifier; 0 without reference."""
     if reference is None:
@@ -232,16 +338,30 @@ def verify_exactly(
 
     Guarantees
     ----------
-    - Geometric: **exact** up to the stated tolerances, finite inspection; ``valide``
-      is the conjunction.
+    - Geometric, rectangular outline: tiling proved in **exact rational arithmetic**
+      (:func:`rational_tiling`), the only tolerance being the identification of edges
+      closer than ``SNAP_M`` (1e-7 m). Other outlines: GEOS areas, tolerances
+      ``_AREA_TOLERANCE_M2`` and ``GAP_TOLERANCE_M2``. ``valide`` is the conjunction.
     - Performance: **none**.
 
     Notes
     -----
     Formulas: ``docs/formules/preuve-exacte.md``.
     """
-    overlap, v_overlap = _overlaps(plan.pieces)
-    gaps, v_gaps = _gaps(plan.pieces, ctx.contour)
+    rational = rational_tiling(plan, ctx)
+    if rational is None:  # not a rectangular outline: GEOS areas and their tolerances
+        overlap, v_overlap = _overlaps(plan.pieces)
+        gaps, v_gaps = _gaps(plan.pieces, ctx.contour)
+    else:
+        v_overlap = tuple(v for v in rational if v.startswith("overlap"))
+        v_gaps = tuple(v for v in rational if v.startswith("gap"))
+        overlap, gaps = bool(v_overlap), bool(v_gaps)
+        if overlap:
+            # With overlapping rooms the sum of areas no longer measures coverage, so the
+            # rational check cannot see a gap: take the gap diagnosis from GEOS. The plan
+            # is invalid either way; this keeps the report complete.
+            gaps, geos_gaps = _gaps(plan.pieces, ctx.contour)
+            v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
     areas_ok, v_areas = _areas(plan.pieces, ctx)
     structure_ok, v_structure = _structure(plan, ctx)
     moved = max_displacement(plan, reference)

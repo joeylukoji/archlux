@@ -52,6 +52,15 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
   `frank_wolfe` has no caller left and is documented as legacy.
 
+#### Changed — the tiling is proved in exact rational arithmetic (batch 1.5b)
+- For an axis-aligned rectangular outline, `verify_exactly` decides overlaps and gaps
+  with `certify.proof.rational_tiling`: edges closer than `SNAP_M` (1e-7 m) are
+  identified (the only tolerance, on lengths), then inclusion, pairwise disjoint
+  interiors and the area sum are checked with `Fraction`, no tolerance. Theorem and
+  proof in `docs/formules/preuve-exacte.md`. Other outlines keep the GEOS checks.
+- Same overlap and gap verdicts as before on 800 benchmark plans; certification of 15
+  rooms 0.8 ms instead of 1.5 ms.
+
 #### Changed — `certify.preuve` migrated to English (track E, batch E10; no behaviour change)
 - New module `archlux.certify.proof`: `verify_exactly`, `GAP_TOLERANCE_M2`,
   `max_displacement`; violation messages in English (`overlap a|b: ...`,
