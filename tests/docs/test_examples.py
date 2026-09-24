@@ -31,11 +31,6 @@ USER_FACING = (
 _PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
 KNOWN_BROKEN: dict[str, tuple[type[BaseException], str]] = {
-    "docs/index.md": (FileNotFoundError, "reads a missing 'sortie_generateur.json'"),
-    "docs/tutoriels/premiers-pas.md": (
-        FileNotFoundError,
-        "reads a missing 'sortie_generateur.json'",
-    ),
     "docs/tutoriels/calibrer-un-substitut.md": (NameError, "uses 'modele' undefined"),
     "docs/tutoriels/entrainer-un-substitut.md": (NameError, "uses 'xs' undefined"),
     "docs/concepts/oracle-partage.md": (

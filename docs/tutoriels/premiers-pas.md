@@ -44,13 +44,41 @@ calibration conforme n'a été attachée.
 
 ## Charger depuis un fichier
 
+Un générateur écrit ses plans en JSON. Le fichier ci-dessous en imite une sortie
+typique : le séjour déborde de 5 cm sur la chambre, et 3 cm de vide séparent la
+chambre de la salle de bain. On l'écrit ici pour que l'exemple se suffise à lui-même ;
+en pratique, il vient du générateur.
+
 ```python
+from pathlib import Path
+
+Path("sortie_generateur.json").write_text(
+    """{
+      "schema": "1",
+      "contour": [[0, 0], [12, 0], [12, 9], [0, 9]],
+      "pieces": [
+        {"id": "sejour", "type": "sejour", "x": 0, "y": 0, "w": 6.05, "h": 9},
+        {"id": "chambre", "type": "chambre", "x": 6, "y": 0, "w": 6, "h": 5},
+        {"id": "sdb", "type": "salle_de_bain", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
+      ],
+      "murs": [], "ouvertures": [], "certificat": null
+    }""",
+    encoding="utf-8",
+)
+
 plan = ax.Plan.from_json("sortie_generateur.json")
-q = ax.legalize(plan, ctx)
+q = ax.legalize(plan, ctx, pavage=True)
+assert q.certificat is not None and q.certificat.geometrie.valide
 q.to_json("plan_legalise.json")
 ```
 
-Le schéma JSON est versionné ; voir [référence](../reference/schema-json.md).
+`pavage=True` impose que les pièces couvrent exactement le contour. Il est nécessaire
+dès que l'entrée peut contenir un vide, ce qui est le cas des sorties de générateur :
+sans lui, les séparations sont des inégalités, le plan troué est déjà son propre point
+le plus proche, et la vérification exacte le rejette (`InvariantViole`).
+
+Le schéma JSON est versionné, et `certificat` vaut `null` sur un plan proposé ; voir
+[référence](../reference/schema-json.md).
 
 ## Suite
 
