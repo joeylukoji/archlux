@@ -277,6 +277,19 @@ Traité en phase 6.3 (σ variable par ensemble ou régression quantile).
 - Budget consommé une seule fois : boîte centrée sur la proposition, et nouveau prédicat
   de preuve `deplacement_max ≤ budget` (§5.8, `api.py:255-260`).
 
+**État du lot 1.4 : terminé (2026-09-24).** Précédé de la migration du module `solve`
+vers l'anglais (lot E9), dans un commit de renommage dont la neutralité est prouvée par
+empreinte SHA-256 identique sur 200 exécutions de Frank-Wolfe. Gap initialisé à +∞,
+recalculé au point rendu, documenté comme mesure de stationnarité (aucun substitut
+livré n'est concave) ; statut d'arrêt explicite ; `Trace.final_gap`. Budget : dépensé
+une seule fois (boîte centrée sur le plan proposé, qui contient toujours le résultat
+classique) et vérifié par la preuve ; mesuré avant correction : 0,55 m pour 0,3 m.
+Budget « certification » du §9 enfin mesuré (1,5 ms sur 5). Revue : 4 points majeurs
+corrigés, dont une régression à budget saturé (15 sondes sur 40). Le banc a un mode
+avec budget et un contrôle indépendant du budget. **Reporté au lot 1.5** : le reliquat
+« X m² < X m² » (1 cas sur 200 en mode budget), et l'écart entre la tolérance du LP
+(~1e-6) et celle de la preuve sur le budget (`SNAP_M`, 1e-7).
+
 ### 1.5 Preuve réellement exacte (§5.4)
 
 - Vérification en `fractions.Fraction` pour les rectangles axés : disjonction deux à deux,
@@ -604,7 +617,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | En cours | | Lots 1.1 (murs), 1.2 (surfaces) et 1.3 (`Daylight`) terminés : 0 certificat mensonger et 0 plantage dans tous les modes du banc. Lot suivant : 1.4 (Frank-Wolfe honnête : gap, statut d'arrêt, budget). |
+| 1 | En cours | | Lots 1.1 à 1.4 terminés : 0 certificat mensonger, 0 plantage et 0 dépassement de budget dans tous les modes du banc. Lot suivant : 1.5 (preuve exacte en rationnels, Farkas vérifié, tolérances unifiées). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |
@@ -613,4 +626,4 @@ Tenir ce tableau à jour à chaque porte franchie.
 | 7 | À faire | | |
 | 8 | À faire | | |
 | 9 | À faire | | |
-| E | En cours | | E0 (glossaire, ADR 0001) et E1 (contrôle de langue) faits. Lot suivant : E2, avec la réécriture du README en phase 1.8. |
+| E | En cours | | E0, E1 et E9 (`solve`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E2, avec la réécriture du README en phase 1.8. |
