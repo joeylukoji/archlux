@@ -16,9 +16,6 @@ Not registered yet (inventoried in phase 1.5): ``geom.diagnostic._AIRE_MIN``, th
 
 Known inconsistencies (to be resolved in phase 1.5)
 ----------------------------------------------------
-- Minimum area: the cutting-plane loop (``lmo.coupes``) accepts a room
-  ``AREA_CUTS_M2`` short of its minimum, but the proof (``certify.preuve``) only
-  tolerates ``AREA_PROOF_M2``. The solver can stop on a plan the proof then rejects.
 - Contact: rooms are adjacent below ``CONTACT_M`` in ``geom.graphe`` but contacts are
   frozen below ``SNAP_M`` in ``geom.polytope.figer_contacts``.
 """
@@ -58,9 +55,13 @@ GAP_M2: Final = 1e-6
 AREA_PROOF_M2: Final = 1e-9
 """Shortfall under a minimum area tolerated by the proof (``certify.preuve``)."""
 
-AREA_CUTS_M2: Final = 1e-6
-"""Shortfall under a minimum area tolerated by the cutting-plane loop
-(``lmo.coupes._TOLERANCE_AIRE``). Looser than ``AREA_PROOF_M2``: see module notes."""
+AREA_TARGET_MARGIN_M2: Final = 1e-6
+"""Margin above a minimum area that cuts and bound tightening aim at (``lmo.coupes``).
+
+The cutting-plane loop *accepts* an area with the proof tolerance ``AREA_PROOF_M2``, and
+*aims* ``AREA_TARGET_MARGIN_M2`` above the minimum, well beyond the LP noise (about
+1e-7), so that the proof never rejects a plan the solver accepted. Until batch 1.5 the
+loop accepted a shortfall of 1e-6 m² that the proof then refused."""
 
 # --- Pure numerics (dimensionless) ---------------------------------------------------
 

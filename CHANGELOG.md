@@ -52,6 +52,16 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `api._coupes_surface_plan` removed: no longer needed. The tangent-cut path of
   `frank_wolfe` has no caller left and is documented as legacy.
 
+#### Fixed — the solver is never looser than the proof (batch 1.5a)
+- The cutting-plane loop accepted a room 1e-6 m² short of its minimum area, the proof
+  only 1e-9 m²: plans were refused with messages such as "surface r4 : 10,35 m² <
+  10,35 m²" (3 of the 1,600 benchmark cases). The loop now accepts with the proof
+  tolerance and, for a room found in deficit, aims `AREA_TARGET_MARGIN_M2` (1e-6 m²)
+  above the minimum, beyond the LP noise. Rooms that meet their minimum are never
+  pushed: outer tangents stay at the exact minimum.
+- `tolerances.AREA_CUTS_M2` replaced by `AREA_TARGET_MARGIN_M2`; the strict xfail
+  "the solver is never looser than the proof" now passes as a plain test.
+
 #### Fixed — Frank-Wolfe reports what it achieved (batch 1.4)
 - The gap started at 0, so a run whose first LP failed read as "optimum reached"; it
   now starts at infinity.

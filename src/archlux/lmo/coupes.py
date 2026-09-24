@@ -63,7 +63,7 @@ from scipy import sparse
 
 from archlux.erreurs import InvariantViole
 from archlux.lmo.solveur import resoudre
-from archlux.tolerances import AREA_PROOF_M2
+from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
@@ -84,14 +84,25 @@ MAX_COUPES_PAR_PIECE = 10
 """Au-delà, ``log.warning("coupe.limite", piece=...)`` et arrêt pour cette pièce."""
 
 _LOG = structlog.get_logger("archlux.lmo.coupes")
-_TOLERANCE_AIRE = 1e-6
-"""Alignée sur la tolérance du §5 : ``aire >= a_min - 1e-6``, en mètres carrés."""
+_TOLERANCE_AIRE = AREA_PROOF_M2
+"""Acceptance: a room is short of its minimum area when ``w h + tol < a_min``. Equal to
+the proof tolerance, so that the loop never stops on a plan the proof then rejects
+(the "10.35 m² < 10.35 m²" refusals). For a room found in deficit, the cuts and the
+bound tightening aim at ``_target``, slightly above the minimum, so that LP noise cannot
+leave it below; rooms that meet their minimum are never pushed by the margin."""
+
+
+def _target(a_min: float) -> float:
+    """Area the cuts aim at: the minimum plus a margin larger than the LP noise."""
+    return a_min + AREA_TARGET_MARGIN_M2
+
+
 _TOLERANCE_BORNE = 1e-12
 """Tolérance d'appartenance à la boîte des bornes, en mètres."""
 _TOLERANCE_LONGUEUR = 1e-6
 """Tolérance de comparaison d'une longueur à une borne, en mètres.
 
-Distincte de :data:`_TOLERANCE_AIRE` malgré la valeur commune : l'une porte sur des
+Distincte de :data:`_TOLERANCE_AIRE` : l'une porte sur des
 mètres carrés, l'autre sur des mètres. Les confondre rendrait toute révision de l'une
 silencieusement dépendante de l'autre.
 """
@@ -141,6 +152,8 @@ def _coupes_initiales(poly: Polytope, ctx: Contexte, pieces: tuple[Piece, ...]) 
             continue
         w_min, w_max = poly.bornes[poly.index[f"{piece.id}.w"]]
         h_min, h_max = poly.bornes[poly.index[f"{piece.id}.h"]]
+        # Exact minimum here, no margin: these outer tangents are satisfied by any valid
+        # plan, and a margin would force rooms that sit exactly at their minimum to grow.
         for largeur, hauteur in _points_appui_hyperbole(seuil, w_min, w_max, h_min, h_max):
             coupes.append(coupe_surface(largeur, hauteur, seuil, piece=piece.id))
     return coupes
@@ -320,10 +333,12 @@ def _resserrer_bornes(
             continue
         idx_w = poly.index[f"{piece.id}.w"]
         idx_h = poly.index[f"{piece.id}.h"]
+        if float(x[idx_w]) * float(x[idx_h]) + _TOLERANCE_AIRE >= seuil:
+            continue  # not short of its minimum: the margin only serves rooms in deficit
         w_min, w_max = bornes[idx_w]
         h_min, h_max = bornes[idx_h]
         cible = _cible_sur_hyperbole(
-            float(x[idx_w]), float(x[idx_h]), seuil, w_min, w_max, h_min, h_max
+            float(x[idx_w]), float(x[idx_h]), _target(seuil), w_min, w_max, h_min, h_max
         )
         if cible is None:
             continue
@@ -370,7 +385,9 @@ def _empiler_tangentes(
         largeur = float(x[poly.index[f"{identifiant}.w"]])
         hauteur = float(x[poly.index[f"{identifiant}.h"]])
         coupes.append(
-            coupe_surface(largeur, hauteur, ctx.referentiel.a_min(piece.type), piece=identifiant)
+            coupe_surface(
+                largeur, hauteur, _target(ctx.referentiel.a_min(piece.type)), piece=identifiant
+            )
         )
         comptes[identifiant] += 1
 
