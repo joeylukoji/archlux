@@ -15,6 +15,12 @@ des pièces  alignées.
 
 Hors branche dédiée : passer ``fusions=`` à :func:`archlux.api.legalize` pour
 imposer les égalités de solidarisation.
+
+Shape and area of a fused room (PLAN.md batch 1.7): :func:`overlap_constraints` keeps
+the order of the sub-rectangle ends along each shared edge and a minimum shared length,
+so an L cannot slide into a Z or split; :func:`minimum_area_shares` splits the room's
+minimum area across its sub-rectangles for the solver, while the proof checks it on the
+union (:func:`archlux.certify.proof.verify_exactly`).
 """
 
 from __future__ import annotations
