@@ -91,7 +91,15 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `Calibration.empreinte_jeu` hashes the calibration **data set** (predictions,
   truths, uncertainties) with `uq.conforme.dataset_fingerprint`, not the scores: two
   data sets can share their scores.
-- JSON: `performance.regime` is written, and a bound without it is refused on read.
+- JSON: `performance.regime` is written, and a bound without it is refused on read;
+  `couverture` is documented as nominal.
+- Review of the batch: an ASE bound was published negative (`ASE <= -28,92`), because
+  surrogates return ASE negated for maximization; `point_prediction` now gives it back
+  positive and removes every wrapping layer. The calibration is checked before any
+  solving (`certify.borne.check_calibration`); a surrogate without a positive `σ̂` at
+  the returned plan gives `performance=None` instead of losing the proved plan.
+  `ajuster` refuses negative or non-finite uncertainties and fingerprints the raw
+  data. The `experiences/` scripts pass `regime="exchangeable"` (held-out plans).
 
 #### Fixed — review of batch 1.5
 - **Tight programs were refused.** The area margin of batch 1.5a (targets 1e-6 m²

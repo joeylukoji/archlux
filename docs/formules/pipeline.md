@@ -45,9 +45,11 @@ the domain, hence every iterate, keeps every minimum area, and no tangent cut is
 Puis [Frank-Wolfe](frank-wolfe.md) maximise le substitut, **même oracle LP**,
 `depart=x` à chaque tour. La sortie est revérifiée exactement ; un itéré
 invalide lève `InvariantViole` — pas de repli silencieux vers L1.
-Le score du substitut est borné **hors** de `legalize` : calibrer, puis
-`certify.borne.construire_borne` (la couche `api` n'importe pas `uq`).
-Sans calibration, `performance is None` et le rapport écrit `NON EVALUABLE`.
+With `legalize(..., calibration=...)`, the surrogate's prediction at the returned
+plan is bounded by `certify.borne.bound_selected_plan`, in the **selected** regime:
+the optimizer chose the plan, so the nominal coverage is not guaranteed and the report
+says so. The calibration is checked before any solving. Sans calibration,
+`performance is None` et le rapport écrit `NON EVALUABLE`.
 
 ## Cas d'utilisation
 

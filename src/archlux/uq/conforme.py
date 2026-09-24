@@ -309,16 +309,20 @@ class CalibrateurConforme:
         """
         pred = np.asarray(predictions, dtype=float).ravel()
         verite = np.asarray(verites, dtype=float).ravel()
-        sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
-        if pred.size != verite.size or pred.size != sigma.size:
+        brut = np.asarray(incertitudes, dtype=float).ravel()
+        if pred.size != verite.size or pred.size != brut.size:
             raise InvariantViole(("predictions, verites et incertitudes de longueurs distinctes",))
         if pred.size == 0:
             raise InvariantViole(("jeu de calibration vide",))
+        if not bool(np.all(np.isfinite(brut))) or bool(np.any(brut < 0.0)):
+            raise InvariantViole(("uncertainties must be finite and non-negative",))
+        sigma = np.maximum(brut, _SIGMA_MIN)
         scores = np.abs(verite - pred) / sigma
         self.q = quantile_conforme(scores, alpha)
         self.n = int(scores.size)
         self.alpha = float(alpha)
-        self.empreinte_jeu = dataset_fingerprint(pred, verite, sigma)
+        # The data set as given, before the floor on sigma: anyone can recompute it.
+        self.empreinte_jeu = dataset_fingerprint(pred, verite, brut)
         self.scores = np.array(scores, dtype=float, copy=True)
 
     def borne(

@@ -114,7 +114,9 @@ pred_ca = ajuster(p_tr, p_ca)
 sigma = float(np.abs(y_ca - pred_ca).std()) or 1.0
 cal = CalibrateurConforme(indicateur="sDA")
 cal.ajuster(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
-bornes = [cal.borne(float(v), sigma) for v in modeles["analytique par piece"]]
+bornes = [
+    cal.borne(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]
+]
 couv = float(np.mean([b.borne_inf <= v <= b.borne_sup for b, v in zip(bornes, y_te, strict=True)]))
 largeur = float(np.mean([b.borne_sup - b.borne_inf for b in bornes]))
 

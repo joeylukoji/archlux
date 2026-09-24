@@ -203,10 +203,21 @@ def point_prediction(
 ) -> tuple[float, float]:
     """Point prediction ``mu`` and uncertainty ``sigma`` behind an objective.
 
+    ``mu`` is in the sign of the indicator (see below).
+
     A conformal interval is centred on the prediction, never on a pessimistic objective:
-    centring it on ``mu - q sigma`` would subtract the margin twice.
+    centring it on ``mu - q sigma`` would subtract the margin twice. Every wrapping layer
+    is removed, so that ``Daylight(Daylight(s))`` does not keep one margin.
+
+    Surrogates return ASE **negated**, so that Frank-Wolfe, which maximizes, reduces
+    glare (:class:`archlux.light.analytique.SubstitutAnalytique`). The prediction is
+    given back as a positive ASE, the quantity the calibration and the report read.
     """
-    surrogate = objective.substitut if isinstance(objective, WrapsSurrogate) else objective
+    surrogate: Substitut = objective
+    while isinstance(surrogate, WrapsSurrogate):
+        surrogate = surrogate.substitut
     mu = float(surrogate.evaluer(x, orientation, baies=baies))
     sigma = float(surrogate.incertitude(x, orientation, baies=baies))
+    if surrogate.indicateur == "ASE":
+        mu = -mu
     return mu, sigma

@@ -7,11 +7,14 @@ de la taille du jeu de calibration : aucune valeur sans son incertitude.
 
 from __future__ import annotations
 
+from math import isfinite
+
+from archlux.erreurs import InvariantViole
 from archlux.types import BornePerformance, Regime
-from archlux.uq.conforme import Calibration, borner
+from archlux.uq.conforme import Calibration, borner, quantile_conforme
 from archlux.uq.derive import DiagnosticDerive
 
-__all__ = ["Calibration", "bound_selected_plan", "construire_borne"]
+__all__ = ["Calibration", "bound_selected_plan", "check_calibration", "construire_borne"]
 
 
 def construire_borne(
@@ -61,9 +64,25 @@ def construire_borne(
     return borner(valeur, calibration, incertitude=incertitude, regime=regime)
 
 
+def check_calibration(calibration: object) -> None:
+    """Refuse, before any solving, a calibration that could not give a finite bound.
+
+    Raises
+    ------
+    InvariantViole
+        Not a :class:`Calibration`, non-finite scores, ``alpha`` outside ``]0, 1[`` or a
+        set too small for ``alpha``: the conformal quantile is computed once here.
+    """
+    if not isinstance(calibration, Calibration):
+        raise InvariantViole(
+            (f"calibration must be a Calibration, got {type(calibration).__name__}",)
+        )
+    quantile_conforme(calibration.scores, calibration.alpha)
+
+
 def bound_selected_plan(
     value: float, calibration: Calibration, *, uncertainty: float
-) -> BornePerformance:
+) -> BornePerformance | None:
     """Conformal interval of a plan **chosen by the optimizer** (PLAN.md batch 1.6).
 
     The interval is computed as for an exchangeable plan, but it is labelled
@@ -84,7 +103,11 @@ def bound_selected_plan(
 
     Returns
     -------
-    BornePerformance
-        With ``regime="selected"`` and ``coverage_guaranteed`` false.
+    BornePerformance or None
+        With ``regime="selected"`` and ``coverage_guaranteed`` false; ``None`` (the
+        report says ``NON EVALUABLE``) when the surrogate gives no positive finite
+        ``σ̂`` at the plan, rather than discarding a plan whose geometry is proved.
     """
+    if not (isfinite(uncertainty) and uncertainty > 0.0):
+        return None
     return borner(value, calibration, incertitude=uncertainty, regime="selected")

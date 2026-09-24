@@ -141,7 +141,7 @@ Contexte ─────┼─────────────────�
                     │
                  valide
                     ▼
-        Plan + Certificat(geometrie=preuve, performance=None, duaux=traduits)
+        Plan + Certificat(geometrie=preuve, performance=borne 'selected' | None, duaux=traduits)
 ```
 
 **Le point non négociable** est la boucle de retour vers `verify_exactly` : la

@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from archlux.certify.borne import bound_selected_plan
+from archlux.certify.borne import bound_selected_plan, check_calibration
 from archlux.certify.dual import traduire_duaux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
@@ -209,6 +209,8 @@ def legalize(
         ``objective`` fourni n'implémente pas :class:`~archlux.light.protocole.Substitut`.
     ValueError
         ``calibration`` without ``objective``, or calibrated for another indicator.
+        A calibration unable to give a finite bound (too small for its ``alpha``,
+        non-finite scores) raises ``InvariantViole``, before any solving.
 
     Guarantees
     ----------
@@ -262,6 +264,7 @@ def legalize(
             raise ValueError(
                 "calibration requires an objective: classic mode claims no performance"
             )
+        check_calibration(calibration)
         if calibration.indicateur != objective.indicateur:
             raise ValueError(
                 f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}"

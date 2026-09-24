@@ -328,12 +328,23 @@ sur `from archlux.certify import verifier_exactement` → phase 3.
 
 ### 1.6 Borne probabiliste qui dit son régime (§5.3)
 
-- `BornePerformance.regime: Literal["echangeable", "selectionne"]`.
+- `BornePerformance.regime: Literal["exchangeable", "selected"]` (English labels, ADR 0001).
 - Le rapport affiche un bandeau distinct si le plan a été choisi par l'optimiseur ; dans
   ce cas, pas de « couverture 90 % » sans réévaluation du plan par l'oracle.
 - `legalize(objective=...)` remplit enfin `Certificat.performance` (§8 étape 3g).
 - `empreinte_jeu` : hacher le jeu de données, pas les scores.
 - `borner(..., incertitude=...)` : paramètre obligatoire.
+
+**État du lot 1.6 : terminé (2026-09-24).** Chaque borne déclare son régime
+(`"exchangeable"` ou `"selected"`) ; le rapport n'affiche plus de couverture pour un plan
+choisi par l'optimiseur ; `legalize(..., calibration=...)` remplit enfin
+`Certificat.performance`, en régime `"selected"`, centrée sur la prédiction μ̂ du
+substitut ; `incertitude` et `regime` obligatoires ; `empreinte_jeu` hache le jeu de
+données brut. Revue : 1 critique corrigé (borne ASE publiée négative), 1 majeur
+(scripts `experiences/` cassés, hors mypy) et 6 mineurs. Banc `after-1.6` identique.
+**Reporté** : une procédure valide sous sélection (phase 6.4) ; `experiences/` reste
+hors mypy et hors tests (phase 2, outillage) ; renommer `couverture` en
+`couverture_nominale` au prochain changement cassant du schéma.
 
 ### 1.7 Pièces en L correctes (§5.2)
 
@@ -640,7 +651,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | En cours | | Lots 1.1 à 1.5 terminés : 0 certificat mensonger, 0 plantage et 0 dépassement de budget dans tous les modes du banc ; pavage prouvé en rationnels, Farkas vérifié exactement. Lot suivant : 1.6 (borne probabiliste qui dit son régime). |
+| 1 | En cours | | Lots 1.1 à 1.6 terminés : 0 certificat mensonger, 0 plantage et 0 dépassement de budget dans tous les modes du banc ; pavage prouvé en rationnels, Farkas vérifié exactement ; chaque borne probabiliste dit son régime. Lot suivant : 1.7 (pièces en L). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |

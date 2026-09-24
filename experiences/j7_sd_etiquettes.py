@@ -99,7 +99,7 @@ p_ca = np.array([net.evaluer(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 s_ca = np.array([net.incertitude(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 cal.ajuster(p_ca, y_ca, s_ca, alpha=0.10)
 bornes = [
-    cal.borne(float(p), float(net.incertitude(x, o)))
+    cal.borne(float(p), float(net.incertitude(x, o)), regime="exchangeable")
     for p, x, o in zip(pred_net, x_te, o_te, strict=True)
 ]
 couv = float(np.mean([b.borne_inf <= v <= b.borne_sup for b, v in zip(bornes, y_te, strict=True)]))

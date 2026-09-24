@@ -28,7 +28,7 @@ for _ in range(80):
     x = np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5])
     o = Orientation(float(rng.uniform(0.0, 360.0)))
     p, s = modele.evaluer(x, o), modele.incertitude(x, o)
-    b = cal.borne(p, s, ">=")
+    b = cal.borne(p, s, ">=", regime="exchangeable")
     ok.append(b.borne_inf <= sim.evaluer(x, o) <= b.borne_sup)
 couv = float(np.mean(ok))
 Path("resultats/j5_conforme.md").write_text(
