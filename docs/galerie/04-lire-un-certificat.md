@@ -33,6 +33,7 @@ borne = BornePerformance(
     borne_sup=61.0,
     couverture=0.90,
     n_calibration=1284,
+    regime="exchangeable",
 )
 certificat = ax.Certificat(
     geometrie=q.certificat.geometrie,
@@ -43,9 +44,12 @@ certificat = ax.Certificat(
 print(certificat.rapport())
 ```
 
-`legalize` n'attache pas la borne (la couche `api` n'importe pas `uq`). On la
-compose avec `certify.borne.construire_borne` après calibration, ou on la
-construit comme ci-dessus pour lire le gabarit.
+On construit ici la borne à la main pour lire le gabarit. `regime="exchangeable"`
+déclare que le plan est échangeable avec le jeu de calibration (un plan tenu à
+l'écart, par exemple) : c'est le seul cas où la couverture de 90 % est garantie.
+`legalize(..., objective=..., calibration=...)` attache lui-même la borne, mais en
+régime `"selected"` : l'optimiseur a choisi le plan, et le rapport écrit alors
+`[PREDICTION — plan selectionne, couverture NON garantie]`.
 
 **Résultat.** Le texte sépare `[EXACT]` et `[PREDICTION — couverture 90 %]`.
 `n_calibration` (1 284) est visible. La section `NON EVALUABLE` est toujours

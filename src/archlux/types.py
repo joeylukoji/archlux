@@ -333,12 +333,28 @@ class PreuveGeometrique:
     violations: tuple[str, ...] = ()
 
 
+Regime = Literal["exchangeable", "selected"]
+"""Under which assumption a conformal bound was computed (PLAN.md batch 1.6).
+
+- ``"exchangeable"``: the plan is exchangeable with the calibration set (for example a
+  held-out plan). The nominal coverage ``1 - alpha`` is guaranteed, marginally.
+- ``"selected"``: the plan was chosen by the optimizer to maximize the prediction.
+  Exchangeability is broken twice, by distribution shift and by the winner's curse (the
+  argmax goes where the surrogate overestimates), so the nominal coverage is **not**
+  guaranteed until the chosen plan is re-evaluated by the oracle (AUDIT.md §5.3).
+"""
+
+REGIMES: tuple[Regime, ...] = ("exchangeable", "selected")
+
+
 @dataclass(frozen=True, slots=True)
 class BornePerformance:
     """Garantie **probabiliste** : intervalle à couverture ``≥ 1 − α``.
 
     ``couverture`` et ``n_calibration`` sont obligatoires : une borne conforme sans son
     niveau de couverture ni sa taille de calibration est invérifiable, donc sans valeur.
+    ``regime`` is mandatory for the same reason: a coverage computed for an exchangeable
+    plan does not hold for a plan the optimizer selected (:data:`Regime`).
     """
 
     indicateur: Literal["sDA", "ASE", "UDI", "vue"]
@@ -347,13 +363,23 @@ class BornePerformance:
     borne_sup: float
     couverture: float
     n_calibration: int
+    regime: Regime
 
     def __post_init__(self) -> None:
-        """Refuser une borne sans jeu de calibration, ou une couverture hors ]0, 1]."""
+        """Refuse a bound without calibration, an out-of-range coverage or regime."""
         if self.n_calibration < 1:
             raise InvariantViole(("n_calibration doit être ≥ 1",))
         if not 0.0 < self.couverture <= 1.0:
             raise InvariantViole((f"couverture hors ]0, 1] : {self.couverture}",))
+        if self.regime not in REGIMES:
+            raise InvariantViole((f"unknown regime {self.regime!r}, expected {REGIMES}",))
+        if not self.borne_inf <= self.borne_sup:
+            raise InvariantViole((f"inverted interval: {self.borne_inf} > {self.borne_sup}",))
+
+    @property
+    def coverage_guaranteed(self) -> bool:
+        """True only when the nominal coverage holds: an exchangeable plan."""
+        return self.regime == "exchangeable"
 
 
 @dataclass(frozen=True, slots=True)

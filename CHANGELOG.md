@@ -72,6 +72,27 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   catch the type. The benchmark separates `refused_unsupported` from
   `refused_invariant`.
 
+#### Changed — a probabilistic bound states its regime (batch 1.6, breaking)
+- `BornePerformance.regime` is mandatory: `"exchangeable"` (plan exchangeable with the
+  calibration set, coverage guaranteed) or `"selected"` (plan chosen by the optimizer,
+  coverage **not** guaranteed: winner's curse). New property `coverage_guaranteed`.
+  An inverted interval (`borne_inf > borne_sup`) is refused.
+- The report no longer prints `[PREDICTION — couverture 90 %]` for a selected plan;
+  it prints `couverture NON garantie` and asks for a re-evaluation by the oracle.
+- `legalize(..., objective=..., calibration=...)` fills `Certificat.performance`, in
+  the selected regime, centred on the surrogate's prediction `mu` (not on the
+  pessimistic objective `mu - q sigma`, which would subtract the margin twice; new
+  `light.protocole.WrapsSurrogate` and `point_prediction`). Without `calibration`,
+  `performance` stays `None`; a calibration without objective or of another
+  indicator raises `ValueError`.
+- `borner`, `construire_borne` and `CalibrateurConforme.borne` take `incertitude`
+  (no more default of 1.0, wrong for normalized scores) and `regime` as mandatory
+  keywords.
+- `Calibration.empreinte_jeu` hashes the calibration **data set** (predictions,
+  truths, uncertainties) with `uq.conforme.dataset_fingerprint`, not the scores: two
+  data sets can share their scores.
+- JSON: `performance.regime` is written, and a bound without it is refused on read.
+
 #### Fixed — review of batch 1.5
 - **Tight programs were refused.** The area margin of batch 1.5a (targets 1e-6 m²
   above the minimum) left no room when the minimum areas fill the outline exactly;

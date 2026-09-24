@@ -16,12 +16,13 @@ from typing import Literal
 import numpy as np
 
 from archlux.erreurs import InvariantViole
-from archlux.types import BornePerformance
+from archlux.types import REGIMES, BornePerformance, Regime
 
 __all__ = [
     "CalibrateurConforme",
     "Calibration",
     "borner",
+    "dataset_fingerprint",
     "n_minimal_conforme",
     "quantile_conforme",
 ]
@@ -37,8 +38,11 @@ class Calibration:
     Attributes
     ----------
     empreinte_jeu : str
-        ``sha256`` du jeu utilisé. Publié avec le modèle : une borne conforme dont le
-        jeu de calibration n'est pas publiable est une garantie invérifiable.
+        ``sha256`` of the calibration **data set** (predictions, ground truths and
+        uncertainties), not of the scores: two data sets can give the same scores, and
+        only the data set can be checked or tested for leakage (PLAN.md batch 1.6).
+        Published with the model: a conformal bound whose calibration set cannot be
+        published is an unverifiable guarantee.
     """
 
     scores: np.ndarray
@@ -152,9 +156,30 @@ def _indicateur(nom: str) -> _Indicateur:
     return nom  # type: ignore[return-value]
 
 
-def _empreinte_scores(scores: np.ndarray) -> str:
-    tampon = np.ascontiguousarray(scores, dtype=float).tobytes()
-    return hashlib.sha256(tampon).hexdigest()
+def dataset_fingerprint(
+    predictions: np.ndarray, truths: np.ndarray, uncertainties: np.ndarray
+) -> str:
+    """SHA-256 of a calibration data set, stable across platforms.
+
+    Each column is hashed as little-endian float64 behind its name and length, so that
+    swapping two columns or moving a value from one to the other changes the digest.
+    """
+    digest = hashlib.sha256(b"archlux-calibration-v1")
+    for name, column in (
+        ("predictions", predictions),
+        ("truths", truths),
+        ("uncertainties", uncertainties),
+    ):
+        values = np.ascontiguousarray(np.asarray(column, dtype="<f8").ravel())
+        digest.update(f"{name}:{values.size};".encode())
+        digest.update(values.tobytes())
+    return digest.hexdigest()
+
+
+def _regime(regime: str) -> Regime:
+    if regime not in REGIMES:
+        raise InvariantViole((f"unknown regime {regime!r}, expected {REGIMES}",))
+    return regime  # type: ignore[return-value]
 
 
 def _echelle(incertitude: float) -> float:
@@ -188,6 +213,7 @@ def _intervalle(
     indicateur: _Indicateur,
     couverture: float,
     n_calibration: int,
+    regime: str,
 ) -> BornePerformance:
     """Intervalle bilatéral ``prédiction ± marge`` ; le sens métier est le côté publié."""
     return BornePerformance(
@@ -197,11 +223,12 @@ def _intervalle(
         borne_sup=float(prediction) + marge,
         couverture=couverture,
         n_calibration=n_calibration,
+        regime=_regime(regime),
     )
 
 
 def borner(
-    valeur: float, calibration: Calibration, *, incertitude: float = 1.0
+    valeur: float, calibration: Calibration, *, incertitude: float, regime: Regime
 ) -> BornePerformance:
     """Assortir une estimation ponctuelle de son intervalle conforme.
 
@@ -212,12 +239,15 @@ def borner(
     calibration : Calibration
         Scores de non-conformité. S'ils sont déjà normalisés par ``σ``, passer
         ``incertitude`` égale à ``σ`` du point à borner.
-    incertitude : float, optional
-        Échelle locale, **strictement positive**. Défaut 1 : les scores sont alors
-        dans l'unité de ``valeur``. Ce défaut n'est correct que pour une calibration
-        **non normalisée** : si les scores viennent de
-        :meth:`CalibrateurConforme.ajuster` (donc divisés par ``σ``), laisser le défaut
-        publie une marge à la mauvaise échelle.
+    incertitude : float
+        Local scale, **strictly positive**, and mandatory: the former default of 1 was
+        only right for scores that are not normalized, while
+        :meth:`CalibrateurConforme.ajuster` divides them by ``σ``; the default then
+        published a margin at the wrong scale without warning. Pass ``σ̂`` of the point
+        for normalized scores, ``1.0`` for raw ones.
+    regime : {"exchangeable", "selected"}
+        Whether the plan is exchangeable with the calibration set or was selected by
+        the optimizer (:data:`archlux.types.Regime`). Mandatory: only the caller knows.
 
     Raises
     ------
@@ -241,6 +271,7 @@ def borner(
         indicateur=_indicateur(calibration.indicateur),
         couverture=1.0 - calibration.alpha,
         n_calibration=calibration.n,
+        regime=regime,
     )
 
 
@@ -287,11 +318,16 @@ class CalibrateurConforme:
         self.q = quantile_conforme(scores, alpha)
         self.n = int(scores.size)
         self.alpha = float(alpha)
-        self.empreinte_jeu = _empreinte_scores(scores)
+        self.empreinte_jeu = dataset_fingerprint(pred, verite, sigma)
         self.scores = np.array(scores, dtype=float, copy=True)
 
     def borne(
-        self, prediction: float, incertitude: float, sens: str | None = None
+        self,
+        prediction: float,
+        incertitude: float,
+        sens: str | None = None,
+        *,
+        regime: Regime,
     ) -> BornePerformance:
         """Publier l'intervalle conforme autour de ``prediction``.
 
@@ -308,6 +344,8 @@ class CalibrateurConforme:
             Défaut : déduit de ``indicateur``. L'intervalle publié reste bilatéral
             ``prédiction ± marge`` ; le rapport choisit le côté via ``indicateur``.
             ``sens`` ne change pas les bornes — il refuse seulement l'incohérence.
+        regime : {"exchangeable", "selected"}
+            See :func:`borner`.
         """
         if self.n < 1:
             raise InvariantViole(("calibrateur non ajusté",))
@@ -325,6 +363,7 @@ class CalibrateurConforme:
             indicateur=self.indicateur,
             couverture=1.0 - self.alpha,
             n_calibration=self.n,
+            regime=regime,
         )
 
     def snapshot(self) -> Calibration:

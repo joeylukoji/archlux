@@ -7,11 +7,11 @@ de la taille du jeu de calibration : aucune valeur sans son incertitude.
 
 from __future__ import annotations
 
-from archlux.types import BornePerformance
+from archlux.types import BornePerformance, Regime
 from archlux.uq.conforme import Calibration, borner
 from archlux.uq.derive import DiagnosticDerive
 
-__all__ = ["construire_borne"]
+__all__ = ["Calibration", "bound_selected_plan", "construire_borne"]
 
 
 def construire_borne(
@@ -19,7 +19,8 @@ def construire_borne(
     calibration: Calibration,
     derive: DiagnosticDerive,
     *,
-    incertitude: float = 1.0,
+    incertitude: float,
+    regime: Regime,
 ) -> BornePerformance | None:
     """Construire la borne, ou ``None`` si la dérive invalide l'échangeabilité.
 
@@ -31,9 +32,11 @@ def construire_borne(
         Jeu de scores conforme.
     derive : DiagnosticDerive
         Verdict d'échangeabilité. ``echangeable=False`` → ``None``.
-    incertitude : float, optional
-        ``σ̂`` du point, **strictement positif**, si les scores de calibration sont
-        normalisés.
+    incertitude : float
+        ``σ̂`` of the point, **strictly positive**, for normalized calibration scores;
+        ``1.0`` for raw ones. Mandatory (PLAN.md batch 1.6).
+    regime : {"exchangeable", "selected"}
+        See :func:`archlux.uq.conforme.borner`.
 
     Returns
     -------
@@ -45,12 +48,9 @@ def construire_borne(
     -----
     Deux pièges que la signature ne rattrape pas :
 
-    - **Le défaut ``incertitude=1.0`` n'est correct que pour une calibration non
-      normalisée.** Le seul constructeur de calibration du dépôt,
-      :meth:`archlux.uq.conforme.CalibrateurConforme.ajuster`, divise les scores par
-      ``σ`` ; appelé avec le défaut, ce module publierait donc une marge à la mauvaise
-      échelle sans le signaler. ``Calibration`` ne transporte pas l'information « ces
-      scores sont normalisés » : c'est à l'appelant de la tenir.
+    - **``incertitude`` must match the calibration.** The only calibration builder of
+      the repository, :meth:`archlux.uq.conforme.CalibrateurConforme.ajuster`, divides
+      the scores by ``σ``; ``Calibration`` does not record it, the caller does.
     - **``derive.echangeable`` est un non-rejet, pas une preuve d'échangeabilité.**
       Il est ici traité comme une autorisation de publier ; à faible effectif, le test
       de :func:`archlux.uq.derive.controler_derive` n'a pratiquement aucune puissance.
@@ -58,4 +58,33 @@ def construire_borne(
     """
     if not derive.echangeable:
         return None
-    return borner(valeur, calibration, incertitude=incertitude)
+    return borner(valeur, calibration, incertitude=incertitude, regime=regime)
+
+
+def bound_selected_plan(
+    value: float, calibration: Calibration, *, uncertainty: float
+) -> BornePerformance:
+    """Conformal interval of a plan **chosen by the optimizer** (PLAN.md batch 1.6).
+
+    The interval is computed as for an exchangeable plan, but it is labelled
+    ``regime="selected"``: the plan maximizes the prediction, so it is not exchangeable
+    with the calibration set and its nominal coverage is not guaranteed (winner's
+    curse, AUDIT.md §5.3). No drift test is run: it would need the true value of the
+    chosen plan, which only the oracle can give. The report says so; a procedure valid
+    under selection is PLAN.md phase 6.4.
+
+    Parameters
+    ----------
+    value : float
+        Prediction of the surrogate at the returned plan.
+    calibration : Calibration
+        Scores normalized by ``σ`` (:meth:`archlux.uq.conforme.CalibrateurConforme.ajuster`).
+    uncertainty : float
+        ``σ̂`` of the surrogate at the returned plan, strictly positive.
+
+    Returns
+    -------
+    BornePerformance
+        With ``regime="selected"`` and ``coverage_guaranteed`` false.
+    """
+    return borner(value, calibration, incertitude=uncertainty, regime="selected")

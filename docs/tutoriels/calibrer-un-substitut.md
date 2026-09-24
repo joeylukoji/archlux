@@ -26,12 +26,14 @@ from archlux.uq.conforme import CalibrateurConforme
 
 cal = CalibrateurConforme(indicateur="sDA")
 cal.ajuster(predictions, verites, incertitudes, alpha=0.10)
-borne = cal.borne(prediction, sigma, ">=")
+borne = cal.borne(prediction, sigma, ">=", regime="exchangeable")
 # borne.borne_inf, borne.couverture, borne.n_calibration
 ```
 
 Le rang est \(\lceil(n+1)(1-\alpha)\rceil\), pas `np.quantile(s, 0.90)`. ASE
-s'ajuste à part, avec `sens="<="`.
+s'ajuste à part, avec `sens="<="`. `regime` est obligatoire : `"exchangeable"`
+pour un plan tiré comme la calibration, `"selected"` pour un plan choisi par un
+optimiseur, dont la couverture n'est alors pas garantie.
 
 ## 3. Objectif pessimiste
 
@@ -40,11 +42,14 @@ import archlux as ax
 from archlux.light.objectif import Daylight
 
 objectif = Daylight(substitut, q_chapeau=cal.q)  # pessimiste=True par défaut
-q = ax.legalize(plan, ctx, objective=objectif)
+q = ax.legalize(plan, ctx, objective=objectif, calibration=cal.snapshot())
 ```
 
-`q.certificat.performance` reste `None` à la sortie de `legalize` : attacher
-la borne avec `certify.borne.construire_borne` après un contrôle de dérive.
+`q.certificat.performance` porte alors l'intervalle conforme du plan rendu, en
+régime `"selected"` : c'est l'optimiseur qui a choisi ce plan, là où le
+substitut surestime le plus (malédiction du vainqueur), donc la couverture
+nominale n'est **pas** garantie. Le rapport le dit. Pour publier une couverture,
+réévaluer le plan avec l'oracle.
 
 ## 4. Dérive et `NON EVALUABLE`
 
@@ -53,7 +58,9 @@ from archlux.certify.borne import construire_borne
 from archlux.uq.derive import controler_derive
 
 derive = controler_derive(scores_production, cal.snapshot(), seed=17)
-certificat_borne = construire_borne(prediction, cal.snapshot(), derive, incertitude=sigma)
+certificat_borne = construire_borne(
+    prediction, cal.snapshot(), derive, incertitude=sigma, regime="exchangeable"
+)
 ```
 
 Si `derive.echangeable` est faux, `construire_borne` rend `None` : le rapport

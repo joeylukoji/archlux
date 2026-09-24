@@ -80,6 +80,7 @@ def test_certificat_separe_les_natures() -> None:
         borne_sup=61.0,
         couverture=0.90,
         n_calibration=1284,
+        regime="exchangeable",
     )
     texte = Certificat(
         geometrie=_preuve(),
@@ -108,9 +109,11 @@ def test_construire_borne_refuse_la_derive() -> None:
         n_observations=20,
         message="dérive",
     )
-    assert construire_borne(50.0, calibration, derive) is None
+    assert (
+        construire_borne(50.0, calibration, derive, incertitude=1.0, regime="exchangeable") is None
+    )
     ok = DiagnosticDerive(True, 0.05, 0.05, 20, "ok")
-    borne = construire_borne(50.0, calibration, ok)
+    borne = construire_borne(50.0, calibration, ok, incertitude=1.0, regime="exchangeable")
     assert borne is not None
     assert borne.n_calibration == 40
 

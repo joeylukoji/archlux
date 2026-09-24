@@ -41,7 +41,7 @@ Deux garanties de natures différentes, séparées par construction — voir
 | Champ | Nature | Sens |
 |---|---|---|
 | `geometrie` | **exacte** | Les quatre prédicats vérifiés indépendamment du solveur, et `deplacement_max` |
-| `performance` | **probabiliste** | Intervalle conforme, avec `couverture` et `n_calibration`. `null` en légalisation classique |
+| `performance` | **probabiliste** | Intervalle conforme, avec `couverture`, `n_calibration` et `regime` (`"exchangeable"` ou `"selected"`, obligatoire depuis 0.10 : un fichier sans `regime` est refusé). `null` en légalisation classique |
 | `duaux` | diagnostic | Paires `[libellé, coût]` : quelle contrainte relâcher, et ce qu'elle coûte |
 | `manifeste` | trace | Version, graine, empreintes — ce qui rend l'exécution rejouable |
 

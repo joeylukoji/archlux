@@ -17,9 +17,11 @@ Chaîne complète, hypothèses et contre-indications : ``docs/formules/pipeline.
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
 import numpy as np
 
+from archlux.certify.borne import bound_selected_plan
 from archlux.certify.dual import traduire_duaux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
@@ -35,11 +37,14 @@ from archlux.geom.polytope import (
     vectoriser,
 )
 from archlux.geom.rectilineaire import PieceRectilineaire, etendre_fusions
-from archlux.light.protocole import Baies, Substitut
+from archlux.light.protocole import Baies, Substitut, point_prediction
 from archlux.lmo.coupes import inner_area_constraints, resoudre_avec_surfaces
 from archlux.lmo.solveur import SolutionLP
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.types import Certificat, Contexte, Plan
+
+if TYPE_CHECKING:
+    from archlux.certify.borne import Calibration
 
 __all__ = ["gradient_distance", "legalize"]
 
@@ -115,6 +120,7 @@ def legalize(
     ctx: Contexte,
     *,
     objective: Substitut | None = None,
+    calibration: Calibration | None = None,
     budget: float | None = None,
     trace: bool = False,
     fusions: tuple[PieceRectilineaire, ...] = (),
@@ -135,6 +141,12 @@ def legalize(
         Structure porteuse, orientation, contour, référentiel.
     objective : Substitut or None, optional
         Objectif à maximiser. ``None`` = proximité géométrique.
+    calibration : Calibration or None, optional
+        Conformal calibration of ``objective`` (same indicator, scores normalized by
+        ``σ``). With it, ``certificat.performance`` holds the conformal interval of the
+        returned plan, labelled ``regime="selected"``: the optimizer chose the plan, so
+        the nominal coverage is **not** guaranteed and the report says so. Requires
+        ``objective``.
     budget : float or None, optional
         Maximum L-infinity displacement from the proposed plan, in metres, over the
         whole legalization (classic pass and Frank-Wolfe share it), checked by the proof.
@@ -195,15 +207,18 @@ def legalize(
         des coupes de Kelley : le LP se dit « optimal », la vérification exacte non.
     TypeError
         ``objective`` fourni n'implémente pas :class:`~archlux.light.protocole.Substitut`.
+    ValueError
+        ``calibration`` without ``objective``, or calibrated for another indicator.
 
     Guarantees
     ----------
     - Géométrique : **exacte**. ``resultat.certificat.geometrie.valide`` est
       revérifié par :func:`archlux.certify.proof.verify_exactly` avant
       retour — le solveur n'est jamais cru sur parole.
-    - Performance : **aucune** en mode classique (``objective is None``). Avec un
-      substitut, ``performance`` reste ``None`` ici : attacher la borne via
-      :func:`archlux.certify.borne.construire_borne` (``api`` n'importe pas ``uq``).
+    - Performance: **none** in classic mode (``objective is None``), nor with a
+      surrogate but no ``calibration`` (``performance`` is then ``None``). With both, a
+      conformal interval in the **selected** regime: nominal coverage stated, not
+      guaranteed, because the optimizer chose the plan (AUDIT.md §5.3).
 
     Complexity
     ----------
@@ -242,6 +257,15 @@ def legalize(
     """
     if objective is not None and not isinstance(objective, Substitut):
         raise TypeError("objective doit implémenter archlux.light.protocole.Substitut")
+    if calibration is not None:
+        if objective is None:
+            raise ValueError(
+                "calibration requires an objective: classic mode claims no performance"
+            )
+        if calibration.indicateur != objective.indicateur:
+            raise ValueError(
+                f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}"
+            )
 
     ordre = deduire_ordre(plan, structure=ctx.structure)
     poly = construire_polytope(ordre, ctx)
@@ -303,16 +327,11 @@ def legalize(
         # Centred on the *proposed* plan, not on x0: the budget is spent once over the
         # whole legalization (AUDIT.md §5.8 measured up to twice the budget).
         poly_fw = restrict_to_budget(poly_fw, x_ref, budget, keep=x0)
-    resultat = frank_wolfe(
-        poly_fw,
-        objective,
-        ctx.orientation,
-        x0,
-        # Glazing is not part of the decision vector: it is constant during the
-        # optimization and passed through unchanged. Without it the surrogate only sees
-        # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
-        glazing=Baies(murs=corrige.murs, ouvertures=corrige.ouvertures),
-    )
+    # Glazing is not part of the decision vector: it is constant during the
+    # optimization and passed through unchanged. Without it the surrogate only sees
+    # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
+    glazing = Baies(murs=corrige.murs, ouvertures=corrige.ouvertures)
+    resultat = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
     performant = replace(
         devectoriser(resultat.x, corrige, poly.index),
         contour=ctx.contour,
@@ -328,8 +347,13 @@ def legalize(
     duaux_fw = duaux
     if resultat.duals is not None:
         duaux_fw = _duaux_traduits(resultat.duals, poly_fw)
+    performance = None
+    if calibration is not None:
+        # Centred on the prediction mu, not on the pessimistic objective mu - q sigma.
+        mu, sigma = point_prediction(objective, resultat.x, ctx.orientation, baies=glazing)
+        performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
         performant,
-        certificat=Certificat(geometrie=preuve_fw, performance=None, duaux=duaux_fw),
+        certificat=Certificat(geometrie=preuve_fw, performance=performance, duaux=duaux_fw),
         trace=resultat.trace if trace else None,
     )

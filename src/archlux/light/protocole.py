@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     from archlux.types import Mur, Orientation, Ouverture
 
-__all__ = ["Baies", "Substitut", "SubstitutParPiece"]
+__all__ = ["Baies", "Substitut", "SubstitutParPiece", "WrapsSurrogate", "point_prediction"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,3 +182,31 @@ class Substitut(Protocol):
         d'échantillonnage à l'apprentissage actif du jalon 6.
         """
         ...
+
+
+@runtime_checkable
+class WrapsSurrogate(Protocol):
+    """An objective built on a surrogate, such as the pessimistic ``Daylight``.
+
+    Its :meth:`Substitut.evaluer` may return ``mu - q sigma`` rather than a prediction;
+    ``substitut`` gives access to the prediction itself (PLAN.md batch 1.6).
+    """
+
+    @property
+    def substitut(self) -> Substitut:
+        """The wrapped surrogate, whose ``evaluer`` is a point prediction."""
+        ...
+
+
+def point_prediction(
+    objective: Substitut, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+) -> tuple[float, float]:
+    """Point prediction ``mu`` and uncertainty ``sigma`` behind an objective.
+
+    A conformal interval is centred on the prediction, never on a pessimistic objective:
+    centring it on ``mu - q sigma`` would subtract the margin twice.
+    """
+    surrogate = objective.substitut if isinstance(objective, WrapsSurrogate) else objective
+    mu = float(surrogate.evaluer(x, orientation, baies=baies))
+    sigma = float(surrogate.incertitude(x, orientation, baies=baies))
+    return mu, sigma

@@ -50,6 +50,7 @@ def test_pas_de_borne_sans_calibration() -> None:
             borne_sup=61.0,
             couverture=0.90,
             n_calibration=0,
+            regime="exchangeable",
         )
 
 
@@ -62,7 +63,7 @@ def test_sens_ase_inverse() -> None:
     incertitudes = np.ones(n)
     calibrateur = CalibrateurConforme(indicateur="ASE")
     calibrateur.ajuster(predictions, verites, incertitudes, alpha=0.10)
-    borne = calibrateur.borne(6.1, 1.0, "<=")
+    borne = calibrateur.borne(6.1, 1.0, "<=", regime="exchangeable")
     assert borne.borne_sup > borne.valeur
     assert borne.indicateur == "ASE"
 
@@ -76,7 +77,7 @@ def test_borner_reproduit_le_quantile() -> None:
         indicateur="sDA",
         empreinte_jeu="test",
     )
-    borne = borner(50.0, calibration)
+    borne = borner(50.0, calibration, incertitude=1.0, regime="exchangeable")
     q = quantile_conforme(scores, 0.10)
     assert borne.borne_inf == pytest.approx(50.0 - q)
     assert borne.n_calibration == 60
@@ -98,7 +99,7 @@ def test_couverture_sur_donnees_synthetiques(alpha: float) -> None:
     sig = np.full(n_test, 1.5)
     ver = pred + sig * rng.normal(0.0, 1.0, n_test)
     couvert = [
-        v >= calibrateur.borne(float(p), float(s), ">=").borne_inf
+        v >= calibrateur.borne(float(p), float(s), ">=", regime="exchangeable").borne_inf
         for p, v, s in zip(pred, ver, sig, strict=True)
     ]
     assert float(np.mean(couvert)) >= 1.0 - alpha - 0.03

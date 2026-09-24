@@ -17,6 +17,7 @@ from hypothesis import strategies as st
 
 from archlux.geom.graphe import OrdreRelatif
 from archlux.types import (
+    REGIMES,
     BornePerformance,
     Certificat,
     Contexte,
@@ -102,14 +103,18 @@ def _preuves() -> st.SearchStrategy[PreuveGeometrique]:
 def _bornes() -> st.SearchStrategy[BornePerformance]:
     """Bornes conformes, toujours munies de leur couverture et de ``n_calibration``."""
     reels = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
-    return st.builds(
-        BornePerformance,
-        indicateur=st.sampled_from(["sDA", "ASE", "UDI", "vue"]),
-        valeur=reels,
-        borne_inf=reels,
-        borne_sup=reels,
-        couverture=st.floats(min_value=0.5, max_value=1.0, allow_nan=False),
-        n_calibration=st.integers(min_value=1, max_value=100_000),
+    # An interval is ordered (batch 1.6 refuses borne_inf > borne_sup).
+    return st.tuples(reels, reels).flatmap(
+        lambda pair: st.builds(
+            BornePerformance,
+            indicateur=st.sampled_from(["sDA", "ASE", "UDI", "vue"]),
+            valeur=reels,
+            borne_inf=st.just(min(pair)),
+            borne_sup=st.just(max(pair)),
+            couverture=st.floats(min_value=0.5, max_value=1.0, allow_nan=False),
+            n_calibration=st.integers(min_value=1, max_value=100_000),
+            regime=st.sampled_from(REGIMES),
+        )
     )
 
 

@@ -27,9 +27,14 @@ Si \(k > n\) (jeu trop petit pour \(\alpha\)), `quantile_conforme` lève
 La couverture \(\ge 1-\alpha\) vaut si le plan à borner est **échangeable** avec
 les \(n\) plans de calibration. Un plan *sélectionné* par Frank-Wolfe pour
 maximiser \(\hat y\) ne l'est plus tout à fait : l'optimiseur cherche les
-erreurs du réseau. Le projet mesure cet écart (`uq.derive.mesurer_derive`) et,
-si un test d'échangeabilité le rejette, le certificat porte `NON EVALUABLE`
-plutôt qu'un intervalle.
+erreurs du réseau (malédiction du vainqueur). Chaque borne déclare donc son
+**régime** : `"exchangeable"` (la couverture est garantie) ou `"selected"` (plan
+choisi par l'optimiseur : l'intervalle est calculé de la même façon, mais sa
+couverture n'est pas garantie et le rapport ne l'annonce pas). `legalize` rend
+toujours `"selected"`. Une procédure valide sous sélection (sélection conforme,
+Jin & Candès 2023 ; conforme pondéré, Fannjiang et al. 2022) est prévue en phase
+6.4 du plan. Pour un plan échangeable, si un test d'échangeabilité rejette,
+`construire_borne` rend `None` et le certificat porte `NON EVALUABLE`.
 
 ## Sens des indicateurs
 

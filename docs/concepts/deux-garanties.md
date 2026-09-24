@@ -12,8 +12,8 @@ que le système est conçu pour rendre difficile.
 | **Nature** | Preuve | Prédiction assortie d'une marge |
 | **Vérification** | Inspection finie, \(O(n^2)\) | Couverture \(\ge 1-\alpha\) sur un jeu de calibration |
 | **Peut être fausse ?** | Non (à la tolérance d'arrondi près) | Oui, dans au plus \(\alpha\) des cas |
-| **Type** | `PreuveGeometrique` — aucun champ de probabilité | `BornePerformance` — `couverture` et `n_calibration` obligatoires |
-| **Bandeau** | `[EXACT]` | `[PREDICTION — couverture 90 %]` |
+| **Type** | `PreuveGeometrique` — aucun champ de probabilité | `BornePerformance` — `couverture`, `n_calibration` et `regime` obligatoires |
+| **Bandeau** | `[EXACT]` | `[PREDICTION — couverture 90 %]` (plan échangeable) ou `[PREDICTION — plan selectionne, couverture NON garantie]` |
 
 La géométrie est un prédicat sur des rectangles : on peut le recompter. La lumière
 est un oracle **gelé** (`SimulateurExact`, split-flux BRE) : la borne dit « au moins
@@ -37,6 +37,11 @@ NON EVALUABLE
 - Si `performance is None`, la section prédiction affiche `NON EVALUABLE` : le
   système refuse d'inventer une couverture.
 - `n_calibration` est affiché : une borne sur 50 points n'en vaut pas une sur 1 284.
+- Le **régime** est affiché. La couverture n'est annoncée que pour un plan
+  échangeable avec la calibration (`regime="exchangeable"`). Pour un plan choisi par
+  l'optimiseur (`regime="selected"`, ce que rend `legalize(..., calibration=...)`),
+  le bandeau dit « couverture NON garantie » et le rapport demande de réévaluer le
+  plan avec l'oracle.
 - Rien n'agrège les deux natures en un score unique.
 
 ## Ce qu'il faut retenir

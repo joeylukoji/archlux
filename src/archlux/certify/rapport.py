@@ -53,7 +53,11 @@ def _section_performance(borne: BornePerformance | None) -> str:
         bandeau = "[PREDICTION — non évaluable]"
     else:
         pct = f"{borne.couverture * 100.0:.0f}"
-        bandeau = f"[PREDICTION — couverture {pct} %]"
+        if borne.coverage_guaranteed:
+            bandeau = f"[PREDICTION — couverture {pct} %]"
+        else:
+            # Batch 1.6: the optimizer chose this plan, the coverage is not guaranteed.
+            bandeau = "[PREDICTION — plan selectionne, couverture NON garantie]"
         if borne.indicateur == "ASE":
             ligne = (
                 f"  {borne.indicateur}   <= {_fmt(borne.borne_sup)}   "
@@ -67,6 +71,13 @@ def _section_performance(borne: BornePerformance | None) -> str:
                 f"marge {_fmt(borne.valeur - borne.borne_inf)})"
             )
         corps = f"{ligne}\n  calibration : {borne.n_calibration} évaluations de l'oracle gelé"
+        if not borne.coverage_guaranteed:
+            corps += (
+                f"\n  regime selectionne : plan choisi par l'optimiseur ; la couverture "
+                f"nominale de {pct} % suppose un plan echangeable avec la calibration"
+                "\n  (malediction du vainqueur). Reevaluer ce plan avec l'oracle avant "
+                "de publier une couverture."
+            )
     return f"PERFORMANCE                        {bandeau}\n{corps}"
 
 

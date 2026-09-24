@@ -136,8 +136,10 @@ La garantie de performance suppose l'**échangeabilité** avec le jeu de calibra
 Les plans produits par un optimiseur sont *sélectionnés* pour maximiser la
 prédiction : la couverture réelle sous cette sélection est une question de
 recherche ouverte, mesurée et publiée par le projet (dérive, banc d'essai).
-Si la dérive est détectée, le certificat affiche `NON EVALUABLE` plutôt qu'un
-intervalle trompeur.
+Le certificat le dit : la borne d'un plan rendu par `legalize` porte
+`regime="selected"`, et le rapport écrit « couverture NON garantie » au lieu d'un
+pourcentage. Pour un plan échangeable, si la dérive est détectée, le certificat
+affiche `NON EVALUABLE` plutôt qu'un intervalle trompeur.
 
 ## Load-bearing structure: what is and is not certified
 

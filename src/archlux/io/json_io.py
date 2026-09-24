@@ -19,6 +19,7 @@ from typing import Any
 
 from archlux.erreurs import InvariantViole
 from archlux.types import (
+    REGIMES,
     BornePerformance,
     Certificat,
     Manifeste,
@@ -29,6 +30,7 @@ from archlux.types import (
     Plan,
     Point,
     PreuveGeometrique,
+    Regime,
 )
 
 __all__ = [
@@ -156,7 +158,16 @@ def _borne_vers_dict(borne: BornePerformance) -> dict[str, Any]:
         "borne_sup": borne.borne_sup,
         "couverture": borne.couverture,
         "n_calibration": borne.n_calibration,
+        "regime": borne.regime,
     }
+
+
+def _regime(donnees: Any) -> Regime:
+    """The regime of a serialized bound; missing or unknown is refused."""
+    regime = donnees.get("regime") if isinstance(donnees, dict) else None
+    if regime not in REGIMES:
+        raise InvariantViole((f"borne.regime: expected one of {REGIMES}, got {regime!r}",))
+    return regime  # type: ignore[no-any-return]
 
 
 def _borne_depuis_dict(donnees: Any) -> BornePerformance:
@@ -171,6 +182,10 @@ def _borne_depuis_dict(donnees: Any) -> BornePerformance:
         borne_sup=_reel(donnees["borne_sup"], "borne.borne_sup"),
         couverture=_reel(donnees["couverture"], "borne.couverture"),
         n_calibration=int(donnees["n_calibration"]),
+        # Files written before batch 1.6 carry no regime. They could only come from a
+        # hand-built bound (legalize never filled one), so none is assumed: reading
+        # such a bound as "exchangeable" would upgrade an unknown guarantee.
+        regime=_regime(donnees),
     )
 
 
