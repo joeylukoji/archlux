@@ -168,3 +168,81 @@ def test_checker_refuses_a_detached_fused_room() -> None:
     found = checkers.violations(detached, _kitchen_minimum(0.0), fusions=(room,))
 
     assert any(v.kind == "area" and v.detail.startswith("l:") for v in found), found
+
+
+# --- Review of the merged batches 1.7 and 1.8 ---------------------------------------------
+
+
+def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Contexte, PieceRectilineaire]:
+    """A kitchen L (bar [0,1]x[0,3], foot [1,2]x[0,1]) tiling 12 x 9 with three rooms."""
+    ctx = replace(
+        CONTEXTE_DEFAUT,
+        referentiel=Referentiel(aires_min=(("kitchen", 3.5),), largeur_min=1.0),
+    )
+    if wall_x is not None:
+        wall = Mur(id="w", a=(wall_x, 0.0), b=(wall_x, 1.0), porteur=True)
+        ctx = replace(ctx, structure=Structure(murs_porteurs=(wall,)))
+    room = decomposer(
+        Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)]), id="l", type_piece="kitchen"
+    )
+    rest = (
+        Piece(id="r1", type="living", x=2.0, y=0.0, w=10.0, h=1.0),
+        Piece(id="r2", type="living", x=1.0, y=1.0, w=11.0, h=2.0),
+        Piece(id="r3", type="living", x=0.0, y=3.0, w=12.0, h=6.0),
+    )
+    plan = Plan(pieces=room.rectangles + rest, murs=(), ouvertures=(), contour=ctx.contour)
+    return plan, ctx, room
+
+
+def test_a_wall_on_the_seam_of_an_l_is_a_crossing() -> None:
+    """Review C1: the seam is inside the room; a wall on it cuts the kitchen in two."""
+    plan, ctx, room = _l_in_tiling(wall_x=1.0)
+    proof = verify_exactly(plan, ctx, fusions=(room,))
+    assert not proof.valide and not proof.structure_preservee
+    assert any(v.kind == "wall" for v in checkers.violations(plan, ctx, fusions=(room,)))
+
+
+@pytest.mark.parametrize("pavage", [False, True])
+def test_legalize_never_puts_a_seam_on_a_wall(pavage: bool) -> None:
+    """Review C1: the solver used to widen the bar until the seam sat on the wall."""
+    plan, ctx, room = _l_in_tiling(wall_x=1.4)
+    try:
+        result = archlux.legalize(plan, ctx, fusions=(room,), pavage=pavage)
+    except archlux.Infaisable:
+        return  # an L straddling a wall has no valid plan in this order: honest refusal
+    assert result.certificat is not None and result.certificat.geometrie.valide
+    assert not checkers.violations(result, ctx, fusions=(room,))
+
+
+def test_the_proof_checks_every_recorded_seam_with_the_minimum_width() -> None:
+    """Review M1: connectivity alone accepted a neck of 5e-7 m; the checker did not."""
+    plan, ctx, room = _l_in_tiling()
+    rooms = _by_id(plan)
+    for foot_y in (3.0 - 5e-7, 2.9):  # a hair of contact, then 0.1 m < largeur_min
+        slid = replace(rooms["l__1"], y=foot_y)
+        moved = replace(plan, pieces=(rooms["l__0"], slid, *plan.pieces[2:]))
+        proof = verify_exactly(moved, ctx, fusions=(room,))
+        assert not proof.surfaces_ok
+        assert any("seam" in v for v in proof.violations)
+        assert checkers.violations(moved, ctx, fusions=(room,))
+
+
+def test_a_fused_room_without_area_is_an_input_limit() -> None:
+    """Review m3: a user input, not an internal fault."""
+    from archlux.erreurs import UnsupportedInput
+    from archlux.geom.rectilineaire import minimum_area_shares
+
+    _, ctx, room = _l_in_tiling()
+    flat = tuple(replace(r, w=0.0) for r in room.rectangles)
+    with pytest.raises(UnsupportedInput, match="no area"):
+        minimum_area_shares(flat, (room,), ctx.referentiel)
+
+
+def test_the_area_shares_keep_the_proof_tolerance_per_part() -> None:
+    """Review m4: k parts each short by the solver tolerance must not miss the minimum."""
+    from archlux.geom.rectilineaire import minimum_area_shares
+    from archlux.tolerances import AREA_PROOF_M2
+
+    plan, ctx, room = _l_in_tiling()
+    shares = minimum_area_shares(plan.pieces, (room,), ctx.referentiel)
+    assert sum(share - AREA_PROOF_M2 for share in shares.values()) >= 3.5 - 1e-12

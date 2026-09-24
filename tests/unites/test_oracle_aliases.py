@@ -41,3 +41,13 @@ def test_old_names_are_not_advertised() -> None:
 def test_unknown_names_still_raise() -> None:
     with pytest.raises(AttributeError):
         _ = light.NoSuchOracle  # type: ignore[attr-defined]
+
+
+def test_a_from_import_warns_once() -> None:
+    """Review of batch 1.8, m1: importlib probes with hasattr before importing."""
+    import warnings
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        exec("from archlux.light import SimulateurExact", {})
+    assert sum(issubclass(w.category, DeprecationWarning) for w in caught) == 1

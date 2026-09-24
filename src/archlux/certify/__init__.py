@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import warnings
 from typing import Any
 
@@ -21,6 +22,9 @@ __all__ = [
 def __getattr__(name: str) -> Any:  # noqa: ANN401 — forwards a renamed attribute
     """Keep ``certify.verifier_exactement`` until 1.0.0, deprecated (ADR 0001)."""
     if name == "verifier_exactement":
+        if sys._getframe(1).f_code.co_filename.startswith("<frozen importlib"):
+            # `from module import name` probes with hasattr first: warn only once.
+            return verify_exactly
         warnings.warn(
             "archlux.certify.verifier_exactement is deprecated, use "
             "archlux.certify.verify_exactly (ADR 0001)",

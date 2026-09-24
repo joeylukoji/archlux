@@ -290,7 +290,10 @@ def legalize(
     # the faulty plan could contradict the tiling equalities (a room moved onto its
     # neighbour overlaps it on both axes).
     ordre = deduire_ordre(
-        plan if trame is None else snap_to_grid(plan, trame), structure=ctx.structure
+        plan if trame is None else snap_to_grid(plan, trame),
+        structure=ctx.structure,
+        # A fused room keeps one side of every wall: never a wall on its seam.
+        groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in fusions),
     )
     poly = construire_polytope(ordre, ctx)
     for piece_l in fusions:

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 import archlux
@@ -47,18 +47,31 @@ def scenarios_with_a_fused_room(
     moved, so that legalize has to push the fused room.
     """
     plan, ctx = draw(realistic_scenarios())
+
+    def fuse(a: Piece, b: Piece, kind: str) -> tuple[PieceRectilineaire, list[Piece]]:
+        first = replace(a, id="fused__0")
+        second = replace(b, id="fused__1", type=a.type)
+        room = PieceRectilineaire(id="fused", rectangles=(first, second), fusions=((0, 1, kind),))
+        return room, [first, second, *(r for r in plan.pieces if r is not a and r is not b)]
+
+    # Only pairs that make one valid room: no load-bearing wall on their seam (it would
+    # cut the room in two) and a seam at least ``largeur_min`` long.
     pairs = [
         (a, b, kind)
         for a in plan.pieces
         for b in plan.pieces
-        if a is not b and (kind := _fusion_kind(a, b)) is not None
+        if a is not b
+        and (kind := _fusion_kind(a, b)) is not None
+        and not checkers.violations(
+            replace(plan, pieces=tuple(fuse(a, b, kind)[1])),
+            ctx,
+            fusions=(fuse(a, b, kind)[0],),
+        )
     ]
+    assume(pairs)
     a, b, kind = draw(st.sampled_from(pairs))
-    first = replace(a, id="fused__0")
-    second = replace(b, id="fused__1", type=a.type)
-    room = PieceRectilineaire(id="fused", rectangles=(first, second), fusions=((0, 1, kind),))
-    rest = tuple(r for r in plan.pieces if r is not a and r is not b)
-    rooms = [first, second, *rest]
+    room, rooms = fuse(a, b, kind)
+    second = rooms[1]
     # The fault that slides a part: a neighbour of the second part pushed into it along
     # the shared edge, which the fusion equality alone does not resist.
     along = "y" if kind == FUSION_DROIT else "x"

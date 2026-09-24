@@ -54,7 +54,7 @@ from fractions import Fraction
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
-from archlux.geom.rectilineaire import PieceRectilineaire
+from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
 from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
 
@@ -170,14 +170,47 @@ def _edge_connected(members: list[Piece]) -> bool:
     return len(reached) == len(members)
 
 
-def _fused_area(room_id: str, members: list[Piece], ctx: Contexte) -> tuple[str, ...]:
+def _recorded_seams(
+    piece: PieceRectilineaire, by_id: dict[str, Piece], min_contact: float
+) -> tuple[str, ...]:
+    """Every seam recorded in the decomposition still holds, at least ``min_contact`` long.
+
+    The solver keeps these seams (``geom.rectilineaire.overlap_constraints``); the proof
+    does not take its word for it. Connectivity alone would accept a foot that slid to
+    another edge, or a neck of 1e-7 m.
+    """
+    violations: list[str] = []
+    for i, j, kind in piece.fusions:
+        a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
+        if a is None or b is None:
+            continue
+        if kind == FUSION_DROIT:
+            gap, span = abs(a.x + a.w - b.x), min(a.y + a.h, b.y + b.h) - max(a.y, b.y)
+        else:
+            gap, span = abs(a.y + a.h - b.y), min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
+        if gap > SNAP_M or span < min_contact - SNAP_M:
+            violations.append(
+                f"area {piece.id}: seam {a.id}|{b.id} not kept "
+                f"(offset {gap:.3g} m, shared {span:.4f} m < {min_contact:g} m)"
+            )
+    return tuple(violations)
+
+
+def _fused_area(
+    piece: PieceRectilineaire, by_id: dict[str, Piece], ctx: Contexte
+) -> tuple[str, ...]:
     """Area of the recomposed polygon of a fused room against its minimum.
 
     The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
     not form a single polygon (detached, or touching at a corner only) are not one
-    room, and have no area to compare.
+    room, and have no area to compare; every recorded seam must also still hold.
     """
+    room_id = piece.id
+    members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
     minimum = max(ctx.referentiel.a_min(member.type) for member in members)
+    seams = _recorded_seams(piece, by_id, max(ctx.referentiel.largeur_min, SNAP_M))
+    if seams:
+        return seams
     if not _edge_connected(members):
         return (f"area {room_id}: sub-rectangles do not form one polygon",)
     area = float(unary_union([_rectangle(member) for member in members]).area)
@@ -197,7 +230,7 @@ def _areas(
         members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
         fused.update(member.id for member in members)
         if members:
-            violations.extend(_fused_area(piece.id, members, ctx))
+            violations.extend(_fused_area(piece, by_id, ctx))
     for room in rooms:
         if room.id in fused:
             continue
@@ -218,12 +251,42 @@ def _same_wall(a: Mur, b: Mur) -> bool:
     return (close(a.a, b.a) and close(a.b, b.b)) or (close(a.a, b.b) and close(a.b, b.a))
 
 
-def _structure(plan: Plan, ctx: Contexte) -> tuple[bool, tuple[str, ...]]:
+def _interiors(
+    plan: Plan, fusions: tuple[PieceRectilineaire, ...], tol: float
+) -> list[tuple[str, Polygon]]:
+    """Interior of every room shrunk by ``tol``; a fused room as the union of its parts.
+
+    Shrinking each sub-rectangle alone would leave out the seam between them, where a
+    wall would cut the room in two (review of batches 1.7 and 1.8, C1).
+    """
+    by_id = {room.id: room for room in plan.pieces}
+    interiors: list[tuple[str, Polygon]] = []
+    fused: set[str] = set()
+    for piece in fusions:
+        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+        if not members:
+            continue
+        fused.update(member.id for member in members)
+        union = unary_union([_rectangle(member) for member in members])
+        interiors.append((piece.id, union.buffer(-tol, join_style="mitre")))
+    for room in plan.pieces:
+        if room.id in fused or room.w <= 2 * tol or room.h <= 2 * tol:
+            continue  # a degenerate room has no interior to cross
+        interiors.append(
+            (room.id, box(room.x + tol, room.y + tol, room.x + room.w - tol, room.y + room.h - tol))
+        )
+    return interiors
+
+
+def _structure(
+    plan: Plan, ctx: Contexte, fusions: tuple[PieceRectilineaire, ...] = ()
+) -> tuple[bool, tuple[str, ...]]:
     """No room crosses a load-bearing wall, and no load-bearing wall was moved.
 
     A crossing is any stretch of the wall inside a room's interior, the room being shrunk
-    by ``_WALL_TOLERANCE_M`` so that a room merely bounded by the wall is accepted. The
-    test is geometric (shapely), so it holds for oblique walls too.
+    by ``_WALL_TOLERANCE_M`` so that a room merely bounded by the wall is accepted. A
+    fused room is one interior, seams included. The test is geometric (shapely), so it
+    holds for oblique walls too.
 
     A plan does not have to repeat the structure in ``plan.murs``: load-bearing walls
     belong to the context. If it does declare a wall of the same id, that wall must
@@ -232,17 +295,15 @@ def _structure(plan: Plan, ctx: Contexte) -> tuple[bool, tuple[str, ...]]:
     declared = {wall.id: wall for wall in plan.murs}
     violations: list[str] = []
     tol = _WALL_TOLERANCE_M
+    interiors = _interiors(plan, fusions, tol)
     for wall in ctx.structure.murs_porteurs:
         stated = declared.get(wall.id)
         if stated is not None and not _same_wall(wall, stated):
             violations.append(f"structure: load-bearing wall {wall.id} moved")
         line = LineString([wall.a, wall.b])
-        for room in plan.pieces:
-            if room.w <= 2 * tol or room.h <= 2 * tol:
-                continue  # a degenerate room has no interior to cross
-            interior = box(room.x + tol, room.y + tol, room.x + room.w - tol, room.y + room.h - tol)
+        for room_id, interior in interiors:
             if line.intersection(interior).length > tol:
-                violations.append(f"structure: room {room.id} crosses load-bearing wall {wall.id}")
+                violations.append(f"structure: room {room_id} crosses load-bearing wall {wall.id}")
     return (not violations, tuple(violations))
 
 
@@ -500,7 +561,7 @@ def verify_exactly(
             gaps = gaps or geos_flag
             v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
     areas_ok, v_areas = _areas(plan.pieces, ctx, fusions)
-    structure_ok, v_structure = _structure(plan, ctx)
+    structure_ok, v_structure = _structure(plan, ctx, fusions)
     moved = max_displacement(plan, reference)
     budget_ok = budget is None or moved <= budget + SNAP_M
     v_budget = () if budget_ok else (f"budget: max displacement {moved:.6f} m > {budget} m",)

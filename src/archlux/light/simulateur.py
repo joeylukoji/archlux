@@ -10,6 +10,7 @@ Le DF moyen d'une pièce suit Littlefair / BRE : baie = WWR × façade éclairé
 
 from __future__ import annotations
 
+import sys
 import warnings
 from dataclasses import dataclass
 from typing import Any, ClassVar, Literal
@@ -251,6 +252,9 @@ class SplitFluxOracle:
 def __getattr__(name: str) -> Any:  # noqa: ANN401 — forwards a renamed attribute
     """Keep ``SimulateurExact`` until 1.0.0, deprecated (ADR 0001, PLAN.md batch 1.8)."""
     if name == "SimulateurExact":
+        if sys._getframe(1).f_code.co_filename.startswith("<frozen importlib"):
+            # `from module import name` probes with hasattr first: warn only once.
+            return SplitFluxOracle
         warnings.warn(
             "archlux.light.simulateur.SimulateurExact is deprecated, use SplitFluxOracle: "
             "a frozen split-flux oracle, neither a simulation nor ground truth (ADR 0001)",

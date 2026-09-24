@@ -441,7 +441,8 @@ def deduire_trame(
             if portees.setdefault(ligne, valeur) != valeur:
                 raise UnsupportedInput(
                     f"tiling grid: outline edges {portees[ligne]} and {valeur} in {axe} "
-                    f"are closer than the grouping tolerance {tolerance} m"
+                    f"fall in one grid line, joined through room edges within the grouping "
+                    f"tolerance {tolerance} m"
                 )
             lignes[ligne] = valeur
     if len(lignes_x) < 2 or len(lignes_y) < 2:

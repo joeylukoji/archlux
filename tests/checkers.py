@@ -38,13 +38,20 @@ def outline_area(ctx: Contexte) -> float:
     return (max(xs) - min(xs)) * (max(ys) - min(ys))
 
 
-def _fusion_holds(a: Piece, b: Piece, kind: str) -> bool:
-    """``b`` continues ``a`` across the recorded edge, sharing a positive length of it."""
+def _seam(a: Piece, b: Piece, kind: str) -> tuple[float, float, float, str]:
+    """Recorded seam of a fused room: offset, then the shared stretch ``[lo, hi]`` and its axis.
+
+    For a seam on a vertical edge, the axis is ``"x"`` and ``[lo, hi]`` is a y range.
+    """
     if kind == FUSION_DROIT:
-        edge, span = abs(a.x + a.w - b.x), min(a.y + a.h, b.y + b.h) - max(a.y, b.y)
-    else:
-        edge, span = abs(a.y + a.h - b.y), min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
-    return edge <= TOLERANCE and span > TOLERANCE
+        return abs(a.x + a.w - b.x), max(a.y, b.y), min(a.y + a.h, b.y + b.h), "x"
+    return abs(a.y + a.h - b.y), max(a.x, b.x), min(a.x + a.w, b.x + b.w), "y"
+
+
+def _fusion_holds(a: Piece, b: Piece, kind: str, min_contact: float) -> bool:
+    """``b`` continues ``a`` across the recorded edge, sharing at least ``min_contact``."""
+    offset, lo, hi, _ = _seam(a, b, kind)
+    return offset <= TOLERANCE and hi - lo >= max(min_contact, 2 * TOLERANCE) - TOLERANCE
 
 
 def _fused_area_violations(
@@ -64,7 +71,11 @@ def _fused_area_violations(
         members.update(part.id for part in parts)
         for i, j, kind in piece.fusions:
             a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
-            if a is not None and b is not None and not _fusion_holds(a, b, kind):
+            if (
+                a is not None
+                and b is not None
+                and not _fusion_holds(a, b, kind, ctx.referentiel.largeur_min)
+            ):
                 found.append(Violation("area", f"{piece.id}: {a.id} and {b.id} are apart"))
         minimum = max(ctx.referentiel.a_min(part.type) for part in parts)
         area = sum(part.w * part.h for part in parts)
@@ -124,6 +135,24 @@ def violations(
                 overlap = min(x1, max(xa, xb)) - max(x0, min(xa, xb))
             if crosses and overlap > TOLERANCE:
                 found.append(Violation("wall", f"{room.id} crosses load-bearing wall {wall.id}"))
+        # A seam of a fused room is inside the room: a wall along it cuts the room in two.
+        by_id = {room.id: room for room in rooms}
+        for piece in fusions:
+            for i, j, kind in piece.fusions:
+                first = by_id.get(piece.rectangles[i].id)
+                second = by_id.get(piece.rectangles[j].id)
+                if first is None or second is None:
+                    continue
+                _, lo, hi, axis = _seam(first, second, kind)
+                line = first.x + first.w if axis == "x" else first.y + first.h
+                on_line = vertical if axis == "x" else horizontal
+                position = xa if axis == "x" else ya
+                ends = (ya, yb) if axis == "x" else (xa, xb)
+                shared = min(hi, max(ends)) - max(lo, min(ends))
+                if on_line and abs(position - line) <= TOLERANCE and shared > TOLERANCE:
+                    found.append(
+                        Violation("wall", f"{piece.id}: load-bearing wall {wall.id} on a seam")
+                    )
     return found
 
 

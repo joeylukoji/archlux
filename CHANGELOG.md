@@ -102,6 +102,23 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   `inner_area_constraints`). The shares are conservative: a false refusal is possible,
   a false certificate is not. New keyword-only parameters, defaults unchanged.
 
+#### Fixed — review of batches 1.7 and 1.8
+- **A load-bearing wall on the seam of an L room was certified.** The proof and the
+  checker tested each sub-rectangle alone, and the order gave each sub-rectangle its own
+  side of every wall, so the solver could widen the bar of an L until its seam sat on
+  the wall: the kitchen was cut in two under a valid certificate. The proof tests a
+  fused room as one interior (union of its parts), the checker tests the seams, and
+  `geom.graphe.deduire_ordre(..., groups=)` gives all the parts of a fused room the side
+  of their bounding box (exact for the union; it may refuse an L wrapped around the end
+  of a partial wall, never accept a crossing).
+- The proof checks every recorded seam of a fused room with the solver's minimum
+  contact (`largeur_min`), as the checker does; connectivity alone accepted a neck of
+  1e-7 m or a foot that slid to another edge.
+- `minimum_area_shares` adds the proof tolerance to every share (k parts could miss the
+  minimum by k * 1e-9) and raises `UnsupportedInput` for a fused room without area.
+- `from archlux.light import SimulateurExact` (and `certify.verifier_exactement`) warns
+  once, not twice; the tiling refusal names the chained grouping of outline edges.
+
 #### Fixed — tiling mode anchors its grid on the outline
 - The outer grid lines are anchored exactly on the outline. They used to take the mean
   of the room edges grouped with them, so a few millimetres of noise left an uncovered

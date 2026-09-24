@@ -52,6 +52,15 @@ w_p h_p \ge a_{\min}(\mathrm{type}(p))
 pour chaque pièce, à \(10^{-9}\,\mathrm{m}^2\) près. \(a_{\min}=0\) si le type
 est inconnu (`Referentiel.a_min`).
 
+**Fused rooms** (an L decomposed into sub-rectangles, `verify_exactly(..., fusions=)`).
+The minimum applies to the union \(U = \bigcup_k R_k\) of the parts, never to each
+part: \(\lambda(U) \ge a_{\min}\). Before the area, every seam recorded by the
+decomposition must still hold: the two parts touch along it (offset at most
+`SNAP_M`) over a length of at least `largeur_min` (minus `SNAP_M`), the contact the
+solver imposes (`geom.rectilineaire.overlap_constraints`). Connectivity alone would
+accept a foot that slid to another edge, or a neck of \(10^{-7}\) m. Parts that do not
+form one polygon through edges (detached, or touching at a corner) are refused.
+
 ### Structure
 
 No room crosses a load-bearing wall of `ctx.structure`: for every wall segment
@@ -63,8 +72,10 @@ No room crosses a load-bearing wall of `ctx.structure`: for every wall segment
 \]
 
 where \(\operatorname{int}_{\varepsilon}(R)\) is the room shrunk by \(\varepsilon\) on every
-side, so that a room *bounded* by the wall is accepted. The test is geometric and holds
-for oblique walls. A wall declared in the plan with the same `id` must also match the
+side, so that a room *bounded* by the wall is accepted. A fused room is one interior,
+\(\operatorname{int}_{\varepsilon}(\bigcup_k R_k)\): a wall along the seam between two
+parts cuts the room in two and is a crossing, although it is on the boundary of each
+part. The test is geometric and holds for oblique walls. A wall declared in the plan with the same `id` must also match the
 structure (same end points, order irrelevant). Columns are not checked.
 
 *Before 0.10 this predicate only compared each wall with itself (walls are not decision

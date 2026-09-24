@@ -32,8 +32,9 @@ from scipy import sparse
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, unary_union
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViole, UnsupportedInput
 from archlux.geom.polytope import Polytope
+from archlux.tolerances import AREA_PROOF_M2
 from archlux.types import Piece, Referentiel
 
 __all__ = [
@@ -463,9 +464,14 @@ def minimum_area_shares(
         minimum = max(referentiel.a_min(member.type) for member in members)
         total = sum(member.w * member.h for member in members)
         if total <= 0.0:
-            raise InvariantViole((f"fused room {piece.id} has no area",))
+            raise UnsupportedInput(f"fused room {piece.id} has no area in the proposed plan")
         for member in members:
-            shares[member.id] = minimum * (member.w * member.h) / total
+            # The solver accepts each rectangle up to AREA_PROOF_M2 below its share; the
+            # proof accepts the union up to AREA_PROOF_M2 once. Adding that tolerance to
+            # every share keeps k sub-rectangles from missing the minimum by k * tol.
+            shares[member.id] = minimum * (member.w * member.h) / total + (
+                AREA_PROOF_M2 if minimum > 0.0 else 0.0
+            )
     return shares
 
 

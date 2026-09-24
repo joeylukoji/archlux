@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import itertools
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
 import networkx as nx
@@ -159,7 +159,11 @@ class GrapheContraintes:
         return frozenset(triplets)
 
 
-def deduire_ordre(plan: Plan, structure: Structure | None = None) -> OrdreRelatif:
+def deduire_ordre(
+    plan: Plan,
+    structure: Structure | None = None,
+    groups: tuple[tuple[str, ...], ...] = (),
+) -> OrdreRelatif:
     """Extraire l'ordre relatif d'un plan proposé, en comparant les centres.
 
     C'est ici qu'est appliqué le principe fondateur : **le générateur décide l'ordre**.
@@ -186,6 +190,12 @@ def deduire_ordre(plan: Plan, structure: Structure | None = None) -> OrdreRelati
         Load-bearing structure. Each wall is treated as a fixed obstacle: every room gets
         the side it stays on (:class:`WallSide`), read from the plan like the order
         between two rooms. A room that crosses a wall gets the smallest correction.
+    groups : tuple of tuple of str, optional
+        Sub-rectangles of one fused room (an L, see :mod:`archlux.geom.rectilineaire`).
+        They take **one** side of every wall, read from their bounding box: a side per
+        sub-rectangle could put the wall on the seam between them, inside the room.
+        A half-plane holds the union exactly when it holds every member; it may refuse
+        an L wrapped around the end of a partial wall, never accept a crossing.
 
     Returns
     -------
@@ -238,9 +248,20 @@ def deduire_ordre(plan: Plan, structure: Structure | None = None) -> OrdreRelati
         xs = [x for x, _ in plan.contour]
         ys = [y for _, y in plan.contour]
         envelope = (min(xs), min(ys), max(xs), max(ys))
+    # A fused room is placed as a whole: its members share the side of its bounding box.
+    reference = dict(par_id)
+    for group in groups:
+        members = [par_id[room_id] for room_id in group if room_id in par_id]
+        if not members:
+            continue
+        x0, y0 = min(m.x for m in members), min(m.y for m in members)
+        x1, y1 = max(m.x + m.w for m in members), max(m.y + m.h for m in members)
+        hull = replace(members[0], x=x0, y=y0, w=x1 - x0, h=y1 - y0)
+        for member in members:
+            reference[member.id] = hull
     wall_sides = (
         tuple(
-            _wall_side(par_id[room_id], wall, envelope)
+            replace(_wall_side(reference[room_id], wall, envelope), room=room_id)
             for wall in sorted(structure.murs_porteurs, key=lambda m: m.id)
             if wall.longueur > SNAP_M  # a point has no side; the proof ignores it too
             for room_id in identifiants
