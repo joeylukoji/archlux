@@ -31,8 +31,6 @@ USER_FACING = (
 _PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
 KNOWN_BROKEN: dict[str, tuple[type[BaseException], str]] = {
-    "docs/tutoriels/calibrer-un-substitut.md": (NameError, "uses 'modele' undefined"),
-    "docs/tutoriels/entrainer-un-substitut.md": (NameError, "uses 'xs' undefined"),
     "docs/concepts/oracle-partage.md": (
         NameError,
         "illustrative fragment ('lmo', 'poly' undefined): make it runnable or "
