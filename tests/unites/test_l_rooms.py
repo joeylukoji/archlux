@@ -19,6 +19,7 @@ from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
 from archlux.geom.rectilineaire import PieceRectilineaire, decomposer, etendre_fusions
 from archlux.types import Contexte, Mur, Piece, Plan, Referentiel, Structure
+from tests import checkers
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
@@ -136,3 +137,34 @@ def test_legalize_keeps_an_l_whose_union_meets_the_minimum_area() -> None:
 
     assert legal.certificat is not None and legal.certificat.geometrie.valide
     assert legal.certificat.geometrie.deplacement_max == pytest.approx(0.0, abs=1e-6)
+
+
+def test_legalize_grows_an_l_whose_union_misses_the_minimum_area() -> None:
+    plan, room = _tiling_with_small_l()
+    ctx = _kitchen_minimum(4.5)
+
+    legal = archlux.legalize(plan, ctx, fusions=(room,), pavage=True)
+
+    assert legal.certificat is not None and legal.certificat.geometrie.valide
+    assert checkers.violations(legal, ctx, fusions=(room,)) == []
+    parts = [r for r in legal.pieces if r.id.startswith("l__")]
+    assert sum(r.w * r.h for r in parts) >= 4.5 - 1e-6
+
+
+@pytest.mark.parametrize(("minimum", "short"), [(3.5, False), (4.5, True)])
+def test_checker_measures_a_fused_room_as_a_whole(minimum: float, short: bool) -> None:
+    plan, room = _tiling_with_small_l()
+
+    found = checkers.violations(plan, _kitchen_minimum(minimum), fusions=(room,))
+
+    assert [v.detail.split(":")[0] for v in found if v.kind == "area"] == (["l"] if short else [])
+
+
+def test_checker_refuses_a_detached_fused_room() -> None:
+    plan, room = _small_l()
+    bar, foot = plan.pieces
+    detached = replace(plan, pieces=(bar, replace(foot, y=4.0)))
+
+    found = checkers.violations(detached, _kitchen_minimum(0.0), fusions=(room,))
+
+    assert any(v.kind == "area" and v.detail.startswith("l:") for v in found), found

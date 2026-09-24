@@ -13,7 +13,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from archlux.types import Contexte, Plan
+from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
+from archlux.types import Contexte, Piece, Plan
 
 TOLERANCE = 1e-6
 """Metres or square metres: well above float noise, well below any meaningful defect."""
@@ -37,10 +38,49 @@ def outline_area(ctx: Contexte) -> float:
     return (max(xs) - min(xs)) * (max(ys) - min(ys))
 
 
-def violations(plan: Plan, ctx: Contexte) -> list[Violation]:
+def _fusion_holds(a: Piece, b: Piece, kind: str) -> bool:
+    """``b`` continues ``a`` across the recorded edge, sharing a positive length of it."""
+    if kind == FUSION_DROIT:
+        edge, span = abs(a.x + a.w - b.x), min(a.y + a.h, b.y + b.h) - max(a.y, b.y)
+    else:
+        edge, span = abs(a.y + a.h - b.y), min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
+    return edge <= TOLERANCE and span > TOLERANCE
+
+
+def _fused_area_violations(
+    rooms: tuple[Piece, ...], ctx: Contexte, fusions: tuple[PieceRectilineaire, ...]
+) -> tuple[set[str], list[Violation]]:
+    """Fused rooms measured as a whole: every recorded edge holds, the sum meets the minimum.
+
+    Returns the ids of the sub-rectangles found, which escape the per-room check.
+    """
+    by_id = {room.id: room for room in rooms}
+    members: set[str] = set()
+    found: list[Violation] = []
+    for piece in fusions:
+        parts = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+        if not parts:
+            continue
+        members.update(part.id for part in parts)
+        for i, j, kind in piece.fusions:
+            a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
+            if a is not None and b is not None and not _fusion_holds(a, b, kind):
+                found.append(Violation("area", f"{piece.id}: {a.id} and {b.id} are apart"))
+        minimum = max(ctx.referentiel.a_min(part.type) for part in parts)
+        area = sum(part.w * part.h for part in parts)
+        if area < minimum - TOLERANCE:
+            found.append(Violation("area", f"{piece.id}: area {area:.6f} < {minimum:.6f}"))
+    return members, found
+
+
+def violations(
+    plan: Plan, ctx: Contexte, *, fusions: tuple[PieceRectilineaire, ...] = ()
+) -> list[Violation]:
     """Tiling, minimum areas and load-bearing walls, checked from coordinates only.
 
-    Pairwise disjoint rooms whose areas add up to the outline area tile it exactly.
+    Pairwise disjoint rooms whose areas add up to the outline area tile it exactly. A
+    fused room (``fusions``) is measured as a whole: its sub-rectangles must keep every
+    recorded shared edge, and their areas add up to the room's.
     """
     found: list[Violation] = []
     rooms = plan.pieces
@@ -58,7 +98,11 @@ def violations(plan: Plan, ctx: Contexte) -> list[Violation]:
             Violation("coverage", f"rooms cover {total:.6f} m² of a {target:.6f} m² outline")
         )
 
+    fused, fused_found = _fused_area_violations(rooms, ctx, fusions)
+    found.extend(fused_found)
     for room in rooms:
+        if room.id in fused:
+            continue
         minimum = ctx.referentiel.a_min(room.type)
         if room.w * room.h < minimum - TOLERANCE:
             found.append(
