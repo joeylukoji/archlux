@@ -37,3 +37,6 @@ session_memory.json
 .cursor/skills/
 .agents/skills/
 .claude/settings.local.json
+
+# Git worktrees of parallel agents
+/.claude/worktrees/
