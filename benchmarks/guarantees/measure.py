@@ -81,6 +81,8 @@ class Mode:
     family: WallKind
     prepare: Callable[[Scenario], Plan]
     run: Callable[[Plan, Contexte], Plan]
+    budget: float | None = None
+    """Displacement budget the output must respect, checked independently."""
 
 
 @dataclass(slots=True)
@@ -122,6 +124,17 @@ def _performance(plan: Plan, ctx: Contexte) -> Plan:
     return archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
 
 
+BUDGET_M = 0.3
+"""Displacement budget of the budget mode: tighter than the 25 cm faults it repairs plus
+what Frank-Wolfe would like to move, so that the budget actually binds."""
+
+
+def _performance_tiling_budget(plan: Plan, ctx: Contexte) -> Plan:
+    return archlux.legalize(
+        plan, ctx, objective=SubstitutAnalytique(), pavage=True, budget=BUDGET_M
+    )
+
+
 def _daylight(plan: Plan, ctx: Contexte) -> Plan:
     objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
     return archlux.legalize(plan, ctx, objective=objective)
@@ -139,6 +152,13 @@ MODES: dict[str, Mode] = {
         "performance (analytic surrogate), valid input", "full", _as_is, _performance
     ),
     "daylight": Mode("performance (Daylight objective), valid input", "full", _as_is, _daylight),
+    "performance_budget": Mode(
+        "one room off by up to 25 cm; tiling + performance, budget 0.3 m",
+        "full",
+        _one_fault,
+        _performance_tiling_budget,
+        budget=BUDGET_M,
+    ),
     "partial_one_fault": Mode(
         "partial load-bearing wall; classic + tiling, one room off by up to 25 cm",
         "partial",
@@ -197,6 +217,8 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
     elapsed_ms = round((time.perf_counter() - start) * 1000, 2)
 
     found = checkers.violations(result, scenario.context)
+    if mode.budget is not None:
+        found += checkers.budget_violations(result, given, mode.budget)
     certified = bool(result.certificat and result.certificat.geometrie.valide)
     outcome: Outcome = (
         "ok" if not found else "false_certificate" if certified else "invalid_but_flagged"
@@ -329,8 +351,8 @@ def write_readme() -> None:
             f"## {key}: {mode.description}",
             "",
             "| run | revision | n | ok | false certificate | invalid, flagged | refused | "
-            "of which invariant | crash | overlap | coverage | area | wall | median ms |",
-            "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
+            "of which invariant | crash | overlap | coverage | area | wall | budget | median ms |",
+            "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
         ]
         for run in runs:
             stored = run["modes"].get(key)
@@ -348,6 +370,7 @@ def write_readme() -> None:
                 f"| {_cell(_count(s, 'refused_invariant'), n)} "
                 f"| {_cell(_count(s, 'crash'), n)} "
                 f"| {v['overlap']} | {v['coverage']} | {v['area']} | {v['wall']} "
+                f"| {v.get('budget', 0)} "
                 f"| {s['median_ms']} |"
             )
         lines.append("")

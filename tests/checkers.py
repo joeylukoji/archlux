@@ -18,8 +18,8 @@ from archlux.types import Contexte, Plan
 TOLERANCE = 1e-6
 """Metres or square metres: well above float noise, well below any meaningful defect."""
 
-Kind = Literal["overlap", "coverage", "area", "wall"]
-KINDS: tuple[Kind, ...] = ("overlap", "coverage", "area", "wall")
+Kind = Literal["overlap", "coverage", "area", "wall", "budget"]
+KINDS: tuple[Kind, ...] = ("overlap", "coverage", "area", "wall", "budget")
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,4 +80,23 @@ def violations(plan: Plan, ctx: Contexte) -> list[Violation]:
                 overlap = min(x1, max(xa, xb)) - max(x0, min(xa, xb))
             if crosses and overlap > TOLERANCE:
                 found.append(Violation("wall", f"{room.id} crosses load-bearing wall {wall.id}"))
+    return found
+
+
+def budget_violations(plan: Plan, proposed: Plan, budget: float) -> list[Violation]:
+    """Rooms moved farther than ``budget`` (L-infinity over x, y, w, h) from ``proposed``."""
+    before = {room.id: room for room in proposed.pieces}
+    found: list[Violation] = []
+    for room in plan.pieces:
+        origin = before.get(room.id)
+        if origin is None:
+            continue
+        moved = max(
+            abs(room.x - origin.x),
+            abs(room.y - origin.y),
+            abs(room.w - origin.w),
+            abs(room.h - origin.h),
+        )
+        if moved > budget + TOLERANCE:
+            found.append(Violation("budget", f"{room.id} moved {moved:.6f} m > {budget} m"))
     return found

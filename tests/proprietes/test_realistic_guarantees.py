@@ -134,3 +134,25 @@ def test_the_checker_detects_each_kind_of_violation() -> None:
         Piece(id="b", type="other", x=2.0, y=0.0, w=2.0, h=2.0),
     )
     assert "a overlaps b" in _independent_violations(overlap, ctx)
+
+
+def test_the_checker_detects_a_budget_overrun() -> None:
+    """Guard for the independent budget check used by the benchmark."""
+    from archlux.types import Piece
+
+    outline = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
+    proposed = Plan(
+        pieces=(Piece(id="a", type="other", x=0.0, y=0.0, w=2.0, h=2.0),),
+        murs=(),
+        ouvertures=(),
+        contour=outline,
+    )
+    moved = Plan(
+        pieces=(Piece(id="a", type="other", x=0.0, y=0.0, w=2.5, h=2.0),),
+        murs=(),
+        ouvertures=(),
+        contour=outline,
+    )
+    assert checkers.budget_violations(moved, proposed, 1.0) == []
+    (violation,) = checkers.budget_violations(moved, proposed, 0.3)
+    assert violation.kind == "budget"
