@@ -27,7 +27,7 @@ from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.erreurs import Infaisable, InvariantViole
 from archlux.geom.graphe import deduire_ordre
-from archlux.geom.pavage import deduire_trame, etendre_pavage
+from archlux.geom.pavage import deduire_trame, etendre_pavage, snap_to_grid
 from archlux.geom.polytope import (
     Polytope,
     construire_polytope,
@@ -169,6 +169,9 @@ def legalize(
         Exige que la trame du plan proposé soit récupérable
         (:func:`~archlux.geom.pavage.deduire_trame`) ; sinon ``GridNotRecoverable``
         nomme les cellules fautives. Défaut ``False`` : contrat 1.x inchangé.
+        With a grid, the relative order and the load-bearing sides are read from
+        the plan snapped onto it (:func:`~archlux.geom.pavage.snap_to_grid`), so
+        that they never contradict the tiling equalities.
     budget_reparation : int, optional
         Nombre de crans de réparation accordés à la récupération de trame, passé
         tel quel à :func:`~archlux.geom.pavage.deduire_trame`. Sans effet si
@@ -270,14 +273,20 @@ def legalize(
                 f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}"
             )
 
-    ordre = deduire_ordre(plan, structure=ctx.structure)
+    # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
+    # du plan propose n'est pas recuperable — echec explicite, pas silencieux.
+    trame = deduire_trame(plan, ctx, budget_reparation=budget_reparation) if pavage else None
+    # With a grid, the order is read from the plan snapped onto it: the order read from
+    # the faulty plan could contradict the tiling equalities (a room moved onto its
+    # neighbour overlaps it on both axes).
+    ordre = deduire_ordre(
+        plan if trame is None else snap_to_grid(plan, trame), structure=ctx.structure
+    )
     poly = construire_polytope(ordre, ctx)
     for piece_l in fusions:
         poly = etendre_fusions(poly, piece_l)
-    if pavage:
-        # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
-        # du plan propose n'est pas recuperable — echec explicite, pas silencieux.
-        poly = etendre_pavage(poly, deduire_trame(plan, ctx, budget_reparation=budget_reparation))
+    if trame is not None:
+        poly = etendre_pavage(poly, trame)
     x_ref = vectoriser(plan, poly.index)
     poly_l1 = etendre_ecarts_l1(poly, x_ref)
     if budget is not None:

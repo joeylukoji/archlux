@@ -77,7 +77,7 @@ if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
     from archlux.types import Contexte, Plan
 
-__all__ = ["Trame", "contraintes_pavage", "deduire_trame", "etendre_pavage"]
+__all__ = ["Trame", "contraintes_pavage", "deduire_trame", "etendre_pavage", "snap_to_grid"]
 
 _EPS = 1e-9
 
@@ -496,6 +496,40 @@ def deduire_trame(
         ancrees_x=frozenset(ancrees_x),
         ancrees_y=frozenset(ancrees_y),
     )
+
+
+def snap_to_grid(plan: Plan, trame: Trame) -> Plan:
+    """Place every room of ``plan`` on the reference lines of its recovered grid.
+
+    The result is an exact tiling of the outline (the partition of ``trame`` is
+    verified), so every pair of rooms is separated on the axis the grid says. Reading
+    the relative order from it rather than from the faulty plan keeps the order
+    consistent with the tiling equalities: a room moved onto its neighbour overlaps it
+    on both axes, and the centres alone may then pick the wrong axis.
+
+    Parameters
+    ----------
+    plan : Plan
+        The proposed plan ``trame`` was recovered from.
+    trame : Trame
+        Grid returned by :func:`deduire_trame` for ``plan``.
+
+    Returns
+    -------
+    Plan
+        New plan, rooms in the same order, only their coordinates changed.
+    """
+    lignes = {
+        nom: (gauche, droite, bas, haut) for nom, gauche, droite, bas, haut in trame.incidences
+    }
+    pieces = []
+    for piece in plan.pieces:
+        gauche, droite, bas, haut = lignes[piece.id]
+        x, y = trame.lignes_x[gauche], trame.lignes_y[bas]
+        pieces.append(
+            replace(piece, x=x, y=y, w=trame.lignes_x[droite] - x, h=trame.lignes_y[haut] - y)
+        )
+    return replace(plan, pieces=tuple(pieces))
 
 
 def contraintes_pavage(
