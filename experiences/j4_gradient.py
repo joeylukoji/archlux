@@ -8,11 +8,11 @@ import numpy as np
 
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.base import SubstitutDense
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
 
-sim, rng = SimulateurExact(), np.random.default_rng(17)
+sim, rng = OracleSplitFlux(), np.random.default_rng(17)
 xs, ys, os_ = [], [], []
 for _ in range(36):
     c = float(rng.uniform(4.0, 8.0))

@@ -25,7 +25,7 @@ dependencies = [
 # torch n'apparait QUE dans cet extra. Le noyau ne doit jamais l'importer.
 appris = ["torch>=2.2"]
 ml = ["torch>=2.2"]
-sim = []  # (Radiance) hors chemin critique ; la CI utilise SimulateurExact
+sim = []  # (Radiance) hors chemin critique ; la CI utilise OracleSplitFlux
 bim = ["ifcopenshell>=0.7"]
 stats = []  # scipy déjà dans le noyau ; extra réservé aux outils optionnels du banc
 dev = [

@@ -19,11 +19,11 @@ from archlux.light.appris import SubstitutAppris
 from archlux.light.base import SubstitutDense
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import Baies, Substitut
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
 from tests import checkers
 
-IMPLEMENTATIONS = (SubstitutAnalytique, SubstitutAppris, SubstitutDense, SimulateurExact, Daylight)
+IMPLEMENTATIONS = (SubstitutAnalytique, SubstitutAppris, SubstitutDense, OracleSplitFlux, Daylight)
 METHODS = ("evaluer", "gradient", "incertitude")
 
 

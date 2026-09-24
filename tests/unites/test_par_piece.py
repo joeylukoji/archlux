@@ -13,10 +13,10 @@ import pytest
 
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.protocole import Substitut, SubstitutParPiece
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.types import Orientation
 
-IMPLEMENTATIONS = [SubstitutAnalytique, SimulateurExact]
+IMPLEMENTATIONS = [SubstitutAnalytique, OracleSplitFlux]
 INDICATEURS = ["sDA", "ASE", "UDI", "vue"]
 
 

@@ -1,6 +1,6 @@
 """Critère d'acceptation du jalon 5 : couverture sur le jeu de TEST.
 
-L'oracle est ``SimulateurExact`` (split-flux), pas un moteur de lancer de rayons.
+L'oracle est ``OracleSplitFlux`` (split-flux), pas un moteur de lancer de rayons.
 La garantie porte sur cet oracle gelé (`ARCHITECTURE.md` §2).
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 
 from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.types import Orientation
 from archlux.uq.conforme import CalibrateurConforme
 from archlux.uq.fiabilite import stratifier_par_orientation
@@ -27,7 +27,7 @@ def _tirer(rng: np.random.Generator, n: int) -> tuple[list[np.ndarray], list[Ori
 
 def _evaluer(
     modele: SubstitutAnalytique,
-    oracle: SimulateurExact,
+    oracle: OracleSplitFlux,
     xs: list[np.ndarray],
     os_: list[Orientation],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -41,7 +41,7 @@ def test_couverture_empirique() -> None:
     """Sur le jeu de TEST, jamais sur celui de calibration. Visée 0,90 ± 4 pts."""
     rng = np.random.default_rng(17)
     modele = SubstitutAnalytique()
-    oracle = SimulateurExact()
+    oracle = OracleSplitFlux()
     xs_cal, os_cal = _tirer(rng, 220)
     xs_test, os_test = _tirer(rng, 280)
     p_cal, v_cal, s_cal = _evaluer(modele, oracle, xs_cal, os_cal)
@@ -88,7 +88,7 @@ def test_derive_bornee_sur_oracle_gelé() -> None:
 
     rng = np.random.default_rng(9)
     modele = SubstitutAnalytique()
-    oracle = SimulateurExact()
+    oracle = OracleSplitFlux()
     xs, os_ = _tirer(rng, 40)
     pred, verite, _sigma = _evaluer(modele, oracle, xs, os_)
     rapport = mesurer_derive(pred, verite, seed=9)

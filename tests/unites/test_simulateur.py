@@ -6,17 +6,17 @@ import numpy as np
 import pytest
 
 from archlux.light.protocole import Substitut
-from archlux.light.simulateur import SimulateurExact, facteur_lumiere_jour
+from archlux.light.simulateur import OracleSplitFlux, facteur_lumiere_jour
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
 
 
 def test_simulateur_respecte_le_protocole() -> None:
-    assert isinstance(SimulateurExact(), Substitut)
+    assert isinstance(OracleSplitFlux(), Substitut)
 
 
 def test_simulation_deterministe() -> None:
-    radiance = SimulateurExact()
+    radiance = OracleSplitFlux()
     x = np.array([0.0, 0.0, 6.0, 4.5, 6.0, 0.0, 6.0, 4.5])
     ctx = Orientation(deg=40.0)
     assert radiance.evaluer(x, ctx) == radiance.evaluer(x, ctx)
@@ -26,8 +26,8 @@ def test_ase_est_l_oppose_du_sda() -> None:
     """ASE nie le score complet une fois, pas l'analytique puis le total."""
     x = np.array([0.0, 0.0, 6.0, 4.5, 6.0, 0.0, 6.0, 4.5])
     ctx = Orientation(deg=40.0)
-    sda = SimulateurExact(indicateur_vise="sDA").evaluer(x, ctx)
-    ase = SimulateurExact(indicateur_vise="ASE").evaluer(x, ctx)
+    sda = OracleSplitFlux(indicateur_vise="sDA").evaluer(x, ctx)
+    ase = OracleSplitFlux(indicateur_vise="ASE").evaluer(x, ctx)
     assert ase == pytest.approx(-sda)
 
 
@@ -61,12 +61,12 @@ def test_df_augmente_avec_le_wwr() -> None:
 def test_simulateur_suit_le_wwr() -> None:
     x = np.array([0.0, 0.0, 6.0, 4.0])
     sud = Orientation(deg=180.0)
-    assert SimulateurExact(wwr=0.40).evaluer(x, sud) > SimulateurExact(wwr=0.20).evaluer(x, sud)
+    assert OracleSplitFlux(wwr=0.40).evaluer(x, sud) > OracleSplitFlux(wwr=0.20).evaluer(x, sud)
 
 
 def test_gradient_coherent_avec_le_split_flux() -> None:
     rapport = valider_gradient(
-        SimulateurExact(),
+        OracleSplitFlux(),
         np.array([[0.0, 0.0, 6.0, 4.0, 6.0, 0.0, 6.0, 4.5]]),
         Orientation(deg=180.0),
         seed=17,

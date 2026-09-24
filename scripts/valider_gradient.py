@@ -7,11 +7,11 @@ from pathlib import Path
 import numpy as np
 
 from archlux.light.base import SubstitutDense
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
 
-SIM, rng = SimulateurExact(), np.random.default_rng(17)
+SIM, rng = OracleSplitFlux(), np.random.default_rng(17)
 xs, ys, oris = [], [], []
 for _ in range(36):
     c = float(rng.uniform(4.0, 8.0))

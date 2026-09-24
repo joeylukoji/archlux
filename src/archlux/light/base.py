@@ -247,7 +247,7 @@ class SubstitutDense:
 
         Le recalage affine n'est pas cosmétique. ``SubstitutAnalytique`` rend un
         score en **unités arbitraires** — une somme de façades pondérées, de l'ordre
-        de la centaine — sans aucune échelle physique. Contre ``SimulateurExact``,
+        de la centaine — sans aucune échelle physique. Contre ``OracleSplitFlux``,
         construit sur la même base, les deux coïncident et le résidu est petit.
         Contre une simulation réelle (Swiss Dwellings, irradiance de l'ordre de 1),
         le résidu vaudrait l'opposé du score : le réseau passerait sa capacité à
