@@ -38,6 +38,40 @@ class Iteration:
     n_cuts: int
     x: np.ndarray
 
+    # --- French names, deprecated until 1.0.0 (ADR 0001) ---------------------------
+
+    @property
+    def valeur(self) -> float:
+        """Deprecated alias of :attr:`value`."""
+        _deprecated_iteration("valeur", "value")
+        return self.value
+
+    @property
+    def pas(self) -> float:  # lang-ok: deprecated French alias
+        """Deprecated alias of :attr:`step`."""
+        _deprecated_iteration("pas", "step")  # lang-ok: deprecated French alias
+        return self.step
+
+    @property
+    def temps_lp_ms(self) -> float:
+        """Deprecated alias of :attr:`lp_ms`."""
+        _deprecated_iteration("temps_lp_ms", "lp_ms")
+        return self.lp_ms
+
+    @property
+    def n_coupes(self) -> int:
+        """Deprecated alias of :attr:`n_cuts`."""
+        _deprecated_iteration("n_coupes", "n_cuts")
+        return self.n_cuts
+
+
+def _deprecated_iteration(old: str, new: str) -> None:
+    warnings.warn(
+        f"Iteration.{old} is deprecated, use Iteration.{new} (ADR 0001)",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
 
 def _deprecated(old: str, new: str) -> None:
     warnings.warn(
@@ -49,10 +83,15 @@ def _deprecated(old: str, new: str) -> None:
 
 @dataclass(frozen=True, slots=True)
 class Trace:
-    """Sequence of iterations, the stop status, and the time spent in the oracle."""
+    """Sequence of iterations, stop status, final gap, and time spent in the oracle.
+
+    ``final_gap`` is the Frank-Wolfe gap at the returned point; the per-iteration gaps
+    describe the point *before* each step.
+    """
 
     iterations: tuple[Iteration, ...]
     status: StopStatus
+    final_gap: float
 
     @property
     def total_lp_ms(self) -> float:

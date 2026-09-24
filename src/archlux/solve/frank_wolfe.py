@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import Infaisable, InvariantViole
 from archlux.geom.polytope import Polytope
 from archlux.lmo.coupes import MAX_COUPES_PAR_PIECE, Coupe, coupe_surface, surfaces_violees
 from archlux.lmo.solveur import resoudre
@@ -66,18 +66,38 @@ class FrankWolfeResult:
     duals: np.ndarray | None = None
 
 
-def restrict_to_budget(poly: Polytope, centre: np.ndarray, radius: float) -> Polytope:
+def restrict_to_budget(
+    poly: Polytope, centre: np.ndarray, radius: float, *, keep: np.ndarray | None = None
+) -> Polytope:
     """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``.
 
-    ``centre`` must be the **proposed** plan, so that the budget is spent once over
-    the whole legalization, not once per pass.
+    ``centre`` must be the **proposed** plan, so that the budget is spent once over the
+    whole legalization, not once per pass.
+
+    ``keep`` is a point the box must contain even if it exceeds the radius by a solver
+    tolerance: the result of a previous pass, which met the same budget only up to the
+    LP tolerance (a saturated budget). Without it, that point could fall outside the box
+    and make the domain empty for no real reason.
+
+    Raises
+    ------
+    Infaisable
+        The box does not intersect the bounds of some variable: the budget is too small
+        for this plan. An input problem, not an internal error.
     """
+    names = {column: name for name, column in poly.index.items()}
     bounds: list[tuple[float, float]] = []
     for i, (lo, hi) in enumerate(poly.bornes):
         low = max(lo, float(centre[i]) - radius)
         high = min(hi, float(centre[i]) + radius)
+        if keep is not None:
+            low, high = min(low, float(keep[i])), max(high, float(keep[i]))
         if low > high + 1e-12:
-            raise InvariantViole((f"budget {radius} m incompatible with the bounds of column {i}",))
+            label = names.get(i, f"column {i}")
+            raise Infaisable(
+                certificat_farkas=None,
+                origines=(f"budget {radius} m cannot reach the bounds of {label}",),
+            )
         bounds.append((low, high))
     return replace(poly, bornes=tuple(bounds))
 
@@ -200,8 +220,9 @@ def frank_wolfe(
 
     Complexity
     ----------
-    ``max_iter`` LP calls, **all warm** via ``depart=``. Omitting it costs a factor 3 to
-    5. Budget: < 500 ms for 15 rooms and 50 iterations.
+    At most ``max_iter + 1`` LP calls (one per iteration, plus one at the returned point
+    for its gap and duals), **all warm** via ``depart=``. Omitting it costs a factor 3
+    to 5. Budget: < 500 ms for 15 rooms and 50 iterations.
     """
     domain = poly if budget is None else restrict_to_budget(poly, start, budget)
     x = np.asarray(start, dtype=float).copy()
@@ -236,11 +257,13 @@ def frank_wolfe(
             -gradient,
             depart=x,
             coupes=active_cuts or None,
-            duaux=(k == max_iter - 1),
+            duaux=False,  # duals are computed once, at the returned point
         )
         last_oracle = oracle
         if oracle.statut != "optimal":
             status = "lp_not_optimal"
+            if k > 0:
+                gap = float("inf")  # x moved since the last successful LP: unknown
             break
         fw_vertex = oracle.x
         gap = float(gradient @ (fw_vertex - x))
@@ -349,8 +372,8 @@ def frank_wolfe(
         if final.statut == "optimal":
             gap = float(final_gradient @ (final.x - x))
             duals = final.duaux
-    elif last_oracle is not None and last_oracle.duaux is not None:
-        duals = last_oracle.duaux
+        else:
+            gap = float("inf")  # the previous gap describes the previous point
     elif last_oracle is not None and last_oracle.statut == "optimal":
         extra = resoudre(
             domain,
@@ -368,6 +391,6 @@ def frank_wolfe(
         gap=gap,
         status=status,
         iterations=len(history) - 1,
-        trace=Trace(iterations=tuple(history), status=status),
+        trace=Trace(iterations=tuple(history), status=status, final_gap=gap),
         duals=duals,
     )

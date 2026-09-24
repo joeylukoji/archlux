@@ -49,7 +49,7 @@ been migrated is a breaking change.
 | ordre relatif / `OrdreRelatif` | relative order / `RelativeOrder` |
 | séparation | separation |
 | chevauchement | overlap |
-| jour | gap |
+| jour | uncovered gap (checker kind `coverage`) |
 | pavage | tiling |
 | trame | grid |
 | réparation de la trame | grid repair |
@@ -75,7 +75,7 @@ been migrated is a breaking change.
 | pas | step |
 | poids (des sommets) | weights |
 | valeur (du substitut) | value |
-| écart de dualité / gap | gap (see batch 1.4: stationarity gap) |
+| écart de dualité / gap (FW) | stationarity gap (field `gap` of `FrankWolfeResult`) |
 | trace, `iteres`, `ecarts`, `objectif` | trace, `iterates`, `gaps`, `values` |
 | `temps_lp_ms`, `n_coupes` | `lp_ms`, `n_cuts` |
 | `depart` | `start` |

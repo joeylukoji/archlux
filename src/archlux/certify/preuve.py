@@ -228,7 +228,8 @@ def verifier_exactement(
         Plan proposé, pour ``deplacement_max``. ``None`` rend ``0.0``.
     budget : float or None, optional
         Maximum displacement allowed from ``reference``, in metres. When given, a
-        larger ``deplacement_max`` (beyond ``SNAP_M``) makes the plan invalid.
+        larger ``deplacement_max`` (beyond ``SNAP_M``) makes the plan invalid. Without
+        ``reference`` the displacement is 0 and the budget cannot be violated.
 
     Returns
     -------

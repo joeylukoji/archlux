@@ -1,1 +1,1 @@
-"""Couche 3 — Frank-Wolfe. Pure. Dépend du protocole ``light``, jamais d'une implémentation."""
+"""Layer 3: Frank-Wolfe. Pure. Depends on the ``light`` protocol, never on an implementation."""

@@ -22,6 +22,7 @@ _TRACE = Trace(
         for k in range(-1, 3)
     ),
     status="max_iter",
+    final_gap=0.25,
 )
 
 
@@ -42,3 +43,20 @@ def test_old_names_warn_and_return_the_same_data(old: str, new: str) -> None:
         assert all(np.array_equal(a, b) for a, b in zip(legacy, current, strict=True))
     else:
         assert legacy == current
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("valeur", "value"),
+        ("pas", "step"),  # lang-ok: deprecated French alias under test
+        ("temps_lp_ms", "lp_ms"),
+        ("n_coupes", "n_cuts"),
+    ],
+)
+def test_old_iteration_names_warn_and_return_the_same_data(old: str, new: str) -> None:
+    """Review M3: Plan.trace.iterations[i] is public too."""
+    step = _TRACE.iterations[1]
+    with pytest.warns(DeprecationWarning, match=f"Iteration.{old} is deprecated"):
+        legacy = getattr(step, old)
+    assert legacy == getattr(step, new)

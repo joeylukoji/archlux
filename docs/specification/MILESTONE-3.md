@@ -1,5 +1,10 @@
 # JALON 3 — Légalisation performantielle sans apprentissage
 
+> **Note (0.10, ADR 0001).** This historical specification keeps the names of its time:
+> `ResultatFW` is now `FrankWolfeResult`, and `Trace.iteres` / `objectif` / `ecarts` are
+> `iterates` / `values` / `gaps`. The old `Trace` names still work, as deprecated aliases,
+> so the snippets below run unchanged.
+
 > **Prérequis : `ARCHITECTURE.md`, `DOCUMENTATION.md`, jalon 2 terminé.**
 > Durée visée : 5 semaines.
 > **Jalon le plus important du projet, et le plus sous-estimé.**

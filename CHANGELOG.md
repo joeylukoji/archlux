@@ -68,6 +68,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   makes a plan moved beyond it invalid; `legalize` passes the budget to the proof.
 - The certification budget of ARCHITECTURE.md §9 (5 ms, 15 rooms) is measured at last:
   about 1.5 ms.
+- After review: the Frank-Wolfe budget box always contains the classic result, which a
+  saturated budget meets only up to the LP tolerance (it raised `InvariantViole` in 15
+  of 40 probes); a real budget conflict raises `Infaisable` naming the variable. The gap
+  is `inf` whenever it is unknown (an LP failing after a step, or at the returned
+  point); `Trace.final_gap` exposes the gap at the returned point; duals are computed
+  once. `Iteration.valeur`, `pas`, `temps_lp_ms`, `n_coupes` are deprecated aliases too.
+- **Breaking for direct construction only**: `Trace` now requires `status` and
+  `final_gap` (it is built by `frank_wolfe`, not by users).
 
 #### Changed — `solve` migrated to English (track E, batch E9; no behaviour change)
 - `ResultatFW` -> `FrankWolfeResult` (`valeur` -> `value`, `duaux` -> `duals`);

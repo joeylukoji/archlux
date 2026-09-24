@@ -125,8 +125,9 @@ def legalize(
     objective : Substitut or None, optional
         Objectif à maximiser. ``None`` = proximité géométrique.
     budget : float or None, optional
-        En mode classique, plafond de chaque écart e_i. En mode performantiel,
-        boîte autour du point L1 (norme infinie), en plus du plafond L1.
+        Maximum L-infinity displacement from the proposed plan, in metres, over the
+        whole legalization (classic pass and Frank-Wolfe share it), checked by the proof.
+        A budget too small for the plan raises ``Infaisable``.
     trace : bool, optional
         Si vrai, attache la trace Frank-Wolfe à ``resultat.trace`` (non sérialisée).
     fusions : tuple of PieceRectilineaire, optional
@@ -280,7 +281,7 @@ def legalize(
     if budget is not None:
         # Centred on the *proposed* plan, not on x0: the budget is spent once over the
         # whole legalization (AUDIT.md §5.8 measured up to twice the budget).
-        poly_fw = restrict_to_budget(poly_fw, x_ref, budget)
+        poly_fw = restrict_to_budget(poly_fw, x_ref, budget, keep=x0)
     resultat = frank_wolfe(
         poly_fw,
         objective,

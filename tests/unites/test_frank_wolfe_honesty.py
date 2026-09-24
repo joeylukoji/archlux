@@ -19,6 +19,7 @@ from hypothesis import given, settings
 import archlux
 from archlux.certify.preuve import verifier_exactement
 from archlux.data.corruption import corrompre
+from archlux.erreurs import InvariantViole
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.lmo import solveur
 from archlux.lmo.solveur import resoudre
@@ -130,6 +131,67 @@ def test_performance_mode_never_moves_a_room_beyond_the_budget(
     assert _max_move(result, proposed) <= budget + 1e-6
 
 
+@settings(max_examples=40, deadline=None, derandomize=True)
+@given(scenario=realistic_scenarios())
+def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Contexte]) -> None:
+    """Review M1: with a budget equal to the displacement the classic pass needs, the LP
+    meets the budget only up to its tolerance; the Frank-Wolfe box must still contain
+    the classic result instead of raising InvariantViole."""
+    plan, ctx = scenario
+    proposed, _ = corrompre(plan, seed=len(plan.pieces), amplitude=0.25)
+    try:
+        classic = archlux.legalize(proposed, ctx, pavage=True)
+    except archlux.ArchluxError:
+        return
+    needed = _max_move(classic, proposed)
+    if needed < 1e-6:
+        return
+    budget = needed - 1e-9  # the LP meets it within its tolerance; the proof accepts it
+    try:
+        archlux.legalize(proposed, ctx, objective=SubstitutAnalytique(), budget=budget, pavage=True)
+    except InvariantViole as error:
+        pytest.fail(f"internal error on a saturated budget: {error}")
+    except archlux.ArchluxError:
+        pass  # an honest refusal is acceptable
+
+
+def test_a_failing_lp_after_a_step_reports_an_unknown_gap(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review M2: the gap of the previous point must not be reported for a moved x."""
+    calls = {"n": 0}
+
+    def second_call_fails(*args: object, **kwargs: object) -> solveur.SolutionLP:
+        calls["n"] += 1
+        solution = resoudre(*args, **kwargs)  # type: ignore[arg-type]
+        return solution if calls["n"] == 1 else replace(solution, statut="limite")
+
+    monkeypatch.setattr(fw_module, "resoudre", second_call_fails)
+    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=10)
+    assert result.status == "lp_not_optimal"
+    assert result.iterations >= 1
+    assert result.gap == float("inf")
+
+
+def test_a_failing_final_lp_reports_an_unknown_gap(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review M2: on a max_iter exit, a failing final LP must not leave a stale gap."""
+    calls = {"n": 0}
+
+    def final_call_fails(*args: object, **kwargs: object) -> solveur.SolutionLP:
+        calls["n"] += 1
+        solution = resoudre(*args, **kwargs)  # type: ignore[arg-type]
+        return solution if calls["n"] <= 1 else replace(solution, statut="limite")
+
+    monkeypatch.setattr(fw_module, "resoudre", final_call_fails)
+    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=1)
+    assert result.status == "max_iter"
+    assert result.gap == float("inf")
+
+
+def test_the_trace_exposes_the_gap_at_the_returned_point() -> None:
+    """Review m2: Plan.trace must show the final gap, not only per-iteration ones."""
+    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=1)
+    assert result.trace.final_gap == result.gap
+
+
 def test_the_proof_rejects_a_plan_moved_beyond_the_budget() -> None:
     from tests.unites.test_load_bearing import _ctx, _plan, _room
 
@@ -140,3 +202,14 @@ def test_the_proof_rejects_a_plan_moved_beyond_the_budget() -> None:
     proof = verifier_exactement(moved, ctx, reference=proposed, budget=0.5)
     assert not proof.valide
     assert any("budget" in violation for violation in proof.violations)
+
+
+def test_a_budget_too_small_for_the_bounds_is_an_honest_refusal() -> None:
+    """A budget conflict is an input problem: Infaisable naming the variable, not a bug."""
+    from archlux.solve.frank_wolfe import restrict_to_budget
+
+    centre = _depart_faisable().copy()
+    centre[POLY.index["A.w"]] = 0.5  # below the 1.5 m minimum width by 1 m
+    with pytest.raises(archlux.Infaisable) as refusal:
+        restrict_to_budget(POLY, centre, 0.2)
+    assert "A.w" in str(refusal.value.origines)
