@@ -48,7 +48,7 @@ s = lmo.resoudre(poly_fw, c=-substitut.gradient(x_k, orientation), depart=x_k)
 ```
 
 **Oracle d'éclairement.** Le noyau ne connaît que le protocole `Substitut`.
-Implémentations livrées : `SubstitutAnalytique` (formes fermées), `OracleSplitFlux`
+Implémentations livrées : `SubstitutAnalytique` (formes fermées), `SplitFluxOracle`
 (analytique + split-flux BRE : **oracle gelé** de la CI, une forme fermée, ni une
 simulation ni une vérité terrain), `SubstitutDense` (perceptron `numpy`) et
 `SubstitutAppris` (qui refuse les poids `.pt` : le transformeur n'existe pas). Un moteur
@@ -302,6 +302,6 @@ manquante dans la bibliothèque. Elle n'est pas tenue aujourd'hui (`j8_generatio
 | 1 | `types`, `io` | aller-retour JSON |
 | **2** | **`geom`, `lmo`, `certify.proof`** | **légalisation classique — voir `MILESTONE-2.md`** |
 | **3** | **`light.analytique`, `orient`, `solve`** | **légalisation performantielle sans apprentissage — `MILESTONE-3.md`** |
-| 4 | `light.appris`, `light.validation` | substitut entraîné + validation du gradient contre `OracleSplitFlux` (forme fermée split-flux) — `MILESTONE-4.md` |
+| 4 | `light.appris`, `light.validation` | substitut entraîné + validation du gradient contre `SplitFluxOracle` (forme fermée split-flux) — `MILESTONE-4.md` |
 | 5 | `uq`, `certify.borne`, `certify.dual` | certificat complet — `MILESTONE-5.md` |
 | 6 | pièces en L (fusions de rectangles), actif, export IFC ; **le non-Manhattan n'est pas livré** (un porteur oblique lève `UnsupportedInput`) | `MILESTONE-6.md` |

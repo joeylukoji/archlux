@@ -12,9 +12,9 @@ silence invaliderait toute publication.
 |---|---|
 | Corpus | 90 pavages 2×2 synthétiques, enveloppe 12 m × 9 m figée (`data.synthese`) |
 | Découpage | 54 / 18 / 18 (`splits/v1/`) |
-| Étiquettes | `light.simulateur.OracleSplitFlux` — **une forme fermée** |
+| Étiquettes | `light.simulateur.SplitFluxOracle` — **une forme fermée** |
 | Modèle | `light.base.SubstitutDense`, perceptron 3 couches, poids `numpy` |
-| Cible apprise | le **résidu** `OracleSplitFlux − SubstitutAnalytique` |
+| Cible apprise | le **résidu** `SplitFluxOracle − SubstitutAnalytique` |
 
 Les deux termes de ce résidu sont analytiques. Le réseau apprend donc la
 différence entre deux formules connues, sur une famille de plans à **deux degrés
@@ -99,7 +99,7 @@ Il ne peut pas servir de corpus d'évaluation :
 
 - **aucun mur** (`murs=()`) et **aucune ouverture** (`ouvertures=()`) — les jetons
   de baie de `light.jetons._jeton_ouverture` ne sont donc **jamais exercés** sur
-  le corpus livré, et le WWR de `OracleSplitFlux` reste à sa valeur par défaut
+  le corpus livré, et le WWR de `SplitFluxOracle` reste à sa valeur par défaut
   quelle que soit la fenestration réelle ;
 - enveloppe unique, quatre pièces, deux degrés de liberté ;
 - un seul type de topologie (pavage 2×2), donc un seul ordre relatif.

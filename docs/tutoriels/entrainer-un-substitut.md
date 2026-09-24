@@ -1,18 +1,18 @@
 # Entraîner un substitut
 
 Le substitut appris n'entre dans `legalize` **que** s'il respecte le protocole
-vectoriel et si son gradient est validé contre l'oracle gelé (`OracleSplitFlux`,
+vectoriel et si son gradient est validé contre l'oracle gelé (`SplitFluxOracle`,
 split-flux BRE ; (Radiance) hors chemin critique).
 
 ```python
 from pathlib import Path
 from archlux.light.base import SubstitutDense
 from archlux.light.appris import SubstitutAppris
-from archlux.light.simulateur import OracleSplitFlux
+from archlux.light.simulateur import SplitFluxOracle
 from archlux.light.validation import valider_gradient
 from archlux.uq.gestion import emettre_jeton
 
-sim = OracleSplitFlux()
+sim = SplitFluxOracle()
 # xs, ys, orientations : jeu d'entraînement uniquement — jamais la calibration
 dense = SubstitutDense()
 dense.ajuster(xs, ys, orientations, seed=17)
@@ -35,7 +35,7 @@ numpy (`light.base`).
     implémentation apprise du dépôt est le perceptron `numpy` ci-dessus.
 
 !!! danger "D'où viennent `xs`, `ys`, `orientations` ?"
-    Dans le dépôt, `ys` vient de `OracleSplitFlux` — une **forme fermée**. Le
+    Dans le dépôt, `ys` vient de `SplitFluxOracle` — une **forme fermée**. Le
     perceptron apprend alors le résidu entre deux formules analytiques : la chaîne
     est exercée, la physique n'est pas mesurée. Pour des étiquettes réelles, lire
     [vérité terrain](../donnees/verite-terrain.md) : Swiss Dwellings (CC BY 4.0,

@@ -66,7 +66,7 @@ certificat_borne = construire_borne(
 Si `derive.echangeable` est faux, `construire_borne` rend `None` : le rapport
 écrit `NON EVALUABLE` plutôt qu'un intervalle.
 
-Oracle gelé : `OracleSplitFlux` (forme fermée split-flux). Pas Radiance, pas une vérité terrain.
+Oracle gelé : `SplitFluxOracle` (forme fermée split-flux). Pas Radiance, pas une vérité terrain.
 
 **Voir aussi :** [Prédiction conforme](../concepts/prediction-conforme.md),
 [Statistique](../formules/statistique.md),

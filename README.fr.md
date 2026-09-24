@@ -31,7 +31,7 @@ murs porteurs du lot 1.1 et seront remesurés (PLAN.md, J7 et J8).
 `legalize(..., objective=..., calibration=...)` rend toujours une borne en régime
 `"selected"`, et le rapport l'écrit (« couverture NON garantie »). Sans `calibration`,
 `certificat.performance` vaut `None`. La borne porte sur l'oracle contre lequel on a
-calibré — dans le dépôt, `OracleSplitFlux`, une **forme fermée** split-flux gelée, ni une
+calibré — dans le dépôt, `SplitFluxOracle`, une **forme fermée** split-flux gelée, ni une
 simulation ni une vérité terrain — jamais sur un sDA LM-83 mesuré.
 
 ## Ce qui n'existe pas encore

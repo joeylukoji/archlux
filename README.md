@@ -170,16 +170,16 @@ assert again.certificat is not None and again.certificat.geometrie.valide
 One argument changes: `objective`. Here the objective is the analytic surrogate,
 wrapped in `Daylight`, which maximizes the pessimistic value `mu - q sigma`. A
 `calibration` makes the certificate carry a conformal interval; it is computed against
-`OracleSplitFlux`, the frozen closed-form oracle of the CI (a split-flux daylight
+`SplitFluxOracle`, the frozen closed-form oracle of the CI (a split-flux daylight
 factor, not a simulation).
 
 ```python
 import numpy as np
 
-from archlux.light import Daylight, OracleSplitFlux, SubstitutAnalytique
+from archlux.light import Daylight, SplitFluxOracle, SubstitutAnalytique
 from archlux.uq.conforme import CalibrateurConforme
 
-surrogate, oracle = SubstitutAnalytique(), OracleSplitFlux()
+surrogate, oracle = SubstitutAnalytique(), SplitFluxOracle()
 rng = np.random.default_rng(17)
 held_out = []  # layouts of the same three rooms, never used to fit the surrogate
 for _ in range(200):
@@ -322,7 +322,7 @@ azimuth, and the glazing (`baies`). Shipped implementations:
 | Class | What it is |
 |---|---|
 | `SubstitutAnalytique` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
-| `OracleSplitFlux` | Analytic part + BRE split-flux daylight factor: the **frozen oracle** of the CI, used to test the chain end to end. A closed form, not a simulation and not ground truth |
+| `SplitFluxOracle` | Analytic part + BRE split-flux daylight factor: the **frozen oracle** of the CI, used to test the chain end to end. A closed form, not a simulation and not ground truth |
 | `light.base.SubstitutDense` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
 | `light.appris.SubstitutAppris` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
 | `Daylight` | Wraps a surrogate and returns the pessimistic value `mu - q sigma` |

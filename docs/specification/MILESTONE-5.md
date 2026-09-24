@@ -19,7 +19,7 @@ diagnostic dual.
 def test_couverture_empirique():
     """Sur le jeu de TEST, jamais sur celui de calibration."""
     bornes  = [modele.borne(p) for p in JEU_TEST]
-    verites = [ORACLE.evaluer(p, CTX) for p in JEU_TEST]  # OracleSplitFlux (forme fermée)
+    verites = [ORACLE.evaluer(p, CTX) for p in JEU_TEST]  # SplitFluxOracle (forme fermée)
     couv = np.mean([v >= b.borne for v, b in zip(verites, bornes)])
     assert 0.86 <= couv <= 0.94          # visée 0,90
 ```
@@ -37,7 +37,7 @@ solutions.
 
 - [ ] Jalon 4 terminé, point de contrôle du gradient franchi
 - [ ] Jeu de calibration **intact** — jamais lu par l'entraînement
-- [ ] 800 – 1 200 évaluations de l'oracle gelé (`OracleSplitFlux`) pour la calibration
+- [ ] 800 – 1 200 évaluations de l'oracle gelé (`SplitFluxOracle`) pour la calibration
       (Radiance)
 - [ ] `Polytope.origines` renseigné depuis le jalon 2 (indispensable ici)
 
@@ -226,7 +226,7 @@ def mesurer_derive(optimiseur, substitut, simulateur, plans, ctx,
 ```
 
 - [ ] Prélèvement périodique parmi les plans produits par l'optimiseur
-- [ ] Évaluation de l'oracle gelé, calcul de l'écart (`OracleSplitFlux`, forme fermée)
+- [ ] Évaluation de l'oracle gelé, calcul de l'écart (`SplitFluxOracle`, forme fermée)
 - [ ] **Couverture empirique sur les plans produits par l'optimiseur** — et non sur le
       jeu de calibration. C'est la vraie question, puisque l'échangeabilité y est douteuse
 - [ ] Plan factoriel `α × Δ` pour mesurer l'effet des deux leviers
@@ -238,7 +238,7 @@ def mesurer_derive(optimiseur, substitut, simulateur, plans, ctx,
 
 ```python
 def test_derive_bornee():
-    r = mesurer_derive(FW, RESEAU, ORACLE, PLANS, CTX)  # ORACLE = OracleSplitFlux (forme fermée, pas Radiance)
+    r = mesurer_derive(FW, RESEAU, ORACLE, PLANS, CTX)  # ORACLE = SplitFluxOracle (forme fermée, pas Radiance)
     assert r.derive_moyenne < SEUIL, "l'optimiseur exploite le substitut"
     assert r.tendance.pvalue > 0.05 or r.tendance.pente <= 0
 ```

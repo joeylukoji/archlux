@@ -75,7 +75,7 @@ faux ; il ne devient utile qu'en lot de plans de tailles différentes.
 !!! warning "Le corpus livré n'exerce pas les jetons de baie"
     `data.synthese.generer_corpus` produit des plans avec `murs=()` et
     `ouvertures=()`. Les colonnes `22:29` y sont donc **identiquement nulles**, et
-    `OracleSplitFlux` utilise son WWR par défaut (0,30) quelle que soit la
+    `SplitFluxOracle` utilise son WWR par défaut (0,30) quelle que soit la
     fenestration. Voir [vérité terrain](../donnees/verite-terrain.md).
 
 ## Source

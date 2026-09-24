@@ -111,7 +111,7 @@ class Loop:
     substitut : Substitut
         Modèle à améliorer. S'il expose ``ajuster``, il est réentraîné chaque cycle.
     simulateur : Substitut
-        Oracle gelé (ex. ``OracleSplitFlux``).
+        Oracle gelé (ex. ``SplitFluxOracle``).
     acquire : StrategieAcquisition
         ``UncertaintyTimesDensity`` ou ``Aleatoire``.
     budget : int

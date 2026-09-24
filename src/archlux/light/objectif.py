@@ -67,7 +67,7 @@ class Daylight:
         Notes
         -----
         Pour ASE, le substitut doit déjà renvoyer une valeur **négative**
-        (contrat ``SubstitutAnalytique`` / ``OracleSplitFlux``). Alors
+        (contrat ``SubstitutAnalytique`` / ``SplitFluxOracle``). Alors
         ``μ − qσ`` reste le bon sens sous maximisation : l'incertitude
         détériore l'objectif. Ne pas envelopper un ASE positif brut.
         """

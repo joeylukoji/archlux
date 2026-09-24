@@ -9,7 +9,7 @@
 ## 0. Objectif et critère d'acceptation
 
 **Objectif.** Remplacer le substitut analytique par un réseau entraîné sur l'oracle
-d'éclairement gelé (`OracleSplitFlux`, forme fermée ; Radiance hors chemin critique) — et
+d'éclairement gelé (`SplitFluxOracle`, forme fermée ; Radiance hors chemin critique) — et
 **vérifier qu'il indique la bonne direction**, pas seulement la bonne valeur.
 
 **Critère d'acceptation — deux conditions, la seconde est bloquante :**
@@ -19,7 +19,7 @@ d'éclairement gelé (`OracleSplitFlux`, forme fermée ; Radiance hors chemin cr
 assert mae(reseau, JEU_TEST) < mae(ANALYTIQUE, JEU_TEST)
 
 # 2. POINT DE CONTRÔLE — le gradient est exploitable
-# ORACLE = OracleSplitFlux (forme fermée, pas Radiance)
+# ORACLE = SplitFluxOracle (forme fermée, pas Radiance)
 rapport = ax.light.valider_gradient(reseau, ORACLE, echantillon(80), CTX)
 assert rapport.accord_de_signe > 0.80, (
     "Le substitut n'indique pas la bonne direction. "
@@ -35,7 +35,7 @@ assert rapport.accord_de_signe > 0.80, (
 - [ ] Jalon 3 terminé : la chaîne tourne avec `SubstitutAnalytique`
 - [ ] `pip install "archlux[ml]"` fonctionne (`archlux[sim]` est vide)
 - [ ] Accès aux corpus : MSD (CC BY-SA 4.0), Swiss Dwellings, CubiCasa5K — **ou** corpus synthétique CI
-- [ ] Oracle gelé : `OracleSplitFlux` (forme fermée split-flux)
+- [ ] Oracle gelé : `SplitFluxOracle` (forme fermée split-flux)
 
 ---
 
@@ -119,7 +119,7 @@ def test_distributions_comparables():
 
 **Fichier :** `src/archlux/light/simulateur.py` + `scripts/simuler.py`
 
-L'oracle **obligatoire** est `OracleSplitFlux` (forme fermée, CI). Un lot
+L'oracle **obligatoire** est `SplitFluxOracle` (forme fermée, CI). Un lot
 (Radiance) est **hors chemin critique** : même protocole `Substitut`, jamais
 importé par le noyau, jamais exigé pour passer au jalon 5.
 
@@ -140,7 +140,7 @@ S'il est lancé, le faire pendant qu'on écrit le reste.
 
 ### Tâches
 
-- [ ] `OracleSplitFlux` respecte le protocole `Substitut` (`gradient` par différences finies)
+- [ ] `SplitFluxOracle` respecte le protocole `Substitut` (`gradient` par différences finies)
 - [ ] (Radiance) Convertisseur `Plan` → modèle de simulation
 - [ ] (Radiance) **Figer** le fichier climatique et le modèle de ciel, et les journaliser
 - [ ] (Radiance) Lancement par lots, parallélisé entre plans
@@ -151,13 +151,13 @@ S'il est lancé, le faire pendant qu'on écrit le reste.
 ```python
 def test_simulation_deterministe():
     """Non négociable : sans déterminisme, la calibration conforme est invalide."""
-    oracle = OracleSplitFlux()
+    oracle = SplitFluxOracle()
     a = oracle.evaluer(x, orientation)
     b = oracle.evaluer(x, orientation)
     assert a == b
 
 def test_simulateur_respecte_le_protocole():
-    assert isinstance(OracleSplitFlux(), Substitut)
+    assert isinstance(SplitFluxOracle(), Substitut)
 ```
 
 - [ ] Les 2 tests passent
@@ -328,7 +328,7 @@ Le système tournerait, convergerait, et optimiserait dans la mauvaise direction
 
 ```python
 def valider_gradient(
-    substitut: Substitut, simulateur: OracleSplitFlux,
+    substitut: Substitut, simulateur: SplitFluxOracle,
     plans: list[Plan], ctx: Contexte,
     *, pas: float = 0.10, variables: list[str] | None = None,
 ) -> RapportGradient:

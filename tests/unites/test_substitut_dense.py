@@ -12,11 +12,11 @@ from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.appris import MAX_PARAMETRES, SubstitutAppris
 from archlux.light.base import SubstitutDense
 from archlux.light.protocole import Substitut
-from archlux.light.simulateur import OracleSplitFlux
+from archlux.light.simulateur import SplitFluxOracle
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
 
-_SIM = OracleSplitFlux()
+_SIM = SplitFluxOracle()
 _ANA = SubstitutAnalytique()
 
 

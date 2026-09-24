@@ -1,6 +1,6 @@
 # Facteur de lumière du jour (split-flux)
 
-**Code :** `light.simulateur.facteur_lumiere_jour`, `light.simulateur.OracleSplitFlux`.
+**Code :** `light.simulateur.facteur_lumiere_jour`, `light.simulateur.SplitFluxOracle`.
 
 ## Énoncé
 
@@ -24,7 +24,7 @@ A_{\mathrm{surf}}=2wh+2(w+h)H_p,\qquad
 vitrée, \(H_p=2{,}70\,\mathrm{m}\) la hauteur sous plafond, \(T=0{,}70\),
 \(R=0{,}50\), \(\vartheta_0=65^\circ\) (ciel dégagé).
 
-`OracleSplitFlux` ajoute \(\sum_i 100\cdot\mathrm{DF}_i\cdot w_i h_i\) au
+`SplitFluxOracle` ajoute \(\sum_i 100\cdot\mathrm{DF}_i\cdot w_i h_i\) au
 substitut analytique (CIBSE profondeur). Ce n'est **pas** un sDA LM-83.
 
 ## Hypothèses
@@ -45,7 +45,7 @@ suivent le quotient \(u/v\).
 
 ## Code
 
-`facteur_lumiere_jour`, `OracleSplitFlux.evaluer`, `.gradient`.
+`facteur_lumiere_jour`, `SplitFluxOracle.evaluer`, `.gradient`.
 
 ## Cas d'utilisation
 

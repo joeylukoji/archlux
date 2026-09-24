@@ -54,7 +54,7 @@ prédiction conforme borne l'oracle gelé : voir [statistique](statistique.md).
 Ce n'est pas une preuve géométrique.
 
 !!! warning "Ce que « l'oracle gelé » veut dire"
-    `OracleSplitFlux` est une **forme fermée**, pas une mesure ni un lancer de
+    `SplitFluxOracle` est une **forme fermée**, pas une mesure ni un lancer de
     rayons. Une couverture calculée contre lui est une couverture *sur cette
     formule*. Aucune fiche de ce dossier ne prétend le contraire, et
     [vérité terrain](../donnees/verite-terrain.md) dit où trouver de vraies

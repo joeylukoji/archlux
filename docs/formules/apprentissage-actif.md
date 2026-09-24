@@ -59,7 +59,7 @@ facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
 ## Hypothèses
 
 - Candidats et référence vivent dans le même espace vectoriel, même échelle.
-- L'oracle est un `Substitut` déterministe (`OracleSplitFlux`), pas un lancer de
+- L'oracle est un `Substitut` déterministe (`SplitFluxOracle`), pas un lancer de
   rayons — voir [vérité terrain](../donnees/verite-terrain.md).
 - Budget de simulations fini ; comparaison **à budget égal** avec `Aleatoire`,
   même graine racine.

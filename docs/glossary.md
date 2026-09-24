@@ -89,7 +89,7 @@ been migrated is a breaking change.
 | éclairement | daylight (quantity: illuminance) |
 | substitut / `Substitut` | surrogate / `Surrogate` |
 | `SubstitutAnalytique` | `AnalyticSurrogate` |
-| `SimulateurExact`, renamed `OracleSplitFlux` in PLAN.md batch 1.8 (old name deprecated) | `SplitFluxOracle` (a frozen closed-form oracle: never "exact", never "ground truth") |
+| `SimulateurExact` (deprecated alias, as is `ExactSimulator`) | `SplitFluxOracle`, done in PLAN.md batch 1.8 (a frozen closed-form oracle: never "exact", never "ground truth") |
 | `SubstitutDense` | `DenseSurrogate` |
 | jetons | tokens |
 | prédiction conforme | conformal prediction |

@@ -8,7 +8,7 @@ vérifie pas.
 
 Les indicateurs produits sont des **estimations de phase amont**. Ils ne se substituent
 pas à une étude thermique ou d'éclairement réglementaire. La borne du jalon 5 couvre
-l'oracle gelé (`OracleSplitFlux` split-flux / analytique), **pas** un sDA LM-83
+l'oracle gelé (`SplitFluxOracle` split-flux / analytique), **pas** un sDA LM-83
 (Radiance). Extra `sim` : vide volontairement.
 
 ## Sur une sortie de générateur, le plan valide le plus proche n'est pas proche
@@ -111,7 +111,7 @@ Détail et protocole : `resultats/j7_variance.md`.
 ## Le substitut appris n'a jamais vu de mesure
 
 Les étiquettes **livrées dans ce dépôt** viennent de
-`light.simulateur.OracleSplitFlux`, une **forme fermée** (analytique CIBSE +
+`light.simulateur.SplitFluxOracle`, une **forme fermée** (analytique CIBSE +
 split-flux BRE). Le perceptron `light.base.SubstitutDense` y apprend le *résidu* entre
 cette forme fermée et `SubstitutAnalytique` : deux formules connues, sur 90 pavages
 2×2 à deux degrés de liberté, sans murs ni ouvertures.

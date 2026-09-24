@@ -359,7 +359,7 @@ hors mypy et hors tests (phase 2, outillage) ; renommer `couverture` en
 - Pour les fonctionnalités absentes (front de Pareto, non-Manhattan) : les retirer ou les
   déplacer dans « Feuille de route ».
 - Régénérer `Project_Architecture_Blueprint.md` avec `architecture-blueprint-generator`.
-- Renommer `SimulateurExact` en `OracleSplitFlux` (garder un alias déprécié) et ne plus
+- Renommer `SimulateurExact` en `SplitFluxOracle` (garder un alias déprécié) et ne plus
   écrire « vérité terrain » ni « exact » à son sujet.
 - Premier paragraphe du README : dire clairement dans quel régime l'outil fonctionne
   (93,9 % sur plans corrompus, environ 20 % sur sorties de générateur).

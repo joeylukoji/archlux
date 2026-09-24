@@ -8,7 +8,7 @@ import numpy as np
 
 from archlux.active import Aleatoire, Loop, UncertaintyTimesDensity
 from archlux.light.base import SubstitutDense
-from archlux.light.simulateur import OracleSplitFlux
+from archlux.light.simulateur import SplitFluxOracle
 from archlux.types import Orientation
 
 GRAINE = 17
@@ -28,7 +28,7 @@ def _tirer(rng: np.random.Generator, n: int) -> tuple[list[np.ndarray], list[Ori
 
 def _campagne(acquire: object, graine: int) -> float:
     rng = np.random.default_rng(graine)
-    sim = OracleSplitFlux()
+    sim = SplitFluxOracle()
     props, oris = _tirer(rng, 48)
     # Calibration et holdout tires INDEPENDAMMENT du pool d'acquisition : c'est ce
     # qui rend la couverture publiable et la comparaison honnete (meme q-chapeau).

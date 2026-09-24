@@ -267,7 +267,7 @@ Où étendre le système sans rien casser, et où **ne pas** l'étendre.
 | Besoin | Point d'extension | Pourquoi c'est le bon |
 |---|---|---|
 | Nouvel indicateur (UDI, vue) | Nouvelle implémentation de `Substitut` | `solve` et `lmo` inchangés |
-| Oracle gelé split-flux (`OracleSplitFlux`) | Idem — troisième implémentation du protocole | Permet de mesurer l'erreur du substitut sur la même interface |
+| Oracle gelé split-flux (`SplitFluxOracle`) | Idem — troisième implémentation du protocole | Permet de mesurer l'erreur du substitut sur la même interface |
 | Nouvelle réglementation | Nouveau `Referentiel` (une **donnée**) | Aucun code de `geom` ni `lmo` à toucher |
 | Nouveau type de contrainte géométrique | Lignes supplémentaires dans `construire_polytope` + entrées dans `origines` | Le diagnostic dual reste lisible |
 | Nouveau corpus | Chargeur dans `bench`, `Decoupage` figé | La règle des trois jeux reste tenue |
