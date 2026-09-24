@@ -424,6 +424,13 @@ def deduire_trame(
     # dedans ou entierement dehors, sinon le masque ci-dessous n'a pas de sens.
     lignes_x, rang_x = _regrouper([*xs, *xs_contour], tolerance)
     lignes_y, rang_y = _regrouper([*ys, *ys_contour], tolerance)
+    # A line that carries an outline vertex *is* the outline: the group mean would
+    # drift with the room edges grouped with it, and the anchoring equalities would
+    # then pin the rooms off the outline, leaving an uncovered strip.
+    for valeur in xs_contour:
+        lignes_x[rang_x[valeur]] = valeur
+    for valeur in ys_contour:
+        lignes_y[rang_y[valeur]] = valeur
     if len(lignes_x) < 2 or len(lignes_y) < 2:
         raise InvariantViole(("trame degeneree : moins de deux lignes sur un axe",))
 
