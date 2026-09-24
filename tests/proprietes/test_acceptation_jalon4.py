@@ -6,11 +6,11 @@ import numpy as np
 
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.base import SubstitutDense
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
 
-_SIM = SimulateurExact()
+_SIM = OracleSplitFlux()
 _ANA = SubstitutAnalytique()
 
 

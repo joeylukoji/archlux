@@ -74,7 +74,7 @@ def valider_gradient(
 ) -> RapportGradient:
     """Comparer le gradient du substitut aux différences finies.
 
-    Si ``reference`` est fournie (simulateur exact), on compare les **signes**
+    Si ``reference`` est fournie (oracle gelé), on compare les **signes**
     au pente réelle — c'est le point de contrôle du projet. Sinon, on vérifie
     la cohérence interne ``gradient`` vs ``evaluer`` du même objet.
 

@@ -29,7 +29,7 @@ def compare(
     """Comparer des substituts avec un évaluateur **externe** obligatoire.
 
     Évaluer un réseau par le réseau lui-même est une erreur circulaire
-    (`MILESTONE-4.md` §8). ``evaluate_by`` est typiquement le simulateur exact.
+    (`MILESTONE-4.md` §8). ``evaluate_by`` est typiquement l'oracle gelé.
     **Sans défaut** : omettre l'argument lève ``TypeError``.
 
     ``Substitut`` est vectoriel : le callback doit transformer le ``Plan`` en

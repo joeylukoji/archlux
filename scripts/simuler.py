@@ -1,4 +1,4 @@
-"""Simuler le corpus : vérité terrain synthétique (Radiance hors chemin critique)."""
+"""Simuler le corpus : étiquettes de l'oracle gelé split-flux, pas une vérité terrain."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ from pathlib import Path
 
 from archlux.data.synthese import generer_corpus
 from archlux.light.jetons import plan_vers_vecteur
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.types import Orientation
 
 out = Path("resultats/j4_simulations.csv")
 out.parent.mkdir(exist_ok=True)
-sim, corpus = SimulateurExact(), generer_corpus(90, seed=17)
+sim, corpus = OracleSplitFlux(), generer_corpus(90, seed=17)
 champs = (
     "id",
     "orientation",

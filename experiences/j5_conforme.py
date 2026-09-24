@@ -1,4 +1,4 @@
-"""Couverture conforme de l'analytique contre SimulateurExact — jamais le réseau."""
+"""Couverture conforme de l'analytique contre OracleSplitFlux — jamais le réseau."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ from pathlib import Path
 import numpy as np
 
 from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.simulateur import SimulateurExact
+from archlux.light.simulateur import OracleSplitFlux
 from archlux.types import Orientation
 from archlux.uq.conforme import CalibrateurConforme
 
-sim, modele, rng = SimulateurExact(), SubstitutAnalytique(), np.random.default_rng(17)
+sim, modele, rng = OracleSplitFlux(), SubstitutAnalytique(), np.random.default_rng(17)
 pred_c, ver_c, sig_c = [], [], []
 for _ in range(120):
     c = float(rng.uniform(4.0, 8.0))

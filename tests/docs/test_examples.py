@@ -31,12 +31,6 @@ USER_FACING = (
 _PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
 KNOWN_BROKEN: dict[str, tuple[type[BaseException], str]] = {
-    "README.md": (
-        FileNotFoundError,
-        "reads a missing 'sortie_generateur.json'; calls APIs that do not exist "
-        "(Structure.from_dxf, ax.referentiel, Daylight(metric=), "
-        "data.generator_outputs, Contexte.sweep_orientation) — AUDIT.md §3 n°2",
-    ),
     "docs/index.md": (FileNotFoundError, "reads a missing 'sortie_generateur.json'"),
     "docs/tutoriels/premiers-pas.md": (
         FileNotFoundError,

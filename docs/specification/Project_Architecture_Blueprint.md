@@ -50,27 +50,27 @@ archlux/
 │   ├── MILESTONE-3.md … MILESTONE-6.md
 │
 ├── src/archlux/
-│   ├── __init__.py              # interface publique UNIQUEMENT (11 noms)
+│   ├── __init__.py              # interface publique UNIQUEMENT (24 noms)
 │   ├── py.typed
 │   ├── types.py                 # modèle de données gelé — dépend de rien
 │   ├── erreurs.py               # ★ exceptions typées — dépend de rien
 │   ├── api.py                   # legalize() + gradient_distance()
 │   │
-│   ├── geom/                    # [1] PUR
+│   ├── geom/                    # [1] DÉTERMINISTE
 │   │   ├── graphe.py            #     ordre relatif → DAG, réduction transitive
 │   │   └── polytope.py          #     DAG → (A, b, A_eq, b_eq, bornes, index, origines)
 │   │
-│   ├── lmo/                     # [2a] PUR — ignore l'origine de c
+│   ├── lmo/                     # [2a] DÉTERMINISTE (cache GLOP, ADR-8) — ignore l'origine de c
 │   │   ├── solveur.py           #      min <c,x> ; warm start, duaux, Farkas
 │   │   └── coupes.py            #      tangentes de surface (wh ≥ a)
 │   │
 │   ├── light/                   # [2b] SEULE COUCHE APPRISE
 │   │   ├── protocole.py         #      Protocol Substitut — 3 méthodes
 │   │   ├── analytique.py        #      formes fermées, sans apprentissage
-│   │   ├── appris.py            #      transformeur — seul fichier autorisé à voir torch
+│   │   ├── appris.py            #      SubstitutAppris : refuse les poids .pt, le transformeur n'existe pas
 │   │   └── validation.py        #      valider_gradient() — obligatoire avant usage
 │   │
-│   ├── solve/                   # [3] PUR
+│   ├── solve/                   # [3] DÉTERMINISTE
 │   │   ├── frank_wolfe.py       #     away-steps, warm start, gap certifié
 │   │   └── trace.py             #     trace gelée = donnée de sortie, pas du log
 │   │
@@ -81,8 +81,8 @@ archlux/
 │   │   ├── gestion.py           #     ★ jeton d'accès au jeu de calibration
 │   │   └── derive.py            #     contrôle d'échangeabilité
 │   │
-│   ├── certify/                 # [4] PUR
-│   │   ├── preuve.py            #     vérification EXACTE, indépendante du solveur
+│   ├── certify/                 # [4] DÉTERMINISTE
+│   │   ├── proof.py             #     vérification EXACTE, indépendante du solveur (preuve.py : alias dépréciés)
 │   │   ├── borne.py             #     assemblage de la garantie probabiliste
 │   │   ├── dual.py              #     prix duaux → langage d'architecte
 │   │   └── rapport.py           #     rendu, deux sections séparées
@@ -141,7 +141,8 @@ Contexte ─────┼─────────────────�
                     │
                  valide
                     ▼
-        Plan + Certificat(geometrie=preuve, performance=borne 'selected' | None, duaux=traduits)
+        Plan + Certificat(geometrie=preuve, performance=None, duaux=traduits)
+        (le mode classique n'affirme rien sur la lumière : performance vaut toujours None)
 ```
 
 **Le point non négociable** est la boucle de retour vers `verify_exactly` : la
@@ -167,10 +168,13 @@ Plan légalisé classiquement ──► x₀
    └─────────┤
              │ gap < tol ou k = max_iter
              ▼
-        certify.verify_exactly  (identique)  +  uq.borner  (nouveau)
+        certify.verify_exactly  (identique)  +  certify.borne.bound_selected_plan
+                                                (seulement si calibration=...)
              │
              ▼
-   Plan + Certificat(geometrie=preuve EXACTE, performance=borne PROBABILISTE)
+   Plan + Certificat(geometrie=preuve EXACTE,
+                     performance=borne regime 'selected' (couverture NON garantie)
+                                 si calibration, sinon None)
 ```
 
 Ce que ce diagramme démontre : **`lmo` n'a pas changé d'une ligne** entre les deux modes.
@@ -188,15 +192,15 @@ qu'il lui est **interdit** de savoir.
 | `types` | Structures gelées | Immuabilité, position d'ouverture dérivée | Tout le reste |
 | `erreurs` | Exceptions typées | Aucune `Exception` nue dans le projet | Tout le reste |
 | `geom.graphe` | `GrapheContraintes` | Acyclique ; toute paire séparée | Dimensions, coûts |
-| `geom.polytope` | `Polytope` | Tout point ⇒ plan sans chevauchement ni jour | Objectifs |
+| `geom.polytope` | `Polytope` | Tout point ⇒ plan sans chevauchement ; sans jour **seulement** avec `pavage=True` | Objectifs |
 | `lmo.solveur` | `SolutionLP` | Optimalité LP, ou Farkas si infaisable | **L'origine de `c`** |
-| `lmo.coupes` | `Coupe` | Aucun point admissible exclu (convexité) | La lumière |
+| `lmo.coupes` | `Coupe` | Tangentes : approximation **extérieure**, aucun point admissible exclu, la preuve revérifie les surfaces ; cordes (`inner_area_constraints`) : approximation **intérieure**, aucun point sous une surface minimale | La lumière |
 | `light.protocole` | *(interface)* | Trois méthodes, entrée vectorielle | `geom`, `lmo`, `solve` |
 | `light.appris` | valeur, ∇, σ | Rien en soi — la garantie vient de `uq` | La géométrie |
-| `solve` | `FrankWolfeResult` | Validité à chaque itéré ; gap certifié | L'implémentation du substitut |
+| `solve` | `FrankWolfeResult` | Validité à chaque itéré ; `status` ; le gap est une mesure de stationnarité, pas une distance à l'optimum (aucun substitut livré n'est concave) | L'implémentation du substitut |
 | `orient` | Encodages, statistiques | Continuité en 0°/360° | Le reste du plan |
 | `uq.conforme` | `BornePerformance` | Couverture ≥ 1−α **sous échangeabilité** | La géométrie |
-| `certify.proof` | `PreuveGeometrique` | Exactitude par inspection finie | Toute probabilité |
+| `certify.proof` | `PreuveGeometrique` | Arithmétique rationnelle sur contour rectangulaire axé (seule tolérance `SNAP_M`), GEOS et tolérances déclarées sinon | Toute probabilité |
 | `certify.dual` | `(libellé, coût)` | Traduction fidèle via `origines` | — |
 | `bench` | Découpages, manifestes | Reproductibilité | — |
 
@@ -251,8 +255,8 @@ Deux précisions qui ont chacune coûté un défaut réel :
   Une liste de dérogations sans plafond est la façon dont une règle de couches se vide,
   une entrée à la fois.
 
-État actuel : **99 tests passent, 2 sont volontairement ignorés** (jalons à venir).
-`ruff check .` et `mypy --strict` sont propres sur les 35 fichiers source.
+Le décompte des tests n'est plus tenu ici (il était périmé) : la CI fait foi.
+`ruff check .` et `mypy --strict` sur `src/` sont des portes de la CI.
 
 ---
 
@@ -263,11 +267,11 @@ Où étendre le système sans rien casser, et où **ne pas** l'étendre.
 | Besoin | Point d'extension | Pourquoi c'est le bon |
 |---|---|---|
 | Nouvel indicateur (UDI, vue) | Nouvelle implémentation de `Substitut` | `solve` et `lmo` inchangés |
-| Simulateur exact comme oracle | Idem — troisième implémentation du protocole | Permet de mesurer l'erreur du substitut sur la même interface |
+| Oracle gelé split-flux (`OracleSplitFlux`) | Idem — troisième implémentation du protocole | Permet de mesurer l'erreur du substitut sur la même interface |
 | Nouvelle réglementation | Nouveau `Referentiel` (une **donnée**) | Aucun code de `geom` ni `lmo` à toucher |
 | Nouveau type de contrainte géométrique | Lignes supplémentaires dans `construire_polytope` + entrées dans `origines` | Le diagnostic dual reste lisible |
 | Nouveau corpus | Chargeur dans `bench`, `Decoupage` figé | La règle des trois jeux reste tenue |
-| Pièces non rectangulaires | `geom` uniquement — jalon 6 | Le reste de la chaîne ne voit qu'un polytope |
+| Pièces non rectangulaires | `geom` uniquement : pièces en L par fusion de rectangles (`geom.rectilineaire`) ; le non-Manhattan n'est pas livré | Le reste de la chaîne ne voit qu'un polytope |
 
 **À ne pas faire :** ajouter un argument à `resoudre` pour « passer un peu de contexte
 lumière ». C'est la manière dont l'ignorance de `lmo` se perd — non pas d'un coup, mais
@@ -429,8 +433,11 @@ dans `io`, la mise en forme dans `certify`. Le coût est réel et assumé : deux
 | 5 | `uq.conforme`, `uq.derive`, `certify.{borne,dual,rapport}` | Certificat complet | Contrats écrits |
 | 6 | non-Manhattan, actif, IFC | v1.0 | — |
 
-Hors jalon 1, **aucun corps de fonction n'est implémenté**. Chaque `NotImplementedError`
-porte son numéro de jalon : la dette est datée, pas diffuse.
+> **État au lot 1.8 (PLAN.md).** Ce tableau décrit le squelette du jalon 1 et n'est
+> plus à jour : les jalons 1 à 5 sont implémentés ; le jalon 6 l'est en partie
+> (pièces en L, apprentissage actif, export IFC ; **pas** le non-Manhattan) ; les
+> jalons 7 à 9 sont des expériences (`experiences/`, `resultats/`). La phrase
+> « hors jalon 1, aucun corps de fonction n'est implémenté » est retirée.
 
 Le jalon 1 livre au passage ce qui ne se voit pas dans le tableau : `plans_quelconques`,
 la stratégie Hypothesis dont dépendront le critère d'acceptation du jalon 2, les tests de

@@ -140,7 +140,7 @@ class Indicateurs:
 - [ ] Un test qui vérifie que `SubstitutAnalytique` satisfait le protocole (`isinstance`)
 
 > **Trois méthodes, pas quatre.** Chaque méthode ajoutée au protocole devra être
-> implémentée par le simulateur exact et par le réseau. Un protocole étroit est ce qui
+> implémentée par l'oracle gelé et par le réseau. Un protocole étroit est ce qui
 > rend les trois implémentations interchangeables.
 
 ---

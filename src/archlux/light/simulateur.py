@@ -10,8 +10,9 @@ Le DF moyen d'une pièce suit Littlefair / BRE : baie = WWR × façade éclairé
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
-from typing import ClassVar, Literal
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 
@@ -22,7 +23,7 @@ from archlux.light.protocole import Baies
 from archlux.orient.circulaire import encoder
 from archlux.types import Orientation
 
-__all__ = ["SimulateurExact", "facteur_lumiere_jour"]
+__all__ = ["OracleSplitFlux", "facteur_lumiere_jour"]
 
 _EPS = 1e-12
 _TRANSMITTANCE = 0.70
@@ -135,8 +136,13 @@ def _split_flux(
 
 
 @dataclass(frozen=True, slots=True)
-class SimulateurExact:
-    """Oracle déterministe : analytique CIBSE + split-flux BRE sur les façades.
+class OracleSplitFlux:
+    """Frozen deterministic oracle: CIBSE analytic surrogate plus BRE split-flux daylight.
+
+    A closed form, **not** a simulation and not ground truth: it lets the CI exercise
+    the whole chain against a fixed reference. Formerly ``SimulateurExact``.
+
+    Oracle déterministe : analytique CIBSE + split-flux BRE sur les façades.
 
     Le terme d'aire × sin 2θ (jouet) est remplacé par un DF cité. Pour ``ASE``,
     l'analytique rend déjà l'opposé ; le split-flux est nié une seule fois.
@@ -240,3 +246,16 @@ class SimulateurExact:
                 )
         valeur += signe_extra * self.ECHELLE_DF * extra
         return valeur, gradient
+
+
+def __getattr__(name: str) -> Any:  # noqa: ANN401 — forwards a renamed attribute
+    """Keep ``SimulateurExact`` until 1.0.0, deprecated (ADR 0001, PLAN.md batch 1.8)."""
+    if name == "SimulateurExact":
+        warnings.warn(
+            "archlux.light.simulateur.SimulateurExact is deprecated, use OracleSplitFlux: "
+            "a frozen split-flux oracle, neither a simulation nor ground truth (ADR 0001)",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return OracleSplitFlux
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
