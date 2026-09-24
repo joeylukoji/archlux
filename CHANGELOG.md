@@ -72,16 +72,30 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   catch the type. The benchmark separates `refused_unsupported` from
   `refused_invariant`.
 
+#### Fixed — review of batch 1.5
+- **Tight programs were refused.** The area margin of batch 1.5a (targets 1e-6 m²
+  above the minimum) left no room when the minimum areas fill the outline exactly;
+  `legalize` raised `InvariantViole` on 37 of 40 such programs. The cutting loop now
+  retries at the exact minimum when the margin fails: 0 of 40 refused at any slack.
+- `verify_exactly`: `jours` no longer contradicts the violations when rooms overlap.
+- `verify_infeasibility` answers "not verified" on a NaN or infinite multiplier
+  instead of raising `ValueError`.
+- `certify.proof` imports its tolerances from `archlux.tolerances`.
+
 #### Changed — the tiling is proved in exact rational arithmetic (batch 1.5b)
 - For an axis-aligned rectangular outline, `verify_exactly` decides overlaps and gaps
   with `certify.proof.rational_tiling`: edges closer than `SNAP_M` (1e-7 m) are
   identified (the only tolerance, on lengths), then inclusion, pairwise disjoint
   interiors and the area sum are checked with `Fraction`, no tolerance. Theorem and
   proof in `docs/formules/preuve-exacte.md`. Other outlines keep the GEOS checks.
-- Same overlap and gap verdicts as before on 800 benchmark plans; certification of 15
-  rooms 0.8 ms instead of 1.5 ms.
+- The raw plan is then bounded as well (raw pairwise overlaps <= `OVERLAP_M2`, raw
+  overhang and a Bonferroni bound of the raw uncovered area <= `GAP_M2`), so that edge
+  identification cannot accept a plan the GEOS path or the checker rejects. Without
+  this bound, batch 1.5b accepted a gap of 9e-6 m² along a 100 m edge and a 3e-8 m²
+  sliver overlap (fixed in the review of batch 1.5). Certification of 15 rooms 0.8 ms
+  instead of 1.5 ms.
 
-#### Changed — `certify.preuve` migrated to English (track E, batch E10; no behaviour change)
+#### Changed — `certify.preuve` migrated to English (track E, batch E10; same verdicts, messages now in English)
 - New module `archlux.certify.proof`: `verify_exactly`, `GAP_TOLERANCE_M2`,
   `max_displacement`; violation messages in English (`overlap a|b: ...`,
   `gap: uncovered area ...`, `area r: ... < ...`, four decimals instead of two, which

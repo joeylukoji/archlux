@@ -72,6 +72,9 @@ def verify_infeasibility(poly: Polytope, y: np.ndarray, z: np.ndarray | None) ->
     FarkasCheck
         ``verified`` is True only if the proof holds in exact arithmetic.
     """
+    multipliers = [float(v) for v in y] + ([] if z is None else [float(v) for v in z])
+    if not all(isfinite(v) for v in multipliers):
+        return FarkasCheck(False, float("nan"), "non-finite multiplier")
     n_var = len(poly.index)
     r = [Fraction(0)] * n_var
     beta = Fraction(0)

@@ -4,9 +4,9 @@ Tolerances are part of what a certificate means: "no overlap" is only ever true 
 some epsilon, and two modules that disagree on that epsilon can disagree on validity.
 This module names geometric tolerances once, with their unit and meaning.
 
-Status (phase 0): the registry **documents** the values currently hard-coded across the
-library; modules do not import it yet. PLAN.md phase 1.5 migrates every usage here and
-resolves the inconsistencies listed below. This module imports nothing, so every layer
+Status (batch 1.5): ``certify.proof`` and ``lmo.coupes`` import their tolerances from
+here; the other modules still hold literals equal to these values, migrated as they are
+touched (PLAN.md). This module imports nothing, so every layer
 may depend on it.
 
 Not registered yet (inventoried in phase 1.5): ``geom.diagnostic._AIRE_MIN``, the

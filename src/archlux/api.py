@@ -181,10 +181,14 @@ def legalize(
         Propagées depuis la construction du graphe.
     UnsupportedInput
         An oblique load-bearing wall: it cannot be kept by a linear side constraint.
+    GridNotRecoverable
+        With ``pavage``: the rooms do not fall into the cells of the recovered grid
+        (an input limit, subclass of ``UnsupportedInput``).
     Infaisable
-        Le programme ne tient pas dans l'enveloppe. L'exception porte ``origines`` et,
-        lorsque le conflit est imputable à des lignes de ``A``, ``certificat_farkas``.
-        Levée avant le LP si ``largeur_min`` excède déjà l'enveloppe.
+        The program does not fit the envelope for this relative order. The exception
+        carries ``origines`` and, when the conflict is attributable to rows of ``A`` or
+        ``A_eq``, ``certificat_farkas`` with its exact verification (``verified``).
+        Raised before the LP if ``largeur_min`` already exceeds the envelope.
     InvariantViole
         Sortie du solveur rejetée par la vérification exacte, ou statut LP inattendu.
         Le cas le plus fréquent est une surface minimale encore violée après épuisement

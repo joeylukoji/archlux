@@ -396,13 +396,14 @@ def deduire_trame(
 
     Raises
     ------
+    GridNotRecoverable
+        The cells do not form a partition: an empty cell (structural gap) or a cell
+        covered twice (structural overlap). The fault is then not a coordinate
+        offset but the order itself, and no partition move will repair it.
     InvariantViole
-        Plan vide, pièce dégénérée après regroupement, contour non rectangulaire,
-        trame ne couvrant pas le contour, ou **cellules ne formant pas une
-        partition** — cellule vide (jour structurel) ou doublement couverte
-        (chevauchement structurel). Dans ce dernier cas la faute n'est pas un
-        décalage de coordonnées : c'est l'ordre lui-même qui est incohérent, et
-        aucun déplacement de cloison ne la corrigera.
+        Empty plan, room degenerate after grouping, non-rectangular outline, or grid
+        not covering the outline (to be reclassified as input limits, PLAN.md
+        phase 3).
 
     Notes
     -----

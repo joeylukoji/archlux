@@ -63,7 +63,7 @@ from scipy import sparse
 
 from archlux.erreurs import InvariantViole
 from archlux.lmo.solveur import resoudre
-from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2
+from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2, SNAP_M
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
@@ -92,9 +92,9 @@ bound tightening aim at ``_target``, slightly above the minimum, so that LP nois
 leave it below; rooms that meet their minimum are never pushed by the margin."""
 
 
-def _target(a_min: float) -> float:
+def _target(a_min: float, margin: float = AREA_TARGET_MARGIN_M2) -> float:
     """Area the cuts aim at: the minimum plus a margin larger than the LP noise."""
-    return a_min + AREA_TARGET_MARGIN_M2
+    return a_min + margin
 
 
 _TOLERANCE_BORNE = 1e-12
@@ -314,7 +314,12 @@ def _cible_sur_hyperbole(
 
 
 def _resserrer_bornes(
-    poly: Polytope, x: np.ndarray, ctx: Contexte, pieces: tuple[Piece, ...]
+    poly: Polytope,
+    x: np.ndarray,
+    ctx: Contexte,
+    pieces: tuple[Piece, ...],
+    *,
+    margin: float = AREA_TARGET_MARGIN_M2,
 ) -> Polytope:
     """Élever les bornes inférieures de ``w,h`` jusqu'à l'hyperbole courante.
 
@@ -338,7 +343,7 @@ def _resserrer_bornes(
         w_min, w_max = bornes[idx_w]
         h_min, h_max = bornes[idx_h]
         cible = _cible_sur_hyperbole(
-            float(x[idx_w]), float(x[idx_h]), _target(seuil), w_min, w_max, h_min, h_max
+            float(x[idx_w]), float(x[idx_h]), _target(seuil, margin), w_min, w_max, h_min, h_max
         )
         if cible is None:
             continue
@@ -377,6 +382,8 @@ def _empiler_tangentes(
     pieces: tuple[Piece, ...],
     coupes: list[Coupe],
     comptes: Counter[str],
+    *,
+    margin: float = AREA_TARGET_MARGIN_M2,
 ) -> None:
     """Ajouter une tangente Kelley par pièce restante (Kelley, 1960)."""
     par_id = {piece.id: piece for piece in pieces}
@@ -386,7 +393,10 @@ def _empiler_tangentes(
         hauteur = float(x[poly.index[f"{identifiant}.h"]])
         coupes.append(
             coupe_surface(
-                largeur, hauteur, _target(ctx.referentiel.a_min(piece.type)), piece=identifiant
+                largeur,
+                hauteur,
+                _target(ctx.referentiel.a_min(piece.type), margin),
+                piece=identifiant,
             )
         )
         comptes[identifiant] += 1
@@ -442,6 +452,38 @@ def resoudre_avec_surfaces(
     -----
     Dérivation, sources et cas d'usage : ``docs/formules/coupes-surface.md``.
     """
+    first = _solve_with_area_cuts(poly, c, ctx, pieces, depart, duaux, AREA_TARGET_MARGIN_M2)
+    if _meets_areas(first, poly, ctx, pieces):
+        return first
+    # The margin needs room the plan may not have (minimum areas that fill the outline
+    # exactly, review of batch 1.5): aim at the exact minimum before giving up.
+    exact = _solve_with_area_cuts(poly, c, ctx, pieces, depart, duaux, 0.0)
+    if _meets_areas(exact, poly, ctx, pieces) or first.statut != "optimal":
+        return exact
+    return first
+
+
+def _meets_areas(
+    solution: SolutionLP, poly: Polytope, ctx: Contexte, pieces: tuple[Piece, ...]
+) -> bool:
+    """An optimal point inside the polytope (up to SNAP_M) with no area in deficit."""
+    return (
+        solution.statut == "optimal"
+        and not surfaces_violees(solution.x, poly, ctx, pieces=pieces)
+        and poly.contient(solution.x, tol=SNAP_M)
+    )
+
+
+def _solve_with_area_cuts(
+    poly: Polytope,
+    c: np.ndarray,
+    ctx: Contexte,
+    pieces: tuple[Piece, ...],
+    depart: np.ndarray | None,
+    duaux: bool,
+    margin: float,
+) -> SolutionLP:
+    """The Kelley loop of :func:`resoudre_avec_surfaces`, aiming ``margin`` above minima."""
     domaine = poly
     coupes: list[Coupe] = _coupes_initiales(domaine, ctx, pieces)
     comptes: Counter[str] = Counter()
@@ -458,7 +500,7 @@ def resoudre_avec_surfaces(
             return solution
         if not surfaces_violees(solution.x, domaine, ctx, pieces=pieces):
             return solution
-        resserre = _resserrer_bornes(domaine, solution.x, ctx, pieces)
+        resserre = _resserrer_bornes(domaine, solution.x, ctx, pieces, margin=margin)
         if resserre is not domaine:
             affine = resoudre(resserre, c, depart=solution.x, coupes=coupes or None, duaux=duaux)
             if affine.statut == "optimal":
@@ -469,7 +511,9 @@ def resoudre_avec_surfaces(
         restantes = _identifiants_a_couper(solution.x, domaine, ctx, pieces, comptes)
         if not restantes:
             return solution
-        _empiler_tangentes(restantes, solution.x, domaine, ctx, pieces, coupes, comptes)
+        _empiler_tangentes(
+            restantes, solution.x, domaine, ctx, pieces, coupes, comptes, margin=margin
+        )
         courant = solution.x
 
 

@@ -57,7 +57,7 @@ class Polytope:
     origines : tuple of str
         Ligne ``i`` de ``A`` → libellé lisible, ex. ``"separation horizontale a|b"``.
         ``len(origines) == A.shape[0]`` : c'est ce qui rend les duaux appariables.
-        Les lignes de ``A_eq`` n'y figurent **pas** — elles ne sont pas dualisées.
+        The rows of ``A_eq`` are labelled separately, by ``origines_eq``.
 
     Notes
     -----

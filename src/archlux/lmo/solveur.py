@@ -209,11 +209,12 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.n
         pas. Exemple réel : ``separation horizontale A|B`` et ``contour droit B`` valent
         1, les autres 0 — deux pièces de 2 m au minimum ne tiennent pas dans 3 m.
 
-        **Vecteur nul** si le problème auxiliaire lui-même n'a pas d'optimum : seules
-        les lignes de ``A`` sont relâchées, donc une infaisabilité venue des bornes ou
-        de ``A_eq`` le rend insoluble et ses duaux ne veulent alors rien dire. Un
-        certificat vide se lit « conflit non imputable à une ligne de ``A`` » ; un
-        certificat faux, non.
+        **Zero vector** if the auxiliary problem itself has no optimum. The rows of
+        ``A`` and of ``A_eq`` are relaxed, not the variable bounds, so a conflict
+        between bounds alone makes it unsolvable and its duals then mean nothing. An
+        empty certificate reads "conflict not attributable to a row"; a wrong one
+        cannot happen unnoticed, :func:`archlux.certify.farkas.verify_infeasibility`
+        checks it exactly.
 
     Notes
     -----

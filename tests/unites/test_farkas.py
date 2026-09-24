@@ -74,3 +74,12 @@ def test_tiling_conflicts_are_named_and_verified(index: int) -> None:
         assert refusal.verified is True
     except archlux.ArchluxError:
         pass  # other refusals are not about infeasibility
+
+
+@pytest.mark.parametrize("bad", [np.nan, np.inf])
+def test_a_non_finite_multiplier_is_not_verified(bad: float) -> None:
+    """Review of batch 1.5, minor 3: a non-finite certificate fails, it does not raise."""
+    y = np.ones(_TWO_ROOMS_IN_3M.A.shape[0])
+    y[0] = bad
+    check = verify_infeasibility(_TWO_ROOMS_IN_3M, y, None)
+    assert not check.verified and check.reason == "non-finite multiplier"

@@ -52,16 +52,17 @@ from fractions import Fraction
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
-from archlux.tolerances import SNAP_M, WALL_M
+from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
 from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
 
 __all__ = ["GAP_TOLERANCE_M2", "max_displacement", "rational_tiling", "verify_exactly"]
 
-GAP_TOLERANCE_M2 = 1e-6
+GAP_TOLERANCE_M2 = GAP_M2
 """Area tolerance of the uncovered-gap and overhang detection, in square metres."""
 
 _WALL_TOLERANCE_M = WALL_M
-_AREA_TOLERANCE_M2 = 1e-9
+_AREA_TOLERANCE_M2 = AREA_PROOF_M2
+_OVERLAP_TOLERANCE_M2 = OVERLAP_M2
 
 
 def _format_m2(value: float) -> str:
@@ -98,7 +99,7 @@ def _disjoint(a: Piece, b: Piece) -> bool:
 def _overlaps(rooms: tuple[Piece, ...]) -> tuple[bool, tuple[str, ...]]:
     """Every pair, intersection area.
 
-    The tolerance is ``_AREA_TOLERANCE_M2 = 1e-9 m²``: two rooms touching along an edge
+    The tolerance is ``OVERLAP_M2 = 1e-9 m²``: two rooms touching along an edge
     have a null intersection and are not reported, while a 1 m by 1 nm sliver just is.
     It differs from :data:`GAP_TOLERANCE_M2`, a thousand times looser, because a gap is
     measured over the whole union, not over one pair.
@@ -110,7 +111,7 @@ def _overlaps(rooms: tuple[Piece, ...]) -> tuple[bool, tuple[str, ...]]:
             if _disjoint(a, b):
                 continue
             area = rectangles[i].intersection(rectangles[offset]).area
-            if area > _AREA_TOLERANCE_M2:
+            if area > _OVERLAP_TOLERANCE_M2:
                 pair = "|".join(sorted((a.id, b.id)))
                 violations.append(f"overlap {pair}: {_format_m2(area)}")
     return (bool(violations), tuple(violations))
@@ -238,6 +239,13 @@ def rational_tiling(plan: Plan, ctx: Contexte) -> tuple[str, ...] | None:
     left uncovered has area ``λ(C) − Σ λ(R_i) = 0``: the rooms tile ``C`` up to a null
     set (no gap, no overlap).
 
+    The identification moves edges by less than ``SNAP_M``, which can hide up to
+    ``SNAP_M`` times a perimeter of area: 9e-6 m² along a 100 m edge. The theorem is
+    about the identified rectangles, so the raw plan is then bounded as well, still in
+    exact arithmetic (:func:`_raw_residuals`): every raw pairwise overlap is at most
+    ``OVERLAP_M2``, and the raw overhang and an upper bound of the raw uncovered area
+    are at most ``GAP_M2``, the tolerances of the GEOS path and of the test checker.
+
     Parameters
     ----------
     plan : Plan
@@ -290,7 +298,69 @@ def rational_tiling(plan: Plan, ctx: Contexte) -> tuple[str, ...] | None:
         if covered != outline_area:
             missing = float(outline_area - covered)
             violations.append(f"gap: uncovered area {missing:.6g} m² (exact)")
+    if not violations:
+        violations.extend(_raw_residuals(raw, bounds))
     return tuple(violations)
+
+
+_Box = tuple[str, Fraction, Fraction, Fraction, Fraction]
+
+
+def _intersection(
+    a: tuple[Fraction, Fraction, Fraction, Fraction],
+    b: tuple[Fraction, Fraction, Fraction, Fraction],
+) -> tuple[Fraction, Fraction, Fraction, Fraction] | None:
+    """Exact intersection of two boxes ``(x0, x1, y0, y1)``, ``None`` if its area is null."""
+    x0, x1 = max(a[0], b[0]), min(a[1], b[1])
+    y0, y1 = max(a[2], b[2]), min(a[3], b[3])
+    if x1 <= x0 or y1 <= y0:
+        return None
+    return x0, x1, y0, y1
+
+
+def _area(box_: tuple[Fraction, Fraction, Fraction, Fraction] | None) -> Fraction:
+    if box_ is None:
+        return Fraction(0)
+    return (box_[1] - box_[0]) * (box_[3] - box_[2])
+
+
+def _raw_residuals(
+    raw: list[_Box], bounds: tuple[Fraction, Fraction, Fraction, Fraction]
+) -> list[str]:
+    """Bound, on the raw coordinates, what the identification may have erased.
+
+    With ``C`` the outline and ``R_i`` the raw rooms, Bonferroni's inequality
+    ``λ(∪ R_i ∩ C) ≥ Σ λ(R_i ∩ C) − Σ_{i<j} λ(R_i ∩ R_j ∩ C)`` bounds the uncovered area
+    from above by ``λ(C) − Σ λ(R_i ∩ C) + Σ_{i<j} λ(R_i ∩ R_j ∩ C)``; the overhang, by
+    ``Σ (λ(R_i) − λ(R_i ∩ C))``, the area of the rooms outside the outline.
+    """
+    ox0, oy0, ox1, oy1 = bounds
+    outline = (ox0, ox1, oy0, oy1)
+    violations: list[str] = []
+    inside = [(rid, _intersection((x0, x1, y0, y1), outline)) for rid, x0, x1, y0, y1 in raw]
+    overlaps = Fraction(0)
+    for i, (a, ax0, ax1, ay0, ay1) in enumerate(raw):
+        for b, bx0, bx1, by0, by1 in raw[i + 1 :]:
+            common = _area(_intersection((ax0, ax1, ay0, ay1), (bx0, bx1, by0, by1)))
+            if common > _OVERLAP_TOLERANCE_M2:
+                pair = "|".join(sorted((a, b)))
+                violations.append(f"overlap {pair}: {float(common):.6g} m² (exact, raw)")
+            overlaps += common
+    overhang = sum(
+        (
+            _area((x0, x1, y0, y1)) - _area(part)
+            for (_, x0, x1, y0, y1), (_, part) in zip(raw, inside, strict=True)
+        ),
+        Fraction(0),
+    )
+    if overhang > GAP_TOLERANCE_M2:
+        violations.append(
+            f"gap: overhang outside the outline {float(overhang):.6g} m² (exact, raw)"
+        )
+    uncovered = _area(outline) - sum((_area(part) for _, part in inside), Fraction(0)) + overlaps
+    if uncovered > GAP_TOLERANCE_M2:
+        violations.append(f"gap: uncovered area at most {float(uncovered):.6g} m² (exact, raw)")
+    return violations
 
 
 def max_displacement(plan: Plan, reference: Plan | None) -> float:
@@ -360,7 +430,8 @@ def verify_exactly(
             # With overlapping rooms the sum of areas no longer measures coverage, so the
             # rational check cannot see a gap: take the gap diagnosis from GEOS. The plan
             # is invalid either way; this keeps the report complete.
-            gaps, geos_gaps = _gaps(plan.pieces, ctx.contour)
+            geos_flag, geos_gaps = _gaps(plan.pieces, ctx.contour)
+            gaps = gaps or geos_flag
             v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
     areas_ok, v_areas = _areas(plan.pieces, ctx)
     structure_ok, v_structure = _structure(plan, ctx)

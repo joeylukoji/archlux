@@ -21,8 +21,10 @@ Quatre prédicats, conjonction pour `valide`. **Aucun n'est probabiliste.**
 
 Pour chaque paire de rectangles \(R_i,R_j\), aire d'intersection
 \(\lambda(R_i\cap R_j)\) (GEOS / Shapely, clipping de Vatti, 1992). Chevauchement
-ssi cette aire dépasse \(10^{-9}\,\mathrm{m}^2\). Messages en virgule française :
-`"chevauchement cuisine|sdb : 0,03 m²"`. Complexité \(O(n^2)\) paires, assumée.
+ssi cette aire dépasse `OVERLAP_M2` \(=10^{-9}\,\mathrm{m}^2\). Message :
+`"overlap cuisine|sdb: 0.0300 m²"`. Complexité \(O(n^2)\) paires, assumée. Ce chemin
+GEOS ne sert plus qu'aux contours non rectangulaires ; un contour rectangulaire passe
+par la preuve rationnelle ci-dessous.
 
 ### Jours
 
@@ -106,9 +108,21 @@ When rooms overlap, (iii) no longer measures coverage; the gap diagnosis then co
 GEOS, so that the report stays complete (the plan is invalid either way). Outlines that
 are not rectangles keep the GEOS area checks and their tolerances.
 
-**Measured agreement.** On 800 plans of the guarantee benchmark (valid, corrupted, noisy
-and legalized), the rational proof and the former GEOS check give identical overlap and
-gap verdicts. The certification of 15 rooms takes about 0.8 ms (1.5 ms with GEOS).
+**What the identification erases.** The theorem is about the *identified* rectangles.
+Moving edges by less than \(\varepsilon = \) `SNAP_M` can hide up to \(\varepsilon\) times a
+perimeter of area (9e-6 m² along a 100 m edge), more than the checker tolerance. Once
+the identified tiling is proved, the raw plan is therefore bounded too, still in exact
+arithmetic: every raw pairwise overlap \(\lambda(R_i \cap R_j) \le\) `OVERLAP_M2`; the
+overhang \(\sum_i \lambda(R_i) - \lambda(R_i \cap C) \le\) `GAP_M2`; and, by Bonferroni's
+inequality \(\lambda(\bigcup_i R_i \cap C) \ge \sum_i \lambda(R_i \cap C) - \sum_{i<j}
+\lambda(R_i \cap R_j \cap C)\), the uncovered area is at most
+\(\lambda(C) - \sum_i \lambda(R_i \cap C) + \sum_{i<j} \lambda(R_i \cap R_j \cap C) \le\)
+`GAP_M2`. These are the tolerances of the GEOS path and of the test checker, so the two
+paths agree on every plan, not only on the benchmark (review of batch 1.5, M2).
+
+**Measured agreement.** On the plans of the guarantee benchmark (valid, corrupted, noisy
+and legalized), the rational proof and the GEOS check give identical overlap and gap
+verdicts. The certification of 15 rooms takes about 0.8 ms (1.5 ms with GEOS).
 
 ## Cas d'utilisation
 

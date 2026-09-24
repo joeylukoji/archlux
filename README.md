@@ -187,9 +187,7 @@ if not verdict:
 ```
 
 ```
-Infaisable : surface utile 58,0 m2 < surface programme 65,0 m2.
-Contraintes en cause : [sejour >= 20, services >= 40, total <= 58].
-Deficit : 7,0 m2.
+Infeasible for this relative order: conflicting constraints [horizontal separation a|b, right outline b]. Certificate verified exactly.
 ```
 
 **Tous les modèles génératifs publiés produisent une sortie quoi qu'il arrive**, y compris
