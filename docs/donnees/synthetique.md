@@ -10,5 +10,5 @@ Découpage figé : `splits/v1/{train,calibration,test}.txt` (54 / 18 / 18).
 `syn-0053` reprend la géométrie de `syn-0000` (même split train) pour le test
 de déduplication trans-frontière.
 
-Ce n'est **pas** un sDA mesuré. Le score vient de `SimulateurExact`
+Ce n'est **pas** un sDA mesuré. Le score vient de `OracleSplitFlux`
 (analytique CIBSE + split-flux BRE ; Radiance hors chemin critique).

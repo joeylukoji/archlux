@@ -1,4 +1,4 @@
-"""Simulateur exact synthétique — `MILESTONE-4.md` §3."""
+"""Oracle gelé split-flux (`OracleSplitFlux`) — `MILESTONE-4.md` §3."""
 
 from __future__ import annotations
 

@@ -16,7 +16,7 @@ que le système est conçu pour rendre difficile.
 | **Bandeau** | `[EXACT]` | `[PREDICTION — couverture 90 %]` (plan échangeable) ou `[PREDICTION — plan selectionne, couverture NON garantie]` |
 
 La géométrie est un prédicat sur des rectangles : on peut le recompter. La lumière
-est un oracle **gelé** (`SimulateurExact`, split-flux BRE) : la borne dit « au moins
+est un oracle **gelé** (`OracleSplitFlux`, split-flux BRE) : la borne dit « au moins
 neuf fois sur dix, la valeur de *cet* oracle tombera au-dessus du seuil annoncé ».
 Ce n'est pas un sDA LM-83, ce n'est pas Radiance.
 

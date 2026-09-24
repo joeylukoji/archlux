@@ -1,4 +1,4 @@
-"""Simuler le corpus : vérité terrain synthétique (Radiance hors chemin critique)."""
+"""Simuler le corpus : étiquettes de l'oracle gelé split-flux, pas une vérité terrain."""
 
 from __future__ import annotations
 
