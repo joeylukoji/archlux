@@ -30,17 +30,12 @@ USER_FACING = (
 )
 _PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
 
-KNOWN_BROKEN: dict[str, tuple[type[BaseException], str]] = {
-    "docs/concepts/oracle-partage.md": (
-        NameError,
-        "illustrative fragment ('lmo', 'poly' undefined): make it runnable or "
-        "present it as pseudo-code",
-    ),
-}
-"""Relative page path -> (expected exception, why it does not run yet), 2026-09-23.
+KNOWN_BROKEN: dict[str, tuple[type[BaseException], str]] = {}
+"""Relative page path -> (expected exception, why it does not run yet).
 
-Naming the exception keeps an unrelated breakage from hiding behind the xfail. Fixed in
-PLAN.md phase 1.8, where the README and tutorials are rewritten."""
+Naming the exception keeps an unrelated breakage from hiding behind the xfail. Empty
+since 2026-09-24: the five pages listed on 2026-09-23 run (PLAN.md, exit gate of
+phase 1). A new entry needs a reason and a plan to remove it."""
 
 
 def _pages() -> list[Path]:
