@@ -8,6 +8,23 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 0: tooling for the English API (no rename yet)
+
+#### Added (development tooling, no change for library users)
+- `archlux._deprecation.lazy_aliases`: one helper builds the lazy deprecated aliases of a
+  module; the four hand-written copies (`certify`, `certify.preuve`, `light`,
+  `light.simulateur`) use it, with unchanged messages and behaviour.
+- `scripts/rename_identifiers.py`: renames identifiers by token (strings and comments
+  untouched), refuses names several classes define, and proves each rename by swapping the
+  names back and comparing the syntax trees.
+- `scripts/neutrality.py` and `tests/test_neutrality.py`: 240 legalizations of a fixed
+  corpus, fingerprinted (schema v1 JSON, and a name-free geometry fingerprint); a rename
+  must keep them identical. Strict on the platform that recorded the reference.
+- `tests/test_identifiers.py`: migrated modules contain no French identifier; the banned
+  terms are read from `docs/glossary.md`.
+- Glossary: exception names, the fields of the model types and three parameters.
+- Plan: `docs/plans/phase-3-9-english-api.md`.
+
 ### Remediation — PLAN.md phase 3, slice G: keyword-only types and light defaults (3.6)
 
 #### Changed — API break (pre-1.0)

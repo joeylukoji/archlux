@@ -41,6 +41,42 @@ been migrated is a breaking change.
 | `wc` | `toilet` |
 | `couloir`, dégagement | `corridor` |
 
+## Exceptions (rename wave 1, PLAN.md 3.9)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `OrdreIncoherent` | `InconsistentOrder` | attribute `axe` becomes `axis` |
+| `SeparationManquante` | `MissingSeparation` | attribute `paire` becomes `pair` |
+| `Infaisable` | `Infeasible` | attributes `certificat_farkas` to `farkas_certificate`, `origines` to `origins` |
+| `InvariantViole` | `InvariantViolation` | attribute `violations` is unchanged |
+| `CalibrationVerrouillee` | `CalibrationLocked` | |
+| `ModeleModifie` | `ModelModified` | subclass of `CalibrationLocked` |
+| `SubstitutInvalide` | `InvalidSurrogate` | |
+| `InvalidInput`, `UnsupportedInput`, `GridNotRecoverable`, `GapNeedsTiling` | `InvalidInput`, `UnsupportedInput`, `GridNotRecoverable`, `GapNeedsTiling` | unchanged: already English |
+
+## Fields of the model types (rename wave 3, no alias)
+
+| French field | English field | Type |
+|---|---|---|
+| `porteur`, `epaisseur` | `load_bearing`, `thickness` | `Wall` |
+| `mur_id`, `largeur_rel`, `hauteur_allege`, `hauteur_linteau` | `wall_id`, `relative_width`, `sill_height`, `head_height` | `Opening` |
+| `pieces`, `murs`, `ouvertures`, `contour`, `certificat` | `rooms`, `walls`, `openings`, `outline`, `certificate` | `Plan` |
+| `murs_porteurs`, `poteaux` | `load_bearing_walls`, `columns` | `Structure` |
+| `aires_min`, `largeur_min`, method `a_min` | `min_areas`, `min_width`, method `min_area` | `Regulation` |
+| `referentiel`, `programme`, `contour` | `regulation`, `program`, `outline` | `Context` |
+| `valide`, `chevauchement`, `jours`, `surfaces_ok`, `structure_preservee`, `deplacement_max` | `valid`, `overlap`, `gaps`, `areas_ok`, `structure_kept`, `max_displacement` | `GeometricProof` |
+| `indicateur`, `valeur`, `borne_inf`, `borne_sup`, `couverture` | `indicator`, `value`, `lower`, `upper`, `coverage` | `PerformanceBound` |
+| `geometrie`, `duaux`, `manifeste` | `geometry`, `duals`, `manifest` | `Certificate` |
+| `horodatage`, `graine`, `empreinte_donnees`, `decoupage`, `environnement`, `parametres`, `modele` | `timestamp`, `seed`, `data_fingerprint`, `split`, `environment`, `parameters`, `model` | `Manifest` |
+| `poids`, `calibration_n` | `weights_fingerprint`, `calibration_n` | `ModelTrace` (was `ModeleTrace`) |
+
+Unchanged because they already read as English or are standard terms: `id`, `type`, `x`, `y`,
+`w`, `h`, `version`, `performance`, `violations`, `regime`, `n_calibration`, `alpha`,
+`trace`, `orientation`, `structure`, `deg`.
+
+Public parameters that follow the same rename: `pavage` becomes `tiling`,
+`budget_reparation` becomes `repair_budget`, `fusions` becomes `merged_rooms`.
+
 ## Geometry and solver
 
 | French | English |
