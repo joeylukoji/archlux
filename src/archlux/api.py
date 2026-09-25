@@ -418,8 +418,8 @@ def legalize(
         if budget is not None and admits(domain(bounded=False)[1], bounded=False):
             relaxable.append(budget_label(budget))
         raise Infeasible(
-            certificat_farkas=sol.certificat_farkas,
-            origines=_origines_actives(sol, poly_l1),
+            farkas_certificate=sol.certificat_farkas,
+            origins=_origines_actives(sol, poly_l1),
             verified=None if check is None else check.verified,
             scope=scope,
             relaxable=tuple(relaxable),

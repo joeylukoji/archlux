@@ -106,8 +106,8 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
         return Verdict(
             faisable=False,
             certificat=CertificatFaisabilite(
-                origines=err.origines,
-                certificat_farkas=err.certificat_farkas,
+                origines=err.origins,
+                certificat_farkas=err.farkas_certificate,
                 verified=err.verified,
                 scope=err.scope,
             ),

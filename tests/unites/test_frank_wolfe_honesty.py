@@ -212,4 +212,4 @@ def test_a_budget_too_small_for_the_bounds_is_an_honest_refusal() -> None:
     centre[POLY.index["A.w"]] = 0.5  # below the 1.5 m minimum width by 1 m
     with pytest.raises(archlux.Infeasible) as refusal:
         restrict_to_budget(POLY, centre, 0.2)
-    assert "A.w" in str(refusal.value.origines)
+    assert "A.w" in str(refusal.value.origins)

@@ -41,7 +41,7 @@ class TestConstruireGraphe:
         ordre = OrdreRelatif(horizontal=(("A", "B"), ("B", "A")), vertical=(), pieces=("A", "B"))
         with pytest.raises(InconsistentOrder) as capture:
             construire_graphe(ordre, ["A", "B"])
-        assert capture.value.axe == "horizontal"
+        assert capture.value.axis == "horizontal"
         assert set(capture.value.cycle) == {"A", "B"}
 
     def test_cycle_vertical_detecte(self) -> None:
@@ -49,14 +49,14 @@ class TestConstruireGraphe:
         ordre = OrdreRelatif(horizontal=(), vertical=(("A", "B"), ("B", "A")), pieces=("A", "B"))
         with pytest.raises(InconsistentOrder) as capture:
             construire_graphe(ordre, ["A", "B"])
-        assert capture.value.axe == "vertical"
+        assert capture.value.axis == "vertical"
 
     def test_paire_non_separee_refusee(self) -> None:
         """Deux pièces sans séparation peuvent se chevaucher : c'est une erreur d'entrée."""
         ordre = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B", "C"))
         with pytest.raises(MissingSeparation) as capture:
             construire_graphe(ordre, ["A", "B", "C"])
-        assert "C" in capture.value.paire
+        assert "C" in capture.value.pair
 
     def test_une_piece_inconnue_est_refusee(self) -> None:
         """Une arête vers une pièce absente de l'ensemble déclaré est incohérente."""

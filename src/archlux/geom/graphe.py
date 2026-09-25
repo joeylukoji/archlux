@@ -412,11 +412,11 @@ def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe:
     graphe.add_nodes_from(sorted(noeuds))
     for a, b in aretes:
         if a not in graphe or b not in graphe:
-            raise InconsistentOrder(cycle=(a, b), axe=axe)
+            raise InconsistentOrder(cycle=(a, b), axis=axe)
         graphe.add_edge(a, b)
     if not nx.is_directed_acyclic_graph(graphe):
         cycle = nx.find_cycle(graphe)
-        raise InconsistentOrder(cycle=tuple(a for a, _ in cycle), axe=axe)
+        raise InconsistentOrder(cycle=tuple(a for a, _ in cycle), axis=axe)
     return graphe
 
 
@@ -462,7 +462,7 @@ def construire_graphe(ordre: OrdreRelatif, pieces: Sequence[str]) -> GrapheContr
     )
     for a, b in itertools.combinations(sorted(pieces), 2):
         if not graphe.a_separation(a, b):
-            raise MissingSeparation(paire=(a, b))
+            raise MissingSeparation(pair=(a, b))
     return graphe
 
 

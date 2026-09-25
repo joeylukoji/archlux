@@ -70,7 +70,7 @@ def test_tiling_conflicts_are_named_and_verified(index: int) -> None:
     try:
         archlux.legalize(mode.prepare(scenario), scenario.context, pavage=True)
     except Infeasible as refusal:
-        assert refusal.origines, "an infeasibility must name its constraints"
+        assert refusal.origins, "an infeasibility must name its constraints"
         assert refusal.verified is True
     except archlux.ArchluxError:
         pass  # other refusals are not about infeasibility

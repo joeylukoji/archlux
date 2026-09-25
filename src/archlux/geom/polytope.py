@@ -247,7 +247,7 @@ def _verifier_enveloppe_admissible(
         if largeur_min > etendue
     )
     if conflits:
-        raise Infeasible(certificat_farkas=None, origines=conflits)
+        raise Infeasible(farkas_certificate=None, origins=conflits)
 
 
 def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:

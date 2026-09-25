@@ -102,7 +102,7 @@ before concluding.
 | Faire | Ne pas faire |
 |---|---|
 | `depart=` pour réutiliser le modèle (même polytope, nouvel objectif) | Réutiliser le cache si des *coupes* ont été ajoutées — le système a changé |
-| Lire `Infeasible.origines`, pas seulement le message | Traduire un dual par « ligne 47 » |
+| Lire `Infeasible.origins`, pas seulement le message | Traduire un dual par « ligne 47 » |
 | Distinguer `infaisable` / `non_borne` / `limite` | Fusionner en un booléen « pas optimal » |
 
 ## Source

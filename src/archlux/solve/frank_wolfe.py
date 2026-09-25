@@ -96,8 +96,8 @@ def restrict_to_budget(
         if low > high + 1e-12:
             label = names.get(i, f"column {i}")
             raise Infeasible(
-                certificat_farkas=None,
-                origines=(f"budget {radius} m cannot reach the bounds of {label}",),
+                farkas_certificate=None,
+                origins=(f"budget {radius} m cannot reach the bounds of {label}",),
             )
         bounds.append((low, high))
     return replace(poly, bornes=tuple(bounds))

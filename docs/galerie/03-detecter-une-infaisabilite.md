@@ -27,7 +27,7 @@ ctx = ax.Contexte(
 try:
     ax.legalize(plan, ctx)
 except ax.Infeasible as err:
-    print(sorted(err.origines))
+    print(sorted(err.origins))
 ```
 
 **Résultat.**
@@ -41,7 +41,7 @@ horizontales et les bords droits. Ce n'est pas un message d'erreur, c'est une **
 d'inexistence (lemme de Farkas).
 
 **Ce qu'il faut retenir.** `Infeasible` n'est pas un échec du solveur. C'est le
-programme qui ne tient pas. Les `origines` sont des libellés métier, jamais des
+programme qui ne tient pas. Les `origins` sont des libellés métier, jamais des
 indices de lignes.
 
 Formule : [Farkas et duaux](../formules/farkas.md).

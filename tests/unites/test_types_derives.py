@@ -92,24 +92,24 @@ class TestExceptions:
 
     def test_ordre_incoherent_expose_le_cycle(self) -> None:
         """Le cycle est exploitable par l'appelant, pas seulement lisible."""
-        erreur = InconsistentOrder(cycle=("a", "b", "a"), axe="horizontal")
+        erreur = InconsistentOrder(cycle=("a", "b", "a"), axis="horizontal")
         assert erreur.cycle == ("a", "b", "a")
         assert "a -> b -> a" in str(erreur)
 
     def test_separation_manquante_expose_la_paire(self) -> None:
         """La paire non séparée est celle qu'il faut corriger."""
-        erreur = MissingSeparation(paire=("cuisine", "sdb"))
-        assert erreur.paire == ("cuisine", "sdb")
+        erreur = MissingSeparation(pair=("cuisine", "sdb"))
+        assert erreur.pair == ("cuisine", "sdb")
 
     def test_infaisable_porte_sa_preuve(self) -> None:
         """Une infaisabilité sans certificat n'apprend rien à personne."""
-        erreur = Infeasible(certificat_farkas=[1.0, 0.0], origines=("mur porteur axe 3",))
-        assert erreur.certificat_farkas == [1.0, 0.0]
+        erreur = Infeasible(farkas_certificate=[1.0, 0.0], origins=("mur porteur axe 3",))
+        assert erreur.farkas_certificate == [1.0, 0.0]
         assert "mur porteur axe 3" in str(erreur)
 
     def test_infaisable_sans_origines_le_dit(self) -> None:
         """Le message ne prétend pas à un diagnostic qu'il n'a pas."""
-        assert "no constraint identified" in str(Infeasible(certificat_farkas=None))
+        assert "no constraint identified" in str(Infeasible(farkas_certificate=None))
 
 
 class TestEcritureRobuste:

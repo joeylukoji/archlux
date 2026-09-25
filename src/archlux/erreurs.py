@@ -69,15 +69,15 @@ class InconsistentOrder(ArchluxError):
     ----------
     cycle : tuple of str
         Les identifiants de pieces formant le cycle, dans l'ordre.
-    axe : {"horizontal", "vertical"}
+    axis : {"horizontal", "vertical"}
         L'axe sur lequel le cycle a ete detecte.
     """
 
-    def __init__(self, cycle: tuple[str, ...], axe: str) -> None:
+    def __init__(self, cycle: tuple[str, ...], axis: str) -> None:
         """Retenir le cycle et son axe, et composer le message lisible."""
         self.cycle = cycle
-        self.axe = axe
-        super().__init__(f"cycle {axe} : {' -> '.join(cycle)}")
+        self.axis = axis
+        super().__init__(f"cycle {axis} : {' -> '.join(cycle)}")
 
 
 class MissingSeparation(ArchluxError):
@@ -85,14 +85,14 @@ class MissingSeparation(ArchluxError):
 
     Parameters
     ----------
-    paire : tuple of str
+    pair : tuple of str
         Les deux identifiants de pieces concernes.
     """
 
-    def __init__(self, paire: tuple[str, str]) -> None:
+    def __init__(self, pair: tuple[str, str]) -> None:
         """Retenir la paire de pieces non separee."""
-        self.paire = paire
-        super().__init__(f"aucune separation entre {paire[0]} et {paire[1]}")
+        self.pair = pair
+        super().__init__(f"aucune separation entre {pair[0]} et {pair[1]}")
 
 
 class Infeasible(ArchluxError):
@@ -103,10 +103,10 @@ class Infeasible(ArchluxError):
 
     Parameters
     ----------
-    certificat_farkas : object
+    farkas_certificate : object
         Vecteur dual du probleme auxiliaire (``numpy.ndarray``), non type ici pour
         maintenir ``erreurs`` sans dependance.
-    origines : tuple of str
+    origins : tuple of str
         Libelles lisibles des contraintes en conflit, issus de ``Polytope.origines``
         et, since batch 1.5c, of ``Polytope.origines_eq`` (tiling, fusions, contacts).
     verified : bool or None
@@ -135,20 +135,20 @@ class Infeasible(ArchluxError):
 
     def __init__(
         self,
-        certificat_farkas: object,
-        origines: tuple[str, ...] = (),
+        farkas_certificate: object,
+        origins: tuple[str, ...] = (),
         *,
         verified: bool | None = None,
         scope: tuple[str, ...] = (),
         relaxable: tuple[str, ...] = (),
     ) -> None:
         """Retenir le certificat de Farkas et les origines en conflit."""
-        self.certificat_farkas = certificat_farkas
-        self.origines = origines
+        self.farkas_certificate = farkas_certificate
+        self.origins = origins
         self.verified = verified
         self.scope = scope
         self.relaxable = relaxable
-        detail = " ; ".join(origines) if origines else "no constraint identified"
+        detail = " ; ".join(origins) if origins else "no constraint identified"
         status = {
             True: " [certificate verified exactly]",
             False: " [certificate NOT verified]",
