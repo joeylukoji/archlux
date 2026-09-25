@@ -78,6 +78,7 @@ MIGRATED: tuple[str, ...] = (
     "tests/unites/test_hostile_inputs.py",
     "tests/unites/test_type_invariants.py",
     "tests/unites/test_plan_exports.py",
+    "tests/unites/test_import_cost.py",
     "tests/unites/test_seeds.py",
     "tests/unites/test_ifc_validation.py",
     "experiences/j5_coverage.py",

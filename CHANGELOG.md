@@ -8,6 +8,16 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice E: lazy `legalize` (3.13)
+
+#### Changed — import time
+- `import archlux` takes about 45 ms instead of 1.1 s: `archlux.legalize` is resolved on
+  first use (module `__getattr__`, like `light`, `bench` and `feasibility`), so the import
+  of `numpy`, `scipy.sparse`, `shapely` and `ortools` moves to the first `legalize` call or
+  attribute access. `from archlux import legalize` and `archlux.legalize` are unchanged.
+  The cost of *using* the library is the same; only merely importing it got cheaper.
+  Covered by `tests/unites/test_import_cost.py` (no solver dependency loaded, under 0.5 s).
+
 ### Remediation — PLAN.md phase 3, slice D: exports on the model (3.11)
 
 #### Added
@@ -29,9 +39,8 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 #### Changed — import time
 - `import archlux` takes about 1.1 s instead of 2.8 s: `networkx`, `scipy.stats`,
-  `scipy.special` and `structlog` are imported on first use. The target of 0.5 s is not met:
-  `numpy`, `scipy.sparse`, `shapely` and `ortools` are needed by `legalize` (phase 4,
-  lazy facades).
+  `scipy.special` and `structlog` are imported on first use. The remaining cost is
+  `numpy`, `scipy.sparse`, `shapely` and `ortools`, moved out of the import by slice E.
 - The OR-Tools `MPSOLVER_ABNORMAL` lines on stderr came from non-finite inputs reaching the
   LP; those are now refused at the door. An LP-infeasible probe (70 m² asked of a 108 m²
   outline split 8 + 8 m wide) printed nothing; other cases were not searched.

@@ -23,10 +23,9 @@ True
 
 from __future__ import annotations
 
-from types import ModuleType
+from typing import TYPE_CHECKING
 
 from archlux._version import __version__
-from archlux.api import legalize
 from archlux.erreurs import (
     ArchluxError,
     CalibrationVerrouillee,
@@ -97,14 +96,25 @@ __all__ = [  # noqa: RUF022
 
 _LAZY = frozenset({"light", "bench", "feasibility"})
 
+if TYPE_CHECKING:
+    from archlux.api import legalize as legalize
 
-def __getattr__(name: str) -> ModuleType:
-    """Charger ``light`` / ``bench`` / ``feasibility`` à la première attribution."""
+# ``legalize`` drags in numpy, scipy.sparse, shapely and ortools (about 1 s): it is
+# resolved on first use, so that ``import archlux`` stays under 0.5 s (PLAN.md 3.13).
+_LAZY_FUNCTIONS = {"legalize": "archlux.api"}
+
+
+def __getattr__(name: str) -> object:
+    """Charger ``light``, ``bench``, ``feasibility`` et ``legalize`` à la première utilisation."""
+    # Import local : ne pas polluer ``dir(archlux)`` avec ``importlib``.
+    import importlib
+
     if name in _LAZY:
-        # Import local : ne pas polluer ``dir(archlux)`` avec ``importlib``.
-        import importlib
-
         return importlib.import_module(f"archlux.{name}")
+    if name in _LAZY_FUNCTIONS:
+        function = getattr(importlib.import_module(_LAZY_FUNCTIONS[name]), name)
+        globals()[name] = function  # resolved once: later lookups skip __getattr__
+        return function
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
