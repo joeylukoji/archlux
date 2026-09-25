@@ -37,9 +37,16 @@ ne l'est pas. Les prix nuls (contraintes inactives) sont filtrés.
 **Résultat.**
 
 ```
--4.1  mur porteur axe 3 : relâchement unitaire ≈ -4.10 (validité locale, quelques dizaines de cm)
--1.7  surface minimale cuisine : relâchement unitaire ≈ -1.70 (validité locale, quelques dizaines de cm)
+-4.1  mur porteur axe 3: relaxing it by 10 cm would change the total displacement by -0.41 m (valid for small changes only, a few tens of cm)
+-1.7  surface minimale cuisine: relaxing it by 10 cm would change the total displacement by -0.17 m (valid for small changes only, a few tens of cm)
 ```
+
+Le prix brut (`-4.1`) est la variation de l'objectif par mètre de relâchement ; la phrase le
+convertit pour un cran de 10 cm (`step_m`) et dans l'unité de l'objectif : des mètres de
+déplacement total en mode classique, des points de l'indicateur **prédits** en mode
+performance. Les libellés inconnus (comme ceux de cet exemple) sont repris tels quels ;
+ceux du polytope réel sont reformulés (« load-bearing wall p1 at x = 6 m : … »), et les
+lignes de l'épigraphe L1, qui sont des artefacts du solveur, ne sont jamais rapportées.
 
 **Ce qu'il faut retenir.** Un prix dual est une dérivée *locale*. Reculer le
 porteur de 20 cm est dans l'intervalle annoncé ; le reculer de 2 m ne l'est

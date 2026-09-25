@@ -110,15 +110,19 @@ def _origines_actives(sol: SolutionLP, poly: Polytope) -> tuple[str, ...]:
     return tuple(labels)
 
 
-def _duaux_traduits(duaux: np.ndarray | None, poly: Polytope) -> tuple[tuple[str, float], ...]:
+def _duaux_traduits(
+    duaux: np.ndarray | None, poly: Polytope, *, objective: str = "displacement"
+) -> tuple[tuple[str, float], ...]:
     """Apparier les duaux des lignes de ``A`` avec ``poly.origines``.
 
     ``duaux`` doit provenir d'un LP résolu sur **ce** polytope : l'appariement est
     positionnel, et ``origines`` ne couvre que ``A``, jamais ``A_eq`` ni les coupes.
+    ``objective`` names the unit of the prices: ``"displacement"`` (L1 pass) or the
+    indicator of the surrogate (Frank-Wolfe pass, a prediction).
     """
     if duaux is None:
         return ()
-    return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL)
+    return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL, objective=objective)
 
 
 def _only_a_gap(preuve: PreuveGeometrique, budget: float | None) -> bool:
@@ -472,7 +476,7 @@ def legalize(
     # dualisée ; ce diagnostic est donc souvent vide (voir lmo.solveur.resoudre).
     duaux_fw = duaux
     if resultat.duals is not None:
-        duaux_fw = _duaux_traduits(resultat.duals, poly_fw)
+        duaux_fw = _duaux_traduits(resultat.duals, poly_fw, objective=objective.indicateur)
     performance = None
     if calibration is not None:
         # Centred on the prediction mu, not on the pessimistic objective mu - q sigma.

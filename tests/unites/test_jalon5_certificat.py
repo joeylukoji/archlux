@@ -56,7 +56,7 @@ def test_le_diagnostic_est_lisible() -> None:
     duaux = np.array([-4.1, -1.7, 0.0])
     phrases = traduire_duaux(duaux, _poly())
     assert all(len(libelle) > 20 for libelle, _prix in phrases)
-    assert all("validité locale" in libelle for libelle, _prix in phrases)
+    assert all("small changes" in libelle for libelle, _prix in phrases)
 
 
 def test_prix_nul_pour_contrainte_non_active() -> None:

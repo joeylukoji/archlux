@@ -8,6 +8,22 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice E2: readable dual diagnostic (3.12)
+
+#### Changed — the DIAGNOSTIC section of the certificate (`Certificat.duaux`)
+- The rows of the L1 epigraph (`ecart plus/moins ...`) are no longer reported: they are
+  solver artefacts, not constraints of the brief.
+- Labels are business wording (`load-bearing wall p1 at x = 6 m: room chambre stays to the
+  right of it`) instead of internal ones (`load-bearing p1: chambre right of 6`); a label
+  that is not recognised is shown unchanged.
+- The price is given for a 10 cm relaxation, with its unit: metres of total displacement in
+  classic mode; in performance mode (`objective=` given) a change of the **predicted**
+  indicator, said to be a surrogate prediction and not a guarantee. `traduire_duaux` takes
+  `objective` and `step_m`. The stored raw price and the JSON schema are unchanged.
+- Known limit: the area cuts and the tiling equalities are still not dualised, so a price
+  is never given in m² (AUDIT.md §3 n°9 asked for it): it needs those rows in the
+  duals, which is a solver change.
+
 ### Remediation — PLAN.md phase 3, slice D2: no bare `ValueError` (3.3)
 
 #### Changed — error types (behaviour change, refusals only)
