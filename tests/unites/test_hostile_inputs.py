@@ -155,6 +155,22 @@ def test_public_exports_input_limits() -> None:
         assert name in archlux.__all__
 
 
+def test_is_feasible_answers_for_a_plan_with_a_gap() -> None:
+    """3.10 (audit 8, 5c): a feasible program with a gap gives a Verdict, not an error."""
+    from archlux.feasibility import is_feasible
+
+    verdict = is_feasible(gapped_plan(), Structure(murs_porteurs=()), make_context())
+    assert verdict.faisable
+    assert verdict.certificat is None
+
+
+def test_is_feasible_refuses_a_malformed_program_with_invalid_input() -> None:
+    from archlux.feasibility import is_feasible
+
+    with pytest.raises(InvalidInput):
+        is_feasible(make_plan(w=-1.0), Structure(murs_porteurs=()), make_context())
+
+
 # --- Review of slices A to C ---------------------------------------------------------
 
 
@@ -197,3 +213,26 @@ def test_the_type_warning_points_at_the_caller() -> None:
             replace(ctx, referentiel=replace(ctx.referentiel, largeur_min=1.0)),
         )
     assert record[0].filename == __file__
+
+
+def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
+    """Infeasible *with* restrictions (here the load-bearing sides) must say which."""
+    from archlux import Mur
+    from archlux.feasibility import is_feasible
+
+    wall = Mur(id="w", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
+    structure = Structure(murs_porteurs=(wall,))
+    ctx = replace(make_context(), structure=structure)
+    plan = replace(
+        make_plan(),
+        pieces=(
+            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+        ),
+    )
+    ctx = replace(ctx, referentiel=Referentiel(aires_min=(("sejour", 60.0),), largeur_min=1.0))
+    verdict = is_feasible(plan, structure, ctx)
+    assert not verdict
+    assert verdict.certificat is not None
+    assert "load-bearing sides" in verdict.certificat.scope
+    assert "load-bearing sides" in verdict.certificat.expliquer()

@@ -8,6 +8,23 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice C (started): `is_feasible` and import time (3.10, 3.13)
+
+#### Fixed
+- `is_feasible` no longer raises on a feasible program whose proposal has a gap (it retries
+  with the rooms forced to tile the outline, and answers with a `Verdict`); a malformed
+  program raises `InvalidInput`. `CertificatFaisabilite.scope` carries the restrictions
+  beyond the relative order (load-bearing sides, tiling grid), as `Infaisable.scope` does.
+
+#### Changed — import time
+- `import archlux` takes about 1.1 s instead of 2.8 s: `networkx`, `scipy.stats`,
+  `scipy.special` and `structlog` are imported on first use. The target of 0.5 s is not met:
+  `numpy`, `scipy.sparse`, `shapely` and `ortools` are needed by `legalize` (phase 4,
+  lazy facades).
+- The OR-Tools `MPSOLVER_ABNORMAL` lines on stderr came from non-finite inputs reaching the
+  LP; those are now refused at the door. An LP-infeasible probe (70 m² asked of a 108 m²
+  outline split 8 + 8 m wide) printed nothing; other cases were not searched.
+
 ### Remediation — PLAN.md phase 3, slice B: coherent types (3.2, 3.7)
 
 #### Changed — construction now refuses incoherent values (`InvalidInput`)

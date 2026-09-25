@@ -19,13 +19,13 @@ import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
-import networkx as nx
-
 from archlux.erreurs import OrdreIncoherent, SeparationManquante, UnsupportedInput
 from archlux.tolerances import CONTACT_M, SNAP_M
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    import networkx as nx
 
     from archlux.types import Mur, Piece, Plan, Structure
 
@@ -156,6 +156,8 @@ class GrapheContraintes:
         ----------
         O(n·m) par axe.
         """
+        import networkx as nx  # lazy: 0.6 s at import, needed only by a first legalize
+
         triplets: set[tuple[str, str, str]] = set()
         for axe in _AXES:
             cloture = nx.transitive_closure_dag(getattr(self, axe))
@@ -404,6 +406,8 @@ def _wall_sides_by_penetration(room: Piece, wall: Mur, envelope: Envelope | None
 
 def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe) -> nx.DiGraph:
     """Assembler un graphe orienté acyclique pour un axe, ou lever."""
+    import networkx as nx
+
     graphe = nx.DiGraph()
     graphe.add_nodes_from(sorted(noeuds))
     for a, b in aretes:
@@ -488,6 +492,8 @@ def reduction_transitive(g: GrapheContraintes) -> GrapheContraintes:
     ----------
     O(n·m) par axe (``networkx.transitive_reduction``).
     """
+    import networkx as nx
+
     reduits: dict[str, nx.DiGraph] = {}
     for axe in _AXES:
         origine: nx.DiGraph = getattr(g, axe)

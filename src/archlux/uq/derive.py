@@ -13,7 +13,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.stats import ks_2samp, linregress
 
 from archlux.erreurs import InvariantViole
 from archlux.uq.conforme import Calibration
@@ -103,6 +102,8 @@ def controler_derive(
         raise InvariantViole(("observations et calibration doivent être non vides",))
     if not bool(np.all(np.isfinite(obs))) or not bool(np.all(np.isfinite(cal))):
         raise InvariantViole(("scores non finis pour le contrôle de dérive",))
+    from scipy.stats import ks_2samp  # lazy: scipy.stats costs 1.3 s at import
+
     # Kolmogorov-Smirnov (pas un test de moyennes) : une derive de variance
     # rompt aussi l'echangeabilite, meme a moyenne inchangee.
     statistique = float(ks_2samp(obs, cal).statistic)
@@ -164,6 +165,8 @@ def mesurer_derive(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -
     ecarts = pred - verite
     n = int(ecarts.size)
     if n >= 3:
+        from scipy.stats import linregress  # lazy, see controler_derive
+
         tendance = linregress(np.arange(n, dtype=float), ecarts)
         pente = float(tendance.slope)
         p_valeur = float(tendance.pvalue)

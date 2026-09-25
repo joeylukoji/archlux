@@ -10,8 +10,6 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.special import erf
-from scipy.stats import beta
 
 from archlux.erreurs import InvariantViole
 from archlux.types import Regime
@@ -47,6 +45,8 @@ def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray)
     sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
     if mu.size != y.size or mu.size != sigma.size or mu.size == 0:
         raise InvariantViole(("tableaux CRPS de longueurs incompatibles",))
+    from scipy.special import erf  # lazy: scipy.special costs 0.8 s at import
+
     z = (y - mu) / sigma
     pdf = np.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
     cdf = 0.5 * (1.0 + erf(z / math.sqrt(2.0)))
@@ -231,6 +231,8 @@ def measure_coverage(
         calibrator.borne(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
     ]
     inside = [b.borne_inf <= t <= b.borne_sup for b, t in zip(bounds, y, strict=True)]
+    from scipy.stats import beta  # lazy: scipy.stats costs 1.3 s at import
+
     k, n = int(np.sum(inside)), int(mu.size)
     return CoverageReport(
         n=n,

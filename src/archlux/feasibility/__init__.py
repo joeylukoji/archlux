@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from archlux.api import legalize
-from archlux.erreurs import Infaisable
+from archlux.erreurs import GapNeedsTiling, Infaisable
 from archlux.types import Contexte, Plan, Structure
 
 __all__ = ["CertificatFaisabilite", "Verdict", "is_feasible"]
@@ -23,6 +23,8 @@ class CertificatFaisabilite:
     origines: tuple[str, ...]
     certificat_farkas: object
     verified: bool | None = None
+    scope: tuple[str, ...] = ()
+    """Restrictions beyond the relative order the proof is about (``Infaisable.scope``)."""
 
     def expliquer(self) -> str:
         """Rendre le conflit en une phrase lisible."""
@@ -31,10 +33,14 @@ class CertificatFaisabilite:
             False: " Certificate NOT verified: treat as a solver diagnosis, not a proof.",
             None: "",
         }[self.verified]
+        within = f" with {', '.join(self.scope)}" if self.scope else ""
         if not self.origines:
-            return f"Infeasible for this relative order: no constraint identified.{status}"
+            return f"Infeasible for this relative order{within}: no constraint identified.{status}"
         causes = ", ".join(self.origines)
-        return f"Infeasible for this relative order: conflicting constraints [{causes}].{status}"
+        return (
+            f"Infeasible for this relative order{within}: "
+            f"conflicting constraints [{causes}].{status}"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +53,18 @@ class Verdict:
     def __bool__(self) -> bool:
         """``True`` ssi le programme admet au moins un plan valide."""
         return self.faisable
+
+
+def _legalize_any_dimensions(programme: Plan, ctx: Contexte) -> None:
+    """Legalize, closing a gap of the proposal with the tiling grid if needed.
+
+    The program is not asked to keep its dimensions: a gap in the proposal is not a
+    reason to refuse. The retry adds the tiling grid to the scope of any refusal.
+    """
+    try:
+        legalize(programme, ctx)
+    except GapNeedsTiling:
+        legalize(programme, ctx, pavage=True)
 
 
 def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict:
@@ -69,6 +87,8 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
 
     Raises
     ------
+    InvalidInput
+        Malformed argument (non-finite size, duplicate ids, ...), before any solving.
     OrdreIncoherent, SeparationManquante
         Entrée mal formée (propagées depuis la construction du graphe).
     UnsupportedInput
@@ -81,7 +101,7 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
     """
     contexte = replace(ctx, structure=structure)
     try:
-        legalize(programme, contexte)
+        _legalize_any_dimensions(programme, contexte)
     except Infaisable as err:
         return Verdict(
             faisable=False,
@@ -89,6 +109,7 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
                 origines=err.origines,
                 certificat_farkas=err.certificat_farkas,
                 verified=err.verified,
+                scope=err.scope,
             ),
         )
     return Verdict(faisable=True, certificat=None)

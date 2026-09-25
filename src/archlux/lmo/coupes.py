@@ -58,7 +58,6 @@ from math import sqrt
 from typing import TYPE_CHECKING
 
 import numpy as np
-import structlog
 from scipy import sparse
 
 from archlux.erreurs import InvariantViole
@@ -83,7 +82,6 @@ __all__ = [
 MAX_COUPES_PAR_PIECE = 10
 """Au-delà, ``log.warning("coupe.limite", piece=...)`` et arrêt pour cette pièce."""
 
-_LOG = structlog.get_logger("archlux.lmo.coupes")
 _TOLERANCE_AIRE = AREA_PROOF_M2
 """Acceptance: a room is short of its minimum area when ``w h + tol < a_min``. Equal to
 the proof tolerance, so that the loop never stops on a plan the proof then rejects
@@ -394,7 +392,10 @@ def _identifiants_a_couper(
     restantes: list[str] = []
     for identifiant in _short_of_area(x, poly, need, pieces):
         if comptes[identifiant] >= MAX_COUPES_PAR_PIECE:
-            _LOG.warning("coupe.limite", piece=identifiant)
+            # Lazy: structlog costs up to 0.4 s at import and this path is rare.
+            import structlog
+
+            structlog.get_logger("archlux.lmo.coupes").warning("coupe.limite", piece=identifiant)
             continue
         restantes.append(identifiant)
     return restantes
