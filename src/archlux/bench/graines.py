@@ -14,6 +14,7 @@ from archlux.seeds import derive
 
 __all__ = ["deriver"]
 
+
 def deriver(seed: int, nom: str) -> int:
     """Dériver une sous-graine stable à partir d'une graine racine et d'un nom.
 

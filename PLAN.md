@@ -451,6 +451,55 @@ entrent dans la bibliothèque.
 `resultats/` régénéré par une seule commande (`make resultats`), avec graine et
 empreinte ; les critères MILESTONE réécrits sont tracés dans un ADR.
 
+**État de la phase 2 (2026-09-25) : en cours, reste l'exécution locale sur corpus.**
+Les 9 rapports sont écrits (`docs/revues/`, publiés sur le site), les critères changés
+sont tracés dans l'ADR 0002. Ce que les revues ont trouvé :
+- **J1** : aller-retour rejoué sur de vraies sorties (porteurs, borne avec régime) ;
+  schéma JSON publié (`archlux/io/plan-v1.schema.json`) et testé contre l'écrivain et
+  le lecteur. Constat : le fichier ne porte pas le `Contexte` → schéma v2 (E5).
+- **J2** : le test de clôture tirait des plans **déjà valides** ; rejoué tel qu'écrit
+  (plans et contextes quelconques) : 129 plans rendus, tous valides, 371 refus typés,
+  0 mensonge ; avec porteurs, surfaces et une faute : valide sur 2 000 exemples.
+  « Suffit à un premier article » retiré (la baseline à 3 générateurs n'existait pas).
+  Le refus « jour sans pavage » est levé en `InvariantViole` → à typer en 3.4.
+- **J3** : critères 1 et 2 tenus avec porteurs et surfaces ; θ et θ+360 donnent la même
+  **valeur** mais pas toujours le même plan (optimum plat) → critère réécrit. La figure
+  publiée avait des pièces de 1 m² ; avec surfaces minimales, aucune sous 12 m². Test
+  de Rayleigh (8 angles équirépartis, ne pouvait pas rejeter) retiré.
+- **J4** : **point de contrôle rouvert**. Rejoué tel qu'écrit (80 points, 4 azimuts,
+  jeu de test) : accord de signe 0,68 / 0,50 / 1,00 / 0,67, il ne passait qu'au sud ;
+  le substitut analytique non entraîné fait pareil. MAE publiée mesurée sur
+  l'entraînement (0,0175 ; 1,19 sur test). `xfail` strict dans la suite.
+- **J5** : couverture moyenne 0,903 sur 20 graines ; 0,879 sous sélection (0,787 au
+  pire) ; largeur **4 à 5 écarts-types** de la cible → critère ajouté, non atteint.
+- **J6** : graines corrélées corrigées (`archlux.seeds`, Q-M5) ; sur 30 campagnes
+  appariées, aucune différence actif/aléatoire (Wilcoxon p = 0,53) → « l'actif perd »
+  retiré. **Aucun fichier IFC n'avait été ouvert par un lecteur IFC** : ifcopenshell
+  les rejetait tous (GUID hexadécimaux, etc.), et chaque mur était décalé de son
+  extrémité ; corrigé, 0/90 → 90/90 acceptés, validé en CI. Test utilisateur externe
+  non atteint (phase 5).
+- **J7** : la table publiée n'avait pas de script ; reconstruite depuis les bruts, elle
+  concorde cellule par cellule, mais le 93,9 % suppose un repli sur **tout** refus de
+  `pavage=True` (93,5 % avec la règle décrite). Scripts réécrits, testés sur un
+  mini-corpus fabriqué.
+- **J8** : taux recalculés depuis les bruts ; chiffres d'avant la phase 1.
+- **J9** : suspendu jusqu'à 6.1.
+Outillage : `make resultats` / `python scripts/resultats.py` régénère les chiffres
+synthétiques et leurs empreintes (`resultats/SHA256SUMS`), `make check-resultats` les
+vérifie, `make resultats-corpus MSD=... HD=...` lance les corpus ; chaque script
+d'`experiences/` est exécuté par la suite de tests. Fonctions manquantes entrées dans
+la bibliothèque (M12) : `decision_vector`, `two_room_vectors`, `two_room_plan`,
+`measure_coverage`, `SubstitutInvalide.report`, `archlux.seeds.derive`.
+
+**Reste pour franchir la porte** :
+1. exécuter localement `make resultats-corpus MSD=... HD=...` (J7, J8), remplacer les
+   anciens fichiers de `resultats/` et mettre à jour les chiffres (README, `api.py`,
+   rapports) ;
+2. réécrire sous 50 lignes, API publique et en anglais, ce qui ne peut être vérifié
+   qu'avec les données : `j7_sd_etiquettes.py`, `j7_sd_par_piece.py` (constructeur de
+   jeu supervisé, M12), `j8_generation.py` (chargeur « boîtes générées → Plan »),
+   `j8_visuels.py`, `j9_orientation.py` (après 6.1).
+
 ---
 
 ## Phase 3 : frontière d'entrée, erreurs et API
@@ -702,7 +751,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
 | 1 | **Terminée** | 2026-09-25 | Lots 1.1 à 1.8 et revue finale : 0 certificat mensonger et 0 plantage dans les 8 modes du banc, 200/200 en mode performance ; garanties exactes tenues sur 2 000 exemples Hypothesis avec porteurs, surfaces et budget ; pavage prouvé en rationnels, Farkas vérifié exactement, chaque refus dit sa portée ; chaque borne dit son régime ; pièces en L ; doc alignée et en anglais. Phase suivante : 2 (revue des jalons). |
-| 2 | À faire | | |
+| 2 | En cours | | 9 rapports de revue (`docs/revues/`) et ADR 0002 : J4 rouvert, J5 critère de largeur non atteint, J6 IFC corrigé (validé par ifcopenshell), « premier article » et « l'actif perd » retirés, J9 suspendu. Chiffres synthétiques régénérés par `make resultats` avec empreintes. Reste : exécution locale sur MSD et HouseDiffusion (J7, J8), et réécriture des scripts de corpus qui en dépend. |
 | 3 | À faire | | |
 | 4 | À faire | | |
 | 5 | À faire | | |
@@ -710,4 +759,4 @@ Tenir ce tableau à jour à chaque porte franchie.
 | 7 | À faire | | |
 | 8 | À faire | | |
 | 9 | À faire | | |
-| E | En cours | | E0, E1, E2 (README), E3 (`ARCHITECTURE.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`), E9 (`solve`) et E10 (`certify.preuve` → `certify.proof`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E4 (API publique), en phase 3. |
+| E | En cours | | E0, E1, E2 (README), E3 (`ARCHITECTURE.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`), E9 (`solve`), E10 (`certify.preuve` → `certify.proof`) faits ; E21 en partie (scripts j2 à j7 d'`experiences/` et leurs résultats, revues de jalon). Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E4 (API publique), en phase 3. |
