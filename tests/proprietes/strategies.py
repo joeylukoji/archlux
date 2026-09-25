@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import itertools
 import os
+from typing import Any
 
 import numpy as np
 from hypothesis import strategies as st
@@ -90,7 +91,7 @@ def _preuves() -> st.SearchStrategy[PreuveGeometrique]:
     branche.
     """
     return st.builds(
-        PreuveGeometrique,
+        _proof,
         valide=st.booleans(),
         chevauchement=st.booleans(),
         jours=st.booleans(),
@@ -99,6 +100,19 @@ def _preuves() -> st.SearchStrategy[PreuveGeometrique]:
         deplacement_max=st.floats(min_value=0.0, max_value=100.0, allow_nan=False),
         violations=st.lists(st.text(max_size=40), max_size=3).map(tuple),
     )
+
+
+def _proof(*, valide: bool, **fields: Any) -> PreuveGeometrique:
+    """Une preuve ``valide`` ne rapporte aucune faute (invariant de ``types``, phase 3.2)."""
+    if valide:
+        fields |= {
+            "chevauchement": False,
+            "jours": False,
+            "surfaces_ok": True,
+            "structure_preservee": True,
+            "violations": (),
+        }
+    return PreuveGeometrique(valide=valide, **fields)
 
 
 def _bornes() -> st.SearchStrategy[BornePerformance]:

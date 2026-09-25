@@ -380,6 +380,15 @@ rooms (see `docs/formules/polytope-separe.md`).
 
 ### ADR-6 — Les plages du §6 sont vérifiées à la frontière, pas dans les constructeurs
 
+> **Addendum (phase 3, 2026-09-25).** `legalize` valide ses arguments une seule fois à
+> l'entrée (`archlux.validation.validate_inputs`, `InvalidInput`) : un contrôle unique ne
+> coûte rien, l'objection ci-dessous ne s'y applique pas. Les types **hors de la boucle
+> chaude** valident aussi à la construction : `Ouverture` (plages de `s` et `largeur_rel`)
+> et `PreuveGeometrique` (une preuve valide ne rapporte aucune faute). `Piece`, `Mur` et
+> `Orientation` restent libres : Frank-Wolfe les construit par milliers, et la preuve doit
+> pouvoir *rapporter* une pièce mal formée. `depuis_dict` contrôle les plages sur les
+> données brutes, avant de construire, pour rapporter toutes les violations ensemble.
+
 `ARCHITECTURE.md` §6 documente `s ∈ [0,1]` et `largeur_rel ∈ ]0,1]`, et une pièce a des
 dimensions positives. Rien ne le faisait respecter : `Ouverture(s=42.0)` se construisait
 sans broncher.

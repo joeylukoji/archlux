@@ -77,7 +77,7 @@ def _paires(valeur: Any) -> tuple[tuple[str, str], ...]:
     return tuple((str(cle), str(val)) for cle, val in valeur)
 
 
-def _verifier_plages(plan: Plan) -> None:
+def _verifier_plages(donnees: Any) -> None:
     """Vérifier les plages documentées par `ARCHITECTURE.md` §6.
 
     **La validation a lieu ici et pas dans les constructeurs** (ADR-6). La frontière JSON
@@ -99,20 +99,23 @@ def _verifier_plages(plan: Plan) -> None:
     O(n) sur le nombre d'éléments du plan.
     """
     violations: list[str] = []
-    for piece in plan.pieces:
-        for champ, valeur in (("w", piece.w), ("h", piece.h)):
+    for piece in donnees["pieces"]:
+        for champ in ("w", "h"):
+            valeur = _reel(piece[champ], f"piece {piece['id']}.{champ}")
             if valeur <= 0.0:
-                violations.append(f"piece {piece.id} : {champ} = {valeur} ; attendu > 0")
-    for mur in plan.murs:
-        if mur.epaisseur <= 0.0:
-            violations.append(f"mur {mur.id} : epaisseur = {mur.epaisseur} ; attendu > 0")
-    for ouverture in plan.ouvertures:
-        if not 0.0 <= ouverture.s <= 1.0:
-            violations.append(f"ouverture {ouverture.id} : s = {ouverture.s} ; attendu dans [0, 1]")
-        if not 0.0 < ouverture.largeur_rel <= 1.0:
+                violations.append(f"piece {piece['id']} : {champ} = {valeur} ; attendu > 0")
+    for mur in donnees["murs"]:
+        epaisseur = _reel(mur["epaisseur"], f"mur {mur['id']}.epaisseur")
+        if epaisseur <= 0.0:
+            violations.append(f"mur {mur['id']} : epaisseur = {epaisseur} ; attendu > 0")
+    for ouverture in donnees["ouvertures"]:
+        s = _reel(ouverture["s"], f"ouverture {ouverture['id']}.s")
+        largeur = _reel(ouverture["largeur_rel"], f"ouverture {ouverture['id']}.largeur_rel")
+        if not 0.0 <= s <= 1.0:
+            violations.append(f"ouverture {ouverture['id']} : s = {s} ; attendu dans [0, 1]")
+        if not 0.0 < largeur <= 1.0:
             violations.append(
-                f"ouverture {ouverture.id} : largeur_rel = {ouverture.largeur_rel} ;"
-                " attendu dans ]0, 1]"
+                f"ouverture {ouverture['id']} : largeur_rel = {largeur} ; attendu dans ]0, 1]"
             )
     if violations:
         raise InvariantViole(tuple(violations))
@@ -357,6 +360,9 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
     if version != VERSION_SCHEMA:
         raise InvariantViole((f"schéma JSON {version!r} inconnu, attendu {VERSION_SCHEMA!r}",))
     try:
+        # Before building: ``Ouverture`` refuses an out-of-range ``s`` itself, which would
+        # hide every other violation of the file behind the first one.
+        _verifier_plages(donnees)
         plan = Plan(
             pieces=tuple(
                 Piece(
@@ -399,7 +405,6 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
         )
     except (KeyError, TypeError, ValueError) as cause:
         raise InvariantViole((f"structure JSON invalide : {cause}",)) from cause
-    _verifier_plages(plan)
     return plan
 
 

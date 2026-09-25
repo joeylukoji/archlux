@@ -8,6 +8,20 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice B: coherent types (3.2, 3.7)
+
+#### Changed — construction now refuses incoherent values (`InvalidInput`)
+- `PreuveGeometrique`: `valide=True` with an overlap, a gap, a failed area or structure
+  check or any violation; a negative or NaN `deplacement_max` (`inf` stays allowed).
+- `Ouverture`: `s` outside `[0, 1]` or `largeur_rel` outside `]0, 1]`.
+- Not in `Piece`, `Mur` or `Orientation`: they are built in loops of the solver, and the
+  proof must be able to *report* a malformed room (ADR-6). Their values are checked once,
+  at the door of `legalize`.
+- The JSON reader checks ranges on the raw data before building, so a file with several
+  out-of-range values still reports all of them together.
+- `Plan.trace` is excluded from equality and hash: `hash(plan)` no longer fails on a
+  traced plan, and two plans differing only by their trace are equal.
+
 ### Remediation — PLAN.md phase 3, slice A: the door of `legalize` (3.1, 3.3, 3.4, 3.5)
 
 #### Added

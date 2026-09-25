@@ -15,10 +15,10 @@ axe ``y`` vers le nord géographique.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvalidInput, InvariantViole
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -129,6 +129,15 @@ class Ouverture:
     hauteur_allege: float = 1.00
     hauteur_linteau: float = 2.15
 
+    def __post_init__(self) -> None:
+        """Refuse ``s`` outside ``[0, 1]`` and ``largeur_rel`` outside ``]0, 1]``."""
+        if not 0.0 <= self.s <= 1.0:
+            raise InvalidInput(f"ouvertures[{self.id}].s", f"must be in [0, 1], got {self.s}")
+        if not 0.0 < self.largeur_rel <= 1.0:
+            raise InvalidInput(
+                f"ouvertures[{self.id}].largeur_rel", f"must be in ]0, 1], got {self.largeur_rel}"
+            )
+
     def segment_absolu(self, mur: Mur) -> tuple[Point, Point]:
         """Dériver les deux extrémités de la baie sur ``mur``.
 
@@ -193,7 +202,9 @@ class Plan:
     # Typé ``object`` à dessein : ``solve.Trace`` vivrait une arête ``types → solve``,
     # interdite. La trace n'est pas sérialisée ; seuls les appelants ``trace=True``
     # la consomment.
-    trace: object | None = None
+    # ``compare=False``: the trace is a diagnostic, not part of the plan's identity. With
+    # it in the comparison, ``hash(plan)`` failed on the trace's arrays.
+    trace: object | None = field(default=None, compare=False, repr=False)
 
     @property
     def ids_pieces(self) -> tuple[str, ...]:
@@ -331,6 +342,25 @@ class PreuveGeometrique:
     structure_preservee: bool
     deplacement_max: float
     violations: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        """A valid proof reports no fault; a displacement is never negative or NaN.
+
+        ``inf`` is allowed: an unbounded displacement is how an invalid proof reports a
+        NaN reference.
+        """
+        if not self.deplacement_max >= 0.0:
+            raise InvalidInput("deplacement_max", f"must be >= 0, got {self.deplacement_max}")
+        if self.valide and (
+            self.chevauchement
+            or self.jours
+            or not self.surfaces_ok
+            or not self.structure_preservee
+            or self.violations
+        ):
+            raise InvalidInput(
+                "valide", "a valid proof cannot report an overlap, a gap or any violation"
+            )
 
 
 Regime = Literal["exchangeable", "selected"]
