@@ -101,7 +101,8 @@ TORCH_TOLERE = frozenset({"light.appris"})
 # La dérogation est nominative et non un assouplissement de la règle : tout autre import
 # depuis `types` échoue toujours.
 EXEMPTIONS: dict[str, frozenset[str]] = {
-    "types": frozenset({"archlux.io.json_io", "archlux.certify.rapport"}),
+    # ADR-9: the export facades `Plan.to_dxf`, `to_ifc`, `to_svg` (PLAN.md 3.11).
+    "types": frozenset({"archlux.io.json_io", "archlux.certify.rapport", "archlux.export"}),
 }
 
 
@@ -222,7 +223,7 @@ def test_les_exemptions_restent_rares_et_nommees() -> None:
     lequel la règle de couches se vide, une entrée à la fois.
     """
     total = sum(len(v) for v in EXEMPTIONS.values())
-    assert total <= 2, "toute nouvelle dérogation exige une ADR dans le blueprint"
+    assert total <= 3, "toute nouvelle dérogation exige une ADR dans le blueprint"
 
 
 @pytest.mark.parametrize("leaf", sorted(LEAVES))

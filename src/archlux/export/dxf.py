@@ -11,14 +11,14 @@ from archlux.types import Plan
 __all__ = ["to_dxf"]
 
 
-def to_dxf(plan: Plan, chemin: Path) -> None:
+def to_dxf(plan: Plan, chemin: Path | str) -> None:
     """Exporter les pièces comme ``LWPOLYLINE`` (plan 2D).
 
     Parameters
     ----------
     plan : Plan
         Plan à exporter.
-    chemin : Path
+    chemin : Path or str
         Fichier ``.dxf`` (écrasé).
 
     Raises
@@ -26,6 +26,7 @@ def to_dxf(plan: Plan, chemin: Path) -> None:
     InvariantViole
         Pathologie géométrique bloquante.
     """
+    chemin = Path(chemin)
     diag = diagnostiquer(plan)
     if not diag.exportable:
         raise InvariantViole(diag.pathologies)

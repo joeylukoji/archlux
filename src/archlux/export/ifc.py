@@ -35,14 +35,14 @@ class RapportExport:
     SPF minimal reste l'unique écrivain tant qu'aucun chemin ne l'appelle."""
 
 
-def to_ifc(plan: Plan, chemin: Path, *, validate: bool = True) -> RapportExport:
+def to_ifc(plan: Plan, chemin: Path | str, *, validate: bool = True) -> RapportExport:
     """Exporter un plan en IFC4 (espaces = pièces ; murs ; baies annotées).
 
     Parameters
     ----------
     plan : Plan
         Plan à exporter. Le certificat éventuel est annexé en ``Pset_Archlux``.
-    chemin : Path
+    chemin : Path or str
         Fichier ``.ifc`` (écrasé).
     validate : bool, optional
         Si vrai (défaut), un plan pathologique n'est **pas** écrit.

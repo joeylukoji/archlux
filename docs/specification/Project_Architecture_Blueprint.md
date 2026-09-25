@@ -250,8 +250,8 @@ Deux précisions qui ont chacune coûté un défaut réel :
 
 - **les `__init__.py` sont scannés.** Les exclure laisse le trou le plus probable : un
   paquet qui viole une couche depuis son propre `__init__` ;
-- **les dérogations sont nominatives et plafonnées.** `EXEMPTIONS` liste deux imports
-  précis (ADR-5), et `test_les_exemptions_restent_rares_et_nommees` échoue au troisième.
+- **les dérogations sont nominatives et plafonnées.** `EXEMPTIONS` liste trois imports
+  précis (ADR-5, ADR-9), et `test_les_exemptions_restent_rares_et_nommees` échoue au quatrième.
   Une liste de dérogations sans plafond est la façon dont une règle de couches se vide,
   une entrée à la fois.
 
@@ -318,6 +318,15 @@ de `tests/`, pas dans un sous-répertoire, parce qu'il ne teste aucun comporteme
 teste la **forme** du projet.
 
 ---
+
+### ADR-9 — `Plan.to_dxf`, `to_ifc` and `to_svg`: a third nominal exemption
+
+PLAN.md 3.11 makes the exports methods of the model, as `Plan.to_json` already is. `types`
+must then reach `archlux.export`. Same decision as ADR-5: a **local import** inside the
+three methods, which only delegate (the writing stays in `export`), so no cycle and no
+cost at import. One `EXEMPTIONS` entry, `archlux.export`, not one per submodule: the
+package facade is the only door `types` uses. The cap of
+`test_les_exemptions_restent_rares_et_nommees` goes from 2 to 3.
 
 ### ADR-8 — Un cache de modèles GLOP porte le démarrage à chaud
 

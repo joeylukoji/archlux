@@ -16,12 +16,13 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from archlux.erreurs import InvalidInput, InvariantViole
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from archlux.export import RapportExport
 
 __all__ = [
     "BornePerformance",
@@ -244,6 +245,41 @@ class Plan:
         from archlux.io.json_io import ecrire
 
         ecrire(self, chemin)
+
+    def to_dxf(self, chemin: Path | str) -> None:
+        """Write the rooms as ``LWPOLYLINE`` and the walls as ``LINE`` in a DXF file.
+
+        Facade over :func:`archlux.export.dxf.to_dxf`, by local import, like
+        :meth:`from_json` (ADR-5 exemption).
+
+        Raises
+        ------
+        InvariantViole
+            The plan has a blocking geometric pathology (overlap, gap...).
+        """
+        from archlux.export import to_dxf
+
+        to_dxf(self, chemin)
+
+    def to_ifc(self, chemin: Path | str, *, validate: bool = True) -> RapportExport:
+        """Write the plan as IFC4 and return the report of the export.
+
+        Facade over :func:`archlux.export.ifc.to_ifc`. With ``validate`` (default), a
+        pathological plan is not written: the report says why, nothing is raised.
+        """
+        from archlux.export import to_ifc
+
+        return to_ifc(self, chemin, validate=validate)
+
+    def to_svg(self, chemin: Path | str, *, titre: str = "", walls: tuple[Mur, ...] = ()) -> None:
+        """Draw the plan as a standalone SVG file, valid or not (the diagnostic use).
+
+        Facade over :func:`archlux.export.svg.rendre` (exported as ``render_svg``).
+        ``walls`` adds walls to draw, typically ``ctx.structure.murs_porteurs``.
+        """
+        from archlux.export import render_svg
+
+        Path(chemin).write_text(render_svg(self, titre=titre, walls=walls), encoding="utf-8")
 
 
 # ======================================================================================

@@ -8,6 +8,17 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice D: exports on the model (3.11)
+
+#### Added
+- `Plan.to_dxf(path)`, `Plan.to_ifc(path, validate=True)` and `Plan.to_svg(path, titre=,
+  walls=)`, taking `str` or `Path`. `archlux.export.render_svg` exposes the SVG renderer.
+  ADR-9: a third nominal exemption for `types` (local import of `archlux.export`).
+
+#### Fixed
+- `export.to_dxf(plan, "a.dxf")` failed on a `str` (`'str' object has no attribute
+  'write_text'`): the path is now coerced, as `to_ifc` already did.
+
 ### Remediation — PLAN.md phase 3, slice C (started): `is_feasible` and import time (3.10, 3.13)
 
 #### Fixed
