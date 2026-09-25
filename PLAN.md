@@ -401,6 +401,28 @@ distingués dans la docstring.
 - le tableau « doc ↔ code » est vide ;
 - relecture `review-and-refactor` sans point Critique.
 
+**Porte de sortie de la phase 1 : franchie le 2026-09-25** (révision `74a6e89`).
+- Banc `after-phase1-final-review` : 0 certificat mensonger et 0 plantage dans les
+  8 modes ; 200/200 en mode performance (avec et sans budget, mur plein et partiel).
+  Régime J8 bruité : 118 corrects et 82 refus typés `GridNotRecoverable`, honnêtes,
+  sujet de la phase 6.5.
+- `KNOWN_BROKEN` vide, aucun `xfail` restant de 0.7 et 0.8.
+- `ARCHLUX_GATE_EXAMPLES=2000 pytest tests/proprietes/test_realistic_guarantees.py
+  tests/proprietes/test_l_room_guarantees.py` : vert, avec porteurs, `aires_min` et
+  budget tiré par Hypothesis (contrôle indépendant du budget). La première passe a
+  trouvé un L dont Frank-Wolfe ferme la marche de 1 cm : permis par le contrat
+  (ordre non strict), c'est la propriété qui était trop stricte ; cas épinglé.
+- Tableau « doc ↔ code » de l'audit §5.8 : chaque ligne corrigée (lot 1.8).
+- Revue `review-and-refactor` de la revue finale : 0 critique ; 3 majeurs corrigés
+  (`Infaisable.relaxable` affirmait qu'un plan existait sans le budget alors que la
+  preuve le refusait : 70 cas sur 134 ; NaN avalé par `max_displacement` ;
+  CHANGELOG), mineurs m1, m2, m3, m7 corrigés.
+- **Reporté** (mineurs de la revue) : un U enroulé autour de l'extrémité d'un porteur
+  partiel est refusé à tort (tester les côtés opposés par paire de parties qui se
+  touchent, pas par groupe) → phase 4 ; `relaxable` ne teste ni les deux
+  restrictions ensemble ni les côtés des porteurs, et `restrict_to_budget` et
+  `construire_polytope` lèvent `Infaisable` sans `scope` → phase 3.4.
+
 ---
 
 ## Phase 2 : revue des jalons déjà accomplis
@@ -679,7 +701,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | En cours | | Lots 1.1 à 1.6 terminés : 0 certificat mensonger, 0 plantage et 0 dépassement de budget dans tous les modes du banc ; pavage prouvé en rationnels, Farkas vérifié exactement ; chaque borne probabiliste dit son régime. Lot suivant : 1.7 (pièces en L). |
+| 1 | **Terminée** | 2026-09-25 | Lots 1.1 à 1.8 et revue finale : 0 certificat mensonger et 0 plantage dans les 8 modes du banc, 200/200 en mode performance ; garanties exactes tenues sur 2 000 exemples Hypothesis avec porteurs, surfaces et budget ; pavage prouvé en rationnels, Farkas vérifié exactement, chaque refus dit sa portée ; chaque borne dit son régime ; pièces en L ; doc alignée et en anglais. Phase suivante : 2 (revue des jalons). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |
@@ -688,4 +710,4 @@ Tenir ce tableau à jour à chaque porte franchie.
 | 7 | À faire | | |
 | 8 | À faire | | |
 | 9 | À faire | | |
-| E | En cours | | E0, E1, E9 (`solve`) et E10 (`certify.preuve` → `certify.proof`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E2, avec la réécriture du README en phase 1.8. |
+| E | En cours | | E0, E1, E2 (README), E3 (`ARCHITECTURE.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`), E9 (`solve`) et E10 (`certify.preuve` → `certify.proof`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E4 (API publique), en phase 3. |
