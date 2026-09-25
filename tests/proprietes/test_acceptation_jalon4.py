@@ -53,6 +53,11 @@ def test_reseau_predit_mieux_que_analytique() -> None:
 
 
 def test_point_de_controle_gradient() -> None:
+    """The checkpoint as it was closed: four points, at south only.
+
+    Kept as a regression test of that measurement, **not** as the checkpoint: replayed
+    as written it fails (PLAN.md phase 2, ``docs/revues/j4.md``, strict xfail below).
+    """
     rng = np.random.default_rng(8)
     xs, ys, oris = [], [], []
     for _ in range(36):

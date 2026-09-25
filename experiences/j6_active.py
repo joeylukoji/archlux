@@ -1,5 +1,5 @@
 """Active acquisition against random, milestone 6 review (PLAN.md phase 2, AUDIT.md Q-M5):
-30 paired campaigns on derived seeds (seed + cycle shared streams across campaigns), equal
+30 paired campaigns on named sub-seeds (the old seed + cycle shared streams), equal
 budget, independent calibration; measure: final interval width (narrower is better)."""
 
 import csv

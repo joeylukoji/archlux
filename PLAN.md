@@ -468,9 +468,9 @@ sont tracés dans l'ADR 0002. Ce que les revues ont trouvé :
   de Rayleigh (8 angles équirépartis, ne pouvait pas rejeter) retiré.
 - **J4** : **point de contrôle rouvert**. Rejoué tel qu'écrit (80 points, 4 azimuts,
   jeu de test) : accord de signe 0,68 / 0,50 / 1,00 / 0,67, il ne passait qu'au sud ;
-  le substitut analytique non entraîné fait pareil. MAE publiée mesurée sur
-  l'entraînement (0,0175 ; 1,19 sur test). `xfail` strict dans la suite.
-- **J5** : couverture moyenne 0,903 sur 20 graines ; 0,879 sous sélection (0,787 au
+  le substitut analytique non entraîné fait pareil. MAE publiée (0,0175) mesurée sur
+  l'entraînement et non reproductible (0,33 aujourd'hui ; 1,19 sur test). `xfail` strict dans la suite.
+- **J5** : couverture moyenne 0,898 sur 20 calibrations ; 0,878 sous sélection (0,787 au
   pire) ; largeur **4 à 5 écarts-types** de la cible → critère ajouté, non atteint.
 - **J6** : graines corrélées corrigées (`archlux.seeds`, Q-M5) ; sur 30 campagnes
   appariées, aucune différence actif/aléatoire (Wilcoxon p = 0,53) → « l'actif perd »

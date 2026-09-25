@@ -23,6 +23,9 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   each opening to its wall, and an opening on a wall absent from the plan is a new
   pathology, `ouverture_orpheline`. 90 of 90 repaired plans pass ifcopenshell (0 of 90
   before). `ifcopenshell` joins the `dev` extra; `tests/unites/test_ifc_validation.py`.
+- After review: GlobalIds are salted with the plan geometry, so two different plans
+  never share one (labels alone gave two flats with the same room ids the same
+  `IfcSpace` ids); one plan still always gets the same ids.
 
 #### Fixed — correlated seeds in active learning (AUDIT.md Q-M5)
 - `active.Loop` drew selection and training seeds as `seed + cycle`: the campaign of
@@ -36,7 +39,8 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   against the writer and the reader; documented on the schema page.
 - `geom.polytope.decision_vector`, `data.synthese.two_room_vectors` and
   `two_room_plan`, `uq.fiabilite.measure_coverage` and `CoverageReport` (AUDIT.md M12:
-  code the experiment scripts had to repeat).
+  code the experiment scripts had to repeat). A coverage comes with its Clopper-Pearson
+  interval (`ARCHITECTURE.md` §7: never a bare scalar); inputs are validated up front.
 - `SubstitutInvalide.report`: the failed `RapportGradient`, so a failed check is
   recorded instead of parsed from the message.
 
@@ -57,6 +61,10 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   `tests/test_experiments.py` runs every script.
 - The published 93.9 % of milestone 7 falls back on plain `legalize` after **any**
   refusal of `pavage=True`; the rule its text described gives 93.5 %.
+- The published milestone 4 MAEs (0.0175 and 6.4007) do not reproduce with the shipped
+  code: the same script gives 0.3272 and 41.8926 today.
+- Experiments derive every seed by name (`archlux.seeds.derive`), no more `seed + k`.
+- The JSON schema no longer requires non-empty ids, as the reader does not (phase 3.1).
 
 ### Remediation — PLAN.md phase 1 (exit gate passed on 2026-09-25)
 

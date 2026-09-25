@@ -1,6 +1,5 @@
-"""Conformal coverage of milestone 5 over 20 calibration seeds (PLAN.md phase 2): held-out
-("exchangeable") and Frank-Wolfe-chosen ("selected") plans, width vs target spread.
-"""
+"""Milestone 5 coverage over 20 calibrations (PLAN.md phase 2): held-out ("exchangeable")
+and Frank-Wolfe-chosen ("selected") plans, Clopper-Pearson intervals, width vs spread."""
 
 import csv
 import sys
@@ -14,6 +13,7 @@ from archlux.geom.polytope import decision_vector
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.light.simulateur import SplitFluxOracle
+from archlux.seeds import derive
 from archlux.uq.conforme import CalibrateurConforme
 from archlux.uq.fiabilite import measure_coverage
 
@@ -36,14 +36,14 @@ def chosen(xs: tuple, orientations: tuple, q: float) -> tuple:
 
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
-    writer.writerow(("seed", "regime", "n", "coverage", "mean_width", "target_std"))
-    for seed in range(17, 37):
+    writer.writerow(("run", "regime", "n", "coverage", "low", "high", "mean_width", "target_std"))
+    for run in range(20):  # named sub-seeds: no stream shared between runs or samples
         cal = CalibrateurConforme()
-        cal.ajuster(*columns(*two_room_vectors(220, seed=seed)), alpha=0.10)
-        starts, orientations = two_room_vectors(80, seed=seed + 2000)
+        cal.ajuster(*columns(*two_room_vectors(220, seed=derive(17, f"cal/{run}"))), alpha=0.10)
+        starts, orientations = two_room_vectors(80, seed=derive(17, f"starts/{run}"))
         selected = (chosen(starts, orientations, cal.q), orientations)
-        exchangeable = two_room_vectors(280, seed=seed + 1000)
+        exchangeable = two_room_vectors(280, seed=derive(17, f"test/{run}"))
         for regime, sample in (("exchangeable", exchangeable), ("selected", selected)):
             r = measure_coverage(cal, *columns(*sample), regime=regime)
-            stats = (r.coverage, r.mean_width, r.target_std)
-            writer.writerow((seed, regime, r.n, *(f"{v:.4f}" for v in stats)))
+            stats = (r.coverage, r.coverage_low, r.coverage_high, r.mean_width, r.target_std)
+            writer.writerow((run, regime, r.n, *(f"{v:.4f}" for v in stats)))

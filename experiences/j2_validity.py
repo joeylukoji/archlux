@@ -1,8 +1,6 @@
-"""Validity before and after legalize, milestone 2 review (PLAN.md phase 2).
-
-2x2 tilings, a load-bearing wall on their cut, minimum areas at 80 % of the smallest room
-of each type, one fault per plan. Raw rows, seed 17, byte-stable: no timing (§9 budgets).
-"""
+"""Validity before and after legalize, milestone 2 review (PLAN.md phase 2): 2x2 tilings,
+a load-bearing wall on their cut, minimum areas at 80 % of the smallest room of each type,
+one fault per plan. Raw rows, seed 17, byte-stable: no timing (§9 budgets)."""
 
 import csv
 import sys
@@ -12,6 +10,7 @@ import archlux as ax
 from archlux.certify import verify_exactly
 from archlux.data.corruption import corrompre
 from archlux.data.synthese import TAILLE_MAX, generer_corpus
+from archlux.seeds import derive
 
 SEED = 17
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j2_validity_raw.csv"
@@ -31,10 +30,10 @@ def context(plan: ax.Plan) -> ax.Contexte:
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.DictWriter(handle, (*FIELDS, "max_displacement_m"), lineterminator="\n")
     writer.writeheader()
-    for k, (plan_id, plan) in enumerate(sorted(generer_corpus(TAILLE_MAX, seed=SEED).items())):
+    for plan_id, plan in sorted(generer_corpus(TAILLE_MAX, seed=SEED).items()):
         ctx = context(plan)
         for amplitude in (0.1, 0.25, 0.5):
-            seed = SEED * 1000 + k * 10 + int(amplitude * 20)
+            seed = derive(SEED, f"j2/{plan_id}/{amplitude}")
             faulty, _ = corrompre(plan, seed=seed, amplitude=amplitude)
             for pavage in (False, True):
                 row = {"plan_id": plan_id, "amplitude_m": amplitude, "pavage": pavage, "seed": seed}

@@ -126,6 +126,16 @@ def _version_paquet() -> str:
 
 def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     """IFC4 SPF déterministe : Project / Site / Building / Storey / Space / Wall."""
+    # GlobalIds must be unique across files, not only within one: salted by the plan
+    # geometry, two different plans never share one, and one plan always gets the same.
+    salt = hashlib.sha256(
+        repr((plan.pieces, plan.murs, plan.ouvertures, plan.contour)).encode()
+    ).hexdigest()[:16]
+
+    def guid(label: str) -> str:
+        """``IfcGloballyUniqueId`` of ``label`` in this plan."""
+        return _guid(f"{salt}/{label}")
+
     ents: list[str] = []
     nxt = 1
 
@@ -187,7 +197,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     id_proj = alloc()
     emit(
         id_proj,
-        f"IFCPROJECT('{_guid('project')}',#{id_owner},'archlux',$,$,$,$,(#{id_ctx}),#{id_units})",
+        f"IFCPROJECT('{guid('project')}',#{id_owner},'archlux',$,$,$,$,(#{id_ctx}),#{id_units})",
     )
 
     id_site_ax = axis2(0.0, 0.0, 0.0)
@@ -196,7 +206,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     id_site = alloc()
     emit(
         id_site,
-        f"IFCSITE('{_guid('site')}',#{id_owner},'site',$,$,#{id_site_pl},$,$,.ELEMENT.,$,$,$,$,$)",
+        f"IFCSITE('{guid('site')}',#{id_owner},'site',$,$,#{id_site_pl},$,$,.ELEMENT.,$,$,$,$,$)",
     )
 
     id_bat_ax = axis2(0.0, 0.0, 0.0)
@@ -205,7 +215,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     id_bat = alloc()
     emit(
         id_bat,
-        f"IFCBUILDING('{_guid('building')}',#{id_owner},'batiment',$,$,#{id_bat_pl},$,$,.ELEMENT.,$,$,$)",
+        f"IFCBUILDING('{guid('building')}',#{id_owner},'batiment',$,$,#{id_bat_pl},$,$,.ELEMENT.,$,$,$)",
     )
 
     id_et_ax = axis2(0.0, 0.0, 0.0)
@@ -214,7 +224,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     id_etage = alloc()
     emit(
         id_etage,
-        f"IFCBUILDINGSTOREY('{_guid('storey')}',#{id_owner},'RDC',$,$,#{id_et_pl},$,$,.ELEMENT.,0.0)",
+        f"IFCBUILDINGSTOREY('{guid('storey')}',#{id_owner},'RDC',$,$,#{id_et_pl},$,$,.ELEMENT.,0.0)",
     )
 
     for rel_id, parent, enfants in (
@@ -225,7 +235,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         refs = ",".join(f"#{e}" for e in enfants)
         emit(
             rel_id,
-            f"IFCRELAGGREGATES('{_guid(f'agg{rel_id}')}',#{id_owner},$,$,#{parent},({refs}))",
+            f"IFCRELAGGREGATES('{guid(f'agg{rel_id}')}',#{id_owner},$,$,#{parent},({refs}))",
         )
 
     espaces: list[int] = []
@@ -250,7 +260,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_space = alloc()
         emit(
             id_space,
-            f"IFCSPACE('{_guid(f'space/{piece.id}')}',#{id_owner},'{_safe(piece.id)}',"
+            f"IFCSPACE('{guid(f'space/{piece.id}')}',#{id_owner},'{_safe(piece.id)}',"
             f"$,'{_safe(piece.type)}',#{id_pl},#{id_psd},$,.ELEMENT.,.INTERNAL.,$)",
         )
         espaces.append(id_space)
@@ -263,7 +273,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_agg = alloc()
         emit(
             id_agg,
-            f"IFCRELAGGREGATES('{_guid('agg_espaces')}',#{id_owner},$,$,#{id_etage},"
+            f"IFCRELAGGREGATES('{guid('agg_espaces')}',#{id_owner},$,$,#{id_etage},"
             f"({','.join(f'#{e}' for e in espaces)}))",
         )
 
@@ -286,7 +296,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_wall = alloc()
         emit(
             id_wall,
-            f"IFCWALL('{_guid(f'wall/{mur.id}')}',#{id_owner},'{_safe(mur.id)}',$,$,#{id_pl},#{id_psd},$,$)",
+            f"IFCWALL('{guid(f'wall/{mur.id}')}',#{id_owner},'{_safe(mur.id)}',$,$,#{id_pl},#{id_psd},$,$)",
         )
         murs_ids.append(id_wall)
         wall_entity[mur.id] = id_wall
@@ -297,7 +307,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_cont = alloc()
         emit(
             id_cont,
-            f"IFCRELCONTAINEDINSPATIALSTRUCTURE('{_guid('contain')}',#{id_owner},$,$,"
+            f"IFCRELCONTAINEDINSPATIALSTRUCTURE('{guid('contain')}',#{id_owner},$,$,"
             f"({','.join(f'#{e}' for e in murs_ids)}),#{id_etage})",
         )
 
@@ -305,14 +315,14 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_ouv = alloc()
         emit(
             id_ouv,
-            f"IFCOPENINGELEMENT('{_guid(f'opening/{ouv.id}')}',#{id_owner},'{_safe(ouv.id)}',"
+            f"IFCOPENINGELEMENT('{guid(f'opening/{ouv.id}')}',#{id_owner},'{_safe(ouv.id)}',"
             f"$,'mur={_safe(ouv.mur_id)} s={ouv.s:.4f}',$,$,$,$)",
         )
         if ouv.mur_id in wall_entity:  # else refused by diagnostiquer when validating
             id_void = alloc()
             emit(
                 id_void,
-                f"IFCRELVOIDSELEMENT('{_guid(f'void/{ouv.id}')}',#{id_owner},$,$,"
+                f"IFCRELVOIDSELEMENT('{guid(f'void/{ouv.id}')}',#{id_owner},$,$,"
                 f"#{wall_entity[ouv.mur_id]},#{id_ouv})",
             )
 
@@ -326,12 +336,12 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_pset = alloc()
         emit(
             id_pset,
-            f"IFCPROPERTYSET('{_guid('pset')}',#{id_owner},'Pset_Archlux',$,(#{id_prop}))",
+            f"IFCPROPERTYSET('{guid('pset')}',#{id_owner},'Pset_Archlux',$,(#{id_prop}))",
         )
         id_rel = alloc()
         emit(
             id_rel,
-            f"IFCRELDEFINESBYPROPERTIES('{_guid('relp')}',#{id_owner},$,$,(#{id_bat}),#{id_pset})",
+            f"IFCRELDEFINESBYPROPERTIES('{guid('relp')}',#{id_owner},$,$,(#{id_bat}),#{id_pset})",
         )
 
     texte = "\n".join(

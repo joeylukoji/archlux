@@ -19,6 +19,7 @@ from archlux.data.corruption import corrompre
 from archlux.data.synthese import TAILLE_MAX, generer_corpus
 from archlux.export import to_ifc
 from archlux.export.wilson import intervalle_wilson
+from archlux.seeds import derive
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j6_ifc.csv"
 N = int(sys.argv[2]) if len(sys.argv) > 2 else TAILLE_MAX  # 2.8 s of validation per file
@@ -26,13 +27,15 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(("plan_id", "exported", "validator_errors"))
     accepted = 0
-    for k, (plan_id, plan) in enumerate(sorted(generer_corpus(N, seed=17).items())):
+    for plan_id, plan in sorted(generer_corpus(N, seed=17).items()):
         cut = next(r.x + r.w for r in plan.pieces if r.id == "sw")
         wall = ax.Mur("lb", (cut, 0.0), (cut, 9.0), porteur=True)
         ctx = ax.Contexte(
             ax.Structure((wall,)), ax.Orientation(0.0), plan.contour, ax.Referentiel((), 1.0)
         )
-        repaired = ax.legalize(corrompre(plan, seed=17_000 + k)[0], ctx, pavage=True)
+        repaired = ax.legalize(
+            corrompre(plan, seed=derive(17, f"ifc/{plan_id}"))[0], ctx, pavage=True
+        )
         path = Path(tmp) / f"{plan_id}.ifc"
         exported = to_ifc(
             ax.Plan(repaired.pieces, (wall,), (), plan.contour), path, validate=True

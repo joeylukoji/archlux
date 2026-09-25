@@ -12,7 +12,13 @@ from archlux.erreurs import InvariantViole
 from archlux.seeds import derive
 from archlux.types import Orientation, Piece, Plan
 
-__all__ = ["TAILLE_MAX", "generer_corpus", "two_room_plan", "two_room_vectors"]
+__all__ = [
+    "TAILLE_MAX",
+    "TWO_ROOM_OUTLINE",
+    "generer_corpus",
+    "two_room_plan",
+    "two_room_vectors",
+]
 
 _CONTOUR = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 _TYPES = ("sejour", "chambre", "cuisine", "sdb")

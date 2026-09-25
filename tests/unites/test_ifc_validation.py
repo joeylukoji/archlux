@@ -91,3 +91,24 @@ def test_walls_are_drawn_where_they_are(tmp_path: Path) -> None:
             for p in points
         ]
     assert drawn == {"south": [(0.0, 0.0), (12.0, 0.0)], "mid": [(6.0, 0.0), (6.0, 9.0)]}
+
+
+def test_two_different_plans_share_no_global_id(tmp_path: Path) -> None:
+    """Review of phase 2, Major 1: labels alone gave two flats the same IfcSpace ids."""
+    first = _plan()
+    second = Plan(
+        pieces=(
+            Piece(id="a", type="cuisine", x=0.0, y=0.0, w=5.0, h=9.0),
+            Piece(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
+        ),
+        murs=first.murs,
+        ouvertures=first.ouvertures,
+        contour=first.contour,
+    )
+    ids = []
+    for k, plan in enumerate((first, second, first)):
+        to_ifc(plan, tmp_path / f"{k}.ifc", validate=True)
+        text = (tmp_path / f"{k}.ifc").read_text()
+        ids.append(set(re.findall(r"^#\d+=IFC\w+\('([^']*)'", text, re.M)))
+    assert not ids[0] & ids[1]
+    assert ids[0] == ids[2]  # deterministic for one plan

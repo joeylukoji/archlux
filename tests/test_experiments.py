@@ -79,3 +79,15 @@ def test_the_msd_experiments_run_on_a_mini_corpus(
     assert "| all faults |" in summary.read_text(encoding="utf-8")
     _run("j7_msd_idempotence.py", str(msd), "3", str(tmp_path), monkeypatch=monkeypatch)
     assert "valid after legalize: 3/3" in (tmp_path / "j7_msd_idempotence.md").read_text()
+
+
+def test_the_msd_summary_rebuilds_the_published_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``resultats/j7_reparation.md`` had no script: rebuilt from its raw rows (J7 review)."""
+    out = tmp_path / "summary.md"
+    raw = ROOT / "resultats" / "j7_reparation_brut.csv"
+    _run("j7_msd_summary.py", str(raw), str(out), monkeypatch=monkeypatch)
+    table = out.read_text(encoding="utf-8")
+    assert "| all faults | 4796 | 35.9 % | 93.0 % | **93.9 %** | [93.2, 94.5] |" in table
+    assert "| fault retrecir | 1196 | 10.0 % | 97.6 % | **98.0 %** | [97.0, 98.6] |" in table

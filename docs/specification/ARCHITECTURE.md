@@ -114,6 +114,7 @@ measuring a cold LP.
 
 ```
 types   ← everyone
+tolerances, seeds ← everyone   (leaves: they import nothing from archlux)
 geom    ← types
 lmo     ← types, geom
 solve   ← types, geom, lmo, light PROTOCOL (never the implementation)
@@ -291,8 +292,13 @@ archlux/
 ```
 
 **Rule:** a script in `experiences/` longer than 50 lines signals a function
-missing from the library. It does not hold today (`j8_generation.py`:
-443 lines; eleven scripts out of thirteen exceed 50 lines): known debt.
+missing from the library. Since phase 2, 11 of 16 scripts comply; the five corpus
+scripts that can only be checked against their data (`j7_sd_*`, `j8_*`, `j9_*`) do not
+yet: known debt (PLAN.md phase 2). A script imports only public names: those of
+`archlux.__all__` and the `__all__` of a documented module (`archlux.data.synthese`,
+`archlux.certify`, `archlux.uq.fiabilite`...), never a name starting with `_`, and
+never another script. `python scripts/resultats.py` (or `make resultats`) runs them;
+their outputs carry no timing, so `resultats/SHA256SUMS` fingerprints them.
 
 ---
 

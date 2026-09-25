@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy.special import erf
+from scipy.stats import beta
 
 from archlux.erreurs import InvariantViole
 from archlux.types import Regime
@@ -169,12 +170,17 @@ class CoverageReport:
     target_std : float
         Standard deviation of the truths (``ddof=1``): an interval wider than this says
         less than "somewhere in the usual range" (PLAN.md phase 2, J5).
+    coverage_low, coverage_high : float
+        Clopper-Pearson 95 % interval of ``coverage`` (``ARCHITECTURE.md`` §7: a metric
+        is never a bare scalar). It is about this sample only, given the calibration.
     """
 
     n: int
     coverage: float
     mean_width: float
     target_std: float
+    coverage_low: float
+    coverage_high: float
 
     @property
     def width_over_std(self) -> float:
@@ -209,20 +215,28 @@ def measure_coverage(
     Raises
     ------
     InvariantViole
-        Arrays of different lengths, or fewer than two points.
+        Arrays of different lengths, fewer than two points, a non-finite value, or an
+        uncertainty that is not strictly positive (``borne`` would refuse it midway).
     """
     mu, sigma, y = (
         np.asarray(a, dtype=float).ravel() for a in (predictions, uncertainties, truths)
     )
     if not mu.size == sigma.size == y.size or mu.size < 2:
         raise InvariantViole((f"need >= 2 aligned points, got {mu.size}, {sigma.size}, {y.size}",))
+    if not (np.isfinite(mu).all() and np.isfinite(y).all() and np.isfinite(sigma).all()):
+        raise InvariantViole(("predictions, truths and uncertainties must be finite",))
+    if (sigma <= 0.0).any():
+        raise InvariantViole(("every uncertainty must be strictly positive",))
     bounds = [
         calibrator.borne(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
     ]
     inside = [b.borne_inf <= t <= b.borne_sup for b, t in zip(bounds, y, strict=True)]
+    k, n = int(np.sum(inside)), int(mu.size)
     return CoverageReport(
-        n=int(mu.size),
-        coverage=float(np.mean(inside)),
+        n=n,
+        coverage=k / n,
         mean_width=float(np.mean([b.borne_sup - b.borne_inf for b in bounds])),
         target_std=float(np.std(y, ddof=1)),
+        coverage_low=float(beta.ppf(0.025, k, n - k + 1)) if k > 0 else 0.0,
+        coverage_high=float(beta.ppf(0.975, k + 1, n - k)) if k < n else 1.0,
     )
