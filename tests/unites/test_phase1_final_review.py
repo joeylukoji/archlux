@@ -209,3 +209,57 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     high = (by_id["f__0"].x + by_id["f__0"].w, by_id["f__1"].x + by_id["f__1"].w)
     assert low[0] == pytest.approx(low[1])  # aligned ends stay aligned
     assert high[0] <= high[1] + 1e-9  # the step keeps its order, or closes
+
+
+# --- Review of the final review of phase 1 -------------------------------------------------
+
+
+def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -> None:
+    """Review M1: an optimal LP without the budget kept the 1 m gap; the proof refused it.
+
+    The message used to say "Without budget 0.1 m, this order admits a plan"."""
+    ctx = CONTEXTE_DEFAUT
+    plan = Plan(
+        pieces=(
+            Piece(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=8.0),
+        ),
+        murs=(),
+        ouvertures=(),
+        contour=ctx.contour,
+    )
+    with pytest.raises(Infaisable) as capture:
+        archlux.legalize(plan, ctx, budget=0.1)
+    assert capture.value.relaxable == ()
+    with pytest.raises(archlux.InvariantViole, match="gap"):
+        archlux.legalize(plan, ctx)
+
+
+def test_a_nan_in_the_reference_is_an_unbounded_displacement() -> None:
+    """Review M2: max() dropped the NaN and the budget was reported kept."""
+    plan, ctx = _overlapping_pair()
+    valid = replace(plan, pieces=(replace(plan.pieces[0], w=6.0), plan.pieces[1]))
+    reference = replace(valid, pieces=(replace(valid.pieces[0], x=math.nan), valid.pieces[1]))
+    proof = verify_exactly(valid, ctx, reference=reference, budget=0.01)
+    assert proof.deplacement_max == math.inf
+    assert not proof.valide
+
+
+def test_the_scope_names_only_what_the_domain_contains() -> None:
+    """Review m1: no shared side when every member of the L keeps its own side."""
+    plan, ctx, (bar, foot) = _l_beside_a_partial_wall()
+    ordre = deduire_ordre(plan, ctx.structure, groups=((bar, foot),))
+    assert ordre.shared_sides == ()
+    zero = Mur(id="z", a=(3.0, 3.0), b=(3.0, 3.0), porteur=True)
+    assert deduire_ordre(plan, Structure(murs_porteurs=(zero,))).wall_sides == ()
+
+
+def test_members_on_opposite_sides_share_the_side_of_their_bounding_box() -> None:
+    """The fallback of an L straddling a wall is recorded, hence named in the scope."""
+    from tests.unites.test_l_rooms import _l_in_tiling
+
+    plan, ctx, room = _l_in_tiling(wall_x=1.4)
+    members = tuple(r.id for r in room.rectangles)
+    ordre = deduire_ordre(plan, ctx.structure, groups=(members,))
+    assert ordre.shared_sides == (("w", members),)
+    assert len({ws.side for ws in ordre.wall_sides if ws.room in members}) == 1

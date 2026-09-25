@@ -88,12 +88,16 @@ class OrdreRelatif:
         Identifiants concernés, **triés**, pour un parcours déterministe.
     wall_sides : tuple of WallSide
         Side of every load-bearing wall each room stays on. Empty without structure.
+    shared_sides : tuple of (str, tuple of str)
+        ``(wall, members)``: the fused room whose members take one shared side of
+        ``wall`` (two of them would otherwise take opposite sides). Empty if none.
     """
 
     horizontal: tuple[tuple[str, str], ...]
     vertical: tuple[tuple[str, str], ...]
     pieces: tuple[str, ...]
     wall_sides: tuple[WallSide, ...] = ()
+    shared_sides: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,7 +200,10 @@ def deduire_ordre(
         on one axis (one left of it, one right of it): only then can a seam between
         them land on the wall, inside the room. The group then takes one side, read
         from its bounding box; a half-plane holds the union exactly when it holds every
-        member. The proof checks the union anyway (``certify.proof``).
+        member. The proof checks the union anyway (``certify.proof``). The test is on
+        the whole group, not on the members that share a seam: a valid U or T wrapped
+        around the end of a partial wall may still be refused, never a crossing
+        accepted.
 
     Returns
     -------
@@ -250,10 +257,13 @@ def deduire_ordre(
         ys = [y for _, y in plan.contour]
         envelope = (min(xs), min(ys), max(xs), max(ys))
     wall_sides: tuple[WallSide, ...] = ()
+    shared_sides: list[tuple[str, tuple[str, ...]]] = []
     if structure is not None:
         walls = [
             m for m in sorted(structure.murs_porteurs, key=lambda m: m.id) if m.longueur > SNAP_M
         ]
+        for wall in walls:
+            _check_axis_aligned(wall)
         sides = {
             (wall.id, room_id): _wall_side(par_id[room_id], wall, envelope)
             for wall in walls  # a point has no side; the proof ignores it too
@@ -269,14 +279,7 @@ def deduire_ordre(
             for wall in walls:
                 # Among equally cheap sides, prefer an assignment without opposite sides.
                 choices = [_wall_sides_by_penetration(m, wall, envelope) for m in members]
-                compatible = next(
-                    (
-                        combo
-                        for combo in itertools.product(*choices)
-                        if not _opposite({ws.side for ws in combo})
-                    ),
-                    None,
-                )
+                compatible = _compatible_sides(choices)
                 if compatible is not None:
                     for ws in compatible:
                         sides[wall.id, ws.room] = ws
@@ -284,12 +287,14 @@ def deduire_ordre(
                     shared = _wall_side(hull, wall, envelope)
                     for m in members:
                         sides[wall.id, m.id] = replace(shared, room=m.id)
+                    shared_sides.append((wall.id, tuple(m.id for m in members)))
         wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiants)
     return OrdreRelatif(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
         pieces=tuple(identifiants),
         wall_sides=wall_sides,
+        shared_sides=tuple(shared_sides),
     )
 
 
@@ -297,9 +302,52 @@ Envelope = tuple[float, float, float, float]
 """Axis-aligned bounding box ``(xmin, ymin, xmax, ymax)`` of the target outline."""
 
 
+_QUADRANTS: tuple[tuple[Side, Side], ...] = (
+    ("left", "below"),
+    ("left", "above"),
+    ("right", "below"),
+    ("right", "above"),
+)
+"""Sets of sides without two opposite ones: any such set fits in one of these pairs."""
+
+
+def _compatible_sides(choices: list[list[WallSide]]) -> list[WallSide] | None:
+    """One side per member, no two opposite, each among the member's cheapest sides.
+
+    Members on opposite sides of one wall could have their seam land on it. A set of
+    sides without two opposite ones fits in one quadrant pair, so four candidates
+    settle it in ``O(4 k)`` for ``k`` members; within a pair, each member keeps its
+    cheapest side (the lists are sorted best first).
+    """
+    best = [options[0] for options in choices]
+    if not _opposite({ws.side for ws in best}):
+        return best
+    for pair in _QUADRANTS:
+        picked = [next((ws for ws in options if ws.side in pair), None) for options in choices]
+        if all(ws is not None for ws in picked):
+            return [ws for ws in picked if ws is not None]
+    return None
+
+
 def _opposite(taken: set[str]) -> bool:
     """Two members on opposite sides of one wall: their seam could land on it."""
     return {"left", "right"} <= taken or {"below", "above"} <= taken
+
+
+def _check_axis_aligned(wall: Mur) -> None:
+    """Refuse an oblique wall: no linear side constraint describes it exactly.
+
+    Raises
+    ------
+    UnsupportedInput
+        The wall is oblique.
+    """
+    (xa, ya), (xb, yb) = wall.a, wall.b
+    if abs(xa - xb) > SNAP_M and abs(ya - yb) > SNAP_M:
+        raise UnsupportedInput(
+            f"load-bearing wall {wall.id} is oblique; only axis-aligned load-bearing "
+            "walls can be kept exactly"
+        )
 
 
 def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
@@ -323,18 +371,18 @@ def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
     UnsupportedInput
         The wall is oblique: no linear side constraint describes it exactly.
     """
-    (xa, ya), (xb, yb) = wall.a, wall.b
-    vertical, horizontal = abs(xa - xb) <= SNAP_M, abs(ya - yb) <= SNAP_M
-    if not (vertical or horizontal):
-        raise UnsupportedInput(
-            f"load-bearing wall {wall.id} is oblique; only axis-aligned load-bearing "
-            "walls can be kept exactly"
-        )
     return _wall_sides_by_penetration(room, wall, envelope)[0]
 
 
 def _wall_sides_by_penetration(room: Piece, wall: Mur, envelope: Envelope | None) -> list[WallSide]:
-    """The sides of :func:`_wall_side` that tie for the least penetration, best first."""
+    """The sides of :func:`_wall_side` that tie for the least penetration, best first.
+
+    Raises
+    ------
+    UnsupportedInput
+        The wall is oblique.
+    """
+    _check_axis_aligned(wall)
     (xa, ya), (xb, yb) = wall.a, wall.b
     x0, x1, y0, y1 = min(xa, xb), max(xa, xb), min(ya, yb), max(ya, yb)
     ex0, ey0, ex1, ey1 = envelope if envelope is not None else (-math.inf,) * 2 + (math.inf,) * 2
