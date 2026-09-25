@@ -10,13 +10,9 @@ dérivation non reproductible — exactement ce que ce module existe pour empêc
 
 from __future__ import annotations
 
-import hashlib
+from archlux.seeds import derive
 
 __all__ = ["deriver"]
-
-_OCTETS = 4
-"""Largeur de la sous-graine : 32 bits, la plage acceptée par ``numpy.random``."""
-
 
 def deriver(seed: int, nom: str) -> int:
     """Dériver une sous-graine stable à partir d'une graine racine et d'un nom.
@@ -47,5 +43,4 @@ def deriver(seed: int, nom: str) -> int:
     >>> deriver(17, "calibration") == deriver(17, "permutation")
     False
     """
-    empreinte = hashlib.blake2b(f"{seed}:{nom}".encode(), digest_size=_OCTETS).digest()
-    return int.from_bytes(empreinte, "big")
+    return derive(seed, nom)

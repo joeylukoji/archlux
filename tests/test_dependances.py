@@ -29,6 +29,7 @@ AUTORISE: dict[str, frozenset[str]] = {
     # Leaves importable by every layer; they import nothing (see LEAVES below).
     "_version": frozenset(),
     "tolerances": frozenset(),
+    "seeds": frozenset(),
     "geom": frozenset({"types", "erreurs"}),
     "lmo": frozenset({"types", "erreurs", "geom"}),
     "solve": frozenset({"types", "erreurs", "geom", "lmo", "light.protocole"}),
@@ -74,6 +75,7 @@ AUTORISE: dict[str, frozenset[str]] = {
 LEAVES: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset({"__future__", "typing"}),
+    "seeds": frozenset({"__future__", "hashlib"}),
 }
 """Modules importable by every layer, with the only imports they may make themselves."""
 

@@ -266,6 +266,7 @@ archlux/
 │   ├── api.py               # legalize
 │   ├── erreurs.py           # typed exceptions
 │   ├── tolerances.py        # registry of numerical tolerances
+│   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer
 │   ├── types.py
 │   ├── geom/{graphe,polytope,pavage,rectilineaire,diagnostic}.py
 │   ├── lmo/{solveur,coupes}.py

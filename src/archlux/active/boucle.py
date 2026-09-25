@@ -23,6 +23,7 @@ import structlog
 from archlux.active.densite import densite_noyau
 from archlux.active.selection import StrategieAcquisition
 from archlux.erreurs import InvariantViole
+from archlux.seeds import derive
 from archlux.uq.conforme import CalibrateurConforme, n_minimal_conforme
 
 if TYPE_CHECKING:
@@ -272,7 +273,9 @@ class Loop:
         restantes = self.budget
         cycle = 0
         calibrateur = CalibrateurConforme(indicateur="sDA")
-        rng = np.random.default_rng(self.seed)
+        # Named sub-streams (AUDIT.md Q-M5): with ``seed + cycle`` the campaign of seed 17
+        # at cycle 1 replayed the selection of the campaign of seed 18 at cycle 0.
+        rng = np.random.default_rng(derive(self.seed, "split"))
 
         while restantes > 0:
             n_prendre = min(self.batch, restantes, len(propositions) - len(exclus))
@@ -283,7 +286,7 @@ class Loop:
                 inc,
                 dens,
                 n=n_prendre,
-                seed=self.seed + cycle,
+                seed=derive(self.seed, f"selection/{cycle}"),
                 exclus=np.asarray(exclus, dtype=int) if exclus else None,
             )
             acquis = [int(i) for i in idxs]
@@ -311,7 +314,7 @@ class Loop:
                     tuple(xs_lab),
                     np.asarray(ys_lab, dtype=float),
                     tuple(os_lab),
-                    seed=self.seed + cycle,
+                    seed=derive(self.seed, f"fit/{cycle}"),
                     epoques=40,
                     lr=0.12,
                 )

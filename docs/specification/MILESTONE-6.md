@@ -13,6 +13,12 @@ exploitables en CAO/BIM, documentation complète.
 
 **Critère d'acceptation — le test le plus exigeant du projet :**
 
+> **Revue de phase 2 (2026-09-25) :** critère **non atteint** (aucun utilisateur externe
+> ne l'a passé ; phase 5). « L'actif perd » est retiré (aucune différence détectée sur 30
+> campagnes indépendantes) ; les fichiers IFC, rejetés par ifcopenshell jusque-là, le
+> passent désormais. Voir [`revues/j6.md`](../revues/j6.md) et
+> [ADR 0002](../adr/0002-milestone-criteria-rewritten.md).
+
 ```python
 def test_utilisateur_externe():
     """Une personne qui n'a jamais vu le code doit réussir en 10 minutes."""
@@ -156,7 +162,7 @@ def test_taux_de_survie_avec_wilson():
 ```
 
 - [x] Les 2 tests passent
-- [x] `resultats/j6_survie_ifc.csv` produit
+- [x] `resultats/j6_survie_ifc.csv` produit (phase 2 : remplacé par `resultats/j6_ifc.csv`, validé par ifcopenshell)
 
 ---
 

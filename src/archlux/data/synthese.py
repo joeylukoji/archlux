@@ -6,11 +6,10 @@ ce générateur tient le même contrat d'identifiants.
 
 from __future__ import annotations
 
-import hashlib
-
 import numpy as np
 
 from archlux.erreurs import InvariantViole
+from archlux.seeds import derive
 from archlux.types import Orientation, Piece, Plan
 
 __all__ = ["TAILLE_MAX", "generer_corpus", "two_room_plan", "two_room_vectors"]
@@ -27,9 +26,8 @@ TAILLE_MAX = _N_COUPES_X * _N_COUPES_Y
 
 
 def _rng(seed: int, nom: str) -> np.random.Generator:
-    """Sous-graine locale : ``data`` n'importe pas ``bench``."""
-    digest = hashlib.blake2b(f"{seed}:{nom}".encode(), digest_size=4).digest()
-    return np.random.default_rng(int.from_bytes(digest, "big"))
+    """Named sub-stream (:func:`archlux.seeds.derive`): ``data`` does not import ``bench``."""
+    return np.random.default_rng(derive(seed, nom))
 
 
 def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:

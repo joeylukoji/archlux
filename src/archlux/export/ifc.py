@@ -96,21 +96,27 @@ def _safe(texte: str, *, lim: int = 120) -> str:
     return texte.replace("'", " ").replace("\\", "/")[:lim]
 
 
+_IFC_BASE64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
+"""Alphabet of ``IfcGloballyUniqueId`` (IFC base 64, not RFC 4648)."""
+
+
 def _guid(etiquette: str) -> str:
     """Identifiant IFC déterministe dérivé d'une étiquette stable.
 
     Le paramètre n'est **pas** une graine au sens d'`ARCHITECTURE.md` §7 : rien
-    n'est échantillonné ici, et le nom ``seed`` prêtait à confusion dans un dépôt
-    où « graine » a une signification contraignante.
+    n'est échantillonné ici.
 
-    Limite connue : ``IfcGloballyUniqueId`` fait bien 22 caractères, mais l'encodage
-    IFC est en base 64 (``0-9A-Za-z_$``) avec un premier caractère dans ``0-3``.
-    Ces 22 caractères hexadécimaux respectent la longueur, pas l'encodage : les
-    outils qui *décodent* le GUID (``ifcopenshell.guid.expand``) ne le retrouveront
-    pas. Suffisant pour la CI et les visionneuses ; à remplacer par un vrai encodage
-    base 64 IFC avant tout échange BIM réel.
+    The 128 first bits of SHA-256 of the label, written in IFC base 64: 22 characters
+    of ``0-9A-Za-z_$``, the first one in ``0-3`` (22 x 6 = 132 bits, the top 4 are
+    zero). ``ifcopenshell.guid.expand`` decodes it. The previous version wrote 22
+    hexadecimal characters, rejected by every IFC validator (PLAN.md phase 2, J6).
     """
-    return hashlib.sha256(etiquette.encode()).hexdigest()[:22]
+    nombre = int.from_bytes(hashlib.sha256(etiquette.encode()).digest()[:16], "big")
+    chiffres = []
+    for _ in range(22):
+        nombre, reste = divmod(nombre, 64)
+        chiffres.append(_IFC_BASE64[reste])
+    return "".join(reversed(chiffres))
 
 
 def _version_paquet() -> str:
@@ -140,6 +146,12 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         emit(num, f"IFCCARTESIANPOINT(({x:.6f},{y:.6f},{z:.6f}))")
         return num
 
+    def point2(x: float, y: float) -> int:
+        """Emit a 2D ``IFCCARTESIANPOINT``: the vertices of a ``Curve2D`` representation."""
+        num = alloc()
+        emit(num, f"IFCCARTESIANPOINT(({x:.6f},{y:.6f}))")
+        return num
+
     def axis2(x: float, y: float, z: float = 0.0) -> int:
         """Emettre un ``IFCAXIS2PLACEMENT3D`` a la position donnee."""
         p = point(x, y, z)
@@ -158,7 +170,9 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     id_po = alloc()
     emit(id_po, f"IFCPERSONANDORGANIZATION(#{id_pers},#{id_org},$)")
     id_owner = alloc()
-    emit(id_owner, f"IFCOWNERHISTORY(#{id_po},#{id_app},$,.ADDED.,$,$,$,0)")
+    # No ChangeAction: without LastModifiedDate, IFC4 rule CorrectChangeAction forbids
+    # .ADDED. (ifcopenshell.validate, PLAN.md phase 2, J6).
+    emit(id_owner, f"IFCOWNERHISTORY(#{id_po},#{id_app},$,$,$,$,$,0)")
     id_unit = alloc()
     emit(id_unit, "IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.)")
     id_units = alloc()
@@ -223,7 +237,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
             (piece.x, piece.y + piece.h),
             (piece.x, piece.y),
         )
-        pts = [point(x, y) for x, y in coins]
+        pts = [point2(x, y) for x, y in coins]
         id_poly = alloc()
         emit(id_poly, f"IFCPOLYLINE(({','.join(f'#{p}' for p in pts)}))")
         id_ax = axis2(0.0, 0.0, 0.0)
@@ -236,7 +250,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_space = alloc()
         emit(
             id_space,
-            f"IFCSPACE('{_guid(piece.id)}',#{id_owner},'{_safe(piece.id)}',"
+            f"IFCSPACE('{_guid(f'space/{piece.id}')}',#{id_owner},'{_safe(piece.id)}',"
             f"$,'{_safe(piece.type)}',#{id_pl},#{id_psd},$,.ELEMENT.,.INTERNAL.,$)",
         )
         espaces.append(id_space)
@@ -254,12 +268,15 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         )
 
     murs_ids: list[int] = []
+    wall_entity: dict[str, int] = {}
     for mur in plan.murs:
-        id_ax = axis2(mur.a[0], mur.a[1], 0.0)
+        # Placed at the storey origin: the axis already holds absolute coordinates. The
+        # previous placement at ``mur.a`` shifted every wall by ``a`` (drawn from 2a).
+        id_ax = axis2(0.0, 0.0, 0.0)
         id_pl = alloc()
         emit(id_pl, f"IFCLOCALPLACEMENT(#{id_et_pl},#{id_ax})")
-        id_p1 = point(mur.a[0], mur.a[1])
-        id_p2 = point(mur.b[0], mur.b[1])
+        id_p1 = point2(mur.a[0], mur.a[1])
+        id_p2 = point2(mur.b[0], mur.b[1])
         id_line = alloc()
         emit(id_line, f"IFCPOLYLINE((#{id_p1},#{id_p2}))")
         id_sr = alloc()
@@ -269,9 +286,10 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_wall = alloc()
         emit(
             id_wall,
-            f"IFCWALL('{_guid(mur.id)}',#{id_owner},'{_safe(mur.id)}',$,$,#{id_pl},#{id_psd},$,$)",
+            f"IFCWALL('{_guid(f'wall/{mur.id}')}',#{id_owner},'{_safe(mur.id)}',$,$,#{id_pl},#{id_psd},$,$)",
         )
         murs_ids.append(id_wall)
+        wall_entity[mur.id] = id_wall
 
     if murs_ids:
         # Les murs, eux, sont bien des éléments **contenus** dans l'étage. Sans cette
@@ -287,9 +305,16 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         id_ouv = alloc()
         emit(
             id_ouv,
-            f"IFCOPENINGELEMENT('{_guid(ouv.id)}',#{id_owner},'{_safe(ouv.id)}',"
+            f"IFCOPENINGELEMENT('{_guid(f'opening/{ouv.id}')}',#{id_owner},'{_safe(ouv.id)}',"
             f"$,'mur={_safe(ouv.mur_id)} s={ouv.s:.4f}',$,$,$,$)",
         )
+        if ouv.mur_id in wall_entity:  # else refused by diagnostiquer when validating
+            id_void = alloc()
+            emit(
+                id_void,
+                f"IFCRELVOIDSELEMENT('{_guid(f'void/{ouv.id}')}',#{id_owner},$,$,"
+                f"#{wall_entity[ouv.mur_id]},#{id_ouv})",
+            )
 
     annexe = _annexe_certificat(plan)
     if annexe:
