@@ -93,6 +93,25 @@ def _write_lines(path: Path, lines: list[bytes], crlf: bool) -> None:
     path.write_bytes(data.replace(b"\n", b"\r\n") if crlf else data)
 
 
+def _member_name(statement: ast.stmt) -> str | None:
+    """The name a class-body statement defines: an annotated field, or a method."""
+    if isinstance(statement, ast.FunctionDef | ast.AsyncFunctionDef):
+        return statement.name
+    target = getattr(statement, "target", None)
+    if isinstance(statement, ast.AnnAssign) and isinstance(target, ast.Name):
+        return target.id
+    return None
+
+
+def _name_position(statement: ast.stmt, lines: list[bytes]) -> tuple[int, int]:
+    """(line, byte column) of the defined name, after ``def`` for a method."""
+    if isinstance(statement, ast.FunctionDef | ast.AsyncFunctionDef):
+        line = lines[statement.lineno - 1]
+        return statement.lineno, line.index(statement.name.encode(), statement.col_offset)
+    target = statement.target  # type: ignore[attr-defined]
+    return target.lineno, target.col_offset
+
+
 def rename_in_class(
     paths: Sequence[Path], class_name: str, mapping: dict[str, str], *, apply: bool
 ) -> list[str]:
@@ -114,13 +133,10 @@ def rename_in_class(
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef) and node.name == class_name:
                 for statement in node.body:
-                    target = getattr(statement, "target", None)
-                    named = isinstance(statement, ast.AnnAssign) and isinstance(target, ast.Name)
-                    if named and target.id in mapping:  # type: ignore[union-attr]
-                        edits.append(
-                            (target.lineno, target.col_offset, target.id, mapping[target.id])  # type: ignore[union-attr]
-                        )
-                        missing.discard(target.id)  # type: ignore[union-attr]
+                    name = _member_name(statement)
+                    if name in mapping:
+                        edits.append((*_name_position(statement, lines), name, mapping[name]))
+                        missing.discard(name)
         if apply and edits:
             for lineno, col, old, new in sorted(edits, reverse=True):
                 line = lines[lineno - 1]
@@ -185,7 +201,6 @@ def _run_mypy(paths: Sequence[Path], *, no_config: bool) -> str:
         "--show-column-numbers",
         "--no-error-summary",
         "--no-pretty",
-        "--no-incremental",
         "--ignore-missing-imports",
     ]
     if no_config:
