@@ -42,6 +42,8 @@ from typing import TYPE_CHECKING
 from shapely.geometry import MultiPolygon, Polygon, box
 from shapely.ops import unary_union
 
+from archlux.erreurs import InvalidInput
+
 if TYPE_CHECKING:
     from archlux.types import Plan
 
@@ -139,7 +141,7 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     (0.167, 2)
     """
     if not plan.pieces:
-        raise ValueError("plan sans pièce : rien à diagnostiquer")
+        raise InvalidInput("pieces", "the plan has no room: nothing to diagnose")
 
     formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in plan.pieces]
     n = len(formes)

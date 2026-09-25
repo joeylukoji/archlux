@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvalidInput, InvariantViole
 from archlux.types import Orientation
 
 __all__ = [
@@ -67,7 +67,7 @@ def encode(deg: float, *, harmoniques: int = 3) -> np.ndarray:
         Vecteur de dimension ``2 * harmoniques``, borné, continu en 0°/360°.
     """
     if harmoniques < 1:
-        raise ValueError(f"harmoniques doit être ≥ 1, reçu {harmoniques}")
+        raise InvalidInput("harmoniques", f"must be >= 1, got {harmoniques}")
     theta = math.radians(deg)
     composantes = np.empty(2 * harmoniques, dtype=float)
     for rang in range(1, harmoniques + 1):
@@ -98,7 +98,7 @@ def _radians(degres: np.ndarray | Sequence[float]) -> np.ndarray:
     """Convertir une séquence d'azimuts en radians, aplatis."""
     valeurs = np.ravel(np.asarray(degres, dtype=float))
     if valeurs.size == 0:
-        raise ValueError("au moins une orientation est requise")
+        raise InvalidInput("degres", "at least one orientation is required")
     return np.asarray(np.radians(valeurs), dtype=float)
 
 
@@ -268,9 +268,9 @@ def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Resultat
     azimut = np.ravel(np.asarray(theta, dtype=float))
     reponse = np.ravel(np.asarray(y, dtype=float))
     if azimut.size != reponse.size:
-        raise ValueError("theta et y doivent avoir la même longueur")
+        raise InvalidInput("theta", "theta and y must have the same length")
     if azimut.size < 3:
-        raise ValueError("au moins trois observations sont requises")
+        raise InvalidInput("theta", "at least three observations are required")
     radians = np.radians(azimut)
     dessin = np.column_stack((np.cos(radians), np.sin(radians), np.ones(azimut.size)))
     coeffs, *_reste = np.linalg.lstsq(dessin, reponse, rcond=None)
@@ -298,7 +298,7 @@ def stratifier(
         Nombre de secteurs. 8 → rose des vents nommée (N, NE, …).
     """
     if n_secteurs < 1:
-        raise ValueError(f"n_secteurs doit être ≥ 1, reçu {n_secteurs}")
+        raise InvalidInput("n_secteurs", f"must be >= 1, got {n_secteurs}")
     valeurs = np.ravel(np.asarray(degres, dtype=float))
     largeur = 360.0 / n_secteurs
     decale = (valeurs % 360.0 + largeur / 2.0) % 360.0

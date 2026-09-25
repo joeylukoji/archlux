@@ -11,6 +11,7 @@ from dataclasses import replace
 
 import numpy as np
 
+from archlux.erreurs import InvalidInput
 from archlux.light.protocole import Baies
 from archlux.orient.circulaire import encode, encoder
 from archlux.types import Contexte, Mur, Orientation, Ouverture, Plan
@@ -34,7 +35,7 @@ _EPS = 1e-12
 def permuter_pieces(plan: Plan, ordre: tuple[int, ...]) -> Plan:
     """Réordonner les pièces sans changer la géométrie."""
     if len(ordre) != len(plan.pieces):
-        raise ValueError("permutation de longueur distincte du plan")
+        raise InvalidInput("ordre", "the permutation must have one index per room")
     pieces = tuple(plan.pieces[i] for i in ordre)
     return replace(plan, pieces=pieces)
 

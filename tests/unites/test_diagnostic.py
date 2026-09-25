@@ -120,7 +120,7 @@ def test_le_cote_donne_l_echelle_du_deplacement() -> None:
 
 def test_un_plan_sans_piece_leve() -> None:
     """Rendre des zéros laisserait croire à un plan sain : on refuse."""
-    with pytest.raises(ValueError, match="rien à diagnostiquer"):
+    with pytest.raises(ValueError, match="nothing to diagnose"):
         diagnostiquer(_plan())
 
 

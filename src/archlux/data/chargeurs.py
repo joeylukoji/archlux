@@ -44,6 +44,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from shapely import affinity, wkt
+from shapely.errors import ShapelyError
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
@@ -521,7 +522,7 @@ def _convertir(
     for genre, sous_type, texte, aire_id, _site in entites:
         try:
             forme = wkt.loads(texte)
-        except Exception:  # WKT tiers : tout echec de lecture est un rejet, pas un bug
+        except (ShapelyError, TypeError):  # WKT tiers illisible : un rejet, pas un bug
             return "wkt illisible"
         if not isinstance(forme, Polygon) or forme.is_empty:
             continue

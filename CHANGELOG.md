@@ -8,6 +8,19 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice D2: no bare `ValueError` (3.3)
+
+#### Changed — error types (behaviour change, refusals only)
+- The remaining `ValueError`s raised by the library are `InvalidInput` (still catchable as
+  `ValueError`), with the offending `field` and English messages: `orient.circulaire`
+  (`encode`, `regression_circulaire_lineaire`, `stratifier`, empty orientation lists),
+  `export.svg.planche`, `geom.diagnostic.diagnostiquer` and `light.jetons.permuter_pieces`.
+- `data.chargeurs` no longer swallows every exception when reading a WKT: an unreadable
+  WKT (`shapely.errors.ShapelyError`, `TypeError`) rejects the apartment, anything else
+  is a bug and propagates.
+- `tests/unites/test_typed_errors.py` fails on any new `raise ValueError`, `raise Exception`
+  or `except Exception` in `src/archlux`.
+
 ### Remediation — PLAN.md phase 3, slice E: lazy `legalize` (3.13)
 
 #### Changed — import time

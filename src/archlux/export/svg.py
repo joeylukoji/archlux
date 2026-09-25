@@ -33,6 +33,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from archlux.erreurs import InvalidInput
+
 if TYPE_CHECKING:
     from archlux.types import Mur, Plan, Point
 
@@ -316,7 +318,7 @@ def planche(
     True
     """
     if not volets:
-        raise ValueError("planche vide : rien à tracer")
+        raise InvalidInput("volets", "empty sheet: nothing to draw")
     vise = contour or volets[0][0].contour
     etendue = _etendue(tuple(p for p, _ in volets), (vise,) if vise else ())
     pas_x = _LARGEUR_PANNEAU + _ESPACE
