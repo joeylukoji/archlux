@@ -175,3 +175,12 @@ def test_the_command_refuses_a_conflict(tool, tmp_path: Path) -> None:  # type: 
     (tmp_path / "m.py").write_text("erreurs = []\nerrors = {}\n", encoding="utf-8")
     assert tool.main(["--map", "erreurs=errors", "--apply", str(tmp_path)]) == 3
     assert "erreurs = []" in (tmp_path / "m.py").read_text(encoding="utf-8")
+
+
+def test_an_allowed_conflict_is_renamed_but_reported_unproved(tool, tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    path = tmp_path / "m.py"
+    path.write_text("import shapely.erreurs\nopen(f, errors='x')\n", encoding="utf-8")
+    args = ["--map", "erreurs=errors", "--apply", "--allow-conflict", "erreurs", str(path)]
+    assert tool.main(args) == 0
+    assert path.read_text(encoding="utf-8") == "import shapely.errors\nopen(f, errors='x')\n"
+    assert "unproved" in capsys.readouterr().out
