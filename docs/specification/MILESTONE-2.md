@@ -3,6 +3,11 @@
 > **Prérequis : lire `ARCHITECTURE.md` d'abord.**
 > Durée visée : 6 semaines. Livrable : un plan invalide entre, un plan valide + preuve sort.
 > **Ce jalon suffit à un premier article publiable.** Aucune composante lumière ici.
+>
+> **Revue de phase 2 (2026-09-25) :** la phrase ci-dessus est **retirée** — la baseline
+> de 3 générateurs publics n'a jamais été construite. Le critère est rejoué tel qu'écrit
+> (`plans_quelconques()`, `contextes()`) ; voir [`revues/j2.md`](../revues/j2.md) et
+> [ADR 0002](../adr/0002-milestone-criteria-rewritten.md).
 
 ---
 
@@ -418,14 +423,14 @@ minimiser Σ e
 
 ## 8. Étape 7 — Mesure pour l'article
 
-**Fichier :** `experiences/j2_taux_validite.py` (< 50 lignes)
+**Fichier :** `experiences/j2_taux_validite.py` (< 50 lignes ; remplacé en phase 2 par `experiences/j2_validity.py`)
 
 - [ ] Télécharger les sorties de 3 modèles publics (HouseDiffusion, GSDiff, DiffPlanner)
 - [ ] Mesurer le taux de plans valides **avant** correction
 - [ ] Appliquer `legalize`, mesurer le taux **après** (doit être 100 %)
 - [ ] Mesurer le déplacement maximal, moyen, et le 95ᵉ centile
 - [ ] Mesurer le temps par plan
-- [ ] Écrire les résultats **bruts** dans `resultats/j2_brut.csv` avant toute agrégation
+- [ ] Écrire les résultats **bruts** dans `resultats/j2_brut.csv` (remplacé en phase 2 par `resultats/j2_validity_raw.csv`) avant toute agrégation
 
 ```
 modele,plan_id,valide_avant,valide_apres,deplacement_max_m,temps_ms,seed

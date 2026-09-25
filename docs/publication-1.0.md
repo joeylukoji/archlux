@@ -41,7 +41,7 @@ demande autre chose, et le dépôt n'y est pas.
 | Budgets de performance tenus | ✅ | `benchmarks/`, `ARCHITECTURE.md` §9 |
 | **Étiquettes d'éclairement mesurées** | ❌ | forme fermée uniquement — [vérité terrain](donnees/verite-terrain.md) |
 | **Corpus réel chargé** | ❌ | chargeur WKT à écrire (`data/chargeurs.py`) |
-| **Baseline : 3 modèles génératifs publics** | ❌ | `MILESTONE-2.md` §8 ; `resultats/j2_brut.csv` contient 2 plans construits à la main |
+| **Baseline : 3 modèles génératifs publics** | ❌ | `MILESTONE-2.md` §8 ; jamais construite : `j2_brut.csv` contenait 2 plans faits à la main (retiré) ; revue [`j2`](revues/j2.md) |
 | **Couverture conforme mesurée sur corpus réel** | ❌ | `n = 18` en calibration synthétique |
 | Étude d'ablation (jetons, imputation des baies, actif vs aléatoire) | ⚠️ | scripts présents, résultats à l'échelle jouet |
 | Comparaison à l'état de l'art | ❌ | aucune |
