@@ -26,7 +26,7 @@ from archlux.certify.borne import bound_selected_plan, check_calibration
 from archlux.certify.dual import traduire_duaux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
+from archlux.errors import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
 from archlux.geom.graphe import OrdreRelatif, deduire_ordre
 from archlux.geom.pavage import deduire_trame, etendre_pavage, snap_to_grid
 from archlux.geom.polytope import (

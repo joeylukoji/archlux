@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import stats as scipy_stats
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 __all__ = ["Intervalle", "bootstrap_apparie", "holm", "puissance", "tost"]
 

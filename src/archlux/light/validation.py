@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from archlux.erreurs import InvalidSurrogate
+from archlux.errors import InvalidSurrogate
 
 if TYPE_CHECKING:
     from archlux.light.protocole import Substitut
@@ -130,7 +130,7 @@ def valider_gradient(
     matrice = matrice[rng.permutation(matrice.shape[0])]
     oracle = reference
     pas_fd = pas if oracle is not None else epsilon
-    erreurs: list[float] = []
+    errors: list[float] = []
     cosinus: list[float] = []
     signes: list[bool] = []
     for x in matrice:
@@ -143,12 +143,12 @@ def valider_gradient(
         norme_c = float(np.linalg.norm(cible))
         norme_d = float(np.linalg.norm(declare))
         if norme_c < _NUIT and norme_d < _NUIT:
-            erreurs.append(0.0)
+            errors.append(0.0)
             cosinus.append(1.0)
             signes.extend([True] * declare.size)
             continue
         denom = max(norme_c, _NUIT)
-        erreurs.append(float(np.linalg.norm(declare - cible) / denom))
+        errors.append(float(np.linalg.norm(declare - cible) / denom))
         if norme_c > _NUIT and norme_d > _NUIT:
             cosinus.append(float(np.dot(declare, cible) / (norme_d * norme_c)))
         else:
@@ -161,7 +161,7 @@ def valider_gradient(
             else:
                 signes.append((a >= 0.0) == (b >= 0.0))
     rapport = RapportGradient(
-        erreur_relative_max=max(erreurs) if erreurs else 0.0,
+        erreur_relative_max=max(errors) if errors else 0.0,
         cosinus_moyen=float(np.mean(cosinus)) if cosinus else 1.0,
         accord_de_signe=float(np.mean(signes)) if signes else 1.0,
         n_points=int(matrice.shape[0]),

@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.appris import MAX_PARAMETRES, SubstitutAppris
 from archlux.light.base import SubstitutDense
@@ -72,11 +72,11 @@ def test_erreur_stratifiee_par_orientation(tmp_path: Path) -> None:
     reseau = _entraine(tmp_path)
     xs, ys, oris = _jeu(seed=5, n=32)
     noms = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
-    erreurs: dict[str, list[float]] = {nom: [] for nom in noms}
+    errors: dict[str, list[float]] = {nom: [] for nom in noms}
     for x, y, ori in zip(xs, ys, oris, strict=True):
         secteur = noms[int(((ori.deg % 360.0) + 22.5) // 45.0) % 8]
-        erreurs[secteur].append(abs(reseau.evaluer(x, ori) - y))
-    for secteur, vals in erreurs.items():
+        errors[secteur].append(abs(reseau.evaluer(x, ori) - y))
+    for secteur, vals in errors.items():
         if not vals:
             continue
         assert float(np.mean(vals)) < 25.0, f"échec sur {secteur}"

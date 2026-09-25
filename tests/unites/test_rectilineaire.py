@@ -7,7 +7,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from shapely.geometry import Polygon, box
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.geom.rectilineaire import (
     FUSION_DROIT,
     MAX_RECTANGLES,

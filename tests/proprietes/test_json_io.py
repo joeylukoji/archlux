@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from hypothesis import given, settings
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
 from archlux.types import Certificat, Mur, Ouverture, Piece, Plan, PreuveGeometrique
 from tests.proprietes.strategies import plans_quelconques

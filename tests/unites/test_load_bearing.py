@@ -12,7 +12,7 @@ import pytest
 
 import archlux
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import UnsupportedInput
+from archlux.errors import UnsupportedInput
 from archlux.geom.graphe import WallSide, deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
 from archlux.light.analytique import SubstitutAnalytique

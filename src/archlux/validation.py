@@ -3,7 +3,7 @@
 PLAN.md phase 3.1. Everything below the door (``geom``, ``lmo``, ``solve``) may assume
 finite numbers, positive sizes and unique ids; a violation found later surfaces as an
 LP status or as ``InvariantViolation``, which means "internal bug" and points the user at
-the wrong place. Every refusal here is an :class:`~archlux.erreurs.InvalidInput` that
+the wrong place. Every refusal here is an :class:`~archlux.errors.InvalidInput` that
 names the field.
 
 Only what the solver cannot survive is checked. Whether the plan is *geometrically*
@@ -18,7 +18,7 @@ from dataclasses import replace
 from numbers import Real
 from typing import TYPE_CHECKING
 
-from archlux.erreurs import InvalidInput
+from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from archlux.erreurs import (
+from archlux.errors import (
     InconsistentOrder,
     Infeasible,
     InvariantViolation,

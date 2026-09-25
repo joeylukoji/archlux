@@ -22,13 +22,15 @@ AUTORISE: dict[str, frozenset[str]] = {
     # `feasibility`, `light`: imported under TYPE_CHECKING only, so that type checkers see
     # the lazy packages (PLAN.md 3.8). `test_import_cost` proves that `import archlux`
     # loads none of them. `bench` cannot be listed: nobody imports it.
-    "__init__": frozenset({"types", "erreurs", "api", "io", "feasibility", "light"}),
-    # `types` peut joindre `erreurs` : les deux sont des racines du graphe, `erreurs` ne
+    "__init__": frozenset({"types", "errors", "api", "io", "feasibility", "light"}),
+    # `types` peut joindre `errors` : les deux sont des racines du graphe, `errors` ne
     # dépend de rien et n'importe surtout pas `types`. L'arête ne crée aucun cycle et
     # évite que chaque type doive lever `Exception` nue faute d'exception typée sous la
     # main (`ARCHITECTURE.md` §7).
-    "types": frozenset({"erreurs"}),
-    "erreurs": frozenset(),
+    "types": frozenset({"errors"}),
+    "errors": frozenset(),
+    # Deprecated module name (PLAN.md 3.9): a shim that forwards to `errors`.
+    "erreurs": frozenset({"errors"}),
     # Leaves importable by every layer; they import nothing (see LEAVES below).
     "_version": frozenset(),
     "tolerances": frozenset(),
@@ -36,31 +38,31 @@ AUTORISE: dict[str, frozenset[str]] = {
     "arrays": frozenset(),
     "_deprecation": frozenset(),
     # Door validation of the public arguments (PLAN.md 3.1): a leaf over `types`.
-    "validation": frozenset({"types", "erreurs"}),
-    "geom": frozenset({"types", "erreurs"}),
-    "lmo": frozenset({"types", "erreurs", "geom"}),
-    "solve": frozenset({"types", "erreurs", "geom", "lmo", "light.protocole"}),
-    "light": frozenset({"types", "erreurs", "orient"}),
-    "orient": frozenset({"types", "erreurs"}),
-    "uq": frozenset({"types", "erreurs"}),
+    "validation": frozenset({"types", "errors"}),
+    "geom": frozenset({"types", "errors"}),
+    "lmo": frozenset({"types", "errors", "geom"}),
+    "solve": frozenset({"types", "errors", "geom", "lmo", "light.protocole"}),
+    "light": frozenset({"types", "errors", "orient"}),
+    "orient": frozenset({"types", "errors"}),
+    "uq": frozenset({"types", "errors"}),
     # `data.chargeurs` convertit un corpus reel (WKT) en `Plan` : il redresse via
     # `orient.circulaire.direction_dominante` et decoupe via `geom.rectilineaire`.
     # Aretes ajoutees a `ARCHITECTURE.md` §5 : `geom` et `orient` sont purs et
     # n'importent pas `data`, donc aucun cycle. `data` ne touche ni `lmo`, ni
     # `solve`, ni `light` : il produit des entrees, il ne resout rien.
-    "data": frozenset({"types", "erreurs", "uq", "orient", "geom"}),
-    "certify": frozenset({"types", "erreurs", "geom", "uq"}),
-    "io": frozenset({"types", "erreurs"}),
+    "data": frozenset({"types", "errors", "uq", "orient", "geom"}),
+    "certify": frozenset({"types", "errors", "geom", "uq"}),
+    "io": frozenset({"types", "errors"}),
     # Apprentissage actif : orchestrateur feuille — protocole light + uq, pas torch.
-    "active": frozenset({"types", "erreurs", "light.protocole", "uq"}),
+    "active": frozenset({"types", "errors", "light.protocole", "uq"}),
     # Export BIM : feuille — types + erreurs ; ifcopenshell optionnel (hors archlux).
-    "export": frozenset({"types", "erreurs"}),
+    "export": frozenset({"types", "errors"}),
     # Faisabilité : façade sur legalize / Farkas — exacte, sans lumière.
-    "feasibility": frozenset({"types", "erreurs", "api"}),
+    "feasibility": frozenset({"types", "errors", "api"}),
     "bench": frozenset(
         {
             "types",
-            "erreurs",
+            "errors",
             "geom",
             "lmo",
             "solve",
@@ -77,7 +79,7 @@ AUTORISE: dict[str, frozenset[str]] = {
     "api": frozenset(
         {
             "types",
-            "erreurs",
+            "errors",
             "validation",
             "geom",
             "lmo",

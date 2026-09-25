@@ -19,7 +19,7 @@ from hypothesis import given, settings
 import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.data.corruption import corrompre
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.lmo import solveur
 from archlux.lmo.solveur import resoudre

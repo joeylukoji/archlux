@@ -154,11 +154,11 @@ def test_excluded_paths_are_left_alone(tool, tmp_path: Path) -> None:  # type: i
 
 def test_a_prose_only_change_next_to_the_new_name_is_still_proved(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     """``errors`` exists in the file (a library keyword); only a comment mentions the old name."""
-    text = "# les erreurs\nopen(f, errors='x')\n"
+    text = "# see erreurs\nopen(f, errors='x')\n"
     assert tool.identifier_conflicts(text, {"erreurs": "errors"}) == []
     new, count = tool.rename_source(text, {"erreurs": "errors"}, prose=True)
     assert count == 1
-    assert new == "# les errors\nopen(f, errors='x')\n"
+    assert new == "# see errors\nopen(f, errors='x')\n"
     path = tmp_path / "m.py"
     path.write_text(text, encoding="utf-8")
     assert tool.main(["--map", "erreurs=errors", "--prose", "--apply", str(path)]) == 0

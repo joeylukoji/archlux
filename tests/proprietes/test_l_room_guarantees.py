@@ -14,7 +14,7 @@ from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 import archlux
-from archlux.erreurs import ArchluxError
+from archlux.errors import ArchluxError
 from archlux.geom.rectilineaire import FUSION_DROIT, FUSION_HAUT, PieceRectilineaire
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.types import Contexte, Piece, Plan

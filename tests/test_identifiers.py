@@ -24,6 +24,7 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/_deprecation.py",
     "src/archlux/_version.py",
     "src/archlux/arrays.py",
+    "src/archlux/errors.py",
     "src/archlux/seeds.py",
     "src/archlux/tolerances.py",
 )

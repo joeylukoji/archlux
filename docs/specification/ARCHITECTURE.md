@@ -115,7 +115,7 @@ measuring a cold LP.
 ```
 types   ← everyone
 tolerances, seeds, arrays ← everyone   (leaves: they import nothing from archlux)
-validation ← types, erreurs   (door checks of the public arguments; imported by api)
+validation ← types, errors   (door checks of the public arguments; imported by api)
 geom    ← types
 lmo     ← types, geom
 solve   ← types, geom, lmo, light PROTOCOL (never the implementation)
@@ -123,8 +123,8 @@ light   ← types, orient
 uq      ← types
 data    ← types, uq, orient, geom   (corpus loaders: straightening + split)
 active  ← types, light.protocole, uq
-export  ← types, erreurs
-feasibility ← types, erreurs, api
+export  ← types, errors
+feasibility ← types, errors, api
 certify ← types, geom, uq
 bench   ← everything
 ```
@@ -266,7 +266,7 @@ archlux/
 │   ├── __init__.py          # public interface ONLY
 │   ├── _version.py          # single source of the version
 │   ├── api.py               # legalize
-│   ├── erreurs.py           # typed exceptions
+│   ├── errors.py            # typed exceptions (`erreurs.py`: deprecated alias module)
 │   ├── tolerances.py        # registry of numerical tolerances
 │   ├── validation.py        # `validate_inputs`: InvalidInput at the door of legalize
 │   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer

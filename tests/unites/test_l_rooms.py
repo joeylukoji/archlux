@@ -229,7 +229,7 @@ def test_the_proof_checks_every_recorded_seam_with_the_minimum_width() -> None:
 
 def test_a_fused_room_without_area_is_an_input_limit() -> None:
     """Review m3: a user input, not an internal fault."""
-    from archlux.erreurs import UnsupportedInput
+    from archlux.errors import UnsupportedInput
     from archlux.geom.rectilineaire import minimum_area_shares
 
     _, ctx, room = _l_in_tiling()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 __all__ = ["densite_noyau"]
 

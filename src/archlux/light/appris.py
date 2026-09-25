@@ -13,7 +13,7 @@ Tant que les poids sont un ``npz`` du perceptron (:class:`~archlux.light.base.Su
 -------------------------
 **Il n'existe pas.** Aucune architecture, aucun poids, aucun entraînement dans ce dépôt.
 :meth:`SubstitutAppris._charger_torch` lève **toujours**
-:class:`~archlux.erreurs.InvariantViolation`, quel que soit le contenu du ``.pt`` : son
+:class:`~archlux.errors.InvariantViolation`, quel que soit le contenu du ``.pt`` : son
 type de retour est ``NoReturn``, et le contrôle
 de taille contre :data:`MAX_PARAMETRES` qu'elle exécute d'abord ne peut donc que changer
 le message d'erreur, jamais laisser passer un modèle. Le seul substitut appris réellement
@@ -33,7 +33,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.light.base import SubstitutDense
 from archlux.light.protocole import Baies
 

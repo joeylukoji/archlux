@@ -12,7 +12,7 @@ C'est ainsi qu'a été trouvé le défaut le plus grave du jalon 8 : des pièces
 pièces restait juste — et une seule figure a suffi.
 
 Le format est du SVG écrit à la main : aucune dépendance ajoutée — ``export`` ne
-peut importer que ``types`` et ``erreurs`` —, une sortie vectorielle lisible dans
+peut importer que ``types`` et ``errors`` —, une sortie vectorielle lisible dans
 n'importe quel navigateur, et un texte que ``git diff`` sait comparer.
 
 Ce que le rendu montre, et pourquoi
@@ -33,7 +33,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from archlux.erreurs import InvalidInput
+from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
     from archlux.types import Mur, Plan, Point

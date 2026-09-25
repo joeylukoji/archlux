@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from archlux.erreurs import CalibrationLocked, ModelModified
+from archlux.errors import CalibrationLocked, ModelModified
 from archlux.uq.gestion import (
     GestionDonnees,
     emettre_jeton,

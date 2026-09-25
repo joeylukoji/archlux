@@ -5,12 +5,13 @@ PLAN.md 3.9, wave 1 (ADR 0001). One parametrized test covers the whole alias tab
 
 from __future__ import annotations
 
+import importlib
 import warnings
 
 import pytest
 
 import archlux
-from archlux import erreurs
+from archlux import errors
 
 RENAMED = {
     "OrdreIncoherent": "InconsistentOrder",
@@ -24,7 +25,7 @@ RENAMED = {
 
 
 def test_the_alias_table_is_the_one_tested_here() -> None:
-    assert erreurs.DEPRECATED_NAMES == RENAMED
+    assert errors.DEPRECATED_NAMES == RENAMED
 
 
 @pytest.mark.parametrize(("old", "new"), RENAMED.items())
@@ -35,11 +36,26 @@ def test_the_package_root_serves_the_old_name_with_a_warning(old: str, new: str)
 
 
 @pytest.mark.parametrize(("old", "new"), RENAMED.items())
-def test_the_error_module_serves_the_old_name_with_a_warning(old: str, new: str) -> None:
-    message = f"archlux.erreurs.{old} is deprecated, use archlux.erreurs.{new}"
+def test_the_old_module_serves_the_old_name_with_a_warning(old: str, new: str) -> None:
+    shim = importlib.import_module("archlux.erreurs")
+    message = f"archlux.erreurs.{old} is deprecated, use archlux.errors.{new}"
     with pytest.warns(DeprecationWarning, match=message):
-        legacy = getattr(erreurs, old)
-    assert legacy is getattr(erreurs, new)
+        legacy = getattr(shim, old)
+    assert legacy is getattr(errors, new)
+
+
+@pytest.mark.parametrize("name", errors.__all__)
+def test_the_old_module_still_serves_the_english_names(name: str) -> None:
+    """Old code importing an English name from the old module path keeps working."""
+    shim = importlib.import_module("archlux.erreurs")
+    with pytest.warns(DeprecationWarning, match=f"use archlux.errors.{name}"):
+        assert getattr(shim, name) is getattr(errors, name)
+
+
+def test_the_old_module_rejects_unknown_names() -> None:
+    shim = importlib.import_module("archlux.erreurs")
+    with pytest.raises(AttributeError):
+        _ = shim.NoSuchError
 
 
 @pytest.mark.parametrize("old", RENAMED)
@@ -53,9 +69,9 @@ def test_a_from_import_warns_exactly_once(old: str) -> None:
 @pytest.mark.parametrize(("old", "new"), RENAMED.items())
 def test_old_names_are_not_advertised(old: str, new: str) -> None:
     assert old not in archlux.__all__
-    assert old not in erreurs.__all__
+    assert old not in errors.__all__
     assert new in archlux.__all__
-    assert new in erreurs.__all__
+    assert new in errors.__all__
 
 
 def test_old_code_that_catches_the_old_name_still_catches_the_new_error() -> None:

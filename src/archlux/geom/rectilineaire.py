@@ -32,7 +32,7 @@ from scipy import sparse
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, unary_union
 
-from archlux.erreurs import InvariantViolation, UnsupportedInput
+from archlux.errors import InvariantViolation, UnsupportedInput
 from archlux.geom.polytope import Polytope
 from archlux.tolerances import AREA_PROOF_M2
 from archlux.types import Piece, Referentiel

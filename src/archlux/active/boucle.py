@@ -22,7 +22,7 @@ import structlog
 
 from archlux.active.densite import densite_noyau
 from archlux.active.selection import StrategieAcquisition
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.seeds import derive
 from archlux.uq.conforme import CalibrateurConforme, n_minimal_conforme
 
@@ -328,7 +328,7 @@ class Loop:
                 except InvariantViolation as echec:
                     # Scores dégénérés en début de campagne : conserver le calibrateur
                     # courant et retenter au cycle suivant. Le rattrapage est tracé —
-                    # ``erreurs.InvariantViolation`` interdit de l'avaler en silence — et
+                    # ``errors.InvariantViolation`` interdit de l'avaler en silence — et
                     # reste borné : si aucun cycle n'aboutit, ``calibrateur.n < 1`` et
                     # le repli ci-dessous relaie l'échec.
                     _LOG.warning(

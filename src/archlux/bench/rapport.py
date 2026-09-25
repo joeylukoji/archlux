@@ -11,7 +11,7 @@ import numpy as np
 from archlux.bench.graines import deriver
 from archlux.bench.run import Resultat
 from archlux.bench.stats import Intervalle, bootstrap_apparie
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.orient.circulaire import stratifier
 
 __all__ = ["N_REPLICATIONS", "RapportBanc", "StrateOrientation", "report"]

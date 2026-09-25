@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.types import REGIMES, BornePerformance, Indicateur, Regime
 
 __all__ = [

@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from archlux.erreurs import InvalidInput, InvariantViolation
+from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
     from archlux.export import RapportExport

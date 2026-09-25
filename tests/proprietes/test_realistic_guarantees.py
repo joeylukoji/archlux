@@ -15,7 +15,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 import archlux
-from archlux.erreurs import ArchluxError
+from archlux.errors import ArchluxError
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, devectoriser
 from archlux.light.analytique import SubstitutAnalytique

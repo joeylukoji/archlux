@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from archlux.bench.manifeste import emettre
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.io.json_io import manifeste_vers_dict
 from archlux.light.protocole import Substitut
 from archlux.types import Manifeste, ModeleTrace, Orientation, Plan

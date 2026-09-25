@@ -27,10 +27,10 @@ from typing import TYPE_CHECKING, Any
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux._version import __version__
-from archlux.erreurs import (
+from archlux.errors import (
     DEPRECATED_NAMES as _DEPRECATED_EXCEPTIONS,
 )
-from archlux.erreurs import (
+from archlux.errors import (
     ArchluxError,
     CalibrationLocked,
     GapNeedsTiling,

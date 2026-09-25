@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.seeds import derive
 from archlux.types import Orientation, Piece, Plan
 

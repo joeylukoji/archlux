@@ -8,7 +8,7 @@ from hypothesis import given, settings
 
 import archlux
 from archlux.data.synthese import two_room_plan, two_room_vectors
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, decision_vector, vectoriser
 from archlux.light.analytique import SubstitutAnalytique

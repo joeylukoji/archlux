@@ -18,7 +18,7 @@ import numpy as np
 from scipy import sparse
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import Infeasible, InvariantViolation
+from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.graphe import construire_graphe, reduction_transitive
 
 if TYPE_CHECKING:

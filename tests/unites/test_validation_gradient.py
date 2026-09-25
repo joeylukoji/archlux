@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from archlux.erreurs import InvalidSurrogate
+from archlux.errors import InvalidSurrogate
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation

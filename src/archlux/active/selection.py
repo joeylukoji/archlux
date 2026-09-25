@@ -6,7 +6,7 @@ from typing import Protocol
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 __all__ = ["Aleatoire", "StrategieAcquisition", "UncertaintyTimesDensity"]
 

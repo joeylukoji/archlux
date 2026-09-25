@@ -11,7 +11,7 @@ from dataclasses import replace
 
 import numpy as np
 
-from archlux.erreurs import InvalidInput
+from archlux.errors import InvalidInput
 from archlux.light.protocole import Baies
 from archlux.orient.circulaire import encode, encoder
 from archlux.types import Contexte, Mur, Orientation, Ouverture, Plan

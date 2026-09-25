@@ -6,7 +6,7 @@ gradient de distance) et à la légalisation performantielle (``c`` = −gradien
 d'éclairement), sans une ligne de différence. Faire connaître la lumière à ``lmo`` casse
 cette réutilisation (`ARCHITECTURE.md` §10).
 
-Dépendances autorisées : ``types``, ``erreurs``, ``geom``. **Jamais ``light``.**
+Dépendances autorisées : ``types``, ``errors``, ``geom``. **Jamais ``light``.**
 
 Dualité, phase I et Farkas : ``docs/formules/farkas.md``.
 """
@@ -23,7 +23,7 @@ import numpy as np
 from ortools.linear_solver import pywraplp
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope

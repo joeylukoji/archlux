@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from archlux.api import legalize
-from archlux.erreurs import GapNeedsTiling, Infeasible
+from archlux.errors import GapNeedsTiling, Infeasible
 from archlux.types import Contexte, Plan, Structure
 
 __all__ = ["CertificatFaisabilite", "Verdict", "is_feasible"]

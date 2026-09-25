@@ -20,7 +20,7 @@ from shapely.geometry import Polygon
 
 import archlux
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import Infeasible
+from archlux.errors import Infeasible
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.rectilineaire import decomposer
 from archlux.types import Contexte, Mur, Piece, Plan, Referentiel, Structure

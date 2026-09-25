@@ -14,7 +14,7 @@ from benchmarks.guarantees.scenarios import generate
 
 import archlux
 from archlux.certify.farkas import verify_infeasibility
-from archlux.erreurs import Infeasible
+from archlux.errors import Infeasible
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.solveur import resoudre

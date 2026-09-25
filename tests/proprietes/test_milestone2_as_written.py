@@ -16,7 +16,7 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.data.corruption import corrompre
-from archlux.erreurs import ArchluxError
+from archlux.errors import ArchluxError
 from archlux.types import Contexte, Plan
 from tests import checkers
 from tests.proprietes.strategies import (

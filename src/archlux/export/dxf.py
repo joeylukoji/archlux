@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.export.pathologie import diagnostiquer
 from archlux.types import Plan
 

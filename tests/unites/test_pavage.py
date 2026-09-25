@@ -12,7 +12,7 @@ import pytest
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import GridNotRecoverable, UnsupportedInput
+from archlux.errors import GridNotRecoverable, UnsupportedInput
 from archlux.geom.pavage import deduire_trame
 from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
 

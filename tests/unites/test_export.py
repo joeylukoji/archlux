@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 import pytest
 from hypothesis import given, settings
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.export import diagnostiquer, survival_rate, to_dxf, to_ifc
 from archlux.export.wilson import intervalle_wilson
 from archlux.types import Mur, Piece, Plan

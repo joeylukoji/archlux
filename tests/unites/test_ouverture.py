@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.types import Mur, Ouverture
 
 MUR_SUD = Mur(id="m_sud", a=(0.0, 0.0), b=(10.0, 0.0))

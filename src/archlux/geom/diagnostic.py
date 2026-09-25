@@ -42,7 +42,7 @@ from typing import TYPE_CHECKING
 from shapely.geometry import MultiPolygon, Polygon, box
 from shapely.ops import unary_union
 
-from archlux.erreurs import InvalidInput
+from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
     from archlux.types import Plan

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.jetons import vecteur_vers_jetons
 from archlux.light.protocole import Baies

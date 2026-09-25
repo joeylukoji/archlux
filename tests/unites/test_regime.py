@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 
 import archlux
-from archlux.erreurs import Infeasible, InvariantViolation
+from archlux.errors import Infeasible, InvariantViolation
 from archlux.io.json_io import depuis_dict, vers_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight

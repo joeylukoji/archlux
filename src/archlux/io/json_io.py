@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.types import (
     REGIMES,
     BornePerformance,

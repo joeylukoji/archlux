@@ -1,6 +1,6 @@
 """Export CAO/BIM : IFC, DXF, taux de survie.
 
-Couche feuille : ``types`` + ``erreurs``.
+Couche feuille : ``types`` + ``errors``.
 ``ifcopenshell`` est optionnel (extra ``bim``) : le noyau écrit un SPF IFC4 minimal
 suffisant pour la CI et les plans rectangulaires.
 """

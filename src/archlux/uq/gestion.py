@@ -38,7 +38,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.erreurs import CalibrationLocked, InvariantViolation, ModelModified
+from archlux.errors import CalibrationLocked, InvariantViolation, ModelModified
 
 __all__ = [
     "GestionDonnees",

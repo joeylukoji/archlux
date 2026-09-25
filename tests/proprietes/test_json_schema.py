@@ -21,7 +21,7 @@ import pytest
 from hypothesis import given, settings
 
 import archlux
-from archlux.erreurs import ArchluxError, InvariantViolation
+from archlux.errors import ArchluxError, InvariantViolation
 from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight

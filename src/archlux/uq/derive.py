@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.uq.conforme import Calibration
 
 __all__ = [

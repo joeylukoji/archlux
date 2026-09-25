@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from archlux import Piece, Plan
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.export import to_dxf
 
 SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))

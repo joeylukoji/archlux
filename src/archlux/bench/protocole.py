@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from archlux.data.decoupage import Decoupage, charger_decoupage
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence

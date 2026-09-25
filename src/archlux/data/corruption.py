@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.types import Piece, Plan
 
 if TYPE_CHECKING:

@@ -7,7 +7,7 @@ import pytest
 
 import archlux
 from archlux.api import gradient_distance
-from archlux.erreurs import Infeasible
+from archlux.errors import Infeasible
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, etendre_ecarts_l1, vectoriser
 from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure

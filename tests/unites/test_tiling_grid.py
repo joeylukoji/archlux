@@ -13,7 +13,7 @@ from dataclasses import replace
 import pytest
 
 import archlux
-from archlux.erreurs import UnsupportedInput
+from archlux.errors import UnsupportedInput
 from archlux.geom.pavage import deduire_trame
 from archlux.types import Contexte, Mur, Orientation, Piece, Plan, Referentiel, Structure
 from tests import checkers

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.io.json_io import charger, depuis_dict, vers_dict
 from archlux.types import Mur, Ouverture, Piece, Plan
 

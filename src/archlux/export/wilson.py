@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 __all__ = ["intervalle_wilson"]
 

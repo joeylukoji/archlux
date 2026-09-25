@@ -69,7 +69,7 @@ from scipy import sparse
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
-from archlux.erreurs import GridNotRecoverable, InvariantViolation, UnsupportedInput
+from archlux.errors import GridNotRecoverable, InvariantViolation, UnsupportedInput
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

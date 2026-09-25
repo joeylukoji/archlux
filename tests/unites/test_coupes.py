@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.coupes import coupe_surface, surfaces_violees

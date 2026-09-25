@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import Infeasible, InvariantViolation
+from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.polytope import Polytope
 from archlux.lmo.coupes import MAX_COUPES_PAR_PIECE, Coupe, coupe_surface, surfaces_violees
 from archlux.lmo.solveur import resoudre

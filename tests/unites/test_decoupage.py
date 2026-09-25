@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from archlux.bench.protocole import charger_decoupage
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 SPLITS = Path(__file__).resolve().parents[2] / "splits" / "v1"
 

@@ -6,7 +6,7 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 
 __all__ = ["Decoupage", "charger_decoupage"]
 

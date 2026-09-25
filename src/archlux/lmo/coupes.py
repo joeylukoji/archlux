@@ -61,7 +61,7 @@ import numpy as np
 from scipy import sparse
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.lmo.solveur import resoudre
 from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2, SNAP_M
 

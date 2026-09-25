@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import (
     construire_polytope,

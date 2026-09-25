@@ -16,7 +16,7 @@ from typing import ClassVar
 import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique, facteur_secteur
 from archlux.light.jetons import CHAMPS_PAR_PIECE
 from archlux.light.protocole import Baies

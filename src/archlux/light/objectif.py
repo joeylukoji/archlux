@@ -5,7 +5,7 @@ marge s'ouvre, l'objectif chute, et l'optimiseur est dissuadé d'y aller. Le gar
 n'est pas ajouté : il découle de l'incertitude.
 
 ``q_chapeau`` est un **flottant** déjà calibré. Ce module n'importe pas ``uq``
-(`ARCHITECTURE.md` §5 : ``light`` ← ``types``, ``erreurs``, ``orient``).
+(`ARCHITECTURE.md` §5 : ``light`` ← ``types``, ``errors``, ``orient``).
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.light.protocole import Baies, Substitut
 from archlux.types import Orientation
 

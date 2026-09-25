@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvalidInput, InvariantViolation
+from archlux.errors import InvalidInput, InvariantViolation
 from archlux.types import Orientation
 
 __all__ = [

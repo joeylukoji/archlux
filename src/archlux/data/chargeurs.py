@@ -48,7 +48,7 @@ from shapely.errors import ShapelyError
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.geom.rectilineaire import PieceRectilineaire, decomposer
 from archlux.orient.circulaire import direction_dominante
 from archlux.types import (

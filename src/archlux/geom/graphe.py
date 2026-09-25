@@ -6,7 +6,7 @@ Traduit « la pièce A est à gauche de la pièce B » en l'inégalité ``x_A + 
 droite, dessus, dessous) doit exister. Sans elle, le chevauchement reste possible et
 aucun ajout de contrainte ultérieur ne le rattrape.
 
-Dépendances autorisées : ``types``, ``erreurs``. Rien d'autre (`ARCHITECTURE.md` §5).
+Dépendances autorisées : ``types``, ``errors``. Rien d'autre (`ARCHITECTURE.md` §5).
 
 Dérivation du jeu entre rectangles, acyclicité et réduction transitive :
 ``docs/formules/ordre-relatif.md``.
@@ -19,7 +19,7 @@ import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
-from archlux.erreurs import InconsistentOrder, MissingSeparation, UnsupportedInput
+from archlux.errors import InconsistentOrder, MissingSeparation, UnsupportedInput
 from archlux.tolerances import CONTACT_M, SNAP_M
 
 if TYPE_CHECKING:

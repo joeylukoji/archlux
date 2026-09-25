@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from math import isfinite
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.types import BornePerformance, Regime
 from archlux.uq.conforme import Calibration, borner, quantile_conforme
 from archlux.uq.derive import DiagnosticDerive

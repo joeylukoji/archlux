@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from archlux.erreurs import InvariantViolation
+from archlux.errors import InvariantViolation
 from archlux.types import BornePerformance
 from archlux.uq.conforme import CalibrateurConforme, Calibration, borner, quantile_conforme
 

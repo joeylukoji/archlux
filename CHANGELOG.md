@@ -8,6 +8,24 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 1: English exceptions
+
+#### Changed — API (pre-1.0; the old names keep working, deprecated until 1.0.0)
+- Exception classes: `OrdreIncoherent` to `InconsistentOrder`, `SeparationManquante` to
+  `MissingSeparation`, `Infaisable` to `Infeasible`, `InvariantViole` to
+  `InvariantViolation`, `CalibrationVerrouillee` to `CalibrationLocked`, `ModeleModifie` to
+  `ModelModified`, `SubstitutInvalide` to `InvalidSurrogate`. The old names are the same
+  objects (`except Infaisable` still catches), served with a `DeprecationWarning` by
+  `archlux` and `archlux.erreurs`.
+- Module `archlux.erreurs` is now `archlux.errors`; the old path is a shim that forwards
+  every name, old and new, with a warning.
+- **Attributes, no alias** (clean break): `InconsistentOrder.axe` is `axis`,
+  `MissingSeparation.paire` is `pair`, `Infeasible.certificat_farkas` is
+  `farkas_certificate` and `Infeasible.origines` is `origins` (constructor keywords too).
+- Exception messages and docstrings are in English (`invariant violated: ...`,
+  `horizontal cycle: a -> b`, `no separation between a and b`).
+- The output of `legalize` on the neutrality corpus is byte-identical to before.
+
 ### Remediation — PLAN.md phase 3.9, wave 0: tooling for the English API (no rename yet)
 
 #### Added (development tooling, no change for library users)
