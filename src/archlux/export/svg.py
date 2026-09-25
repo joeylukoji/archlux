@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING
 from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
-    from archlux.types import Mur, Plan, Point
+    from archlux.types import Plan, Point, Wall
 
 __all__ = ["comparer", "planche", "rendre"]
 
@@ -109,7 +109,7 @@ def _panneau(
     etendue: tuple[float, float, float, float],
     decalage_x: float,
     decalage_y: float = 0.0,
-    walls: tuple[Mur, ...] = (),
+    walls: tuple[Wall, ...] = (),
 ) -> list[str]:
     """Un panneau : cadre, contour en tirets, pièces, murs, titre. Coordonnées SVG.
 
@@ -185,7 +185,7 @@ def rendre(
     *,
     contour: tuple[Point, ...] = (),
     titre: str = "",
-    walls: tuple[Mur, ...] = (),
+    walls: tuple[Wall, ...] = (),
 ) -> str:
     """Rendre un plan en SVG autonome.
 
@@ -229,7 +229,7 @@ def comparer(
     *,
     contour: tuple[Point, ...] = (),
     titres: tuple[str, str] = ("avant", "après"),
-    walls: tuple[Mur, ...] = (),
+    walls: tuple[Wall, ...] = (),
 ) -> str:
     """Rendre deux plans côte à côte, **à la même échelle**.
 
@@ -273,7 +273,7 @@ def planche(
     *,
     contour: tuple[Point, ...] = (),
     colonnes: int = 4,
-    walls: tuple[Mur, ...] = (),
+    walls: tuple[Wall, ...] = (),
 ) -> str:
     """Rendre une **série** de variantes en grille, toutes à la même échelle.
 

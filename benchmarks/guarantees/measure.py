@@ -47,11 +47,11 @@ from tests import checkers
 
 import archlux
 from archlux.data.corruption import corrompre
-from archlux.erreurs import ArchluxError, Infeasible, UnsupportedInput
+from archlux.errors import ArchluxError, Infeasible, UnsupportedInput
 from archlux.export.svg import comparer
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
-from archlux.types import Contexte, Plan
+from archlux.types import Context, Plan
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results"
@@ -84,7 +84,7 @@ class Mode:
     description: str
     family: WallKind
     prepare: Callable[[Scenario], Plan]
-    run: Callable[[Plan, Contexte], Plan]
+    run: Callable[[Plan, Context], Plan]
     budget: float | None = None
     """Displacement budget the output must respect, checked independently."""
 
@@ -116,15 +116,15 @@ def _noisy(s: Scenario) -> Plan:
     return perturb(s.plan, seed=zlib.crc32(s.name.encode()))
 
 
-def _classic(plan: Plan, ctx: Contexte) -> Plan:
+def _classic(plan: Plan, ctx: Context) -> Plan:
     return archlux.legalize(plan, ctx)
 
 
-def _classic_tiling(plan: Plan, ctx: Contexte) -> Plan:
+def _classic_tiling(plan: Plan, ctx: Context) -> Plan:
     return archlux.legalize(plan, ctx, pavage=True)
 
 
-def _performance(plan: Plan, ctx: Contexte) -> Plan:
+def _performance(plan: Plan, ctx: Context) -> Plan:
     return archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
 
 
@@ -133,13 +133,13 @@ BUDGET_M = 0.3
 what Frank-Wolfe would like to move, so that the budget actually binds."""
 
 
-def _performance_tiling_budget(plan: Plan, ctx: Contexte) -> Plan:
+def _performance_tiling_budget(plan: Plan, ctx: Context) -> Plan:
     return archlux.legalize(
         plan, ctx, objective=SubstitutAnalytique(), pavage=True, budget=BUDGET_M
     )
 
 
-def _daylight(plan: Plan, ctx: Contexte) -> Plan:
+def _daylight(plan: Plan, ctx: Context) -> Plan:
     objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
     return archlux.legalize(plan, ctx, objective=objective)
 
@@ -254,7 +254,7 @@ def _gallery(
     label: str,
     key: str,
     measured: list[tuple[Case, tuple[Plan, Plan] | None]],
-    context_of: dict[str, Contexte],
+    context_of: dict[str, Context],
 ) -> list[str]:
     folder = RESULTS / label
     written: list[str] = []

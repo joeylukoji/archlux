@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import archlux
-from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
@@ -12,8 +12,8 @@ def test_api_publique_stable() -> None:
     attendu = {
         "legalize",
         "Plan",
-        "Contexte",
-        "Certificat",
+        "Context",
+        "Certificate",
         "Infeasible",
         "InvariantViolation",
         "light",
@@ -26,8 +26,8 @@ def test_api_publique_stable() -> None:
 def test_feasibility_faisable() -> None:
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -42,18 +42,18 @@ def test_feasibility_infaisable_explique() -> None:
     contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
-            Piece(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
+            Room(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
         ),
         murs=(),
         ouvertures=(),
         contour=contour,
     )
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=contour,
-        referentiel=Referentiel(aires_min=(), largeur_min=8.0),
+        referentiel=Regulation(aires_min=(), largeur_min=8.0),
     )
     verdict = archlux.feasibility.is_feasible(plan, ctx.structure, ctx)
     assert not verdict

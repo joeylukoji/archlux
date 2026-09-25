@@ -14,16 +14,16 @@ from hypothesis import given, settings
 
 from archlux.errors import InvariantViolation
 from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
-from archlux.types import Certificat, Mur, Ouverture, Piece, Plan, PreuveGeometrique
+from archlux.types import Certificate, GeometricProof, Opening, Plan, Room, Wall
 from tests.proprietes.strategies import plans_quelconques
 
 PLAN_T2 = Plan(
     pieces=(
-        Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),
-        Piece(id="sdb", type="sdb", x=4.0, y=0.0, w=2.0, h=2.5),
+        Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),
+        Room(id="sdb", type="sdb", x=4.0, y=0.0, w=2.0, h=2.5),
     ),
-    murs=(Mur(id="m_sud", a=(0.0, 0.0), b=(6.0, 0.0), porteur=True),),
-    ouvertures=(Ouverture(id="f1", mur_id="m_sud", s=0.3, largeur_rel=0.25),),
+    murs=(Wall(id="m_sud", a=(0.0, 0.0), b=(6.0, 0.0), porteur=True),),
+    ouvertures=(Opening(id="f1", mur_id="m_sud", s=0.3, largeur_rel=0.25),),
     contour=((0.0, 0.0), (6.0, 0.0), (6.0, 3.5), (0.0, 3.5)),
 )
 
@@ -44,7 +44,7 @@ def test_aller_retour_sur_disque(tmp_path: Path) -> None:
 
 def test_le_certificat_survit_a_l_aller_retour() -> None:
     """Un plan légalisé porte son certificat ; le relire ne doit pas le perdre."""
-    preuve = PreuveGeometrique(
+    preuve = GeometricProof(
         valide=True,
         chevauchement=False,
         jours=False,
@@ -58,7 +58,7 @@ def test_le_certificat_survit_a_l_aller_retour() -> None:
         murs=PLAN_T2.murs,
         ouvertures=PLAN_T2.ouvertures,
         contour=PLAN_T2.contour,
-        certificat=Certificat(geometrie=preuve),
+        certificat=Certificate(geometrie=preuve),
     )
     relu = depuis_dict(vers_dict(legalise))
     assert relu.certificat is not None

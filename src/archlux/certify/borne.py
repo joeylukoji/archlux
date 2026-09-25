@@ -10,7 +10,7 @@ from __future__ import annotations
 from math import isfinite
 
 from archlux.errors import InvariantViolation
-from archlux.types import BornePerformance, Regime
+from archlux.types import PerformanceBound, Regime
 from archlux.uq.conforme import Calibration, borner, quantile_conforme
 from archlux.uq.derive import DiagnosticDerive
 
@@ -24,7 +24,7 @@ def construire_borne(
     *,
     incertitude: float,
     regime: Regime,
-) -> BornePerformance | None:
+) -> PerformanceBound | None:
     """Construire la borne, ou ``None`` si la dérive invalide l'échangeabilité.
 
     Parameters
@@ -82,7 +82,7 @@ def check_calibration(calibration: object) -> None:
 
 def bound_selected_plan(
     value: float, calibration: Calibration, *, uncertainty: float
-) -> BornePerformance | None:
+) -> PerformanceBound | None:
     """Conformal interval of a plan **chosen by the optimizer** (PLAN.md batch 1.6).
 
     The interval is computed as for an exchangeable plan, but it is labelled

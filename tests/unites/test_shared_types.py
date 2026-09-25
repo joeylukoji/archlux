@@ -1,7 +1,7 @@
 """Shared type aliases and the typing of the lazy packages (PLAN.md 3.8).
 
 ``Literal["sDA", "ASE", "UDI", "vue"]`` was written in seven places, and ``Substitut``
-declared its indicator as a bare ``str`` while ``BornePerformance`` used the literal.
+declared its indicator as a bare ``str`` while ``PerformanceBound`` used the literal.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from archlux.types import BornePerformance, Indicateur
+from archlux.types import Indicateur, PerformanceBound
 
 SRC = Path(__file__).resolve().parents[2] / "src" / "archlux"
 
@@ -36,7 +36,7 @@ def test_the_indicator_literal_is_written_once() -> None:
 def test_the_bound_and_the_protocol_share_the_alias() -> None:
     from archlux.light.protocole import Substitut
 
-    assert typing.get_type_hints(BornePerformance)["indicateur"] == Indicateur
+    assert typing.get_type_hints(PerformanceBound)["indicateur"] == Indicateur
     assert typing.get_type_hints(Substitut.indicateur.fget)["return"] == Indicateur  # type: ignore[attr-defined]
 
 

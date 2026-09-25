@@ -25,7 +25,7 @@ from archlux.lmo import solveur
 from archlux.lmo.solveur import resoudre
 from archlux.solve import frank_wolfe as fw_module
 from archlux.solve.frank_wolfe import frank_wolfe
-from archlux.types import Contexte, Orientation, Plan
+from archlux.types import Context, Orientation, Plan
 from tests.proprietes.strategies import realistic_scenarios
 from tests.unites.test_frank_wolfe import NORD, POLY, ObjectifLineaire, _depart_faisable
 
@@ -114,7 +114,7 @@ def _max_move(result: Plan, proposed: Plan) -> float:
 @settings(max_examples=40, deadline=None, derandomize=True)
 @given(scenario=realistic_scenarios())
 def test_performance_mode_never_moves_a_room_beyond_the_budget(
-    scenario: tuple[Plan, Contexte],
+    scenario: tuple[Plan, Context],
 ) -> None:
     """AUDIT.md §5.8: the Frank-Wolfe box was centred on the L1 point, so the total move
     from the proposal could reach twice the budget. The input is corrupted first, so
@@ -133,7 +133,7 @@ def test_performance_mode_never_moves_a_room_beyond_the_budget(
 
 @settings(max_examples=40, deadline=None, derandomize=True)
 @given(scenario=realistic_scenarios())
-def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Contexte]) -> None:
+def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Context]) -> None:
     """Review M1: with a budget equal to the displacement the classic pass needs, the LP
     meets the budget only up to its tolerance; the Frank-Wolfe box must still contain
     the classic result instead of raising InvariantViolation."""

@@ -9,19 +9,19 @@ import pytest
 from archlux import types as t
 
 TYPES_GELES = [
-    t.Piece,
-    t.Mur,
-    t.Ouverture,
+    t.Room,
+    t.Wall,
+    t.Opening,
     t.Plan,
     t.Orientation,
-    t.Referentiel,
+    t.Regulation,
     t.Structure,
-    t.Contexte,
-    t.PreuveGeometrique,
-    t.BornePerformance,
-    t.ModeleTrace,
-    t.Manifeste,
-    t.Certificat,
+    t.Context,
+    t.GeometricProof,
+    t.PerformanceBound,
+    t.ModelTrace,
+    t.Manifest,
+    t.Certificate,
 ]
 
 
@@ -35,17 +35,17 @@ def test_tous_les_types_sont_geles(type_: type) -> None:
 def test_la_preuve_geometrique_n_a_aucun_champ_de_probabilite() -> None:
     """Une preuve et une prédiction ne se mélangent pas, jusque dans les types."""
     interdits = {"couverture", "alpha", "proba", "probabilite", "confiance", "sigma"}
-    champs = {f.name for f in dataclasses.fields(t.PreuveGeometrique)}
+    champs = {f.name for f in dataclasses.fields(t.GeometricProof)}
     assert not (champs & interdits)
 
 
 def test_la_borne_porte_toujours_sa_couverture() -> None:
     """Une borne conforme sans couverture ni taille de calibration est invérifiable."""
-    champs = {f.name for f in dataclasses.fields(t.BornePerformance)}
+    champs = {f.name for f in dataclasses.fields(t.PerformanceBound)}
     assert {"couverture", "n_calibration"} <= champs
 
 
 def test_une_ouverture_ne_stocke_aucune_position_absolue() -> None:
     """La position absolue est dérivée ; la stocker désynchronise murs et fenêtres."""
-    champs = {f.name for f in dataclasses.fields(t.Ouverture)}
+    champs = {f.name for f in dataclasses.fields(t.Opening)}
     assert not (champs & {"x", "y", "x_abs", "y_abs", "position"})

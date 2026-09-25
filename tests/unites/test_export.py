@@ -11,17 +11,17 @@ from hypothesis import given, settings
 from archlux.errors import InvariantViolation
 from archlux.export import diagnostiquer, survival_rate, to_dxf, to_ifc
 from archlux.export.wilson import intervalle_wilson
-from archlux.types import Mur, Piece, Plan
+from archlux.types import Plan, Room, Wall
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 
 
 def _plan_sain() -> Plan:
     return Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(Mur(id="m1", a=(0.0, 0.0), b=(12.0, 0.0), porteur=True),),
+        murs=(Wall(id="m1", a=(0.0, 0.0), b=(12.0, 0.0), porteur=True),),
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )
@@ -30,10 +30,10 @@ def _plan_sain() -> Plan:
 def _plan_pathologique() -> Plan:
     return Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Piece(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(Mur(id="nul", a=(1.0, 1.0), b=(1.0, 1.0), porteur=False),),
+        murs=(Wall(id="nul", a=(1.0, 1.0), b=(1.0, 1.0), porteur=False),),
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )

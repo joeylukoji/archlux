@@ -17,29 +17,29 @@ from archlux.geom.graphe import WallSide, deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.protocole import Substitut
-from archlux.types import Contexte, Mur, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 
 _OUTLINE = ((0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (0.0, 6.0))
-_FULL = Mur(id="w", a=(6.0, 0.0), b=(6.0, 6.0), porteur=True)
-_PARTIAL = Mur(id="p", a=(6.0, 0.0), b=(6.0, 3.0), porteur=True)
+_FULL = Wall(id="w", a=(6.0, 0.0), b=(6.0, 6.0), porteur=True)
+_PARTIAL = Wall(id="p", a=(6.0, 0.0), b=(6.0, 3.0), porteur=True)
 
 
-def _ctx(*walls: Mur, areas: tuple[tuple[str, float], ...] = ()) -> Contexte:
-    return Contexte(
+def _ctx(*walls: Wall, areas: tuple[tuple[str, float], ...] = ()) -> Context:
+    return Context(
         structure=Structure(murs_porteurs=walls),
         orientation=Orientation(deg=30.0),
         contour=_OUTLINE,
-        referentiel=Referentiel(aires_min=areas, largeur_min=1.0),
+        referentiel=Regulation(aires_min=areas, largeur_min=1.0),
     )
 
 
-def _plan(*rooms: Piece, walls: tuple[Mur, ...] = ()) -> Plan:
+def _plan(*rooms: Room, walls: tuple[Wall, ...] = ()) -> Plan:
     return Plan(pieces=rooms, murs=walls, ouvertures=(), contour=_OUTLINE)
 
 
-def _room(rid: str, x: float, y: float, w: float, h: float) -> Piece:
-    return Piece(id=rid, type="chambre", x=x, y=y, w=w, h=h)
+def _room(rid: str, x: float, y: float, w: float, h: float) -> Room:
+    return Room(id=rid, type="chambre", x=x, y=y, w=w, h=h)
 
 
 # --- Order: which side of each wall every room stays on -------------------------------
@@ -103,7 +103,7 @@ def test_without_structure_the_order_has_no_wall_sides() -> None:
 
 
 def test_an_oblique_load_bearing_wall_is_refused_not_ignored() -> None:
-    oblique = Mur(id="o", a=(0.0, 0.0), b=(10.0, 6.0), porteur=True)
+    oblique = Wall(id="o", a=(0.0, 0.0), b=(10.0, 6.0), porteur=True)
     with pytest.raises(UnsupportedInput, match="axis-aligned"):
         deduire_ordre(_plan(_room("a", 0, 0, 10, 6)), structure=Structure((oblique,)))
 
@@ -156,7 +156,7 @@ def test_the_proof_tolerates_solver_noise_but_not_a_real_crossing(
 
 
 def test_the_proof_checks_oblique_walls_too() -> None:
-    oblique = Mur(id="o", a=(0.0, 0.0), b=(10.0, 6.0), porteur=True)
+    oblique = Wall(id="o", a=(0.0, 0.0), b=(10.0, 6.0), porteur=True)
     plan = _plan(_room("a", 0, 0, 10, 6), walls=(oblique,))
     assert not verify_exactly(plan, _ctx(oblique)).structure_preservee
 
@@ -192,15 +192,15 @@ def test_the_audit_grid_keeps_its_load_bearing_wall_in_performance_mode() -> Non
     """AUDIT.md §5.3, measured: on a 5 x 3 grid with a load-bearing wall at x = 6,
     Frank-Wolfe used to place partitions at 3.796 and 11.204 and certify it."""
     outline = ((0.0, 0.0), (15.0, 0.0), (15.0, 9.0), (0.0, 9.0))
-    wall = Mur(id="x6", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
-    ctx = Contexte(
+    wall = Wall(id="x6", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
+    ctx = Context(
         structure=Structure(murs_porteurs=(wall,)),
         orientation=Orientation(deg=20.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(), largeur_min=1.0),
     )
     rooms = tuple(
-        Piece(id=f"c{i}{j}", type="chambre", x=3.0 * i, y=3.0 * j, w=3.0, h=3.0)
+        Room(id=f"c{i}{j}", type="chambre", x=3.0 * i, y=3.0 * j, w=3.0, h=3.0)
         for i in range(5)
         for j in range(3)
     )

@@ -10,7 +10,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from archlux.errors import InvariantViolation
-from archlux.types import BornePerformance
+from archlux.types import PerformanceBound
 from archlux.uq.conforme import CalibrateurConforme, Calibration, borner, quantile_conforme
 
 
@@ -43,7 +43,7 @@ def test_quantile_refuse_un_jeu_trop_petit() -> None:
 def test_pas_de_borne_sans_calibration() -> None:
     """Une borne sans jeu de calibration est invérifiable."""
     with pytest.raises(InvariantViolation, match="n_calibration"):
-        BornePerformance(
+        PerformanceBound(
             indicateur="sDA",
             valeur=56.2,
             borne_inf=51.4,

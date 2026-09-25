@@ -10,7 +10,7 @@ import numpy as np
 
 from archlux.errors import InvariantViolation
 from archlux.seeds import derive
-from archlux.types import Orientation, Piece, Plan
+from archlux.types import Orientation, Plan, Room
 
 __all__ = [
     "TAILLE_MAX",
@@ -65,15 +65,15 @@ def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:
     corpus: dict[str, Plan] = {}
     for rang in range(n):
         coupe_x, coupe_y = paires[rang]
-        pieces: tuple[Piece, ...] = (
-            Piece(id="sw", type=_TYPES[rang % 4], x=0.0, y=0.0, w=coupe_x, h=coupe_y),
-            Piece(
+        pieces: tuple[Room, ...] = (
+            Room(id="sw", type=_TYPES[rang % 4], x=0.0, y=0.0, w=coupe_x, h=coupe_y),
+            Room(
                 id="se", type=_TYPES[(rang + 1) % 4], x=coupe_x, y=0.0, w=12.0 - coupe_x, h=coupe_y
             ),
-            Piece(
+            Room(
                 id="nw", type=_TYPES[(rang + 2) % 4], x=0.0, y=coupe_y, w=coupe_x, h=9.0 - coupe_y
             ),
-            Piece(
+            Room(
                 id="ne",
                 type=_TYPES[(rang + 3) % 4],
                 x=coupe_x,
@@ -142,6 +142,6 @@ def two_room_plan(x: np.ndarray) -> Plan:
     Plan
         Two rooms, no wall, outline :data:`TWO_ROOM_OUTLINE`.
     """
-    a = Piece(id="a", type="sejour", x=float(x[0]), y=float(x[1]), w=float(x[2]), h=float(x[3]))
-    b = Piece(id="b", type="chambre", x=float(x[4]), y=float(x[5]), w=float(x[6]), h=float(x[7]))
+    a = Room(id="a", type="sejour", x=float(x[0]), y=float(x[1]), w=float(x[2]), h=float(x[3]))
+    b = Room(id="b", type="chambre", x=float(x[4]), y=float(x[5]), w=float(x[6]), h=float(x[7]))
     return Plan((a, b), (), (), TWO_ROOM_OUTLINE)

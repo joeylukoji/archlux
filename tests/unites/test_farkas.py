@@ -18,13 +18,13 @@ from archlux.errors import Infeasible
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.solveur import resoudre
-from archlux.types import Contexte, Orientation, Referentiel, Structure
+from archlux.types import Context, Orientation, Regulation, Structure
 
-_CTX = Contexte(
+_CTX = Context(
     structure=Structure(murs_porteurs=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-    referentiel=Referentiel(aires_min=(), largeur_min=2.0),
+    referentiel=Regulation(aires_min=(), largeur_min=2.0),
 )
 _TWO_ROOMS_IN_3M = construire_polytope(
     OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")), _CTX
@@ -50,7 +50,7 @@ def test_a_forged_certificate_does_not_verify() -> None:
 def test_a_feasible_system_never_verifies() -> None:
     wide = construire_polytope(
         OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")),
-        Contexte(
+        Context(
             structure=_CTX.structure,
             orientation=_CTX.orientation,
             contour=((0.0, 0.0), (5.0, 0.0), (5.0, 3.0), (0.0, 3.0)),

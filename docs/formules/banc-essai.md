@@ -4,7 +4,7 @@
 
 ## Énoncé
 
-Toute exécution produit un **manifeste** (version, graine, empreintes, `ModeleTrace`)
+Toute exécution produit un **manifeste** (version, graine, empreintes, `ModelTrace`)
 **avant** les résultats. Les **bruts** sont écrits **avant** toute agrégation.
 Le rapport est **stratifié par orientation** (rose à 8 secteurs) — jamais une moyenne
 globale seule : deux méthodes peuvent avoir la même moyenne et se croiser au sud.
@@ -76,7 +76,7 @@ significatif (« puissance observée ») n'a pas de valeur inférentielle.
 
 | Symbole | Fonction |
 |---|---|
-| manifeste | `bench.manifeste.emettre` / `ModeleTrace` |
+| manifeste | `bench.manifeste.emettre` / `ModelTrace` |
 | orchestration | `bench.run` → `Resultat` |
 | comparaison | `bench.compare` |
 | rapport | `bench.rapport` |

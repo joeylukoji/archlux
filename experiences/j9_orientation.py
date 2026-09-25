@@ -5,7 +5,7 @@ Ce que ce jalon montre
 `legalize(..., objective=Substitut)` enchaine Frank-Wolfe depuis le point L1 **sans
 sortir du polytope**. Chaque variante produite est donc un plan geometriquement
 valide et certifie : on explore l'espace des dispositions admissibles, on n'en
-sort jamais. Faire varier `Contexte.orientation` fait varier l'objectif, donc la
+sort jamais. Faire varier `Context.orientation` fait varier l'objectif, donc la
 disposition retenue.
 
 L'entree est un plan **genere** (jalon 8) puis legalise : la chaine complete va

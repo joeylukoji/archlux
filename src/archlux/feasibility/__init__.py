@@ -6,7 +6,7 @@ from dataclasses import dataclass, replace
 
 from archlux.api import legalize
 from archlux.errors import GapNeedsTiling, Infeasible
-from archlux.types import Contexte, Plan, Structure
+from archlux.types import Context, Plan, Structure
 
 __all__ = ["CertificatFaisabilite", "Verdict", "is_feasible"]
 
@@ -55,7 +55,7 @@ class Verdict:
         return self.faisable
 
 
-def _legalize_any_dimensions(programme: Plan, ctx: Contexte) -> None:
+def _legalize_any_dimensions(programme: Plan, ctx: Context) -> None:
     """Legalize, closing a gap of the proposal with the tiling grid if needed.
 
     The program is not asked to keep its dimensions: a gap in the proposal is not a
@@ -67,7 +67,7 @@ def _legalize_any_dimensions(programme: Plan, ctx: Contexte) -> None:
         legalize(programme, ctx, pavage=True)
 
 
-def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict:
+def is_feasible(programme: Plan, structure: Structure, ctx: Context) -> Verdict:
     """Décider si un programme (ordre relatif fixé) admet un plan valide.
 
     Parameters

@@ -20,7 +20,7 @@ from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, devectoriser
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
-from archlux.types import Contexte, Plan
+from archlux.types import Context, Plan
 from tests import checkers
 from tests.proprietes.strategies import GATE_EXAMPLES, realistic_scenarios
 
@@ -31,14 +31,14 @@ _SETTINGS = settings(
 )
 
 
-def _independent_violations(result: Plan, ctx: Contexte) -> list[str]:
+def _independent_violations(result: Plan, ctx: Context) -> list[str]:
     """Details of the violations found by the shared independent checker."""
     return [violation.detail for violation in checkers.violations(result, ctx)]
 
 
 @_SETTINGS
 @given(scenario=realistic_scenarios())
-def test_the_input_is_valid_under_its_own_context(scenario: tuple[Plan, Contexte]) -> None:
+def test_the_input_is_valid_under_its_own_context(scenario: tuple[Plan, Context]) -> None:
     """Sanity check of the strategy itself: any later violation comes from legalize."""
     plan, ctx = scenario
     assert ctx.structure.murs_porteurs, "every scenario must contain a load-bearing wall"
@@ -48,7 +48,7 @@ def test_the_input_is_valid_under_its_own_context(scenario: tuple[Plan, Contexte
 
 @_SETTINGS
 @given(scenario=realistic_scenarios())
-def test_classic_legalization_keeps_every_guarantee(scenario: tuple[Plan, Contexte]) -> None:
+def test_classic_legalization_keeps_every_guarantee(scenario: tuple[Plan, Context]) -> None:
     plan, ctx = scenario
     result = archlux.legalize(plan, ctx)
     assert _independent_violations(result, ctx) == []
@@ -60,7 +60,7 @@ def test_classic_legalization_keeps_every_guarantee(scenario: tuple[Plan, Contex
     budget=st.none() | st.floats(min_value=0.05, max_value=1.0),
 )
 def test_legalize_never_certifies_a_broken_guarantee(
-    scenario: tuple[Plan, Contexte], budget: float | None
+    scenario: tuple[Plan, Context], budget: float | None
 ) -> None:
     """The central promise: either an honest, typed refusal or a plan that keeps every
     exact guarantee, the budget included. Never a certificate that lies.
@@ -81,7 +81,7 @@ def test_legalize_never_certifies_a_broken_guarantee(
 @_SETTINGS
 @given(scenario=realistic_scenarios())
 def test_performance_legalization_keeps_every_guarantee(
-    scenario: tuple[Plan, Contexte],
+    scenario: tuple[Plan, Context],
 ) -> None:
     plan, ctx = scenario
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
@@ -91,7 +91,7 @@ def test_performance_legalization_keeps_every_guarantee(
 @_SETTINGS
 @given(scenario=realistic_scenarios())
 def test_every_frank_wolfe_iterate_keeps_every_guarantee(
-    scenario: tuple[Plan, Contexte],
+    scenario: tuple[Plan, Context],
 ) -> None:
     """Not only the output: every intermediate plan of Frank-Wolfe is valid (PLAN.md 1.2).
 
@@ -107,7 +107,7 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
 
 @_SETTINGS
 @given(scenario=realistic_scenarios())
-def test_daylight_objective_is_accepted_by_legalize(scenario: tuple[Plan, Contexte]) -> None:
+def test_daylight_objective_is_accepted_by_legalize(scenario: tuple[Plan, Context]) -> None:
     plan, ctx = scenario
     objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
     result = archlux.legalize(plan, ctx, objective=objective)
@@ -116,52 +116,52 @@ def test_daylight_objective_is_accepted_by_legalize(scenario: tuple[Plan, Contex
 
 def test_the_checker_detects_each_kind_of_violation() -> None:
     """Guard against a checker that silently accepts everything."""
-    from archlux.types import Mur, Orientation, Piece, Referentiel, Structure
+    from archlux.types import Orientation, Regulation, Room, Structure, Wall
 
     outline = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
-    wall = Mur(id="w", a=(2.0, 0.0), b=(2.0, 2.0), porteur=True)
-    ctx = Contexte(
+    wall = Wall(id="w", a=(2.0, 0.0), b=(2.0, 2.0), porteur=True)
+    ctx = Context(
         structure=Structure(murs_porteurs=(wall,)),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(("bedroom", 5.0),), largeur_min=0.5),
+        referentiel=Regulation(aires_min=(("bedroom", 5.0),), largeur_min=0.5),
     )
 
-    def plan(*rooms: Piece) -> Plan:
+    def plan(*rooms: Room) -> Plan:
         return Plan(pieces=rooms, murs=(wall,), ouvertures=(), contour=outline)
 
     valid = plan(
-        Piece(id="a", type="bedroom", x=0.0, y=0.0, w=2.0, h=2.0),
-        Piece(id="b", type="other", x=2.0, y=0.0, w=2.0, h=2.0),
+        Room(id="a", type="bedroom", x=0.0, y=0.0, w=2.0, h=2.0),
+        Room(id="b", type="other", x=2.0, y=0.0, w=2.0, h=2.0),
     )
     assert _independent_violations(valid, ctx) == ["a: area 4.000000 < 5.000000"]
     crossing = plan(
-        Piece(id="a", type="other", x=0.0, y=0.0, w=3.0, h=2.0),
-        Piece(id="b", type="other", x=3.0, y=0.0, w=1.0, h=2.0),
+        Room(id="a", type="other", x=0.0, y=0.0, w=3.0, h=2.0),
+        Room(id="b", type="other", x=3.0, y=0.0, w=1.0, h=2.0),
     )
     assert _independent_violations(crossing, ctx) == ["a crosses load-bearing wall w"]
-    gap = plan(Piece(id="a", type="other", x=0.0, y=0.0, w=2.0, h=2.0))
+    gap = plan(Room(id="a", type="other", x=0.0, y=0.0, w=2.0, h=2.0))
     assert _independent_violations(gap, ctx) == ["rooms cover 4.000000 m² of a 8.000000 m² outline"]
     overlap = plan(
-        Piece(id="a", type="other", x=0.0, y=0.0, w=2.5, h=2.0),
-        Piece(id="b", type="other", x=2.0, y=0.0, w=2.0, h=2.0),
+        Room(id="a", type="other", x=0.0, y=0.0, w=2.5, h=2.0),
+        Room(id="b", type="other", x=2.0, y=0.0, w=2.0, h=2.0),
     )
     assert "a overlaps b" in _independent_violations(overlap, ctx)
 
 
 def test_the_checker_detects_a_budget_overrun() -> None:
     """Guard for the independent budget check used by the benchmark."""
-    from archlux.types import Piece
+    from archlux.types import Room
 
     outline = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
     proposed = Plan(
-        pieces=(Piece(id="a", type="other", x=0.0, y=0.0, w=2.0, h=2.0),),
+        pieces=(Room(id="a", type="other", x=0.0, y=0.0, w=2.0, h=2.0),),
         murs=(),
         ouvertures=(),
         contour=outline,
     )
     moved = Plan(
-        pieces=(Piece(id="a", type="other", x=0.0, y=0.0, w=2.5, h=2.0),),
+        pieces=(Room(id="a", type="other", x=0.0, y=0.0, w=2.5, h=2.0),),
         murs=(),
         ouvertures=(),
         contour=outline,

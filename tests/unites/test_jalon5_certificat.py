@@ -14,11 +14,11 @@ from archlux.geom.polytope import Polytope
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import Substitut
 from archlux.types import (
-    BornePerformance,
-    Certificat,
-    Manifeste,
+    Certificate,
+    GeometricProof,
+    Manifest,
     Orientation,
-    PreuveGeometrique,
+    PerformanceBound,
 )
 from archlux.uq.conforme import Calibration
 from archlux.uq.derive import DiagnosticDerive, controler_derive, mesurer_derive
@@ -41,8 +41,8 @@ def _poly() -> Polytope:
     )
 
 
-def _preuve() -> PreuveGeometrique:
-    return PreuveGeometrique(
+def _preuve() -> GeometricProof:
+    return GeometricProof(
         valide=True,
         chevauchement=False,
         jours=False,
@@ -73,7 +73,7 @@ def test_duaux_tries_par_cout_absolu() -> None:
 
 
 def test_certificat_separe_les_natures() -> None:
-    borne = BornePerformance(
+    borne = PerformanceBound(
         indicateur="sDA",
         valeur=56.2,
         borne_inf=51.4,
@@ -82,11 +82,11 @@ def test_certificat_separe_les_natures() -> None:
         n_calibration=1284,
         regime="exchangeable",
     )
-    texte = Certificat(
+    texte = Certificate(
         geometrie=_preuve(),
         performance=borne,
         duaux=(("mur porteur axe 3 : relâchement", -4.1),),
-        manifeste=Manifeste(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),
+        manifeste=Manifest(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),
     ).rapport()
     assert "[EXACT]" in texte and "[PREDICTION" in texte
     assert "1284" in texte
@@ -94,7 +94,7 @@ def test_certificat_separe_les_natures() -> None:
 
 
 def test_non_evaluable_toujours_present() -> None:
-    texte = Certificat(geometrie=_preuve()).rapport()
+    texte = Certificate(geometrie=_preuve()).rapport()
     assert "NON EVALUABLE" in texte
     assert "[PREDICTION" in texte
 

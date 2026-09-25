@@ -8,12 +8,12 @@ import warnings
 import numpy as np
 import pytest
 
-from archlux import InvalidInput, Orientation, Ouverture, Plan, PreuveGeometrique
-from archlux.types import Contexte, Referentiel, Structure
+from archlux import GeometricProof, InvalidInput, Opening, Orientation, Plan
+from archlux.types import Context, Regulation, Structure
 from tests.unites.test_hostile_inputs import SQUARE, make_plan
 
 
-def proof(**changes: object) -> PreuveGeometrique:
+def proof(**changes: object) -> GeometricProof:
     """A coherent, valid proof with ``changes`` applied."""
     fields: dict[str, object] = {
         "valide": True,
@@ -25,7 +25,7 @@ def proof(**changes: object) -> PreuveGeometrique:
         "violations": (),
     }
     fields.update(changes)
-    return PreuveGeometrique(**fields)  # type: ignore[arg-type]
+    return GeometricProof(**fields)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize(
@@ -61,11 +61,11 @@ def test_unbounded_displacement_is_allowed_on_an_invalid_proof() -> None:
 @pytest.mark.parametrize(("s", "width"), [(2.0, 0.2), (-0.1, 0.2), (0.5, 0.0), (0.5, 1.5)])
 def test_opening_ranges(s: float, width: float) -> None:
     with pytest.raises(InvalidInput):
-        Ouverture(id="o", mur_id="m", s=s, largeur_rel=width)
+        Opening(id="o", mur_id="m", s=s, largeur_rel=width)
 
 
 def test_opening_on_the_boundary_is_allowed() -> None:
-    assert Ouverture(id="o", mur_id="m", s=1.0, largeur_rel=1.0).s == 1.0
+    assert Opening(id="o", mur_id="m", s=1.0, largeur_rel=1.0).s == 1.0
 
 
 def test_a_plan_with_a_trace_is_hashable_and_equal_without_it() -> None:
@@ -84,11 +84,11 @@ def test_a_plan_with_a_trace_is_hashable_and_equal_without_it() -> None:
 def test_unknown_room_type_warns_when_the_regulation_has_thresholds() -> None:
     from archlux import legalize
 
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=SQUARE,
-        referentiel=Referentiel(aires_min=(("sejour", 1.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("sejour", 1.0),), largeur_min=1.0),
     )
     typo = make_plan(type="sejuor")
     with pytest.warns(UserWarning, match="sejuor"):

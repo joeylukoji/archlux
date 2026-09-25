@@ -26,7 +26,7 @@ plus que le code ne tient pas. Les contournements connus, tous à une ligne :
 Ce que le dispositif apporte malgré tout : un accès accidentel devient bruyant, et
 l'empreinte des poids devient publiable avec le résultat. Rendre la barrière réelle
 demanderait une clef détenue hors du dépôt (HMAC ou signature) et un horodatage attesté
-par un tiers, plus la propagation du jeton jusqu'à ``BornePerformance``.
+par un tiers, plus la propagation du jeton jusqu'à ``PerformanceBound``.
 """
 
 from __future__ import annotations

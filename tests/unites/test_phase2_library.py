@@ -12,7 +12,7 @@ from archlux.errors import InvariantViolation
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, decision_vector, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
-from archlux.types import Contexte, Mur, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from archlux.uq.conforme import CalibrateurConforme
 from archlux.uq.fiabilite import measure_coverage
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, realistic_scenarios
@@ -21,9 +21,9 @@ from tests.proprietes.strategies import CONTEXTE_DEFAUT, realistic_scenarios
 def test_the_decision_vector_matches_the_polytope_columns() -> None:
     plan = Plan(
         pieces=(
-            Piece(id="c", type="sejour", x=8.0, y=0.0, w=4.0, h=9.0),
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=9.0),
-            Piece(id="b", type="sejour", x=3.0, y=0.0, w=5.0, h=9.0),
+            Room(id="c", type="sejour", x=8.0, y=0.0, w=4.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=9.0),
+            Room(id="b", type="sejour", x=3.0, y=0.0, w=5.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -90,7 +90,7 @@ def test_two_room_plan_is_the_inverse_of_decision_vector() -> None:
 @given(scenario=realistic_scenarios())
 @settings(max_examples=100, deadline=None)
 def test_the_decision_vector_matches_the_columns_of_every_polytope(
-    scenario: tuple[Plan, Contexte],
+    scenario: tuple[Plan, Context],
 ) -> None:
     """Review of phase 2, Minor 11: the invariant on every plan, not on one."""
     plan, ctx = scenario
@@ -100,22 +100,22 @@ def test_the_decision_vector_matches_the_columns_of_every_polytope(
 
 def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
     """J3 review: theta = 0 and 360 give plans 5.2 m apart at the same objective value."""
-    wall = Mur(id="lb0", a=(1.01, 0.0), b=(1.01, 9.0), porteur=True)
+    wall = Wall(id="lb0", a=(1.01, 0.0), b=(1.01, 9.0), porteur=True)
     rooms = (
-        Piece(id="p0", type="sejour", x=0.0, y=0.0, w=1.01, h=9.0),
-        Piece(id="p1", type="sejour", x=1.01, y=0.0, w=1.41, h=1.0),
-        Piece(id="p2", type="sejour", x=1.01, y=1.0, w=1.41, h=8.0),
-        Piece(id="p3", type="sejour", x=2.42, y=0.0, w=9.58, h=1.0),
-        Piece(id="p4", type="sejour", x=2.42, y=1.0, w=9.58, h=8.0),
+        Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.01, h=9.0),
+        Room(id="p1", type="sejour", x=1.01, y=0.0, w=1.41, h=1.0),
+        Room(id="p2", type="sejour", x=1.01, y=1.0, w=1.41, h=8.0),
+        Room(id="p3", type="sejour", x=2.42, y=0.0, w=9.58, h=1.0),
+        Room(id="p4", type="sejour", x=2.42, y=1.0, w=9.58, h=8.0),
     )
     plan = Plan(rooms, (wall,), (), CONTEXTE_DEFAUT.contour)
     surrogate, values, widths = SubstitutAnalytique(), [], []
     for deg in (0.0, 360.0):
-        ctx = Contexte(
+        ctx = Context(
             structure=Structure(murs_porteurs=(wall,)),
             orientation=Orientation(deg=deg),
             contour=CONTEXTE_DEFAUT.contour,
-            referentiel=Referentiel(aires_min=(("sejour", 1.41),), largeur_min=1.0),
+            referentiel=Regulation(aires_min=(("sejour", 1.41),), largeur_min=1.0),
         )
         out = archlux.legalize(plan, ctx, objective=surrogate)
         values.append(surrogate.evaluer(decision_vector(out), Orientation(deg=0.0)))

@@ -47,7 +47,7 @@ from archlux.lmo.coupes import inner_area_constraints, resoudre_avec_surfaces
 from archlux.lmo.solveur import SolutionLP
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.tolerances import SNAP_M
-from archlux.types import Certificat, Contexte, Plan, PreuveGeometrique
+from archlux.types import Certificate, Context, GeometricProof, Plan
 from archlux.validation import resolve_outline, validate_inputs
 
 if TYPE_CHECKING:
@@ -126,7 +126,7 @@ def _duaux_traduits(
     return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL, objective=objective)
 
 
-def _only_a_gap(preuve: PreuveGeometrique, budget: float | None) -> bool:
+def _only_a_gap(preuve: GeometricProof, budget: float | None) -> bool:
     """The proof fails on a gap and on nothing else, read from its flags, never its text."""
     return (
         preuve.jours
@@ -169,7 +169,7 @@ def _scope(
 
 def legalize(
     plan: Plan,
-    ctx: Contexte,
+    ctx: Context,
     *,
     objective: Substitut | None = None,
     calibration: Calibration | None = None,
@@ -441,7 +441,7 @@ def legalize(
     if objective is None:
         return replace(
             corrige,
-            certificat=Certificat(geometrie=preuve, performance=None, duaux=duaux),
+            certificat=Certificate(geometrie=preuve, performance=None, duaux=duaux),
         )
 
     x0 = vectoriser(corrige, poly.index)
@@ -486,6 +486,6 @@ def legalize(
         performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
         performant,
-        certificat=Certificat(geometrie=preuve_fw, performance=performance, duaux=duaux_fw),
+        certificat=Certificate(geometrie=preuve_fw, performance=performance, duaux=duaux_fw),
         trace=resultat.trace if trace else None,
     )

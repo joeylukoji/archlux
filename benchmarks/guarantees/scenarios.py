@@ -23,7 +23,7 @@ from typing import Literal
 
 import numpy as np
 
-from archlux.types import Contexte, Mur, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 
 GRID_M = 0.10
 MIN_SIDE_M = 2.0
@@ -37,7 +37,7 @@ class Scenario:
 
     name: str
     plan: Plan
-    context: Contexte
+    context: Context
 
 
 def _cut(
@@ -89,7 +89,7 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
 
     kinds = ["sejour", *(str(rng.choice(ROOM_TYPES)) for _ in rects[1:])]
     rooms = tuple(
-        Piece(id=f"r{i}", type=kind, x=round(x, 2), y=round(y, 2), w=round(w, 2), h=round(h, 2))
+        Room(id=f"r{i}", type=kind, x=round(x, 2), y=round(y, 2), w=round(w, 2), h=round(h, 2))
         for i, (kind, (x, y, w, h)) in enumerate(zip(kinds, rects, strict=True))
     )
 
@@ -99,18 +99,18 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
 
     partial = [c for c in cuts if not spans_building(c)]
     ends = partial[-1] if wall == "partial" and partial else cuts[0]
-    bearing = Mur(id="refend", a=ends[0], b=ends[1], porteur=True)
+    bearing = Wall(id="refend", a=ends[0], b=ends[1], porteur=True)
 
     smallest: dict[str, float] = {}
     for room in rooms:
         smallest[room.type] = min(smallest.get(room.type, float("inf")), room.w * room.h)
     ratio = float(rng.uniform(0.7, 1.0))
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
-    context = Contexte(
+    context = Context(
         structure=Structure(murs_porteurs=(bearing,)),
         orientation=Orientation(deg=float(rng.uniform(0.0, 360.0))),
         contour=outline,
-        referentiel=Referentiel(
+        referentiel=Regulation(
             aires_min=tuple(sorted((k, round(ratio * a, 4)) for k, a in smallest.items())),
             largeur_min=1.0,
         ),
@@ -124,7 +124,7 @@ def perturb(plan: Plan, *, seed: int, amplitude_m: float = 0.03) -> Plan:
     """Move every room coordinate by up to ``amplitude_m``: a nearly valid plan."""
     rng = np.random.default_rng(seed)
     noisy = tuple(
-        Piece(
+        Room(
             id=r.id,
             type=r.type,
             x=r.x + float(rng.uniform(-amplitude_m, amplitude_m)),

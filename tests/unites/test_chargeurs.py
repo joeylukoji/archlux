@@ -22,7 +22,7 @@ from archlux.data.chargeurs import (
     _trame,
     charger_msd,
 )
-from archlux.types import Referentiel
+from archlux.types import Regulation
 
 _ANGLE = 23.0  # repere tourne, comme dans MSD
 
@@ -106,7 +106,7 @@ def test_charge_un_appartement_tourne_et_le_redresse(tmp_path: Path) -> None:
 def test_referentiel_par_defaut_neutralise_la_largeur_minimale(tmp_path: Path) -> None:
     """MSD ne porte aucune reglementation : `largeur_min` doit valoir 0.
 
-    Le defaut de `Referentiel` (1,80 m) s'appliquerait a chaque **sous-rectangle**,
+    Le defaut de `Regulation` (1,80 m) s'appliquerait a chaque **sous-rectangle**,
     y compris aux bandes etroites issues d'une decomposition en L. Le plan reel
     sortirait alors de son propre polytope.
     """
@@ -144,7 +144,7 @@ def test_largeur_minimale_heritee_deforme_un_plan_reel(tmp_path: Path) -> None:
     """
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
-    etroit = Referentiel(aires_min=(), largeur_min=6.0)  # plus large que les pieces
+    etroit = Regulation(aires_min=(), largeur_min=6.0)  # plus large que les pieces
     appart = next(iter(charger_msd(csv, referentiel=etroit)))
     with pytest.raises(ax.ArchluxError):
         ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)

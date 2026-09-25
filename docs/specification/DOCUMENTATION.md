@@ -62,7 +62,7 @@ réglementaires doit dire explicitement ce qu'il ne vérifie pas.
 Style **NumPy**. Toute fonction publique doit avoir les sections marquées ✱.
 
 ```python
-def legalize(plan: Plan, ctx: Contexte, *, objective=None,
+def legalize(plan: Plan, ctx: Context, *, objective=None,
              budget: float | None = None) -> Plan:
     """Corrige un plan vers le plan valide le plus proche.          ✱ résumé 1 ligne
 
@@ -117,7 +117,7 @@ def legalize(plan: Plan, ctx: Contexte, *, objective=None,
 
 ### Les deux sections propres à ce projet
 
-**`Guarantees`** — obligatoire sur toute fonction qui rend un `Plan` ou un `Certificat`.
+**`Guarantees`** — obligatoire sur toute fonction qui rend un `Plan` ou un `Certificate`.
 Elle dit **de quelle nature** est chaque garantie. C'est la thèse du projet inscrite
 dans la documentation, au même titre que dans les types.
 

@@ -14,12 +14,12 @@ import pytest
 
 from archlux.errors import InvariantViolation
 from archlux.io.json_io import charger, depuis_dict, vers_dict
-from archlux.types import Mur, Ouverture, Piece, Plan
+from archlux.types import Opening, Plan, Room, Wall
 
 PLAN = Plan(
-    pieces=(Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
-    murs=(Mur(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
-    ouvertures=(Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.2),),
+    pieces=(Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
+    murs=(Wall(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
+    ouvertures=(Opening(id="f", mur_id="m", s=0.5, largeur_rel=0.2),),
     contour=((0.0, 0.0), (4.0, 0.0), (4.0, 3.5), (0.0, 3.5)),
 )
 

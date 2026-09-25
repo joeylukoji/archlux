@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from shapely.geometry import LineString, Polygon, box
 
-from archlux.types import Mur, Piece, Plan
+from archlux.types import Plan, Room, Wall
 
 __all__ = ["DiagnosticPathologie", "diagnostiquer"]
 
@@ -26,7 +26,7 @@ class DiagnosticPathologie:
         return not self.pathologies
 
 
-def _piece_box(piece: Piece) -> Polygon:
+def _piece_box(piece: Room) -> Polygon:
     """Rectangle Shapely d'une piece, en coordonnees absolues."""
     return box(piece.x, piece.y, piece.x + piece.w, piece.y + piece.h)
 
@@ -46,7 +46,7 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
     # bornes et inventerait des chevauchements / auto-intersections).
     # Les polygones sont construits **une fois** : la boucle de chevauchement est
     # quadratique, et reconstruire un ``box`` par comparaison l'était aussi.
-    pieces_ok: list[tuple[Piece, Polygon]] = []
+    pieces_ok: list[tuple[Room, Polygon]] = []
 
     for piece in plan.pieces:
         if piece.w <= _EPS or piece.h <= _EPS:
@@ -87,7 +87,7 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
     return DiagnosticPathologie(pathologies=tuple(trouves))
 
 
-def _arete_nulle(mur: Mur) -> bool:
+def _arete_nulle(mur: Wall) -> bool:
     """Dire si le mur est degenere (longueur nulle a ``_EPS`` pres)."""
     return bool(LineString([mur.a, mur.b]).length <= _EPS)
 

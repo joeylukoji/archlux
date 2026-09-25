@@ -39,14 +39,14 @@ def test_invariance_par_permutation_des_jetons(plan) -> None:
 
 def test_ouvertures_sont_des_jetons_distincts() -> None:
     """Une baie n'est pas recopiée sur chaque pièce — `MILESTONE-4.md` §4."""
-    from archlux.types import Mur, Ouverture, Piece, Plan
+    from archlux.types import Opening, Plan, Room, Wall
 
-    mur = Mur(id="m0", a=(0.0, 0.0), b=(6.0, 0.0))
-    ouv = Ouverture(id="o0", mur_id="m0", s=0.5, largeur_rel=0.3)
+    mur = Wall(id="m0", a=(0.0, 0.0), b=(6.0, 0.0))
+    ouv = Opening(id="o0", mur_id="m0", s=0.5, largeur_rel=0.3)
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
-            Piece(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
+            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
         ),
         murs=(mur,),
         ouvertures=(ouv,),

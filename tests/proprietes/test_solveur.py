@@ -9,13 +9,13 @@ from hypothesis import strategies as st
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.solveur import resoudre
-from archlux.types import Contexte
+from archlux.types import Context
 from tests.proprietes.strategies import contextes, ordres_valides, vecteurs_objectifs
 
 
 @given(ordre=ordres_valides(), ctx=contextes(), tirage=st.data())
 @settings(max_examples=150, deadline=None)
-def test_solution_est_admissible(ordre: OrdreRelatif, ctx: Contexte, tirage: st.DataObject) -> None:
+def test_solution_est_admissible(ordre: OrdreRelatif, ctx: Context, tirage: st.DataObject) -> None:
     """Toute solution rendue optimale appartient au polytope.
 
     La vérification passe par ``Polytope.contient``, qui n'emprunte rien au solveur :
@@ -31,7 +31,7 @@ def test_solution_est_admissible(ordre: OrdreRelatif, ctx: Contexte, tirage: st.
 @given(ordre=ordres_valides(), ctx=contextes(), tirage=st.data())
 @settings(max_examples=100, deadline=None)
 def test_le_demarrage_a_chaud_ne_change_pas_la_solution(
-    ordre: OrdreRelatif, ctx: Contexte, tirage: st.DataObject
+    ordre: OrdreRelatif, ctx: Context, tirage: st.DataObject
 ) -> None:
     """Le démarrage à chaud accélère ; il ne doit rien décider.
 
@@ -49,7 +49,7 @@ def test_le_demarrage_a_chaud_ne_change_pas_la_solution(
 
 @given(ordre=ordres_valides(), ctx=contextes())
 @settings(max_examples=100, deadline=None)
-def test_un_objectif_nul_rend_un_point_admissible(ordre: OrdreRelatif, ctx: Contexte) -> None:
+def test_un_objectif_nul_rend_un_point_admissible(ordre: OrdreRelatif, ctx: Context) -> None:
     """Avec ``c = 0``, le LP se réduit à une question de faisabilité.
 
     C'est le mode qu'utilisera ``certify`` pour distinguer « programme impossible » de

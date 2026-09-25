@@ -12,11 +12,9 @@ from archlux.bench.manifeste import emettre
 from archlux.errors import InvariantViolation
 from archlux.io.json_io import manifeste_vers_dict
 from archlux.light.protocole import Substitut
-from archlux.types import Manifeste, ModeleTrace, Orientation, Plan
+from archlux.types import Manifest, ModelTrace, Orientation, Plan
 
 __all__ = ["LigneBrute", "Manifest", "Resultat", "run"]
-
-Manifest = Manifeste  # alias wording `MILESTONE-6.md`
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +31,7 @@ class LigneBrute:
 class Resultat:
     """Sortie de :func:`run` : manifeste + chemins + lignes brutes."""
 
-    manifest: Manifeste
+    manifest: Manifest
     chemin_bruts: Path
     chemin_manifeste: Path
     lignes: tuple[LigneBrute, ...]
@@ -48,7 +46,7 @@ def run(
     seed: int,
     empreinte_donnees: str,
     decoupage: str,
-    modele: ModeleTrace,
+    modele: ModelTrace,
     repertoire: Path | str,
     parametres: Mapping[str, str] | None = None,
 ) -> Resultat:
@@ -102,7 +100,7 @@ def run(
     )
 
 
-def _ecrire_manifeste(chemin: Path, manifeste: Manifeste) -> None:
+def _ecrire_manifeste(chemin: Path, manifeste: Manifest) -> None:
     # Même forme que le schéma JSON des certificats (`io.json_io`) — une seule vérité.
     """Ecrire le manifeste en JSON, cles triees, avant tout resultat."""
     payload = manifeste_vers_dict(manifeste)

@@ -16,7 +16,7 @@ import pytest
 from hypothesis import given, settings
 
 from archlux.export import diagnostiquer, to_ifc
-from archlux.types import Mur, Ouverture, Piece, Plan
+from archlux.types import Opening, Plan, Room, Wall
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 
 _GUID = re.compile(r"^[0-3][0-9A-Za-z_$]{21}$")
@@ -24,16 +24,16 @@ _GUID = re.compile(r"^[0-3][0-9A-Za-z_$]{21}$")
 
 def _plan() -> Plan:
     walls = (
-        Mur(id="south", a=(0.0, 0.0), b=(12.0, 0.0), porteur=True),
-        Mur(id="mid", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True),
+        Wall(id="south", a=(0.0, 0.0), b=(12.0, 0.0), porteur=True),
+        Wall(id="mid", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True),
     )
     return Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=walls,
-        ouvertures=(Ouverture(id="w1", mur_id="south", s=0.3, largeur_rel=0.2),),
+        ouvertures=(Opening(id="w1", mur_id="south", s=0.3, largeur_rel=0.2),),
         contour=CONTEXTE_DEFAUT.contour,
     )
 
@@ -46,7 +46,7 @@ def test_every_global_id_is_ifc_base64_and_unique(tmp_path: Path) -> None:
 
 
 def test_an_opening_on_an_unknown_wall_is_refused(tmp_path: Path) -> None:
-    orphan = Ouverture(id="w9", mur_id="nowhere", s=0.5, largeur_rel=0.2)
+    orphan = Opening(id="w9", mur_id="nowhere", s=0.5, largeur_rel=0.2)
     plan = Plan(_plan().pieces, _plan().murs, (orphan,), _plan().contour)
     assert "ouverture_orpheline:w9" in diagnostiquer(plan).pathologies
     assert not to_ifc(plan, tmp_path / "plan.ifc", validate=True).valide
@@ -98,8 +98,8 @@ def test_two_different_plans_share_no_global_id(tmp_path: Path) -> None:
     first = _plan()
     second = Plan(
         pieces=(
-            Piece(id="a", type="cuisine", x=0.0, y=0.0, w=5.0, h=9.0),
-            Piece(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
+            Room(id="a", type="cuisine", x=0.0, y=0.0, w=5.0, h=9.0),
+            Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
         murs=first.murs,
         ouvertures=first.ouvertures,

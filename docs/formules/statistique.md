@@ -60,7 +60,7 @@ de `np.quantile(s, 0.90)` seul.
 |---|---|
 | \(s_{(k)}\) | `quantile_conforme` |
 | \(\hat q\) | `CalibrateurConforme.ajuster` / `.q` |
-| intervalle | `CalibrateurConforme.borne` → `BornePerformance` |
+| intervalle | `CalibrateurConforme.borne` → `PerformanceBound` |
 | CRPS | `uq.fiabilite.crps` |
 | \(J=\hat\mu-\hat q\,\hat\sigma\) | `light.objectif.Daylight` |
 

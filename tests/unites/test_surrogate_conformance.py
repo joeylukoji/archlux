@@ -20,7 +20,7 @@ from archlux.light.base import SubstitutDense
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import Baies, Substitut
 from archlux.light.simulateur import SplitFluxOracle
-from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers
 
 IMPLEMENTATIONS = (SubstitutAnalytique, SubstitutAppris, SubstitutDense, SplitFluxOracle, Daylight)
@@ -82,14 +82,14 @@ def test_legalize_accepts_a_daylight_objective() -> None:
     """End to end, the call of the README: it used to raise TypeError."""
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (0.0, 6.0))
     rooms = (
-        Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=6.0),
-        Piece(id="b", type="chambre", x=6.0, y=0.0, w=4.0, h=6.0),
+        Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=6.0),
+        Room(id="b", type="chambre", x=6.0, y=0.0, w=4.0, h=6.0),
     )
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=30.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(("chambre", 12.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("chambre", 12.0),), largeur_min=1.0),
     )
     plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
     result = archlux.legalize(plan, ctx, objective=Daylight(SubstitutAnalytique(), q_chapeau=1.0))

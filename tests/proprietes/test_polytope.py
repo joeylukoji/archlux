@@ -11,7 +11,7 @@ from hypothesis import given, settings
 
 from archlux.geom.graphe import OrdreRelatif, deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
-from archlux.types import Contexte, Plan
+from archlux.types import Context, Plan
 from tests.proprietes.strategies import (
     CONTEXTE_DEFAUT,
     contextes,
@@ -22,7 +22,7 @@ from tests.proprietes.strategies import (
 
 @given(ordre=ordres_valides(), ctx=contextes())
 @settings(max_examples=200, deadline=None)
-def test_dimensions_coherentes(ordre: OrdreRelatif, ctx: Contexte) -> None:
+def test_dimensions_coherentes(ordre: OrdreRelatif, ctx: Context) -> None:
     """Une origine par ligne, une colonne par variable."""
     poly = construire_polytope(ordre, ctx)
     assert poly.A.shape[0] == len(poly.origines)

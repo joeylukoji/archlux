@@ -22,24 +22,24 @@ from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import Polytope, construire_polytope, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.lmo.coupes import inner_area_constraints
-from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers
 
 _OUTLINE = ((0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (0.0, 6.0))
 
 
-def _setup(w0: float, h0: float, a_min: float) -> tuple[Polytope, np.ndarray, Contexte, Plan]:
+def _setup(w0: float, h0: float, a_min: float) -> tuple[Polytope, np.ndarray, Context, Plan]:
     """One room of w0 x h0 (plus a filler room) under a minimum area ``a_min``."""
     rooms = (
-        Piece(id="r", type="chambre", x=0.0, y=0.0, w=w0, h=h0),
-        Piece(id="f", type="couloir", x=w0, y=0.0, w=10.0 - w0, h=6.0),
+        Room(id="r", type="chambre", x=0.0, y=0.0, w=w0, h=h0),
+        Room(id="f", type="couloir", x=w0, y=0.0, w=10.0 - w0, h=6.0),
     )
     plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=_OUTLINE)
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=_OUTLINE,
-        referentiel=Referentiel(aires_min=(("chambre", a_min),), largeur_min=0.5),
+        referentiel=Regulation(aires_min=(("chambre", a_min),), largeur_min=0.5),
     )
     poly = construire_polytope(deduire_ordre(plan), ctx)
     return poly, vectoriser(plan, poly.index), ctx, plan
@@ -95,11 +95,11 @@ def test_every_point_of_the_inner_region_keeps_the_minimum_area(
 def test_the_soundness_check_detects_a_weakened_region() -> None:
     """Guard: rows built for 97 % of the area must be caught by the boundary sampling."""
     poly, x0, ctx, plan = _setup(4.0, 3.0, 12.0)
-    weak_ctx = Contexte(
+    weak_ctx = Context(
         structure=ctx.structure,
         orientation=ctx.orientation,
         contour=ctx.contour,
-        referentiel=Referentiel(aires_min=(("chambre", 12.0 * 0.97),), largeur_min=0.5),
+        referentiel=Regulation(aires_min=(("chambre", 12.0 * 0.97),), largeur_min=0.5),
     )
     inner = inner_area_constraints(poly, x0, weak_ctx, plan.pieces)
     w = 4.0 * 1.25**0.5  # between two nodes
@@ -154,15 +154,15 @@ def test_performance_mode_keeps_tight_minimum_areas() -> None:
     """End to end, the case of the benchmark: 3 x 4 rooms with a_min = 11 m²."""
     outline = ((0.0, 0.0), (15.0, 0.0), (15.0, 12.0), (0.0, 12.0))
     rooms = tuple(
-        Piece(id=f"p{i}_{j}", type="chambre", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
+        Room(id=f"p{i}_{j}", type="chambre", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
         for i in range(5)
         for j in range(3)
     )
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=20.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(("chambre", 11.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("chambre", 11.0),), largeur_min=1.0),
     )
     plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)

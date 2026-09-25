@@ -21,27 +21,27 @@ from archlux.geom.polytope import (
     vectoriser,
 )
 from archlux.types import (
-    Contexte,
+    Context,
     Orientation,
-    Piece,
     Plan,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
 )
 
-CTX = Contexte(
+CTX = Context(
     structure=Structure(murs_porteurs=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Referentiel(aires_min=(("sdb", 5.0),), largeur_min=1.5),
+    referentiel=Regulation(aires_min=(("sdb", 5.0),), largeur_min=1.5),
 )
 
 ORDRE_AB = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B"))
 
 PLAN_AB = Plan(
     pieces=(
-        Piece(id="A", type="sejour", x=0.0, y=0.0, w=4.0, h=8.0),
-        Piece(id="B", type="sdb", x=4.0, y=0.0, w=6.0, h=8.0),
+        Room(id="A", type="sejour", x=0.0, y=0.0, w=4.0, h=8.0),
+        Room(id="B", type="sdb", x=4.0, y=0.0, w=6.0, h=8.0),
     ),
     murs=(),
     ouvertures=(),
@@ -176,7 +176,7 @@ class TestVectorisation:
         """Vectoriser un plan qui n'a pas les pièces de l'ordre est un bogue interne."""
         poly = construire_polytope(ORDRE_AB, CTX)
         autre = Plan(
-            pieces=(Piece(id="Z", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),),
+            pieces=(Room(id="Z", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),),
             murs=(),
             ouvertures=(),
             contour=CTX.contour,
@@ -219,7 +219,7 @@ class TestRefus:
         """
         poly = construire_polytope(ORDRE_AB, CTX)
         etranger = Plan(
-            pieces=(*PLAN_AB.pieces, Piece(id="Z", type="wc", x=0.0, y=0.0, w=1.0, h=1.0)),
+            pieces=(*PLAN_AB.pieces, Room(id="Z", type="wc", x=0.0, y=0.0, w=1.0, h=1.0)),
             murs=(),
             ouvertures=(),
             contour=CTX.contour,
@@ -244,11 +244,11 @@ class TestRefus:
 
     def test_un_contour_plat_est_refuse(self) -> None:
         """Un contour d'aire nulle donnerait des bornes vides sans le dire."""
-        ctx = Contexte(
+        ctx = Context(
             structure=Structure(murs_porteurs=()),
             orientation=Orientation(deg=0.0),
             contour=((0.0, 0.0), (10.0, 0.0), (10.0, 0.0)),
-            referentiel=Referentiel(aires_min=()),
+            referentiel=Regulation(aires_min=()),
         )
         with pytest.raises(InvariantViolation, match="dégénéré"):
             construire_polytope(ORDRE_AB, ctx)
@@ -256,11 +256,11 @@ class TestRefus:
 
 def test_un_contour_degenere_est_refuse() -> None:
     """Un contour vide n'a pas d'enveloppe : le dire plutôt que produire des bornes nulles."""
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=(),
-        referentiel=Referentiel(aires_min=()),
+        referentiel=Regulation(aires_min=()),
     )
     with pytest.raises(InvariantViolation):
         construire_polytope(ORDRE_AB, ctx)

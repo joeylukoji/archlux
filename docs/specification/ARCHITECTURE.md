@@ -23,7 +23,7 @@ The output carries **two guarantees of different kinds**:
 | Guarantee | Kind | Verification |
 |---|---|---|
 | Geometric | **exact** on the model (axis-aligned rectangles) | `certify.proof.verify_exactly`: rational arithmetic on an axis-aligned rectangular outline (only tolerance: `SNAP_M` on lengths), GEOS with declared tolerances otherwise; infeasibility by a Farkas certificate verified exactly, **for the proposed relative order** |
-| Daylight performance | **probabilistic** | conformal prediction; coverage ≥ 1−α **only** in the `"exchangeable"` regime. A plan chosen by the optimizer is in the `"selected"` regime: coverage **not** guaranteed (`BornePerformance.regime`) |
+| Daylight performance | **probabilistic** | conformal prediction; coverage ≥ 1−α **only** in the `"exchangeable"` regime. A plan chosen by the optimizer is in the `"selected"` regime: coverage **not** guaranteed (`PerformanceBound.regime`) |
 
 **Never confuse them, not in the code, not in the types, not in the messages.**
 
@@ -94,7 +94,7 @@ measuring a cold LP.
 
 | Module | Single responsibility | Learned? |
 |---|---|---|
-| `types` | `Plan`, `Piece`, `Ouverture`, `Mur`, `Contexte`, `Certificat` | no |
+| `types` | `Plan`, `Room`, `Opening`, `Wall`, `Context`, `Certificate` | no |
 | `geom` | relative order → constraint graph → polytope | no |
 | `lmo` | solve `min <c,x>` over the polytope. **Ignores where `c` comes from** | no |
 | `solve` | Frank-Wolfe (+ away-steps, warm start, cuts) | no |
@@ -157,12 +157,12 @@ def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/tes
 
 ```python
 @dataclass(frozen=True, slots=True, kw_only=True)   # Piece, Mur, Ouverture: keyword-only
-class Piece:
+class Room:
     id: str; type: str
     x: float; y: float; w: float; h: float      # metres
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class Ouverture:
+class Opening:
     id: str
     mur_id: str            # ← relative to a wall
     s: float               # relative abscissa ∈ [0,1]
@@ -172,9 +172,9 @@ class Ouverture:
 
 @dataclass(frozen=True, slots=True)
 class Plan:
-    pieces: tuple[Piece, ...]
-    murs: tuple[Mur, ...] = ()
-    ouvertures: tuple[Ouverture, ...] = ()
+    pieces: tuple[Room, ...]
+    murs: tuple[Wall, ...] = ()
+    ouvertures: tuple[Opening, ...] = ()
     contour: tuple[tuple[float, float], ...] = ()   # empty: taken from Contexte.contour
     certificat: "Certificat | None" = None
 ```
@@ -184,8 +184,8 @@ class Plan:
 - [ ] All types are `frozen=True` — **never any in-place mutation**
 - [ ] The **absolute** position of an opening is **never stored**, always derived
 - [ ] A legalized plan **always** carries its certificate
-- [ ] `PreuveGeometrique` has **no** probability field
-- [ ] `BornePerformance` **always** carries `couverture` and `n_calibration`
+- [ ] `GeometricProof` has **no** probability field
+- [ ] `PerformanceBound` **always** carries `couverture` and `n_calibration`
 
 ---
 

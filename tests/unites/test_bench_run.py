@@ -9,12 +9,12 @@ import pytest
 from archlux.bench import compare, report, run
 from archlux.bench.stats import bootstrap_apparie, puissance, tost
 from archlux.light.analytique import SubstitutAnalytique
-from archlux.types import ModeleTrace, Orientation, Piece, Plan
+from archlux.types import ModelTrace, Orientation, Plan, Room
 
 
 def _plan() -> Plan:
     return Plan(
-        pieces=(Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),),
+        pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),),
         murs=(),
         ouvertures=(),
         contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
@@ -28,7 +28,7 @@ def _evaluateur(plan: Plan, methode: object) -> float:
 
 def test_manifeste_complet(tmp_path: Path) -> None:
     """`MILESTONE-6.md` §5 : run écrit un manifeste avec poids et calibration_n."""
-    modele = ModeleTrace(poids="sha256:abc", calibration_n=40, alpha=0.10)
+    modele = ModelTrace(poids="sha256:abc", calibration_n=40, alpha=0.10)
     resultat = run(
         plans=(_plan(), _plan()),
         orientations=(Orientation(0.0), Orientation(45.0)),
@@ -56,7 +56,7 @@ def test_evaluate_by_obligatoire() -> None:
 
 
 def test_report_strate_par_orientation(tmp_path: Path) -> None:
-    modele = ModeleTrace(poids="sha256:x", calibration_n=10, alpha=0.1)
+    modele = ModelTrace(poids="sha256:x", calibration_n=10, alpha=0.1)
     resultat = run(
         plans=(_plan(), _plan(), _plan(), _plan()),
         orientations=(

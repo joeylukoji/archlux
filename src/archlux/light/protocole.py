@@ -21,7 +21,7 @@ from archlux.types import Indicateur
 
 if TYPE_CHECKING:
     from archlux.arrays import VecteurF
-    from archlux.types import Mur, Orientation, Ouverture
+    from archlux.types import Opening, Orientation, Wall
 
 __all__ = ["Baies", "Substitut", "SubstitutParPiece", "WrapsSurrogate", "point_prediction"]
 
@@ -52,8 +52,8 @@ class Baies:
         Baies, en coordonnées relatives ``(mur_id, s, largeur_rel)``.
     """
 
-    murs: tuple[Mur, ...] = ()
-    ouvertures: tuple[Ouverture, ...] = ()
+    murs: tuple[Wall, ...] = ()
+    ouvertures: tuple[Opening, ...] = ()
 
     @property
     def vide(self) -> bool:

@@ -14,7 +14,7 @@ import numpy as np
 from archlux.errors import InvalidInput
 from archlux.light.protocole import Baies
 from archlux.orient.circulaire import encode, encoder
-from archlux.types import Contexte, Mur, Orientation, Ouverture, Plan
+from archlux.types import Context, Opening, Orientation, Plan, Wall
 
 __all__ = [
     "CHAMPS_PAR_PIECE",
@@ -81,8 +81,8 @@ def _jeton_piece(
 
 
 def _jeton_ouverture(
-    ouv: Ouverture,
-    mur: Mur,
+    ouv: Opening,
+    mur: Wall,
     n_pieces: float,
     aire_totale: float,
     orientation: Orientation,
@@ -103,7 +103,7 @@ def _jeton_ouverture(
     return jeton
 
 
-def plan_vers_jetons(plan: Plan, ctx: Contexte) -> tuple[np.ndarray, np.ndarray]:
+def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     """Encoder ``plan`` en ``(jetons [N, d], masque_padding [N])``.
 
     Trois familles, dans cet ordre : pièces, puis ouvertures (`MILESTONE-4.md` §4).

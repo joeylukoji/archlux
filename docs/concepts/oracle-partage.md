@@ -20,18 +20,18 @@ from archlux.lmo import solveur as lmo
 contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     pieces=(
-        ax.Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Piece(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
     murs=(),
     ouvertures=(),
     contour=contour,
 )
-ctx = ax.Contexte(
+ctx = ax.Context(
     structure=ax.Structure(murs_porteurs=()),
     orientation=ax.Orientation(deg=12.0),
     contour=contour,
-    referentiel=ax.Referentiel(aires_min=(), largeur_min=1.0),
+    referentiel=ax.Regulation(aires_min=(), largeur_min=1.0),
 )
 poly = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx)
 Q_propose = vectoriser(plan, poly.index)

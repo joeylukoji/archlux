@@ -58,15 +58,15 @@ from shapely.ops import unary_union
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import GridNotRecoverable
+from archlux.errors import GridNotRecoverable
 from archlux.export.wilson import intervalle_wilson
 from archlux.geom.diagnostic import Diagnostic, diagnostiquer
 from archlux.types import (
-    Contexte,
+    Context,
     Orientation,
-    Piece,
     Plan,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
 )
 
@@ -149,14 +149,14 @@ def _echelle(lignes: list[dict]) -> float:
     return float(np.sqrt(AIRE_CIBLE_M2 / np.median(aires)))
 
 
-def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Contexte, Diagnostic] | str:
+def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnostic] | str:
     """Plan archlux + diagnostic d'entree, ou le motif de rejet en clair."""
     boites = _boites(plan_json, echelle)
     if any(w < COTE_MIN_M or h < COTE_MIN_M for _, (_, _, w, h) in boites):
         return "piece degeneree"
 
     pieces = tuple(
-        Piece(id=f"p{rang:03d}", type=type_piece, x=x, y=y, w=w, h=h)
+        Room(id=f"p{rang:03d}", type=type_piece, x=x, y=y, w=w, h=h)
         for rang, (type_piece, (x, y, w, h)) in enumerate(boites)
     )
     formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in pieces]
@@ -172,12 +172,12 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Contexte, Diagno
     contour = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
 
     plan = Plan(pieces=pieces, murs=(), ouvertures=(), contour=contour)
-    contexte = Contexte(
+    contexte = Context(
         structure=Structure(murs_porteurs=(), poteaux=()),
         orientation=Orientation(deg=0.0),
         contour=contour,
         # Le referentiel est remplace essai par essai : voir LARGEUR_DEFAUT.
-        referentiel=Referentiel(aires_min=(), largeur_min=LARGEUR_DEFAUT),
+        referentiel=Regulation(aires_min=(), largeur_min=LARGEUR_DEFAUT),
         programme=tuple(sorted(set(plan_json["programme"]))),
     )
     return plan, contexte, diagnostiquer(plan)
@@ -378,7 +378,7 @@ def main() -> None:
                 cote_min, intact = "", ""
                 contexte_essai = replace(
                     contexte,
-                    referentiel=Referentiel(aires_min=(), largeur_min=largeur),
+                    referentiel=Regulation(aires_min=(), largeur_min=largeur),
                 )
                 try:
                     corrige = ax.legalize(

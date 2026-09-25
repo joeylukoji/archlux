@@ -7,26 +7,26 @@ ce qui est **prouvé** et ce qui est **prédit** — sans les mélanger.
 
 ```python
 import archlux as ax
-from archlux.types import BornePerformance, Manifeste
+from archlux.types import PerformanceBound, Manifest
 
 contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     pieces=(
-        ax.Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Piece(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
     murs=(),
     ouvertures=(),
     contour=contour,
 )
-ctx = ax.Contexte(
+ctx = ax.Context(
     structure=ax.Structure(murs_porteurs=()),
     orientation=ax.Orientation(deg=12.0),
     contour=contour,
-    referentiel=ax.Referentiel(aires_min=(), largeur_min=1.0),
+    referentiel=ax.Regulation(aires_min=(), largeur_min=1.0),
 )
 q = ax.legalize(plan, ctx)
-borne = BornePerformance(
+borne = PerformanceBound(
     indicateur="sDA",
     valeur=56.2,
     borne_inf=51.4,
@@ -35,11 +35,11 @@ borne = BornePerformance(
     n_calibration=1284,
     regime="exchangeable",
 )
-certificat = ax.Certificat(
+certificat = ax.Certificate(
     geometrie=q.certificat.geometrie,
     performance=borne,
     duaux=q.certificat.duaux,
-    manifeste=Manifeste(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),
+    manifeste=Manifest(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),
 )
 print(certificat.rapport())
 ```

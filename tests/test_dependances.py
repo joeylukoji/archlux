@@ -106,7 +106,7 @@ LEAVES: dict[str, frozenset[str]] = {
 TORCH_TOLERE = frozenset({"light.appris"})
 
 # Dérogations nominatives, chacune adossée à une décision écrite (ADR-5 du blueprint).
-# `Plan.from_json` et `Certificat.rapport()` sont l'API publique fixée par
+# `Plan.from_json` et `Certificate.rapport()` sont l'API publique fixée par
 # `DOCUMENTATION.md` §3 et §5. Les honorer demande à `types` de déléguer vers `io` et
 # `certify` — par import **local**, à l'appel, donc sans cycle à l'import.
 # La dérogation est nominative et non un assouplissement de la règle : tout autre import

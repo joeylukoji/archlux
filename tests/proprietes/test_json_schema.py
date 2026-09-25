@@ -25,7 +25,7 @@ from archlux.errors import ArchluxError, InvariantViolation
 from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
-from archlux.types import Contexte, Plan
+from archlux.types import Context, Plan
 from archlux.uq.conforme import CalibrateurConforme, Calibration
 from tests.proprietes.strategies import plans_quelconques, realistic_scenarios
 
@@ -66,7 +66,7 @@ def _calibration() -> Calibration:
     return calibrator.snapshot()
 
 
-def _outputs(plan: Plan, ctx: Contexte) -> list[Plan]:
+def _outputs(plan: Plan, ctx: Context) -> list[Plan]:
     """What legalize writes: classic, and performance with a bound in regime "selected"."""
     outputs = []
     for kwargs in (
@@ -86,7 +86,7 @@ def _outputs(plan: Plan, ctx: Contexte) -> list[Plan]:
 @given(scenario=realistic_scenarios())
 @settings(max_examples=40, deadline=None, derandomize=True)
 def test_legalized_plans_round_trip_through_a_file(
-    scenario: tuple[Plan, Contexte], tmp_path_factory: pytest.TempPathFactory
+    scenario: tuple[Plan, Context], tmp_path_factory: pytest.TempPathFactory
 ) -> None:
     """Load-bearing walls, certificate and regime survive ``to_json`` / ``from_json``."""
     plan, ctx = scenario
@@ -111,22 +111,22 @@ def test_a_performance_output_carries_its_regime_in_the_file(tmp_path: Path) -> 
     assert any(wall["porteur"] for wall in document["murs"]) or ctx.structure.murs_porteurs
 
 
-def _a_scenario() -> tuple[Plan, Contexte]:
+def _a_scenario() -> tuple[Plan, Context]:
     from dataclasses import replace
 
-    from archlux.types import Mur, Piece, Referentiel, Structure
+    from archlux.types import Regulation, Room, Structure, Wall
     from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
-    wall = Mur(id="lb", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
+    wall = Wall(id="lb", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(murs_porteurs=(wall,)),
-        referentiel=Referentiel(aires_min=(("chambre", 20.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("chambre", 20.0),), largeur_min=1.0),
     )
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(wall,),
         ouvertures=(),

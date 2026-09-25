@@ -98,10 +98,10 @@ class CalibrateurConforme:
         self.q = float(np.quantile(scores, min(niveau, 1.0)))
         self.n, self.alpha = n, alpha
 
-    def borne(self, prediction, incertitude, sens) -> BornePerformance:
+    def borne(self, prediction, incertitude, sens) -> PerformanceBound:
         marge = self.q * incertitude
         val = prediction - marge if sens == ">=" else prediction + marge
-        return BornePerformance(borne=val, prediction=prediction, marge=marge,
+        return PerformanceBound(borne=val, prediction=prediction, marge=marge,
                                 couverture=1 - self.alpha, sens=sens,
                                 n_calibration=self.n)
 ```
@@ -349,7 +349,7 @@ def test_certificat_separe_les_natures():
 
 def test_pas_de_borne_sans_calibration():
     with pytest.raises(ValueError):
-        BornePerformance(borne=51.4, prediction=56.2, marge=4.8,
+        PerformanceBound(borne=51.4, prediction=56.2, marge=4.8,
                          couverture=0.90, sens=">=", n_calibration=0)
 
 def test_non_evaluable_toujours_present():

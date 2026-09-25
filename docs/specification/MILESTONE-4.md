@@ -190,7 +190,7 @@ aveugle, **projet impossible**. C'est le piège le plus séduisant du jalon.
 | Global | orientation (cos/sin + harmoniques), surface totale, nombre de pièces |
 
 ```python
-def plan_vers_jetons(plan: Plan, ctx: Contexte) -> tuple[np.ndarray, np.ndarray]:
+def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     """Retourne (jetons [N, d], masque [N])."""
 ```
 
@@ -334,7 +334,7 @@ Le système tournerait, convergerait, et optimiserait dans la mauvaise direction
 ```python
 def valider_gradient(
     substitut: Substitut, simulateur: SplitFluxOracle,
-    plans: list[Plan], ctx: Contexte,
+    plans: list[Plan], ctx: Context,
     *, pas: float = 0.10, variables: list[str] | None = None,
 ) -> RapportGradient:
     """Compare le gradient du substitut aux différences finies de l'oracle gelé.

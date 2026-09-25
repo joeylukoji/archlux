@@ -16,9 +16,9 @@ from archlux.errors import (
     InvariantViolation,
     MissingSeparation,
 )
-from archlux.types import Certificat, Mur, Ouverture, Piece, Plan, PreuveGeometrique
+from archlux.types import Certificate, GeometricProof, Opening, Plan, Room, Wall
 
-SEJOUR = Piece(id="sejour", type="sejour", x=1.0, y=2.0, w=4.0, h=3.0)
+SEJOUR = Room(id="sejour", type="sejour", x=1.0, y=2.0, w=4.0, h=3.0)
 
 
 class TestPiece:
@@ -44,9 +44,9 @@ class TestPlan:
         """
         plan = Plan(
             pieces=(
-                Piece(id="wc", type="wc", x=0.0, y=0.0, w=1.0, h=1.0),
-                Piece(id="cuisine", type="cuisine", x=0.0, y=0.0, w=1.0, h=1.0),
-                Piece(id="bain", type="sdb", x=0.0, y=0.0, w=1.0, h=1.0),
+                Room(id="wc", type="wc", x=0.0, y=0.0, w=1.0, h=1.0),
+                Room(id="cuisine", type="cuisine", x=0.0, y=0.0, w=1.0, h=1.0),
+                Room(id="bain", type="sdb", x=0.0, y=0.0, w=1.0, h=1.0),
             ),
             murs=(),
             ouvertures=(),
@@ -60,8 +60,8 @@ class TestOuvertureDegeneree:
 
     def test_un_mur_de_longueur_nulle_est_refuse(self) -> None:
         """Une direction indéfinie doit lever, jamais rendre des ``NaN`` silencieux."""
-        mur = Mur(id="m", a=(2.0, 2.0), b=(2.0, 2.0))
-        baie = Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.5)
+        mur = Wall(id="m", a=(2.0, 2.0), b=(2.0, 2.0))
+        baie = Opening(id="f", mur_id="m", s=0.5, largeur_rel=0.5)
         with pytest.raises(InvariantViolation, match="longueur nulle"):
             baie.segment_absolu(mur)
 
@@ -71,8 +71,8 @@ class TestCertificat:
 
     def test_rapport_delegue_a_certify(self) -> None:
         """La délégation produit le gabarit à deux natures, sans score composite."""
-        certificat = Certificat(
-            geometrie=PreuveGeometrique(
+        certificat = Certificate(
+            geometrie=GeometricProof(
                 valide=True,
                 chevauchement=False,
                 jours=False,
@@ -122,7 +122,7 @@ class TestEcritureRobuste:
         ferait sortir du domaine d'erreurs du projet une faute pourtant interne.
         """
         plan = Plan(
-            pieces=(Piece(id="a", type="sejour", x=float("nan"), y=0.0, w=1.0, h=1.0),),
+            pieces=(Room(id="a", type="sejour", x=float("nan"), y=0.0, w=1.0, h=1.0),),
             murs=(),
             ouvertures=(),
             contour=(),

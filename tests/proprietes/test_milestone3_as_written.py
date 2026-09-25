@@ -22,7 +22,7 @@ from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, devectoriser, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.solve.trace import Trace
-from archlux.types import Contexte, Orientation, Plan
+from archlux.types import Context, Orientation, Plan
 from tests import checkers
 from tests.proprietes.strategies import (
     GATE_EXAMPLES,
@@ -35,7 +35,7 @@ ANALYTIC = SubstitutAnalytique()
 _SETTINGS = settings(max_examples=GATE_EXAMPLES, deadline=None, derandomize=True)
 
 
-def _trace(plan: Plan, ctx: Contexte) -> tuple[Plan, Trace] | None:
+def _trace(plan: Plan, ctx: Context) -> tuple[Plan, Trace] | None:
     try:
         result = archlux.legalize(plan, ctx, objective=ANALYTIC, trace=True)
     except ArchluxError:
@@ -44,7 +44,7 @@ def _trace(plan: Plan, ctx: Contexte) -> tuple[Plan, Trace] | None:
     return result, result.trace
 
 
-def _iterates_are_valid(plan: Plan, ctx: Contexte) -> None:
+def _iterates_are_valid(plan: Plan, ctx: Context) -> None:
     """Criterion 1: every iterate is a valid plan, checked independently of the solver."""
     traced = _trace(plan, ctx)
     if traced is None:
@@ -55,7 +55,7 @@ def _iterates_are_valid(plan: Plan, ctx: Contexte) -> None:
         assert checkers.violations(devectoriser(x, result, index), ctx) == [], f"iterate {step}"
 
 
-def _objective_is_monotone(plan: Plan, ctx: Contexte) -> None:
+def _objective_is_monotone(plan: Plan, ctx: Context) -> None:
     """Criterion 2: the objective never decreases along the iterates (tolerance 1e-9)."""
     traced = _trace(plan, ctx)
     if traced is None:
@@ -66,28 +66,28 @@ def _objective_is_monotone(plan: Plan, ctx: Contexte) -> None:
 
 @given(plan=plans_quelconques(), ctx=contextes())
 @_SETTINGS
-def test_every_iterate_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Contexte) -> None:
+def test_every_iterate_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     _iterates_are_valid(plan, ctx)
 
 
 @given(scenario=realistic_scenarios())
 @_SETTINGS
 def test_every_iterate_is_valid_with_walls_and_minimum_areas(
-    scenario: tuple[Plan, Contexte],
+    scenario: tuple[Plan, Context],
 ) -> None:
     _iterates_are_valid(*scenario)
 
 
 @given(plan=plans_quelconques(), ctx=contextes())
 @_SETTINGS
-def test_the_objective_is_monotone_on_arbitrary_inputs(plan: Plan, ctx: Contexte) -> None:
+def test_the_objective_is_monotone_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     _objective_is_monotone(plan, ctx)
 
 
 @given(scenario=realistic_scenarios())
 @_SETTINGS
 def test_the_objective_is_monotone_with_walls_and_minimum_areas(
-    scenario: tuple[Plan, Contexte],
+    scenario: tuple[Plan, Context],
 ) -> None:
     _objective_is_monotone(*scenario)
 
@@ -95,7 +95,7 @@ def test_the_objective_is_monotone_with_walls_and_minimum_areas(
 @given(scenario=realistic_scenarios(), theta=st.floats(0.0, 360.0, allow_nan=False))
 @_SETTINGS
 def test_the_orientation_is_circular_with_walls_and_minimum_areas(
-    scenario: tuple[Plan, Contexte], theta: float
+    scenario: tuple[Plan, Context], theta: float
 ) -> None:
     """Criterion 3: ``theta`` and ``theta + 360`` reach the same objective value.
 

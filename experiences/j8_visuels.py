@@ -23,7 +23,7 @@ from pathlib import Path
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import GridNotRecoverable
+from archlux.errors import GridNotRecoverable
 from archlux.export.svg import comparer, rendre
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))

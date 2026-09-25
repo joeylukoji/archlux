@@ -75,7 +75,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from archlux.geom.polytope import Polytope
-    from archlux.types import Contexte, Plan
+    from archlux.types import Context, Plan
 
 __all__ = ["Trame", "contraintes_pavage", "deduire_trame", "etendre_pavage", "snap_to_grid"]
 
@@ -362,7 +362,7 @@ def _reparer_partition(
 
 def deduire_trame(
     plan: Plan,
-    ctx: Contexte,
+    ctx: Context,
     *,
     tolerance: float = 0.01,
     support_min: int = 2,

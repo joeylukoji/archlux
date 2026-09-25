@@ -8,7 +8,7 @@ preuve ou d'une prédiction.
 from __future__ import annotations
 
 from archlux._version import __version__
-from archlux.types import BornePerformance, Certificat, Manifeste, PreuveGeometrique
+from archlux.types import Certificate, GeometricProof, Manifest, PerformanceBound
 
 __all__ = ["rendre"]
 
@@ -31,7 +31,7 @@ def _verdict(ok: bool) -> str:
     return "verifie" if ok else "echec"
 
 
-def _section_geometrie(preuve: PreuveGeometrique) -> str:
+def _section_geometrie(preuve: GeometricProof) -> str:
     chev = "aucun" if not preuve.chevauchement else "present"
     jours = "aucun" if not preuve.jours else "present"
     surfaces = "ok" if preuve.surfaces_ok else "insuffisantes"
@@ -47,7 +47,7 @@ def _section_geometrie(preuve: PreuveGeometrique) -> str:
     )
 
 
-def _section_performance(borne: BornePerformance | None) -> str:
+def _section_performance(borne: PerformanceBound | None) -> str:
     if borne is None:
         corps = "  NON EVALUABLE — pas de calibration, ou dérive (échangeabilité rompue)"
         bandeau = "[PREDICTION — non évaluable]"
@@ -89,7 +89,7 @@ def _section_diagnostic(duaux: tuple[tuple[str, float], ...]) -> str:
     return f"DIAGNOSTIC\n{corps}"
 
 
-def _en_tete(manifeste: Manifeste | None) -> str:
+def _en_tete(manifeste: Manifest | None) -> str:
     paquet = _version()
     if manifeste is None:
         return f"CERTIFICAT                              archlux {paquet}"
@@ -99,7 +99,7 @@ def _en_tete(manifeste: Manifeste | None) -> str:
     )
 
 
-def rendre(certificat: Certificat) -> str:
+def rendre(certificat: Certificate) -> str:
     """Rendre le certificat en texte lisible.
 
     Returns

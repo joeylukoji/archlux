@@ -7,43 +7,43 @@ from __future__ import annotations
 
 from archlux.certify.proof import verify_exactly
 from archlux.types import (
-    Contexte,
-    Mur,
+    Context,
     Orientation,
-    Piece,
     Plan,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
+    Wall,
 )
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 CTX = CONTEXTE_DEFAUT
 
 
-def _plan(*pieces: Piece) -> Plan:
+def _plan(*pieces: Room) -> Plan:
     return Plan(pieces=pieces, murs=(), ouvertures=(), contour=CTX.contour)
 
 
 class TestChevauchement:
     def test_detecte_un_chevauchement(self) -> None:
         """Deux carrés 2×2 dont l'intersection fait 1 m²."""
-        a = Piece(id="cuisine", type="cuisine", x=0.0, y=0.0, w=2.0, h=2.0)
-        b = Piece(id="sdb", type="sdb", x=1.0, y=0.0, w=2.0, h=2.0)
+        a = Room(id="cuisine", type="cuisine", x=0.0, y=0.0, w=2.0, h=2.0)
+        b = Room(id="sdb", type="sdb", x=1.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(a, b), CTX)
         assert preuve.chevauchement is True
         assert preuve.valide is False
         assert any("overlap cuisine|sdb" in v for v in preuve.violations)
 
     def test_deux_pieces_disjointes_ne_se_chevauchent_pas(self) -> None:
-        a = Piece(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
-        b = Piece(id="b", type="sejour", x=3.0, y=0.0, w=2.0, h=2.0)
+        a = Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
+        b = Room(id="b", type="sejour", x=3.0, y=0.0, w=2.0, h=2.0)
         assert verify_exactly(_plan(a, b), CTX).chevauchement is False
 
 
 class TestJours:
     def test_detecte_un_jour(self) -> None:
         """Une pièce 2×2 dans 12×9 laisse un jour d'aire 108 − 4 = 104 m²."""
-        p = Piece(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
+        p = Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(p), CTX)
         assert preuve.jours is True
         assert preuve.valide is False
@@ -51,29 +51,29 @@ class TestJours:
 
 class TestSurfaces:
     def test_surface_insuffisante(self) -> None:
-        ctx = Contexte(
+        ctx = Context(
             structure=Structure(murs_porteurs=()),
             orientation=Orientation(deg=0.0),
             contour=CTX.contour,
-            referentiel=Referentiel(aires_min=(("sdb", 5.0),), largeur_min=1.0),
+            referentiel=Regulation(aires_min=(("sdb", 5.0),), largeur_min=1.0),
         )
-        p = Piece(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=2.0)
+        p = Room(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(p), ctx)
         assert preuve.surfaces_ok is False
 
 
 class TestStructure:
     def test_mur_porteur_deplace(self) -> None:
-        mur = Mur(id="p1", a=(0.0, 0.0), b=(3.0, 0.0), porteur=True)
-        ctx = Contexte(
+        mur = Wall(id="p1", a=(0.0, 0.0), b=(3.0, 0.0), porteur=True)
+        ctx = Context(
             structure=Structure(murs_porteurs=(mur,)),
             orientation=Orientation(deg=0.0),
             contour=CTX.contour,
-            referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+            referentiel=Regulation(aires_min=(), largeur_min=1.0),
         )
         plan = Plan(
             pieces=(),
-            murs=(Mur(id="p1", a=(0.0, 1.0), b=(3.0, 1.0), porteur=True),),
+            murs=(Wall(id="p1", a=(0.0, 1.0), b=(3.0, 1.0), porteur=True),),
             ouvertures=(),
             contour=CTX.contour,
         )

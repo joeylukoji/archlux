@@ -13,12 +13,12 @@ from dataclasses import replace
 import pytest
 
 from archlux import (
-    Contexte,
+    Context,
     InvalidInput,
     Orientation,
-    Piece,
     Plan,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
     legalize,
 )
@@ -28,18 +28,18 @@ SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
 def make_plan(**changes: object) -> Plan:
     """Two valid rooms side by side, with ``changes`` applied to the first one."""
-    first = replace(Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0), **changes)  # type: ignore[arg-type]
-    second = Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
+    first = replace(Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0), **changes)  # type: ignore[arg-type]
+    second = Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
     return Plan(pieces=(first, second), murs=(), ouvertures=(), contour=SQUARE)
 
 
-def make_context(*, degrees: float = 0.0, largeur_min: float = 1.0) -> Contexte:
+def make_context(*, degrees: float = 0.0, largeur_min: float = 1.0) -> Context:
     """Empty structure, square outline, no minimum areas."""
-    return Contexte(
+    return Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=degrees),
         contour=SQUARE,
-        referentiel=Referentiel(aires_min=(), largeur_min=largeur_min),
+        referentiel=Regulation(aires_min=(), largeur_min=largeur_min),
     )
 
 
@@ -126,8 +126,8 @@ def test_invalid_input_is_not_an_internal_bug() -> None:
 
 def gapped_plan() -> Plan:
     """A 3 cm gap between the rooms: valid input, but not a tiling."""
-    first = Piece(id="a", type="sejour", x=0.0, y=0.0, w=5.97, h=9.0)
-    second = Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
+    first = Room(id="a", type="sejour", x=0.0, y=0.0, w=5.97, h=9.0)
+    second = Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
     return Plan(pieces=(first, second), murs=(), ouvertures=(), contour=SQUARE)
 
 
@@ -179,9 +179,9 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
 ) -> None:
     """The gap is read from the proof's flags, never from the text of its violations."""
     import archlux.api
-    from archlux import GapNeedsTiling, InvariantViolation, PreuveGeometrique
+    from archlux import GapNeedsTiling, GeometricProof, InvariantViolation
 
-    silent = PreuveGeometrique(
+    silent = GeometricProof(
         valide=False,
         chevauchement=False,
         jours=False,
@@ -197,16 +197,16 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
 
 
 def test_zero_wall_thickness_is_refused_as_by_the_json_reader() -> None:
-    from archlux import Mur
+    from archlux import Wall
 
-    plan = replace(make_plan(), murs=(Mur(id="m", a=(0.0, 0.0), b=(12.0, 0.0), epaisseur=0.0),))
+    plan = replace(make_plan(), murs=(Wall(id="m", a=(0.0, 0.0), b=(12.0, 0.0), epaisseur=0.0),))
     with pytest.raises(InvalidInput) as raised:
         legalize(plan, make_context())
     assert raised.value.field == "murs[m].epaisseur"
 
 
 def test_the_type_warning_points_at_the_caller() -> None:
-    ctx = replace(make_context(), referentiel=Referentiel(aires_min=(("sejour", 1.0),)))
+    ctx = replace(make_context(), referentiel=Regulation(aires_min=(("sejour", 1.0),)))
     with pytest.warns(UserWarning, match="sejuor") as record:
         legalize(
             make_plan(type="sejuor"),
@@ -217,20 +217,20 @@ def test_the_type_warning_points_at_the_caller() -> None:
 
 def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     """A refusal *with* restrictions (here the load-bearing sides) must say which."""
-    from archlux import Mur
+    from archlux import Wall
     from archlux.feasibility import is_feasible
 
-    wall = Mur(id="w", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
+    wall = Wall(id="w", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
     structure = Structure(murs_porteurs=(wall,))
     ctx = replace(make_context(), structure=structure)
     plan = replace(
         make_plan(),
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
     )
-    ctx = replace(ctx, referentiel=Referentiel(aires_min=(("sejour", 60.0),), largeur_min=1.0))
+    ctx = replace(ctx, referentiel=Regulation(aires_min=(("sejour", 60.0),), largeur_min=1.0))
     verdict = is_feasible(plan, structure, ctx)
     assert not verdict
     assert verdict.certificat is not None

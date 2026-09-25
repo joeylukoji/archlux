@@ -130,7 +130,7 @@ class Polytope:
     index: dict[str, int]          # "sejour.x" -> 12
     origines: list[str]            # ligne i -> "separation sejour|cuisine"
 
-def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope: ...
+def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope: ...
 ```
 
 ### `origines` est OBLIGATOIRE
@@ -327,10 +327,10 @@ Vérifier, **indépendamment du solveur**, que le plan de sortie est valide.
 ### Signature
 
 ```python
-def verifier_exactement(plan: Plan, ctx: Contexte) -> PreuveGeometrique: ...
+def verifier_exactement(plan: Plan, ctx: Context) -> GeometricProof: ...
 
 @dataclass(frozen=True)
-class PreuveGeometrique:
+class GeometricProof:
     valide: bool
     chevauchement: bool
     jours: bool
@@ -377,7 +377,7 @@ def test_un_plan_valide_passe(plan):
 ```python
 def legalize(
     plan: Plan,
-    ctx: Contexte,
+    ctx: Context,
     *,
     objective=None,            # None = proximité. Utilisé au jalon 3.
     budget: float | None = None,
@@ -402,7 +402,7 @@ def legalize(plan, ctx, *, objective=None, budget=None):
     preuve = verifier_exactement(q, ctx)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)   # jamais silencieux
-    return replace(q, certificat=Certificat(geometrie=preuve, ...))
+    return replace(q, certificat=Certificate(geometrie=preuve, ...))
 ```
 
 ### Le piège de la valeur absolue
@@ -417,7 +417,7 @@ minimiser Σ e
 
 - [ ] Variables d'écart implémentées
 - [ ] `gradient_distance` produit le bon vecteur `c`
-- [ ] `__init__.py` n'exporte que `legalize`, `Plan`, `Contexte`, les exceptions
+- [ ] `__init__.py` n'exporte que `legalize`, `Plan`, `Context`, les exceptions
 
 ---
 

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
     import networkx as nx
 
-    from archlux.types import Mur, Piece, Plan, Structure
+    from archlux.types import Plan, Room, Structure, Wall
 
 __all__ = [
     "GrapheContraintes",
@@ -336,7 +336,7 @@ def _opposite(taken: set[str]) -> bool:
     return {"left", "right"} <= taken or {"below", "above"} <= taken
 
 
-def _check_axis_aligned(wall: Mur) -> None:
+def _check_axis_aligned(wall: Wall) -> None:
     """Refuse an oblique wall: no linear side constraint describes it exactly.
 
     Raises
@@ -352,7 +352,7 @@ def _check_axis_aligned(wall: Mur) -> None:
         )
 
 
-def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
+def _wall_side(room: Room, wall: Wall, envelope: Envelope | None) -> WallSide:
     """Side of ``wall`` that ``room`` stays on: the half-plane it penetrates least.
 
     The wall is a fixed obstacle; each of its four half-planes (left of, right of,
@@ -376,7 +376,7 @@ def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
     return _wall_sides_by_penetration(room, wall, envelope)[0]
 
 
-def _wall_sides_by_penetration(room: Piece, wall: Mur, envelope: Envelope | None) -> list[WallSide]:
+def _wall_sides_by_penetration(room: Room, wall: Wall, envelope: Envelope | None) -> list[WallSide]:
     """The sides of :func:`_wall_side` that tie for the least penetration, best first.
 
     Raises

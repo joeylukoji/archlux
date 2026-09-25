@@ -116,13 +116,13 @@ def test_les_parts_ignorent_les_baies_pour_les_substituts_analytiques() -> None:
     une irradiance simulee.
     """
     from archlux.light.protocole import Baies
-    from archlux.types import Mur, Ouverture
+    from archlux.types import Opening, Wall
 
     x = _plan(3)
     orientation = Orientation(deg=90.0)
     baies = Baies(
-        murs=(Mur(id="m", a=(0.0, 0.0), b=(6.0, 0.0)),),
-        ouvertures=(Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.9),),
+        murs=(Wall(id="m", a=(0.0, 0.0), b=(6.0, 0.0)),),
+        ouvertures=(Opening(id="f", mur_id="m", s=0.5, largeur_rel=0.9),),
     )
     for classe in IMPLEMENTATIONS:
         substitut = classe()

@@ -17,7 +17,7 @@ où \(P\) est le [polytope d'ordre](polytope-separe.md), \(K_p\) le
 plan proposé [vectorisé](epigraphe-l1.md).
 
 Puis : dévectoriser, [vérifier exactement](preuve-exacte.md), attacher le
-`Certificat`. Si la preuve est fausse → `InvariantViolation` (bogue interne, jamais
+`Certificate`. Si la preuve est fausse → `InvariantViolation` (bogue interne, jamais
 silencieux). Si le LP est infaisable → `Infeasible` avec
 [Farkas](farkas.md).
 
@@ -30,7 +30,7 @@ silencieux). Si le LP est infaisable → `Infeasible` avec
 5. `resoudre_avec_surfaces` — GLOP + Kelley + bornes.
 6. `devectoriser` — murs et baies suivent (baie relative au mur).
 7. `verify_exactly(..., reference=plan)` — \(\delta_\infty\).
-8. `Certificat(geometrie=..., performance=None, duaux=...)`.
+8. `Certificate(geometrie=..., performance=None, duaux=...)`.
 
 `performance is None` : en mode classique il n'y a **rien de probabiliste** à
 affirmer.

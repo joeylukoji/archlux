@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from archlux import Piece, Plan
+from archlux import Plan, Room
 from archlux.errors import InvariantViolation
 from archlux.export import to_dxf
 
@@ -21,8 +21,8 @@ SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 def sound_plan() -> Plan:
     return Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -33,8 +33,8 @@ def sound_plan() -> Plan:
 def overlapping_plan() -> Plan:
     return Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),

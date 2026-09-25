@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
-from archlux.types import Contexte, Piece, Plan
+from archlux.types import Context, Plan, Room
 
 TOLERANCE = 1e-6
 """Metres or square metres: well above float noise, well below any meaningful defect."""
@@ -31,14 +31,14 @@ class Violation:
     detail: str
 
 
-def outline_area(ctx: Contexte) -> float:
+def outline_area(ctx: Context) -> float:
     """Area of the axis-aligned rectangle spanned by the outline."""
     xs = [x for x, _ in ctx.contour]
     ys = [y for _, y in ctx.contour]
     return (max(xs) - min(xs)) * (max(ys) - min(ys))
 
 
-def _seam(a: Piece, b: Piece, kind: str) -> tuple[float, float, float, str]:
+def _seam(a: Room, b: Room, kind: str) -> tuple[float, float, float, str]:
     """Recorded seam of a fused room: offset, then the shared stretch ``[lo, hi]`` and its axis.
 
     For a seam on a vertical edge, the axis is ``"x"`` and ``[lo, hi]`` is a y range.
@@ -48,14 +48,14 @@ def _seam(a: Piece, b: Piece, kind: str) -> tuple[float, float, float, str]:
     return abs(a.y + a.h - b.y), max(a.x, b.x), min(a.x + a.w, b.x + b.w), "y"
 
 
-def _fusion_holds(a: Piece, b: Piece, kind: str, min_contact: float) -> bool:
+def _fusion_holds(a: Room, b: Room, kind: str, min_contact: float) -> bool:
     """``b`` continues ``a`` across the recorded edge, sharing at least ``min_contact``."""
     offset, lo, hi, _ = _seam(a, b, kind)
     return offset <= TOLERANCE and hi - lo >= max(min_contact, 2 * TOLERANCE) - TOLERANCE
 
 
 def _fused_area_violations(
-    rooms: tuple[Piece, ...], ctx: Contexte, fusions: tuple[PieceRectilineaire, ...]
+    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[PieceRectilineaire, ...]
 ) -> tuple[set[str], list[Violation]]:
     """Fused rooms measured as a whole: every recorded edge holds, the sum meets the minimum.
 
@@ -85,7 +85,7 @@ def _fused_area_violations(
 
 
 def violations(
-    plan: Plan, ctx: Contexte, *, fusions: tuple[PieceRectilineaire, ...] = ()
+    plan: Plan, ctx: Context, *, fusions: tuple[PieceRectilineaire, ...] = ()
 ) -> list[Violation]:
     """Tiling, minimum areas and load-bearing walls, checked from coordinates only.
 

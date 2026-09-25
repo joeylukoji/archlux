@@ -10,7 +10,7 @@ from archlux.api import gradient_distance
 from archlux.errors import Infeasible
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, etendre_ecarts_l1, vectoriser
-from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
@@ -26,8 +26,8 @@ def test_l1_d_un_point_faisable_est_nulle() -> None:
     """Si x̂ ∈ P, min ||x − x̂||₁ = 0 et x★ = x̂ (Bertsimas–Tsitsiklis)."""
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -47,8 +47,8 @@ def test_un_chevauchement_est_corrige() -> None:
     """
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -65,16 +65,16 @@ def test_un_chevauchement_est_corrige() -> None:
 
 def test_programme_trop_gros_leve_infaisable() -> None:
     """Deux pièces de largeur min 8 m dans 12 m d'enveloppe, côte à côte."""
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-        referentiel=Referentiel(aires_min=(), largeur_min=8.0),
+        referentiel=Regulation(aires_min=(), largeur_min=8.0),
     )
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
-            Piece(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
+            Room(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
         ),
         murs=(),
         ouvertures=(),
@@ -94,14 +94,14 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
     ``legalize`` levait ``InvariantViolation`` (« bogue interne ») au lieu d'``Infeasible``,
     sans aucun diagnostic — alors que le programme est bel et bien infaisable.
     """
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-        referentiel=Referentiel(aires_min=(), largeur_min=4.0),
+        referentiel=Regulation(aires_min=(), largeur_min=4.0),
     )
     plan = Plan(
-        pieces=(Piece(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
+        pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
         murs=(),
         ouvertures=(),
         contour=ctx.contour,
@@ -114,11 +114,11 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
 
 def test_polytope_sans_piece_tolere_une_enveloppe_etroite() -> None:
     """Aucune pièce : aucune variable ``w``/``h``, donc rien à déclarer infaisable."""
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-        referentiel=Referentiel(aires_min=(), largeur_min=4.0),
+        referentiel=Regulation(aires_min=(), largeur_min=4.0),
     )
     vide = Plan(pieces=(), murs=(), ouvertures=(), contour=ctx.contour)
     poly = construire_polytope(deduire_ordre(vide), ctx)
@@ -128,7 +128,7 @@ def test_polytope_sans_piece_tolere_une_enveloppe_etroite() -> None:
 
 def test_objective_invalide_leve_typeerror() -> None:
     plan = Plan(
-        pieces=(Piece(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
+        pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
         murs=(),
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
@@ -142,8 +142,8 @@ def test_objective_analytique_reste_valide() -> None:
 
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -161,8 +161,8 @@ def test_legalize_trace_remonte_les_iteres() -> None:
 
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -181,10 +181,10 @@ def test_budget_zero_reste_au_point_l1() -> None:
 
     plan = Plan(
         pieces=(
-            Piece(id="sw", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
-            Piece(id="se", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
-            Piece(id="nw", type="sejour", x=0.0, y=4.5, w=6.0, h=4.5),
-            Piece(id="ne", type="chambre", x=6.0, y=4.5, w=6.0, h=4.5),
+            Room(id="sw", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
+            Room(id="se", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
+            Room(id="nw", type="sejour", x=0.0, y=4.5, w=6.0, h=4.5),
+            Room(id="ne", type="chambre", x=6.0, y=4.5, w=6.0, h=4.5),
         ),
         murs=(),
         ouvertures=(),
@@ -199,16 +199,16 @@ def test_budget_zero_reste_au_point_l1() -> None:
 
 def test_une_surface_insuffisante_est_agrandie() -> None:
     """Kelley + AM-GM : une pièce 2×9 = 18 m² sous a_min = 20 m² est dilatée."""
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=CONTEXTE_DEFAUT.contour,
-        referentiel=Referentiel(aires_min=(("sdb", 20.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("sdb", 20.0),), largeur_min=1.0),
     )
     plan = Plan(
         pieces=(
-            Piece(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=9.0),
-            Piece(id="sejour", type="sejour", x=2.0, y=0.0, w=10.0, h=9.0),
+            Room(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=9.0),
+            Room(id="sejour", type="sejour", x=2.0, y=0.0, w=10.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -223,7 +223,7 @@ def test_une_surface_insuffisante_est_agrandie() -> None:
 
 def test_etendre_l1_double_les_variables() -> None:
     plan = Plan(
-        pieces=(Piece(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
+        pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
         murs=(),
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from archlux import InvalidInput, Piece, Plan
+from archlux import InvalidInput, Plan, Room
 from archlux.data.chargeurs import _convertir
 from archlux.export.svg import planche
 from archlux.geom.diagnostic import diagnostiquer
@@ -22,7 +22,7 @@ from archlux.orient.circulaire import (
     stratifier,
     variance_circulaire,
 )
-from archlux.types import Referentiel
+from archlux.types import Regulation
 
 SRC = Path(__file__).resolve().parents[2] / "src" / "archlux"
 SQUARE = ((0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (0.0, 4.0))
@@ -30,7 +30,7 @@ SQUARE = ((0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (0.0, 4.0))
 
 def one_room_plan() -> Plan:
     return Plan(
-        pieces=(Piece(id="a", type="sejour", x=0.0, y=0.0, w=4.0, h=4.0),),
+        pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=4.0, h=4.0),),
         murs=(),
         ouvertures=(),
         contour=SQUARE,
@@ -62,7 +62,7 @@ def test_unreadable_wkt_is_a_rejection_not_a_swallowed_bug() -> None:
     rejected = _convertir(
         "x",
         [("area", "Bedroom", "not a wkt", "1", "site")],
-        reglement=Referentiel(aires_min=()),
+        reglement=Regulation(aires_min=()),
         max_pieces=20,
         max_rectangles=30,
         tolerance_calage=0.1,

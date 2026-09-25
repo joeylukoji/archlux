@@ -9,12 +9,12 @@ from __future__ import annotations
 import pytest
 
 from archlux.errors import InvariantViolation
-from archlux.types import Mur, Ouverture
+from archlux.types import Opening, Wall
 
-MUR_SUD = Mur(id="m_sud", a=(0.0, 0.0), b=(10.0, 0.0))
-MUR_OBLIQUE = Mur(id="m_obl", a=(0.0, 0.0), b=(3.0, 4.0))  # longueur 5
+MUR_SUD = Wall(id="m_sud", a=(0.0, 0.0), b=(10.0, 0.0))
+MUR_OBLIQUE = Wall(id="m_obl", a=(0.0, 0.0), b=(3.0, 4.0))  # longueur 5
 
-BAIE = Ouverture(id="f1", mur_id="m_sud", s=0.5, largeur_rel=0.2)
+BAIE = Opening(id="f1", mur_id="m_sud", s=0.5, largeur_rel=0.2)
 
 
 def test_baie_centree_sur_un_mur_horizontal() -> None:
@@ -26,7 +26,7 @@ def test_baie_centree_sur_un_mur_horizontal() -> None:
 
 def test_baie_sur_un_mur_oblique() -> None:
     """Mur 3-4-5 (longueur 5), baie de 20 % centrée : longueur 1, centrée en (1,5 ; 2)."""
-    baie = Ouverture(id="f2", mur_id="m_obl", s=0.5, largeur_rel=0.2)
+    baie = Opening(id="f2", mur_id="m_obl", s=0.5, largeur_rel=0.2)
     debut, fin = baie.segment_absolu(MUR_OBLIQUE)
     assert debut == pytest.approx((1.2, 1.6))
     assert fin == pytest.approx((1.8, 2.4))
@@ -35,11 +35,11 @@ def test_baie_sur_un_mur_oblique() -> None:
 def test_la_baie_suit_le_mur_quand_le_solveur_le_deplace() -> None:
     """**La raison d'être de l'invariant.**
 
-    La même ``Ouverture``, non modifiée, rend une position différente dès que son mur
+    La même ``Opening``, non modifiée, rend une position différente dès que son mur
     bouge. C'est exactement ce qu'une coordonnée absolue stockée ne ferait pas : elle
     resterait sur place et désynchroniserait la fenêtre de sa cloison.
     """
-    mur_deplace = Mur(id="m_sud", a=(0.0, 3.0), b=(10.0, 3.0))
+    mur_deplace = Wall(id="m_sud", a=(0.0, 3.0), b=(10.0, 3.0))
     debut, fin = BAIE.segment_absolu(mur_deplace)
     assert debut == pytest.approx((4.0, 3.0))
     assert fin == pytest.approx((6.0, 3.0))

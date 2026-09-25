@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from archlux.errors import InvariantViolation
-from archlux.types import REGIMES, BornePerformance, Indicateur, Regime
+from archlux.types import REGIMES, Indicateur, PerformanceBound, Regime
 
 __all__ = [
     "CalibrateurConforme",
@@ -214,9 +214,9 @@ def _intervalle(
     couverture: float,
     n_calibration: int,
     regime: str,
-) -> BornePerformance:
+) -> PerformanceBound:
     """Intervalle bilatéral ``prédiction ± marge`` ; le sens métier est le côté publié."""
-    return BornePerformance(
+    return PerformanceBound(
         indicateur=indicateur,
         valeur=float(prediction),
         borne_inf=float(prediction) - marge,
@@ -229,7 +229,7 @@ def _intervalle(
 
 def borner(
     valeur: float, calibration: Calibration, *, incertitude: float, regime: Regime
-) -> BornePerformance:
+) -> PerformanceBound:
     """Assortir une estimation ponctuelle de son intervalle conforme.
 
     Parameters
@@ -257,7 +257,7 @@ def borner(
     Guarantees
     ----------
     - Performance : **probabiliste**, couverture ``≥ 1 − alpha`` sous hypothèse
-      d'échangeabilité avec le jeu de calibration. ``BornePerformance.couverture``
+      d'échangeabilité avec le jeu de calibration. ``PerformanceBound.couverture``
       porte le niveau **nominal** ``1 − alpha``, jamais une couverture mesurée.
       Cette hypothèse est **affaiblie** lorsque le plan a été sélectionné par
       l'optimiseur pour maximiser la prédiction ; le projet mesure et publie la
@@ -334,7 +334,7 @@ class CalibrateurConforme:
         sens: str | None = None,
         *,
         regime: Regime,
-    ) -> BornePerformance:
+    ) -> PerformanceBound:
         """Publier l'intervalle conforme autour de ``prediction``.
 
         Parameters

@@ -12,13 +12,13 @@ from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.solveur import resoudre
 from archlux.solve.frank_wolfe import frank_wolfe
-from archlux.types import Contexte, Orientation, Referentiel, Structure
+from archlux.types import Context, Orientation, Regulation, Structure
 
-CTX = Contexte(
+CTX = Context(
     structure=Structure(murs_porteurs=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Referentiel(aires_min=(), largeur_min=1.5),
+    referentiel=Regulation(aires_min=(), largeur_min=1.5),
 )
 POLY = construire_polytope(OrdreRelatif(horizontal=(), vertical=(), pieces=("A",)), CTX)
 NORD = Orientation(deg=0.0)

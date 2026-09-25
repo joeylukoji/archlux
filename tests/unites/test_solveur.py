@@ -16,13 +16,13 @@ from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.coupes import Coupe
 from archlux.lmo.solveur import resoudre
-from archlux.types import Contexte, Orientation, Referentiel, Structure
+from archlux.types import Context, Orientation, Regulation, Structure
 
-CTX = Contexte(
+CTX = Context(
     structure=Structure(murs_porteurs=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Referentiel(aires_min=(), largeur_min=1.5),
+    referentiel=Regulation(aires_min=(), largeur_min=1.5),
 )
 
 ORDRE_1 = OrdreRelatif(horizontal=(), vertical=(), pieces=("A",))
@@ -94,11 +94,11 @@ class TestInfeasible:
     @staticmethod
     def _polytope_surcontraint() -> object:
         """Deux pièces de 2 m minimum côte à côte dans un contour de 3 m."""
-        ctx = Contexte(
+        ctx = Context(
             structure=Structure(murs_porteurs=()),
             orientation=Orientation(deg=0.0),
             contour=((0.0, 0.0), (3.0, 0.0), (3.0, 8.0), (0.0, 8.0)),
-            referentiel=Referentiel(aires_min=(), largeur_min=2.0),
+            referentiel=Regulation(aires_min=(), largeur_min=2.0),
         )
         return construire_polytope(ORDRE_AB, ctx)
 

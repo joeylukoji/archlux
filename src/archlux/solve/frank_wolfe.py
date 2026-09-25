@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from archlux.light.protocole import Baies, Substitut
-    from archlux.types import Contexte, Orientation, Piece
+    from archlux.types import Context, Orientation, Room
 
 __all__ = ["FrankWolfeResult", "frank_wolfe", "restrict_to_budget"]
 
@@ -115,8 +115,8 @@ def _add_cuts(
     cuts: list[Coupe],
     x: VecteurF,
     domain: Polytope,
-    ctx: Contexte | None,
-    rooms: tuple[Piece, ...] | None,
+    ctx: Context | None,
+    rooms: tuple[Room, ...] | None,
 ) -> None:
     """Add AM-GM tangents when a room goes below ``a_min`` (legacy path)."""
     if ctx is None or not rooms:
@@ -156,8 +156,8 @@ def frank_wolfe(
     budget: float | None = None,
     away_steps: bool = True,
     cuts: Sequence[Coupe] | None = None,
-    rooms: tuple[Piece, ...] | None = None,
-    ctx: Contexte | None = None,
+    rooms: tuple[Room, ...] | None = None,
+    ctx: Context | None = None,
     glazing: Baies | None = None,
 ) -> FrankWolfeResult:
     """Maximize ``surrogate`` over the polytope, starting from ``start``.

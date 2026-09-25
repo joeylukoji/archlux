@@ -20,17 +20,17 @@ from typing import Any
 from archlux.errors import InvariantViolation
 from archlux.types import (
     REGIMES,
-    BornePerformance,
-    Certificat,
-    Manifeste,
-    ModeleTrace,
-    Mur,
-    Ouverture,
-    Piece,
+    Certificate,
+    GeometricProof,
+    Manifest,
+    ModelTrace,
+    Opening,
+    PerformanceBound,
     Plan,
     Point,
-    PreuveGeometrique,
     Regime,
+    Room,
+    Wall,
 )
 
 __all__ = [
@@ -126,7 +126,7 @@ def _verifier_plages(donnees: Any) -> None:
 # ======================================================================================
 
 
-def _preuve_vers_dict(preuve: PreuveGeometrique) -> dict[str, Any]:
+def _preuve_vers_dict(preuve: GeometricProof) -> dict[str, Any]:
     """Serialiser une preuve geometrique ; aucun champ de probabilite n'y entre."""
     return {
         "valide": preuve.valide,
@@ -139,9 +139,9 @@ def _preuve_vers_dict(preuve: PreuveGeometrique) -> dict[str, Any]:
     }
 
 
-def _preuve_depuis_dict(donnees: Any) -> PreuveGeometrique:
+def _preuve_depuis_dict(donnees: Any) -> GeometricProof:
     """Reconstruire une preuve geometrique depuis sa forme JSON."""
-    return PreuveGeometrique(
+    return GeometricProof(
         valide=bool(donnees["valide"]),
         chevauchement=bool(donnees["chevauchement"]),
         jours=bool(donnees["jours"]),
@@ -152,7 +152,7 @@ def _preuve_depuis_dict(donnees: Any) -> PreuveGeometrique:
     )
 
 
-def _borne_vers_dict(borne: BornePerformance) -> dict[str, Any]:
+def _borne_vers_dict(borne: PerformanceBound) -> dict[str, Any]:
     """Serialiser une borne de performance, couverture et n_calibration compris."""
     return {
         "indicateur": borne.indicateur,
@@ -173,12 +173,12 @@ def _regime(donnees: Any) -> Regime:
     return regime  # type: ignore[no-any-return]
 
 
-def _borne_depuis_dict(donnees: Any) -> BornePerformance:
+def _borne_depuis_dict(donnees: Any) -> PerformanceBound:
     """Reconstruire une borne de performance ; refuser un indicateur inconnu."""
     indicateur = donnees["indicateur"]
     if indicateur not in ("sDA", "ASE", "UDI", "vue"):
         raise InvariantViolation((f"indicateur inconnu : {indicateur!r}",))
-    return BornePerformance(
+    return PerformanceBound(
         indicateur=indicateur,
         valeur=_reel(donnees["valeur"], "borne.valeur"),
         borne_inf=_reel(donnees["borne_inf"], "borne.borne_inf"),
@@ -192,7 +192,7 @@ def _borne_depuis_dict(donnees: Any) -> BornePerformance:
     )
 
 
-def manifeste_vers_dict(manifeste: Manifeste) -> dict[str, Any]:
+def manifeste_vers_dict(manifeste: Manifest) -> dict[str, Any]:
     """Sérialiser un :class:`~archlux.types.Manifeste` (forme unique JSON / banc)."""
     modele = manifeste.modele
     return {
@@ -213,17 +213,17 @@ def manifeste_vers_dict(manifeste: Manifeste) -> dict[str, Any]:
     }
 
 
-def _manifeste_depuis_dict(donnees: Any) -> Manifeste:
-    """Reconstruire un manifeste, ``ModeleTrace`` compris s'il est present."""
+def _manifeste_depuis_dict(donnees: Any) -> Manifest:
+    """Reconstruire un manifeste, ``ModelTrace`` compris s'il est present."""
     brut = donnees.get("modele")
     modele = None
     if brut is not None:
-        modele = ModeleTrace(
+        modele = ModelTrace(
             poids=str(brut["poids"]),
             calibration_n=int(brut["calibration_n"]),
             alpha=float(brut["alpha"]),
         )
-    return Manifeste(
+    return Manifest(
         version=str(donnees["version"]),
         horodatage=str(donnees["horodatage"]),
         graine=int(donnees["graine"]),
@@ -235,7 +235,7 @@ def _manifeste_depuis_dict(donnees: Any) -> Manifeste:
     )
 
 
-def _certificat_vers_dict(certificat: Certificat | None) -> dict[str, Any] | None:
+def _certificat_vers_dict(certificat: Certificate | None) -> dict[str, Any] | None:
     """Serialiser un certificat ; ``None`` en performance reste explicite."""
     if certificat is None:
         return None
@@ -251,13 +251,13 @@ def _certificat_vers_dict(certificat: Certificat | None) -> dict[str, Any] | Non
     }
 
 
-def _certificat_depuis_dict(donnees: Any) -> Certificat | None:
+def _certificat_depuis_dict(donnees: Any) -> Certificate | None:
     """Reconstruire un certificat, ou ``None`` si le plan n'en porte pas."""
     if donnees is None:
         return None
     performance = donnees["performance"]
     manifeste = donnees["manifeste"]
-    return Certificat(
+    return Certificate(
         geometrie=_preuve_depuis_dict(donnees["geometrie"]),
         performance=None if performance is None else _borne_depuis_dict(performance),
         duaux=tuple(
@@ -360,12 +360,12 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
     if version != VERSION_SCHEMA:
         raise InvariantViolation((f"schéma JSON {version!r} inconnu, attendu {VERSION_SCHEMA!r}",))
     try:
-        # Before building: ``Ouverture`` refuses an out-of-range ``s`` itself, which would
+        # Before building: ``Opening`` refuses an out-of-range ``s`` itself, which would
         # hide every other violation of the file behind the first one.
         _verifier_plages(donnees)
         plan = Plan(
             pieces=tuple(
-                Piece(
+                Room(
                     id=str(p["id"]),
                     type=str(p["type"]),
                     x=_reel(p["x"], f"piece {p['id']}.x"),
@@ -376,7 +376,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                 for p in donnees["pieces"]
             ),
             murs=tuple(
-                Mur(
+                Wall(
                     id=str(m["id"]),
                     a=_point(m["a"], f"mur {m['id']}.a"),
                     b=_point(m["b"], f"mur {m['id']}.b"),
@@ -386,7 +386,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                 for m in donnees["murs"]
             ),
             ouvertures=tuple(
-                Ouverture(
+                Opening(
                     id=str(o["id"]),
                     mur_id=str(o["mur_id"]),
                     s=_reel(o["s"], f"ouverture {o['id']}.s"),

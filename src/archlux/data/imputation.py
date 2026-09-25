@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from archlux.types import Mur, Ouverture, Plan
+from archlux.types import Opening, Plan, Wall
 
 __all__ = ["RATIO_BAIE_DEFAUT", "imputer_ouvertures"]
 
@@ -19,18 +19,19 @@ def imputer_ouvertures(plan: Plan, *, ratio: float = RATIO_BAIE_DEFAUT) -> Plan:
     calibration doit être mesuré à part (`docs/donnees/imputation.md`).
     """
     murs_occupes = {o.mur_id for o in plan.ouvertures}
-    nouvelles: list[Ouverture] = list(plan.ouvertures)
-    murs: tuple[Mur, ...] = plan.murs
+    nouvelles: list[Opening] = list(plan.ouvertures)
+    murs: tuple[Wall, ...] = plan.murs
     if not murs and len(plan.contour) >= 2:
         contour = (*plan.contour, plan.contour[0])
         murs = tuple(
-            Mur(id=f"contour-{i}", a=contour[i], b=contour[i + 1]) for i in range(len(plan.contour))
+            Wall(id=f"contour-{i}", a=contour[i], b=contour[i + 1])
+            for i in range(len(plan.contour))
         )
     for mur in murs:
         if mur.id in murs_occupes:
             continue
         nouvelles.append(
-            Ouverture(
+            Opening(
                 id=f"impute-{mur.id}",
                 mur_id=mur.id,
                 s=0.5,

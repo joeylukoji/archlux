@@ -11,7 +11,7 @@ from hypothesis import strategies as st
 
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.coupes import coupe_surface, resoudre_avec_surfaces
-from archlux.types import Contexte, Orientation, Piece, Referentiel, Structure
+from archlux.types import Context, Orientation, Regulation, Room, Structure
 from tests.proprietes.strategies import ordres_valides
 
 
@@ -37,15 +37,15 @@ def test_la_coupe_n_exclut_aucun_point_valide(w0: float, h0: float, w: float, h:
 @settings(max_examples=40, deadline=None)
 def test_surfaces_minimales_respectees(ordre: object) -> None:
     """Après la boucle de coupes, aucune pièce n'est sous son a_min."""
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (20.0, 0.0), (20.0, 16.0), (0.0, 16.0)),
-        referentiel=Referentiel(aires_min=(("sejour", 4.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("sejour", 4.0),), largeur_min=1.0),
     )
     poly = construire_polytope(ordre, ctx)  # type: ignore[arg-type]
     pieces = tuple(
-        Piece(id=nom, type="sejour", x=0.0, y=0.0, w=1.0, h=1.0)
+        Room(id=nom, type="sejour", x=0.0, y=0.0, w=1.0, h=1.0)
         for nom in ordre.pieces  # type: ignore[attr-defined]
     )
     c = np.zeros(len(poly.index))

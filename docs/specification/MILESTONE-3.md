@@ -122,9 +122,9 @@ class Substitut(Protocol):
     """Contrat minimal. Toute implémentation le respectant est acceptée
     par le noyau — y compris un modèle analytique sans apprentissage."""
 
-    def evaluer(self, plan: Plan, ctx: Contexte) -> Indicateurs: ...
-    def gradient(self, plan: Plan, ctx: Contexte) -> np.ndarray: ...
-    def incertitude(self, plan: Plan, ctx: Contexte) -> np.ndarray: ...
+    def evaluer(self, plan: Plan, ctx: Context) -> Indicateurs: ...
+    def gradient(self, plan: Plan, ctx: Context) -> np.ndarray: ...
+    def incertitude(self, plan: Plan, ctx: Context) -> np.ndarray: ...
 
 
 @dataclass(frozen=True)
@@ -362,7 +362,7 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
     preuve = verifier_exactement(q, ctx)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)
-    return replace(q, certificat=Certificat(geometrie=preuve, ...))
+    return replace(q, certificat=Certificate(geometrie=preuve, ...))
 ```
 
 - [ ] `budget` implémenté comme boîte `‖x − x₀‖∞ ≤ Δ` ajoutée au polytope

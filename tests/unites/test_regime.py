@@ -19,12 +19,12 @@ from archlux.io.json_io import depuis_dict, vers_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import point_prediction
-from archlux.types import BornePerformance, Certificat, PreuveGeometrique, Referentiel
+from archlux.types import Certificate, GeometricProof, PerformanceBound, Regulation
 from archlux.uq.conforme import CalibrateurConforme, Calibration, borner, dataset_fingerprint
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
-def _bound(**changes: object) -> BornePerformance:
+def _bound(**changes: object) -> PerformanceBound:
     fields: dict[str, object] = {
         "indicateur": "sDA",
         "valeur": 56.2,
@@ -35,11 +35,11 @@ def _bound(**changes: object) -> BornePerformance:
         "regime": "exchangeable",
     }
     fields.update(changes)
-    return BornePerformance(**fields)  # type: ignore[arg-type]
+    return PerformanceBound(**fields)  # type: ignore[arg-type]
 
 
-def _proof() -> PreuveGeometrique:
-    return PreuveGeometrique(
+def _proof() -> GeometricProof:
+    return GeometricProof(
         valide=True,
         chevauchement=False,
         jours=False,
@@ -63,7 +63,7 @@ def _calibration(indicator: str = "sDA", n: int = 60) -> Calibration:
 
 def test_a_bound_without_regime_cannot_be_built() -> None:
     with pytest.raises(TypeError, match="regime"):
-        BornePerformance(  # type: ignore[call-arg]
+        PerformanceBound(  # type: ignore[call-arg]
             indicateur="sDA",
             valeur=56.2,
             borne_inf=51.4,
@@ -92,12 +92,12 @@ def test_only_an_exchangeable_plan_has_a_guaranteed_coverage() -> None:
 
 
 def test_the_report_claims_the_coverage_of_an_exchangeable_plan() -> None:
-    text = Certificat(geometrie=_proof(), performance=_bound()).rapport()
+    text = Certificate(geometrie=_proof(), performance=_bound()).rapport()
     assert "[PREDICTION — couverture 90 %]" in text
 
 
 def test_the_report_never_claims_the_coverage_of_a_selected_plan() -> None:
-    text = Certificat(geometrie=_proof(), performance=_bound(regime="selected")).rapport()
+    text = Certificate(geometrie=_proof(), performance=_bound(regime="selected")).rapport()
     assert "couverture 90 %]" not in text
     assert "couverture NON garantie" in text
     assert "oracle" in text
@@ -147,8 +147,8 @@ def _plan() -> archlux.Plan:
     """Two rooms tiling the default 12 m x 9 m outline, off-centre."""
     return archlux.Plan(
         pieces=(
-            archlux.Piece(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=9.0),
-            archlux.Piece(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
+            archlux.Room(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=9.0),
+            archlux.Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -199,14 +199,14 @@ def test_a_calibration_of_another_indicator_is_refused() -> None:
 
 
 def test_the_regime_survives_serialization() -> None:
-    certificate = Certificat(geometrie=_proof(), performance=_bound(regime="selected"))
+    certificate = Certificate(geometrie=_proof(), performance=_bound(regime="selected"))
     restored = depuis_dict(vers_dict(replace(_plan(), certificat=certificate)))
     assert restored.certificat is not None and restored.certificat.performance is not None
     assert restored.certificat.performance.regime == "selected"
 
 
 def test_a_serialized_bound_without_regime_is_refused() -> None:
-    certificate = Certificat(geometrie=_proof(), performance=_bound())
+    certificate = Certificate(geometrie=_proof(), performance=_bound())
     data = vers_dict(replace(_plan(), certificat=certificate))
     del data["certificat"]["performance"]["regime"]
     with pytest.raises(InvariantViolation, match="regime"):
@@ -257,7 +257,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     tiny_ctx = replace(
         CONTEXTE_DEFAUT,
         contour=small_outline,
-        referentiel=Referentiel(aires_min=(), largeur_min=2.0),
+        referentiel=Regulation(aires_min=(), largeur_min=2.0),
     )
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=SubstitutAnalytique())

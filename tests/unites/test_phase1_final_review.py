@@ -23,7 +23,7 @@ from archlux.certify.proof import verify_exactly
 from archlux.errors import Infeasible
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.rectilineaire import decomposer
-from archlux.types import Contexte, Mur, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
@@ -53,13 +53,13 @@ def test_the_message_without_scope_is_about_the_order_alone() -> None:
     assert message == "infeasible for this relative order: no constraint identified"
 
 
-def _overlapping_pair() -> tuple[Plan, Contexte]:
+def _overlapping_pair() -> tuple[Plan, Context]:
     """Two rooms overlapping by 1 m: repairing them moves an edge by at least 0.5 m."""
     ctx = CONTEXTE_DEFAUT
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -87,7 +87,7 @@ def test_the_same_plan_without_budget_is_repaired() -> None:
 def test_an_infeasible_order_is_not_blamed_on_a_restriction() -> None:
     """Two rooms side by side, each at least 7 m wide, in 12 m: the order is the cause."""
     plan, ctx = _overlapping_pair()
-    ctx = replace(ctx, referentiel=Referentiel(aires_min=(), largeur_min=7.0))
+    ctx = replace(ctx, referentiel=Regulation(aires_min=(), largeur_min=7.0))
     with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=1.0)
     assert capture.value.scope == ("budget 1 m",)
@@ -125,27 +125,27 @@ def test_a_malformed_room_has_an_unbounded_displacement_when_not_finite() -> Non
 # --- Fused rooms keep their own side of a wall when no seam can land on it -----------------
 
 
-def _l_beside_a_partial_wall() -> tuple[Plan, Contexte, tuple[str, str]]:
+def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
     """A kitchen L (bar [0,2]x[0,4], foot [2,4]x[0,2]) under a wall x = 3, y in [2, 4].
 
     The bar is left of the wall, the foot below its lower end: the plan is valid. The
     bounding box of the L, [0,4]x[0,4], crosses the wall; its cheapest side is ``left``,
     which would pull the foot back to x + w <= 3.
     """
-    wall = Mur(id="w", a=(3.0, 2.0), b=(3.0, 4.0), porteur=True)
+    wall = Wall(id="w", a=(3.0, 2.0), b=(3.0, 4.0), porteur=True)
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(murs_porteurs=(wall,)),
-        referentiel=Referentiel(aires_min=(("kitchen", 10.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("kitchen", 10.0),), largeur_min=1.0),
     )
     room = decomposer(
         Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", type_piece="kitchen"
     )
     rest = (
-        Piece(id="r1", type="living", x=4.0, y=0.0, w=8.0, h=2.0),
-        Piece(id="r2a", type="living", x=2.0, y=2.0, w=1.0, h=2.0),
-        Piece(id="r2b", type="living", x=3.0, y=2.0, w=9.0, h=2.0),
-        Piece(id="r3", type="living", x=0.0, y=4.0, w=12.0, h=5.0),
+        Room(id="r1", type="living", x=4.0, y=0.0, w=8.0, h=2.0),
+        Room(id="r2a", type="living", x=2.0, y=2.0, w=1.0, h=2.0),
+        Room(id="r2b", type="living", x=3.0, y=2.0, w=9.0, h=2.0),
+        Room(id="r3", type="living", x=0.0, y=4.0, w=12.0, h=5.0),
     )
     plan = Plan(pieces=room.rectangles + rest, murs=(), ouvertures=(), contour=ctx.contour)
     bar, foot = sorted(room.rectangles, key=lambda r: r.x)
@@ -184,19 +184,19 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     from archlux.geom.rectilineaire import PieceRectilineaire
     from archlux.light.analytique import SubstitutAnalytique
 
-    wall = Mur(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), porteur=True)
-    bar = Piece(id="f__0", type="sejour", x=0.0, y=1.0, w=1.0, h=1.0)
-    foot = Piece(id="f__1", type="sejour", x=0.0, y=2.0, w=1.01, h=7.0)
+    wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), porteur=True)
+    bar = Room(id="f__0", type="sejour", x=0.0, y=1.0, w=1.0, h=1.0)
+    foot = Room(id="f__1", type="sejour", x=0.0, y=2.0, w=1.01, h=7.0)
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(murs_porteurs=(wall,)),
-        referentiel=Referentiel(aires_min=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
     )
     rest = (
-        Piece(id="p0", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
-        Piece(id="p2", type="sejour", x=1.0, y=0.0, w=1.0, h=2.0),
-        Piece(id="p3", type="sejour", x=2.0, y=0.0, w=10.0, h=2.0),
-        Piece(id="p5", type="chambre", x=1.01, y=2.0, w=10.99, h=7.0),
+        Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
+        Room(id="p2", type="sejour", x=1.0, y=0.0, w=1.0, h=2.0),
+        Room(id="p3", type="sejour", x=2.0, y=0.0, w=10.0, h=2.0),
+        Room(id="p5", type="chambre", x=1.01, y=2.0, w=10.99, h=7.0),
     )
     plan = Plan(pieces=(bar, foot, *rest), murs=(wall,), ouvertures=(), contour=ctx.contour)
     room = PieceRectilineaire(
@@ -221,8 +221,8 @@ def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -
     ctx = CONTEXTE_DEFAUT
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=8.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=8.0),
         ),
         murs=(),
         ouvertures=(),
@@ -250,7 +250,7 @@ def test_the_scope_names_only_what_the_domain_contains() -> None:
     plan, ctx, (bar, foot) = _l_beside_a_partial_wall()
     ordre = deduire_ordre(plan, ctx.structure, groups=((bar, foot),))
     assert ordre.shared_sides == ()
-    zero = Mur(id="z", a=(3.0, 3.0), b=(3.0, 3.0), porteur=True)
+    zero = Wall(id="z", a=(3.0, 3.0), b=(3.0, 3.0), porteur=True)
     assert deduire_ordre(plan, Structure(murs_porteurs=(zero,))).wall_sides == ()
 
 

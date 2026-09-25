@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-from archlux import Contexte, Mur, Orientation, Piece, Plan, Referentiel, Structure, legalize
+from archlux import Context, Orientation, Plan, Regulation, Room, Structure, Wall, legalize
 from archlux.certify.dual import describe_origin, traduire_duaux
 from archlux.geom.polytope import Polytope
 
@@ -102,20 +102,20 @@ def test_a_real_certificate_lists_only_business_constraints() -> None:
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 7.0), (0.0, 7.0))
     plan = Plan(
         pieces=(
-            Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=6.2, h=7.0),
-            Piece(id="chambre", type="chambre", x=6.0, y=0.0, w=4.0, h=4.0),
-            Piece(id="sdb", type="sdb", x=6.0, y=4.0, w=4.0, h=3.0),
+            Room(id="sejour", type="sejour", x=0.0, y=0.0, w=6.2, h=7.0),
+            Room(id="chambre", type="chambre", x=6.0, y=0.0, w=4.0, h=4.0),
+            Room(id="sdb", type="sdb", x=6.0, y=4.0, w=4.0, h=3.0),
         ),
         murs=(),
         ouvertures=(),
         contour=outline,
     )
-    wall = Mur(id="p1", a=(6.0, 0.0), b=(6.0, 7.0), porteur=True)
-    ctx = Contexte(
+    wall = Wall(id="p1", a=(6.0, 0.0), b=(6.0, 7.0), porteur=True)
+    ctx = Context(
         structure=Structure(murs_porteurs=(wall,)),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(), largeur_min=1.5),
+        referentiel=Regulation(aires_min=(), largeur_min=1.5),
     )
     duals = legalize(plan, ctx, pavage=True).certificat.duaux  # type: ignore[union-attr]
     assert duals
@@ -143,18 +143,18 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 7.0), (0.0, 7.0))
     plan = Plan(
         pieces=(
-            Piece(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=7.0),
-            Piece(id="b", type="sejour", x=5.0, y=0.0, w=5.0, h=7.0),
+            Room(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=7.0),
+            Room(id="b", type="sejour", x=5.0, y=0.0, w=5.0, h=7.0),
         ),
         murs=(),
         ouvertures=(),
         contour=outline,
     )
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(), largeur_min=1.0),
     )
     surrogate = SubstitutAnalytique()
     legalize(plan, ctx, objective=surrogate)

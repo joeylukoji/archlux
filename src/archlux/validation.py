@@ -23,7 +23,7 @@ from archlux.errors import InvalidInput
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from archlux.types import Contexte, Plan, Point
+    from archlux.types import Context, Plan, Point
 
 __all__ = ["resolve_outline", "validate_inputs"]
 
@@ -93,10 +93,10 @@ def _walls(plan: Plan) -> None:
         _point(f"murs[{wall.id}].b", wall.b)
         # > 0 as in the JSON reader: the two doors must agree on what a wall is.
         _positive(f"murs[{wall.id}].epaisseur", wall.epaisseur)
-    # Openings need no check here: ``Ouverture`` refuses its own ranges at construction.
+    # Openings need no check here: ``Opening`` refuses its own ranges at construction.
 
 
-def _context(ctx: Contexte) -> None:
+def _context(ctx: Context) -> None:
     _finite("orientation.deg", ctx.orientation.deg)
     _non_negative("referentiel.largeur_min", ctx.referentiel.largeur_min)
     for type_piece, threshold in ctx.referentiel.aires_min:
@@ -108,7 +108,7 @@ def _context(ctx: Contexte) -> None:
         _point(f"structure.poteaux[{index}]", post)
 
 
-def _outlines(plan: Plan, ctx: Contexte) -> None:
+def _outlines(plan: Plan, ctx: Context) -> None:
     """Each outline given must be a polygon, and at least one of the two must be given."""
     for field, outline in (("contour", plan.contour), ("contexte.contour", ctx.contour)):
         if outline:
@@ -121,7 +121,7 @@ def _outlines(plan: Plan, ctx: Contexte) -> None:
         )
 
 
-def resolve_outline(plan: Plan, ctx: Contexte) -> Contexte:
+def resolve_outline(plan: Plan, ctx: Context) -> Context:
     """The context with its outline filled in from the plan when it has none.
 
     An outline in the context wins over the plan's: it is the site, the plan's own is
@@ -130,11 +130,11 @@ def resolve_outline(plan: Plan, ctx: Contexte) -> Contexte:
     return ctx if ctx.contour else replace(ctx, contour=plan.contour)
 
 
-def _warn_unregulated_types(plan: Plan, ctx: Contexte) -> None:
+def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
     """Warn about room types the regulation has no threshold for.
 
     A typo such as ``"sejuor"`` silently removes the minimum-area requirement of the room
-    (``Referentiel.a_min`` gives ``0.0`` for an unknown type). Only when the regulation
+    (``Regulation.a_min`` gives ``0.0`` for an unknown type). Only when the regulation
     lists thresholds: an empty one means "no regulation", not a typo.
     """
     known = {type_piece for type_piece, _ in ctx.referentiel.aires_min}
@@ -153,7 +153,7 @@ def _warn_unregulated_types(plan: Plan, ctx: Contexte) -> None:
 
 def validate_inputs(
     plan: Plan,
-    ctx: Contexte,
+    ctx: Context,
     *,
     budget: float | None = None,
     budget_reparation: int = 0,

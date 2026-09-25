@@ -17,7 +17,7 @@ from hypothesis import strategies as st
 import archlux
 from archlux.data.corruption import corrompre
 from archlux.errors import ArchluxError
-from archlux.types import Contexte, Plan
+from archlux.types import Context, Plan
 from tests import checkers
 from tests.proprietes.strategies import (
     GATE_EXAMPLES,
@@ -27,7 +27,7 @@ from tests.proprietes.strategies import (
 )
 
 
-def _returned_plans_are_valid(plan: Plan, ctx: Contexte, *, pavage: bool) -> None:
+def _returned_plans_are_valid(plan: Plan, ctx: Context, *, pavage: bool) -> None:
     try:
         result = archlux.legalize(plan, ctx, pavage=pavage)
     except ArchluxError:
@@ -38,7 +38,7 @@ def _returned_plans_are_valid(plan: Plan, ctx: Contexte, *, pavage: bool) -> Non
 
 @given(plan=plans_quelconques(), ctx=contextes())
 @settings(max_examples=500, deadline=None, derandomize=True)
-def test_every_returned_plan_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Contexte) -> None:
+def test_every_returned_plan_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     """The criterion as written: arbitrary plans and contexts, 500 examples."""
     _returned_plans_are_valid(plan, ctx, pavage=False)
 
@@ -51,7 +51,7 @@ def test_every_returned_plan_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Conte
 )
 @settings(max_examples=GATE_EXAMPLES, deadline=None, derandomize=True)
 def test_every_returned_plan_is_valid_with_walls_and_one_fault(
-    scenario: tuple[Plan, Contexte], seed: int, amplitude: float, pavage: bool
+    scenario: tuple[Plan, Context], seed: int, amplitude: float, pavage: bool
 ) -> None:
     """PLAN.md phase 2: replayed with load-bearing walls, minimum areas and one fault."""
     plan, ctx = scenario

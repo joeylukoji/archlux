@@ -12,27 +12,27 @@ import pytest
 from hypothesis import given, settings
 
 from archlux.certify.proof import rational_tiling, verify_exactly
-from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 
 _OUTLINE = ((0.0, 0.0), (0.6, 0.0), (0.6, 1.0), (0.0, 1.0))
 
 
-def _ctx(outline: tuple[tuple[float, float], ...] = _OUTLINE) -> Contexte:
-    return Contexte(
+def _ctx(outline: tuple[tuple[float, float], ...] = _OUTLINE) -> Context:
+    return Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(), largeur_min=0.05),
+        referentiel=Regulation(aires_min=(), largeur_min=0.05),
     )
 
 
-def _plan(*rooms: Piece, outline: tuple[tuple[float, float], ...] = _OUTLINE) -> Plan:
+def _plan(*rooms: Room, outline: tuple[tuple[float, float], ...] = _OUTLINE) -> Plan:
     return Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
 
 
-def _room(rid: str, x: float, y: float, w: float, h: float) -> Piece:
-    return Piece(id=rid, type="chambre", x=x, y=y, w=w, h=h)
+def _room(rid: str, x: float, y: float, w: float, h: float) -> Room:
+    return Room(id=rid, type="chambre", x=x, y=y, w=w, h=h)
 
 
 def test_decimal_inputs_tile_exactly_despite_binary_floats() -> None:
@@ -112,11 +112,11 @@ def test_a_program_that_fills_the_outline_exactly_is_still_legalized() -> None:
     import archlux
 
     outline = ((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0))
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(("chambre", 4.5),), largeur_min=0.5),
+        referentiel=Regulation(aires_min=(("chambre", 4.5),), largeur_min=0.5),
     )
     plan = _plan(_room("a", 0.0, 0.0, 1.0, 3.0), _room("b", 1.0, 0.0, 2.0, 3.0), outline=outline)
     result = archlux.legalize(plan, ctx)

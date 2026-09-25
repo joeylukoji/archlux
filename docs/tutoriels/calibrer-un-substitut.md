@@ -29,19 +29,19 @@ from archlux.light.simulateur import SplitFluxOracle
 contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     pieces=(
-        ax.Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=6.05, h=9.0),
-        ax.Piece(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=5.0),
-        ax.Piece(id="sdb", type="salle_de_bain", x=6.0, y=5.03, w=6.0, h=3.97),
+        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=6.05, h=9.0),
+        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=5.0),
+        ax.Room(id="sdb", type="salle_de_bain", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
     murs=(),
     ouvertures=(),
     contour=contour,
 )
-ctx = ax.Contexte(
+ctx = ax.Context(
     structure=ax.Structure(murs_porteurs=()),
     orientation=ax.Orientation(deg=12.0),
     contour=contour,
-    referentiel=ax.Referentiel(aires_min=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    referentiel=ax.Regulation(aires_min=(("salle_de_bain", 5.0),), largeur_min=1.0),
 )
 
 

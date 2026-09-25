@@ -11,18 +11,18 @@ import archlux as ax
 contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     pieces=(
-        ax.Piece(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
-        ax.Piece(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
+        ax.Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
+        ax.Room(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
     ),
     murs=(),
     ouvertures=(),
     contour=contour,
 )
-ctx = ax.Contexte(
+ctx = ax.Context(
     structure=ax.Structure(murs_porteurs=()),
     orientation=ax.Orientation(deg=0.0),
     contour=contour,
-    referentiel=ax.Referentiel(aires_min=(), largeur_min=8.0),
+    referentiel=ax.Regulation(aires_min=(), largeur_min=8.0),
 )
 try:
     ax.legalize(plan, ctx)

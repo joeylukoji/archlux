@@ -5,8 +5,8 @@ Règles absolues (`ARCHITECTURE.md` §6), vérifiées par les tests de propriét
 - tous les types sont ``frozen=True, slots=True`` — jamais de mutation en place ;
 - la position **absolue** d'une ouverture n'est jamais stockée, toujours dérivée ;
 - un plan légalisé porte **toujours** son certificat ;
-- :class:`PreuveGeometrique` n'a **aucun** champ de probabilité ;
-- :class:`BornePerformance` porte **toujours** ``couverture`` et ``n_calibration``.
+- :class:`GeometricProof` n'a **aucun** champ de probabilité ;
+- :class:`PerformanceBound` porte **toujours** ``couverture`` et ``n_calibration``.
 
 Unités : mètres, mètres carrés, degrés d'azimut. Origine au coin bas-gauche du contour,
 axe ``y`` vers le nord géographique.
@@ -25,28 +25,28 @@ if TYPE_CHECKING:
     from archlux.export import RapportExport
 
 __all__ = [
-    "BornePerformance",
-    "Certificat",
-    "Contexte",
+    "Certificate",
+    "Context",
+    "GeometricProof",
     "Indicateur",
-    "Manifeste",
-    "ModeleTrace",
-    "Mur",
+    "Manifest",
+    "ModelTrace",
+    "Opening",
     "Orientation",
-    "Ouverture",
-    "Piece",
+    "PerformanceBound",
     "Plan",
     "Point",
-    "PreuveGeometrique",
-    "Referentiel",
+    "Regulation",
+    "Room",
     "Structure",
+    "Wall",
 ]
 
 Point = tuple[float, float]
 
 Indicateur = Literal["sDA", "ASE", "UDI", "vue"]
 """Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
-``BornePerformance``, the ``Substitut`` protocol, the surrogates and the calibration all
+``PerformanceBound``, the ``Substitut`` protocol, the surrogates and the calibration all
 share it."""
 
 
@@ -56,7 +56,7 @@ share it."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class Piece:
+class Room:
     """Pièce rectangulaire, en mètres, coin bas-gauche en ``(x, y)``.
 
     Attributes
@@ -66,7 +66,7 @@ class Piece:
         d'itération est toujours explicite, jamais celui d'un ``set``.
     type : str
         Catégorie de programme (``"sejour"``, ``"sdb"``, …). Détermine les seuils
-        réglementaires via :class:`Referentiel`.
+        réglementaires via :class:`Regulation`.
     x, y, w, h : float
         Position et dimensions, en mètres.
     """
@@ -90,7 +90,7 @@ class Piece:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class Mur:
+class Wall:
     """Segment de mur entre deux points, porteur ou non.
 
     Attributes
@@ -114,7 +114,7 @@ class Mur:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class Ouverture:
+class Opening:
     """Baie définie **relativement à son mur**, jamais en coordonnées absolues.
 
     Stocker une position absolue désynchronise murs et fenêtres dès que le solveur
@@ -145,7 +145,7 @@ class Ouverture:
                 f"ouvertures[{self.id}].largeur_rel", f"must be in ]0, 1], got {self.largeur_rel}"
             )
 
-    def segment_absolu(self, mur: Mur) -> tuple[Point, Point]:
+    def segment_absolu(self, mur: Wall) -> tuple[Point, Point]:
         """Dériver les deux extrémités de la baie sur ``mur``.
 
         Parameters
@@ -201,11 +201,11 @@ class Plan:
     Frank-Wolfe, **non sérialisée** (elle n'appartient pas au schéma JSON).
     """
 
-    pieces: tuple[Piece, ...]
-    murs: tuple[Mur, ...] = ()
-    ouvertures: tuple[Ouverture, ...] = ()
+    pieces: tuple[Room, ...]
+    murs: tuple[Wall, ...] = ()
+    ouvertures: tuple[Opening, ...] = ()
     contour: tuple[Point, ...] = ()
-    certificat: Certificat | None = None
+    certificat: Certificate | None = None
     # Typé ``object`` à dessein : ``solve.Trace`` vivrait une arête ``types → solve``,
     # interdite. La trace n'est pas sérialisée ; seuls les appelants ``trace=True``
     # la consomment.
@@ -277,7 +277,7 @@ class Plan:
 
         return to_ifc(self, chemin, validate=validate)
 
-    def to_svg(self, chemin: Path | str, *, titre: str = "", walls: tuple[Mur, ...] = ()) -> None:
+    def to_svg(self, chemin: Path | str, *, titre: str = "", walls: tuple[Wall, ...] = ()) -> None:
         """Draw the plan as a standalone SVG file, valid or not (the diagnostic use).
 
         Facade over :func:`archlux.export.svg.rendre` (exported as ``render_svg``).
@@ -305,7 +305,7 @@ class Orientation:
 
 
 @dataclass(frozen=True, slots=True)
-class Referentiel:
+class Regulation:
     """Seuils réglementaires : surfaces et largeurs minimales par type de pièce.
 
     Un référentiel est **une donnée**, pas du code : changer de réglementation ne doit
@@ -321,7 +321,7 @@ class Referentiel:
         Parameters
         ----------
         type_piece : str
-            Catégorie de programme, telle que portée par :attr:`Piece.type`.
+            Catégorie de programme, telle que portée par :attr:`Room.type`.
 
         Returns
         -------
@@ -344,21 +344,21 @@ class Referentiel:
 class Structure:
     """Structure porteuse : ce que le solveur n'a pas le droit de déplacer."""
 
-    murs_porteurs: tuple[Mur, ...]
+    murs_porteurs: tuple[Wall, ...]
     poteaux: tuple[Point, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
-class Contexte:
+class Context:
     """Tout ce qui n'est pas le plan : structure, orientation, contour, référentiel.
 
-    Séparer ``Plan`` et ``Contexte`` est ce qui permet à ``legalize`` d'avoir deux
+    Séparer ``Plan`` et ``Context`` est ce qui permet à ``legalize`` d'avoir deux
     arguments et non douze, et rend le contexte réutilisable sur un lot de plans.
     """
 
     structure: Structure
     orientation: Orientation
-    referentiel: Referentiel
+    referentiel: Regulation
     programme: tuple[str, ...] = ()
     contour: tuple[Point, ...] = field(default=(), kw_only=True)
     """Outline of the site. Empty means "the outline of the plan": ``legalize`` takes
@@ -371,7 +371,7 @@ class Contexte:
 
 
 @dataclass(frozen=True, slots=True)
-class PreuveGeometrique:
+class GeometricProof:
     """Garantie **exacte**, vérifiée indépendamment du solveur.
 
     Ce type ne contient **aucun champ de probabilité** et ne doit jamais en contenir.
@@ -422,7 +422,7 @@ REGIMES: tuple[Regime, ...] = ("exchangeable", "selected")
 
 
 @dataclass(frozen=True, slots=True)
-class BornePerformance:
+class PerformanceBound:
     """Garantie **probabiliste** : intervalle à couverture ``≥ 1 − α``.
 
     ``couverture`` et ``n_calibration`` sont obligatoires : une borne conforme sans son
@@ -457,7 +457,7 @@ class BornePerformance:
 
 
 @dataclass(frozen=True, slots=True)
-class ModeleTrace:
+class ModelTrace:
     """Empreinte du modèle et taille de calibration — champs du manifeste de banc.
 
     ``poids`` est une empreinte (SHA), jamais le tenseur lui-même.
@@ -485,7 +485,7 @@ class ModeleTrace:
 
 
 @dataclass(frozen=True, slots=True)
-class Manifeste:
+class Manifest:
     """Trace de reproductibilité émise à chaque exécution, sans exception.
 
     Les champs sont des tuples de paires et non des ``dict`` : le manifeste est gelé et
@@ -499,11 +499,11 @@ class Manifeste:
     decoupage: str | None = None
     environnement: tuple[tuple[str, str], ...] = ()
     parametres: tuple[tuple[str, str], ...] = ()
-    modele: ModeleTrace | None = None
+    modele: ModelTrace | None = None
 
 
 @dataclass(frozen=True, slots=True)
-class Certificat:
+class Certificate:
     """Preuve exacte + borne probabiliste optionnelle + diagnostic dual.
 
     ``performance`` vaut ``None`` en légalisation classique : il n'y a alors rien de
@@ -516,10 +516,10 @@ class Certificat:
         4.1)``. Jamais un indice de ligne nu.
     """
 
-    geometrie: PreuveGeometrique
-    performance: BornePerformance | None = None
+    geometrie: GeometricProof
+    performance: PerformanceBound | None = None
     duaux: tuple[tuple[str, float], ...] = ()
-    manifeste: Manifeste | None = None
+    manifeste: Manifest | None = None
 
     def rapport(self) -> str:
         """Rendre le certificat en texte, sections ``[EXACT]`` et ``[PREDICTION]``.

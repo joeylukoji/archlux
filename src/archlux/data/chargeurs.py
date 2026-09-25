@@ -52,14 +52,14 @@ from archlux.errors import InvariantViolation
 from archlux.geom.rectilineaire import PieceRectilineaire, decomposer
 from archlux.orient.circulaire import direction_dominante
 from archlux.types import (
-    Contexte,
-    Mur,
+    Context,
+    Opening,
     Orientation,
-    Ouverture,
-    Piece,
     Plan,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
+    Wall,
 )
 
 if TYPE_CHECKING:
@@ -128,7 +128,7 @@ class AppartementMSD:
 
     identifiant: str
     plan: Plan
-    contexte: Contexte
+    contexte: Context
     fusions: tuple[PieceRectilineaire, ...]
     angle_redressement: float
     site_id: str = ""
@@ -247,7 +247,7 @@ def _recoller(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
     On quantifie donc les abscisses et les ordonnées de tous les sommets de
     l'appartement sur une trame commune : deux bords distants de moins de
     ``tolerance`` deviennent **le même** bord, à mi-chemin. Les pièces se touchent
-    alors exactement, et l'épaisseur réelle reste portée par ``Mur.epaisseur``.
+    alors exactement, et l'épaisseur réelle reste portée par ``Wall.epaisseur``.
 
     C'est une **transformation du corpus**, pas une correction : elle déplace les
     cloisons d'au plus ``tolerance / 2``. Toute publication doit citer la valeur
@@ -309,16 +309,16 @@ def _segment_du_mur(poly: Polygon) -> LineString | None:
     )
 
 
-def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) -> tuple[Mur, ...]:
+def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) -> tuple[Wall, ...]:
     """Convertir des cloisons pleines en segments d'axe, identifiants stables."""
-    murs: list[Mur] = []
+    murs: list[Wall] = []
     for rang, (poly, epaisseur) in enumerate(zip(polygones, epaisseurs, strict=True)):
         segment = _segment_du_mur(poly)
         if segment is None or segment.length <= _EPS:
             continue
         (ax, ay), (bx, by) = list(segment.coords)
         murs.append(
-            Mur(
+            Wall(
                 id=f"m{rang:04d}",
                 a=(float(ax), float(ay)),
                 b=(float(bx), float(by)),
@@ -329,12 +329,12 @@ def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) ->
     return tuple(murs)
 
 
-def _ouverture_depuis_baie(baie: Polygon, murs: tuple[Mur, ...], rang: int) -> Ouverture | None:
+def _ouverture_depuis_baie(baie: Polygon, murs: tuple[Wall, ...], rang: int) -> Opening | None:
     """Projeter une baie sur le mur le plus proche, en coordonnées **relatives**."""
     if not murs:
         return None
     centre = baie.centroid
-    meilleur: tuple[float, Mur] | None = None
+    meilleur: tuple[float, Wall] | None = None
     for mur in murs:
         distance = LineString([mur.a, mur.b]).distance(centre)
         if meilleur is None or distance < meilleur[0]:
@@ -355,7 +355,7 @@ def _ouverture_depuis_baie(baie: Polygon, murs: tuple[Mur, ...], rang: int) -> O
     largeur_rel = largeur / longueur
     if not 0.0 < largeur_rel <= 1.0 or not 0.0 <= s <= 1.0:
         return None
-    return Ouverture(id=f"b{rang:04d}", mur_id=mur.id, s=s, largeur_rel=largeur_rel)
+    return Opening(id=f"b{rang:04d}", mur_id=mur.id, s=s, largeur_rel=largeur_rel)
 
 
 def _contour_simple(pieces: list[Polygon]) -> tuple[tuple[float, float], ...] | None:
@@ -409,7 +409,7 @@ def _lire_groupes(
 def charger_msd(
     chemin: Path | str,
     *,
-    referentiel: Referentiel | None = None,
+    referentiel: Regulation | None = None,
     max_pieces: int = 15,
     max_rectangles: int = 8,
     tolerance_calage: float = 0.05,
@@ -478,7 +478,7 @@ def charger_msd(
         raise InvariantViolation((f"corpus MSD introuvable : {chemin}",))
     stats = statistiques if statistiques is not None else StatistiquesChargement()
     reglement = (
-        referentiel if referentiel is not None else Referentiel(aires_min=(), largeur_min=0.0)
+        referentiel if referentiel is not None else Regulation(aires_min=(), largeur_min=0.0)
     )
     groupes = _lire_groupes(chemin, types_exclus)
 
@@ -506,7 +506,7 @@ def _convertir(
     identifiant: str,
     entites: list[tuple[str, str, str, str, str]],
     *,
-    reglement: Referentiel,
+    reglement: Regulation,
     max_pieces: int,
     max_rectangles: int,
     tolerance_calage: float,
@@ -563,7 +563,7 @@ def _convertir(
     if any(not d.is_valid or d.area <= _EPS for d in polygones_pieces):
         return "piece degeneree apres recollage"
 
-    pieces: list[Piece] = []
+    pieces: list[Room] = []
     fusions: list[PieceRectilineaire] = []
     for rang, ((sous_type, _), droit) in enumerate(
         zip(pieces_brutes, polygones_pieces, strict=True)
@@ -609,7 +609,7 @@ def _convertir(
     )
 
     plan = Plan(pieces=tuple(pieces), murs=murs, ouvertures=ouvertures, contour=contour)
-    contexte = Contexte(
+    contexte = Context(
         # MSD n'annote pas la portance : aucun mur n'est declare porteur.
         structure=Structure(murs_porteurs=(), poteaux=poteaux),
         orientation=Orientation(deg=theta),

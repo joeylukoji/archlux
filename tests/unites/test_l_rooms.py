@@ -18,12 +18,12 @@ from archlux.certify.proof import verify_exactly
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
 from archlux.geom.rectilineaire import PieceRectilineaire, decomposer, etendre_fusions
-from archlux.types import Contexte, Mur, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
-def _pushed_l_plan() -> tuple[Plan, Contexte, PieceRectilineaire]:
+def _pushed_l_plan() -> tuple[Plan, Context, PieceRectilineaire]:
     """A 12 x 9 tiling where a load-bearing wall pushes the foot of an L upwards.
 
     The L is a bar ``l__0`` = [0, 2] x [1, 5.5] and a foot ``l__1`` = [2, 6] x [1, 3],
@@ -35,11 +35,11 @@ def _pushed_l_plan() -> tuple[Plan, Contexte, PieceRectilineaire]:
     outline = Polygon([(0, 1), (6, 1), (6, 3), (2, 3), (2, 5.5), (0, 5.5)])
     room = decomposer(outline, id="l", type_piece="kitchen")
     others = (
-        Piece(id="h", type="living", x=0.0, y=0.0, w=2.0, h=2.0),
-        Piece(id="d", type="living", x=2.0, y=0.0, w=4.0, h=2.0),
-        Piece(id="f", type="living", x=0.0, y=5.5, w=2.0, h=3.5),
-        Piece(id="e", type="living", x=2.0, y=3.8, w=4.0, h=5.2),
-        Piece(id="g", type="living", x=6.0, y=0.0, w=6.0, h=9.0),
+        Room(id="h", type="living", x=0.0, y=0.0, w=2.0, h=2.0),
+        Room(id="d", type="living", x=2.0, y=0.0, w=4.0, h=2.0),
+        Room(id="f", type="living", x=0.0, y=5.5, w=2.0, h=3.5),
+        Room(id="e", type="living", x=2.0, y=3.8, w=4.0, h=5.2),
+        Room(id="g", type="living", x=6.0, y=0.0, w=6.0, h=9.0),
     )
     plan = Plan(
         pieces=room.rectangles + others,
@@ -47,12 +47,12 @@ def _pushed_l_plan() -> tuple[Plan, Contexte, PieceRectilineaire]:
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )
-    wall = Mur(id="wall", a=(2.0, 1.8), b=(6.0, 1.8), porteur=True)
+    wall = Wall(id="wall", a=(2.0, 1.8), b=(6.0, 1.8), porteur=True)
     ctx = replace(CONTEXTE_DEFAUT, structure=Structure(murs_porteurs=(wall,)))
     return plan, ctx, room
 
 
-def _by_id(plan: Plan) -> dict[str, Piece]:
+def _by_id(plan: Plan) -> dict[str, Room]:
     return {room.id: room for room in plan.pieces}
 
 
@@ -95,9 +95,9 @@ def _small_l() -> tuple[Plan, PieceRectilineaire]:
     return plan, room
 
 
-def _kitchen_minimum(area: float) -> Contexte:
+def _kitchen_minimum(area: float) -> Context:
     return replace(
-        CONTEXTE_DEFAUT, referentiel=Referentiel(aires_min=(("kitchen", area),), largeur_min=1.0)
+        CONTEXTE_DEFAUT, referentiel=Regulation(aires_min=(("kitchen", area),), largeur_min=1.0)
     )
 
 
@@ -122,9 +122,9 @@ def _tiling_with_small_l() -> tuple[Plan, PieceRectilineaire]:
     """The 4 m² L of :func:`_small_l` inside a valid 12 x 9 tiling."""
     plan, room = _small_l()
     rest = (
-        Piece(id="r1", type="living", x=2.0, y=0.0, w=10.0, h=1.0),
-        Piece(id="r2", type="living", x=1.0, y=1.0, w=11.0, h=2.0),
-        Piece(id="r3", type="living", x=0.0, y=3.0, w=12.0, h=6.0),
+        Room(id="r1", type="living", x=2.0, y=0.0, w=10.0, h=1.0),
+        Room(id="r2", type="living", x=1.0, y=1.0, w=11.0, h=2.0),
+        Room(id="r3", type="living", x=0.0, y=3.0, w=12.0, h=6.0),
     )
     return replace(plan, pieces=plan.pieces + rest), room
 
@@ -173,22 +173,22 @@ def test_checker_refuses_a_detached_fused_room() -> None:
 # --- Review of the merged batches 1.7 and 1.8 ---------------------------------------------
 
 
-def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Contexte, PieceRectilineaire]:
+def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Context, PieceRectilineaire]:
     """A kitchen L (bar [0,1]x[0,3], foot [1,2]x[0,1]) tiling 12 x 9 with three rooms."""
     ctx = replace(
         CONTEXTE_DEFAUT,
-        referentiel=Referentiel(aires_min=(("kitchen", 3.5),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("kitchen", 3.5),), largeur_min=1.0),
     )
     if wall_x is not None:
-        wall = Mur(id="w", a=(wall_x, 0.0), b=(wall_x, 1.0), porteur=True)
+        wall = Wall(id="w", a=(wall_x, 0.0), b=(wall_x, 1.0), porteur=True)
         ctx = replace(ctx, structure=Structure(murs_porteurs=(wall,)))
     room = decomposer(
         Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)]), id="l", type_piece="kitchen"
     )
     rest = (
-        Piece(id="r1", type="living", x=2.0, y=0.0, w=10.0, h=1.0),
-        Piece(id="r2", type="living", x=1.0, y=1.0, w=11.0, h=2.0),
-        Piece(id="r3", type="living", x=0.0, y=3.0, w=12.0, h=6.0),
+        Room(id="r1", type="living", x=2.0, y=0.0, w=10.0, h=1.0),
+        Room(id="r2", type="living", x=1.0, y=1.0, w=11.0, h=2.0),
+        Room(id="r3", type="living", x=0.0, y=3.0, w=12.0, h=6.0),
     )
     plan = Plan(pieces=room.rectangles + rest, murs=(), ouvertures=(), contour=ctx.contour)
     return plan, ctx, room

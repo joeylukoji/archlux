@@ -1,8 +1,8 @@
 """Model types are keyword-only where positions are easy to swap, with light defaults.
 
-PLAN.md 3.6. ``Piece("a", "sejour", 0, 0, 6, 9)`` swapped ``x, y, w, h`` without error;
+PLAN.md 3.6. ``Room("a", "sejour", 0, 0, 6, 9)`` swapped ``x, y, w, h`` without error;
 ``Plan`` needed ``murs=()`` and ``ouvertures=()`` even for a plan without walls; and the
-outline had to be given twice, in the ``Plan`` and in the ``Contexte``.
+outline had to be given twice, in the ``Plan`` and in the ``Context``.
 """
 
 from __future__ import annotations
@@ -12,41 +12,41 @@ from dataclasses import replace
 import pytest
 
 from archlux import (
-    Contexte,
+    Context,
     InvalidInput,
-    Mur,
+    Opening,
     Orientation,
-    Ouverture,
-    Piece,
     Plan,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
+    Wall,
     legalize,
 )
 
 SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
 
-def rooms() -> tuple[Piece, ...]:
+def rooms() -> tuple[Room, ...]:
     return (
-        Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-        Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+        Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+        Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
     )
 
 
 def test_piece_refuses_positional_arguments() -> None:
     with pytest.raises(TypeError):
-        Piece("a", "sejour", 0.0, 0.0, 6.0, 9.0)  # type: ignore[misc]
+        Room("a", "sejour", 0.0, 0.0, 6.0, 9.0)  # type: ignore[misc]
 
 
 def test_wall_refuses_positional_arguments() -> None:
     with pytest.raises(TypeError):
-        Mur("m", (0.0, 0.0), (1.0, 0.0))  # type: ignore[misc]
+        Wall("m", (0.0, 0.0), (1.0, 0.0))  # type: ignore[misc]
 
 
 def test_opening_refuses_positional_arguments() -> None:
     with pytest.raises(TypeError):
-        Ouverture("o", "m", 0.5, 0.2)  # type: ignore[misc]
+        Opening("o", "m", 0.5, 0.2)  # type: ignore[misc]
 
 
 def test_a_plan_needs_only_its_rooms() -> None:
@@ -63,11 +63,11 @@ def test_the_plan_keeps_its_positional_order() -> None:
     assert plan.contour == SQUARE
 
 
-def context(**changes: object) -> Contexte:
-    base = Contexte(
+def context(**changes: object) -> Context:
+    base = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
-        referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(), largeur_min=1.0),
     )
     return replace(base, **changes)  # type: ignore[arg-type]
 

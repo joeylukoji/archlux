@@ -68,7 +68,7 @@ from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2, SNAP_M
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
     from archlux.lmo.solveur import SolutionLP
-    from archlux.types import Contexte, Piece
+    from archlux.types import Context, Room
 
 __all__ = [
     "INNER_AREA_SPREAD",
@@ -143,7 +143,7 @@ def _points_appui_hyperbole(
 
 
 def _minimum_areas(
-    ctx: Contexte, pieces: tuple[Piece, ...], minima: Mapping[str, float] | None
+    ctx: Context, pieces: tuple[Room, ...], minima: Mapping[str, float] | None
 ) -> dict[str, float]:
     """Minimum area of each room: ``minima`` if it names the room, else its type's."""
     overrides = minima or {}
@@ -153,7 +153,7 @@ def _minimum_areas(
 
 
 def _coupes_initiales(
-    poly: Polytope, need: Mapping[str, float], pieces: tuple[Piece, ...]
+    poly: Polytope, need: Mapping[str, float], pieces: tuple[Room, ...]
 ) -> list[Coupe]:
     """Tangentes d'enveloppe, avant la première résolution."""
     coupes: list[Coupe] = []
@@ -258,9 +258,9 @@ def coupe_surface(w0: float, h0: float, a_min: float, *, piece: str = "") -> Cou
 def surfaces_violees(
     x: VecteurF | Sequence[float],
     poly: Polytope,
-    ctx: Contexte,
+    ctx: Context,
     *,
-    pieces: tuple[Piece, ...],
+    pieces: tuple[Room, ...],
     minima: Mapping[str, float] | None = None,
 ) -> tuple[str, ...]:
     """Lister les pièces dont ``w h`` est strictement sous ``a_min``.
@@ -291,7 +291,7 @@ def _short_of_area(
     x: VecteurF | Sequence[float],
     poly: Polytope,
     need: Mapping[str, float],
-    pieces: tuple[Piece, ...],
+    pieces: tuple[Room, ...],
 ) -> tuple[str, ...]:
     """Rooms whose ``w h`` is strictly below ``need``, sorted."""
     vecteur = np.asarray(x, dtype=float)
@@ -342,7 +342,7 @@ def _resserrer_bornes(
     poly: Polytope,
     x: VecteurF,
     need: Mapping[str, float],
-    pieces: tuple[Piece, ...],
+    pieces: tuple[Room, ...],
     *,
     margin: float = AREA_TARGET_MARGIN_M2,
 ) -> Polytope:
@@ -386,7 +386,7 @@ def _identifiants_a_couper(
     x: VecteurF,
     poly: Polytope,
     need: Mapping[str, float],
-    pieces: tuple[Piece, ...],
+    pieces: tuple[Room, ...],
     comptes: Counter[str],
 ) -> list[str]:
     """Pièces encore sous ``a_min`` et sous le plafond de coupes."""
@@ -425,8 +425,8 @@ def _empiler_tangentes(
 def resoudre_avec_surfaces(
     poly: Polytope,
     c: VecteurF,
-    ctx: Contexte,
-    pieces: tuple[Piece, ...],
+    ctx: Context,
+    pieces: tuple[Room, ...],
     *,
     depart: VecteurF | None = None,
     duaux: bool = False,
@@ -490,7 +490,7 @@ def resoudre_avec_surfaces(
 
 
 def _meets_areas(
-    solution: SolutionLP, poly: Polytope, need: Mapping[str, float], pieces: tuple[Piece, ...]
+    solution: SolutionLP, poly: Polytope, need: Mapping[str, float], pieces: tuple[Room, ...]
 ) -> bool:
     """An optimal point inside the polytope (up to SNAP_M) with no area in deficit."""
     return (
@@ -504,7 +504,7 @@ def _solve_with_area_cuts(
     poly: Polytope,
     c: VecteurF,
     need: Mapping[str, float],
-    pieces: tuple[Piece, ...],
+    pieces: tuple[Room, ...],
     depart: VecteurF | None,
     duaux: bool,
     margin: float,
@@ -554,8 +554,8 @@ reference gain, at least 0.95 of it in 96 % of scenarios, for +4 ms median; the 
 def inner_area_constraints(
     poly: Polytope,
     x: VecteurF,
-    ctx: Contexte,
-    pieces: tuple[Piece, ...],
+    ctx: Context,
+    pieces: tuple[Room, ...],
     *,
     spread: tuple[float, ...] = INNER_AREA_SPREAD,
     minima: Mapping[str, float] | None = None,

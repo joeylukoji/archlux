@@ -16,15 +16,15 @@ from archlux.geom.graphe import (
     deduire_ordre,
     reduction_transitive,
 )
-from archlux.types import Piece, Plan
+from archlux.types import Plan, Room
 
 
-def _plan(*pieces: Piece) -> Plan:
+def _plan(*pieces: Room) -> Plan:
     return Plan(pieces=pieces, murs=(), ouvertures=(), contour=())
 
 
-def _carre(nom: str, x: float, y: float, cote: float = 1.0) -> Piece:
-    return Piece(id=nom, type="sejour", x=x, y=y, w=cote, h=cote)
+def _carre(nom: str, x: float, y: float, cote: float = 1.0) -> Room:
+    return Room(id=nom, type="sejour", x=x, y=y, w=cote, h=cote)
 
 
 class TestConstruireGraphe:
@@ -91,8 +91,8 @@ class TestDeduireOrdre:
         """
         ordre = deduire_ordre(
             _plan(
-                Piece(id="A", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
-                Piece(id="B", type="sejour", x=1.0, y=0.0, w=1.0, h=9.0),
+                Room(id="A", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
+                Room(id="B", type="sejour", x=1.0, y=0.0, w=1.0, h=9.0),
             )
         )
         assert ordre.horizontal == (("A", "B"),)
@@ -106,8 +106,8 @@ class TestDeduireOrdre:
         """
         ordre = deduire_ordre(
             _plan(
-                Piece(id="A", type="sejour", x=0.0, y=0.0, w=4.0, h=4.0),
-                Piece(id="B", type="sejour", x=1.0, y=3.0, w=4.0, h=4.0),
+                Room(id="A", type="sejour", x=0.0, y=0.0, w=4.0, h=4.0),
+                Room(id="B", type="sejour", x=1.0, y=3.0, w=4.0, h=4.0),
             )
         )
         assert ordre.vertical == (("A", "B"),)
@@ -121,8 +121,8 @@ class TestDeduireOrdre:
         recevaient une contrainte verticale que le plan violait. Le cas survient dès
         qu'un mur sépare deux pièces adjacentes — c'est-à-dire partout.
         """
-        gauche = Piece(id="A", type="sejour", x=1.0, y=0.0, w=3.47, h=9.0)
-        droite = Piece(id="B", type="sejour", x=4.47, y=0.0, w=1.0, h=1.0)
+        gauche = Room(id="A", type="sejour", x=1.0, y=0.0, w=3.47, h=9.0)
+        droite = Room(id="B", type="sejour", x=4.47, y=0.0, w=1.0, h=1.0)
         assert gauche.x + gauche.w != droite.x  # le piège, en une ligne
         ordre = deduire_ordre(_plan(gauche, droite))
         assert ordre.horizontal == (("A", "B"),)

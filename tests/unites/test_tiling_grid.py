@@ -15,7 +15,7 @@ import pytest
 import archlux
 from archlux.errors import UnsupportedInput
 from archlux.geom.pavage import deduire_trame
-from archlux.types import Contexte, Mur, Orientation, Piece, Plan, Referentiel, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 
 WIDTH = 11.0
@@ -23,21 +23,21 @@ HEIGHT = 7.8
 OUTLINE = ((0.0, 0.0), (WIDTH, 0.0), (WIDTH, HEIGHT), (0.0, HEIGHT))
 
 
-def _context(outline: tuple[tuple[float, float], ...] = OUTLINE) -> Contexte:
-    return Contexte(
+def _context(outline: tuple[tuple[float, float], ...] = OUTLINE) -> Context:
+    return Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(), largeur_min=1.0),
     )
 
 
-def _plan(*rooms: Piece, outline: tuple[tuple[float, float], ...] = OUTLINE) -> Plan:
+def _plan(*rooms: Room, outline: tuple[tuple[float, float], ...] = OUTLINE) -> Plan:
     return Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
 
 
-def _room(name: str, left: float, bottom: float, right: float, top: float) -> Piece:
-    return Piece(id=name, type="sejour", x=left, y=bottom, w=right - left, h=top - bottom)
+def _room(name: str, left: float, bottom: float, right: float, top: float) -> Room:
+    return Room(id=name, type="sejour", x=left, y=bottom, w=right - left, h=top - bottom)
 
 
 # Two right edges fall a few millimetres on each side of the outline edge at x = 11:
@@ -65,7 +65,7 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
     relation cannot be absorbed by collapsing a grid line.
     """
     outline = ((0.0, 0.0), (13.3, 0.0), (13.3, 10.4), (0.0, 10.4))
-    wall = Mur(id="refend", a=(0.0, 2.6), b=(3.2, 2.6), porteur=True)
+    wall = Wall(id="refend", a=(0.0, 2.6), b=(3.2, 2.6), porteur=True)
     kinds = {
         "r0": "sejour",
         "r1": "couloir",
@@ -91,7 +91,7 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
     ctx = replace(
         _context(outline),
         structure=Structure(murs_porteurs=(wall,)),
-        referentiel=Referentiel(
+        referentiel=Regulation(
             aires_min=(
                 ("chambre", 20.5806),
                 ("couloir", 8.6082),

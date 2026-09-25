@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 
 from archlux.errors import InvariantViolation
-from archlux.types import Piece, Plan
+from archlux.types import Plan, Room
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -85,8 +85,8 @@ class Corruption:
 
 
 def _perturber(
-    piece: Piece, mode: Mode, amplitude: float, axe: Literal["x", "y"]
-) -> tuple[Piece, float]:
+    piece: Room, mode: Mode, amplitude: float, axe: Literal["x", "y"]
+) -> tuple[Room, float]:
     """Appliquer une perturbation, et rendre l'amplitude réellement appliquée."""
     if mode == "deplacer":
         if axe == "x":

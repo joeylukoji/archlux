@@ -20,19 +20,19 @@ from hypothesis import strategies as st
 from archlux.geom.graphe import OrdreRelatif
 from archlux.types import (
     REGIMES,
-    BornePerformance,
-    Certificat,
-    Contexte,
-    Manifeste,
-    ModeleTrace,
-    Mur,
+    Certificate,
+    Context,
+    GeometricProof,
+    Manifest,
+    ModelTrace,
+    Opening,
     Orientation,
-    Ouverture,
-    Piece,
+    PerformanceBound,
     Plan,
-    PreuveGeometrique,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
+    Wall,
 )
 
 __all__ = [
@@ -54,15 +54,15 @@ _IDS = st.text(alphabet="abcdefghijklmnopqrstuvwxyz_0123456789", min_size=1, max
 _TYPES = st.sampled_from(["sejour", "chambre", "cuisine", "sdb", "couloir", "wc"])
 
 
-def pieces() -> st.SearchStrategy[Piece]:
+def pieces() -> st.SearchStrategy[Room]:
     """Pièces rectangulaires quelconques, dimensions strictement positives."""
-    return st.builds(Piece, id=_IDS, type=_TYPES, x=_COORD, y=_COORD, w=_TAILLE, h=_TAILLE)
+    return st.builds(Room, id=_IDS, type=_TYPES, x=_COORD, y=_COORD, w=_TAILLE, h=_TAILLE)
 
 
-def murs() -> st.SearchStrategy[Mur]:
+def murs() -> st.SearchStrategy[Wall]:
     """Murs quelconques, porteurs ou non."""
     return st.builds(
-        Mur,
+        Wall,
         id=_IDS,
         a=st.tuples(_COORD, _COORD),
         b=st.tuples(_COORD, _COORD),
@@ -71,9 +71,9 @@ def murs() -> st.SearchStrategy[Mur]:
     )
 
 
-def _ouvertures(ids_murs: list[str]) -> st.SearchStrategy[Ouverture]:
+def _ouvertures(ids_murs: list[str]) -> st.SearchStrategy[Opening]:
     return st.builds(
-        Ouverture,
+        Opening,
         id=_IDS,
         mur_id=st.sampled_from(ids_murs),
         s=_UNITE,
@@ -83,7 +83,7 @@ def _ouvertures(ids_murs: list[str]) -> st.SearchStrategy[Ouverture]:
     )
 
 
-def _preuves() -> st.SearchStrategy[PreuveGeometrique]:
+def _preuves() -> st.SearchStrategy[GeometricProof]:
     """Preuves géométriques, **avec** des violations parfois non vides.
 
     Un générateur qui ne produirait que ``violations=()`` rendrait la sérialisation de
@@ -102,7 +102,7 @@ def _preuves() -> st.SearchStrategy[PreuveGeometrique]:
     )
 
 
-def _proof(*, valide: bool, **fields: Any) -> PreuveGeometrique:
+def _proof(*, valide: bool, **fields: Any) -> GeometricProof:
     """Une preuve ``valide`` ne rapporte aucune faute (invariant de ``types``, phase 3.2)."""
     if valide:
         fields |= {
@@ -112,16 +112,16 @@ def _proof(*, valide: bool, **fields: Any) -> PreuveGeometrique:
             "structure_preservee": True,
             "violations": (),
         }
-    return PreuveGeometrique(valide=valide, **fields)
+    return GeometricProof(valide=valide, **fields)
 
 
-def _bornes() -> st.SearchStrategy[BornePerformance]:
+def _bornes() -> st.SearchStrategy[PerformanceBound]:
     """Bornes conformes, toujours munies de leur couverture et de ``n_calibration``."""
     reels = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
     # An interval is ordered (batch 1.6 refuses borne_inf > borne_sup).
     return st.tuples(reels, reels).flatmap(
         lambda pair: st.builds(
-            BornePerformance,
+            PerformanceBound,
             indicateur=st.sampled_from(["sDA", "ASE", "UDI", "vue"]),
             valeur=reels,
             borne_inf=st.just(min(pair)),
@@ -133,20 +133,20 @@ def _bornes() -> st.SearchStrategy[BornePerformance]:
     )
 
 
-def _manifestes() -> st.SearchStrategy[Manifeste]:
+def _manifestes() -> st.SearchStrategy[Manifest]:
     """Manifestes de reproductibilité, champs optionnels parfois renseignés."""
     paires = st.lists(st.tuples(st.text(max_size=12), st.text(max_size=12)), max_size=3).map(tuple)
     modeles = st.one_of(
         st.none(),
         st.builds(
-            ModeleTrace,
+            ModelTrace,
             poids=st.text(min_size=1, max_size=32),
             calibration_n=st.integers(min_value=1, max_value=10_000),
             alpha=st.floats(min_value=0.01, max_value=0.99, allow_nan=False),
         ),
     )
     return st.builds(
-        Manifeste,
+        Manifest,
         version=st.text(min_size=1, max_size=10),
         horodatage=st.text(min_size=1, max_size=32),
         graine=st.integers(min_value=0, max_value=2**32 - 1),
@@ -158,7 +158,7 @@ def _manifestes() -> st.SearchStrategy[Manifeste]:
     )
 
 
-def _certificats() -> st.SearchStrategy[Certificat]:
+def _certificats() -> st.SearchStrategy[Certificate]:
     """Certificats complets : les deux garanties, le diagnostic dual et la trace.
 
     ``performance`` est ``None`` **une fois sur deux** et non systématiquement : les
@@ -166,7 +166,7 @@ def _certificats() -> st.SearchStrategy[Certificat]:
     traverser la sérialisation.
     """
     return st.builds(
-        Certificat,
+        Certificate,
         geometrie=_preuves(),
         performance=st.one_of(st.none(), _bornes()),
         duaux=st.lists(
@@ -212,11 +212,11 @@ LARGEUR_MIN_DEFAUT = 1.0
 CONTOUR_DEFAUT_CM = (1200, 900)
 """Contour de référence, en **centimètres** : 12 m x 9 m."""
 
-CONTEXTE_DEFAUT = Contexte(
+CONTEXTE_DEFAUT = Context(
     structure=Structure(murs_porteurs=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-    referentiel=Referentiel(aires_min=(), largeur_min=LARGEUR_MIN_DEFAUT),
+    referentiel=Regulation(aires_min=(), largeur_min=LARGEUR_MIN_DEFAUT),
 )
 """Contexte de référence des tests, accordé à :func:`plans_valides`."""
 
@@ -276,7 +276,7 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
         draw, 0, 0, largeur, hauteur, profondeur, minimum, force_split=force_split
     )
     pieces = tuple(
-        Piece(
+        Room(
             id=f"p{i}",
             type=draw(_TYPES),
             x=x / 100.0,
@@ -332,7 +332,7 @@ def ordres_valides(draw: st.DrawFn, max_pieces: int = 6) -> OrdreRelatif:
 
 
 @st.composite
-def contextes(draw: st.DrawFn) -> Contexte:
+def contextes(draw: st.DrawFn) -> Context:
     """Contextes cohérents : contour rectangulaire, orientation, référentiel.
 
     La structure porteuse est vide : lier une pièce à un mur porteur demande une
@@ -341,11 +341,11 @@ def contextes(draw: st.DrawFn) -> Contexte:
     """
     largeur = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
     hauteur = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
-    return Contexte(
+    return Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
         contour=((0.0, 0.0), (largeur, 0.0), (largeur, hauteur), (0.0, hauteur)),
-        referentiel=Referentiel(
+        referentiel=Regulation(
             aires_min=(),
             largeur_min=draw(st.floats(min_value=0.5, max_value=2.0, allow_nan=False)),
         ),
@@ -367,7 +367,7 @@ def vecteurs_objectifs(dimension: int) -> st.SearchStrategy[np.ndarray]:
 
 
 @st.composite
-def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Contexte]:
+def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     """Valid plan plus a context that actually constrains it (PLAN.md, task 0.8).
 
     Every other strategy uses ``aires_min=()`` and no load-bearing wall, which is how the
@@ -394,7 +394,7 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Contexte]:
             edges.append(((room.x, top), (right, top)))
     # At least two rooms (force_split), hence at least one interior edge.
     a, b = draw(st.sampled_from(edges))
-    walls = (Mur(id="lb0", a=a, b=b, porteur=True),)
+    walls = (Wall(id="lb0", a=a, b=b, porteur=True),)
 
     smallest: dict[str, float] = {}
     for room in plan.pieces:
@@ -402,10 +402,10 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Contexte]:
     ratio = draw(st.floats(min_value=0.5, max_value=1.0, allow_nan=False))
     minimum_areas = tuple(sorted((kind, ratio * area) for kind, area in smallest.items()))
 
-    context = Contexte(
+    context = Context(
         structure=Structure(murs_porteurs=walls),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
         contour=CONTEXTE_DEFAUT.contour,
-        referentiel=Referentiel(aires_min=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
+        referentiel=Regulation(aires_min=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
     )
     return Plan(pieces=plan.pieces, murs=walls, ouvertures=(), contour=plan.contour), context

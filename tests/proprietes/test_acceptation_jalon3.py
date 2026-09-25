@@ -18,7 +18,7 @@ from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, figer_contacts
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.solve.trace import Trace
-from archlux.types import Contexte, Orientation, Plan
+from archlux.types import Context, Orientation, Plan
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 
 ANALYTIQUE = SubstitutAnalytique()
@@ -66,16 +66,16 @@ def test_orientation_circulaire(theta: float) -> None:
     """``θ`` et ``θ + 360`` produisent le même plan (encodage périodique)."""
     plan = archlux.Plan(
         pieces=(
-            archlux.Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            archlux.Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            archlux.Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
+            archlux.Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )
 
-    def _ctx(azimut: float) -> Contexte:
-        return Contexte(
+    def _ctx(azimut: float) -> Context:
+        return Context(
             structure=CONTEXTE_DEFAUT.structure,
             orientation=Orientation(deg=azimut),
             contour=CONTEXTE_DEFAUT.contour,
@@ -93,8 +93,8 @@ def test_non_regression_jalon2() -> None:
     """``objective=None`` reste la légalisation L1 du jalon 2."""
     plan = archlux.Plan(
         pieces=(
-            archlux.Piece(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            archlux.Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            archlux.Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+            archlux.Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -112,10 +112,10 @@ def _plan_grille() -> archlux.Plan:
     """Quatre pièces en 2×2, assez de liberté pour que le nord déplace les cotes."""
     return archlux.Plan(
         pieces=(
-            archlux.Piece(id="sw", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
-            archlux.Piece(id="se", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
-            archlux.Piece(id="nw", type="sejour", x=0.0, y=4.5, w=6.0, h=4.5),
-            archlux.Piece(id="ne", type="chambre", x=6.0, y=4.5, w=6.0, h=4.5),
+            archlux.Room(id="sw", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
+            archlux.Room(id="se", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
+            archlux.Room(id="nw", type="sejour", x=0.0, y=4.5, w=6.0, h=4.5),
+            archlux.Room(id="ne", type="chambre", x=6.0, y=4.5, w=6.0, h=4.5),
         ),
         murs=(),
         ouvertures=(),
@@ -126,8 +126,8 @@ def _plan_grille() -> archlux.Plan:
 def test_orientation_change_le_plan() -> None:
     """Nord et sud ne rendent plus le même pavage — c'est le livrable du jalon 3."""
 
-    def _ctx(deg: float) -> Contexte:
-        return Contexte(
+    def _ctx(deg: float) -> Context:
+        return Context(
             structure=CONTEXTE_DEFAUT.structure,
             orientation=Orientation(deg=deg),
             contour=CONTEXTE_DEFAUT.contour,

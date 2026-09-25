@@ -35,7 +35,7 @@ from shapely.ops import split, unary_union
 from archlux.errors import InvariantViolation, UnsupportedInput
 from archlux.geom.polytope import Polytope
 from archlux.tolerances import AREA_PROOF_M2
-from archlux.types import Piece, Referentiel
+from archlux.types import Regulation, Room
 
 __all__ = [
     "FUSION_DROIT",
@@ -83,7 +83,7 @@ class PieceRectilineaire:
     """
 
     id: str
-    rectangles: tuple[Piece, ...]
+    rectangles: tuple[Room, ...]
     fusions: tuple[tuple[int, int, str], ...]
 
 
@@ -115,10 +115,10 @@ def _est_rectangle(poly: Polygon) -> bool:
     return bool(abs(poly.area - candidat.area) <= _TOL_RECT and poly.equals(candidat))
 
 
-def _vers_piece(poly: Polygon, *, id: str, type_piece: str) -> Piece:
+def _vers_piece(poly: Polygon, *, id: str, type_piece: str) -> Room:
     """Convertir un rectangle Shapely en :class:`~archlux.types.Piece`."""
     minx, miny, maxx, maxy = poly.bounds
-    return Piece(
+    return Room(
         id=id,
         type=type_piece,
         x=float(minx),
@@ -278,7 +278,7 @@ def _decouper(poly: Polygon) -> list[Polygon]:
     return resultat
 
 
-def _detecter_fusions(rects: tuple[Piece, ...]) -> tuple[tuple[int, int, str], ...]:
+def _detecter_fusions(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ...]:
     """Une fusion par bord partagé, orientation canonique (gauche→droite / bas→haut)."""
     propres: list[tuple[int, int, str]] = []
     for i, a in enumerate(rects):
@@ -420,9 +420,9 @@ def contraintes_fusion(
 
 
 def minimum_area_shares(
-    rooms: tuple[Piece, ...],
+    rooms: tuple[Room, ...],
     fusions: tuple[PieceRectilineaire, ...],
-    referentiel: Referentiel,
+    referentiel: Regulation,
 ) -> dict[str, float]:
     """Split the minimum area of each fused room across its sub-rectangles.
 
@@ -479,7 +479,7 @@ _Row = tuple[str, dict[str, float], float]
 """A labelled affine row ``(label, {variable: coefficient}, right-hand side)``."""
 
 
-def _interval(room: Piece, axis: str) -> tuple[float, float, dict[str, float], dict[str, float]]:
+def _interval(room: Room, axis: str) -> tuple[float, float, dict[str, float], dict[str, float]]:
     """Proposed interval of ``room`` on ``axis`` and the affine forms of its two ends."""
     position, size = ("y", "h") if axis == "y" else ("x", "w")
     low = float(getattr(room, position))

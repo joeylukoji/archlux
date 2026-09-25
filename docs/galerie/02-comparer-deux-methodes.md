@@ -15,24 +15,24 @@ from archlux.light.analytique import SubstitutAnalytique
 contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     pieces=(
-        ax.Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Piece(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
     murs=(),
     ouvertures=(),
     contour=contour,
 )
-ctx_n = ax.Contexte(
+ctx_n = ax.Context(
     structure=ax.Structure(()),
     orientation=ax.Orientation(0.0),
     contour=contour,
-    referentiel=ax.Referentiel((), 1.0),
+    referentiel=ax.Regulation((), 1.0),
 )
-ctx_s = ax.Contexte(
+ctx_s = ax.Context(
     structure=ax.Structure(()),
     orientation=ax.Orientation(180.0),
     contour=contour,
-    referentiel=ax.Referentiel((), 1.0),
+    referentiel=ax.Regulation((), 1.0),
 )
 q_l1 = ax.legalize(plan, ctx_n)
 q_n = ax.legalize(plan, ctx_n, objective=SubstitutAnalytique())

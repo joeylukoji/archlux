@@ -57,7 +57,7 @@ from shapely.ops import unary_union
 
 from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
-from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
+from archlux.types import Context, GeometricProof, Plan, Room, Wall
 
 __all__ = ["GAP_TOLERANCE_M2", "max_displacement", "rational_tiling", "verify_exactly"]
 
@@ -74,7 +74,7 @@ def _format_m2(value: float) -> str:
     return f"{value:.4f} m²"
 
 
-def _rectangle(room: Piece) -> Polygon:
+def _rectangle(room: Room) -> Polygon:
     """Closed rectangle of the room: lower-left corner plus (w, h)."""
     return box(room.x, room.y, room.x + room.w, room.y + room.h)
 
@@ -89,7 +89,7 @@ def _outline_polygon(outline: tuple[tuple[float, float], ...]) -> Polygon | None
     return polygon
 
 
-def _disjoint(a: Piece, b: Piece) -> bool:
+def _disjoint(a: Room, b: Room) -> bool:
     """Exact rejection of two axis-aligned rectangles, without GEOS.
 
     Rooms are boxes: if their intervals separate on ``x`` or on ``y``, the intersection
@@ -100,7 +100,7 @@ def _disjoint(a: Piece, b: Piece) -> bool:
     return a.x + a.w <= b.x or b.x + b.w <= a.x or a.y + a.h <= b.y or b.y + b.h <= a.y
 
 
-def _overlaps(rooms: tuple[Piece, ...]) -> tuple[bool, tuple[str, ...]]:
+def _overlaps(rooms: tuple[Room, ...]) -> tuple[bool, tuple[str, ...]]:
     """Every pair, intersection area.
 
     The tolerance is ``OVERLAP_M2 = 1e-9 m²``: two rooms touching along an edge
@@ -122,7 +122,7 @@ def _overlaps(rooms: tuple[Piece, ...]) -> tuple[bool, tuple[str, ...]]:
 
 
 def _gaps(
-    rooms: tuple[Piece, ...], outline: tuple[tuple[float, float], ...]
+    rooms: tuple[Room, ...], outline: tuple[tuple[float, float], ...]
 ) -> tuple[bool, tuple[str, ...]]:
     """Set differences between union and outline: uncovered gap **and** overhang.
 
@@ -145,7 +145,7 @@ def _gaps(
     return (bool(violations), tuple(violations))
 
 
-def _share_an_edge(a: Piece, b: Piece) -> bool:
+def _share_an_edge(a: Room, b: Room) -> bool:
     """Edges within ``SNAP_M`` of each other, sharing more than ``SNAP_M`` of length."""
 
     def touch(a0: float, a1: float, b0: float, b1: float) -> bool:
@@ -158,7 +158,7 @@ def _share_an_edge(a: Piece, b: Piece) -> bool:
     return (touch(*ax, *bx) and overlap(*ay, *by)) or (touch(*ay, *by) and overlap(*ax, *bx))
 
 
-def _edge_connected(members: list[Piece]) -> bool:
+def _edge_connected(members: list[Room]) -> bool:
     """Whether the sub-rectangles form one piece through shared edges (not corners)."""
     reached = {0}
     frontier = [0]
@@ -172,7 +172,7 @@ def _edge_connected(members: list[Piece]) -> bool:
 
 
 def _recorded_seams(
-    piece: PieceRectilineaire, by_id: dict[str, Piece], min_contact: float
+    piece: PieceRectilineaire, by_id: dict[str, Room], min_contact: float
 ) -> tuple[str, ...]:
     """Every seam recorded in the decomposition still holds, at least ``min_contact`` long.
 
@@ -197,9 +197,7 @@ def _recorded_seams(
     return tuple(violations)
 
 
-def _fused_area(
-    piece: PieceRectilineaire, by_id: dict[str, Piece], ctx: Contexte
-) -> tuple[str, ...]:
+def _fused_area(piece: PieceRectilineaire, by_id: dict[str, Room], ctx: Context) -> tuple[str, ...]:
     """Area of the recomposed polygon of a fused room against its minimum.
 
     The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
@@ -221,7 +219,7 @@ def _fused_area(
 
 
 def _areas(
-    rooms: tuple[Piece, ...], ctx: Contexte, fusions: tuple[PieceRectilineaire, ...] = ()
+    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[PieceRectilineaire, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
     """Area ``w h`` against ``a_min`` of the room type; fused rooms as a whole."""
     by_id = {room.id: room for room in rooms}
@@ -243,7 +241,7 @@ def _areas(
     return (not violations, tuple(violations))
 
 
-def _same_wall(a: Mur, b: Mur) -> bool:
+def _same_wall(a: Wall, b: Wall) -> bool:
     """Same geometry up to tolerance, end points possibly swapped."""
 
     def close(p: tuple[float, float], q: tuple[float, float]) -> bool:
@@ -280,7 +278,7 @@ def _interiors(
 
 
 def _structure(
-    plan: Plan, ctx: Contexte, fusions: tuple[PieceRectilineaire, ...] = ()
+    plan: Plan, ctx: Context, fusions: tuple[PieceRectilineaire, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
     """No room crosses a load-bearing wall, and no load-bearing wall was moved.
 
@@ -342,7 +340,7 @@ def _identify(values: list[Fraction], tolerance: Fraction) -> dict[Fraction, Fra
     return mapping
 
 
-def rational_tiling(plan: Plan, ctx: Contexte) -> tuple[str, ...] | None:
+def rational_tiling(plan: Plan, ctx: Context) -> tuple[str, ...] | None:
     """Prove, in exact rational arithmetic, that the rooms tile a rectangular outline.
 
     Edges closer than ``SNAP_M`` (1e-7 m) are identified: that is the only tolerance,
@@ -509,12 +507,12 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
 
 def verify_exactly(
     plan: Plan,
-    ctx: Contexte,
+    ctx: Context,
     *,
     reference: Plan | None = None,
     budget: float | None = None,
     fusions: tuple[PieceRectilineaire, ...] = (),
-) -> PreuveGeometrique:
+) -> GeometricProof:
     """Check that a plan is valid, borrowing nothing from the solver.
 
     Parameters
@@ -563,7 +561,7 @@ def verify_exactly(
     if malformed:
         # Nothing is proved about a malformed plan: every predicate is reported as not
         # established, never as holding (final review of phase 1, M1).
-        return PreuveGeometrique(
+        return GeometricProof(
             valide=False,
             chevauchement=True,
             jours=True,
@@ -594,7 +592,7 @@ def verify_exactly(
     v_budget = () if budget_ok else (f"budget: max displacement {moved:.6f} m > {budget} m",)
     violations = v_overlap + v_gaps + v_areas + v_structure + v_budget
     valid = (not overlap) and (not gaps) and areas_ok and structure_ok and budget_ok
-    return PreuveGeometrique(
+    return GeometricProof(
         valide=valid,
         chevauchement=overlap,
         jours=gaps,

@@ -14,7 +14,7 @@ from archlux.geom.rectilineaire import (
     decomposer,
     recomposer,
 )
-from archlux.types import Piece, Plan
+from archlux.types import Plan, Room
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
@@ -70,9 +70,9 @@ def _plan_avec_L(*, chevauche: bool = False) -> tuple[Plan, object]:
     x_r1 = 1.5 if chevauche else 2.0
     w_r1 = 10.5 if chevauche else 10.0
     reste = (
-        Piece(id="r1", type="sejour", x=x_r1, y=0.0, w=w_r1, h=1.0),
-        Piece(id="r2", type="sejour", x=1.0, y=1.0, w=11.0, h=2.0),
-        Piece(id="r3", type="sejour", x=0.0, y=3.0, w=12.0, h=6.0),
+        Room(id="r1", type="sejour", x=x_r1, y=0.0, w=w_r1, h=1.0),
+        Room(id="r2", type="sejour", x=1.0, y=1.0, w=11.0, h=2.0),
+        Room(id="r3", type="sejour", x=0.0, y=3.0, w=12.0, h=6.0),
     )
     plan = Plan(
         pieces=piece.rectangles + reste,

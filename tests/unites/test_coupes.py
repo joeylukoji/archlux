@@ -12,13 +12,13 @@ from archlux.errors import InvariantViolation
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.coupes import coupe_surface, surfaces_violees
-from archlux.types import Contexte, Orientation, Piece, Referentiel, Structure
+from archlux.types import Context, Orientation, Regulation, Room, Structure
 
-CTX = Contexte(
+CTX = Context(
     structure=Structure(murs_porteurs=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Referentiel(aires_min=(("sejour", 9.0),), largeur_min=1.5),
+    referentiel=Regulation(aires_min=(("sejour", 9.0),), largeur_min=1.5),
 )
 
 
@@ -54,11 +54,11 @@ class TestSurfacesViolees:
         poly = construire_polytope(OrdreRelatif((), (), ("A",)), CTX)
         # A.x, A.y, A.w, A.h
         x = [0.0, 0.0, 2.0, 2.0]
-        pieces = (Piece(id="A", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0),)
+        pieces = (Room(id="A", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0),)
         assert surfaces_violees(x, poly, CTX, pieces=pieces) == ("A",)
 
     def test_une_piece_au_seuil_n_est_pas_listée(self) -> None:
         poly = construire_polytope(OrdreRelatif((), (), ("A",)), CTX)
         x = [0.0, 0.0, 3.0, 3.0]
-        pieces = (Piece(id="A", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),)
+        pieces = (Room(id="A", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),)
         assert surfaces_violees(x, poly, CTX, pieces=pieces) == ()

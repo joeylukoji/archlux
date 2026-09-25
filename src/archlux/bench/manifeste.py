@@ -11,7 +11,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 
 from archlux._version import __version__
-from archlux.types import Manifeste, ModeleTrace
+from archlux.types import Manifest, ModelTrace
 
 __all__ = ["emettre"]
 
@@ -51,8 +51,8 @@ def emettre(
     empreinte_donnees: str | None = None,
     decoupage: str | None = None,
     parametres: dict[str, str] | None = None,
-    modele: ModeleTrace | None = None,
-) -> Manifeste:
+    modele: ModelTrace | None = None,
+) -> Manifest:
     """Construire le manifeste de l'exécution courante.
 
     Parameters
@@ -85,7 +85,7 @@ def emettre(
     ----------
     O(k) sur le nombre de paquets suivis.
     """
-    return Manifeste(
+    return Manifest(
         version=__version__,
         horodatage=dt.datetime.now(dt.UTC).isoformat(),
         graine=seed,

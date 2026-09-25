@@ -45,17 +45,17 @@ from archlux.errors import (
     UnsupportedInput,
 )
 from archlux.types import (
-    BornePerformance,
-    Certificat,
-    Contexte,
-    Mur,
+    Certificate,
+    Context,
+    GeometricProof,
+    Opening,
     Orientation,
-    Ouverture,
-    Piece,
+    PerformanceBound,
     Plan,
-    PreuveGeometrique,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
+    Wall,
 )
 
 # Groupé par rôle et non trié alphabétiquement : la structure de cette liste *est* la
@@ -68,16 +68,16 @@ __all__ = [  # noqa: RUF022
     # modèle de données ; les entrées/sorties passent par Plan.from_json / Plan.to_json
     # et non par des fonctions libres : une seule façon de charger un plan.
     "Plan",
-    "Piece",
-    "Mur",
-    "Ouverture",
-    "Contexte",
+    "Room",
+    "Wall",
+    "Opening",
+    "Context",
     "Structure",
     "Orientation",
-    "Referentiel",
-    "Certificat",
-    "PreuveGeometrique",
-    "BornePerformance",
+    "Regulation",
+    "Certificate",
+    "GeometricProof",
+    "PerformanceBound",
     # exceptions
     "ArchluxError",
     "InconsistentOrder",

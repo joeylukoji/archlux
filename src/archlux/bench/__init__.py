@@ -6,14 +6,14 @@ from archlux.bench.protocole import Decoupage, charger_decoupage, compare
 from archlux.bench.rapport import RapportBanc, StrateOrientation, report
 from archlux.bench.run import LigneBrute, Manifest, Resultat, run
 from archlux.bench.stats import Intervalle, bootstrap_apparie, holm, puissance, tost
-from archlux.types import ModeleTrace
+from archlux.types import ModelTrace
 
 __all__ = [
     "Decoupage",
     "Intervalle",
     "LigneBrute",
     "Manifest",
-    "ModeleTrace",
+    "ModelTrace",
     "RapportBanc",
     "Resultat",
     "StrateOrientation",

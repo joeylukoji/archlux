@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.erreurs import InvalidSurrogate
+from archlux.errors import InvalidSurrogate
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.base import SubstitutDense
 from archlux.light.simulateur import SplitFluxOracle

@@ -58,7 +58,7 @@ Une pièce en L = deux rectangles + une contrainte les rendant solidaires.
 @dataclass(frozen=True)
 class PieceRectilineaire:
     id: str
-    rectangles: tuple[Piece, ...]          # 2 à 4
+    rectangles: tuple[Room, ...]          # 2 à 4
     fusions: tuple[tuple[int, int, str], ...]   # (i, j, "partage_bord_droit")
 ```
 

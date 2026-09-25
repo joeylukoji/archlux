@@ -120,7 +120,7 @@ Every Python block of this page is executed by the test suite
 
 Three rooms in a 12 m × 9 m outline, with a load-bearing wall at x = 6 m. The living
 room crosses the wall by 5 cm and a 3 cm gap separates the bedroom from the bathroom.
-Room types are free strings; `Referentiel` gives the minimum area per type and the
+Room types are free strings; `Regulation` gives the minimum area per type and the
 minimum width.
 
 ```python
@@ -129,21 +129,21 @@ import archlux as ax
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     pieces=(
-        ax.Piece(id="living", type="living", x=0.0, y=0.0, w=6.05, h=9.0),
-        ax.Piece(id="bed", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
-        ax.Piece(id="bath", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
+        ax.Room(id="living", type="living", x=0.0, y=0.0, w=6.05, h=9.0),
+        ax.Room(id="bed", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
+        ax.Room(id="bath", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
     murs=(),
     ouvertures=(),
     contour=outline,
 )
-ctx = ax.Contexte(
+ctx = ax.Context(
     structure=ax.Structure(
-        murs_porteurs=(ax.Mur(id="axis-3", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True),)
+        murs_porteurs=(ax.Wall(id="axis-3", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True),)
     ),
     orientation=ax.Orientation(deg=12.0),  # north at 12 degrees east
     contour=outline,
-    referentiel=ax.Referentiel(aires_min=(("bathroom", 5.0),), largeur_min=1.0),
+    referentiel=ax.Regulation(aires_min=(("bathroom", 5.0),), largeur_min=1.0),
 )
 
 repaired = ax.legalize(plan, ctx, pavage=True)
@@ -229,18 +229,18 @@ Three rooms side by side, each at least 4.5 m wide, in a 12 m wide outline:
 ```python
 narrow = ax.Plan(
     pieces=tuple(
-        ax.Piece(id=name, type="bedroom", x=4.0 * k, y=0.0, w=4.0, h=9.0)
+        ax.Room(id=name, type="bedroom", x=4.0 * k, y=0.0, w=4.0, h=9.0)
         for k, name in enumerate("abc")
     ),
     murs=(),
     ouvertures=(),
     contour=outline,
 )
-wide_rooms = ax.Contexte(
+wide_rooms = ax.Context(
     structure=ax.Structure(murs_porteurs=()),
     orientation=ax.Orientation(deg=0.0),
     contour=outline,
-    referentiel=ax.Referentiel(aires_min=(), largeur_min=4.5),
+    referentiel=ax.Regulation(aires_min=(), largeur_min=4.5),
 )
 verdict = ax.feasibility.is_feasible(narrow, wide_rooms.structure, wide_rooms)
 assert not verdict and verdict.certificat is not None
@@ -329,7 +329,7 @@ azimuth, and the glazing (`baies`). Shipped implementations:
 
 The input is a set of numbers per room, not an image: moving a wall by 2 cm changes no
 pixel of a coarse image, so an image-based gradient is zero almost everywhere.
-Openings are stored relative to their wall (`Ouverture.mur_id`, relative abscissa
+Openings are stored relative to their wall (`Opening.mur_id`, relative abscissa
 `s`); their absolute position is never stored. The solver moves rooms, never walls, and
 the glazing is passed unchanged to the surrogate during the optimization.
 
@@ -382,7 +382,7 @@ This is the core of the project, and the two must never be confused.
   with the tolerances of `archlux/tolerances.py`. Infeasibility is proved by a Farkas
   certificate verified in exact arithmetic, and only for the relative order read from
   the proposal.
-- **Daylight, probabilistic.** `BornePerformance.regime` is mandatory.
+- **Daylight, probabilistic.** `PerformanceBound.regime` is mandatory.
   `"exchangeable"`: the plan is exchangeable with the calibration set, and the coverage
   is guaranteed. `"selected"`: the optimizer chose the plan, the coverage is **not**
   guaranteed, and the report says "couverture NON garantie". `legalize(...,
@@ -391,8 +391,8 @@ This is the core of the project, and the two must never be confused.
   computed against (here the frozen split-flux oracle), never about a measured LM-83
   sDA.
 
-The two are **distinct types**: `PreuveGeometrique` has no probability field,
-`BornePerformance` always carries its coverage, calibration size and regime. See
+The two are **distinct types**: `GeometricProof` has no probability field,
+`PerformanceBound` always carries its coverage, calibration size and regime. See
 [`docs/concepts/deux-garanties.md`](docs/concepts/deux-garanties.md).
 
 ---
@@ -418,7 +418,7 @@ exchangeable plan, `couverture NON garantie` for a selected one, `NON EVALUABLE`
 without calibration), the dual diagnosis, and an out-of-scope section (summer comfort,
 building services, materials). "Structure preservee" is checked since batch 1.1: no
 room interior contains a stretch of a load-bearing wall. The maximum displacement is a
-checked predicate when a `budget` is given. `Certificat.manifeste` is `None` unless the
+checked predicate when a `budget` is given. `Certificate.manifeste` is `None` unless the
 caller attaches one.
 
 ---
@@ -454,7 +454,7 @@ solver serve both modes.
 
 | Module | Responsibility |
 |---|---|
-| `types` | `Plan`, `Piece`, `Mur`, `Ouverture`, `Contexte`, `Certificat` |
+| `types` | `Plan`, `Room`, `Wall`, `Opening`, `Context`, `Certificate` |
 | `geom` | relative order, load-bearing sides, tiling grid, polytope, L-shaped fusions |
 | `lmo` | solve `min <c, x>` over the polytope, area cuts; ignores where `c` comes from |
 | `solve` | Frank-Wolfe, warm start, trace |

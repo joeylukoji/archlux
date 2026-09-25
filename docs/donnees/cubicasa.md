@@ -18,7 +18,7 @@ où les corpus simulés les omettent souvent.
 ## Ce qu'il apporte
 
 Les annotations sont **vectorielles**, pas raster : les segments de fenêtre sont
-directement projetables en `Ouverture(mur_id=..., s=..., largeur_rel=...)`. C'est le seul
+directement projetables en `Opening(mur_id=..., s=..., largeur_rel=...)`. C'est le seul
 corpus de cette liste qui permet de mesurer l'écart entre baies **observées** et
 baies **imputées** — la mesure exigée par [imputation](imputation.md).
 

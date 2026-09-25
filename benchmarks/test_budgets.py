@@ -20,11 +20,11 @@ from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.solveur import resoudre, vider_cache
 from archlux.types import (
-    Contexte,
+    Context,
     Orientation,
-    Piece,
     Plan,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
 )
 
@@ -56,18 +56,18 @@ def _assert_within_budget(benchmark: BenchmarkFixture, budget: str) -> None:
     assert mean_ms < limit_ms, f"{mean_ms:.2f} ms > {limit_ms} ms — budget §9 '{budget}' exceeded"
 
 
-CTX_15 = Contexte(
+CTX_15 = Context(
     structure=Structure(murs_porteurs=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (15.0, 0.0), (15.0, 12.0), (0.0, 12.0)),
-    referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+    referentiel=Regulation(aires_min=(), largeur_min=1.0),
 )
 
 
 def _plan_15_pieces() -> Plan:
     """Grille 5 x 3 de pièces jointives, le cas de référence du §9."""
     pieces = tuple(
-        Piece(
+        Room(
             id=f"p{colonne}_{ligne}",
             type="sejour",
             x=colonne * 3.0,
@@ -165,11 +165,11 @@ def test_budget_legalisation_performantielle(benchmark: BenchmarkFixture) -> Non
     _assert_within_budget(benchmark, "legalisation_performantielle")
 
 
-CTX_15_AREAS = Contexte(
+CTX_15_AREAS = Context(
     structure=CTX_15.structure,
     orientation=Orientation(deg=20.0),
     contour=CTX_15.contour,
-    referentiel=Referentiel(aires_min=(("sejour", 11.0),), largeur_min=1.0),
+    referentiel=Regulation(aires_min=(("sejour", 11.0),), largeur_min=1.0),
 )
 """The realistic case the budgets missed (AUDIT.md Q-C2): tight minimum areas."""
 
@@ -210,15 +210,15 @@ def test_performance_mode_scales_with_tight_minimum_areas(
     width, height = 3.0 * columns, 4.0 * rows
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
     rooms = tuple(
-        Piece(id=f"p{i}_{j}", type="sejour", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
+        Room(id=f"p{i}_{j}", type="sejour", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
         for i in range(columns)
         for j in range(rows)
     )
-    ctx = Contexte(
+    ctx = Context(
         structure=Structure(murs_porteurs=()),
         orientation=Orientation(deg=20.0),
         contour=outline,
-        referentiel=Referentiel(aires_min=(("sejour", 11.0),), largeur_min=1.0),
+        referentiel=Regulation(aires_min=(("sejour", 11.0),), largeur_min=1.0),
     )
     plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
     start = time.perf_counter()

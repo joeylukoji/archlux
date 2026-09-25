@@ -23,7 +23,7 @@ from archlux.geom.graphe import construire_graphe, reduction_transitive
 
 if TYPE_CHECKING:
     from archlux.geom.graphe import OrdreRelatif
-    from archlux.types import Contexte, Plan
+    from archlux.types import Context, Plan
 
 __all__ = [
     "CHAMPS",
@@ -209,7 +209,7 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
     )
 
 
-def _enveloppe(ctx: Contexte) -> tuple[float, float, float, float]:
+def _enveloppe(ctx: Context) -> tuple[float, float, float, float]:
     """Boîte englobante du contour : ``(xmin, ymin, xmax, ymax)``."""
     if not ctx.contour:
         raise InvariantViolation(("contour vide : aucune enveloppe n'est définissable",))
@@ -250,7 +250,7 @@ def _verifier_enveloppe_admissible(
         raise Infeasible(farkas_certificate=None, origins=conflits)
 
 
-def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
+def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
     """Assembler le système linéaire décrivant tous les plans valides de cet ordre.
 
     Contraintes produites :
