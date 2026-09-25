@@ -1,14 +1,14 @@
 # Claude Code — archlux
 
-Avant toute tâche : lire `AGENTS.md` et dispatcher vers les sous-agents / skills concernés.
+Before any task: read `AGENTS.md` and dispatch to the relevant subagents / skills.
 
-Lire `docs/specification/ARCHITECTURE.md` avant de modifier le code. Géométrie exacte ; lumière probabiliste.
+Read `docs/specification/ARCHITECTURE.md` before changing the code. Exact geometry; probabilistic light.
 
-## Sous-agents (déléguer automatiquement)
+## Subagents (delegate automatically)
 
-Les descriptions dans `.claude/agents/` sont le signal de routage. Déléguer **proactively** dès qu'une ligne de `AGENTS.md` matche.
+The descriptions in `.claude/agents/` are the routing signal. Delegate **proactively** as soon as a row of `AGENTS.md` matches.
 
-| Agent | Skill préchargé |
+| Agent | Preloaded skill |
 |---|---|
 | `python-expert` | `python-expert` |
 | `python-design-patterns` | `python-design-patterns` |
@@ -18,4 +18,4 @@ Les descriptions dans `.claude/agents/` sont le signal de routage. Déléguer **
 | `architecture-blueprint-generator` | `architecture-blueprint-generator` |
 | `agent-browser` | `agent-browser` |
 
-Après du code Python non trivial, enchaîner `review-and-refactor`.
+After non-trivial Python code, chain `review-and-refactor`.

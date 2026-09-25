@@ -19,9 +19,11 @@ from archlux.geom.rectilineaire import FUSION_DROIT, FUSION_HAUT, PieceRectiline
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.types import Contexte, Piece, Plan
 from tests import checkers
-from tests.proprietes.strategies import realistic_scenarios
+from tests.proprietes.strategies import GATE_EXAMPLES, realistic_scenarios
 
-_SETTINGS = settings(max_examples=60, deadline=None, derandomize=True, report_multiple_bugs=False)
+_SETTINGS = settings(
+    max_examples=GATE_EXAMPLES, deadline=None, derandomize=True, report_multiple_bugs=False
+)
 _EDGE = 1e-9
 """Two scenario edges closer than this coincide: the plans are drawn on a centimetre grid."""
 
@@ -111,12 +113,18 @@ def test_legalize_never_certifies_a_broken_fused_room(
         except ArchluxError:
             continue  # refusing is allowed; lying is not
         assert checkers.violations(result, ctx, fusions=(room,)) == []
-        assert _aligned_ends(result, room) == _aligned_ends(plan, room)
+        for before, after in zip(_end_order(plan, room), _end_order(result, room), strict=True):
+            assert after in (before, 0), "an end of the L changed order"
 
 
-def _aligned_ends(plan: Plan, room: PieceRectilineaire) -> tuple[bool, bool]:
-    """Whether the low ends, and the high ends, of the two parts coincide along the
-    shared edge: the L-ness of the room, which ``legalize`` keeps."""
+def _end_order(plan: Plan, room: PieceRectilineaire) -> tuple[int, int]:
+    """Order (-1, 0 or 1) of the low ends, and of the high ends, of the two parts along
+    the shared edge: the shape of the room.
+
+    ``legalize`` keeps it non-strictly (``overlap_constraints``): aligned ends stay
+    aligned, other ends keep their order or meet, when the step of the L closes (an L
+    may degenerate into a rectangle, never turn into a T or a Z). Found at 2000
+    examples: Frank-Wolfe closing a 1 cm step, which a strict comparison flagged."""
     by_id = {r.id: r for r in plan.pieces}
     a, b = (by_id[r.id] for r in room.rectangles)
     ((_, _, kind),) = room.fusions
@@ -124,5 +132,5 @@ def _aligned_ends(plan: Plan, room: PieceRectilineaire) -> tuple[bool, bool]:
         ends = ((a.y, b.y), (a.y + a.h, b.y + b.h))
     else:
         ends = ((a.x, b.x), (a.x + a.w, b.x + b.w))
-    low, high = (abs(u - v) <= checkers.TOLERANCE for u, v in ends)
+    low, high = (0 if abs(u - v) <= checkers.TOLERANCE else (1 if u > v else -1) for u, v in ends)
     return low, high

@@ -352,6 +352,20 @@ hors mypy et hors tests (phase 2, outillage) ; renommer `couverture` en
   pas un Z.
 - Contrôler la surface sur le polygone recomposé, et non par sous-rectangle.
 
+**État du lot 1.7 : terminé (2026-09-25).** `etendre_fusions` garde, sur l'axe
+orthogonal, l'ordre des extrémités des sous-rectangles et une longueur de contact
+minimale (`overlap_constraints`, `largeur_min`) : un L ne devient plus ni un T, ni un Z,
+ni deux pièces. La surface minimale d'une pièce fusionnée est prouvée sur l'union
+(`verify_exactly(..., fusions=)`) ; le solveur donne à chaque partie une part
+proportionnelle du minimum (`minimum_area_shares`, prudent : un refus à tort est
+possible, un faux certificat non). Le contrôleur indépendant mesure une pièce fusionnée
+d'un seul tenant ; propriété Hypothesis dédiée (`test_l_room_guarantees.py`).
+Revue : 1 critique corrigé (un porteur sur la couture d'un L était certifié : la cuisine
+était coupée en deux) et 1 majeur (col de 1e-7 m accepté). Revue finale de la phase 1 :
+les parties d'un L gardent chacune leur côté d'un porteur, sauf si deux d'entre elles
+prennent des côtés opposés (seul cas où la couture peut tomber sur le mur) ; le côté de
+la boîte englobante, imposé à toutes, déplaçait un pied qui ne touchait pas le mur.
+
 ### 1.8 Documentation alignée sur le code (§5.8)
 
 - Corriger **chaque ligne** du tableau « écarts doc ↔ code » : README l.156-205, 251,
@@ -364,6 +378,20 @@ hors mypy et hors tests (phase 2, outillage) ; renommer `couverture` en
 - Premier paragraphe du README : dire clairement dans quel régime l'outil fonctionne
   (93,9 % sur plans corrompus, environ 20 % sur sorties de générateur).
 
+**État du lot 1.8 : terminé (2026-09-25).** README réécrit en anglais (lot E2), premier
+paragraphe sur le régime (93,9 % sur plans MSD corrompus avec repli, environ 20 % sur
+sorties HouseDiffusion, chiffres d'avant le lot 1.1, à remesurer en phase 2) ; chaque
+exemple du README et de `docs/` est exécuté par `tests/docs/test_examples.py`
+(`KNOWN_BROKEN` vide). Chaque ligne du tableau §5.8 de l'audit est corrigée ; front de
+Pareto et non-Manhattan déplacés dans la feuille de route. `ARCHITECTURE.md` §1, 2, 3,
+9, 11 alignés sur le code, `Project_Architecture_Blueprint.md` régénéré.
+`SimulateurExact` → `SplitFluxOracle` (alias `SimulateurExact` et `ExactSimulator`
+dépréciés jusqu'à 1.0.0), jamais « exact » ni « vérité terrain ». Lot E3 :
+`ARCHITECTURE.md`, `CONTRIBUTING.md`, `AGENTS.md` et `CLAUDE.md` traduits, ajoutés à la
+liste des fichiers migrés de `tests/test_language.py`. Les chiffres de `api.py`
+(93,0 % / 97,6 %, colonne `pavage=True`) et du README (93,9 %, colonne repli) sont
+distingués dans la docstring.
+
 **Porte de sortie de la phase 1** :
 - banc `benchmarks/guarantees` : **0 certificat mensonger et 0 plantage dans tous les
   modes** ; en mode performance, au moins 95 % de sorties correctes ;
@@ -372,6 +400,28 @@ hors mypy et hors tests (phase 2, outillage) ; renommer `couverture` en
   2 000 exemples Hypothesis avec porteurs, `aires_min` et budget ;
 - le tableau « doc ↔ code » est vide ;
 - relecture `review-and-refactor` sans point Critique.
+
+**Porte de sortie de la phase 1 : franchie le 2026-09-25** (révision `74a6e89`).
+- Banc `after-phase1-final-review` : 0 certificat mensonger et 0 plantage dans les
+  8 modes ; 200/200 en mode performance (avec et sans budget, mur plein et partiel).
+  Régime J8 bruité : 118 corrects et 82 refus typés `GridNotRecoverable`, honnêtes,
+  sujet de la phase 6.5.
+- `KNOWN_BROKEN` vide, aucun `xfail` restant de 0.7 et 0.8.
+- `ARCHLUX_GATE_EXAMPLES=2000 pytest tests/proprietes/test_realistic_guarantees.py
+  tests/proprietes/test_l_room_guarantees.py` : vert, avec porteurs, `aires_min` et
+  budget tiré par Hypothesis (contrôle indépendant du budget). La première passe a
+  trouvé un L dont Frank-Wolfe ferme la marche de 1 cm : permis par le contrat
+  (ordre non strict), c'est la propriété qui était trop stricte ; cas épinglé.
+- Tableau « doc ↔ code » de l'audit §5.8 : chaque ligne corrigée (lot 1.8).
+- Revue `review-and-refactor` de la revue finale : 0 critique ; 3 majeurs corrigés
+  (`Infaisable.relaxable` affirmait qu'un plan existait sans le budget alors que la
+  preuve le refusait : 70 cas sur 134 ; NaN avalé par `max_displacement` ;
+  CHANGELOG), mineurs m1, m2, m3, m7 corrigés.
+- **Reporté** (mineurs de la revue) : un U enroulé autour de l'extrémité d'un porteur
+  partiel est refusé à tort (tester les côtés opposés par paire de parties qui se
+  touchent, pas par groupe) → phase 4 ; `relaxable` ne teste ni les deux
+  restrictions ensemble ni les côtés des porteurs, et `restrict_to_budget` et
+  `construire_polytope` lèvent `Infaisable` sans `scope` → phase 3.4.
 
 ---
 
@@ -651,7 +701,7 @@ Tenir ce tableau à jour à chaque porte franchie.
 | Phase | Statut | Porte franchie le | Commentaire |
 |--:|---|---|---|
 | 0 | **Terminée** | 2026-09-23 | 15 commits. 626 tests verts + 9 xfail stricts documentés (6 pages de doc, 2 garanties du mode performance, 1 incohérence de tolérances) : ce sont les tests d'entrée de la phase 1. Version `0.10.0.dev0` (0.9.0 déjà pris, 1.0.0 retirée). Revue `review-and-refactor` faite ; ses 18 constats corrigés, dont 1 critique (pages `docs/donnees/` jamais versionnées). |
-| 1 | En cours | | Lots 1.1 à 1.6 terminés : 0 certificat mensonger, 0 plantage et 0 dépassement de budget dans tous les modes du banc ; pavage prouvé en rationnels, Farkas vérifié exactement ; chaque borne probabiliste dit son régime. Lot suivant : 1.7 (pièces en L). |
+| 1 | **Terminée** | 2026-09-25 | Lots 1.1 à 1.8 et revue finale : 0 certificat mensonger et 0 plantage dans les 8 modes du banc, 200/200 en mode performance ; garanties exactes tenues sur 2 000 exemples Hypothesis avec porteurs, surfaces et budget ; pavage prouvé en rationnels, Farkas vérifié exactement, chaque refus dit sa portée ; chaque borne dit son régime ; pièces en L ; doc alignée et en anglais. Phase suivante : 2 (revue des jalons). |
 | 2 | À faire | | |
 | 3 | À faire | | |
 | 4 | À faire | | |
@@ -660,4 +710,4 @@ Tenir ce tableau à jour à chaque porte franchie.
 | 7 | À faire | | |
 | 8 | À faire | | |
 | 9 | À faire | | |
-| E | En cours | | E0, E1, E9 (`solve`) et E10 (`certify.preuve` → `certify.proof`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E2, avec la réécriture du README en phase 1.8. |
+| E | En cours | | E0, E1, E2 (README), E3 (`ARCHITECTURE.md`, `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`), E9 (`solve`) et E10 (`certify.preuve` → `certify.proof`) faits. Fichiers touchés par chaque lot écrits en anglais. Lot suivant : E4 (API publique), en phase 3. |

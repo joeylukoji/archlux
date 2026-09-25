@@ -26,7 +26,7 @@ from archlux.certify.dual import traduire_duaux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.erreurs import Infaisable, InvariantViole
-from archlux.geom.graphe import deduire_ordre
+from archlux.geom.graphe import OrdreRelatif, deduire_ordre
 from archlux.geom.pavage import deduire_trame, etendre_pavage, snap_to_grid
 from archlux.geom.polytope import (
     Polytope,
@@ -119,24 +119,33 @@ def _duaux_traduits(duaux: np.ndarray | None, poly: Polytope) -> tuple[tuple[str
     return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL)
 
 
+GRID_LABEL = "tiling grid"
+"""Scope entry of the tiling equalities (``pavage=True``)."""
+
+
+def budget_label(budget: float) -> str:
+    """Scope entry of the displacement budget."""
+    return f"budget {budget:g} m"
+
+
 def _scope(
-    ctx: Contexte,
+    ordre: OrdreRelatif,
     fusions: tuple[PieceRectilineaire, ...],
     grid: bool,
     budget: float | None,
 ) -> tuple[str, ...]:
-    """Restrictions of the solver's domain beyond the relative order, as stated."""
+    """Restrictions of the solver's domain beyond the relative order, as built."""
     scope: list[str] = []
-    if ctx.structure.murs_porteurs:
+    if ordre.wall_sides:
         scope.append("load-bearing sides")
     if fusions:
         scope.append("fused-room seams and area shares")
-        if ctx.structure.murs_porteurs:
-            scope.append("one side per straddled fused room")
+    if ordre.shared_sides:
+        scope.append("one shared side per fused room straddling a wall")
     if grid:
-        scope.append("tiling grid")
+        scope.append(GRID_LABEL)
     if budget is not None:
-        scope.append(f"budget {budget:g} m")
+        scope.append(budget_label(budget))
     return tuple(scope)
 
 
@@ -193,7 +202,9 @@ def legalize(
         À activer dès que l'entrée peut porter un **jour** — c'est le cas des
         sorties de modèles génératifs. Mesuré sur 4 796 corruptions de 300 plans
         MSD réels (`resultats/j7_reparation.md`) : la réparation passe de 35,9 %
-        à 93,0 %, et sur les jours seuls de 10,0 % à 97,6 %.
+        à 93,0 %, et sur les jours seuls de 10,0 % à 97,6 % (colonne ``pavage=True`` ;
+        les 93,9 % du README sont la colonne « repli » : ``pavage=True``, sinon
+        ``legalize`` seul). Chiffres mesurés avant le lot 1.1.
 
         Exige que la trame du plan proposé soit récupérable
         (:func:`~archlux.geom.pavage.deduire_trame`) ; sinon ``GridNotRecoverable``
@@ -262,6 +273,9 @@ def legalize(
     ``MAX_COUPES_PAR_PIECE`` par pièce, < 20 ms pour 15 pièces.
     Mode performantiel : jusqu'à 50 LP à chaud, < 500 ms
     (`ARCHITECTURE.md` §9).
+    A refusal costs up to three times the classic mode: the tiling grid and the budget
+    are each dropped once, solved and proved, to fill ``Infaisable.relaxable``. No §9
+    budget covers refusals.
 
     Notes
     -----
@@ -347,12 +361,31 @@ def legalize(
         )
         # The certificate is about this domain, not about the order alone (final review
         # of phase 1, C1): name every restriction, and test the ones legalize added.
-        scope = _scope(ctx, fusions, trame is not None, budget)
+        scope = _scope(ordre, fusions, trame is not None, budget)
+
+        def admits(l1: Polytope, *, bounded: bool) -> bool:
+            """The relaxed optimum is a plan the exact proof accepts, as returned.
+
+            An ``"optimal"`` LP is not enough: without the grid the L1 optimum keeps a
+            gap, and the area cuts are an outer approximation (final review, M1).
+            """
+            relaxed = solve(l1)
+            if relaxed.statut != "optimal":
+                return False
+            candidate = replace(devectoriser(relaxed.x, plan, l1.index), contour=ctx.contour)
+            return verify_exactly(
+                candidate,
+                ctx,
+                reference=plan,
+                budget=budget if bounded else None,
+                fusions=fusions,
+            ).valide
+
         relaxable: list[str] = []
-        if trame is not None and solve(domain(grid=False)[1]).statut == "optimal":
-            relaxable.append("tiling grid")
-        if budget is not None and solve(domain(bounded=False)[1]).statut == "optimal":
-            relaxable.append(f"budget {budget:g} m")
+        if trame is not None and admits(domain(grid=False)[1], bounded=True):
+            relaxable.append(GRID_LABEL)
+        if budget is not None and admits(domain(bounded=False)[1], bounded=False):
+            relaxable.append(budget_label(budget))
         raise Infaisable(
             certificat_farkas=sol.certificat_farkas,
             origines=_origines_actives(sol, poly_l1),

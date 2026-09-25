@@ -1,75 +1,75 @@
-# Dispatch des agents et skills
+# Agent and skill dispatch
 
-Fichier canonique pour **Cursor** et **Claude Code**.
-À chaque nouvelle tâche : classer le travail, charger **uniquement** les skills concernés, lire leur `SKILL.md`, puis exécuter.
+Canonical file for **Cursor** and **Claude Code**.
+For each new task: classify the work, load **only** the relevant skills, read their `SKILL.md`, then execute.
 
-Contrainte projet : lire `docs/specification/ARCHITECTURE.md` avant toute modification. La géométrie est exacte ; la lumière est probabiliste. Ne jamais les confondre.
+Project constraint: read `docs/specification/ARCHITECTURE.md` before any change. Geometry is exact; light is probabilistic. Never confuse them.
 
-## Comment dispatcher
+## How to dispatch
 
-1. Identifier le type de tâche dans la table ci-dessous (plusieurs lignes peuvent matcher).
-2. Charger les skills listés (lire `SKILL.md` ; suivre les fichiers liés).
-3. **Claude Code** : déléguer aux sous-agents `.claude/agents/` du même nom (`skills:` déjà préchargés).
-4. **Cursor** : invoquer les skills projet (`.cursor/skills/` et `.agents/skills/`).
-5. Ne pas charger un skill hors table « juste au cas où ».
-6. Après du code Python non trivial : enchaîner `review-and-refactor`.
+1. Identify the task type in the table below (several rows may match).
+2. Load the listed skills (read `SKILL.md`; follow the linked files).
+3. **Claude Code**: delegate to the `.claude/agents/` subagents of the same name (`skills:` already preloaded).
+4. **Cursor**: invoke the project skills (`.cursor/skills/` and `.agents/skills/`).
+5. Do not load a skill outside the table "just in case".
+6. After non-trivial Python code: chain `review-and-refactor`.
 
-## Table de routage
+## Routing table
 
-| Si la tâche… | Appeler | Ne pas appeler |
+| If the task… | Call | Do not call |
 |---|---|---|
-| Écrit, corrige, annote ou debug du **Python** | `python-expert` | `agent-browser` |
-| Concevoir / découper un module, SRP, composition, couplage, God class | `python-design-patterns` puis `python-expert` | `architecture-blueprint-generator` (sauf doc d'ensemble) |
-| Feature ou bug **test-first**, red-green, tests d'intégration | `tdd` + `python-expert` | refactor plan tant que le comportement n'est pas piné |
-| **Planifier** un refactor (RFC, commits minuscules, issue) | `request-refactor-plan` | coder avant la fin du plan |
-| **Revoir / nettoyer** du code existant selon les standards du repo | `review-and-refactor` | `tdd` sauf si les tests cassent |
-| Documenter l'architecture (blueprint, diagrammes, ADR) | `architecture-blueprint-generator` | modifier le code dans la même passe |
-| Naviguer un site, formulaire, screenshot, scrape, QA UI | `agent-browser` | les skills Python |
+| Writes, fixes, annotates or debugs **Python** | `python-expert` | `agent-browser` |
+| Design / split a module, SRP, composition, coupling, God class | `python-design-patterns` then `python-expert` | `architecture-blueprint-generator` (except for overall docs) |
+| **Test-first** feature or bug, red-green, integration tests | `tdd` + `python-expert` | refactor plan as long as the behaviour is not pinned |
+| **Plan** a refactor (RFC, tiny commits, issue) | `request-refactor-plan` | coding before the plan is finished |
+| **Review / clean up** existing code against the repo standards | `review-and-refactor` | `tdd` unless the tests break |
+| Document the architecture (blueprint, diagrams, ADR) | `architecture-blueprint-generator` | changing the code in the same pass |
+| Browse a site, form, screenshot, scrape, UI QA | `agent-browser` | the Python skills |
 
-## Combos fréquents
+## Frequent combos
 
-| Demande utilisateur | Séquence |
+| User request | Sequence |
 |---|---|
-| « implémente X » | `tdd` → `python-expert` → `review-and-refactor` |
-| « refactor Y » | `request-refactor-plan` → (après accord) `tdd` → `python-expert` → `review-and-refactor` |
-| « nouveau module / couche » | `python-design-patterns` → `python-expert` → `tdd` |
-| « documente l'archi » | `architecture-blueprint-generator` (sortie `Project_Architecture_Blueprint.md`, sans contredire `docs/specification/ARCHITECTURE.md`) |
-| « teste l'UI / ouvre le navigateur » | `agent-browser` |
-| « review cette PR / ce diff » | `review-and-refactor` + `python-design-patterns` si le diff est structurel |
+| "implement X" | `tdd` → `python-expert` → `review-and-refactor` |
+| "refactor Y" | `request-refactor-plan` → (after agreement) `tdd` → `python-expert` → `review-and-refactor` |
+| "new module / layer" | `python-design-patterns` → `python-expert` → `tdd` |
+| "document the architecture" | `architecture-blueprint-generator` (output `Project_Architecture_Blueprint.md`, without contradicting `docs/specification/ARCHITECTURE.md`) |
+| "test the UI / open the browser" | `agent-browser` |
+| "review this PR / this diff" | `review-and-refactor` + `python-design-patterns` if the diff is structural |
 
-## Rôle de chaque agent
+## Role of each agent
 
 ### `python-expert`
 
-Écrire et relire du Python 3.11+ idiomatique. Priorité : **correctness → types → perf → style**. Pas d'archi multi-modules (ça c'est `python-design-patterns`).
+Write and review idiomatic Python 3.11+. Priority: **correctness → types → perf → style**. No multi-module architecture (that is `python-design-patterns`).
 
 ### `python-design-patterns`
 
-Décider comment **structurer** : KISS, SRP, composition, règle de trois, injection. Lire `references/details.md` si le navigateur du skill ne suffit pas.
+Decide how to **structure**: KISS, SRP, composition, rule of three, injection. Read `references/details.md` if the skill's navigator is not enough.
 
 ### `tdd`
 
-Boucle rouge → vert, une tranche verticale, seams publics seulement. Confirmer les seams avec l'utilisateur avant le premier test. Le refactor n'est **pas** dans la boucle (stage `review-and-refactor`).
+Red → green loop, one vertical slice, public seams only. Confirm the seams with the user before the first test. Refactoring is **not** in the loop (`review-and-refactor` stage).
 
 ### `request-refactor-plan`
 
-Interview + exploration + plan de micro-commits + issue GitHub. **Ne pas implémenter** pendant ce skill. Restauré depuis l'archive mattpocock (retiré du repo amont ; successeurs amont : `to-spec` / `improve-codebase-architecture`).
+Interview + exploration + micro-commit plan + GitHub issue. **Do not implement** during this skill. Restored from the mattpocock archive (removed from the upstream repo; upstream successors: `to-spec` / `improve-codebase-architecture`).
 
 ### `review-and-refactor`
 
-Revue senior après un diff. Pour ce repo, les instructions contraignantes sont `docs/specification/ARCHITECTURE.md` (et ce fichier), pas seulement `.github/instructions/`. Garder les fichiers existants ; ne pas éclater le code sans besoin. Relancer les tests s'il y en a.
+Senior review after a diff. For this repo, the binding instructions are `docs/specification/ARCHITECTURE.md` (and this file), not only `.github/instructions/`. Keep the existing files; do not split the code without need. Rerun the tests if there are any.
 
 ### `architecture-blueprint-generator`
 
-Analyser le repo et produire un blueprint extensible. Ne pas inventer une archi qui viole les 4 couches (`geom`, `lmo`, `solve`/`light`, `certify`).
+Analyse the repo and produce an extensible blueprint. Do not invent an architecture that violates the 4 layers (`geom`, `lmo`, `solve`/`light`, `certify`).
 
 ### `agent-browser`
 
-Automatisation navigateur (CLI `agent-browser`). Charger `agent-browser skills get core` avant la première commande. Préférer ce skill à tout autre outil browser.
+Browser automation (`agent-browser` CLI). Load `agent-browser skills get core` before the first command. Prefer this skill over any other browser tool.
 
-## Emplacements
+## Locations
 
-| Outil | Skills | Agents |
+| Tool | Skills | Agents |
 |---|---|---|
 | Claude Code | `.claude/skills/` | `.claude/agents/` |
-| Cursor | `.cursor/skills/` et `.agents/skills/` | règle `.cursor/rules/agent-dispatch.mdc` |
+| Cursor | `.cursor/skills/` and `.agents/skills/` | rule `.cursor/rules/agent-dispatch.mdc` |

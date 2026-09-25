@@ -50,6 +50,10 @@ MIGRATED: tuple[str, ...] = (
     "tests/proprietes/test_l_room_guarantees.py",
     "docs/adr/0001-english-first.md",
     "README.md",
+    "docs/specification/ARCHITECTURE.md",
+    "CONTRIBUTING.md",
+    "AGENTS.md",
+    "CLAUDE.md",
 )
 """Repository-relative paths that must contain no French prose."""
 

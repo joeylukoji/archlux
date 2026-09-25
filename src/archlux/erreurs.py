@@ -88,11 +88,13 @@ class Infaisable(ArchluxError):
     scope : tuple of str
         Restrictions of the solver's domain beyond the relative order, each of which
         the certificate is about: ``"load-bearing sides"``, ``"tiling grid"``,
-        ``"budget 0.3 m"``, ``"one side per fused room"``... The certificate proves the
-        domain **with all of them** empty, nothing more.
+        ``"budget 0.3 m"``, ``"one shared side per fused room straddling a wall"``...
+        The certificate proves the domain **with all of them** empty, nothing more.
     relaxable : tuple of str
-        Restrictions of ``scope`` without which this relative order does admit a plan:
-        they, not the order, are the cause.
+        Entries of ``scope`` without which ``legalize`` finds a plan that passes the
+        exact proof **for this same order**: they, not the order, are the cause. Only
+        the tiling grid and the budget are tested, each dropped alone: an empty tuple
+        does not rule out the other restrictions, nor the two dropped together.
 
     Notes
     -----

@@ -50,7 +50,7 @@ Derivation, tolerances and use cases: ``docs/formules/preuve-exacte.md``.
 from __future__ import annotations
 
 from fractions import Fraction
-from math import isfinite
+from math import inf, isfinite, isnan
 
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
@@ -482,7 +482,10 @@ def _raw_residuals(
 
 
 def max_displacement(plan: Plan, reference: Plan | None) -> float:
-    """L-infinity over (x, y, w, h) of the rooms sharing an identifier; 0 without reference."""
+    """L-infinity over (x, y, w, h) of the rooms sharing an identifier; 0 without reference.
+
+    ``inf`` as soon as one difference is undefined (a NaN in the plan or the reference).
+    """
     if reference is None:
         return 0.0
     by_id = {room.id: room for room in reference.pieces}
@@ -491,13 +494,16 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
         origin = by_id.get(room.id)
         if origin is None:
             continue
-        delta = max(
-            delta,
+        gaps = (
             abs(room.x - origin.x),
             abs(room.y - origin.y),
             abs(room.w - origin.w),
             abs(room.h - origin.h),
         )
+        if any(isnan(gap) for gap in gaps):
+            # max() drops a NaN: an undefined displacement is never within a budget.
+            return inf
+        delta = max(delta, *gaps)
     return delta
 
 
@@ -563,9 +569,7 @@ def verify_exactly(
             jours=True,
             surfaces_ok=False,
             structure_preservee=False,
-            deplacement_max=max_displacement(plan, reference)
-            if all(isfinite(v) for r in plan.pieces for v in (r.x, r.y, r.w, r.h))
-            else float("inf"),
+            deplacement_max=max_displacement(plan, reference),
             violations=malformed,
         )
     rational = rational_tiling(plan, ctx)

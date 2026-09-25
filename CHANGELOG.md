@@ -8,7 +8,39 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
-### Remediation — PLAN.md phase 1 (in progress)
+### Remediation — PLAN.md phase 1 (exit gate passed on 2026-09-25)
+
+#### Fixed — final review of phase 1 (certificate behaviour change)
+- **A refusal proved more than it said.** The Farkas certificate is about the domain
+  `legalize` built, with the load-bearing sides, the fused-room seams, the tiling grid
+  and the budget, not about the relative order alone. `Infaisable.scope` names these
+  restrictions; `Infaisable.relaxable` names the tiling grid or the budget when
+  `legalize` without it finds a plan that passes the exact proof for the same order.
+  The message is now in English: "infeasible for this relative order with ...".
+  After review, an optimal LP without the restriction is no longer enough: it could
+  keep a gap or miss an area (70 false "without budget" claims in 134 refusals).
+- `certify.proof.verify_exactly` establishes nothing on a room with a non-finite or
+  non-positive dimension (every predicate reported as not holding, with the room
+  named), and `max_displacement` returns `inf` when a difference is NaN: `max()`
+  dropped it and a budget was reported kept against an undefined reference.
+- `geom.graphe.deduire_ordre(..., groups=)`: each member of a fused room keeps its own
+  side of a load-bearing wall unless two of them take opposite sides; only then does
+  the group share the side of its bounding box (`OrdreRelatif.shared_sides`). Forcing
+  the bounding-box side on every member moved a foot that did not touch the wall. A U
+  wrapped around the end of a partial wall may still be refused, never accepted across.
+- Lint, mypy (1.x and 2.x) and the `Substitut` protocol test pass on Python 3.11 to
+  3.13 (`__protocol_attrs__` only exists from 3.12).
+
+#### Added — phase 1 exit gate
+- `ARCHLUX_GATE_EXAMPLES=2000` runs the guarantee properties on 2000 Hypothesis
+  examples (60 by default); the central property also draws a budget and checks it
+  with the independent checker. At 2000 examples, Frank-Wolfe closed the 1 cm step of
+  an L: allowed by the non-strict order of `overlap_constraints`, the property now
+  says so, and the case is pinned by a unit test.
+
+#### Changed — documentation in English (batch 1.8, track E batch E3)
+- `ARCHITECTURE.md`, `CONTRIBUTING.md`, `AGENTS.md` and `CLAUDE.md` translated; they
+  join the English allowlist of `tests/test_language.py`.
 
 #### Fixed — load-bearing walls (batch 1.1, certificate behaviour change)
 - **The structure predicate verified nothing.** It compared each load-bearing wall with

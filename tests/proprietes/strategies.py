@@ -11,6 +11,7 @@ les écrire d'avance produirait des générateurs jamais exécutés, donc jamais
 from __future__ import annotations
 
 import itertools
+import os
 
 import numpy as np
 from hypothesis import strategies as st
@@ -187,6 +188,9 @@ def plans_quelconques(draw: st.DrawFn) -> Plan:
         certificat=certificat,
     )
 
+
+GATE_EXAMPLES = int(os.environ.get("ARCHLUX_GATE_EXAMPLES", "60"))
+"""Examples per guarantee property: 60 in CI, 2000 for the phase 1 exit gate (PLAN.md)."""
 
 LARGEUR_MIN_DEFAUT = 1.0
 """Largeur minimale du contexte de référence, en mètres."""

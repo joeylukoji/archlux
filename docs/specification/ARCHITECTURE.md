@@ -1,148 +1,148 @@
 # ARCHITECTURE — archlux
 
-> Contexte pour agents de code (Cursor, Claude Code, etc.).
-> **Lire ce fichier avant toute modification.** Les règles ci-dessous sont contraignantes.
+> Context for coding agents (Cursor, Claude Code, etc.).
+> **Read this file before any change.** The rules below are binding.
 
 ---
 
-## 1. Objet du projet
+## 1. Purpose of the project
 
-`archlux` corrige les plans d'architecture produits par des modèles génératifs :
+`archlux` corrects architectural plans produced by generative models:
 
-1. **rendre le plan géométriquement valide** (aucun chevauchement, aucun jour, surfaces
-   minimales respectées, chaque pièce du bon côté des murs porteurs, déplacement borné
-   par `budget`) ;
-2. **améliorer la lumière naturelle sans quitter cette validité** : parmi les plans
-   valides qui **gardent l'ordre relatif proposé** (une seule cellule de l'espace des
-   plans : contacts figés, budget de déplacement), Frank-Wolfe cherche un meilleur
-   point pour le substitut. Il rend un point stationnaire, pas l'optimum global, et
-   n'explore jamais les autres ordres relatifs.
+1. **make the plan geometrically valid** (no overlap, no gap, minimum areas
+   respected, every room on the right side of the load-bearing walls, displacement bounded
+   by `budget`);
+2. **improve daylight without leaving that validity**: among the valid
+   plans that **keep the proposed relative order** (a single cell of the space of
+   plans: frozen contacts, displacement budget), Frank-Wolfe looks for a better
+   point for the surrogate. It returns a stationary point, not the global optimum, and
+   never explores the other relative orders.
 
-La sortie porte **deux garanties de natures différentes** :
+The output carries **two guarantees of different kinds**:
 
-| Garantie | Nature | Vérification |
+| Guarantee | Kind | Verification |
 |---|---|---|
-| Géométrique | **exacte** sur le modèle (rectangles axés) | `certify.proof.verify_exactly` : arithmétique rationnelle sur contour rectangulaire axé (seule tolérance : `SNAP_M` sur les longueurs), GEOS avec tolérances déclarées sinon ; infaisabilité par certificat de Farkas vérifié exactement, **pour l'ordre relatif proposé** |
-| Performance lumineuse | **probabiliste** | prédiction conforme ; couverture ≥ 1−α **seulement** en régime `"exchangeable"`. Un plan choisi par l'optimiseur est en régime `"selected"` : couverture **non** garantie (`BornePerformance.regime`) |
+| Geometric | **exact** on the model (axis-aligned rectangles) | `certify.proof.verify_exactly`: rational arithmetic on an axis-aligned rectangular outline (only tolerance: `SNAP_M` on lengths), GEOS with declared tolerances otherwise; infeasibility by a Farkas certificate verified exactly, **for the proposed relative order** |
+| Daylight performance | **probabilistic** | conformal prediction; coverage ≥ 1−α **only** in the `"exchangeable"` regime. A plan chosen by the optimizer is in the `"selected"` regime: coverage **not** guaranteed (`BornePerformance.regime`) |
 
-**Ne jamais les confondre, ni dans le code, ni dans les types, ni dans les messages.**
+**Never confuse them, not in the code, not in the types, not in the messages.**
 
 ---
 
-## 2. Principe fondateur
+## 2. Founding principle
 
-> Le générateur décide **l'ordre** des pièces.
-> Le solveur décide **les dimensions**.
-> Le réseau de neurones ne fait **que** fournir une direction (gradient).
+> The generator decides **the order** of the rooms.
+> The solver decides **the dimensions**.
+> The neural network **only** provides a direction (gradient).
 
-Conséquence : l'oracle linéaire de Frank-Wolfe **est** le solveur de légalisation.
-Un seul solveur, deux vecteurs objectifs.
+Consequence: the Frank-Wolfe linear oracle **is** the legalization solver.
+One solver, two objective vectors.
 
 ```text
-# pseudo-code (vrais appels : lmo.coupes.resoudre_avec_surfaces, solve.frank_wolfe)
-# légalisation classique : épigraphe L1 autour du plan proposé
+# pseudo-code (real calls: lmo.coupes.resoudre_avec_surfaces, solve.frank_wolfe)  # lang-ok: French identifier, not renamed yet
+# classical legalization: L1 epigraph around the proposed plan
 x = lmo.resoudre(poly_l1, c=gradient_distance(x_propose))
 
-# légalisation performantielle (1 itération Frank-Wolfe), démarrage à chaud
+# performance legalization (1 Frank-Wolfe iteration), warm start
 s = lmo.resoudre(poly_fw, c=-substitut.gradient(x_k, orientation), depart=x_k)
 ```
 
-**Oracle d'éclairement.** Le noyau ne connaît que le protocole `Substitut`.
-Implémentations livrées : `SubstitutAnalytique` (formes fermées), `SplitFluxOracle`
-(analytique + split-flux BRE : **oracle gelé** de la CI, une forme fermée, ni une
-simulation ni une vérité terrain), `SubstitutDense` (perceptron `numpy`) et
-`SubstitutAppris` (qui refuse les poids `.pt` : le transformeur n'existe pas). Un moteur
-de lancer de rayons (Radiance) est **hors chemin critique** : extra `sim` vide, jamais
-importé par le noyau, jamais exigé par la CI ni par les jalons 5–6. Il peut se brancher
-plus tard derrière le même protocole. La garantie lumineuse du jalon 5 porte sur **cet
-oracle gelé**, pas sur un sDA LM-83.
+**Daylight oracle.** The core only knows the `Substitut` protocol.
+Shipped implementations: `SubstitutAnalytique` (closed forms), `SplitFluxOracle`
+(analytic + BRE split-flux: the **frozen oracle** of the CI, a closed form, neither a
+simulation nor a ground truth), `SubstitutDense` (`numpy` perceptron) and
+`SubstitutAppris` (which refuses `.pt` weights: the transformer does not exist). A
+ray-tracing engine (Radiance) is **off the critical path**: empty `sim` extra, never
+imported by the core, never required by the CI nor by milestones 5–6. It can be plugged in
+later behind the same protocol. The daylight guarantee of milestone 5 is about **this
+frozen oracle**, not about an LM-83 sDA.
 
 ---
 
-## 3. Couches
+## 3. Layers
 
 ```
-ENTRÉES : plan proposé · structure porteuse · orientation · programme
+INPUTS: proposed plan · load-bearing structure · orientation · room program
    │
    ▼
-[1] geom      modélisation → polytope (A, b)        DÉTERMINISTE
+[1] geom      modelling → polytope (A, b)           DETERMINISTIC
    │
    ├──────────────┬──────────────────────────┐
    ▼              ▼                          ▼
-[2a] lmo       solveur LP, objectif      [2b] light   substitut
-     paramétrable (cache GLOP)               valeur / gradient / σ   APPRIS
+[2a] lmo       LP solver, configurable   [2b] light   surrogate
+     objective (GLOP cache)                  value / gradient / σ    LEARNED
    │              │                          │
-   └──────────────┴────────► [3] solve  Frank-Wolfe   DÉTERMINISTE
+   └──────────────┴────────► [3] solve  Frank-Wolfe   DETERMINISTIC
                                    │
                                    ▼
-                             [4] certify   preuve + borne + duaux   DÉTERMINISTE
+                             [4] certify   proof + bound + duals   DETERMINISTIC
                                    │
                                    ▼
-              SORTIE : plan valide + certificat + diagnostic dual
+              OUTPUT: valid plan + certificate + dual diagnostic
 ```
 
-**Toutes les couches sont déterministes** (mêmes entrées, même sortie) ; une seule est
-apprise, isolée derrière un protocole. Elles ne sont pas toutes **pures** : `lmo` garde
-un cache global mutable de modèles GLOP (au plus 4, `lmo.solveur._CACHE`, ADR-8 du
-blueprint) pour le démarrage à chaud de Frank-Wolfe. Ce cache change le temps, jamais
-le résultat ; `lmo.solveur.vider_cache` le vide, et les tests de budget le vident avant
-de mesurer un LP à froid.
+**All layers are deterministic** (same inputs, same output); only one is
+learned, isolated behind a protocol. They are not all **pure**: `lmo` keeps
+a mutable global cache of GLOP models (at most 4, `lmo.solveur._CACHE`, ADR-8 of the
+blueprint) for the Frank-Wolfe warm start. This cache changes the time, never
+the result; `lmo.solveur.vider_cache` empties it, and the budget tests empty it before
+measuring a cold LP.
 
 ---
 
 ## 4. Modules
 
-| Module | Responsabilité unique | Appris ? |
+| Module | Single responsibility | Learned? |
 |---|---|---|
-| `types` | `Plan`, `Piece`, `Ouverture`, `Mur`, `Contexte`, `Certificat` | non |
-| `geom` | ordre relatif → graphe de contraintes → polytope | non |
-| `lmo` | résoudre `min <c,x>` sur le polytope. **Ignore l'origine de `c`** | non |
-| `solve` | Frank-Wolfe (+ away-steps, warm start, coupes) | non |
-| `light` | protocole `Substitut` : `evaluer`, `gradient`, `incertitude` | **oui** |
-| `orient` | encodage et statistiques circulaires | non |
-| `uq` | calibration conforme, contrôle de dérive | non |
-| `active` | sélection de plans à simuler (incertitude × densité) | non |
-| `export` | IFC / DXF, pathologies, taux de survie (Wilson) | non |
-| `feasibility` | existence d'un plan valide (Farkas), sans lumière | non |
-| `certify` | vérification exacte + borne + traduction des duaux | non |
-| `bench` | protocole, graines, manifestes, run/report/stats | non |
-| `data` | corpus, dédup, découpage figé | non |
+| `types` | `Plan`, `Piece`, `Ouverture`, `Mur`, `Contexte`, `Certificat` | no |
+| `geom` | relative order → constraint graph → polytope | no |
+| `lmo` | solve `min <c,x>` over the polytope. **Ignores where `c` comes from** | no |
+| `solve` | Frank-Wolfe (+ away-steps, warm start, cuts) | no |
+| `light` | `Substitut` protocol: `evaluer`, `gradient`, `incertitude` | **yes** |
+| `orient` | circular encoding and statistics | no |
+| `uq` | conformal calibration, drift control | no |
+| `active` | selection of plans to simulate (uncertainty × density) | no |
+| `export` | IFC / DXF, pathologies, survival rate (Wilson) | no |
+| `feasibility` | existence of a valid plan (Farkas), without daylight | no |
+| `certify` | exact verification + bound + translation of the duals | no |
+| `bench` | protocol, seeds, manifests, run/report/stats | no |
+| `data` | corpus, dedup, frozen split | no |
 
 ---
 
-## 5. Règles de dépendance (contraignantes)
+## 5. Dependency rules (binding)
 
 ```
-types   ← tout le monde
+types   ← everyone
 geom    ← types
 lmo     ← types, geom
-solve   ← types, geom, lmo, PROTOCOLE light (jamais l'implémentation)
+solve   ← types, geom, lmo, light PROTOCOL (never the implementation)
 light   ← types, orient
 uq      ← types
-data    ← types, uq, orient, geom   (chargeurs de corpus : redressement + decoupe)
+data    ← types, uq, orient, geom   (corpus loaders: straightening + split)
 active  ← types, light.protocole, uq
 export  ← types, erreurs
 feasibility ← types, erreurs, api
 certify ← types, geom, uq
-bench   ← tout
+bench   ← everything
 ```
 
-**INTERDIT :**
+**FORBIDDEN:**
 
-- [ ] `geom`, `lmo`, `solve`, `certify` **ne doivent jamais importer `torch`**
-- [ ] `lmo` ne doit jamais importer `light`
-- [ ] `light` ne doit jamais importer `geom`, `lmo` ou `solve`
-- [ ] `active` n'importe aucune implémentation `light.*` (seulement le protocole)
-- [ ] `export` n'importe ni `geom` ni `certify` (annexe certificat via `Plan.certificat`)
-- [ ] `feasibility` n'importe ni `light` ni `uq` (aucune promesse de performance)
-- [ ] aucun module ne doit importer `bench`
-- [ ] `data` peut lire `geom` et `orient` (chargeurs de corpus **uniquement**),
-      jamais `lmo`, `solve` ni `light` : il produit des entrees, il ne resout rien
+- [ ] `geom`, `lmo`, `solve`, `certify` **must never import `torch`**
+- [ ] `lmo` must never import `light`
+- [ ] `light` must never import `geom`, `lmo` or `solve`
+- [ ] `active` imports no `light.*` implementation (only the protocol)
+- [ ] `export` imports neither `geom` nor `certify` (certificate appendix via `Plan.certificat`)
+- [ ] `feasibility` imports neither `light` nor `uq` (no performance promise)
+- [ ] no module may import `bench`
+- [ ] `data` may read `geom` and `orient` (corpus loaders **only**),
+      never `lmo`, `solve` or `light`: it produces inputs, it solves nothing
 
-Test automatisé qui garde cette règle :
+Automated test that guards this rule:
 
 ```python
-def test_le_noyau_n_importe_pas_torch():
+def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/test_dependances.py
     import subprocess, sys
     code = "import archlux, sys; assert 'torch' not in sys.modules"
     assert subprocess.run([sys.executable, "-c", code]).returncode == 0
@@ -151,19 +151,19 @@ def test_le_noyau_n_importe_pas_torch():
 ---
 
 
-## 6. Modèle de données — invariants
+## 6. Data model — invariants
 
 ```python
 @dataclass(frozen=True, slots=True)
 class Piece:
     id: str; type: str
-    x: float; y: float; w: float; h: float      # mètres
+    x: float; y: float; w: float; h: float      # metres
 
 @dataclass(frozen=True, slots=True)
 class Ouverture:
     id: str
-    mur_id: str            # ← relatif à un mur
-    s: float               # abscisse relative ∈ [0,1]
+    mur_id: str            # ← relative to a wall
+    s: float               # relative abscissa ∈ [0,1]
     largeur_rel: float     # ∈ ]0,1]
     hauteur_allege: float = 1.00
     hauteur_linteau: float = 2.15
@@ -177,95 +177,95 @@ class Plan:
     certificat: "Certificat | None" = None
 ```
 
-**Règles absolues :**
+**Absolute rules:**
 
-- [ ] Tous les types sont `frozen=True` — **jamais de mutation en place**
-- [ ] La position **absolue** d'une ouverture n'est **jamais stockée**, toujours dérivée
-- [ ] Un plan légalisé porte **toujours** son certificat
-- [ ] `PreuveGeometrique` n'a **aucun** champ de probabilité
-- [ ] `BornePerformance` porte **toujours** `couverture` et `n_calibration`
+- [ ] All types are `frozen=True` — **never any in-place mutation**
+- [ ] The **absolute** position of an opening is **never stored**, always derived
+- [ ] A legalized plan **always** carries its certificate
+- [ ] `PreuveGeometrique` has **no** probability field
+- [ ] `BornePerformance` **always** carries `couverture` and `n_calibration`
 
 ---
 
 ## 7. Conventions
 
-| Point | Règle |
+| Topic | Rule |
 |---|---|
-| Unités | mètres, m², degrés (azimut) |
-| Origine | coin bas-gauche du contour, axe y vers le nord géographique |
-| Graines | argument `seed: int` **obligatoire, sans défaut**, sur toute fonction qui échantillonne |
-| Métriques | rendent **valeur + intervalle**, jamais un scalaire nu |
-| Erreurs | exceptions typées (`OrdreIncoherent`, `Infaisable`, `InvariantViole`) — jamais `Exception` |
-| Journaux | `structlog`, journalisation structurée, jamais de texte libre |
-| Style | `ruff check` + `ruff format` + `mypy --strict` sur `src/` |
-| Language | **English** for code, API, docstrings, messages, tests and documentation. New code is English now; existing French is migrated batch by batch ([ADR 0001](../adr/0001-english-first.md), [glossary](../glossary.md)) |
+| Units | metres, m², degrees (azimuth) |
+| Origin | bottom-left corner of the outline, y axis towards geographic north |
+| Seeds | `seed: int` argument **mandatory, with no default**, on every function that samples |
+| Metrics | return **value + interval**, never a bare scalar |
+| Errors | typed exceptions (`OrdreIncoherent`, `Infaisable`, `InvariantViole`) — never `Exception` |
+| Logs | `structlog`, structured logging, never free text |
+| Style | `ruff check` + `ruff format` + `mypy --strict` on `src/` |
+| Language | **English** for code, API, docstrings, messages, tests and documentation. New code is English now; existing French is migrated batch by batch ([ADR 0001](../adr/0001-english-first.md), [glossary](../glossary.md)). This file was translated in batch E3 |
 | Tolerances | target rule, enforced from PLAN.md 1.5: declared once in `archlux/tolerances.py`, never as inline literals |
 
 ---
 
-## 8. Définition de « terminé » pour toute modification
+## 8. Definition of "done" for any change
 
-- [ ] `pytest` passe (unitaires + propriétés)
-- [ ] `ruff check .` et `mypy src/` propres
-- [ ] Aucune nouvelle dépendance dans le noyau
-- [ ] Si l'API publique change : `CHANGELOG.md` mis à jour
-- [ ] Si un invariant est ajouté : un test **par propriété** l'accompagne
-- [ ] Les budgets de performance du §9 sont respectés
+- [ ] `pytest` passes (unit + properties)
+- [ ] `ruff check .` and `mypy src/` clean
+- [ ] No new dependency in the core
+- [ ] If the public API changes: `CHANGELOG.md` updated
+- [ ] If an invariant is added: a **property-based** test comes with it
+- [ ] The performance budgets of §9 are met
 
 ---
 
-## 9. Budgets de performance (contrats, mesurés en CI)
+## 9. Performance budgets (contracts, measured in CI)
 
-| Opération | Budget | Référence |
+| Operation | Budget | Reference |
 |---|---|---|
-| Construction du polytope | < 5 ms | 15 pièces |
-| LP à froid | < 10 ms | 15 pièces |
-| LP à chaud (`depart=`) | < 3 ms | 15 pièces |
-| Légalisation classique complète | < 20 ms | 15 pièces |
-| Légalisation performantielle | < 500 ms | 15 pièces, 50 itérations au plus |
-| Certification | < 5 ms | 15 pièces |
+| Polytope construction | < 5 ms | 15 rooms |
+| Cold LP | < 10 ms | 15 rooms |
+| Warm LP (`depart=`) | < 3 ms | 15 rooms |
+| Full classical legalization | < 20 ms | 15 rooms |
+| Performance legalization | < 500 ms | 15 rooms, 50 iterations at most |
+| Certification | < 5 ms | 15 rooms |
 
-**Ce qui est mesuré, et ce qui ne l'est pas.** `benchmarks/test_budgets.py` (job CI
-`budgets`, `pytest -m budget --benchmark-only`) mesure ces budgets sur **le cas le plus
-favorable** : une grille 5 × 3 de pièces déjà valide, sans mur porteur, sans pavage,
-substitut analytique. S'y ajoutent, depuis le lot 1.2, le mode performantiel avec des
-surfaces minimales serrées (15 pièces) et un test d'échelle à 15, 50 et 100 pièces. Aucun
-budget ne couvre une entrée bruitée, `pavage=True` ni les murs porteurs : pour ces cas,
-le banc `benchmarks/guarantees/` relève des temps médians (environ 5 ms en classique,
-15 à 20 ms en performantiel sur 200 scénarios) sans en faire un contrat. Sous
-`--benchmark-disable`, un budget non mesuré est **ignoré** (skip), pas validé.
+**What is measured, and what is not.** `benchmarks/test_budgets.py` (CI job
+`budgets`, `pytest -m budget --benchmark-only`) measures these budgets on **the most
+favourable case**: a 5 × 3 grid of rooms that is already valid, with no load-bearing wall, no tiling,
+analytic surrogate. Since batch 1.2, it also covers the performance mode with tight
+minimum areas (15 rooms) and a scaling test at 15, 50 and 100 rooms. No
+budget covers a noisy input, `pavage=True` or load-bearing walls: for these cases,
+the `benchmarks/guarantees/` bench records median times (about 5 ms in classical mode,
+15 to 20 ms in performance mode over 200 scenarios) without making them a contract. Under
+`--benchmark-disable`, an unmeasured budget is **skipped**, not validated.
 
 ---
 
-## 10. Anti-patterns à refuser en revue
+## 10. Anti-patterns to reject in review
 
-| Anti-pattern | Pourquoi c'est fatal |
+| Anti-pattern | Why it is fatal |
 |---|---|
-| Image / raster en entrée du substitut | Gradient nul presque partout → optimiseur aveugle → **projet impossible** |
-| Coordonnées absolues pour les ouvertures | Désynchronisation murs/fenêtres |
-| `lmo` qui connaît la lumière | Casse la réutilisation du solveur, cœur de l'architecture |
-| Jeu de calibration lu à l'entraînement | **Garantie conforme fausse, et rien ne le signale** |
-| Métrique rendant un scalaire nu | Viole le principe « aucune valeur sans incertitude » |
-| Mutation d'un `Plan` | Les types sont gelés ; contourner = bogue |
-| `np.quantile(scores, 0.90)` en conforme | Il faut `ceil((n+1)*(1-α))/n` — correction d'échantillon fini |
-| LP sans `depart=` dans la boucle FW | ×3 à ×5 de temps perdu |
+| Image / raster as surrogate input | Gradient zero almost everywhere → blind optimizer → **project impossible** |
+| Absolute coordinates for openings | Walls/windows out of sync |
+| `lmo` that knows about daylight | Breaks the reuse of the solver, the heart of the architecture |
+| Calibration set read during training | **False conformal guarantee, and nothing reports it** |
+| Metric returning a bare scalar | Violates the "no value without uncertainty" principle |
+| Mutation of a `Plan` | Types are frozen; working around it = bug |
+| `np.quantile(scores, 0.90)` in conformal | Must be `ceil((n+1)*(1-α))/n` — finite-sample correction |
+| LP without `depart=` in the FW loop | ×3 to ×5 time wasted |
 
 ---
 
-## 11. Arborescence
+## 11. Directory layout
 
-État du dépôt (lot 1.8). Les noms français sont migrés lot par lot (ADR 0001) ; les
-anciens noms publics restent en alias dépréciés jusqu'à la 1.0.0.
+Repository state (batch 1.8). French names are migrated batch by batch (ADR 0001); the
+old public names remain as deprecated aliases until 1.0.0.
 
 ```
 archlux/
 ├── pyproject.toml
 ├── src/archlux/
-│   ├── __init__.py          # interface publique UNIQUEMENT
-│   ├── _version.py          # source unique de la version
+│   ├── __init__.py          # public interface ONLY
+│   ├── _version.py          # single source of the version
 │   ├── api.py               # legalize
-│   ├── erreurs.py           # exceptions typées
-│   ├── tolerances.py        # registre des tolérances numériques
+│   ├── erreurs.py           # typed exceptions
+│   ├── tolerances.py        # registry of numerical tolerances
 │   ├── types.py
 │   ├── geom/{graphe,polytope,pavage,rectilineaire,diagnostic}.py
 │   ├── lmo/{solveur,coupes}.py
@@ -273,7 +273,7 @@ archlux/
 │   ├── light/{protocole,analytique,appris,base,jetons,objectif,simulateur,validation}.py
 │   ├── orient/circulaire.py
 │   ├── uq/{conforme,gestion,derive,fiabilite}.py
-│   ├── certify/{proof,farkas,borne,dual,rapport}.py   # preuve.py : alias dépréciés
+│   ├── certify/{proof,farkas,borne,dual,rapport}.py   # preuve.py: deprecated aliases
 │   ├── feasibility/__init__.py
 │   ├── active/{boucle,densite,selection}.py
 │   ├── data/{chargeurs,corruption,decoupage,dedup,imputation,synthese}.py
@@ -283,25 +283,25 @@ archlux/
 ├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependances.py,
 │                                                #   test_hygiene.py, test_language.py
 ├── benchmarks/{test_budgets.py,guarantees/}
-├── experiences/            # scripts d'expérience (jalons 2 à 9)
-├── resultats/              # résultats bruts et tables publiées
-├── scripts/                # préparation des données, étiquetage par l'oracle gelé
-└── splits/v1/              # découpage figé
+├── experiences/            # experiment scripts (milestones 2 to 9)
+├── resultats/              # raw results and published tables
+├── scripts/                # data preparation, labelling by the frozen oracle
+└── splits/v1/              # frozen split
 ```
 
-**Règle :** un script dans `experiences/` de plus de 50 lignes signale une fonction
-manquante dans la bibliothèque. Elle n'est pas tenue aujourd'hui (`j8_generation.py` :
-443 lignes ; onze scripts sur treize dépassent 50 lignes) : dette connue.
+**Rule:** a script in `experiences/` longer than 50 lines signals a function
+missing from the library. It does not hold today (`j8_generation.py`:
+443 lines; eleven scripts out of thirteen exceed 50 lines): known debt.
 
 ---
 
-## 12. Ordre d'implémentation
+## 12. Implementation order
 
-| Jalon | Contenu | Livrable |
+| Milestone | Content | Deliverable |
 |---|---|---|
-| 1 | `types`, `io` | aller-retour JSON |
-| **2** | **`geom`, `lmo`, `certify.proof`** | **légalisation classique — voir `MILESTONE-2.md`** |
-| **3** | **`light.analytique`, `orient`, `solve`** | **légalisation performantielle sans apprentissage — `MILESTONE-3.md`** |
-| 4 | `light.appris`, `light.validation` | substitut entraîné + validation du gradient contre `SplitFluxOracle` (forme fermée split-flux) — `MILESTONE-4.md` |
-| 5 | `uq`, `certify.borne`, `certify.dual` | certificat complet — `MILESTONE-5.md` |
-| 6 | pièces en L (fusions de rectangles), actif, export IFC ; **le non-Manhattan n'est pas livré** (un porteur oblique lève `UnsupportedInput`) | `MILESTONE-6.md` |
+| 1 | `types`, `io` | JSON round trip |
+| **2** | **`geom`, `lmo`, `certify.proof`** | **classical legalization — see `MILESTONE-2.md`** |
+| **3** | **`light.analytique`, `orient`, `solve`** | **performance legalization without learning — `MILESTONE-3.md`** |
+| 4 | `light.appris`, `light.validation` | trained surrogate + gradient validation against `SplitFluxOracle` (split-flux closed form) — `MILESTONE-4.md` |
+| 5 | `uq`, `certify.borne`, `certify.dual` | complete certificate — `MILESTONE-5.md` |
+| 6 | L-shaped rooms (unions of rectangles), active, IFC export; **non-Manhattan is not delivered** (an oblique load-bearing wall raises `UnsupportedInput`) | `MILESTONE-6.md` |

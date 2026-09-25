@@ -1,66 +1,66 @@
-# Contribuer à archlux
+# Contributing to archlux
 
-Merci. Avant toute contribution, lire
+Thank you. Before any contribution, read
 [`docs/specification/ARCHITECTURE.md`](docs/specification/ARCHITECTURE.md)
-et [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md).
+and [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md).
 
-## Principes non négociables
+## Non-negotiable principles
 
-1. **Géométrie exacte ; lumière probabiliste.** Ne jamais confondre les deux
-   natures dans les types, messages d'erreur, certificats ou documentation.
-2. **Règles de dépendance** (`ARCHITECTURE.md` §5) : vérifiées par
-   `tests/test_dependances.py`. En particulier :
-   - `geom`, `lmo`, `solve`, `certify` **n'importent jamais** `torch` ;
-   - `lmo` n'importe pas `light` ;
-   - `light` n'importe pas `geom` / `lmo` / `solve` ;
-   - personne n'importe `bench` depuis le noyau ;
-   - `active` n'importe que `light.protocole`, jamais une implémentation.
-3. Une fonction **publique** sans docstring NumPy n'est pas terminée.
-4. Une graine d'aléa a **toujours** un paramètre explicite, sans défaut.
+1. **Exact geometry; probabilistic light.** Never confuse the two
+   kinds in types, error messages, certificates or documentation.
+2. **Dependency rules** (`ARCHITECTURE.md` §5): checked by
+   `tests/test_dependances.py`. In particular:
+   - `geom`, `lmo`, `solve`, `certify` **never import** `torch`;
+   - `lmo` does not import `light`;
+   - `light` does not import `geom` / `lmo` / `solve`;
+   - nobody imports `bench` from the core;
+   - `active` imports only `light.protocole`, never an implementation.
+3. A **public** function without a NumPy docstring is not finished.
+4. A random seed **always** has an explicit parameter, with no default.
 5. **English-first.** All new code, docstrings, messages and documentation are
    written in English, using the terms of `docs/glossary.md`. Existing French code
    is migrated batch by batch; a rename and a refactor never share a commit
    (`docs/adr/0001-english-first.md`).
 
-## Comment travailler
+## How to work
 
-1. Ouvrir une issue (ou commenter une issue existante) avant un changement
-   structurel.
-2. Une PR = une intention. Préférer plusieurs micro-commits à un monolithe.
-3. Les tests d'abord pour un comportement nouveau (`tests/unites/`,
-   `tests/proprietes/`). Les seams publics seulement.
-4. Après du Python non trivial : relancer au minimum
-   `pytest tests/test_dependances.py` et les tests du module touché ;
-   `ruff check` + `mypy` sur les fichiers modifiés.
-5. La documentation du comportement nouveau (galerie, formule ou concept)
-   fait partie de la définition de « terminé ».
+1. Open an issue (or comment on an existing issue) before a structural
+   change.
+2. One PR = one intent. Prefer several micro-commits to a monolith.
+3. Tests first for new behaviour (`tests/unites/`,
+   `tests/proprietes/`). Public seams only.
+4. After non-trivial Python: rerun at least
+   `pytest tests/test_dependances.py` and the tests of the touched module;
+   `ruff check` + `mypy` on the modified files.
+5. Documentation of new behaviour (gallery, formula or concept)
+   is part of the definition of "done".
 
-## Gouvernance
+## Governance
 
-| Décision | Qui | Où |
+| Decision | Who | Where |
 |---|---|---|
-| Changement de couche / dépendance | Mainteneurs | Issue + ADR dans le blueprint si durable |
-| Rupture d'API publique (`archlux.__all__`) | Mainteneurs | Version **majeure** |
-| Correctif / doc / test | Tout contributeur | PR revue |
-| Version | Mainteneurs | `CHANGELOG.md` (Keep a Changelog) + semver |
+| Layer / dependency change | Maintainers | Issue + ADR in the blueprint if lasting |
+| Public API break (`archlux.__all__`) | Maintainers | **Major** version |
+| Fix / doc / test | Any contributor | Reviewed PR |
+| Release | Maintainers | `CHANGELOG.md` (Keep a Changelog) + semver |
 
-**Revue.** Au moins une relecture pour les PR qui touchent `geom`, `lmo`,
-`solve`, `certify`, `uq` ou `tests/test_dependances.py`. Une PR qui casse
-`test_le_noyau_n_importe_pas_torch` est refusée sans discussion.
+**Review.** At least one review for PRs that touch `geom`, `lmo`,
+`solve`, `certify`, `uq` or `tests/test_dependances.py`. A PR that breaks
+`test_le_noyau_n_importe_pas_torch` is rejected without discussion.
 
-**Versions.** Semver. Tout changement de comportement de l'oracle (`lmo`) ou
-du certificat (`certify`) est une **version majeure** : un certificat produit
-en `1.2.0` doit rester reproductible en `1.2.x`.
+**Versions.** Semver. Any change in the behaviour of the oracle (`lmo`) or
+of the certificate (`certify`) is a **major version**: a certificate produced
+with `1.2.0` must remain reproducible with `1.2.x`.
 
-## Structure utile
+## Useful structure
 
-| Chemin | Rôle |
+| Path | Role |
 |---|---|
 | `src/archlux/` | Code |
-| `tests/` | Unités, propriétés, budgets |
-| `docs/` | Site MkDocs (`mkdocs build --strict`) |
-| `docs/specification/ARCHITECTURE.md` | Règles contraignantes |
-| `experiences/` | Scripts de reproduction des tableaux |
+| `tests/` | Units, properties, budgets |
+| `docs/` | MkDocs site (`mkdocs build --strict`) |
+| `docs/specification/ARCHITECTURE.md` | Binding rules |
+| `experiences/` | Scripts reproducing the tables |
 
 ## AI-assisted development
 
@@ -72,7 +72,7 @@ The skills those agents load are **third-party** (see `skills-lock.json` for sou
 hashes) and are **not** redistributed in this repository. Reinstall them with your agent
 tooling from `skills-lock.json`. Local session state (`session_memory.json`) is ignored.
 
-## Licence
+## License
 
-En contribuant, vous acceptez que vos contributions soient publiées sous
-**Apache-2.0** (voir [`LICENSE`](LICENSE)).
+By contributing, you agree that your contributions are published under
+**Apache-2.0** (see [`LICENSE`](LICENSE)).

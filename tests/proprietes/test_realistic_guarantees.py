@@ -12,6 +12,7 @@ it.
 from __future__ import annotations
 
 from hypothesis import given, settings
+from hypothesis import strategies as st
 
 import archlux
 from archlux.erreurs import ArchluxError
@@ -21,11 +22,13 @@ from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.types import Contexte, Plan
 from tests import checkers
-from tests.proprietes.strategies import realistic_scenarios
+from tests.proprietes.strategies import GATE_EXAMPLES, realistic_scenarios
 
 # One failure per test, so that ``xfail(raises=...)`` sees a plain exception rather than
 # an ExceptionGroup of several distinct bugs.
-_SETTINGS = settings(max_examples=60, deadline=None, derandomize=True, report_multiple_bugs=False)
+_SETTINGS = settings(
+    max_examples=GATE_EXAMPLES, deadline=None, derandomize=True, report_multiple_bugs=False
+)
 
 
 def _independent_violations(result: Plan, ctx: Contexte) -> list[str]:
@@ -52,17 +55,27 @@ def test_classic_legalization_keeps_every_guarantee(scenario: tuple[Plan, Contex
 
 
 @_SETTINGS
-@given(scenario=realistic_scenarios())
-def test_legalize_never_certifies_a_broken_guarantee(scenario: tuple[Plan, Contexte]) -> None:
+@given(
+    scenario=realistic_scenarios(),
+    budget=st.none() | st.floats(min_value=0.05, max_value=1.0),
+)
+def test_legalize_never_certifies_a_broken_guarantee(
+    scenario: tuple[Plan, Contexte], budget: float | None
+) -> None:
     """The central promise: either an honest, typed refusal or a plan that keeps every
-    exact guarantee. Never a certificate that lies (PLAN.md phase 1 exit criterion)."""
+    exact guarantee, the budget included. Never a certificate that lies.
+
+    PLAN.md phase 1 exit criterion, with load-bearing walls, minimum areas and a
+    budget: run it with ``ARCHLUX_GATE_EXAMPLES=2000``."""
     plan, ctx = scenario
     for objective in (None, SubstitutAnalytique()):
         try:
-            result = archlux.legalize(plan, ctx, objective=objective)
+            result = archlux.legalize(plan, ctx, objective=objective, budget=budget)
         except ArchluxError:
             continue  # refusing is allowed; lying is not
         assert _independent_violations(result, ctx) == []
+        if budget is not None:
+            assert checkers.budget_violations(result, plan, budget) == []
 
 
 @_SETTINGS
