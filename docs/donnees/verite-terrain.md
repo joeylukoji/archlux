@@ -82,7 +82,7 @@ d'être dominée par le bruit d'échantillonnage.
 ### Option C — corpus lacunaire + imputation des baies
 
 Quand la géométrie vient d'un corpus sans baies : `data.imputation` centre une
-baie (`s = 0,5`, `largeur_rel = 0,30`) sur chaque mur nu.
+baie (`s = 0,5`, `relative_width = 0,30`) sur chaque mur nu.
 
 C'est une **hypothèse**, pas une mesure. La règle du dépôt tient toujours :
 calibrer séparément sur le sous-jeu à baies observées et sur le jeu imputé, et

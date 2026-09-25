@@ -29,7 +29,7 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
     accepted = 0
     for plan_id, plan in sorted(generer_corpus(N, seed=17).items()):
         cut = next(r.x + r.w for r in plan.pieces if r.id == "sw")
-        wall = ax.Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), porteur=True)
+        wall = ax.Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), load_bearing=True)
         ctx = ax.Context(
             structure=ax.Structure((wall,)),
             orientation=ax.Orientation(0.0),

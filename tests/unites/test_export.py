@@ -21,7 +21,7 @@ def _plan_sain() -> Plan:
             Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
             Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(Wall(id="m1", a=(0.0, 0.0), b=(12.0, 0.0), porteur=True),),
+        murs=(Wall(id="m1", a=(0.0, 0.0), b=(12.0, 0.0), load_bearing=True),),
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )
@@ -33,7 +33,7 @@ def _plan_pathologique() -> Plan:
             Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
             Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(Wall(id="nul", a=(1.0, 1.0), b=(1.0, 1.0), porteur=False),),
+        murs=(Wall(id="nul", a=(1.0, 1.0), b=(1.0, 1.0), load_bearing=False),),
         ouvertures=(),
         contour=CONTEXTE_DEFAUT.contour,
     )

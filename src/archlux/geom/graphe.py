@@ -262,7 +262,9 @@ def deduire_ordre(
     shared_sides: list[tuple[str, tuple[str, ...]]] = []
     if structure is not None:
         walls = [
-            m for m in sorted(structure.murs_porteurs, key=lambda m: m.id) if m.longueur > SNAP_M
+            m
+            for m in sorted(structure.load_bearing_walls, key=lambda m: m.id)
+            if m.longueur > SNAP_M
         ]
         for wall in walls:
             _check_axis_aligned(wall)

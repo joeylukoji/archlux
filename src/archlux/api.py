@@ -129,11 +129,11 @@ def _duaux_traduits(
 def _only_a_gap(preuve: GeometricProof, budget: float | None) -> bool:
     """The proof fails on a gap and on nothing else, read from its flags, never its text."""
     return (
-        preuve.jours
-        and not preuve.chevauchement
-        and preuve.surfaces_ok
-        and preuve.structure_preservee
-        and (budget is None or preuve.deplacement_max <= budget + SNAP_M)
+        preuve.gaps
+        and not preuve.overlap
+        and preuve.areas_ok
+        and preuve.structure_kept
+        and (budget is None or preuve.max_displacement <= budget + SNAP_M)
     )
 
 
@@ -284,7 +284,7 @@ def legalize(
 
     Guarantees
     ----------
-    - Géométrique : **exacte**. ``resultat.certificat.geometrie.valide`` est
+    - Géométrique : **exacte**. ``resultat.certificat.geometry.valide`` est
       revérifié par :func:`archlux.certify.proof.verify_exactly` avant
       retour — le solveur n'est jamais cru sur parole.
     - Performance: **none** in classic mode (``objective is None``), nor with a
@@ -441,7 +441,7 @@ def legalize(
     if objective is None:
         return replace(
             corrige,
-            certificat=Certificate(geometrie=preuve, performance=None, duaux=duaux),
+            certificat=Certificate(geometry=preuve, performance=None, duaux=duaux),
         )
 
     x0 = vectoriser(corrige, poly.index)
@@ -486,6 +486,6 @@ def legalize(
         performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
         performant,
-        certificat=Certificate(geometrie=preuve_fw, performance=performance, duaux=duaux_fw),
+        certificat=Certificate(geometry=preuve_fw, performance=performance, duaux=duaux_fw),
         trace=resultat.trace if trace else None,
     )

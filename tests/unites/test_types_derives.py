@@ -61,7 +61,7 @@ class TestOuvertureDegeneree:
     def test_un_mur_de_longueur_nulle_est_refuse(self) -> None:
         """Une direction indéfinie doit lever, jamais rendre des ``NaN`` silencieux."""
         mur = Wall(id="m", a=(2.0, 2.0), b=(2.0, 2.0))
-        baie = Opening(id="f", mur_id="m", s=0.5, largeur_rel=0.5)
+        baie = Opening(id="f", wall_id="m", s=0.5, relative_width=0.5)
         with pytest.raises(InvariantViolation, match="longueur nulle"):
             baie.segment_absolu(mur)
 
@@ -72,13 +72,13 @@ class TestCertificat:
     def test_rapport_delegue_a_certify(self) -> None:
         """La délégation produit le gabarit à deux natures, sans score composite."""
         certificat = Certificate(
-            geometrie=GeometricProof(
+            geometry=GeometricProof(
                 valide=True,
-                chevauchement=False,
-                jours=False,
-                surfaces_ok=True,
-                structure_preservee=True,
-                deplacement_max=0.0,
+                overlap=False,
+                gaps=False,
+                areas_ok=True,
+                structure_kept=True,
+                max_displacement=0.0,
             )
         )
         texte = certificat.rapport()

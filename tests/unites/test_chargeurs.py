@@ -99,8 +99,8 @@ def test_charge_un_appartement_tourne_et_le_redresse(tmp_path: Path) -> None:
     # Les baies sont relatives a leur mur, jamais absolues.
     for ouverture in appart.plan.ouvertures:
         assert 0.0 <= ouverture.s <= 1.0
-        assert 0.0 < ouverture.largeur_rel <= 1.0
-        assert ouverture.mur_id in {mur.id for mur in appart.plan.murs}
+        assert 0.0 < ouverture.relative_width <= 1.0
+        assert ouverture.wall_id in {mur.id for mur in appart.plan.murs}
 
 
 def test_referentiel_par_defaut_neutralise_la_largeur_minimale(tmp_path: Path) -> None:
@@ -114,7 +114,7 @@ def test_referentiel_par_defaut_neutralise_la_largeur_minimale(tmp_path: Path) -
     _ecrire_csv(csv, _appartement_deux_pieces())
     appart = next(iter(charger_msd(csv)))
     assert appart.contexte.referentiel.largeur_min == 0.0
-    assert appart.contexte.referentiel.aires_min == ()
+    assert appart.contexte.referentiel.min_areas == ()
 
 
 def test_legalize_est_idempotent_sur_un_plan_reel_valide(tmp_path: Path) -> None:
@@ -130,9 +130,9 @@ def test_legalize_est_idempotent_sur_un_plan_reel_valide(tmp_path: Path) -> None
     assert verify_exactly(appart.plan, appart.contexte).valide
 
     corrige = ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)
-    preuve = corrige.certificat.geometrie
+    preuve = corrige.certificat.geometry
     assert preuve.valide
-    assert preuve.deplacement_max == pytest.approx(0.0, abs=1e-9)
+    assert preuve.max_displacement == pytest.approx(0.0, abs=1e-9)
 
 
 def test_largeur_minimale_heritee_deforme_un_plan_reel(tmp_path: Path) -> None:
@@ -144,7 +144,7 @@ def test_largeur_minimale_heritee_deforme_un_plan_reel(tmp_path: Path) -> None:
     """
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
-    etroit = Regulation(aires_min=(), largeur_min=6.0)  # plus large que les pieces
+    etroit = Regulation(min_areas=(), largeur_min=6.0)  # plus large que les pieces
     appart = next(iter(charger_msd(csv, referentiel=etroit)))
     with pytest.raises(ax.ArchluxError):
         ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)

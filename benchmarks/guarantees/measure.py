@@ -225,7 +225,7 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
     found = checkers.violations(result, scenario.context)
     if mode.budget is not None:
         found += checkers.budget_violations(result, given, mode.budget)
-    certified = bool(result.certificat and result.certificat.geometrie.valide)
+    certified = bool(result.certificat and result.certificat.geometry.valide)
     outcome: Outcome = (
         "ok" if not found else "false_certificate" if certified else "invalid_but_flagged"
     )
@@ -268,7 +268,7 @@ def _gallery(
             given,
             result,
             contour=context_of[case.scenario].contour,
-            walls=context_of[case.scenario].structure.murs_porteurs,
+            walls=context_of[case.scenario].structure.load_bearing_walls,
             titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
         _write(folder / name, svg)

@@ -105,8 +105,8 @@ class Wall:
     id: str
     a: Point
     b: Point
-    porteur: bool = False
-    epaisseur: float = 0.10
+    load_bearing: bool = False
+    thickness: float = 0.10
 
     @property
     def longueur(self) -> float:
@@ -131,19 +131,20 @@ class Opening:
     """
 
     id: str
-    mur_id: str
+    wall_id: str
     s: float
-    largeur_rel: float
-    hauteur_allege: float = 1.00
-    hauteur_linteau: float = 2.15
+    relative_width: float
+    sill_height: float = 1.00
+    head_height: float = 2.15
 
     def __post_init__(self) -> None:
-        """Refuse ``s`` outside ``[0, 1]`` and ``largeur_rel`` outside ``]0, 1]``."""
+        """Refuse ``s`` outside ``[0, 1]`` and ``relative_width`` outside ``]0, 1]``."""
         if not 0.0 <= self.s <= 1.0:
             raise InvalidInput(f"ouvertures[{self.id}].s", f"must be in [0, 1], got {self.s}")
-        if not 0.0 < self.largeur_rel <= 1.0:
+        if not 0.0 < self.relative_width <= 1.0:
             raise InvalidInput(
-                f"ouvertures[{self.id}].largeur_rel", f"must be in ]0, 1], got {self.largeur_rel}"
+                f"ouvertures[{self.id}].largeur_rel",
+                f"must be in ]0, 1], got {self.relative_width}",
             )
 
     def segment_absolu(self, mur: Wall) -> tuple[Point, Point]:
@@ -152,7 +153,7 @@ class Opening:
         Parameters
         ----------
         mur : Mur
-            Le mur portant cette ouverture ; son ``id`` doit valoir ``self.mur_id``.
+            Le mur portant cette ouverture ; son ``id`` doit valoir ``self.wall_id``.
 
         Returns
         -------
@@ -162,7 +163,7 @@ class Opening:
         Raises
         ------
         InvariantViolation
-            Si ``mur.id`` ne correspond pas à ``self.mur_id``.
+            Si ``mur.id`` ne correspond pas à ``self.wall_id``.
 
         Complexity
         ----------
@@ -175,9 +176,9 @@ class Opening:
         >>> Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.2).segment_absolu(mur)
         ((4.0, 0.0), (6.0, 0.0))
         """
-        if mur.id != self.mur_id:
+        if mur.id != self.wall_id:
             raise InvariantViolation(
-                (f"ouverture {self.id} portée par {self.mur_id}, dérivée sur {mur.id}",)
+                (f"ouverture {self.id} portée par {self.wall_id}, dérivée sur {mur.id}",)
             )
         (ax, ay), (bx, by) = mur.a, mur.b
         longueur = mur.longueur
@@ -187,7 +188,7 @@ class Opening:
             raise InvariantViolation((f"mur {mur.id} de longueur nulle",))
         ux, uy = (bx - ax) / longueur, (by - ay) / longueur
         cx, cy = ax + (bx - ax) * self.s, ay + (by - ay) * self.s
-        demi = self.largeur_rel * longueur / 2.0
+        demi = self.relative_width * longueur / 2.0
         return ((cx - demi * ux, cy - demi * uy), (cx + demi * ux, cy + demi * uy))
 
 
@@ -282,7 +283,7 @@ class Plan:
         """Draw the plan as a standalone SVG file, valid or not (the diagnostic use).
 
         Facade over :func:`archlux.export.svg.rendre` (exported as ``render_svg``).
-        ``walls`` adds walls to draw, typically ``ctx.structure.murs_porteurs``.
+        ``walls`` adds walls to draw, typically ``ctx.structure.load_bearing_walls``.
         """
         from archlux.export import render_svg
 
@@ -313,7 +314,7 @@ class Regulation:
     jamais demander de modifier ``geom`` ou ``lmo``.
     """
 
-    aires_min: tuple[tuple[str, float], ...]
+    min_areas: tuple[tuple[str, float], ...]
     largeur_min: float = 1.80
 
     def a_min(self, type_piece: str) -> float:
@@ -335,7 +336,7 @@ class Regulation:
         ----------
         O(k), k = nombre de types réglementés — une poignée en pratique.
         """
-        for type_connu, seuil in self.aires_min:
+        for type_connu, seuil in self.min_areas:
             if type_connu == type_piece:
                 return seuil
         return 0.0
@@ -345,8 +346,8 @@ class Regulation:
 class Structure:
     """Structure porteuse : ce que le solveur n'a pas le droit de déplacer."""
 
-    murs_porteurs: tuple[Wall, ...]
-    poteaux: tuple[Point, ...] = ()
+    load_bearing_walls: tuple[Wall, ...]
+    columns: tuple[Point, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -381,11 +382,11 @@ class GeometricProof:
     """
 
     valide: bool
-    chevauchement: bool
-    jours: bool
-    surfaces_ok: bool
-    structure_preservee: bool
-    deplacement_max: float
+    overlap: bool
+    gaps: bool
+    areas_ok: bool
+    structure_kept: bool
+    max_displacement: float
     violations: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -394,13 +395,13 @@ class GeometricProof:
         ``inf`` is allowed: an unbounded displacement is how an invalid proof reports a
         NaN reference.
         """
-        if not self.deplacement_max >= 0.0:
-            raise InvalidInput("deplacement_max", f"must be >= 0, got {self.deplacement_max}")
+        if not self.max_displacement >= 0.0:
+            raise InvalidInput("max_displacement", f"must be >= 0, got {self.max_displacement}")
         if self.valide and (
-            self.chevauchement
-            or self.jours
-            or not self.surfaces_ok
-            or not self.structure_preservee
+            self.overlap
+            or self.gaps
+            or not self.areas_ok
+            or not self.structure_kept
             or self.violations
         ):
             raise InvalidInput(
@@ -435,7 +436,7 @@ class PerformanceBound:
     indicateur: Indicateur
     valeur: float
     borne_inf: float
-    borne_sup: float
+    upper: float
     couverture: float
     n_calibration: int
     regime: Regime
@@ -448,8 +449,8 @@ class PerformanceBound:
             raise InvariantViolation((f"couverture hors ]0, 1] : {self.couverture}",))
         if self.regime not in REGIMES:
             raise InvariantViolation((f"unknown regime {self.regime!r}, expected {REGIMES}",))
-        if not self.borne_inf <= self.borne_sup:
-            raise InvariantViolation((f"inverted interval: {self.borne_inf} > {self.borne_sup}",))
+        if not self.borne_inf <= self.upper:
+            raise InvariantViolation((f"inverted interval: {self.borne_inf} > {self.upper}",))
 
     @property
     def coverage_guaranteed(self) -> bool:
@@ -517,7 +518,7 @@ class Certificate:
         4.1)``. Jamais un indice de ligne nu.
     """
 
-    geometrie: GeometricProof
+    geometry: GeometricProof
     performance: PerformanceBound | None = None
     duaux: tuple[tuple[str, float], ...] = ()
     manifeste: Manifest | None = None

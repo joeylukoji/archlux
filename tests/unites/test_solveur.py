@@ -19,10 +19,10 @@ from archlux.lmo.solveur import resoudre
 from archlux.types import Context, Orientation, Regulation, Structure
 
 CTX = Context(
-    structure=Structure(murs_porteurs=()),
+    structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Regulation(aires_min=(), largeur_min=1.5),
+    referentiel=Regulation(min_areas=(), largeur_min=1.5),
 )
 
 ORDRE_1 = OrdreRelatif(horizontal=(), vertical=(), pieces=("A",))
@@ -95,10 +95,10 @@ class TestInfeasible:
     def _polytope_surcontraint() -> object:
         """Deux pièces de 2 m minimum côte à côte dans un contour de 3 m."""
         ctx = Context(
-            structure=Structure(murs_porteurs=()),
+            structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
             contour=((0.0, 0.0), (3.0, 0.0), (3.0, 8.0), (0.0, 8.0)),
-            referentiel=Regulation(aires_min=(), largeur_min=2.0),
+            referentiel=Regulation(min_areas=(), largeur_min=2.0),
         )
         return construire_polytope(ORDRE_AB, ctx)
 

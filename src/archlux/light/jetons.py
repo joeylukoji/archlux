@@ -96,10 +96,10 @@ def _jeton_ouverture(
     jeton[22:28] = np.concatenate(
         [
             encode(azimut_mur, harmoniques=1),
-            np.array([ouv.s, ouv.largeur_rel, ouv.hauteur_linteau, 1.0], dtype=float),
+            np.array([ouv.s, ouv.relative_width, ouv.head_height, 1.0], dtype=float),
         ]
     )
-    jeton[28] = ouv.hauteur_allege
+    jeton[28] = ouv.sill_height
     return jeton
 
 
@@ -129,7 +129,7 @@ def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     murs_par_id = {mur.id: mur for mur in plan.murs}
     extra: list[np.ndarray] = []
     for ouv in plan.ouvertures:
-        mur = murs_par_id.get(ouv.mur_id)
+        mur = murs_par_id.get(ouv.wall_id)
         if mur is None:
             continue
         extra.append(_jeton_ouverture(ouv, mur, float(n), aire_totale, ctx.orientation))
@@ -185,9 +185,9 @@ def vecteur_vers_jetons(
     if baies is not None and not baies.vide:
         murs_par_id = {mur.id: mur for mur in baies.murs}
         extra = [
-            _jeton_ouverture(ouv, murs_par_id[ouv.mur_id], float(n), aire_totale, orientation)
+            _jeton_ouverture(ouv, murs_par_id[ouv.wall_id], float(n), aire_totale, orientation)
             for ouv in baies.ouvertures
-            if ouv.mur_id in murs_par_id
+            if ouv.wall_id in murs_par_id
         ]
         if extra:
             jetons = np.vstack((jetons, np.stack(extra)))

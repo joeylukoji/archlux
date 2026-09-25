@@ -19,7 +19,7 @@ from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 def test_un_plan_valide_passe(plan: Plan) -> None:
     preuve = verify_exactly(plan, CONTEXTE_DEFAUT)
     assert preuve.valide
-    assert preuve.chevauchement is False
-    assert preuve.jours is False
-    assert preuve.surfaces_ok
-    assert preuve.structure_preservee
+    assert preuve.overlap is False
+    assert preuve.gaps is False
+    assert preuve.areas_ok
+    assert preuve.structure_kept

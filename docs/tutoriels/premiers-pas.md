@@ -25,15 +25,15 @@ plan = ax.Plan(
     contour=contour,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     contour=contour,
-    referentiel=ax.Regulation(aires_min=(), largeur_min=1.0),
+    referentiel=ax.Regulation(min_areas=(), largeur_min=1.0),
 )
 
 q = ax.legalize(plan, ctx)
 assert q.certificat is not None
-assert q.certificat.geometrie.valide
+assert q.certificat.geometry.valide
 assert q.certificat.performance is None  # légalisation classique : pas de borne
 print(q.certificat.rapport())
 ```
@@ -68,7 +68,7 @@ Path("sortie_generateur.json").write_text(
 
 plan = ax.Plan.from_json("sortie_generateur.json")
 q = ax.legalize(plan, ctx, pavage=True)
-assert q.certificat is not None and q.certificat.geometrie.valide
+assert q.certificat is not None and q.certificat.geometry.valide
 q.to_json("plan_legalise.json")
 ```
 

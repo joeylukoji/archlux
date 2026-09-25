@@ -37,7 +37,7 @@ ctx_s = ax.Context(
 q_l1 = ax.legalize(plan, ctx_n)
 q_n = ax.legalize(plan, ctx_n, objective=SubstitutAnalytique())
 q_s = ax.legalize(plan, ctx_s, objective=SubstitutAnalytique())
-print(q_l1.certificat.geometrie.valide)
+print(q_l1.certificat.geometry.valide)
 print(q_n.pieces == q_s.pieces)
 ```
 

@@ -120,7 +120,7 @@ def violations(
                 Violation("area", f"{room.id}: area {room.w * room.h:.6f} < {minimum:.6f}")
             )
 
-    for wall in ctx.structure.murs_porteurs:
+    for wall in ctx.structure.load_bearing_walls:
         (xa, ya), (xb, yb) = wall.a, wall.b
         vertical, horizontal = abs(xa - xb) < TOLERANCE, abs(ya - yb) < TOLERANCE
         if not (vertical or horizontal):

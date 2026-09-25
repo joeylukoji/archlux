@@ -37,7 +37,7 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
     Codes
     -----
     ``arete_nulle``, ``sommets_dupliques``, ``auto_intersection``,
-    ``solide_non_ferme``, ``chevauchement``, ``dimension_non_positive``,
+    ``solide_non_ferme``, ``overlap``, ``dimension_non_positive``,
     ``ouverture_orpheline`` (an opening on a wall absent from ``plan.murs``: IFC4 wants
     every ``IfcOpeningElement`` to void an element).
     """
@@ -63,7 +63,7 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
 
     walls = {mur.id for mur in plan.murs}
     trouves.extend(
-        f"ouverture_orpheline:{ouv.id}" for ouv in plan.ouvertures if ouv.mur_id not in walls
+        f"ouverture_orpheline:{ouv.id}" for ouv in plan.ouvertures if ouv.wall_id not in walls
     )
 
     if plan.contour:

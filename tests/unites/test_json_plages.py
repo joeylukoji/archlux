@@ -19,7 +19,7 @@ from archlux.types import Opening, Plan, Room, Wall
 PLAN = Plan(
     pieces=(Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
     murs=(Wall(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
-    ouvertures=(Opening(id="f", mur_id="m", s=0.5, largeur_rel=0.2),),
+    ouvertures=(Opening(id="f", wall_id="m", s=0.5, relative_width=0.2),),
     contour=((0.0, 0.0), (4.0, 0.0), (4.0, 3.5), (0.0, 3.5)),
 )
 
@@ -35,7 +35,7 @@ def _avec(chemin: list[str | int], valeur: object) -> dict:
 
 
 class TestPlagesOuverture:
-    """`s ∈ [0, 1]` et `largeur_rel ∈ ]0, 1]`."""
+    """`s ∈ [0, 1]` et `relative_width ∈ ]0, 1]`."""
 
     @pytest.mark.parametrize("s", [-0.01, 1.5])
     def test_abscisse_hors_plage(self, s: float) -> None:
@@ -55,9 +55,9 @@ class TestPlagesOuverture:
             depuis_dict(_avec(["ouvertures", 0, "largeur_rel"], largeur))
 
     def test_une_baie_pleine_largeur_est_licite(self) -> None:
-        """``largeur_rel = 1`` est la borne haute, incluse."""
+        """``relative_width = 1`` est la borne haute, incluse."""
         relu = depuis_dict(_avec(["ouvertures", 0, "largeur_rel"], 1.0))
-        assert relu.ouvertures[0].largeur_rel == 1.0
+        assert relu.ouvertures[0].relative_width == 1.0
 
 
 class TestPlagesPiece:

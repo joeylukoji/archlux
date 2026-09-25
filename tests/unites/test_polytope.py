@@ -30,10 +30,10 @@ from archlux.types import (
 )
 
 CTX = Context(
-    structure=Structure(murs_porteurs=()),
+    structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Regulation(aires_min=(("sdb", 5.0),), largeur_min=1.5),
+    referentiel=Regulation(min_areas=(("sdb", 5.0),), largeur_min=1.5),
 )
 
 ORDRE_AB = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B"))
@@ -245,10 +245,10 @@ class TestRefus:
     def test_un_contour_plat_est_refuse(self) -> None:
         """Un contour d'aire nulle donnerait des bornes vides sans le dire."""
         ctx = Context(
-            structure=Structure(murs_porteurs=()),
+            structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
             contour=((0.0, 0.0), (10.0, 0.0), (10.0, 0.0)),
-            referentiel=Regulation(aires_min=()),
+            referentiel=Regulation(min_areas=()),
         )
         with pytest.raises(InvariantViolation, match="dégénéré"):
             construire_polytope(ORDRE_AB, ctx)
@@ -257,10 +257,10 @@ class TestRefus:
 def test_un_contour_degenere_est_refuse() -> None:
     """Un contour vide n'a pas d'enveloppe : le dire plutôt que produire des bornes nulles."""
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=(),
-        referentiel=Regulation(aires_min=()),
+        referentiel=Regulation(min_areas=()),
     )
     with pytest.raises(InvariantViolation):
         construire_polytope(ORDRE_AB, ctx)

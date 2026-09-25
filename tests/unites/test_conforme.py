@@ -47,7 +47,7 @@ def test_pas_de_borne_sans_calibration() -> None:
             indicateur="sDA",
             valeur=56.2,
             borne_inf=51.4,
-            borne_sup=61.0,
+            upper=61.0,
             couverture=0.90,
             n_calibration=0,
             regime="exchangeable",
@@ -64,7 +64,7 @@ def test_sens_ase_inverse() -> None:
     calibrateur = CalibrateurConforme(indicateur="ASE")
     calibrateur.ajuster(predictions, verites, incertitudes, alpha=0.10)
     borne = calibrateur.borne(6.1, 1.0, "<=", regime="exchangeable")
-    assert borne.borne_sup > borne.valeur
+    assert borne.upper > borne.valeur
     assert borne.indicateur == "ASE"
 
 

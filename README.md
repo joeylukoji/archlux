@@ -139,15 +139,15 @@ plan = ax.Plan(
 )
 ctx = ax.Context(
     structure=ax.Structure(
-        murs_porteurs=(ax.Wall(id="axis-3", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True),)
+        load_bearing_walls=(ax.Wall(id="axis-3", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True),)
     ),
     orientation=ax.Orientation(deg=12.0),  # north at 12 degrees east
     contour=outline,
-    referentiel=ax.Regulation(aires_min=(("bathroom", 5.0),), largeur_min=1.0),
+    referentiel=ax.Regulation(min_areas=(("bathroom", 5.0),), largeur_min=1.0),
 )
 
 repaired = ax.legalize(plan, ctx, pavage=True)
-assert repaired.certificat is not None and repaired.certificat.geometrie.valide
+assert repaired.certificat is not None and repaired.certificat.geometry.valide
 print(repaired.certificat.rapport())
 ```
 
@@ -162,7 +162,7 @@ Plans round-trip through JSON with their certificate:
 ```python
 repaired.to_json("repaired.json")
 again = ax.Plan.from_json("repaired.json")
-assert again.certificat is not None and again.certificat.geometrie.valide
+assert again.certificat is not None and again.certificat.geometry.valide
 ```
 
 ### Repair while keeping the daylight
@@ -237,10 +237,10 @@ narrow = ax.Plan(
     contour=outline,
 )
 wide_rooms = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     contour=outline,
-    referentiel=ax.Regulation(aires_min=(), largeur_min=4.5),
+    referentiel=ax.Regulation(min_areas=(), largeur_min=4.5),
 )
 verdict = ax.feasibility.is_feasible(narrow, wide_rooms.structure, wide_rooms)
 assert not verdict and verdict.certificat is not None
@@ -329,7 +329,7 @@ azimuth, and the glazing (`baies`). Shipped implementations:
 
 The input is a set of numbers per room, not an image: moving a wall by 2 cm changes no
 pixel of a coarse image, so an image-based gradient is zero almost everywhere.
-Openings are stored relative to their wall (`Opening.mur_id`, relative abscissa
+Openings are stored relative to their wall (`Opening.wall_id`, relative abscissa
 `s`); their absolute position is never stored. The solver moves rooms, never walls, and
 the glazing is passed unchanged to the surrogate during the optimization.
 

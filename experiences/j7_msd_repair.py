@@ -33,8 +33,8 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                         out = ax.legalize(
                             plan, apartment.contexte, fusions=apartment.fusions, pavage=pavage
                         )
-                        proof = out.certificat.geometrie  # type: ignore[union-attr]
-                        result = ("ok", proof.valide, f"{proof.deplacement_max:.6f}")
+                        proof = out.certificat.geometry  # type: ignore[union-attr]
+                        result = ("ok", proof.valide, f"{proof.max_displacement:.6f}")
                     except ax.ArchluxError as error:
                         result = (type(error).__name__, False, "")
                     head = (

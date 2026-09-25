@@ -17,11 +17,11 @@ def proof(**changes: object) -> GeometricProof:
     """A coherent, valid proof with ``changes`` applied."""
     fields: dict[str, object] = {
         "valide": True,
-        "chevauchement": False,
-        "jours": False,
-        "surfaces_ok": True,
-        "structure_preservee": True,
-        "deplacement_max": 0.0,
+        "overlap": False,
+        "gaps": False,
+        "areas_ok": True,
+        "structure_kept": True,
+        "max_displacement": 0.0,
         "violations": (),
     }
     fields.update(changes)
@@ -31,10 +31,10 @@ def proof(**changes: object) -> GeometricProof:
 @pytest.mark.parametrize(
     "changes",
     [
-        {"chevauchement": True},
-        {"jours": True},
-        {"surfaces_ok": False},
-        {"structure_preservee": False},
+        {"overlap": True},
+        {"gaps": True},
+        {"areas_ok": False},
+        {"structure_kept": False},
         {"violations": ("overlap a|b",)},
     ],
 )
@@ -44,28 +44,28 @@ def test_a_valid_proof_cannot_report_a_fault(changes: dict[str, object]) -> None
 
 
 def test_an_invalid_proof_may_report_anything() -> None:
-    assert not proof(valide=False, chevauchement=True, violations=("x",)).valide
+    assert not proof(valide=False, overlap=True, violations=("x",)).valide
 
 
 @pytest.mark.parametrize("value", [-0.1, math.nan])
 def test_displacement_is_never_negative_or_nan(value: float) -> None:
-    with pytest.raises(InvalidInput, match="deplacement_max"):
-        proof(deplacement_max=value)
+    with pytest.raises(InvalidInput, match="max_displacement"):
+        proof(max_displacement=value)
 
 
 def test_unbounded_displacement_is_allowed_on_an_invalid_proof() -> None:
     """The proof reports ``inf`` for a NaN reference (final review of phase 1)."""
-    assert proof(valide=False, deplacement_max=math.inf).deplacement_max == math.inf
+    assert proof(valide=False, max_displacement=math.inf).max_displacement == math.inf
 
 
 @pytest.mark.parametrize(("s", "width"), [(2.0, 0.2), (-0.1, 0.2), (0.5, 0.0), (0.5, 1.5)])
 def test_opening_ranges(s: float, width: float) -> None:
     with pytest.raises(InvalidInput):
-        Opening(id="o", mur_id="m", s=s, largeur_rel=width)
+        Opening(id="o", wall_id="m", s=s, relative_width=width)
 
 
 def test_opening_on_the_boundary_is_allowed() -> None:
-    assert Opening(id="o", mur_id="m", s=1.0, largeur_rel=1.0).s == 1.0
+    assert Opening(id="o", wall_id="m", s=1.0, relative_width=1.0).s == 1.0
 
 
 def test_a_plan_with_a_trace_is_hashable_and_equal_without_it() -> None:
@@ -85,10 +85,10 @@ def test_unknown_room_type_warns_when_the_regulation_has_thresholds() -> None:
     from archlux import legalize
 
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=SQUARE,
-        referentiel=Regulation(aires_min=(("sejour", 1.0),), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(("sejour", 1.0),), largeur_min=1.0),
     )
     typo = make_plan(type="sejuor")
     with pytest.warns(UserWarning, match="sejuor"):

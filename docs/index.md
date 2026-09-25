@@ -27,10 +27,10 @@ Path("sortie_generateur.json").write_text(
 
 plan = ax.Plan.from_json("sortie_generateur.json")
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     contour=plan.contour,
-    referentiel=ax.Regulation(aires_min=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    referentiel=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
 )
 q = ax.legalize(plan, ctx, pavage=True)  # pavage : les pièces couvrent tout le contour
 print(q.certificat.rapport())

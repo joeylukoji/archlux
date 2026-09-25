@@ -20,5 +20,5 @@ def test_toute_sortie_est_valide(plan: Plan) -> None:
     """`MILESTONE-2.md` §0 : le critère d'acceptation unique du jalon."""
     resultat = archlux.legalize(plan, CONTEXTE_DEFAUT)
     assert resultat.certificat is not None
-    assert resultat.certificat.geometrie.valide
+    assert resultat.certificat.geometry.valide
     assert resultat.certificat.performance is None

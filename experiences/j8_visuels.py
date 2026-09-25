@@ -74,13 +74,13 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
             "une infaisabilité est **prouvée**, certificat de Farkas à l'appui.",
         ]
     else:
-        geo = corrige.certificat.geometrie
+        geo = corrige.certificat.geometry
         lignes += [
             "| grandeur | valeur |",
             "|---|--:|",
             f"| valide | **{geo.valide}** |",
-            f"| déplacement max | {geo.deplacement_max:.3f} m |",
-            f"| rapporté au côté | {geo.deplacement_max / diag.cote:.0%} |",
+            f"| déplacement max | {geo.max_displacement:.3f} m |",
+            f"| rapporté au côté | {geo.max_displacement / diag.cote:.0%} |",
             f"| pièces | {len(corrige.pieces)} |",
         ]
     return "\n".join(lignes) + "\n"
@@ -101,7 +101,7 @@ def main() -> None:
         corrige, statut = None, "réparé"
         try:
             corrige = ax.legalize(plan, contexte, pavage=True, budget_reparation=BUDGET)
-            if not corrige.certificat.geometrie.valide:
+            if not corrige.certificat.geometry.valide:
                 statut = "corrigé mais invalide"
         except ax.Infeasible:
             statut = "infaisable (prouvé)"
@@ -134,7 +134,7 @@ def main() -> None:
                 titres=(
                     f"avant — {avant}",
                     f"après — {statut}, déplacement "
-                    f"{corrige.certificat.geometrie.deplacement_max:.2f} m",
+                    f"{corrige.certificat.geometry.max_displacement:.2f} m",
                 ),
             )
         nom = plan_json["id"]

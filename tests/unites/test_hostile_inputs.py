@@ -36,10 +36,10 @@ def make_plan(**changes: object) -> Plan:
 def make_context(*, degrees: float = 0.0, largeur_min: float = 1.0) -> Context:
     """Empty structure, square outline, no minimum areas."""
     return Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=degrees),
         contour=SQUARE,
-        referentiel=Regulation(aires_min=(), largeur_min=largeur_min),
+        referentiel=Regulation(min_areas=(), largeur_min=largeur_min),
     )
 
 
@@ -145,7 +145,7 @@ def test_gap_without_tiling_says_to_use_tiling() -> None:
 def test_gap_is_repaired_with_tiling() -> None:
     fixed = legalize(gapped_plan(), make_context(), pavage=True)
     assert fixed.certificat is not None
-    assert fixed.certificat.geometrie.valide
+    assert fixed.certificat.geometry.valide
 
 
 def test_public_exports_input_limits() -> None:
@@ -159,7 +159,7 @@ def test_is_feasible_answers_for_a_plan_with_a_gap() -> None:
     """3.10 (audit 8, 5c): a feasible program with a gap gives a Verdict, not an error."""
     from archlux.feasibility import is_feasible
 
-    verdict = is_feasible(gapped_plan(), Structure(murs_porteurs=()), make_context())
+    verdict = is_feasible(gapped_plan(), Structure(load_bearing_walls=()), make_context())
     assert verdict.faisable
     assert verdict.certificat is None
 
@@ -168,7 +168,7 @@ def test_is_feasible_refuses_a_malformed_program_with_invalid_input() -> None:
     from archlux.feasibility import is_feasible
 
     with pytest.raises(InvalidInput):
-        is_feasible(make_plan(w=-1.0), Structure(murs_porteurs=()), make_context())
+        is_feasible(make_plan(w=-1.0), Structure(load_bearing_walls=()), make_context())
 
 
 # --- Review of slices A to C ---------------------------------------------------------
@@ -183,11 +183,11 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
 
     silent = GeometricProof(
         valide=False,
-        chevauchement=False,
-        jours=False,
-        surfaces_ok=True,
-        structure_preservee=True,
-        deplacement_max=0.0,
+        overlap=False,
+        gaps=False,
+        areas_ok=True,
+        structure_kept=True,
+        max_displacement=0.0,
         violations=(),
     )
     monkeypatch.setattr(archlux.api, "verify_exactly", lambda *a, **k: silent)
@@ -199,14 +199,14 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
 def test_zero_wall_thickness_is_refused_as_by_the_json_reader() -> None:
     from archlux import Wall
 
-    plan = replace(make_plan(), murs=(Wall(id="m", a=(0.0, 0.0), b=(12.0, 0.0), epaisseur=0.0),))
+    plan = replace(make_plan(), murs=(Wall(id="m", a=(0.0, 0.0), b=(12.0, 0.0), thickness=0.0),))
     with pytest.raises(InvalidInput) as raised:
         legalize(plan, make_context())
     assert raised.value.field == "murs[m].epaisseur"
 
 
 def test_the_type_warning_points_at_the_caller() -> None:
-    ctx = replace(make_context(), referentiel=Regulation(aires_min=(("sejour", 1.0),)))
+    ctx = replace(make_context(), referentiel=Regulation(min_areas=(("sejour", 1.0),)))
     with pytest.warns(UserWarning, match="sejuor") as record:
         legalize(
             make_plan(type="sejuor"),
@@ -220,8 +220,8 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     from archlux import Wall
     from archlux.feasibility import is_feasible
 
-    wall = Wall(id="w", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
-    structure = Structure(murs_porteurs=(wall,))
+    wall = Wall(id="w", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True)
+    structure = Structure(load_bearing_walls=(wall,))
     ctx = replace(make_context(), structure=structure)
     plan = replace(
         make_plan(),
@@ -230,7 +230,7 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
             Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
     )
-    ctx = replace(ctx, referentiel=Regulation(aires_min=(("sejour", 60.0),), largeur_min=1.0))
+    ctx = replace(ctx, referentiel=Regulation(min_areas=(("sejour", 60.0),), largeur_min=1.0))
     verdict = is_feasible(plan, structure, ctx)
     assert not verdict
     assert verdict.certificat is not None

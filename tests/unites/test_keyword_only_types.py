@@ -65,9 +65,9 @@ def test_the_plan_keeps_its_positional_order() -> None:
 
 def context(**changes: object) -> Context:
     base = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        referentiel=Regulation(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(), largeur_min=1.0),
     )
     return replace(base, **changes)  # type: ignore[arg-type]
 
@@ -80,14 +80,14 @@ def test_legalize_reads_the_outline_from_the_plan() -> None:
     legal = legalize(Plan(pieces=rooms(), contour=SQUARE), context())
     assert legal.contour == SQUARE
     assert legal.certificat is not None
-    assert legal.certificat.geometrie.valide
+    assert legal.certificat.geometry.valide
 
 
 def test_legalize_reads_the_outline_from_the_context() -> None:
     legal = legalize(Plan(pieces=rooms()), context(contour=SQUARE))
     assert legal.contour == SQUARE
     assert legal.certificat is not None
-    assert legal.certificat.geometrie.valide
+    assert legal.certificat.geometry.valide
 
 
 def test_the_context_outline_wins_when_both_are_given() -> None:

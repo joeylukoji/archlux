@@ -110,12 +110,12 @@ def test_a_real_certificate_lists_only_business_constraints() -> None:
         ouvertures=(),
         contour=outline,
     )
-    wall = Wall(id="p1", a=(6.0, 0.0), b=(6.0, 7.0), porteur=True)
+    wall = Wall(id="p1", a=(6.0, 0.0), b=(6.0, 7.0), load_bearing=True)
     ctx = Context(
-        structure=Structure(murs_porteurs=(wall,)),
+        structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(), largeur_min=1.5),
+        referentiel=Regulation(min_areas=(), largeur_min=1.5),
     )
     duals = legalize(plan, ctx, pavage=True).certificat.duaux  # type: ignore[union-attr]
     assert duals
@@ -151,10 +151,10 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
         contour=outline,
     )
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(), largeur_min=1.0),
     )
     surrogate = SubstitutAnalytique()
     legalize(plan, ctx, objective=surrogate)

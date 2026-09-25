@@ -36,10 +36,10 @@ def _setup(w0: float, h0: float, a_min: float) -> tuple[Polytope, np.ndarray, Co
     )
     plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=_OUTLINE)
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=_OUTLINE,
-        referentiel=Regulation(aires_min=(("chambre", a_min),), largeur_min=0.5),
+        referentiel=Regulation(min_areas=(("chambre", a_min),), largeur_min=0.5),
     )
     poly = construire_polytope(deduire_ordre(plan), ctx)
     return poly, vectoriser(plan, poly.index), ctx, plan
@@ -99,7 +99,7 @@ def test_the_soundness_check_detects_a_weakened_region() -> None:
         structure=ctx.structure,
         orientation=ctx.orientation,
         contour=ctx.contour,
-        referentiel=Regulation(aires_min=(("chambre", 12.0 * 0.97),), largeur_min=0.5),
+        referentiel=Regulation(min_areas=(("chambre", 12.0 * 0.97),), largeur_min=0.5),
     )
     inner = inner_area_constraints(poly, x0, weak_ctx, plan.pieces)
     w = 4.0 * 1.25**0.5  # between two nodes
@@ -159,10 +159,10 @@ def test_performance_mode_keeps_tight_minimum_areas() -> None:
         for j in range(3)
     )
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=20.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(("chambre", 11.0),), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(("chambre", 11.0),), largeur_min=1.0),
     )
     plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)

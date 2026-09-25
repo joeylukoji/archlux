@@ -220,7 +220,7 @@ def _intervalle(
         indicateur=indicateur,
         valeur=float(prediction),
         borne_inf=float(prediction) - marge,
-        borne_sup=float(prediction) + marge,
+        upper=float(prediction) + marge,
         couverture=couverture,
         n_calibration=n_calibration,
         regime=_regime(regime),

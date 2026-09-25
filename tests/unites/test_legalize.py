@@ -35,8 +35,8 @@ def test_l1_d_un_point_faisable_est_nulle() -> None:
     )
     q = archlux.legalize(plan, CONTEXTE_DEFAUT)
     assert q.certificat is not None
-    assert q.certificat.geometrie.valide
-    assert q.certificat.geometrie.deplacement_max == pytest.approx(0.0, abs=1e-5)
+    assert q.certificat.geometry.valide
+    assert q.certificat.geometry.max_displacement == pytest.approx(0.0, abs=1e-5)
 
 
 def test_un_chevauchement_est_corrige() -> None:
@@ -56,8 +56,8 @@ def test_un_chevauchement_est_corrige() -> None:
     )
     q = archlux.legalize(plan, CONTEXTE_DEFAUT)
     assert q.certificat is not None
-    assert q.certificat.geometrie.valide
-    assert q.certificat.geometrie.chevauchement is False
+    assert q.certificat.geometry.valide
+    assert q.certificat.geometry.overlap is False
     gauche = next(p for p in q.pieces if p.id == "a")
     droite = next(p for p in q.pieces if p.id == "b")
     assert gauche.x + gauche.w <= droite.x + 1e-6
@@ -66,10 +66,10 @@ def test_un_chevauchement_est_corrige() -> None:
 def test_programme_trop_gros_leve_infaisable() -> None:
     """Deux pièces de largeur min 8 m dans 12 m d'enveloppe, côte à côte."""
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-        referentiel=Regulation(aires_min=(), largeur_min=8.0),
+        referentiel=Regulation(min_areas=(), largeur_min=8.0),
     )
     plan = Plan(
         pieces=(
@@ -95,10 +95,10 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
     sans aucun diagnostic — alors que le programme est bel et bien infaisable.
     """
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-        referentiel=Regulation(aires_min=(), largeur_min=4.0),
+        referentiel=Regulation(min_areas=(), largeur_min=4.0),
     )
     plan = Plan(
         pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
@@ -115,10 +115,10 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
 def test_polytope_sans_piece_tolere_une_enveloppe_etroite() -> None:
     """Aucune pièce : aucune variable ``w``/``h``, donc rien à déclarer infaisable."""
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-        referentiel=Regulation(aires_min=(), largeur_min=4.0),
+        referentiel=Regulation(min_areas=(), largeur_min=4.0),
     )
     vide = Plan(pieces=(), murs=(), ouvertures=(), contour=ctx.contour)
     poly = construire_polytope(deduire_ordre(vide), ctx)
@@ -151,7 +151,7 @@ def test_objective_analytique_reste_valide() -> None:
     )
     q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique())
     assert q.certificat is not None
-    assert q.certificat.geometrie.valide
+    assert q.certificat.geometry.valide
     assert q.certificat.performance is None
 
 
@@ -172,7 +172,7 @@ def test_legalize_trace_remonte_les_iteres() -> None:
     assert isinstance(q.trace, Trace)
     assert q.trace.iterates
     assert q.certificat is not None
-    assert q.certificat.geometrie.valide
+    assert q.certificat.geometry.valide
 
 
 def test_budget_zero_reste_au_point_l1() -> None:
@@ -200,10 +200,10 @@ def test_budget_zero_reste_au_point_l1() -> None:
 def test_une_surface_insuffisante_est_agrandie() -> None:
     """Kelley + AM-GM : une pièce 2×9 = 18 m² sous a_min = 20 m² est dilatée."""
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=CONTEXTE_DEFAUT.contour,
-        referentiel=Regulation(aires_min=(("sdb", 20.0),), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(("sdb", 20.0),), largeur_min=1.0),
     )
     plan = Plan(
         pieces=(
@@ -218,7 +218,7 @@ def test_une_surface_insuffisante_est_agrandie() -> None:
     sdb = next(p for p in q.pieces if p.id == "sdb")
     assert sdb.aire >= 20.0 - 1e-6
     assert q.certificat is not None
-    assert q.certificat.geometrie.valide
+    assert q.certificat.geometry.valide
 
 
 def test_etendre_l1_double_les_variables() -> None:

@@ -20,7 +20,7 @@ def test_the_load_bearing_wall_spans_the_building() -> None:
     """The first cut is a full-span bearing partition present in the plan."""
     for index in range(50):
         scenario = generate(seed=17, index=index)
-        (wall,) = scenario.context.structure.murs_porteurs
+        (wall,) = scenario.context.structure.load_bearing_walls
         xs = [x for x, _ in scenario.context.contour]
         ys = [y for _, y in scenario.context.contour]
         span = abs(wall.a[0] - wall.b[0]) + abs(wall.a[1] - wall.b[1])

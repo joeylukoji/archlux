@@ -11,7 +11,7 @@ import pytest
 from archlux.types import Regulation
 
 REFERENTIEL_FR = Regulation(
-    aires_min=(("sejour", 9.0), ("chambre", 9.0), ("sdb", 5.0), ("cuisine", 6.0)),
+    min_areas=(("sejour", 9.0), ("chambre", 9.0), ("sdb", 5.0), ("cuisine", 6.0)),
     largeur_min=1.80,
 )
 

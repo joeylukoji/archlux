@@ -92,19 +92,19 @@ def _walls(plan: Plan) -> None:
         _point(f"murs[{wall.id}].a", wall.a)
         _point(f"murs[{wall.id}].b", wall.b)
         # > 0 as in the JSON reader: the two doors must agree on what a wall is.
-        _positive(f"murs[{wall.id}].epaisseur", wall.epaisseur)
+        _positive(f"murs[{wall.id}].epaisseur", wall.thickness)
     # Openings need no check here: ``Opening`` refuses its own ranges at construction.
 
 
 def _context(ctx: Context) -> None:
     _finite("orientation.deg", ctx.orientation.deg)
     _non_negative("referentiel.largeur_min", ctx.referentiel.largeur_min)
-    for type_piece, threshold in ctx.referentiel.aires_min:
+    for type_piece, threshold in ctx.referentiel.min_areas:
         _non_negative(f"referentiel.aires_min[{type_piece}]", threshold)
-    for wall in ctx.structure.murs_porteurs:
+    for wall in ctx.structure.load_bearing_walls:
         _point(f"structure.murs_porteurs[{wall.id}].a", wall.a)
         _point(f"structure.murs_porteurs[{wall.id}].b", wall.b)
-    for index, post in enumerate(ctx.structure.poteaux):
+    for index, post in enumerate(ctx.structure.columns):
         _point(f"structure.poteaux[{index}]", post)
 
 
@@ -137,7 +137,7 @@ def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
     (``Regulation.a_min`` gives ``0.0`` for an unknown type). Only when the regulation
     lists thresholds: an empty one means "no regulation", not a typo.
     """
-    known = {type_piece for type_piece, _ in ctx.referentiel.aires_min}
+    known = {type_piece for type_piece, _ in ctx.referentiel.min_areas}
     if not known:
         return
     unknown = sorted({room.type for room in plan.pieces} - known)
@@ -181,7 +181,7 @@ def validate_inputs(
     Warns
     -----
     UserWarning
-        A room type absent from ``referentiel.aires_min`` (when it lists any).
+        A room type absent from ``referentiel.min_areas`` (when it lists any).
     """
     _rooms(plan)
     _walls(plan)

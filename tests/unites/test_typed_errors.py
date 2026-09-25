@@ -62,7 +62,7 @@ def test_unreadable_wkt_is_a_rejection_not_a_swallowed_bug() -> None:
     rejected = _convertir(
         "x",
         [("area", "Bedroom", "not a wkt", "1", "site")],
-        reglement=Regulation(aires_min=()),
+        reglement=Regulation(min_areas=()),
         max_pieces=20,
         max_rectangles=30,
         tolerance_calage=0.1,

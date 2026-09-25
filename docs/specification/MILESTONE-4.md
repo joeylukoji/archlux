@@ -186,7 +186,7 @@ aveugle, **projet impossible**. C'est le piège le plus séduisant du jalon.
 | Jeton | Attributs |
 |---|---|
 | Pièce | `x, y, w, h`, type (encodage à chaud), périmètre extérieur, compacité |
-| Ouverture | mur, `s`, `largeur_rel`, allège, linteau, **azimut du mur** |
+| Ouverture | mur, `s`, `relative_width`, allège, linteau, **azimut du mur** |
 | Global | orientation (cos/sin + harmoniques), surface totale, nombre de pièces |
 
 ```python

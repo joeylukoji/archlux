@@ -24,8 +24,8 @@ _GUID = re.compile(r"^[0-3][0-9A-Za-z_$]{21}$")
 
 def _plan() -> Plan:
     walls = (
-        Wall(id="south", a=(0.0, 0.0), b=(12.0, 0.0), porteur=True),
-        Wall(id="mid", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True),
+        Wall(id="south", a=(0.0, 0.0), b=(12.0, 0.0), load_bearing=True),
+        Wall(id="mid", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True),
     )
     return Plan(
         pieces=(
@@ -33,7 +33,7 @@ def _plan() -> Plan:
             Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         murs=walls,
-        ouvertures=(Opening(id="w1", mur_id="south", s=0.3, largeur_rel=0.2),),
+        ouvertures=(Opening(id="w1", wall_id="south", s=0.3, relative_width=0.2),),
         contour=CONTEXTE_DEFAUT.contour,
     )
 
@@ -46,7 +46,7 @@ def test_every_global_id_is_ifc_base64_and_unique(tmp_path: Path) -> None:
 
 
 def test_an_opening_on_an_unknown_wall_is_refused(tmp_path: Path) -> None:
-    orphan = Opening(id="w9", mur_id="nowhere", s=0.5, largeur_rel=0.2)
+    orphan = Opening(id="w9", wall_id="nowhere", s=0.5, relative_width=0.2)
     plan = Plan(_plan().pieces, _plan().murs, (orphan,), _plan().contour)
     assert "ouverture_orpheline:w9" in diagnostiquer(plan).pathologies
     assert not to_ifc(plan, tmp_path / "plan.ifc", validate=True).valide

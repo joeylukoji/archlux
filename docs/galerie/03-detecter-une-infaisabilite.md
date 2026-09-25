@@ -19,10 +19,10 @@ plan = ax.Plan(
     contour=contour,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     contour=contour,
-    referentiel=ax.Regulation(aires_min=(), largeur_min=8.0),
+    referentiel=ax.Regulation(min_areas=(), largeur_min=8.0),
 )
 try:
     ax.legalize(plan, ctx)

@@ -32,17 +32,17 @@ def _verdict(ok: bool) -> str:
 
 
 def _section_geometrie(preuve: GeometricProof) -> str:
-    chev = "aucun" if not preuve.chevauchement else "present"
-    jours = "aucun" if not preuve.jours else "present"
-    surfaces = "ok" if preuve.surfaces_ok else "insuffisantes"
-    structure = "oui" if preuve.structure_preservee else "non"
-    deplacement = f"{_fmt(preuve.deplacement_max)} m"
+    chev = "aucun" if not preuve.overlap else "present"
+    gaps = "aucun" if not preuve.gaps else "present"
+    surfaces = "ok" if preuve.areas_ok else "insuffisantes"
+    structure = "oui" if preuve.structure_kept else "non"
+    deplacement = f"{_fmt(preuve.max_displacement)} m"
     return (
         "GEOMETRIE                                       [EXACT]\n"
-        f"  Chevauchement          {chev:<13} {_verdict(not preuve.chevauchement)}\n"
-        f"  Jours                  {jours:<13} {_verdict(not preuve.jours)}\n"
-        f"  Surfaces minimales     {surfaces:<13} {_verdict(preuve.surfaces_ok)}\n"
-        f"  Structure preservee    {structure:<13} {_verdict(preuve.structure_preservee)}\n"
+        f"  Chevauchement          {chev:<13} {_verdict(not preuve.overlap)}\n"
+        f"  Jours                  {gaps:<13} {_verdict(not preuve.gaps)}\n"
+        f"  Surfaces minimales     {surfaces:<13} {_verdict(preuve.areas_ok)}\n"
+        f"  Structure preservee    {structure:<13} {_verdict(preuve.structure_kept)}\n"
         f"  Deplacement maximal    {deplacement}"
     )
 
@@ -60,9 +60,9 @@ def _section_performance(borne: PerformanceBound | None) -> str:
             bandeau = "[PREDICTION — plan selectionne, couverture NON garantie]"
         if borne.indicateur == "ASE":
             ligne = (
-                f"  {borne.indicateur}   <= {_fmt(borne.borne_sup)}   "
+                f"  {borne.indicateur}   <= {_fmt(borne.upper)}   "
                 f"(predit {_fmt(borne.valeur)}, "
-                f"marge {_fmt(borne.borne_sup - borne.valeur)})"
+                f"marge {_fmt(borne.upper - borne.valeur)})"
             )
         else:
             ligne = (
@@ -112,7 +112,7 @@ def rendre(certificat: Certificate) -> str:
     parties = [
         _en_tete(certificat.manifeste),
         "",
-        _section_geometrie(certificat.geometrie),
+        _section_geometrie(certificat.geometry),
         "",
         _section_performance(certificat.performance),
         "",

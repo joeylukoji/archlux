@@ -28,10 +28,10 @@ plan = ax.Plan(
     contour=contour,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     contour=contour,
-    referentiel=ax.Regulation(aires_min=(), largeur_min=1.0),
+    referentiel=ax.Regulation(min_areas=(), largeur_min=1.0),
 )
 poly = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx)
 Q_propose = vectoriser(plan, poly.index)

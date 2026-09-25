@@ -14,7 +14,7 @@ from archlux.types import Opening, Wall
 MUR_SUD = Wall(id="m_sud", a=(0.0, 0.0), b=(10.0, 0.0))
 MUR_OBLIQUE = Wall(id="m_obl", a=(0.0, 0.0), b=(3.0, 4.0))  # longueur 5
 
-BAIE = Opening(id="f1", mur_id="m_sud", s=0.5, largeur_rel=0.2)
+BAIE = Opening(id="f1", wall_id="m_sud", s=0.5, relative_width=0.2)
 
 
 def test_baie_centree_sur_un_mur_horizontal() -> None:
@@ -26,7 +26,7 @@ def test_baie_centree_sur_un_mur_horizontal() -> None:
 
 def test_baie_sur_un_mur_oblique() -> None:
     """Mur 3-4-5 (longueur 5), baie de 20 % centrée : longueur 1, centrée en (1,5 ; 2)."""
-    baie = Opening(id="f2", mur_id="m_obl", s=0.5, largeur_rel=0.2)
+    baie = Opening(id="f2", wall_id="m_obl", s=0.5, relative_width=0.2)
     debut, fin = baie.segment_absolu(MUR_OBLIQUE)
     assert debut == pytest.approx((1.2, 1.6))
     assert fin == pytest.approx((1.8, 2.4))

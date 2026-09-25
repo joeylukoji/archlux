@@ -102,7 +102,7 @@ def test_legalize_preserve_validite_avec_L() -> None:
     plan, piece = _plan_avec_L(chevauche=True)
     q = archlux.legalize(plan, CONTEXTE_DEFAUT, fusions=(piece,))
     assert q.certificat is not None
-    assert q.certificat.geometrie.valide
+    assert q.certificat.geometry.valide
     sous = sorted(
         (p for p in q.pieces if p.id.startswith("cuisine__")),
         key=lambda p: (p.x, p.y),

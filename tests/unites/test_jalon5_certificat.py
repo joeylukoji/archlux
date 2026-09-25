@@ -44,11 +44,11 @@ def _poly() -> Polytope:
 def _preuve() -> GeometricProof:
     return GeometricProof(
         valide=True,
-        chevauchement=False,
-        jours=False,
-        surfaces_ok=True,
-        structure_preservee=True,
-        deplacement_max=0.18,
+        overlap=False,
+        gaps=False,
+        areas_ok=True,
+        structure_kept=True,
+        max_displacement=0.18,
     )
 
 
@@ -77,13 +77,13 @@ def test_certificat_separe_les_natures() -> None:
         indicateur="sDA",
         valeur=56.2,
         borne_inf=51.4,
-        borne_sup=61.0,
+        upper=61.0,
         couverture=0.90,
         n_calibration=1284,
         regime="exchangeable",
     )
     texte = Certificate(
-        geometrie=_preuve(),
+        geometry=_preuve(),
         performance=borne,
         duaux=(("mur porteur axe 3 : relâchement", -4.1),),
         manifeste=Manifest(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),
@@ -94,7 +94,7 @@ def test_certificat_separe_les_natures() -> None:
 
 
 def test_non_evaluable_toujours_present() -> None:
-    texte = Certificate(geometrie=_preuve()).rapport()
+    texte = Certificate(geometry=_preuve()).rapport()
     assert "NON EVALUABLE" in texte
     assert "[PREDICTION" in texte
 

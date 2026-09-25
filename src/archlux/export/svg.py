@@ -170,7 +170,7 @@ def _panneau(
     for wall in plan.murs + tuple(w for w in walls if w.id not in declared):
         (xa, ya), (xb, yb) = vers_svg(*wall.a), vers_svg(*wall.b)
         css_class, colour, width = (
-            ("wall-load-bearing", "#1f1f1f", 4.0) if wall.porteur else ("wall", "#6b6b6b", 1.5)
+            ("wall-load-bearing", "#1f1f1f", 4.0) if wall.load_bearing else ("wall", "#6b6b6b", 1.5)
         )
         parties.append(
             f'<line class="{css_class}" x1="{xa:.2f}" y1="{ya:.2f}" x2="{xb:.2f}" '
@@ -198,7 +198,7 @@ def rendre(
     titre : str, optional
         Libellé porté en haut du panneau.
     walls : tuple of Mur, optional
-        Extra walls to draw, typically ``ctx.structure.murs_porteurs``: a plan does not
+        Extra walls to draw, typically ``ctx.structure.load_bearing_walls``: a plan does not
         have to repeat its load-bearing structure, but a drawing should show it.
 
     Returns

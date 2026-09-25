@@ -20,10 +20,10 @@ _OUTLINE = ((0.0, 0.0), (0.6, 0.0), (0.6, 1.0), (0.0, 1.0))
 
 def _ctx(outline: tuple[tuple[float, float], ...] = _OUTLINE) -> Context:
     return Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(), largeur_min=0.05),
+        referentiel=Regulation(min_areas=(), largeur_min=0.05),
     )
 
 
@@ -82,7 +82,7 @@ def test_every_guillotine_tiling_passes_the_rational_check(plan: Plan) -> None:
 def test_the_proof_uses_the_rational_check_on_rectangular_outlines() -> None:
     overlap = _plan(_room("a", 0.0, 0.0, 0.35, 1.0), _room("b", 0.3, 0.0, 0.3, 1.0))
     proof = verify_exactly(overlap, _ctx())
-    assert not proof.valide and proof.chevauchement
+    assert not proof.valide and proof.overlap
     assert any(v.startswith("overlap a|b:") for v in proof.violations)
 
 
@@ -97,7 +97,7 @@ def test_a_sliver_above_the_overlap_tolerance_is_refused() -> None:
     """Review M2: 3e-8 m x 1 m = 3e-8 m2 exceeds OVERLAP_M2, as it did before batch 1.5b."""
     plan = _plan(_room("a", 0.0, 0.0, 0.3 + 3e-8, 1.0), _room("b", 0.3, 0.0, 0.3, 1.0))
     proof = verify_exactly(plan, _ctx())
-    assert not proof.valide and proof.chevauchement
+    assert not proof.valide and proof.overlap
 
 
 # --- Review of batch 1.5 -------------------------------------------------------------
@@ -113,14 +113,14 @@ def test_a_program_that_fills_the_outline_exactly_is_still_legalized() -> None:
 
     outline = ((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0))
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(("chambre", 4.5),), largeur_min=0.5),
+        referentiel=Regulation(min_areas=(("chambre", 4.5),), largeur_min=0.5),
     )
     plan = _plan(_room("a", 0.0, 0.0, 1.0, 3.0), _room("b", 1.0, 0.0, 2.0, 3.0), outline=outline)
     result = archlux.legalize(plan, ctx)
-    assert result.certificat is not None and result.certificat.geometrie.valide
+    assert result.certificat is not None and result.certificat.geometry.valide
     widths = sorted(round(room.w, 6) for room in result.pieces)
     assert widths == [1.5, 1.5]
 
@@ -135,7 +135,7 @@ def test_the_proof_bounds_what_edge_identification_erases() -> None:
         outline=outline,
     )
     proof = verify_exactly(plan, _ctx(outline))
-    assert not proof.valide and proof.jours
+    assert not proof.valide and proof.gaps
 
 
 _L_SHAPE = ((0.0, 0.0), (2.0, 0.0), (2.0, 1.0), (1.0, 1.0), (1.0, 2.0), (0.0, 2.0))
@@ -162,4 +162,4 @@ def test_the_geos_path_detects_faults_on_a_non_rectangular_outline(
     plan = _plan(*(_room(*room) for room in rooms), outline=_L_SHAPE)
     proof = verify_exactly(plan, _ctx(_L_SHAPE))
     assert not proof.valide
-    assert (proof.chevauchement, proof.jours) == (overlap, gaps)
+    assert (proof.overlap, proof.gaps) == (overlap, gaps)

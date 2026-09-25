@@ -108,7 +108,7 @@ def test_a_performance_output_carries_its_regime_in_the_file(tmp_path: Path) -> 
     output.to_json(tmp_path / "plan.json")
     document = json.loads((tmp_path / "plan.json").read_text("utf-8"))
     assert document["certificat"]["performance"]["regime"] == "selected"
-    assert any(wall["porteur"] for wall in document["murs"]) or ctx.structure.murs_porteurs
+    assert any(wall["porteur"] for wall in document["murs"]) or ctx.structure.load_bearing_walls
 
 
 def _a_scenario() -> tuple[Plan, Context]:
@@ -117,11 +117,11 @@ def _a_scenario() -> tuple[Plan, Context]:
     from archlux.types import Regulation, Room, Structure, Wall
     from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
-    wall = Wall(id="lb", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
+    wall = Wall(id="lb", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True)
     ctx = replace(
         CONTEXTE_DEFAUT,
-        structure=Structure(murs_porteurs=(wall,)),
-        referentiel=Regulation(aires_min=(("chambre", 20.0),), largeur_min=1.0),
+        structure=Structure(load_bearing_walls=(wall,)),
+        referentiel=Regulation(min_areas=(("chambre", 20.0),), largeur_min=1.0),
     )
     plan = Plan(
         pieces=(

@@ -38,10 +38,10 @@ def test_la_coupe_n_exclut_aucun_point_valide(w0: float, h0: float, w: float, h:
 def test_surfaces_minimales_respectees(ordre: object) -> None:
     """Après la boucle de coupes, aucune pièce n'est sous son a_min."""
     ctx = Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=((0.0, 0.0), (20.0, 0.0), (20.0, 16.0), (0.0, 16.0)),
-        referentiel=Regulation(aires_min=(("sejour", 4.0),), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(("sejour", 4.0),), largeur_min=1.0),
     )
     poly = construire_polytope(ordre, ctx)  # type: ignore[arg-type]
     pieces = tuple(

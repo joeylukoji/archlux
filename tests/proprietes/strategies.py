@@ -66,8 +66,8 @@ def murs() -> st.SearchStrategy[Wall]:
         id=_IDS,
         a=st.tuples(_COORD, _COORD),
         b=st.tuples(_COORD, _COORD),
-        porteur=st.booleans(),
-        epaisseur=st.floats(min_value=0.05, max_value=0.6, allow_nan=False),
+        load_bearing=st.booleans(),
+        thickness=st.floats(min_value=0.05, max_value=0.6, allow_nan=False),
     )
 
 
@@ -75,11 +75,13 @@ def _ouvertures(ids_murs: list[str]) -> st.SearchStrategy[Opening]:
     return st.builds(
         Opening,
         id=_IDS,
-        mur_id=st.sampled_from(ids_murs),
+        wall_id=st.sampled_from(ids_murs),
         s=_UNITE,
-        largeur_rel=st.floats(min_value=0.01, max_value=1.0, allow_nan=False, allow_infinity=False),
-        hauteur_allege=st.floats(min_value=0.0, max_value=1.5, allow_nan=False),
-        hauteur_linteau=st.floats(min_value=1.6, max_value=3.0, allow_nan=False),
+        relative_width=st.floats(
+            min_value=0.01, max_value=1.0, allow_nan=False, allow_infinity=False
+        ),
+        sill_height=st.floats(min_value=0.0, max_value=1.5, allow_nan=False),
+        head_height=st.floats(min_value=1.6, max_value=3.0, allow_nan=False),
     )
 
 
@@ -93,11 +95,11 @@ def _preuves() -> st.SearchStrategy[GeometricProof]:
     return st.builds(
         _proof,
         valide=st.booleans(),
-        chevauchement=st.booleans(),
-        jours=st.booleans(),
-        surfaces_ok=st.booleans(),
-        structure_preservee=st.booleans(),
-        deplacement_max=st.floats(min_value=0.0, max_value=100.0, allow_nan=False),
+        overlap=st.booleans(),
+        gaps=st.booleans(),
+        areas_ok=st.booleans(),
+        structure_kept=st.booleans(),
+        max_displacement=st.floats(min_value=0.0, max_value=100.0, allow_nan=False),
         violations=st.lists(st.text(max_size=40), max_size=3).map(tuple),
     )
 
@@ -106,10 +108,10 @@ def _proof(*, valide: bool, **fields: Any) -> GeometricProof:
     """Une preuve ``valide`` ne rapporte aucune faute (invariant de ``types``, phase 3.2)."""
     if valide:
         fields |= {
-            "chevauchement": False,
-            "jours": False,
-            "surfaces_ok": True,
-            "structure_preservee": True,
+            "overlap": False,
+            "gaps": False,
+            "areas_ok": True,
+            "structure_kept": True,
             "violations": (),
         }
     return GeometricProof(valide=valide, **fields)
@@ -125,7 +127,7 @@ def _bornes() -> st.SearchStrategy[PerformanceBound]:
             indicateur=st.sampled_from(["sDA", "ASE", "UDI", "vue"]),
             valeur=reels,
             borne_inf=st.just(min(pair)),
-            borne_sup=st.just(max(pair)),
+            upper=st.just(max(pair)),
             couverture=st.floats(min_value=0.5, max_value=1.0, allow_nan=False),
             n_calibration=st.integers(min_value=1, max_value=100_000),
             regime=st.sampled_from(REGIMES),
@@ -167,7 +169,7 @@ def _certificats() -> st.SearchStrategy[Certificate]:
     """
     return st.builds(
         Certificate,
-        geometrie=_preuves(),
+        geometry=_preuves(),
         performance=st.one_of(st.none(), _bornes()),
         duaux=st.lists(
             st.tuples(
@@ -213,10 +215,10 @@ CONTOUR_DEFAUT_CM = (1200, 900)
 """Contour de référence, en **centimètres** : 12 m x 9 m."""
 
 CONTEXTE_DEFAUT = Context(
-    structure=Structure(murs_porteurs=()),
+    structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-    referentiel=Regulation(aires_min=(), largeur_min=LARGEUR_MIN_DEFAUT),
+    referentiel=Regulation(min_areas=(), largeur_min=LARGEUR_MIN_DEFAUT),
 )
 """Contexte de référence des tests, accordé à :func:`plans_valides`."""
 
@@ -342,11 +344,11 @@ def contextes(draw: st.DrawFn) -> Context:
     largeur = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
     hauteur = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
     return Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
         contour=((0.0, 0.0), (largeur, 0.0), (largeur, hauteur), (0.0, hauteur)),
         referentiel=Regulation(
-            aires_min=(),
+            min_areas=(),
             largeur_min=draw(st.floats(min_value=0.5, max_value=2.0, allow_nan=False)),
         ),
     )
@@ -370,7 +372,7 @@ def vecteurs_objectifs(dimension: int) -> st.SearchStrategy[np.ndarray]:
 def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     """Valid plan plus a context that actually constrains it (PLAN.md, task 0.8).
 
-    Every other strategy uses ``aires_min=()`` and no load-bearing wall, which is how the
+    Every other strategy uses ``min_areas=()`` and no load-bearing wall, which is how the
     critical defects of AUDIT.md §3 went unnoticed. Here:
 
     - one load-bearing wall lies on a real partition of the plan (a room edge that is
@@ -394,7 +396,7 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
             edges.append(((room.x, top), (right, top)))
     # At least two rooms (force_split), hence at least one interior edge.
     a, b = draw(st.sampled_from(edges))
-    walls = (Wall(id="lb0", a=a, b=b, porteur=True),)
+    walls = (Wall(id="lb0", a=a, b=b, load_bearing=True),)
 
     smallest: dict[str, float] = {}
     for room in plan.pieces:
@@ -403,9 +405,9 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     minimum_areas = tuple(sorted((kind, ratio * area) for kind, area in smallest.items()))
 
     context = Context(
-        structure=Structure(murs_porteurs=walls),
+        structure=Structure(load_bearing_walls=walls),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
         contour=CONTEXTE_DEFAUT.contour,
-        referentiel=Regulation(aires_min=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
+        referentiel=Regulation(min_areas=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
     )
     return Plan(pieces=plan.pieces, murs=walls, ouvertures=(), contour=plan.contour), context

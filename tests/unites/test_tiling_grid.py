@@ -25,10 +25,10 @@ OUTLINE = ((0.0, 0.0), (WIDTH, 0.0), (WIDTH, HEIGHT), (0.0, HEIGHT))
 
 def _context(outline: tuple[tuple[float, float], ...] = OUTLINE) -> Context:
     return Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(), largeur_min=1.0),
     )
 
 
@@ -52,7 +52,7 @@ NOISY_RIGHT_EDGE = _plan(
 def test_tiling_legalization_of_a_noisy_edge_keeps_every_guarantee() -> None:
     result = archlux.legalize(NOISY_RIGHT_EDGE, _context(), pavage=True)
     assert result.certificat is not None
-    assert result.certificat.geometrie.valide
+    assert result.certificat.geometry.valide
     assert checkers.violations(result, _context()) == []
 
 
@@ -65,7 +65,7 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
     relation cannot be absorbed by collapsing a grid line.
     """
     outline = ((0.0, 0.0), (13.3, 0.0), (13.3, 10.4), (0.0, 10.4))
-    wall = Wall(id="refend", a=(0.0, 2.6), b=(3.2, 2.6), porteur=True)
+    wall = Wall(id="refend", a=(0.0, 2.6), b=(3.2, 2.6), load_bearing=True)
     kinds = {
         "r0": "sejour",
         "r1": "couloir",
@@ -90,9 +90,9 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
     plan = Plan(pieces=rooms, murs=(wall,), ouvertures=(), contour=outline)
     ctx = replace(
         _context(outline),
-        structure=Structure(murs_porteurs=(wall,)),
+        structure=Structure(load_bearing_walls=(wall,)),
         referentiel=Regulation(
-            aires_min=(
+            min_areas=(
                 ("chambre", 20.5806),
                 ("couloir", 8.6082),
                 ("sdb", 9.2349),

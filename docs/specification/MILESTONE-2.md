@@ -21,7 +21,7 @@
 @given(plan=plans_quelconques(), ctx=contextes())
 @settings(max_examples=500, deadline=None)
 def test_toute_sortie_est_valide(plan, ctx):
-    assert archlux.legalize(plan, ctx).certificat.geometrie.valide
+    assert archlux.legalize(plan, ctx).certificat.geometry.valide
 ```
 
 **Mesure à produire pour l'article :** taux de plans valides avant / après correction, sur les sorties de 3 modèles publics.
@@ -332,11 +332,11 @@ def verifier_exactement(plan: Plan, ctx: Context) -> GeometricProof: ...
 @dataclass(frozen=True)
 class GeometricProof:
     valide: bool
-    chevauchement: bool
-    jours: bool
-    surfaces_ok: bool
-    structure_preservee: bool
-    deplacement_max: float
+    overlap: bool
+    gaps: bool
+    areas_ok: bool
+    structure_kept: bool
+    max_displacement: float
     violations: tuple[str, ...] = ()
 ```
 
@@ -354,10 +354,10 @@ class GeometricProof:
 ```python
 def test_detecte_un_chevauchement():
     p = plan_avec_chevauchement(0.03)
-    assert verifier_exactement(p, CTX).chevauchement is True
+    assert verifier_exactement(p, CTX).overlap is True
 
 def test_detecte_un_jour():
-    assert verifier_exactement(plan_avec_jour(0.5), CTX).jours is True
+    assert verifier_exactement(plan_avec_jour(0.5), CTX).gaps is True
 
 @given(plan=plans_valides())
 def test_un_plan_valide_passe(plan):
@@ -402,7 +402,7 @@ def legalize(plan, ctx, *, objective=None, budget=None):
     preuve = verifier_exactement(q, ctx)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)   # jamais silencieux
-    return replace(q, certificat=Certificate(geometrie=preuve, ...))
+    return replace(q, certificat=Certificate(geometry=preuve, ...))
 ```
 
 ### Le piège de la valeur absolue
@@ -485,7 +485,7 @@ housediffusion,000123,False,True,0.18,12.4,17
 | Solveur lent (> 50 ms) | Réduction transitive oubliée | Appliquer `reduction_transitive` |
 | Surfaces non respectées | Contrainte `w·h` passée telle quelle à GLOP | Utiliser les coupes tangentes |
 | Résultat non déterministe | Ordre d'itération sur un `set` | Trier explicitement les identifiants |
-| `deplacement_max` énorme | Valeur absolue mal linéarisée | Vérifier les deux contraintes d'écart |
+| `max_displacement` énorme | Valeur absolue mal linéarisée | Vérifier les deux contraintes d'écart |
 | Chevauchements résiduels | Une paire sans séparation | `test_toute_paire_est_separee` |
 | Duaux tous nuls | `duaux=True` oublié | Passer le flag |
 

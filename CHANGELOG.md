@@ -8,6 +8,20 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 3: English field names (in progress, no alias)
+
+#### Changed — API break (pre-1.0, clean break: no deprecated alias for fields)
+- Batch 3a, the 16 field names that no other class shares: `Wall.porteur` is
+  `load_bearing` and `epaisseur` is `thickness`; `Opening.mur_id`, `largeur_rel`,
+  `hauteur_allege`, `hauteur_linteau` are `wall_id`, `relative_width`, `sill_height`,
+  `head_height`; `Structure.murs_porteurs` and `poteaux` are `load_bearing_walls` and
+  `columns`; `Regulation.aires_min` is `min_areas`; `GeometricProof.chevauchement`, `jours`,
+  `surfaces_ok`, `structure_preservee`, `deplacement_max` are `overlap`, `gaps`,
+  `areas_ok`, `structure_kept`, `max_displacement`; `PerformanceBound.borne_sup` is `upper`;
+  `Certificate.geometrie` is `geometry`. Constructor keywords change with them.
+- The JSON files keep their schema v1 keys (`"porteur"`, `"jours"`...): only the Python
+  names moved, so old files still load and the written JSON is byte-identical.
+
 ### Remediation — PLAN.md phase 3.9, wave 2: English model classes
 
 #### Changed — API (pre-1.0; the old names keep working, deprecated until 1.0.0)

@@ -28,8 +28,8 @@ for apartment in charger_msd(MSD, statistiques=stats, limite=N):
     except ax.ArchluxError:
         refused += 1
         continue
-    valid_after += out.certificat.geometrie.valide  # type: ignore[union-attr]
-    moved.append(out.certificat.geometrie.deplacement_max)  # type: ignore[union-attr]
+    valid_after += out.certificat.geometry.valide  # type: ignore[union-attr]
+    moved.append(out.certificat.geometry.max_displacement)  # type: ignore[union-attr]
 n = stats.retenus
 OUT.write_text(
     "# Milestone 7: idempotence on MSD\n\n"

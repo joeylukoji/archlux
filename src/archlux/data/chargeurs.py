@@ -24,9 +24,9 @@ La conversion tient en quatre gestes, dans cet ordre :
 Ce que MSD ne donne pas
 -----------------------
 **Aucune annotation de mur porteur.** Les seuls sous-types de séparateur sont
-``WALL`` et ``COLUMN``. ``Structure.murs_porteurs`` est donc vide et seuls les
+``WALL`` et ``COLUMN``. ``Structure.load_bearing_walls`` est donc vide et seuls les
 poteaux sont renseignés : inventer une portance produirait des égalités ``A_eq``
-arbitraires, et un ``structure_preservee`` qui ne veut rien dire.
+arbitraires, et un ``structure_kept`` qui ne veut rien dire.
 
 Aucune simulation d'éclairement non plus : voir ``docs/donnees/verite-terrain.md``.
 """
@@ -247,7 +247,7 @@ def _recoller(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
     On quantifie donc les abscisses et les ordonnées de tous les sommets de
     l'appartement sur une trame commune : deux bords distants de moins de
     ``tolerance`` deviennent **le même** bord, à mi-chemin. Les pièces se touchent
-    alors exactement, et l'épaisseur réelle reste portée par ``Wall.epaisseur``.
+    alors exactement, et l'épaisseur réelle reste portée par ``Wall.thickness``.
 
     C'est une **transformation du corpus**, pas une correction : elle déplace les
     cloisons d'au plus ``tolerance / 2``. Toute publication doit citer la valeur
@@ -293,8 +293,8 @@ def _segment_du_mur(poly: Polygon) -> LineString | None:
         for i in range(4)
     ]
     cotes.sort(key=lambda c: c[0])
-    epaisseur = cotes[0][0]
-    if epaisseur > _LARGEUR_MUR_MAX:
+    thickness = cotes[0][0]
+    if thickness > _LARGEUR_MUR_MAX:
         return None
     _, a, b = cotes[-1]
     centre = poly.centroid
@@ -312,7 +312,7 @@ def _segment_du_mur(poly: Polygon) -> LineString | None:
 def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) -> tuple[Wall, ...]:
     """Convertir des cloisons pleines en segments d'axe, identifiants stables."""
     murs: list[Wall] = []
-    for rang, (poly, epaisseur) in enumerate(zip(polygones, epaisseurs, strict=True)):
+    for rang, (poly, thickness) in enumerate(zip(polygones, epaisseurs, strict=True)):
         segment = _segment_du_mur(poly)
         if segment is None or segment.length <= _EPS:
             continue
@@ -322,8 +322,8 @@ def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) ->
                 id=f"m{rang:04d}",
                 a=(float(ax), float(ay)),
                 b=(float(bx), float(by)),
-                porteur=False,
-                epaisseur=float(epaisseur),
+                load_bearing=False,
+                thickness=float(thickness),
             )
         )
     return tuple(murs)
@@ -352,10 +352,10 @@ def _ouverture_depuis_baie(baie: Polygon, murs: tuple[Wall, ...], rang: int) -> 
     coords = list(baie.minimum_rotated_rectangle.exterior.coords)[:-1]
     if len(coords) == 4:
         largeur = max(math.dist(coords[i], coords[(i + 1) % 4]) for i in range(4))
-    largeur_rel = largeur / longueur
-    if not 0.0 < largeur_rel <= 1.0 or not 0.0 <= s <= 1.0:
+    relative_width = largeur / longueur
+    if not 0.0 < relative_width <= 1.0 or not 0.0 <= s <= 1.0:
         return None
-    return Opening(id=f"b{rang:04d}", mur_id=mur.id, s=s, largeur_rel=largeur_rel)
+    return Opening(id=f"b{rang:04d}", wall_id=mur.id, s=s, relative_width=relative_width)
 
 
 def _contour_simple(pieces: list[Polygon]) -> tuple[tuple[float, float], ...] | None:
@@ -426,7 +426,7 @@ def charger_msd(
         CSV MSD (``mds_V2_*.csv``), colonnes ``apartment_id``, ``entity_type``,
         ``entity_subtype``, ``geom`` (WKT, mètres).
     referentiel : Referentiel or None, optional
-        Seuils réglementaires attachés au contexte. ``None`` = ``aires_min=()`` **et**
+        Seuils réglementaires attachés au contexte. ``None`` = ``min_areas=()`` **et**
         ``largeur_min=0``, le cas neutre : MSD ne porte aucune réglementation.
 
         Ne pas neutraliser ``largeur_min`` est un piège coûteux. Sa valeur par défaut
@@ -478,7 +478,7 @@ def charger_msd(
         raise InvariantViolation((f"corpus MSD introuvable : {chemin}",))
     stats = statistiques if statistiques is not None else StatistiquesChargement()
     reglement = (
-        referentiel if referentiel is not None else Regulation(aires_min=(), largeur_min=0.0)
+        referentiel if referentiel is not None else Regulation(min_areas=(), largeur_min=0.0)
     )
     groupes = _lire_groupes(chemin, types_exclus)
 
@@ -604,14 +604,14 @@ def _convertir(
         )
         if ouv is not None
     )
-    poteaux = tuple(
+    columns = tuple(
         (float(redresser(p).centroid.x), float(redresser(p).centroid.y)) for p in poteaux_bruts
     )
 
     plan = Plan(pieces=tuple(pieces), murs=murs, ouvertures=ouvertures, contour=contour)
     contexte = Context(
         # MSD n'annote pas la portance : aucun mur n'est declare porteur.
-        structure=Structure(murs_porteurs=(), poteaux=poteaux),
+        structure=Structure(load_bearing_walls=(), columns=columns),
         orientation=Orientation(deg=theta),
         contour=contour,
         referentiel=reglement,

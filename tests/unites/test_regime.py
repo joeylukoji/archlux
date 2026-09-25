@@ -29,7 +29,7 @@ def _bound(**changes: object) -> PerformanceBound:
         "indicateur": "sDA",
         "valeur": 56.2,
         "borne_inf": 51.4,
-        "borne_sup": 61.0,
+        "upper": 61.0,
         "couverture": 0.90,
         "n_calibration": 1284,
         "regime": "exchangeable",
@@ -41,11 +41,11 @@ def _bound(**changes: object) -> PerformanceBound:
 def _proof() -> GeometricProof:
     return GeometricProof(
         valide=True,
-        chevauchement=False,
-        jours=False,
-        surfaces_ok=True,
-        structure_preservee=True,
-        deplacement_max=0.0,
+        overlap=False,
+        gaps=False,
+        areas_ok=True,
+        structure_kept=True,
+        max_displacement=0.0,
     )
 
 
@@ -67,7 +67,7 @@ def test_a_bound_without_regime_cannot_be_built() -> None:
             indicateur="sDA",
             valeur=56.2,
             borne_inf=51.4,
-            borne_sup=61.0,
+            upper=61.0,
             couverture=0.90,
             n_calibration=10,
         )
@@ -92,12 +92,12 @@ def test_only_an_exchangeable_plan_has_a_guaranteed_coverage() -> None:
 
 
 def test_the_report_claims_the_coverage_of_an_exchangeable_plan() -> None:
-    text = Certificate(geometrie=_proof(), performance=_bound()).rapport()
+    text = Certificate(geometry=_proof(), performance=_bound()).rapport()
     assert "[PREDICTION — couverture 90 %]" in text
 
 
 def test_the_report_never_claims_the_coverage_of_a_selected_plan() -> None:
-    text = Certificate(geometrie=_proof(), performance=_bound(regime="selected")).rapport()
+    text = Certificate(geometry=_proof(), performance=_bound(regime="selected")).rapport()
     assert "couverture 90 %]" not in text
     assert "couverture NON garantie" in text
     assert "oracle" in text
@@ -199,14 +199,14 @@ def test_a_calibration_of_another_indicator_is_refused() -> None:
 
 
 def test_the_regime_survives_serialization() -> None:
-    certificate = Certificate(geometrie=_proof(), performance=_bound(regime="selected"))
+    certificate = Certificate(geometry=_proof(), performance=_bound(regime="selected"))
     restored = depuis_dict(vers_dict(replace(_plan(), certificat=certificate)))
     assert restored.certificat is not None and restored.certificat.performance is not None
     assert restored.certificat.performance.regime == "selected"
 
 
 def test_a_serialized_bound_without_regime_is_refused() -> None:
-    certificate = Certificate(geometrie=_proof(), performance=_bound())
+    certificate = Certificate(geometry=_proof(), performance=_bound())
     data = vers_dict(replace(_plan(), certificat=certificate))
     del data["certificat"]["performance"]["regime"]
     with pytest.raises(InvariantViolation, match="regime"):
@@ -233,7 +233,7 @@ def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
     raw = surrogate.evaluer(x, CONTEXTE_DEFAUT.orientation)
     assert raw < 0.0 < bound.valeur
     assert bound.valeur == pytest.approx(-raw, rel=1e-6)
-    assert bound.borne_inf <= bound.valeur <= bound.borne_sup
+    assert bound.borne_inf <= bound.valeur <= bound.upper
 
 
 def test_every_wrapping_layer_is_removed() -> None:
@@ -257,7 +257,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     tiny_ctx = replace(
         CONTEXTE_DEFAUT,
         contour=small_outline,
-        referentiel=Regulation(aires_min=(), largeur_min=2.0),
+        referentiel=Regulation(min_areas=(), largeur_min=2.0),
     )
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=SubstitutAnalytique())
@@ -289,7 +289,7 @@ def test_no_uncertainty_at_the_plan_gives_no_bound_not_a_lost_plan() -> None:
         objective=SubstitutAnalytique(sigma_nominal=0.0),
         calibration=_calibration(),
     )
-    assert result.certificat is not None and result.certificat.geometrie.valide
+    assert result.certificat is not None and result.certificat.geometry.valide
     assert result.certificat.performance is None
 
 

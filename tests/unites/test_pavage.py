@@ -21,10 +21,10 @@ _RECT = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
 def _ctx(contour: tuple[tuple[float, float], ...] = _RECT) -> Context:
     return Context(
-        structure=Structure(murs_porteurs=()),
+        structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         contour=contour,
-        referentiel=Regulation(aires_min=(), largeur_min=0.0),
+        referentiel=Regulation(min_areas=(), largeur_min=0.0),
     )
 
 
@@ -163,7 +163,7 @@ def test_une_piece_manquante_est_absorbee_par_sa_voisine() -> None:
 
     corrige = ax.legalize(plan, _ctx(), pavage=True)
     assert corrige.certificat is not None
-    assert corrige.certificat.geometrie.valide
+    assert corrige.certificat.geometry.valide
     assert len(corrige.pieces) == 3
 
 
@@ -263,8 +263,8 @@ def test_legalize_avec_pavage_ferme_un_jour() -> None:
 
     corrige = ax.legalize(abime, ctx, pavage=True)
     assert corrige.certificat is not None
-    assert corrige.certificat.geometrie.valide
-    assert not corrige.certificat.geometrie.jours
+    assert corrige.certificat.geometry.valide
+    assert not corrige.certificat.geometry.gaps
 
 
 def test_pavage_preserve_l_idempotence() -> None:
@@ -272,7 +272,7 @@ def test_pavage_preserve_l_idempotence() -> None:
     ctx = _ctx()
     corrige = ax.legalize(_pavage_2x2(), ctx, pavage=True)
     assert corrige.certificat is not None
-    assert corrige.certificat.geometrie.deplacement_max == pytest.approx(0.0, abs=1e-9)
+    assert corrige.certificat.geometry.max_displacement == pytest.approx(0.0, abs=1e-9)
 
 
 def test_pavage_est_invariant_par_translation_des_lignes() -> None:

@@ -99,7 +99,7 @@ def _largeur_moyenne(
         sigma = float(substitut.incertitude(x, o))
         # Held-out plans, never chosen by an optimizer: exchangeable by construction.
         borne = calibrateur.borne(pred, sigma, regime="exchangeable")
-        largeurs.append(float(borne.borne_sup - borne.borne_inf))
+        largeurs.append(float(borne.upper - borne.borne_inf))
     return float(np.mean(largeurs))
 
 

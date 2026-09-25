@@ -87,7 +87,7 @@ def test_the_same_plan_without_budget_is_repaired() -> None:
 def test_an_infeasible_order_is_not_blamed_on_a_restriction() -> None:
     """Two rooms side by side, each at least 7 m wide, in 12 m: the order is the cause."""
     plan, ctx = _overlapping_pair()
-    ctx = replace(ctx, referentiel=Regulation(aires_min=(), largeur_min=7.0))
+    ctx = replace(ctx, referentiel=Regulation(min_areas=(), largeur_min=7.0))
     with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=1.0)
     assert capture.value.scope == ("budget 1 m",)
@@ -107,8 +107,8 @@ def test_a_malformed_room_establishes_no_predicate(field: str, value: float) -> 
     bad = replace(plan.pieces[1], **{field: value})
     proof = verify_exactly(replace(plan, pieces=(plan.pieces[0], bad)), ctx)
     assert not proof.valide
-    assert proof.chevauchement and proof.jours  # "no overlap / no gap" not established
-    assert not proof.surfaces_ok and not proof.structure_preservee
+    assert proof.overlap and proof.gaps  # "no overlap / no gap" not established
+    assert not proof.areas_ok and not proof.structure_kept
     assert proof.violations == (
         f"room b: dimensions must be finite and positive "
         f"(x={bad.x}, y={bad.y}, w={bad.w}, h={bad.h})",
@@ -119,7 +119,7 @@ def test_a_malformed_room_has_an_unbounded_displacement_when_not_finite() -> Non
     plan, ctx = _overlapping_pair()
     bad = replace(plan.pieces[1], y=math.nan)
     proof = verify_exactly(replace(plan, pieces=(plan.pieces[0], bad)), ctx, reference=plan)
-    assert proof.deplacement_max == math.inf
+    assert proof.max_displacement == math.inf
 
 
 # --- Fused rooms keep their own side of a wall when no seam can land on it -----------------
@@ -132,11 +132,11 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
     bounding box of the L, [0,4]x[0,4], crosses the wall; its cheapest side is ``left``,
     which would pull the foot back to x + w <= 3.
     """
-    wall = Wall(id="w", a=(3.0, 2.0), b=(3.0, 4.0), porteur=True)
+    wall = Wall(id="w", a=(3.0, 2.0), b=(3.0, 4.0), load_bearing=True)
     ctx = replace(
         CONTEXTE_DEFAUT,
-        structure=Structure(murs_porteurs=(wall,)),
-        referentiel=Regulation(aires_min=(("kitchen", 10.0),), largeur_min=1.0),
+        structure=Structure(load_bearing_walls=(wall,)),
+        referentiel=Regulation(min_areas=(("kitchen", 10.0),), largeur_min=1.0),
     )
     room = decomposer(
         Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", type_piece="kitchen"
@@ -168,8 +168,8 @@ def test_legalize_leaves_a_valid_l_beside_a_partial_wall_in_place() -> None:
     )
     assert not checkers.violations(plan, ctx, fusions=(room,)), "the input must be valid"
     result = archlux.legalize(plan, ctx, fusions=(room,))
-    assert result.certificat is not None and result.certificat.geometrie.valide
-    assert result.certificat.geometrie.deplacement_max == pytest.approx(0.0, abs=1e-6)
+    assert result.certificat is not None and result.certificat.geometry.valide
+    assert result.certificat.geometry.max_displacement == pytest.approx(0.0, abs=1e-6)
     assert not checkers.violations(result, ctx, fusions=(room,))
 
 
@@ -184,13 +184,13 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     from archlux.geom.rectilineaire import PieceRectilineaire
     from archlux.light.analytique import SubstitutAnalytique
 
-    wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), porteur=True)
+    wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), load_bearing=True)
     bar = Room(id="f__0", type="sejour", x=0.0, y=1.0, w=1.0, h=1.0)
     foot = Room(id="f__1", type="sejour", x=0.0, y=2.0, w=1.01, h=7.0)
     ctx = replace(
         CONTEXTE_DEFAUT,
-        structure=Structure(murs_porteurs=(wall,)),
-        referentiel=Regulation(aires_min=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
+        structure=Structure(load_bearing_walls=(wall,)),
+        referentiel=Regulation(min_areas=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
     )
     rest = (
         Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
@@ -241,7 +241,7 @@ def test_a_nan_in_the_reference_is_an_unbounded_displacement() -> None:
     valid = replace(plan, pieces=(replace(plan.pieces[0], w=6.0), plan.pieces[1]))
     reference = replace(valid, pieces=(replace(valid.pieces[0], x=math.nan), valid.pieces[1]))
     proof = verify_exactly(valid, ctx, reference=reference, budget=0.01)
-    assert proof.deplacement_max == math.inf
+    assert proof.max_displacement == math.inf
     assert not proof.valide
 
 
@@ -250,8 +250,8 @@ def test_the_scope_names_only_what_the_domain_contains() -> None:
     plan, ctx, (bar, foot) = _l_beside_a_partial_wall()
     ordre = deduire_ordre(plan, ctx.structure, groups=((bar, foot),))
     assert ordre.shared_sides == ()
-    zero = Wall(id="z", a=(3.0, 3.0), b=(3.0, 3.0), porteur=True)
-    assert deduire_ordre(plan, Structure(murs_porteurs=(zero,))).wall_sides == ()
+    zero = Wall(id="z", a=(3.0, 3.0), b=(3.0, 3.0), load_bearing=True)
+    assert deduire_ordre(plan, Structure(load_bearing_walls=(zero,))).wall_sides == ()
 
 
 def test_members_on_opposite_sides_share_the_side_of_their_bounding_box() -> None:

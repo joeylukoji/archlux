@@ -37,7 +37,7 @@ Structure
 No room interior contains a stretch of a load-bearing wall of :math:`\\mathrm{ctx}`
 (rooms shrunk by a metric tolerance, so that a room bounded by the wall is accepted;
 oblique walls included). A wall the plan declares with the same ``id`` must match the
-structure. Columns (``Structure.poteaux``) are fixed data and are not checked.
+structure. Columns (``Structure.columns``) are fixed data and are not checked.
 
 Displacement
 ------------
@@ -295,7 +295,7 @@ def _structure(
     violations: list[str] = []
     tol = _WALL_TOLERANCE_M
     interiors = _interiors(plan, fusions, tol)
-    for wall in ctx.structure.murs_porteurs:
+    for wall in ctx.structure.load_bearing_walls:
         stated = declared.get(wall.id)
         if stated is not None and not _same_wall(wall, stated):
             violations.append(f"structure: load-bearing wall {wall.id} moved")
@@ -522,10 +522,10 @@ def verify_exactly(
     ctx : Contexte
         Outline, load-bearing structure and regulation.
     reference : Plan or None, optional
-        Proposed plan, for ``deplacement_max``. ``None`` gives ``0.0``.
+        Proposed plan, for ``max_displacement``. ``None`` gives ``0.0``.
     budget : float or None, optional
         Maximum displacement allowed from ``reference``, in metres. When given, a
-        larger ``deplacement_max`` (beyond ``SNAP_M``) makes the plan invalid. Without
+        larger ``max_displacement`` (beyond ``SNAP_M``) makes the plan invalid. Without
         ``reference`` the displacement is 0 and the budget cannot be violated.
     fusions : tuple of PieceRectilineaire, optional
         Rooms decomposed into sub-rectangles (L, T, U, Z), as passed to
@@ -563,11 +563,11 @@ def verify_exactly(
         # established, never as holding (final review of phase 1, M1).
         return GeometricProof(
             valide=False,
-            chevauchement=True,
-            jours=True,
-            surfaces_ok=False,
-            structure_preservee=False,
-            deplacement_max=max_displacement(plan, reference),
+            overlap=True,
+            gaps=True,
+            areas_ok=False,
+            structure_kept=False,
+            max_displacement=max_displacement(plan, reference),
             violations=malformed,
         )
     rational = rational_tiling(plan, ctx)
@@ -594,10 +594,10 @@ def verify_exactly(
     valid = (not overlap) and (not gaps) and areas_ok and structure_ok and budget_ok
     return GeometricProof(
         valide=valid,
-        chevauchement=overlap,
-        jours=gaps,
-        surfaces_ok=areas_ok,
-        structure_preservee=structure_ok,
-        deplacement_max=moved,
+        overlap=overlap,
+        gaps=gaps,
+        areas_ok=areas_ok,
+        structure_kept=structure_ok,
+        max_displacement=moved,
         violations=violations,
     )

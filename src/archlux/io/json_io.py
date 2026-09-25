@@ -105,9 +105,9 @@ def _verifier_plages(donnees: Any) -> None:
             if valeur <= 0.0:
                 violations.append(f"piece {piece['id']} : {champ} = {valeur} ; attendu > 0")
     for mur in donnees["murs"]:
-        epaisseur = _reel(mur["epaisseur"], f"mur {mur['id']}.epaisseur")
-        if epaisseur <= 0.0:
-            violations.append(f"mur {mur['id']} : epaisseur = {epaisseur} ; attendu > 0")
+        thickness = _reel(mur["epaisseur"], f"mur {mur['id']}.epaisseur")
+        if thickness <= 0.0:
+            violations.append(f"mur {mur['id']} : epaisseur = {thickness} ; attendu > 0")
     for ouverture in donnees["ouvertures"]:
         s = _reel(ouverture["s"], f"ouverture {ouverture['id']}.s")
         largeur = _reel(ouverture["largeur_rel"], f"ouverture {ouverture['id']}.largeur_rel")
@@ -130,11 +130,11 @@ def _preuve_vers_dict(preuve: GeometricProof) -> dict[str, Any]:
     """Serialiser une preuve geometrique ; aucun champ de probabilite n'y entre."""
     return {
         "valide": preuve.valide,
-        "chevauchement": preuve.chevauchement,
-        "jours": preuve.jours,
-        "surfaces_ok": preuve.surfaces_ok,
-        "structure_preservee": preuve.structure_preservee,
-        "deplacement_max": preuve.deplacement_max,
+        "chevauchement": preuve.overlap,
+        "jours": preuve.gaps,
+        "surfaces_ok": preuve.areas_ok,
+        "structure_preservee": preuve.structure_kept,
+        "deplacement_max": preuve.max_displacement,
         "violations": list(preuve.violations),
     }
 
@@ -143,11 +143,11 @@ def _preuve_depuis_dict(donnees: Any) -> GeometricProof:
     """Reconstruire une preuve geometrique depuis sa forme JSON."""
     return GeometricProof(
         valide=bool(donnees["valide"]),
-        chevauchement=bool(donnees["chevauchement"]),
-        jours=bool(donnees["jours"]),
-        surfaces_ok=bool(donnees["surfaces_ok"]),
-        structure_preservee=bool(donnees["structure_preservee"]),
-        deplacement_max=_reel(donnees["deplacement_max"], "preuve.deplacement_max"),
+        overlap=bool(donnees["chevauchement"]),
+        gaps=bool(donnees["jours"]),
+        areas_ok=bool(donnees["surfaces_ok"]),
+        structure_kept=bool(donnees["structure_preservee"]),
+        max_displacement=_reel(donnees["deplacement_max"], "preuve.deplacement_max"),
         violations=tuple(str(v) for v in donnees["violations"]),
     )
 
@@ -158,7 +158,7 @@ def _borne_vers_dict(borne: PerformanceBound) -> dict[str, Any]:
         "indicateur": borne.indicateur,
         "valeur": borne.valeur,
         "borne_inf": borne.borne_inf,
-        "borne_sup": borne.borne_sup,
+        "borne_sup": borne.upper,
         "couverture": borne.couverture,
         "n_calibration": borne.n_calibration,
         "regime": borne.regime,
@@ -182,7 +182,7 @@ def _borne_depuis_dict(donnees: Any) -> PerformanceBound:
         indicateur=indicateur,
         valeur=_reel(donnees["valeur"], "borne.valeur"),
         borne_inf=_reel(donnees["borne_inf"], "borne.borne_inf"),
-        borne_sup=_reel(donnees["borne_sup"], "borne.borne_sup"),
+        upper=_reel(donnees["borne_sup"], "borne.borne_sup"),
         couverture=_reel(donnees["couverture"], "borne.couverture"),
         n_calibration=int(donnees["n_calibration"]),
         # Files written before batch 1.6 carry no regime. They could only come from a
@@ -242,7 +242,7 @@ def _certificat_vers_dict(certificat: Certificate | None) -> dict[str, Any] | No
     performance = certificat.performance
     manifeste = certificat.manifeste
     return {
-        "geometrie": _preuve_vers_dict(certificat.geometrie),
+        "geometrie": _preuve_vers_dict(certificat.geometry),
         # `None` explicite plutôt qu'une clé absente : « aucune garantie de performance »
         # est une information, pas un oubli de sérialisation.
         "performance": None if performance is None else _borne_vers_dict(performance),
@@ -258,7 +258,7 @@ def _certificat_depuis_dict(donnees: Any) -> Certificate | None:
     performance = donnees["performance"]
     manifeste = donnees["manifeste"]
     return Certificate(
-        geometrie=_preuve_depuis_dict(donnees["geometrie"]),
+        geometry=_preuve_depuis_dict(donnees["geometrie"]),
         performance=None if performance is None else _borne_depuis_dict(performance),
         duaux=tuple(
             (str(libelle), _reel(cout, f"dual {libelle}")) for libelle, cout in donnees["duaux"]
@@ -313,19 +313,19 @@ def vers_dict(plan: Plan) -> dict[str, Any]:
                 "id": m.id,
                 "a": [m.a[0], m.a[1]],
                 "b": [m.b[0], m.b[1]],
-                "porteur": m.porteur,
-                "epaisseur": m.epaisseur,
+                "porteur": m.load_bearing,
+                "epaisseur": m.thickness,
             }
             for m in plan.murs
         ],
         "ouvertures": [
             {
                 "id": o.id,
-                "mur_id": o.mur_id,
+                "mur_id": o.wall_id,
                 "s": o.s,
-                "largeur_rel": o.largeur_rel,
-                "hauteur_allege": o.hauteur_allege,
-                "hauteur_linteau": o.hauteur_linteau,
+                "largeur_rel": o.relative_width,
+                "hauteur_allege": o.sill_height,
+                "hauteur_linteau": o.head_height,
             }
             for o in plan.ouvertures
         ],
@@ -380,23 +380,19 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                     id=str(m["id"]),
                     a=_point(m["a"], f"mur {m['id']}.a"),
                     b=_point(m["b"], f"mur {m['id']}.b"),
-                    porteur=bool(m["porteur"]),
-                    epaisseur=_reel(m["epaisseur"], f"mur {m['id']}.epaisseur"),
+                    load_bearing=bool(m["porteur"]),
+                    thickness=_reel(m["epaisseur"], f"mur {m['id']}.epaisseur"),
                 )
                 for m in donnees["murs"]
             ),
             ouvertures=tuple(
                 Opening(
                     id=str(o["id"]),
-                    mur_id=str(o["mur_id"]),
+                    wall_id=str(o["mur_id"]),
                     s=_reel(o["s"], f"ouverture {o['id']}.s"),
-                    largeur_rel=_reel(o["largeur_rel"], f"ouverture {o['id']}.largeur_rel"),
-                    hauteur_allege=_reel(
-                        o["hauteur_allege"], f"ouverture {o['id']}.hauteur_allege"
-                    ),
-                    hauteur_linteau=_reel(
-                        o["hauteur_linteau"], f"ouverture {o['id']}.hauteur_linteau"
-                    ),
+                    relative_width=_reel(o["largeur_rel"], f"ouverture {o['id']}.largeur_rel"),
+                    sill_height=_reel(o["hauteur_allege"], f"ouverture {o['id']}.hauteur_allege"),
+                    head_height=_reel(o["hauteur_linteau"], f"ouverture {o['id']}.hauteur_linteau"),
                 )
                 for o in donnees["ouvertures"]
             ),

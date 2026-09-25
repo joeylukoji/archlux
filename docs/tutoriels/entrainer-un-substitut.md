@@ -34,10 +34,10 @@ plan = ax.Plan(
     contour=contour,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     contour=contour,
-    referentiel=ax.Regulation(aires_min=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    referentiel=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
 )
 
 
@@ -85,7 +85,7 @@ rapport = valider_gradient(reseau, points, ctx.orientation, seed=17, reference=s
 assert rapport.accord_de_signe > 0.80
 
 q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, pavage=True)
-assert q.certificat is not None and q.certificat.geometrie.valide
+assert q.certificat is not None and q.certificat.geometry.valide
 ```
 
 !!! danger "Point de contrôle rouvert (revue de phase 2)"

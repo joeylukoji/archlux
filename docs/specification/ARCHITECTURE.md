@@ -164,11 +164,11 @@ class Room:
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Opening:
     id: str
-    mur_id: str            # ← relative to a wall
+    wall_id: str            # ← relative to a wall
     s: float               # relative abscissa ∈ [0,1]
-    largeur_rel: float     # ∈ ]0,1]
-    hauteur_allege: float = 1.00
-    hauteur_linteau: float = 2.15
+    relative_width: float     # ∈ ]0,1]
+    sill_height: float = 1.00
+    head_height: float = 2.15
 
 @dataclass(frozen=True, slots=True)
 class Plan:

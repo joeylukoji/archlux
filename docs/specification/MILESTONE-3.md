@@ -174,7 +174,7 @@ class SubstitutAnalytique:
         total = 0.0
         for piece in plan.pieces:
             for ouv in ouvertures_de(piece, plan):
-                profondeur_utile = self.FACTEUR_PROFONDEUR * ouv.hauteur_linteau
+                profondeur_utile = self.FACTEUR_PROFONDEUR * ouv.head_height
                 penetration = min(profondeur(piece, ouv), profondeur_utile)
                 f_orient = self._facteur_orientation(ouv, ctx.orientation)
                 total += penetration * largeur_absolue(ouv, plan) * f_orient
@@ -208,8 +208,8 @@ et donc l'expérience Q3 possible dès ce jalon.
 
 ```python
 def test_plus_de_baie_donne_plus_de_lumiere():
-    p1 = plan_avec_baie(largeur_rel=0.20)
-    p2 = plan_avec_baie(largeur_rel=0.60)
+    p1 = plan_avec_baie(relative_width=0.20)
+    p2 = plan_avec_baie(relative_width=0.60)
     assert SUB.evaluer(p2, CTX).sda > SUB.evaluer(p1, CTX).sda
 
 def test_piece_profonde_sature():
@@ -362,7 +362,7 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
     preuve = verifier_exactement(q, ctx)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)
-    return replace(q, certificat=Certificate(geometrie=preuve, ...))
+    return replace(q, certificat=Certificate(geometry=preuve, ...))
 ```
 
 - [ ] `budget` implémenté comme boîte `‖x − x₀‖∞ ≤ Δ` ajoutée au polytope

@@ -41,8 +41,8 @@ def _independent_violations(result: Plan, ctx: Context) -> list[str]:
 def test_the_input_is_valid_under_its_own_context(scenario: tuple[Plan, Context]) -> None:
     """Sanity check of the strategy itself: any later violation comes from legalize."""
     plan, ctx = scenario
-    assert ctx.structure.murs_porteurs, "every scenario must contain a load-bearing wall"
-    assert ctx.referentiel.aires_min, "every scenario must declare minimum areas"
+    assert ctx.structure.load_bearing_walls, "every scenario must contain a load-bearing wall"
+    assert ctx.referentiel.min_areas, "every scenario must declare minimum areas"
     assert _independent_violations(plan, ctx) == []
 
 
@@ -119,12 +119,12 @@ def test_the_checker_detects_each_kind_of_violation() -> None:
     from archlux.types import Orientation, Regulation, Room, Structure, Wall
 
     outline = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
-    wall = Wall(id="w", a=(2.0, 0.0), b=(2.0, 2.0), porteur=True)
+    wall = Wall(id="w", a=(2.0, 0.0), b=(2.0, 2.0), load_bearing=True)
     ctx = Context(
-        structure=Structure(murs_porteurs=(wall,)),
+        structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=0.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(("bedroom", 5.0),), largeur_min=0.5),
+        referentiel=Regulation(min_areas=(("bedroom", 5.0),), largeur_min=0.5),
     )
 
     def plan(*rooms: Room) -> Plan:

@@ -100,7 +100,7 @@ def test_the_decision_vector_matches_the_columns_of_every_polytope(
 
 def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
     """J3 review: theta = 0 and 360 give plans 5.2 m apart at the same objective value."""
-    wall = Wall(id="lb0", a=(1.01, 0.0), b=(1.01, 9.0), porteur=True)
+    wall = Wall(id="lb0", a=(1.01, 0.0), b=(1.01, 9.0), load_bearing=True)
     rooms = (
         Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.01, h=9.0),
         Room(id="p1", type="sejour", x=1.01, y=0.0, w=1.41, h=1.0),
@@ -112,10 +112,10 @@ def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
     surrogate, values, widths = SubstitutAnalytique(), [], []
     for deg in (0.0, 360.0):
         ctx = Context(
-            structure=Structure(murs_porteurs=(wall,)),
+            structure=Structure(load_bearing_walls=(wall,)),
             orientation=Orientation(deg=deg),
             contour=CONTEXTE_DEFAUT.contour,
-            referentiel=Regulation(aires_min=(("sejour", 1.41),), largeur_min=1.0),
+            referentiel=Regulation(min_areas=(("sejour", 1.41),), largeur_min=1.0),
         )
         out = archlux.legalize(plan, ctx, objective=surrogate)
         values.append(surrogate.evaluer(decision_vector(out), Orientation(deg=0.0)))

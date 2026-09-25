@@ -99,7 +99,7 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
 
     partial = [c for c in cuts if not spans_building(c)]
     ends = partial[-1] if wall == "partial" and partial else cuts[0]
-    bearing = Wall(id="refend", a=ends[0], b=ends[1], porteur=True)
+    bearing = Wall(id="refend", a=ends[0], b=ends[1], load_bearing=True)
 
     smallest: dict[str, float] = {}
     for room in rooms:
@@ -107,11 +107,11 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
     ratio = float(rng.uniform(0.7, 1.0))
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
     context = Context(
-        structure=Structure(murs_porteurs=(bearing,)),
+        structure=Structure(load_bearing_walls=(bearing,)),
         orientation=Orientation(deg=float(rng.uniform(0.0, 360.0))),
         contour=outline,
         referentiel=Regulation(
-            aires_min=tuple(sorted((k, round(ratio * a, 4)) for k, a in smallest.items())),
+            min_areas=tuple(sorted((k, round(ratio * a, 4)) for k, a in smallest.items())),
             largeur_min=1.0,
         ),
     )

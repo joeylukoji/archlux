@@ -21,16 +21,16 @@ from archlux.types import Context, Orientation, Plan, Regulation, Room, Structur
 from tests import checkers
 
 _OUTLINE = ((0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (0.0, 6.0))
-_FULL = Wall(id="w", a=(6.0, 0.0), b=(6.0, 6.0), porteur=True)
-_PARTIAL = Wall(id="p", a=(6.0, 0.0), b=(6.0, 3.0), porteur=True)
+_FULL = Wall(id="w", a=(6.0, 0.0), b=(6.0, 6.0), load_bearing=True)
+_PARTIAL = Wall(id="p", a=(6.0, 0.0), b=(6.0, 3.0), load_bearing=True)
 
 
 def _ctx(*walls: Wall, areas: tuple[tuple[str, float], ...] = ()) -> Context:
     return Context(
-        structure=Structure(murs_porteurs=walls),
+        structure=Structure(load_bearing_walls=walls),
         orientation=Orientation(deg=30.0),
         contour=_OUTLINE,
-        referentiel=Regulation(aires_min=areas, largeur_min=1.0),
+        referentiel=Regulation(min_areas=areas, largeur_min=1.0),
     )
 
 
@@ -103,7 +103,7 @@ def test_without_structure_the_order_has_no_wall_sides() -> None:
 
 
 def test_an_oblique_load_bearing_wall_is_refused_not_ignored() -> None:
-    oblique = Wall(id="o", a=(0.0, 0.0), b=(10.0, 6.0), porteur=True)
+    oblique = Wall(id="o", a=(0.0, 0.0), b=(10.0, 6.0), load_bearing=True)
     with pytest.raises(UnsupportedInput, match="axis-aligned"):
         deduire_ordre(_plan(_room("a", 0, 0, 10, 6)), structure=Structure((oblique,)))
 
@@ -135,14 +135,14 @@ def test_the_proof_rejects_a_room_crossing_a_load_bearing_wall() -> None:
     ctx = _ctx(_FULL)
     crossing = _plan(_room("a", 0, 0, 7, 6), _room("b", 7, 0, 3, 6), walls=(_FULL,))
     proof = verify_exactly(crossing, ctx)
-    assert not proof.structure_preservee and not proof.valide
+    assert not proof.structure_kept and not proof.valide
     assert any("a" in v and "w" in v and "crosses" in v for v in proof.violations)
 
 
 def test_the_proof_accepts_rooms_bounded_by_the_wall() -> None:
     ctx = _ctx(_FULL)
     plan = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6), walls=(_FULL,))
-    assert verify_exactly(plan, ctx).structure_preservee
+    assert verify_exactly(plan, ctx).structure_kept
 
 
 @pytest.mark.parametrize(("overlap", "accepted"), [(5e-8, True), (1e-3, False)])
@@ -152,19 +152,19 @@ def test_the_proof_tolerates_solver_noise_but_not_a_real_crossing(
     """Review minor 4: an LP output a hair past the wall line (< WALL_M) is not a false
     refusal; a millimetre is a crossing."""
     plan = _plan(_room("a", 0, 0, 6 + overlap, 6), _room("b", 6 + overlap, 0, 4 - overlap, 6))
-    assert verify_exactly(plan, _ctx(_FULL)).structure_preservee is accepted
+    assert verify_exactly(plan, _ctx(_FULL)).structure_kept is accepted
 
 
 def test_the_proof_checks_oblique_walls_too() -> None:
-    oblique = Wall(id="o", a=(0.0, 0.0), b=(10.0, 6.0), porteur=True)
+    oblique = Wall(id="o", a=(0.0, 0.0), b=(10.0, 6.0), load_bearing=True)
     plan = _plan(_room("a", 0, 0, 10, 6), walls=(oblique,))
-    assert not verify_exactly(plan, _ctx(oblique)).structure_preservee
+    assert not verify_exactly(plan, _ctx(oblique)).structure_kept
 
 
 def test_the_proof_no_longer_requires_the_plan_to_repeat_the_structure() -> None:
     """Walls are context: a plan without ``murs`` is judged on crossings only."""
     plan = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6))
-    assert verify_exactly(plan, _ctx(_FULL)).structure_preservee
+    assert verify_exactly(plan, _ctx(_FULL)).structure_kept
 
 
 # --- End to end: both modes keep the wall ----------------------------------------------
@@ -176,7 +176,7 @@ def test_legalize_never_crosses_a_load_bearing_wall(objective: Substitut | None)
     plan = _plan(_room("a", 0, 0, 6, 3), _room("c", 0, 3, 6, 3), _room("b", 6, 0, 4, 6))
     result = archlux.legalize(plan, ctx, objective=objective)
     assert [v for v in checkers.violations(result, ctx) if v.kind == "wall"] == []
-    assert result.certificat is not None and result.certificat.geometrie.structure_preservee
+    assert result.certificat is not None and result.certificat.geometry.structure_kept
 
 
 def test_legalize_moves_a_crossing_room_back_behind_the_wall() -> None:
@@ -192,12 +192,12 @@ def test_the_audit_grid_keeps_its_load_bearing_wall_in_performance_mode() -> Non
     """AUDIT.md §5.3, measured: on a 5 x 3 grid with a load-bearing wall at x = 6,
     Frank-Wolfe used to place partitions at 3.796 and 11.204 and certify it."""
     outline = ((0.0, 0.0), (15.0, 0.0), (15.0, 9.0), (0.0, 9.0))
-    wall = Wall(id="x6", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True)
+    wall = Wall(id="x6", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True)
     ctx = Context(
-        structure=Structure(murs_porteurs=(wall,)),
+        structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=20.0),
         contour=outline,
-        referentiel=Regulation(aires_min=(), largeur_min=1.0),
+        referentiel=Regulation(min_areas=(), largeur_min=1.0),
     )
     rooms = tuple(
         Room(id=f"c{i}{j}", type="chambre", x=3.0 * i, y=3.0 * j, w=3.0, h=3.0)

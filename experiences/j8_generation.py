@@ -173,11 +173,11 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnos
 
     plan = Plan(pieces=pieces, murs=(), ouvertures=(), contour=contour)
     contexte = Context(
-        structure=Structure(murs_porteurs=(), poteaux=()),
+        structure=Structure(load_bearing_walls=(), columns=()),
         orientation=Orientation(deg=0.0),
         contour=contour,
         # Le referentiel est remplace essai par essai : voir LARGEUR_DEFAUT.
-        referentiel=Regulation(aires_min=(), largeur_min=LARGEUR_DEFAUT),
+        referentiel=Regulation(min_areas=(), largeur_min=LARGEUR_DEFAUT),
         programme=tuple(sorted(set(plan_json["programme"]))),
     )
     return plan, contexte, diagnostiquer(plan)
@@ -378,7 +378,7 @@ def main() -> None:
                 cote_min, intact = "", ""
                 contexte_essai = replace(
                     contexte,
-                    referentiel=Regulation(aires_min=(), largeur_min=largeur),
+                    referentiel=Regulation(min_areas=(), largeur_min=largeur),
                 )
                 try:
                     corrige = ax.legalize(
@@ -387,8 +387,8 @@ def main() -> None:
                         pavage=(mode == "pavage"),
                         budget_reparation=budget,
                     )
-                    valide = corrige.certificat.geometrie.valide
-                    deplacement = f"{corrige.certificat.geometrie.deplacement_max:.6f}"
+                    valide = corrige.certificat.geometry.valide
+                    deplacement = f"{corrige.certificat.geometry.max_displacement:.6f}"
                     n_apres = str(len(corrige.pieces))
                     petit = min(min(p.w, p.h) for p in corrige.pieces)
                     cote_min = f"{petit:.4f}"

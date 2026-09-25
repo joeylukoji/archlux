@@ -146,7 +146,7 @@ affiche `NON EVALUABLE` plutôt qu'un intervalle trompeur.
 Since 0.10 (ADR-7), the certificate proves that **no room crosses a load-bearing wall**,
 and the solver keeps every room on its side of each wall. It does not certify more:
 
-- **Columns** (`Structure.poteaux`) are not constrained or checked: a column inside a
+- **Columns** (`Structure.columns`) are not constrained or checked: a column inside a
   room is normal in housing, and nothing is claimed about them.
 - **Openings on interior partitions do not follow a moved room**: walls are not decision
   variables. Openings on facades stay put because the outline is fixed.

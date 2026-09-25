@@ -96,7 +96,7 @@ def legalize(plan: Plan, ctx: Context, *, objective=None,
 
     Guarantees                                                       ✱ SPÉCIFIQUE PROJET
     ----------
-    - Géométrique : **exacte**. ``resultat.certificat.geometrie.valide``
+    - Géométrique : **exacte**. ``resultat.certificat.geometry.valide``
       est vérifié indépendamment du solveur avant retour.
     - Performance : **probabiliste** si ``objective`` est fourni.
       Couverture ≥ 1−α, sous hypothèse d'échangeabilité avec le jeu

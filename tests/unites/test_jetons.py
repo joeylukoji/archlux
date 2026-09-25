@@ -42,7 +42,7 @@ def test_ouvertures_sont_des_jetons_distincts() -> None:
     from archlux.types import Opening, Plan, Room, Wall
 
     mur = Wall(id="m0", a=(0.0, 0.0), b=(6.0, 0.0))
-    ouv = Opening(id="o0", mur_id="m0", s=0.5, largeur_rel=0.3)
+    ouv = Opening(id="o0", wall_id="m0", s=0.5, relative_width=0.3)
     plan = Plan(
         pieces=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),

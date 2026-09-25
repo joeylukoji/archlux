@@ -20,23 +20,23 @@ plan = ax.Plan(
     contour=contour,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     contour=contour,
-    referentiel=ax.Regulation(aires_min=(), largeur_min=1.0),
+    referentiel=ax.Regulation(min_areas=(), largeur_min=1.0),
 )
 q = ax.legalize(plan, ctx)
 borne = PerformanceBound(
     indicateur="sDA",
     valeur=56.2,
     borne_inf=51.4,
-    borne_sup=61.0,
+    upper=61.0,
     couverture=0.90,
     n_calibration=1284,
     regime="exchangeable",
 )
 certificat = ax.Certificate(
-    geometrie=q.certificat.geometrie,
+    geometry=q.certificat.geometry,
     performance=borne,
     duaux=q.certificat.duaux,
     manifeste=Manifest(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),

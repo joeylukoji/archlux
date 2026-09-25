@@ -22,8 +22,8 @@ PLAN_T2 = Plan(
         Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),
         Room(id="sdb", type="sdb", x=4.0, y=0.0, w=2.0, h=2.5),
     ),
-    murs=(Wall(id="m_sud", a=(0.0, 0.0), b=(6.0, 0.0), porteur=True),),
-    ouvertures=(Opening(id="f1", mur_id="m_sud", s=0.3, largeur_rel=0.25),),
+    murs=(Wall(id="m_sud", a=(0.0, 0.0), b=(6.0, 0.0), load_bearing=True),),
+    ouvertures=(Opening(id="f1", wall_id="m_sud", s=0.3, relative_width=0.25),),
     contour=((0.0, 0.0), (6.0, 0.0), (6.0, 3.5), (0.0, 3.5)),
 )
 
@@ -46,11 +46,11 @@ def test_le_certificat_survit_a_l_aller_retour() -> None:
     """Un plan légalisé porte son certificat ; le relire ne doit pas le perdre."""
     preuve = GeometricProof(
         valide=True,
-        chevauchement=False,
-        jours=False,
-        surfaces_ok=True,
-        structure_preservee=True,
-        deplacement_max=0.21,
+        overlap=False,
+        gaps=False,
+        areas_ok=True,
+        structure_kept=True,
+        max_displacement=0.21,
         violations=(),
     )
     legalise = Plan(
@@ -58,11 +58,11 @@ def test_le_certificat_survit_a_l_aller_retour() -> None:
         murs=PLAN_T2.murs,
         ouvertures=PLAN_T2.ouvertures,
         contour=PLAN_T2.contour,
-        certificat=Certificate(geometrie=preuve),
+        certificat=Certificate(geometry=preuve),
     )
     relu = depuis_dict(vers_dict(legalise))
     assert relu.certificat is not None
-    assert relu.certificat.geometrie.deplacement_max == pytest.approx(0.21)
+    assert relu.certificat.geometry.max_displacement == pytest.approx(0.21)
     assert relu.certificat.performance is None
 
 

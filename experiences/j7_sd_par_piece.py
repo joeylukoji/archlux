@@ -117,8 +117,8 @@ cal.ajuster(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
 bornes = [
     cal.borne(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]
 ]
-couv = float(np.mean([b.borne_inf <= v <= b.borne_sup for b, v in zip(bornes, y_te, strict=True)]))
-largeur = float(np.mean([b.borne_sup - b.borne_inf for b in bornes]))
+couv = float(np.mean([b.borne_inf <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
+largeur = float(np.mean([b.upper - b.borne_inf for b in bornes]))
 
 Path("resultats").mkdir(exist_ok=True)
 Path("resultats/j7_sd_par_piece.md").write_text(

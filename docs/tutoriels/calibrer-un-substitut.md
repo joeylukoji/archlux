@@ -38,10 +38,10 @@ plan = ax.Plan(
     contour=contour,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     contour=contour,
-    referentiel=ax.Regulation(aires_min=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    referentiel=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
 )
 
 
@@ -91,7 +91,7 @@ x_nouveau = disposition(rng)  # tiré comme la calibration : échangeable avec e
 prediction = modele.evaluer(x_nouveau, ctx.orientation)
 sigma = modele.incertitude(x_nouveau, ctx.orientation)
 borne = cal.borne(prediction, sigma, ">=", regime="exchangeable")
-assert borne.borne_inf <= prediction <= borne.borne_sup
+assert borne.borne_inf <= prediction <= borne.upper
 # borne.borne_inf, borne.couverture, borne.n_calibration
 ```
 

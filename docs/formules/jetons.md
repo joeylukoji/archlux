@@ -58,7 +58,7 @@ faux ; il ne devient utile qu'en lot de plans de tailles différentes.
 - Toute statistique d'ensemble (moyenne, somme) est **invariante par permutation**
   des pièces : `permuter_pieces` ne doit pas changer le score. C'est ce que teste
   `tests/unites/test_jetons.py`.
-- Une ouverture dont le `mur_id` ne correspond à aucun mur du plan est
+- Une ouverture dont le `wall_id` ne correspond à aucun mur du plan est
   **silencieusement ignorée** (`plan_vers_jetons`). C'est un choix : un corpus
   lacunaire ne doit pas faire tomber l'encodage. La contrepartie est qu'une erreur
   d'appariement mur/baie ne se signale pas ici — elle se signale à la

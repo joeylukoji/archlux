@@ -19,7 +19,7 @@ FIELDS = ("plan_id", "amplitude_m", "pavage", "valid_before", "status", "valid_a
 
 def context(plan: ax.Plan) -> ax.Context:
     cut = next(r.x + r.w for r in plan.pieces if r.id == "sw")
-    wall = ax.Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), porteur=True)
+    wall = ax.Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), load_bearing=True)
     kinds = sorted({r.type for r in plan.pieces})
     minima = tuple((t, 0.8 * min(r.w * r.h for r in plan.pieces if r.type == t)) for t in kinds)
     return ax.Context(
@@ -43,9 +43,9 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                 row["valid_before"] = verify_exactly(faulty, ctx).valide
                 try:
                     out = ax.legalize(faulty, ctx, pavage=pavage)
-                    geometry = out.certificat.geometrie  # type: ignore[union-attr]
+                    geometry = out.certificat.geometry  # type: ignore[union-attr]
                     row |= {"status": "ok", "valid_after": geometry.valide}
-                    row["max_displacement_m"] = f"{geometry.deplacement_max:.6f}"
+                    row["max_displacement_m"] = f"{geometry.max_displacement:.6f}"
                 except ax.ArchluxError as error:
                     row |= {"status": type(error).__name__, "valid_after": False}
                 writer.writerow(row)

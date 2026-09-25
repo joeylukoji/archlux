@@ -316,14 +316,14 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         emit(
             id_ouv,
             f"IFCOPENINGELEMENT('{guid(f'opening/{ouv.id}')}',#{id_owner},'{_safe(ouv.id)}',"
-            f"$,'mur={_safe(ouv.mur_id)} s={ouv.s:.4f}',$,$,$,$)",
+            f"$,'mur={_safe(ouv.wall_id)} s={ouv.s:.4f}',$,$,$,$)",
         )
-        if ouv.mur_id in wall_entity:  # else refused by diagnostiquer when validating
+        if ouv.wall_id in wall_entity:  # else refused by diagnostiquer when validating
             id_void = alloc()
             emit(
                 id_void,
                 f"IFCRELVOIDSELEMENT('{guid(f'void/{ouv.id}')}',#{id_owner},$,$,"
-                f"#{wall_entity[ouv.mur_id]},#{id_ouv})",
+                f"#{wall_entity[ouv.wall_id]},#{id_ouv})",
             )
 
     annexe = _annexe_certificat(plan)

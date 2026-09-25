@@ -30,7 +30,7 @@ def test_sortie_performantielle_valide(plan: Plan) -> None:
     """Toute sortie de ``legalize(..., objective=)`` reste géométriquement valide."""
     resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
     assert resultat.certificat is not None
-    assert resultat.certificat.geometrie.valide
+    assert resultat.certificat.geometry.valide
     assert resultat.certificat.performance is None
 
 
@@ -104,7 +104,7 @@ def test_non_regression_jalon2() -> None:
     explicite = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=None)
     assert classique.pieces == explicite.pieces
     assert classique.certificat is not None
-    assert classique.certificat.geometrie.valide
+    assert classique.certificat.geometry.valide
     assert classique.certificat.performance is None
 
 
@@ -140,8 +140,8 @@ def test_orientation_change_le_plan() -> None:
     xn = np.array([(p.x, p.y, p.w, p.h) for p in nord.pieces])
     xs = np.array([(p.x, p.y, p.w, p.h) for p in sud.pieces])
     assert not np.allclose(xn, xs, atol=1e-3)
-    assert nord.certificat is not None and nord.certificat.geometrie.valide
-    assert sud.certificat is not None and sud.certificat.geometrie.valide
+    assert nord.certificat is not None and nord.certificat.geometry.valide
+    assert sud.certificat is not None and sud.certificat.geometry.valide
     l1 = archlux.legalize(plan, _ctx(180.0))
     xl1 = np.array([(p.x, p.y, p.w, p.h) for p in l1.pieces])
     assert not np.allclose(xs, xl1, atol=1e-3)

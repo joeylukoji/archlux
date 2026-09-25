@@ -21,10 +21,10 @@ from archlux.lmo.solveur import resoudre
 from archlux.types import Context, Orientation, Regulation, Structure
 
 _CTX = Context(
-    structure=Structure(murs_porteurs=()),
+    structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     contour=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-    referentiel=Regulation(aires_min=(), largeur_min=2.0),
+    referentiel=Regulation(min_areas=(), largeur_min=2.0),
 )
 _TWO_ROOMS_IN_3M = construire_polytope(
     OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")), _CTX

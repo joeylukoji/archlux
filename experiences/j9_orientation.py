@@ -90,7 +90,7 @@ def main() -> None:
             valide = ax.legalize(propose, contexte, pavage=True, budget_reparation=BUDGETS[-1])
         except ax.ArchluxError:
             continue
-        if not valide.certificat.geometrie.valide or len(valide.pieces) < 4:
+        if not valide.certificat.geometry.valide or len(valide.pieces) < 4:
             continue
         retenus += 1
 

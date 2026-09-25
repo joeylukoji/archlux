@@ -17,7 +17,7 @@ from archlux.types import Opening, Plan, Room, Wall
 PLAN = Plan(
     pieces=(Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
     murs=(Wall(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
-    ouvertures=(Opening(id="f", mur_id="m", s=0.5, largeur_rel=0.2),),
+    ouvertures=(Opening(id="f", wall_id="m", s=0.5, relative_width=0.2),),
     contour=((0.0, 0.0), (4.0, 0.0), (4.0, 3.5), (0.0, 3.5)),
 )
 
