@@ -514,7 +514,7 @@ la bibliothèque (M12) : `decision_vector`, `two_room_vectors`, `two_room_plan`,
 | 3.6 | `kw_only=True` sur `Piece`, `Mur`, `Ouverture` ; valeurs par défaut `murs=()`, `ouvertures=()` ; `Contexte.contour` repris du plan | §7 |
 | 3.7 | Tableaux gelés : `setflags(write=False)`, `MappingProxyType`, `field(compare=False)` pour `trace` ; `hash(plan)` ne plante plus | §7, Q-m5 |
 | 3.8 | Typage : alias `VecteurF = NDArray[np.float64]`, `NewType` pour les unités, `Indicateur` partagé, `TYPE_CHECKING` pour les paquets paresseux | §7 |
-| 3.9 | **API publique en anglais** : lots E4 et E5 du chantier E (alias français dépréciés jusqu'à la 1.0.0) ; supprimer les doublons `ExactSimulator` / `Manifest` | §4 Mineur |
+| 3.9 | **API publique en anglais** : lots E4 et E5 du chantier E (alias français dépréciés jusqu'à la 1.0.0) ; supprimer les doublons `ExactSimulator` / `Manifest`. Mesuré le 2026-09-25 : environ 200 noms publics et 10 types à renommer, pas 25. **Plan d'exécution par vagues : [`docs/plans/phase-3-9-english-api.md`](docs/plans/phase-3-9-english-api.md)** (décisions : classes, fonctions et modules avec alias ; champs sans alias ; valeurs de types de pièce avec le JSON v2) | §4 Mineur |
 | 3.10 | `is_feasible(plan, ctx) -> Verdict` : ne résout que le LP de faisabilité, rend le plan témoin, ne laisse jamais échapper `InvariantViole` | M2, §8 5c |
 | 3.11 | Exports publics : `Plan.to_dxf/to_ifc/to_svg`, acceptant `str` et `Path` | §8 étape 6 |
 | 3.12 | Diagnostic dual filtré sur les origines métier et exprimé en unités métier (m², points d'indicateur) | §3 n°9 |

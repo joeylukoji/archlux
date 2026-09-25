@@ -83,6 +83,7 @@ MIGRATED: tuple[str, ...] = (
     "tests/unites/test_dual_units.py",
     "tests/unites/test_shared_types.py",
     "tests/unites/test_keyword_only_types.py",
+    "docs/plans/phase-3-9-english-api.md",
     "src/archlux/arrays.py",
     "src/archlux/certify/dual.py",
     "tests/unites/test_seeds.py",
