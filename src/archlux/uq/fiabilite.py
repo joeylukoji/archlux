@@ -7,14 +7,22 @@ carnet d'expérience, pas du noyau.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.special import erf
 
 from archlux.erreurs import InvariantViole
-from archlux.uq.conforme import quantile_conforme
+from archlux.types import Regime
+from archlux.uq.conforme import CalibrateurConforme, quantile_conforme
 
-__all__ = ["crps", "diagramme_fiabilite", "stratifier_par_orientation"]
+__all__ = [
+    "CoverageReport",
+    "crps",
+    "diagramme_fiabilite",
+    "measure_coverage",
+    "stratifier_par_orientation",
+]
 
 _SIGMA_MIN = 1e-12
 _N_SECTEURS = 8
@@ -144,3 +152,77 @@ def stratifier_par_orientation(
     bacs = np.floor(angles / largeur).astype(int)
     bacs = np.clip(bacs, 0, n_secteurs - 1)
     return {k: np.flatnonzero(bacs == k) for k in range(n_secteurs)}
+
+
+@dataclass(frozen=True, slots=True)
+class CoverageReport:
+    """Empirical coverage of conformal intervals on a sample, and how wide they are.
+
+    Attributes
+    ----------
+    n : int
+        Sample size.
+    coverage : float
+        Share of truths inside ``[borne_inf, borne_sup]``.
+    mean_width : float
+        Mean interval width, in the unit of the indicator.
+    target_std : float
+        Standard deviation of the truths (``ddof=1``): an interval wider than this says
+        less than "somewhere in the usual range" (PLAN.md phase 2, J5).
+    """
+
+    n: int
+    coverage: float
+    mean_width: float
+    target_std: float
+
+    @property
+    def width_over_std(self) -> float:
+        """Mean width in units of the target spread; ``inf`` for a constant target."""
+        return self.mean_width / self.target_std if self.target_std > 0.0 else math.inf
+
+
+def measure_coverage(
+    calibrator: CalibrateurConforme,
+    predictions: np.ndarray,
+    truths: np.ndarray,
+    uncertainties: np.ndarray,
+    *,
+    regime: Regime,
+) -> CoverageReport:
+    """Bound every prediction and count the truths inside (AUDIT.md M12).
+
+    Parameters
+    ----------
+    calibrator : CalibrateurConforme
+        Fitted calibrator.
+    predictions, truths, uncertainties : numpy.ndarray
+        ``mu``, the oracle value and ``sigma``, point by point (the order of
+        :meth:`CalibrateurConforme.ajuster`), on a sample **never used for calibration**.
+    regime : {"exchangeable", "selected"}
+        Regime of the sample: ``"selected"`` when an optimizer chose the plans.
+
+    Returns
+    -------
+    CoverageReport
+
+    Raises
+    ------
+    InvariantViole
+        Arrays of different lengths, or fewer than two points.
+    """
+    mu, sigma, y = (
+        np.asarray(a, dtype=float).ravel() for a in (predictions, uncertainties, truths)
+    )
+    if not mu.size == sigma.size == y.size or mu.size < 2:
+        raise InvariantViole((f"need >= 2 aligned points, got {mu.size}, {sigma.size}, {y.size}",))
+    bounds = [
+        calibrator.borne(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
+    ]
+    inside = [b.borne_inf <= t <= b.borne_sup for b, t in zip(bounds, y, strict=True)]
+    return CoverageReport(
+        n=int(mu.size),
+        coverage=float(np.mean(inside)),
+        mean_width=float(np.mean([b.borne_sup - b.borne_inf for b in bounds])),
+        target_std=float(np.std(y, ddof=1)),
+    )
