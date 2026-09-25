@@ -34,6 +34,7 @@ AUTORISE: dict[str, frozenset[str]] = {
     "tolerances": frozenset(),
     "seeds": frozenset(),
     "arrays": frozenset(),
+    "_deprecation": frozenset(),
     # Door validation of the public arguments (PLAN.md 3.1): a leaf over `types`.
     "validation": frozenset({"types", "erreurs"}),
     "geom": frozenset({"types", "erreurs"}),
@@ -93,6 +94,9 @@ LEAVES: dict[str, frozenset[str]] = {
     "tolerances": frozenset({"__future__", "typing"}),
     "seeds": frozenset({"__future__", "hashlib"}),
     "arrays": frozenset({"__future__", "typing", "numpy"}),
+    "_deprecation": frozenset(
+        {"__future__", "sys", "warnings", "dataclasses", "typing", "collections"}
+    ),
 }
 """Modules importable by every layer, with the only imports they may make themselves."""
 
