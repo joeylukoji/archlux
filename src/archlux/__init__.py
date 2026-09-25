@@ -25,7 +25,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux._version import __version__
+from archlux.erreurs import (
+    DEPRECATED_NAMES as _DEPRECATED_EXCEPTIONS,
+)
 from archlux.erreurs import (
     ArchluxError,
     CalibrationLocked,
@@ -110,7 +114,7 @@ if TYPE_CHECKING:
 _LAZY_FUNCTIONS = {"legalize": "archlux.api"}
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
+def _lazy_attribute(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
     """Charger ``light``, ``bench``, ``feasibility`` et ``legalize`` à la première utilisation."""
     # Import local : ne pas polluer ``dir(archlux)`` avec ``importlib``.
     import importlib
@@ -122,6 +126,15 @@ def __getattr__(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
         globals()[name] = function  # resolved once: later lookups skip __getattr__
         return function
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+# The former French exception names (ADR 0001): deprecated aliases until 1.0.0, then the
+# lazy attributes above for everything else, so a from-import warns only once.
+__getattr__ = lazy_aliases(
+    __name__,
+    {old: Alias(globals()[new], f"archlux.{new}") for old, new in _DEPRECATED_EXCEPTIONS.items()},
+    fallback=_lazy_attribute,
+)
 
 
 def __dir__() -> list[str]:

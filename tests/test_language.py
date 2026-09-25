@@ -83,6 +83,7 @@ MIGRATED: tuple[str, ...] = (
     "tests/unites/test_dual_units.py",
     "tests/unites/test_shared_types.py",
     "tests/unites/test_deprecation_helper.py",
+    "tests/unites/test_exception_aliases.py",
     "tests/unites/test_rename_tool.py",
     "scripts/rename_identifiers.py",
     "scripts/neutrality.py",

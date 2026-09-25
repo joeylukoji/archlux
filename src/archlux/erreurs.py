@@ -12,6 +12,8 @@ cycle. Ici, les champs sont types en ``object`` et la dependance reste nulle.
 
 from __future__ import annotations
 
+from archlux._deprecation import Alias, lazy_aliases
+
 __all__ = [
     "ArchluxError",
     "CalibrationLocked",
@@ -289,3 +291,21 @@ class GridNotRecoverable(UnsupportedInput):
             f"tiling grid not recoverable: {excess} cells covered twice, {missing} "
             "uncovered; raise budget_reparation or fix the plan"
         )
+
+
+DEPRECATED_NAMES = {
+    "OrdreIncoherent": "InconsistentOrder",
+    "SeparationManquante": "MissingSeparation",
+    "Infaisable": "Infeasible",
+    "InvariantViole": "InvariantViolation",
+    "CalibrationVerrouillee": "CalibrationLocked",
+    "ModeleModifie": "ModelModified",
+    "SubstitutInvalide": "InvalidSurrogate",
+}
+"""Former French names of the exceptions, kept as deprecated aliases until 1.0.0 (ADR 0001,
+PLAN.md 3.9 wave 1). Not part of ``__all__``."""
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {old: Alias(globals()[new], f"archlux.erreurs.{new}") for old, new in DEPRECATED_NAMES.items()},
+)

@@ -77,3 +77,32 @@ def test_a_from_import_warns_exactly_once() -> None:
         assert sum(issubclass(w.category, DeprecationWarning) for w in caught) == 1
     finally:
         del sys.modules["archlux_demo_from_import"]
+
+
+def test_a_fallback_serves_the_names_that_are_not_aliases() -> None:
+    """A module with its own lazy attributes keeps them, and still warns only once."""
+    import sys
+    import types
+
+    served = object()
+
+    def fallback(name: str) -> object:
+        if name == "lazy":
+            return served
+        raise AttributeError(name)
+
+    module = types.ModuleType("archlux_demo_fallback")
+    module.__getattr__ = lazy_aliases(  # type: ignore[attr-defined]
+        "archlux_demo_fallback", {"Old": Alias(NEW, "New")}, fallback=fallback
+    )
+    sys.modules["archlux_demo_fallback"] = module
+    try:
+        assert module.lazy is served  # type: ignore[attr-defined]
+        with pytest.raises(AttributeError):
+            module.absent  # type: ignore[attr-defined]  # noqa: B018
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            exec("from archlux_demo_fallback import Old", {})
+        assert sum(issubclass(w.category, DeprecationWarning) for w in caught) == 1
+    finally:
+        del sys.modules["archlux_demo_fallback"]
