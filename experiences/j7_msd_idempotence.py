@@ -1,57 +1,44 @@
-"""Idempotence de legalize sur corpus reel MSD — jalon 7.
+"""Idempotence of legalize on real MSD plans, milestone 7 (PLAN.md phase 2).
 
-Un plan deja valide doit ressortir inchange : l'optimum L1 est alors e = 0.
-Corpus non redistribue : passer le chemin du CSV en argument.
+A valid plan must come out unchanged (the L1 optimum is then e = 0). Usage:
+python experiences/j7_msd_idempotence.py MSD_CSV [N_APARTMENTS] [OUT_DIR]. MSD is not
+redistributed (docs/donnees/msd.md). Byte-stable: no timing (§9 budgets).
 """
 
-from __future__ import annotations
-
 import sys
-import time
 from pathlib import Path
 
 import numpy as np
 
 import archlux as ax
-from archlux.certify.proof import verify_exactly
+from archlux.certify import verify_exactly
 from archlux.data.chargeurs import StatistiquesChargement, charger_msd
 
-CSV = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
-CIBLE = int(sys.argv[2]) if len(sys.argv) > 2 else 400
-
+MSD, N = Path(sys.argv[1]), int(sys.argv[2]) if len(sys.argv) > 2 else 400
+OUT = Path(sys.argv[3] if len(sys.argv) > 3 else "resultats") / "j7_msd_idempotence.md"
 stats = StatistiquesChargement()
-avant = apres = echecs = 0
-depl: list[float] = []
-temps: list[float] = []
-tailles: list[int] = []
-for appart in charger_msd(CSV, statistiques=stats, limite=CIBLE):
-    avant += verify_exactly(appart.plan, appart.contexte).valide
-    tailles.append(len(appart.plan.pieces))
-    debut = time.perf_counter()
+valid_before = valid_after = refused = 0
+moved: list[float] = []
+sizes: list[int] = []
+for apartment in charger_msd(MSD, statistiques=stats, limite=N):
+    valid_before += verify_exactly(apartment.plan, apartment.contexte).valide
+    sizes.append(len(apartment.plan.pieces))
     try:
-        corrige = ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)
+        out = ax.legalize(apartment.plan, apartment.contexte, fusions=apartment.fusions)
     except ax.ArchluxError:
-        echecs += 1
+        refused += 1
         continue
-    temps.append((time.perf_counter() - debut) * 1000.0)
-    apres += corrige.certificat.geometrie.valide
-    depl.append(corrige.certificat.geometrie.deplacement_max)
-
+    valid_after += out.certificat.geometrie.valide  # type: ignore[union-attr]
+    moved.append(out.certificat.geometrie.deplacement_max)  # type: ignore[union-attr]
 n = stats.retenus
-Path("resultats").mkdir(exist_ok=True)
-Path("resultats/j7_msd_idempotence.md").write_text(
-    "# Jalon 7 — idempotence sur MSD\n\n"
-    f"{stats.resume()}\n\n"
-    f"appartements evalues : {n}\n"
-    f"sous-rectangles : median {int(np.median(tailles))}, max {max(tailles)}\n"
-    f"valides avant legalize : {avant}/{n}\n"
-    f"valides apres legalize : {apres}/{n}\n"
-    f"echecs : {echecs}\n"
-    f"deplacement max : median {np.median(depl):.6f} m, max {max(depl):.6f} m\n"
-    f"temps : median {np.median(temps):.1f} ms, p90 {np.percentile(temps, 90):.1f} ms\n",
+OUT.write_text(
+    "# Milestone 7: idempotence on MSD\n\n"
+    f"```\n{stats.resume()}\n```\n\n"
+    f"apartments evaluated: {n}\n"
+    f"sub-rectangles: median {int(np.median(sizes))}, max {max(sizes)}\n"
+    f"valid before legalize: {valid_before}/{n}\n"
+    f"valid after legalize: {valid_after}/{n}\n"
+    f"refused: {refused}\n"
+    f"max displacement: median {np.median(moved):.6f} m, max {max(moved):.6f} m\n",
     encoding="utf-8",
-)
-print(
-    f"n={n} avant={avant} apres={apres} echecs={echecs} "
-    f"depl_max={max(depl):.6f} temps_median={np.median(temps):.1f} ms"
 )

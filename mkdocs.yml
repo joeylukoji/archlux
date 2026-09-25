@@ -77,6 +77,17 @@ nav:
       - Swiss Dwellings: donnees/swiss-dwellings.md
       - CubiCasa5K: donnees/cubicasa.md
       - Imputation: donnees/imputation.md
+  - Milestone reviews:
+      - Overview: revues/index.md
+      - J1 types and JSON: revues/j1.md
+      - J2 classic legalization: revues/j2.md
+      - J3 performance legalization: revues/j3.md
+      - J4 gradient checkpoint: revues/j4.md
+      - J5 conformal coverage: revues/j5.md
+      - J6 L rooms, active, IFC: revues/j6.md
+      - J7 real MSD plans: revues/j7.md
+      - J8 generated plans: revues/j8.md
+      - J9 orientation: revues/j9.md
   - Publication 1.0: publication-1.0.md
   - Limites: limites.md
   - Contribuer: contribution.md
@@ -86,6 +97,7 @@ nav:
       - Architecture: specification/ARCHITECTURE.md
       - Glossary (FR -> EN): glossary.md
       - ADR 0001 English-first: adr/0001-english-first.md
+      - ADR 0002 Milestone criteria: adr/0002-milestone-criteria-rewritten.md
       - Blueprint detaille: specification/Project_Architecture_Blueprint.md
       - Conventions de documentation: specification/DOCUMENTATION.md
       - Jalon 2: specification/MILESTONE-2.md

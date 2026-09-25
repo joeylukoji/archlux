@@ -21,11 +21,12 @@ from archlux.export import to_ifc
 from archlux.export.wilson import intervalle_wilson
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j6_ifc.csv"
+N = int(sys.argv[2]) if len(sys.argv) > 2 else TAILLE_MAX  # 2.8 s of validation per file
 with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(("plan_id", "exported", "validator_errors"))
     accepted = 0
-    for k, (plan_id, plan) in enumerate(sorted(generer_corpus(TAILLE_MAX, seed=17).items())):
+    for k, (plan_id, plan) in enumerate(sorted(generer_corpus(N, seed=17).items())):
         cut = next(r.x + r.w for r in plan.pieces if r.id == "sw")
         wall = ax.Mur("lb", (cut, 0.0), (cut, 9.0), porteur=True)
         ctx = ax.Contexte(
@@ -41,5 +42,5 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
             ifcopenshell.validate.validate(ifcopenshell.open(str(path)), logger, express_rules=True)
         accepted += exported and not logger.statements
         writer.writerow((plan_id, exported, len(logger.statements) if exported else ""))
-low, high = intervalle_wilson(accepted, TAILLE_MAX)
-print(f"accepted by ifcopenshell: {accepted}/{TAILLE_MAX}, Wilson 95 % [{low:.3f}, {high:.3f}]")
+low, high = intervalle_wilson(accepted, N)
+print(f"accepted by ifcopenshell: {accepted}/{N}, Wilson 95 % [{low:.3f}, {high:.3f}]")

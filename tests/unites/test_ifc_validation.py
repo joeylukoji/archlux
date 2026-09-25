@@ -52,11 +52,12 @@ def test_an_opening_on_an_unknown_wall_is_refused(tmp_path: Path) -> None:
     assert not to_ifc(plan, tmp_path / "plan.ifc", validate=True).valide
 
 
-def _errors(path: Path) -> list[str]:
+def _errors(path: Path, *, rules: bool = True) -> list[str]:
+    """Validator messages; ``rules=False`` checks the schema only (0.02 s, not 2.8 s)."""
     ifcopenshell = pytest.importorskip("ifcopenshell")
     validate = pytest.importorskip("ifcopenshell.validate")
     logger = validate.json_logger()
-    validate.validate(ifcopenshell.open(str(path)), logger, express_rules=True)
+    validate.validate(ifcopenshell.open(str(path)), logger, express_rules=rules)
     return [str(statement["message"]).splitlines()[0] for statement in logger.statements]
 
 
@@ -72,7 +73,7 @@ def test_ifcopenshell_accepts_every_exported_plan(
 ) -> None:
     path = tmp_path_factory.mktemp("ifc") / "plan.ifc"
     assert to_ifc(plan, path, validate=True).valide
-    assert _errors(path) == []
+    assert _errors(path, rules=False) == []
 
 
 def test_walls_are_drawn_where_they_are(tmp_path: Path) -> None:
