@@ -352,6 +352,20 @@ hors mypy et hors tests (phase 2, outillage) ; renommer `couverture` en
   pas un Z.
 - Contrôler la surface sur le polygone recomposé, et non par sous-rectangle.
 
+**État du lot 1.7 : terminé (2026-09-25).** `etendre_fusions` garde, sur l'axe
+orthogonal, l'ordre des extrémités des sous-rectangles et une longueur de contact
+minimale (`overlap_constraints`, `largeur_min`) : un L ne devient plus ni un T, ni un Z,
+ni deux pièces. La surface minimale d'une pièce fusionnée est prouvée sur l'union
+(`verify_exactly(..., fusions=)`) ; le solveur donne à chaque partie une part
+proportionnelle du minimum (`minimum_area_shares`, prudent : un refus à tort est
+possible, un faux certificat non). Le contrôleur indépendant mesure une pièce fusionnée
+d'un seul tenant ; propriété Hypothesis dédiée (`test_l_room_guarantees.py`).
+Revue : 1 critique corrigé (un porteur sur la couture d'un L était certifié : la cuisine
+était coupée en deux) et 1 majeur (col de 1e-7 m accepté). Revue finale de la phase 1 :
+les parties d'un L gardent chacune leur côté d'un porteur, sauf si deux d'entre elles
+prennent des côtés opposés (seul cas où la couture peut tomber sur le mur) ; le côté de
+la boîte englobante, imposé à toutes, déplaçait un pied qui ne touchait pas le mur.
+
 ### 1.8 Documentation alignée sur le code (§5.8)
 
 - Corriger **chaque ligne** du tableau « écarts doc ↔ code » : README l.156-205, 251,
@@ -363,6 +377,20 @@ hors mypy et hors tests (phase 2, outillage) ; renommer `couverture` en
   écrire « vérité terrain » ni « exact » à son sujet.
 - Premier paragraphe du README : dire clairement dans quel régime l'outil fonctionne
   (93,9 % sur plans corrompus, environ 20 % sur sorties de générateur).
+
+**État du lot 1.8 : terminé (2026-09-25).** README réécrit en anglais (lot E2), premier
+paragraphe sur le régime (93,9 % sur plans MSD corrompus avec repli, environ 20 % sur
+sorties HouseDiffusion, chiffres d'avant le lot 1.1, à remesurer en phase 2) ; chaque
+exemple du README et de `docs/` est exécuté par `tests/docs/test_examples.py`
+(`KNOWN_BROKEN` vide). Chaque ligne du tableau §5.8 de l'audit est corrigée ; front de
+Pareto et non-Manhattan déplacés dans la feuille de route. `ARCHITECTURE.md` §1, 2, 3,
+9, 11 alignés sur le code, `Project_Architecture_Blueprint.md` régénéré.
+`SimulateurExact` → `SplitFluxOracle` (alias `SimulateurExact` et `ExactSimulator`
+dépréciés jusqu'à 1.0.0), jamais « exact » ni « vérité terrain ». Lot E3 :
+`ARCHITECTURE.md`, `CONTRIBUTING.md`, `AGENTS.md` et `CLAUDE.md` traduits, ajoutés à la
+liste des fichiers migrés de `tests/test_language.py`. Les chiffres de `api.py`
+(93,0 % / 97,6 %, colonne `pavage=True`) et du README (93,9 %, colonne repli) sont
+distingués dans la docstring.
 
 **Porte de sortie de la phase 1** :
 - banc `benchmarks/guarantees` : **0 certificat mensonger et 0 plantage dans tous les

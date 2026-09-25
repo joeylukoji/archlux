@@ -193,7 +193,9 @@ def legalize(
         À activer dès que l'entrée peut porter un **jour** — c'est le cas des
         sorties de modèles génératifs. Mesuré sur 4 796 corruptions de 300 plans
         MSD réels (`resultats/j7_reparation.md`) : la réparation passe de 35,9 %
-        à 93,0 %, et sur les jours seuls de 10,0 % à 97,6 %.
+        à 93,0 %, et sur les jours seuls de 10,0 % à 97,6 %. The 93.9 % of the README
+        is the fallback column (``pavage=True``, else plain ``legalize``); every figure
+        was measured before batch 1.1.
 
         Exige que la trame du plan proposé soit récupérable
         (:func:`~archlux.geom.pavage.deduire_trame`) ; sinon ``GridNotRecoverable``
