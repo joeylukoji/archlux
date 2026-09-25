@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
@@ -538,3 +539,24 @@ class Certificate:
         from archlux.certify.rapport import rendre
 
         return rendre(self)
+
+
+DEPRECATED_NAMES = {
+    "Piece": "Room",
+    "Mur": "Wall",
+    "Ouverture": "Opening",
+    "Contexte": "Context",
+    "Referentiel": "Regulation",
+    "Certificat": "Certificate",
+    "PreuveGeometrique": "GeometricProof",
+    "BornePerformance": "PerformanceBound",
+    "Manifeste": "Manifest",
+    "ModeleTrace": "ModelTrace",
+}
+"""Former French names of the model classes, kept as deprecated aliases until 1.0.0 (ADR 0001,
+PLAN.md 3.9 wave 2). Not part of ``__all__``."""
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {old: Alias(globals()[new], f"archlux.types.{new}") for old, new in DEPRECATED_NAMES.items()},
+)

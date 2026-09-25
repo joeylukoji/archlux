@@ -44,6 +44,7 @@ from archlux.errors import (
     ModelModified,
     UnsupportedInput,
 )
+from archlux.types import DEPRECATED_NAMES as _DEPRECATED_MODEL
 from archlux.types import (
     Certificate,
     Context,
@@ -132,7 +133,11 @@ def _lazy_attribute(name: str) -> Any:  # noqa: ANN401 - a lazy module or functi
 # lazy attributes above for everything else, so a from-import warns only once.
 __getattr__ = lazy_aliases(
     __name__,
-    {old: Alias(globals()[new], f"archlux.{new}") for old, new in _DEPRECATED_EXCEPTIONS.items()},
+    {
+        old: Alias(globals()[new], f"archlux.{new}")
+        for old, new in {**_DEPRECATED_EXCEPTIONS, **_DEPRECATED_MODEL}.items()
+        if new in globals()  # only what the root exports (not Manifest, ModelTrace)
+    },
     fallback=_lazy_attribute,
 )
 

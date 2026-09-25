@@ -8,6 +8,19 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 2: English model classes
+
+#### Changed — API (pre-1.0; the old names keep working, deprecated until 1.0.0)
+- `Piece` to `Room`, `Mur` to `Wall`, `Ouverture` to `Opening`, `Contexte` to `Context`,
+  `Referentiel` to `Regulation`, `Certificat` to `Certificate`, `PreuveGeometrique` to
+  `GeometricProof`, `BornePerformance` to `PerformanceBound`, `Manifeste` to `Manifest`,
+  `ModeleTrace` to `ModelTrace`. The old names are the same objects, served with a
+  `DeprecationWarning` by `archlux.types` and (for the eight it exports) by `archlux`.
+- `archlux.bench.Manifest` was an alias of the manifest class: it is now that class itself
+  under its new name, and the duplicate is gone.
+- Fields keep their French names until wave 3 (`Plan.pieces`, `Wall.porteur`...).
+- The output of `legalize` on the neutrality corpus is byte-identical to before.
+
 ### Remediation — PLAN.md phase 3.9, wave 1: English exceptions
 
 #### Changed — API (pre-1.0; the old names keep working, deprecated until 1.0.0)
