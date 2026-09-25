@@ -171,3 +171,41 @@ def test_legalize_leaves_a_valid_l_beside_a_partial_wall_in_place() -> None:
     assert result.certificat is not None and result.certificat.geometrie.valide
     assert result.certificat.geometrie.deplacement_max == pytest.approx(0.0, abs=1e-6)
     assert not checkers.violations(result, ctx, fusions=(room,))
+
+
+# --- Phase 1 gate at 2000 examples: an L may close its step, never change order -----------
+
+
+def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
+    """Bar [0,1]x[1,2] under a foot [0,1.01]x[2,9]: a 1 cm step on the high ends.
+
+    Frank-Wolfe meets the ends (the L degenerates into a rectangle): the non-strict order
+    of ``overlap_constraints`` allows it, and every exact guarantee holds."""
+    from archlux.geom.rectilineaire import PieceRectilineaire
+    from archlux.light.analytique import SubstitutAnalytique
+
+    wall = Mur(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), porteur=True)
+    bar = Piece(id="f__0", type="sejour", x=0.0, y=1.0, w=1.0, h=1.0)
+    foot = Piece(id="f__1", type="sejour", x=0.0, y=2.0, w=1.01, h=7.0)
+    ctx = replace(
+        CONTEXTE_DEFAUT,
+        structure=Structure(murs_porteurs=(wall,)),
+        referentiel=Referentiel(aires_min=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
+    )
+    rest = (
+        Piece(id="p0", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
+        Piece(id="p2", type="sejour", x=1.0, y=0.0, w=1.0, h=2.0),
+        Piece(id="p3", type="sejour", x=2.0, y=0.0, w=10.0, h=2.0),
+        Piece(id="p5", type="chambre", x=1.01, y=2.0, w=10.99, h=7.0),
+    )
+    plan = Plan(pieces=(bar, foot, *rest), murs=(wall,), ouvertures=(), contour=ctx.contour)
+    room = PieceRectilineaire(
+        id="f", rectangles=(bar, foot), fusions=((0, 1, "partage_bord_haut"),)
+    )
+    result = archlux.legalize(plan, ctx, fusions=(room,), objective=SubstitutAnalytique())
+    assert not checkers.violations(result, ctx, fusions=(room,))
+    by_id = {r.id: r for r in result.pieces}
+    low = (by_id["f__0"].x, by_id["f__1"].x)
+    high = (by_id["f__0"].x + by_id["f__0"].w, by_id["f__1"].x + by_id["f__1"].w)
+    assert low[0] == pytest.approx(low[1])  # aligned ends stay aligned
+    assert high[0] <= high[1] + 1e-9  # the step keeps its order, or closes
