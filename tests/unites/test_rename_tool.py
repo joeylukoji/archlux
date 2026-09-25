@@ -184,3 +184,14 @@ def test_an_allowed_conflict_is_renamed_but_reported_unproved(tool, tmp_path: Pa
     assert tool.main(args) == 0
     assert path.read_text(encoding="utf-8") == "import shapely.errors\nopen(f, errors='x')\n"
     assert "unproved" in capsys.readouterr().out
+
+
+def test_the_proof_only_swaps_back_the_names_the_file_uses(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """``Room`` already exists in this file; only the unrelated ``Piece`` rename is applied."""
+    path = tmp_path / "m.py"
+    path.write_text("from x import Room, Chambre\nvalue = Room(Chambre)\n", encoding="utf-8")
+    args = ["--map", "Chambre=Bedroom", "--map", "Piece=Room", "--apply", str(path)]
+    assert tool.main(args) == 0
+    assert (
+        path.read_text(encoding="utf-8") == "from x import Room, Bedroom\nvalue = Room(Bedroom)\n"
+    )

@@ -360,6 +360,12 @@ def _proved(path: Path, text: str, mapping: dict[str, str], allowed: Sequence[st
     A conflict listed in ``allowed`` (the reviewer checked that the new name is a keyword
     or an attribute there, not a variable) is renamed but reported **unproved**.
     """
+    present = {
+        token.string
+        for token in tokenize.generate_tokens(io.StringIO(text).readline)
+        if token.type == tokenize.NAME
+    }
+    mapping = {old: new for old, new in mapping.items() if old in present}  # what this file uses
     conflicts = identifier_conflicts(text, mapping)
     if conflicts and set(conflicts) <= set(allowed):
         print(f"unproved: {path}: {conflicts} renamed beside existing new names; review by hand")
