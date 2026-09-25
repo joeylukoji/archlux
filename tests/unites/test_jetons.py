@@ -45,8 +45,8 @@ def test_ouvertures_sont_des_jetons_distincts() -> None:
     ouv = Ouverture(id="o0", mur_id="m0", s=0.5, largeur_rel=0.3)
     plan = Plan(
         pieces=(
-            Piece("a", "sejour", 0.0, 0.0, 6.0, 4.5),
-            Piece("b", "chambre", 6.0, 0.0, 6.0, 4.5),
+            Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
+            Piece(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
         ),
         murs=(mur,),
         ouvertures=(ouv,),

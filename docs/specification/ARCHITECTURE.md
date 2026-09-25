@@ -156,12 +156,12 @@ def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/tes
 ## 6. Data model — invariants
 
 ```python
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)   # Piece, Mur, Ouverture: keyword-only
 class Piece:
     id: str; type: str
     x: float; y: float; w: float; h: float      # metres
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Ouverture:
     id: str
     mur_id: str            # ← relative to a wall
@@ -173,9 +173,9 @@ class Ouverture:
 @dataclass(frozen=True, slots=True)
 class Plan:
     pieces: tuple[Piece, ...]
-    murs: tuple[Mur, ...]
-    ouvertures: tuple[Ouverture, ...]
-    contour: tuple[tuple[float, float], ...]
+    murs: tuple[Mur, ...] = ()
+    ouvertures: tuple[Ouverture, ...] = ()
+    contour: tuple[tuple[float, float], ...] = ()   # empty: taken from Contexte.contour
     certificat: "Certificat | None" = None
 ```
 

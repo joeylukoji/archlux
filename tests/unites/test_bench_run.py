@@ -14,7 +14,7 @@ from archlux.types import ModeleTrace, Orientation, Piece, Plan
 
 def _plan() -> Plan:
     return Plan(
-        pieces=(Piece("a", "sejour", 0.0, 0.0, 6.0, 9.0),),
+        pieces=(Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),),
         murs=(),
         ouvertures=(),
         contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),

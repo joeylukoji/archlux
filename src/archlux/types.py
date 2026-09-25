@@ -55,7 +55,7 @@ share it."""
 # ======================================================================================
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Piece:
     """Pièce rectangulaire, en mètres, coin bas-gauche en ``(x, y)``.
 
@@ -89,7 +89,7 @@ class Piece:
         return (self.x + self.w / 2.0, self.y + self.h / 2.0)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Mur:
     """Segment de mur entre deux points, porteur ou non.
 
@@ -113,7 +113,7 @@ class Mur:
         return math.dist(self.a, self.b)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Ouverture:
     """Baie définie **relativement à son mur**, jamais en coordonnées absolues.
 
@@ -202,9 +202,9 @@ class Plan:
     """
 
     pieces: tuple[Piece, ...]
-    murs: tuple[Mur, ...]
-    ouvertures: tuple[Ouverture, ...]
-    contour: tuple[Point, ...]
+    murs: tuple[Mur, ...] = ()
+    ouvertures: tuple[Ouverture, ...] = ()
+    contour: tuple[Point, ...] = ()
     certificat: Certificat | None = None
     # Typé ``object`` à dessein : ``solve.Trace`` vivrait une arête ``types → solve``,
     # interdite. La trace n'est pas sérialisée ; seuls les appelants ``trace=True``
@@ -358,9 +358,11 @@ class Contexte:
 
     structure: Structure
     orientation: Orientation
-    contour: tuple[Point, ...]
     referentiel: Referentiel
     programme: tuple[str, ...] = ()
+    contour: tuple[Point, ...] = field(default=(), kw_only=True)
+    """Outline of the site. Empty means "the outline of the plan": ``legalize`` takes
+    ``plan.contour`` then (an outline given here wins over the plan's)."""
 
 
 # ======================================================================================

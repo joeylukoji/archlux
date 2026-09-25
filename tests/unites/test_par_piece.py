@@ -121,8 +121,8 @@ def test_les_parts_ignorent_les_baies_pour_les_substituts_analytiques() -> None:
     x = _plan(3)
     orientation = Orientation(deg=90.0)
     baies = Baies(
-        murs=(Mur("m", (0.0, 0.0), (6.0, 0.0)),),
-        ouvertures=(Ouverture("f", "m", 0.5, 0.9),),
+        murs=(Mur(id="m", a=(0.0, 0.0), b=(6.0, 0.0)),),
+        ouvertures=(Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.9),),
     )
     for classe in IMPLEMENTATIONS:
         substitut = classe()

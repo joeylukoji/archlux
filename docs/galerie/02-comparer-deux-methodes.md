@@ -23,10 +23,16 @@ plan = ax.Plan(
     contour=contour,
 )
 ctx_n = ax.Contexte(
-    ax.Structure(()), ax.Orientation(0.0), contour, ax.Referentiel((), 1.0),
+    structure=ax.Structure(()),
+    orientation=ax.Orientation(0.0),
+    contour=contour,
+    referentiel=ax.Referentiel((), 1.0),
 )
 ctx_s = ax.Contexte(
-    ax.Structure(()), ax.Orientation(180.0), contour, ax.Referentiel((), 1.0),
+    structure=ax.Structure(()),
+    orientation=ax.Orientation(180.0),
+    contour=contour,
+    referentiel=ax.Referentiel((), 1.0),
 )
 q_l1 = ax.legalize(plan, ctx_n)
 q_n = ax.legalize(plan, ctx_n, objective=SubstitutAnalytique())

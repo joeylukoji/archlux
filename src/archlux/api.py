@@ -48,7 +48,7 @@ from archlux.lmo.solveur import SolutionLP
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.tolerances import SNAP_M
 from archlux.types import Certificat, Contexte, Plan, PreuveGeometrique
-from archlux.validation import validate_inputs
+from archlux.validation import resolve_outline, validate_inputs
 
 if TYPE_CHECKING:
     from archlux.certify.borne import Calibration
@@ -333,6 +333,7 @@ def legalize(
     if objective is not None and not isinstance(objective, Substitut):
         raise TypeError("objective doit implémenter archlux.light.protocole.Substitut")
     validate_inputs(plan, ctx, budget=budget, budget_reparation=budget_reparation)
+    ctx = resolve_outline(plan, ctx)
     if calibration is not None:
         if objective is None:
             raise InvalidInput(

@@ -53,7 +53,7 @@ tesselation hexagonale du sol, soleil direct **et** diffus.
 1. Télécharger depuis Zenodo (compte non requis, fichiers de l'ordre du Go).
 2. Reconstruire les `Plan` : WKT `POLYGON` des pièces → rectangles englobants ou
    décomposition rectilinéaire (`geom.rectilineaire.decomposer`) ; WKT des
-   ouvertures → `Ouverture(mur_id, s, largeur_rel)` par projection sur le mur
+   ouvertures → `Ouverture(mur_id=..., s=..., largeur_rel=...)` par projection sur le mur
    porteur le plus proche — **jamais de coordonnées absolues**
    (`ARCHITECTURE.md` §10).
 3. Dédupliquer : `data.dedup`, distance de Hausdorff \(0{,}02\,\mathrm{m}\).

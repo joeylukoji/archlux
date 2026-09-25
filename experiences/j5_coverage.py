@@ -29,7 +29,12 @@ def columns(xs: tuple, orientations: tuple) -> list[np.ndarray]:
 def chosen(xs: tuple, orientations: tuple, q: float) -> tuple:
     """Start from each held-out plan and let Frank-Wolfe choose where it goes."""
     fw, ref = Daylight(model, q_chapeau=q), ax.Referentiel((), 1.0)
-    ctx = [ax.Contexte(ax.Structure(()), o, TWO_ROOM_OUTLINE, ref) for o in orientations]
+    ctx = [
+        ax.Contexte(
+            structure=ax.Structure(()), orientation=o, contour=TWO_ROOM_OUTLINE, referentiel=ref
+        )
+        for o in orientations
+    ]
     plans = (ax.legalize(two_room_plan(x), c, objective=fw) for x, c in zip(xs, ctx, strict=True))
     return tuple(decision_vector(plan) for plan in plans)
 

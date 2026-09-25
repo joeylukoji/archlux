@@ -19,11 +19,14 @@ FIELDS = ("plan_id", "amplitude_m", "pavage", "valid_before", "status", "valid_a
 
 def context(plan: ax.Plan) -> ax.Contexte:
     cut = next(r.x + r.w for r in plan.pieces if r.id == "sw")
-    wall = ax.Mur("lb", (cut, 0.0), (cut, 9.0), porteur=True)
+    wall = ax.Mur(id="lb", a=(cut, 0.0), b=(cut, 9.0), porteur=True)
     kinds = sorted({r.type for r in plan.pieces})
     minima = tuple((t, 0.8 * min(r.w * r.h for r in plan.pieces if r.type == t)) for t in kinds)
     return ax.Contexte(
-        ax.Structure((wall,)), ax.Orientation(0.0), plan.contour, ax.Referentiel(minima, 1.0)
+        structure=ax.Structure((wall,)),
+        orientation=ax.Orientation(0.0),
+        contour=plan.contour,
+        referentiel=ax.Referentiel(minima, 1.0),
     )
 
 

@@ -29,9 +29,12 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
     accepted = 0
     for plan_id, plan in sorted(generer_corpus(N, seed=17).items()):
         cut = next(r.x + r.w for r in plan.pieces if r.id == "sw")
-        wall = ax.Mur("lb", (cut, 0.0), (cut, 9.0), porteur=True)
+        wall = ax.Mur(id="lb", a=(cut, 0.0), b=(cut, 9.0), porteur=True)
         ctx = ax.Contexte(
-            ax.Structure((wall,)), ax.Orientation(0.0), plan.contour, ax.Referentiel((), 1.0)
+            structure=ax.Structure((wall,)),
+            orientation=ax.Orientation(0.0),
+            contour=plan.contour,
+            referentiel=ax.Referentiel((), 1.0),
         )
         repaired = ax.legalize(
             corrompre(plan, seed=derive(17, f"ifc/{plan_id}"))[0], ctx, pavage=True

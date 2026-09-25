@@ -32,10 +32,10 @@ def _pavage_2x2(largeur_sw: float = 5.0) -> Plan:
     """Pavage 2x2 ; `largeur_sw` < 5 ouvre un jour sous la piece nord-ouest."""
     return Plan(
         pieces=(
-            Piece("sw", "sejour", 0.0, 0.0, largeur_sw, 4.0),
-            Piece("se", "chambre", 5.0, 0.0, 7.0, 4.0),
-            Piece("nw", "cuisine", 0.0, 4.0, 5.0, 5.0),
-            Piece("ne", "sdb", 5.0, 4.0, 7.0, 5.0),
+            Piece(id="sw", type="sejour", x=0.0, y=0.0, w=largeur_sw, h=4.0),
+            Piece(id="se", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
+            Piece(id="nw", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
+            Piece(id="ne", type="sdb", x=5.0, y=4.0, w=7.0, h=5.0),
         ),
         murs=(),
         ouvertures=(),
@@ -48,11 +48,11 @@ def _moulin() -> Plan:
     contour = ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0), (0.0, 9.0))
     return Plan(
         pieces=(
-            Piece("A", "sejour", 0.0, 6.0, 6.0, 3.0),
-            Piece("B", "sejour", 6.0, 3.0, 3.0, 6.0),
-            Piece("C", "sejour", 3.0, 0.0, 6.0, 3.0),
-            Piece("D", "sejour", 0.0, 0.0, 3.0, 6.0),
-            Piece("E", "sejour", 3.0, 3.0, 3.0, 3.0),
+            Piece(id="A", type="sejour", x=0.0, y=6.0, w=6.0, h=3.0),
+            Piece(id="B", type="sejour", x=6.0, y=3.0, w=3.0, h=6.0),
+            Piece(id="C", type="sejour", x=3.0, y=0.0, w=6.0, h=3.0),
+            Piece(id="D", type="sejour", x=0.0, y=0.0, w=3.0, h=6.0),
+            Piece(id="E", type="sejour", x=3.0, y=3.0, w=3.0, h=3.0),
         ),
         murs=(),
         ouvertures=(),
@@ -87,9 +87,9 @@ def test_contour_rectilineaire_est_accepte() -> None:
     contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 4.0), (5.0, 4.0), (5.0, 9.0), (0.0, 9.0))
     plan = Plan(
         pieces=(
-            Piece("a", "sejour", 0.0, 0.0, 5.0, 4.0),
-            Piece("b", "chambre", 5.0, 0.0, 7.0, 4.0),
-            Piece("c", "cuisine", 0.0, 4.0, 5.0, 5.0),
+            Piece(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=4.0),
+            Piece(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
+            Piece(id="c", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
         ),
         murs=(),
         ouvertures=(),
@@ -116,8 +116,8 @@ def test_une_cloison_etroite_n_est_pas_ecrasee() -> None:
     """Le refus d'ecraser une piece borne la consolidation."""
     plan = Plan(
         pieces=(
-            Piece("couloir", "couloir", 0.0, 0.0, 0.4, 9.0),
-            Piece("sejour", "sejour", 0.4, 0.0, 11.6, 9.0),
+            Piece(id="couloir", type="couloir", x=0.0, y=0.0, w=0.4, h=9.0),
+            Piece(id="sejour", type="sejour", x=0.4, y=0.0, w=11.6, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -130,9 +130,9 @@ def _trois_pieces_sur_quatre() -> Plan:
     """Pavage 2x2 ampute de sa piece nord-est : une cellule reste vide."""
     return Plan(
         pieces=(
-            Piece("sw", "sejour", 0.0, 0.0, 5.0, 4.0),
-            Piece("se", "chambre", 5.0, 0.0, 7.0, 4.0),
-            Piece("nw", "cuisine", 0.0, 4.0, 5.0, 5.0),
+            Piece(id="sw", type="sejour", x=0.0, y=0.0, w=5.0, h=4.0),
+            Piece(id="se", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
+            Piece(id="nw", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
         ),
         murs=(),
         ouvertures=(),
@@ -171,8 +171,8 @@ def test_le_budget_borne_la_reparation() -> None:
     """Au-dela du budget, la faute n'est plus une cote fausse : on refuse."""
     plan = Plan(
         pieces=(
-            Piece("a", "sejour", 0.0, 0.0, 2.0, 3.0),
-            Piece("b", "chambre", 4.0, 6.0, 2.0, 3.0),
+            Piece(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=3.0),
+            Piece(id="b", type="chambre", x=4.0, y=6.0, w=2.0, h=3.0),
         ),
         murs=(),
         ouvertures=(),
@@ -220,8 +220,8 @@ def test_chevauchement_simple_est_resorbe_par_le_support() -> None:
     """
     plan = Plan(
         pieces=(
-            Piece("a", "sejour", 0.0, 0.0, 7.0, 9.0),
-            Piece("b", "chambre", 5.0, 0.0, 7.0, 9.0),
+            Piece(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
+            Piece(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
         murs=(),
         ouvertures=(),
@@ -237,8 +237,8 @@ def test_chevauchement_structurel_est_refuse() -> None:
     """Une piece **contenue** dans une autre : aucune fusion de lignes ne la sauve."""
     plan = Plan(
         pieces=(
-            Piece("englobante", "sejour", 0.0, 0.0, 12.0, 9.0),
-            Piece("incluse", "chambre", 0.0, 0.0, 5.0, 4.0),
+            Piece(id="englobante", type="sejour", x=0.0, y=0.0, w=12.0, h=9.0),
+            Piece(id="incluse", type="chambre", x=0.0, y=0.0, w=5.0, h=4.0),
         ),
         murs=(),
         ouvertures=(),
@@ -285,10 +285,10 @@ def test_pavage_est_invariant_par_translation_des_lignes() -> None:
     a = deduire_trame(_pavage_2x2(), ctx)
     decale = Plan(
         pieces=(
-            Piece("sw", "sejour", 0.0, 0.0, 3.0, 6.0),
-            Piece("se", "chambre", 3.0, 0.0, 9.0, 6.0),
-            Piece("nw", "cuisine", 0.0, 6.0, 3.0, 3.0),
-            Piece("ne", "sdb", 3.0, 6.0, 9.0, 3.0),
+            Piece(id="sw", type="sejour", x=0.0, y=0.0, w=3.0, h=6.0),
+            Piece(id="se", type="chambre", x=3.0, y=0.0, w=9.0, h=6.0),
+            Piece(id="nw", type="cuisine", x=0.0, y=6.0, w=3.0, h=3.0),
+            Piece(id="ne", type="sdb", x=3.0, y=6.0, w=9.0, h=3.0),
         ),
         murs=(),
         ouvertures=(),

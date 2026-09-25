@@ -8,6 +8,24 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice G: keyword-only types and light defaults (3.6)
+
+#### Changed — API break (pre-1.0)
+- `Piece`, `Mur` and `Ouverture` are keyword-only: `Piece("a", "sejour", 0, 0, 6, 9)`
+  swapped `x, y, w, h` without a word. Use `Piece(id="a", type="sejour", x=0, y=0, w=6,
+  h=9)`. `Plan` keeps its positional order.
+- `Contexte.contour` is keyword-only and optional. **Positional `Contexte(structure,
+  orientation, contour, referentiel)` calls break**: `referentiel` is now the third
+  positional field; pass `contour=` by keyword.
+
+#### Added
+- `Plan(pieces=...)` is enough: `murs`, `ouvertures` and `contour` default to `()`.
+- The outline no longer has to be given twice: `legalize` uses `Contexte.contour`, or the
+  plan's when the context has none (the context's wins when both are given). Neither:
+  `InvalidInput` naming `contour` and saying to give `Contexte.contour` or `Plan.contour`.
+- Migration: about 270 constructions in `src/`, tests, `experiences/` and the docs were
+  named mechanically (an AST rewrite, then the full suite).
+
 ### Remediation — PLAN.md phase 3, slice F: shared types (3.8)
 
 #### Added

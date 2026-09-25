@@ -51,10 +51,10 @@ def test_a_feasible_system_never_verifies() -> None:
     wide = construire_polytope(
         OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")),
         Contexte(
-            _CTX.structure,
-            _CTX.orientation,
-            ((0.0, 0.0), (5.0, 0.0), (5.0, 3.0), (0.0, 3.0)),
-            _CTX.referentiel,
+            structure=_CTX.structure,
+            orientation=_CTX.orientation,
+            contour=((0.0, 0.0), (5.0, 0.0), (5.0, 3.0), (0.0, 3.0)),
+            referentiel=_CTX.referentiel,
         ),
     )
     rng = np.random.default_rng(7)

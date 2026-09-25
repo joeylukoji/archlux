@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import math
 import warnings
+from dataclasses import replace
 from numbers import Real
 from typing import TYPE_CHECKING
 
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 
     from archlux.types import Contexte, Plan, Point
 
-__all__ = ["validate_inputs"]
+__all__ = ["resolve_outline", "validate_inputs"]
 
 
 def _is_number(value: object) -> bool:
@@ -100,12 +101,33 @@ def _context(ctx: Contexte) -> None:
     _non_negative("referentiel.largeur_min", ctx.referentiel.largeur_min)
     for type_piece, threshold in ctx.referentiel.aires_min:
         _non_negative(f"referentiel.aires_min[{type_piece}]", threshold)
-    _outline("contexte.contour", ctx.contour)
     for wall in ctx.structure.murs_porteurs:
         _point(f"structure.murs_porteurs[{wall.id}].a", wall.a)
         _point(f"structure.murs_porteurs[{wall.id}].b", wall.b)
     for index, post in enumerate(ctx.structure.poteaux):
         _point(f"structure.poteaux[{index}]", post)
+
+
+def _outlines(plan: Plan, ctx: Contexte) -> None:
+    """Each outline given must be a polygon, and at least one of the two must be given."""
+    for field, outline in (("contour", plan.contour), ("contexte.contour", ctx.contour)):
+        if outline:
+            _outline(field, outline)
+    if not (plan.contour or ctx.contour):
+        raise InvalidInput(
+            "contour",
+            "neither the plan nor the context has an outline",
+            "give Contexte.contour or Plan.contour",
+        )
+
+
+def resolve_outline(plan: Plan, ctx: Contexte) -> Contexte:
+    """The context with its outline filled in from the plan when it has none.
+
+    An outline in the context wins over the plan's: it is the site, the plan's own is
+    what the generator drew. Call after :func:`validate_inputs`.
+    """
+    return ctx if ctx.contour else replace(ctx, contour=plan.contour)
 
 
 def _warn_unregulated_types(plan: Plan, ctx: Contexte) -> None:
@@ -153,8 +175,8 @@ def validate_inputs(
     ------
     InvalidInput
         On the first problem found, naming its field: a non-finite or non-numeric
-        value, a non-positive room size, a duplicate id, a plan without room, an
-        outline with fewer than 3 points, a negative budget.
+        value, a non-positive room size, a duplicate id, a plan without room, no outline
+        at all or one with fewer than 3 points, a negative budget.
 
     Warns
     -----
@@ -163,7 +185,7 @@ def validate_inputs(
     """
     _rooms(plan)
     _walls(plan)
-    _outline("contour", plan.contour)
+    _outlines(plan, ctx)
     _context(ctx)
     if budget is not None:
         _non_negative("budget", budget)

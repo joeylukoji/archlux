@@ -66,10 +66,21 @@ def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:
     for rang in range(n):
         coupe_x, coupe_y = paires[rang]
         pieces: tuple[Piece, ...] = (
-            Piece("sw", _TYPES[rang % 4], 0.0, 0.0, coupe_x, coupe_y),
-            Piece("se", _TYPES[(rang + 1) % 4], coupe_x, 0.0, 12.0 - coupe_x, coupe_y),
-            Piece("nw", _TYPES[(rang + 2) % 4], 0.0, coupe_y, coupe_x, 9.0 - coupe_y),
-            Piece("ne", _TYPES[(rang + 3) % 4], coupe_x, coupe_y, 12.0 - coupe_x, 9.0 - coupe_y),
+            Piece(id="sw", type=_TYPES[rang % 4], x=0.0, y=0.0, w=coupe_x, h=coupe_y),
+            Piece(
+                id="se", type=_TYPES[(rang + 1) % 4], x=coupe_x, y=0.0, w=12.0 - coupe_x, h=coupe_y
+            ),
+            Piece(
+                id="nw", type=_TYPES[(rang + 2) % 4], x=0.0, y=coupe_y, w=coupe_x, h=9.0 - coupe_y
+            ),
+            Piece(
+                id="ne",
+                type=_TYPES[(rang + 3) % 4],
+                x=coupe_x,
+                y=coupe_y,
+                w=12.0 - coupe_x,
+                h=9.0 - coupe_y,
+            ),
         )
         identifiant = f"syn-{rang:04d}"
         if rang == _RANG_JUMEAU_DEDUPLICATION:
@@ -131,6 +142,6 @@ def two_room_plan(x: np.ndarray) -> Plan:
     Plan
         Two rooms, no wall, outline :data:`TWO_ROOM_OUTLINE`.
     """
-    a = Piece("a", "sejour", float(x[0]), float(x[1]), float(x[2]), float(x[3]))
-    b = Piece("b", "chambre", float(x[4]), float(x[5]), float(x[6]), float(x[7]))
+    a = Piece(id="a", type="sejour", x=float(x[0]), y=float(x[1]), w=float(x[2]), h=float(x[3]))
+    b = Piece(id="b", type="chambre", x=float(x[4]), y=float(x[5]), w=float(x[6]), h=float(x[7]))
     return Plan((a, b), (), (), TWO_ROOM_OUTLINE)
