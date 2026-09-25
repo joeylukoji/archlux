@@ -42,6 +42,7 @@ from pathlib import Path
 __all__ = [
     "check_mapping",
     "find_shared_names",
+    "identifier_conflicts",
     "main",
     "rename_file",
     "rename_markdown",
@@ -275,6 +276,21 @@ def verify_inverse(
         return False
 
 
+def identifier_conflicts(text: str, mapping: dict[str, str]) -> list[str]:
+    """Old names whose new name is already used as an identifier in the same source.
+
+    Renaming ``a`` to ``b`` where ``b`` already exists merges two names into one, and the
+    inverse-rename proof cannot see it. Returns the old names concerned, sorted. Prose
+    (comments, docstrings) never creates a conflict: only identifiers do.
+    """
+    present = {
+        token.string
+        for token in tokenize.generate_tokens(io.StringIO(text).readline)
+        if token.type == tokenize.NAME
+    }
+    return sorted(old for old, new in mapping.items() if old in present and new in present)
+
+
 def find_shared_names(
     paths: Sequence[Path], names: set[str], exclude: Sequence[Path] = ()
 ) -> dict[str, list[str]]:
@@ -337,6 +353,20 @@ def string_hits(text: str, names: set[str]) -> list[tuple[int, str]]:
     return hits
 
 
+def _proved(path: Path, text: str, mapping: dict[str, str]) -> bool:
+    """The identifier part of a rename is proved: no conflict, and the inverse gives back
+    the original tree. Prose edits are outside the proof (they cannot change behaviour)."""
+    conflicts = identifier_conflicts(text, mapping)
+    if conflicts:
+        print(f"conflict: {path}: {conflicts} and their new names are both used in the file")
+        return False
+    identifiers_only, edits = rename_source(text, mapping)
+    if edits and not verify_inverse(text, identifiers_only, mapping):
+        print(f"verification failed: {path} (not a pure rename)")
+        return False
+    return True
+
+
 def _parse_mapping(pairs: Sequence[str]) -> dict[str, str]:
     mapping: dict[str, str] = {}
     for pair in pairs:
@@ -378,14 +408,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     for path in _iter_files(args.paths, (".py", ".md"), args.exclude):
         text, _ = _read(path)
         try:
-            new, count = _rename(path, text, mapping, args.prose)
+            _, count = _rename(path, text, mapping, args.prose)
         except _TOKENIZE_ERRORS:
             continue
         if not count:
             continue
-        proved = path.suffix != ".py" or args.no_verify
-        if not proved and not verify_inverse(text, new, mapping, prose=args.prose):
-            print(f"verification failed: {path} (not a pure rename)")
+        if path.suffix == ".py" and not args.no_verify and not _proved(path, text, mapping):
             return 3
         if path.suffix == ".py":
             for line, name in string_hits(text, set(mapping)):

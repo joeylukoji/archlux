@@ -150,3 +150,28 @@ def test_excluded_paths_are_left_alone(tool, tmp_path: Path) -> None:  # type: i
     assert tool.main(args) == 0
     assert (tmp_path / "keep" / "a.py").read_text(encoding="utf-8") == "x = Piece()\n"
     assert (tmp_path / "b.py").read_text(encoding="utf-8") == "y = Room()\n"
+
+
+def test_a_prose_only_change_next_to_the_new_name_is_still_proved(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    """``errors`` exists in the file (a library keyword); only a comment mentions the old name."""
+    text = "# les erreurs\nopen(f, errors='x')\n"
+    assert tool.identifier_conflicts(text, {"erreurs": "errors"}) == []
+    new, count = tool.rename_source(text, {"erreurs": "errors"}, prose=True)
+    assert count == 1
+    assert new == "# les errors\nopen(f, errors='x')\n"
+    path = tmp_path / "m.py"
+    path.write_text(text, encoding="utf-8")
+    assert tool.main(["--map", "erreurs=errors", "--prose", "--apply", str(path)]) == 0
+    assert path.read_text(encoding="utf-8") == new
+
+
+def test_the_new_name_already_used_beside_the_old_one_is_a_conflict(tool) -> None:  # type: ignore[no-untyped-def]
+    """Renaming would merge two variables into one: the inverse rename cannot see it."""
+    text = "erreurs = []\nerrors = {}\n"
+    assert tool.identifier_conflicts(text, {"erreurs": "errors"}) == ["erreurs"]
+
+
+def test_the_command_refuses_a_conflict(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    (tmp_path / "m.py").write_text("erreurs = []\nerrors = {}\n", encoding="utf-8")
+    assert tool.main(["--map", "erreurs=errors", "--apply", str(tmp_path)]) == 3
+    assert "erreurs = []" in (tmp_path / "m.py").read_text(encoding="utf-8")
