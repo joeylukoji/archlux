@@ -14,6 +14,11 @@ d'éclairement gelé (`SplitFluxOracle`, forme fermée ; Radiance hors chemin cr
 
 **Critère d'acceptation — deux conditions, la seconde est bloquante :**
 
+> **Revue de phase 2 (2026-09-25) : point de contrôle ROUVERT.** Rejoué tel qu'écrit
+> (80 points, quatre azimuts, jeu de test), l'accord de signe vaut 0,68 / 0,50 / 1,00 /
+> 0,67 : il ne passait qu'au sud, là où il avait été mesuré. Voir
+> [`revues/j4.md`](../revues/j4.md) et [ADR 0002](../adr/0002-milestone-criteria-rewritten.md).
+
 ```python
 # 1. Le réseau prédit mieux que l'analytique
 assert mae(reseau, JEU_TEST) < mae(ANALYTIQUE, JEU_TEST)
@@ -363,7 +368,7 @@ def valider_gradient(
 - [ ] `valider_gradient` avec corrélation **et** accord de signe
 - [ ] Stratification par variable et par orientation
 - [ ] `assert` bloquant dans `scripts/valider_gradient.py`, pas seulement dans la doc
-- [ ] Rapport écrit dans `resultats/j4_gradient.md`
+- [ ] Rapport écrit dans `resultats/j4_gradient.md` (phase 2 : `resultats/j4_gradient.csv`)
 
 > Coût : deux simulations exactes par variable et par plan. À faire sur un **petit
 > échantillon (60–100 plans)**, et **tôt**. Découvrir un gradient inexploitable au

@@ -172,13 +172,15 @@ def valider_gradient(
         conforme = rapport.erreur_relative_max <= tolerance
         if not conforme:
             raise SubstitutInvalide(
-                f"erreur relative {rapport.erreur_relative_max:.3g} > {tolerance}"
+                f"erreur relative {rapport.erreur_relative_max:.3g} > {tolerance}",
+                report=rapport,
             )
     else:
         conforme = rapport.accord_de_signe >= seuil_signe
         if not conforme:
             raise SubstitutInvalide(
                 f"accord de signe {rapport.accord_de_signe:.3f} < {seuil_signe} "
-                "— ne pas passer au jalon 5"
+                "— ne pas passer au jalon 5",
+                report=rapport,
             )
     return replace(rapport, conforme=True)

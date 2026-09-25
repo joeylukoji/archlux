@@ -185,8 +185,16 @@ class SubstitutInvalide(ArchluxError):
     gradient est faux fait converger l'optimiseur vers du bruit, sans erreur visible.
     """
 
-    def __init__(self, detail: str = "gradient du substitut inexploitable") -> None:
-        """Composer le message de gradient de substitut inexploitable."""
+    def __init__(
+        self, detail: str = "gradient du substitut inexploitable", *, report: object = None
+    ) -> None:
+        """Composer le message de gradient de substitut inexploitable.
+
+        ``report`` is the full :class:`~archlux.light.validation.RapportGradient` of a
+        failed check, so that a caller can record the failing value without parsing
+        the message (PLAN.md phase 2, J4).
+        """
+        self.report = report
         super().__init__(detail)
 
 

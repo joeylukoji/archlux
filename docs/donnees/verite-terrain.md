@@ -19,8 +19,10 @@ silence invaliderait toute publication.
 Les deux termes de ce résidu sont analytiques. Le réseau apprend donc la
 différence entre deux formules connues, sur une famille de plans à **deux degrés
 de liberté** (les deux coordonnées de coupe). Le `mae_reseau = 0,0175` contre
-`mae_analytique = 6,4007` de `resultats/j4_gradient.md` mesure exactement cela :
-une régression réussie sur une fonction déterministe, sans bruit.
+`mae_analytique = 6,4007` publié au jalon 4 mesure exactement cela, et **sur le jeu
+d'entraînement** : une régression réussie sur une fonction déterministe, sans bruit.
+Rejouée sur un jeu de test en phase 2 (`resultats/j4_gradient.csv`, revue
+[j4](../revues/j4.md)), l'erreur du réseau est 1,19 contre 37,3.
 
 !!! danger "Ce que cela veut dire pour un article"
     Ce n'est **pas** un résultat d'apprentissage. Aucun relecteur n'acceptera

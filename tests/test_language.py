@@ -59,6 +59,8 @@ MIGRATED: tuple[str, ...] = (
     "docs/revues/j1.md",
     "docs/revues/j2.md",
     "docs/revues/j3.md",
+    "docs/revues/j4.md",
+    "experiences/j4_gradient.py",
     "experiences/j3_orientation.py",
     "tests/proprietes/test_milestone3_as_written.py",
     "experiences/j2_validity.py",

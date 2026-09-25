@@ -1,0 +1,9 @@
+surrogate,azimuth,n_points,sign_agreement,mae_test
+dense,0.0,20,0.6833,1.1938
+dense,90.0,20,0.5000,1.1938
+dense,180.0,20,1.0000,1.1938
+dense,270.0,20,0.6667,1.1938
+analytic_untrained,0.0,20,0.6667,37.2904
+analytic_untrained,90.0,20,0.6667,37.2904
+analytic_untrained,180.0,20,1.0000,37.2904
+analytic_untrained,270.0,20,0.6667,37.2904
