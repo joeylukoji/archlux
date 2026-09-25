@@ -119,6 +119,27 @@ def _duaux_traduits(duaux: np.ndarray | None, poly: Polytope) -> tuple[tuple[str
     return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL)
 
 
+def _scope(
+    ctx: Contexte,
+    fusions: tuple[PieceRectilineaire, ...],
+    grid: bool,
+    budget: float | None,
+) -> tuple[str, ...]:
+    """Restrictions of the solver's domain beyond the relative order, as stated."""
+    scope: list[str] = []
+    if ctx.structure.murs_porteurs:
+        scope.append("load-bearing sides")
+    if fusions:
+        scope.append("fused-room seams and area shares")
+        if ctx.structure.murs_porteurs:
+            scope.append("one side per straddled fused room")
+    if grid:
+        scope.append("tiling grid")
+    if budget is not None:
+        scope.append(f"budget {budget:g} m")
+    return tuple(scope)
+
+
 def legalize(
     plan: Plan,
     ctx: Contexte,
@@ -295,36 +316,49 @@ def legalize(
         # A fused room keeps one side of every wall: never a wall on its seam.
         groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in fusions),
     )
-    poly = construire_polytope(ordre, ctx)
+    base = construire_polytope(ordre, ctx)
     for piece_l in fusions:
-        poly = etendre_fusions(poly, piece_l, min_contact=ctx.referentiel.largeur_min)
-    if trame is not None:
-        poly = etendre_pavage(poly, trame)
-    x_ref = vectoriser(plan, poly.index)
-    poly_l1 = etendre_ecarts_l1(poly, x_ref)
-    if budget is not None:
-        n_geo = len(poly.index)
-        bornes = tuple(poly_l1.bornes[:n_geo]) + tuple((0.0, float(budget)) for _ in range(n_geo))
-        poly_l1 = replace(poly_l1, bornes=bornes)
+        base = etendre_fusions(base, piece_l, min_contact=ctx.referentiel.largeur_min)
+    x_ref = vectoriser(plan, base.index)
+    minima = minimum_area_shares(plan.pieces, fusions, ctx.referentiel)
 
-    sol = resoudre_avec_surfaces(
-        poly_l1,
-        gradient_distance(x_ref),
-        ctx,
-        plan.pieces,
-        duaux=True,
-        minima=minimum_area_shares(plan.pieces, fusions, ctx.referentiel),
-    )
+    def domain(*, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
+        """The solver's domain, optionally without the tiling grid or the budget."""
+        geometric = etendre_pavage(base, trame) if grid and trame is not None else base
+        l1 = etendre_ecarts_l1(geometric, x_ref)
+        if bounded and budget is not None:
+            n_geo = len(geometric.index)
+            bornes = tuple(l1.bornes[:n_geo]) + tuple((0.0, float(budget)) for _ in range(n_geo))
+            l1 = replace(l1, bornes=bornes)
+        return geometric, l1
+
+    def solve(l1: Polytope) -> SolutionLP:
+        return resoudre_avec_surfaces(
+            l1, gradient_distance(x_ref), ctx, plan.pieces, duaux=True, minima=minima
+        )
+
+    poly, poly_l1 = domain()
+    sol = solve(poly_l1)
     if sol.statut == "infaisable":
         check = (
             verify_infeasibility(poly_l1, sol.certificat_farkas, sol.certificat_farkas_eq)
             if sol.certificat_farkas is not None
             else None
         )
+        # The certificate is about this domain, not about the order alone (final review
+        # of phase 1, C1): name every restriction, and test the ones legalize added.
+        scope = _scope(ctx, fusions, trame is not None, budget)
+        relaxable: list[str] = []
+        if trame is not None and solve(domain(grid=False)[1]).statut == "optimal":
+            relaxable.append("tiling grid")
+        if budget is not None and solve(domain(bounded=False)[1]).statut == "optimal":
+            relaxable.append(f"budget {budget:g} m")
         raise Infaisable(
             certificat_farkas=sol.certificat_farkas,
             origines=_origines_actives(sol, poly_l1),
             verified=None if check is None else check.verified,
+            scope=scope,
+            relaxable=tuple(relaxable),
         )
     if sol.statut != "optimal":
         raise InvariantViole((f"statut LP inattendu : {sol.statut}",))

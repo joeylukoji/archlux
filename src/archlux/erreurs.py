@@ -85,10 +85,21 @@ class Infaisable(ArchluxError):
         (:func:`archlux.certify.farkas.verify_infeasibility`); ``None`` if no check
         was run (for instance a conflict detected before any LP).
 
+    scope : tuple of str
+        Restrictions of the solver's domain beyond the relative order, each of which
+        the certificate is about: ``"load-bearing sides"``, ``"tiling grid"``,
+        ``"budget 0.3 m"``, ``"one side per fused room"``... The certificate proves the
+        domain **with all of them** empty, nothing more.
+    relaxable : tuple of str
+        Restrictions of ``scope`` without which this relative order does admit a plan:
+        they, not the order, are the cause.
+
     Notes
     -----
     The proof is about the polytope of **this relative order**, read from the proposed
-    plan: another order might admit a valid plan (AUDIT.md §5.2).
+    plan, **with the restrictions of** ``scope``: another order, or the same order
+    without one of them, might admit a valid plan (AUDIT.md §5.2; final review of
+    phase 1, C1).
     """
 
     def __init__(
@@ -97,25 +108,36 @@ class Infaisable(ArchluxError):
         origines: tuple[str, ...] = (),
         *,
         verified: bool | None = None,
+        scope: tuple[str, ...] = (),
+        relaxable: tuple[str, ...] = (),
     ) -> None:
         """Retenir le certificat de Farkas et les origines en conflit."""
         self.certificat_farkas = certificat_farkas
         self.origines = origines
         self.verified = verified
+        self.scope = scope
+        self.relaxable = relaxable
         detail = " ; ".join(origines) if origines else "no constraint identified"
         status = {
             True: " [certificate verified exactly]",
             False: " [certificate NOT verified]",
             None: "",
         }[verified]
-        super().__init__(f"programme infaisable pour cet ordre relatif : {detail}{status}")
+        within = f" with {', '.join(scope)}" if scope else ""
+        cause = (
+            f". Without {' or without '.join(relaxable)}, this order admits a plan"
+            if relaxable
+            else ""
+        )
+        super().__init__(f"infeasible for this relative order{within}: {detail}{status}{cause}")
 
 
 class InvariantViole(ArchluxError):
     """Le solveur a rendu une sortie que la verification exacte rejette.
 
-    C'est un **bogue interne**, jamais une entree utilisateur invalide. Il n'est jamais
-    rattrape silencieusement : `ARCHITECTURE.md` interdit de faire confiance au solveur.
+    Most often an internal bug; also the documented refusal of a plan with a gap when
+    ``legalize`` runs without ``pavage`` (the L1 optimum keeps the gap, the proof rejects
+    it). Never caught silently: `ARCHITECTURE.md` forbids trusting the solver.
 
     Parameters
     ----------

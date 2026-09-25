@@ -50,6 +50,7 @@ Derivation, tolerances and use cases: ``docs/formules/preuve-exacte.md``.
 from __future__ import annotations
 
 from fractions import Fraction
+from math import isfinite
 
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
@@ -545,6 +546,28 @@ def verify_exactly(
     -----
     Formulas: ``docs/formules/preuve-exacte.md``.
     """
+    malformed = tuple(
+        f"room {room.id}: dimensions must be finite and positive "
+        f"(x={room.x}, y={room.y}, w={room.w}, h={room.h})"
+        for room in plan.pieces
+        if not all(isfinite(v) for v in (room.x, room.y, room.w, room.h))
+        or room.w <= 0.0
+        or room.h <= 0.0
+    )
+    if malformed:
+        # Nothing is proved about a malformed plan: every predicate is reported as not
+        # established, never as holding (final review of phase 1, M1).
+        return PreuveGeometrique(
+            valide=False,
+            chevauchement=True,
+            jours=True,
+            surfaces_ok=False,
+            structure_preservee=False,
+            deplacement_max=max_displacement(plan, reference)
+            if all(isfinite(v) for r in plan.pieces for v in (r.x, r.y, r.w, r.h))
+            else float("inf"),
+            violations=malformed,
+        )
     rational = rational_tiling(plan, ctx)
     if rational is None:  # not a rectangular outline: GEOS areas and their tolerances
         overlap, v_overlap = _overlaps(plan.pieces)

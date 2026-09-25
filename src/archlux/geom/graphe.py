@@ -192,10 +192,11 @@ def deduire_ordre(
         between two rooms. A room that crosses a wall gets the smallest correction.
     groups : tuple of tuple of str, optional
         Sub-rectangles of one fused room (an L, see :mod:`archlux.geom.rectilineaire`).
-        They take **one** side of every wall, read from their bounding box: a side per
-        sub-rectangle could put the wall on the seam between them, inside the room.
-        A half-plane holds the union exactly when it holds every member; it may refuse
-        an L wrapped around the end of a partial wall, never accept a crossing.
+        Each takes its own side of a wall, unless two of them take **opposite** sides
+        on one axis (one left of it, one right of it): only then can a seam between
+        them land on the wall, inside the room. The group then takes one side, read
+        from its bounding box; a half-plane holds the union exactly when it holds every
+        member. The proof checks the union anyway (``certify.proof``).
 
     Returns
     -------
@@ -248,27 +249,42 @@ def deduire_ordre(
         xs = [x for x, _ in plan.contour]
         ys = [y for _, y in plan.contour]
         envelope = (min(xs), min(ys), max(xs), max(ys))
-    # A fused room is placed as a whole: its members share the side of its bounding box.
-    reference = dict(par_id)
-    for group in groups:
-        members = [par_id[room_id] for room_id in group if room_id in par_id]
-        if not members:
-            continue
-        x0, y0 = min(m.x for m in members), min(m.y for m in members)
-        x1, y1 = max(m.x + m.w for m in members), max(m.y + m.h for m in members)
-        hull = replace(members[0], x=x0, y=y0, w=x1 - x0, h=y1 - y0)
-        for member in members:
-            reference[member.id] = hull
-    wall_sides = (
-        tuple(
-            replace(_wall_side(reference[room_id], wall, envelope), room=room_id)
-            for wall in sorted(structure.murs_porteurs, key=lambda m: m.id)
-            if wall.longueur > SNAP_M  # a point has no side; the proof ignores it too
+    wall_sides: tuple[WallSide, ...] = ()
+    if structure is not None:
+        walls = [
+            m for m in sorted(structure.murs_porteurs, key=lambda m: m.id) if m.longueur > SNAP_M
+        ]
+        sides = {
+            (wall.id, room_id): _wall_side(par_id[room_id], wall, envelope)
+            for wall in walls  # a point has no side; the proof ignores it too
             for room_id in identifiants
-        )
-        if structure is not None
-        else ()
-    )
+        }
+        for group in groups:
+            members = [par_id[room_id] for room_id in group if room_id in par_id]
+            if len(members) < 2:
+                continue
+            x0, y0 = min(m.x for m in members), min(m.y for m in members)
+            x1, y1 = max(m.x + m.w for m in members), max(m.y + m.h for m in members)
+            hull = replace(members[0], x=x0, y=y0, w=x1 - x0, h=y1 - y0)
+            for wall in walls:
+                # Among equally cheap sides, prefer an assignment without opposite sides.
+                choices = [_wall_sides_by_penetration(m, wall, envelope) for m in members]
+                compatible = next(
+                    (
+                        combo
+                        for combo in itertools.product(*choices)
+                        if not _opposite({ws.side for ws in combo})
+                    ),
+                    None,
+                )
+                if compatible is not None:
+                    for ws in compatible:
+                        sides[wall.id, ws.room] = ws
+                else:
+                    shared = _wall_side(hull, wall, envelope)
+                    for m in members:
+                        sides[wall.id, m.id] = replace(shared, room=m.id)
+        wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiants)
     return OrdreRelatif(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
@@ -279,6 +295,11 @@ def deduire_ordre(
 
 Envelope = tuple[float, float, float, float]
 """Axis-aligned bounding box ``(xmin, ymin, xmax, ymax)`` of the target outline."""
+
+
+def _opposite(taken: set[str]) -> bool:
+    """Two members on opposite sides of one wall: their seam could land on it."""
+    return {"left", "right"} <= taken or {"below", "above"} <= taken
 
 
 def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
@@ -318,9 +339,29 @@ def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
         (room.y + room.h - y0, "below", y0, y0 - ey0),
         (y1 - room.y, "above", y1, ey1 - y1),
     ]
+    return _wall_sides_by_penetration(room, wall, envelope)[0]
+
+
+def _wall_sides_by_penetration(
+    room: Piece, wall: Mur, envelope: Envelope | None
+) -> list[WallSide]:
+    """The sides of :func:`_wall_side` that tie for the least penetration, best first."""
+    (xa, ya), (xb, yb) = wall.a, wall.b
+    x0, x1, y0, y1 = min(xa, xb), max(xa, xb), min(ya, yb), max(ya, yb)
+    ex0, ey0, ex1, ey1 = envelope if envelope is not None else (-math.inf,) * 2 + (math.inf,) * 2
+    options: list[tuple[float, Side, float, float]] = [
+        (room.x + room.w - x0, "left", x0, x0 - ex0),
+        (x1 - room.x, "right", x1, ex1 - x1),
+        (room.y + room.h - y0, "below", y0, y0 - ey0),
+        (y1 - room.y, "above", y1, ey1 - y1),
+    ]
     reachable = [option for option in options if option[3] > CONTACT_M] or options
-    _, side, bound, _ = min(reachable, key=lambda option: option[0])
-    return WallSide(room=room.id, wall=wall.id, side=side, bound=bound)
+    best = min(option[0] for option in reachable)
+    return [
+        WallSide(room=room.id, wall=wall.id, side=side, bound=bound)
+        for penetration, side, bound, _ in sorted(reachable, key=lambda option: option[0])
+        if penetration <= best + CONTACT_M
+    ]
 
 
 def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe) -> nx.DiGraph:
