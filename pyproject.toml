@@ -37,6 +37,10 @@ dev = [
     # Pinned with the ruff-pre-commit rev: format output changes between minors.
     "ruff==0.14.10",
     "mypy>=1.10",
+    # Validates the published JSON schema of plans (PLAN.md phase 2, J1).
+    "jsonschema>=4.20",
+    # Opens the exported IFC files with a real IFC toolkit (PLAN.md phase 2, J6).
+    "ifcopenshell>=0.8",
     "interrogate>=1.7",
     "pre-commit>=3.7",
 ]

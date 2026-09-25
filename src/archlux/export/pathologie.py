@@ -37,7 +37,9 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
     Codes
     -----
     ``arete_nulle``, ``sommets_dupliques``, ``auto_intersection``,
-    ``solide_non_ferme``, ``chevauchement``, ``dimension_non_positive``.
+    ``solide_non_ferme``, ``chevauchement``, ``dimension_non_positive``,
+    ``ouverture_orpheline`` (an opening on a wall absent from ``plan.murs``: IFC4 wants
+    every ``IfcOpeningElement`` to void an element).
     """
     trouves: list[str] = []
     # Pièces à cotes non positives : ne pas les géométriser (``box`` normalise les
@@ -58,6 +60,11 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
     for mur in plan.murs:
         if _arete_nulle(mur):
             trouves.append(f"arete_nulle:{mur.id}")
+
+    walls = {mur.id for mur in plan.murs}
+    trouves.extend(
+        f"ouverture_orpheline:{ouv.id}" for ouv in plan.ouvertures if ouv.mur_id not in walls
+    )
 
     if plan.contour:
         if _sommets_dupliques(plan.contour):

@@ -88,6 +88,12 @@ q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, pavage=True)
 assert q.certificat is not None and q.certificat.geometrie.valide
 ```
 
+!!! danger "Point de contrôle rouvert (revue de phase 2)"
+    Cet exemple mesure l'accord de signe à **une** orientation. Rejoué sur 80 points à
+    quatre azimuts, le perceptron échoue à 0°, 90° et 270° (0,68 / 0,50 / 0,67), comme
+    le substitut analytique non entraîné : voir [la revue du jalon 4](../revues/j4.md).
+    Passer ce contrôle ici ne dit pas que le gradient est exploitable.
+
 `valider_gradient` lève `SubstitutInvalide` sous le seuil d'accord de signe (0,80) :
 l'`assert` ne fait que rendre le point de contrôle visible. `budget=0.5` borne le
 déplacement de chaque mur à 50 cm autour de la proposition ; sans lui, Frank-Wolfe

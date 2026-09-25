@@ -23,6 +23,11 @@ troisième mois, pas au dix-huitième.
 
 **Critère d'acceptation — le jalon est terminé quand ces trois tests passent :**
 
+> **Revue de phase 2 (2026-09-25) :** le troisième critère est réécrit (même **valeur**
+> d'objectif, pas forcément même plan : un optimum plat n'est pas unique) et le test de
+> Rayleigh du §7 est retiré ; voir [`revues/j3.md`](../revues/j3.md) et
+> [ADR 0002](../adr/0002-milestone-criteria-rewritten.md).
+
 ```python
 @given(plan=plans_quelconques())
 def test_tous_les_iteres_sont_valides(plan):

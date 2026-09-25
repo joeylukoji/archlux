@@ -38,3 +38,18 @@ def test_gradient_faux_leve_substitut_invalide() -> None:
 
     with pytest.raises(SubstitutInvalide):
         valider_gradient(Faux(), X, NORD, seed=17)
+
+
+def test_a_failed_check_carries_its_report() -> None:
+    """PLAN.md phase 2, J4: the failing value is read from the report, not the message."""
+    from archlux.light.analytique import SubstitutAnalytique
+
+    class Negated(SubstitutAnalytique):
+        def gradient(self, x, orientation, *, baies=None):  # type: ignore[no-untyped-def]
+            return -super().gradient(x, orientation, baies=baies)
+
+    with pytest.raises(SubstitutInvalide) as capture:
+        valider_gradient(Negated(), X, NORD, seed=17, reference=SubstitutAnalytique())
+    report = capture.value.report
+    assert report is not None and not report.conforme
+    assert report.accord_de_signe < 0.8

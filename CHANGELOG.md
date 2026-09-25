@@ -8,6 +8,64 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 2 (in progress): milestone reviews
+
+#### Fixed — IFC export (export behaviour change)
+- **No IFC reader had ever opened an exported file**, and ifcopenshell's validator
+  rejected every one: GlobalIds written as 22 hexadecimal characters instead of IFC
+  base 64, `IfcOwnerHistory` with `ChangeAction = ADDED` and no date, `Curve2D`
+  footprints made of 3D points, openings voiding no element. `validate=True` only meant
+  that archlux's own pathology check passed.
+- **Every wall was drawn shifted by its first end** (placed at `a`, axis from `a` to
+  `b` in that frame).
+- All fixed: GUIDs are IFC base 64 (still deterministic, labels prefixed by entity kind
+  so a room and a wall of the same id no longer share one), `IfcRelVoidsElement` links
+  each opening to its wall, and an opening on a wall absent from the plan is a new
+  pathology, `ouverture_orpheline`. 90 of 90 repaired plans pass ifcopenshell (0 of 90
+  before). `ifcopenshell` joins the `dev` extra; `tests/unites/test_ifc_validation.py`.
+- After review: GlobalIds are salted with the plan geometry, so two different plans
+  never share one (labels alone gave two flats with the same room ids the same
+  `IfcSpace` ids); one plan still always gets the same ids.
+
+#### Fixed — correlated seeds in active learning (AUDIT.md Q-M5)
+- `active.Loop` drew selection and training seeds as `seed + cycle`: the campaign of
+  seed 17 at cycle 1 replayed the campaign of seed 18 at cycle 0. It now uses named
+  sub-seeds (`selection/k`, `fit/k`, `split`). Campaign results change.
+- New leaf module `archlux.seeds` (`derive`), importable by every layer;
+  `bench.graines.deriver` and `data.synthese` use it (same derivation, same values).
+
+#### Added — published JSON schema and library functions from the experiments
+- `archlux/io/plan-v1.schema.json` (JSON Schema 2020-12), shipped in the wheel, tested
+  against the writer and the reader; documented on the schema page.
+- `geom.polytope.decision_vector`, `data.synthese.two_room_vectors` and
+  `two_room_plan`, `uq.fiabilite.measure_coverage` and `CoverageReport` (AUDIT.md M12:
+  code the experiment scripts had to repeat). A coverage comes with its Clopper-Pearson
+  interval (`ARCHITECTURE.md` §7: never a bare scalar); inputs are validated up front.
+- `SubstitutInvalide.report`: the failed `RapportGradient`, so a failed check is
+  recorded instead of parsed from the message.
+
+#### Changed — milestone reviews (docs/revues, ADR 0002)
+- Nine reports, criterion as written → replayed → result → decision. Milestone 4's
+  gradient checkpoint is **reopened** (it passed at south only, where it was measured);
+  milestone 5 gets a width criterion it does not meet (4 to 5 target standard
+  deviations); "enough for a first paper" (J2) and "active loses" (J6) are withdrawn;
+  milestone 9 is suspended until phase 6.1. `MILESTONE-2` to `-6.md` point to them.
+- Acceptance criteria replayed as written: `test_milestone2_as_written.py`,
+  `test_milestone3_as_written.py`, and the milestone 4 checkpoint as a strict `xfail`.
+- Experiments rewritten in English, under 50 lines, byte-stable (no timing column):
+  `j2_validity`, `j3_orientation`, `j4_gradient`, `j5_coverage`, `j6_active`,
+  `j6_ifc`, `j7_msd_repair`, `j7_msd_summary`, `j7_msd_idempotence`; the scripts and
+  results they replace are removed. `make resultats` (or `python scripts/resultats.py`)
+  regenerates the synthetic figures and `resultats/SHA256SUMS`; `make check-resultats`
+  compares; `make resultats-corpus MSD=... HD=...` runs the corpora.
+  `tests/test_experiments.py` runs every script.
+- The published 93.9 % of milestone 7 falls back on plain `legalize` after **any**
+  refusal of `pavage=True`; the rule its text described gives 93.5 %.
+- The published milestone 4 MAEs (0.0175 and 6.4007) do not reproduce with the shipped
+  code: the same script gives 0.3272 and 41.8926 today.
+- Experiments derive every seed by name (`archlux.seeds.derive`), no more `seed + k`.
+- The JSON schema no longer requires non-empty ids, as the reader does not (phase 3.1).
+
 ### Remediation — PLAN.md phase 1 (exit gate passed on 2026-09-25)
 
 #### Fixed — final review of phase 1 (certificate behaviour change)

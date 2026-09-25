@@ -15,6 +15,11 @@ diagnostic dual.
 
 **Critère d'acceptation :**
 
+> **Revue de phase 2 (2026-09-25) :** couverture mesurée sur 20 graines de calibration
+> (moyenne 0,898), et critère **ajouté** : largeur moyenne < 1 écart-type de la cible
+> (mesuré : 4 à 5, non atteint). Sous sélection par l'optimiseur : 0,878 en moyenne.
+> Voir [`revues/j5.md`](../revues/j5.md) et [ADR 0002](../adr/0002-milestone-criteria-rewritten.md).
+
 ```python
 def test_couverture_empirique():
     """Sur le jeu de TEST, jamais sur celui de calibration."""

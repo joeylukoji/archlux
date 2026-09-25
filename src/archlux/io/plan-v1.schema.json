@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/joeylukoji/archlux/blob/main/src/archlux/io/plan-v1.schema.json",
+  "title": "archlux plan, JSON schema v1",
+  "description": "A plan as written by archlux.io.json_io.vers_dict (Plan.to_json). Keys are still French in v1; v2 (English keys) comes with PLAN.md batch E5. The trace of Frank-Wolfe is never serialized.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "contour", "pieces", "murs", "ouvertures", "certificat"],
+  "properties": {
+    "schema": {"const": "1"},
+    "contour": {
+      "description": "Outline of the plan, a closed polygon given without repeating its first vertex, in metres.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/point"}
+    },
+    "pieces": {
+      "description": "Rooms: axis-aligned rectangles.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "x", "y", "w", "h"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"type": "string"},
+          "x": {"type": "number"},
+          "y": {"type": "number"},
+          "w": {"type": "number", "exclusiveMinimum": 0},
+          "h": {"type": "number", "exclusiveMinimum": 0}
+        }
+      }
+    },
+    "murs": {
+      "description": "Walls; porteur marks a load-bearing wall, the solver never moves it.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "a", "b", "porteur", "epaisseur"],
+        "properties": {
+          "id": {"type": "string"},
+          "a": {"$ref": "#/$defs/point"},
+          "b": {"$ref": "#/$defs/point"},
+          "porteur": {"type": "boolean"},
+          "epaisseur": {"type": "number", "exclusiveMinimum": 0}
+        }
+      }
+    },
+    "ouvertures": {
+      "description": "Openings (windows), positioned on a wall by a relative abscissa.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "mur_id", "s", "largeur_rel", "hauteur_allege", "hauteur_linteau"],
+        "properties": {
+          "id": {"type": "string"},
+          "mur_id": {"type": "string"},
+          "s": {"type": "number", "minimum": 0, "maximum": 1},
+          "largeur_rel": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+          "hauteur_allege": {"type": "number"},
+          "hauteur_linteau": {"type": "number"}
+        }
+      }
+    },
+    "certificat": {
+      "description": "Certificate of a legalized plan; null for a proposed plan.",
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/certificat"}]
+    }
+  },
+  "$defs": {
+    "point": {
+      "type": "array",
+      "prefixItems": [{"type": "number"}, {"type": "number"}],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "preuve": {
+      "description": "Exact geometric proof: no probability enters it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valide",
+        "chevauchement",
+        "jours",
+        "surfaces_ok",
+        "structure_preservee",
+        "deplacement_max",
+        "violations"
+      ],
+      "properties": {
+        "valide": {"type": "boolean"},
+        "chevauchement": {"type": "boolean"},
+        "jours": {"type": "boolean"},
+        "surfaces_ok": {"type": "boolean"},
+        "structure_preservee": {"type": "boolean"},
+        "deplacement_max": {"type": "number", "minimum": 0},
+        "violations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "borne": {
+      "description": "Probabilistic daylight bound. regime is required: 'selected' (a plan chosen by the optimizer) carries no coverage guarantee.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "indicateur",
+        "valeur",
+        "borne_inf",
+        "borne_sup",
+        "couverture",
+        "n_calibration",
+        "regime"
+      ],
+      "properties": {
+        "indicateur": {"enum": ["sDA", "ASE", "UDI", "vue"]},
+        "valeur": {"type": "number"},
+        "borne_inf": {"type": "number"},
+        "borne_sup": {"type": "number"},
+        "couverture": {"type": "number", "minimum": 0, "maximum": 1},
+        "n_calibration": {"type": "integer", "minimum": 0},
+        "regime": {"enum": ["exchangeable", "selected"]}
+      }
+    },
+    "manifeste": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "horodatage",
+        "graine",
+        "empreinte_donnees",
+        "decoupage",
+        "environnement",
+        "parametres",
+        "modele"
+      ],
+      "properties": {
+        "version": {"type": "string"},
+        "horodatage": {"type": "string"},
+        "graine": {"type": "integer"},
+        "empreinte_donnees": {"type": ["string", "null"]},
+        "decoupage": {"type": ["string", "null"]},
+        "environnement": {"$ref": "#/$defs/paires"},
+        "parametres": {"$ref": "#/$defs/paires"},
+        "modele": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["poids", "calibration_n", "alpha"],
+              "properties": {
+                "poids": {"type": "string"},
+                "calibration_n": {"type": "integer", "minimum": 0},
+                "alpha": {"type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 1}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "paires": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [{"type": "string"}, {"type": "string"}],
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "certificat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["geometrie", "performance", "duaux", "manifeste"],
+      "properties": {
+        "geometrie": {"$ref": "#/$defs/preuve"},
+        "performance": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/borne"}]},
+        "duaux": {
+          "description": "Dual costs: (constraint label, marginal cost).",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [{"type": "string"}, {"type": "number"}],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "manifeste": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/manifeste"}]}
+      }
+    }
+  }
+}

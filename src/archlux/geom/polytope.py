@@ -28,6 +28,7 @@ __all__ = [
     "CHAMPS",
     "Polytope",
     "construire_polytope",
+    "decision_vector",
     "devectoriser",
     "etendre_ecarts_l1",
     "figer_contacts",
@@ -300,11 +301,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
     xmin, ymin, xmax, ymax = _enveloppe(ctx)
     graphe = reduction_transitive(construire_graphe(ordre, ordre.pieces))
 
-    index = {
-        f"{piece}.{champ}": 4 * rang + decalage
-        for rang, piece in enumerate(ordre.pieces)
-        for decalage, champ in enumerate(CHAMPS)
-    }
+    index = _decision_index(ordre.pieces)
     n_var = len(index)
 
     lignes: list[int] = []
@@ -374,6 +371,43 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
         index=index,
         origines=tuple(origines),
     )
+
+
+def _decision_index(room_ids: tuple[str, ...]) -> dict[str, int]:
+    """Columns ``<room>.<field>``: rooms in the given order, fields in :data:`CHAMPS` order."""
+    return {
+        f"{room}.{field}": 4 * rank + offset
+        for rank, room in enumerate(room_ids)
+        for offset, field in enumerate(CHAMPS)
+    }
+
+
+def decision_vector(plan: Plan) -> np.ndarray:
+    """Decision vector of ``plan``, without building a polytope (AUDIT.md M12).
+
+    Rooms sorted by identifier, then ``x, y, w, h``: the column order of
+    :func:`construire_polytope` (whose relative order lists rooms sorted), hence the
+    vector a surrogate receives from ``solve``. Use it to evaluate a surrogate or an
+    oracle on a plan.
+
+    Parameters
+    ----------
+    plan : Plan
+        Any plan; its rooms need distinct identifiers.
+
+    Returns
+    -------
+    numpy.ndarray
+        Vector of dimension ``4 * len(plan.pieces)``.
+
+    Examples
+    --------
+    >>> from archlux.types import Piece, Plan
+    >>> plan = Plan((Piece("b", "x", 6, 0, 6, 9), Piece("a", "x", 0, 0, 6, 9)), (), (), ())
+    >>> decision_vector(plan).tolist()
+    [0.0, 0.0, 6.0, 9.0, 6.0, 0.0, 6.0, 9.0]
+    """
+    return vectoriser(plan, _decision_index(tuple(sorted(room.id for room in plan.pieces))))
 
 
 def vectoriser(plan: Plan, index: dict[str, int]) -> np.ndarray:
