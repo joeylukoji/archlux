@@ -54,6 +54,9 @@ MIGRATED: tuple[str, ...] = (
     "CONTRIBUTING.md",
     "AGENTS.md",
     "CLAUDE.md",
+    "tests/proprietes/test_json_schema.py",
+    "docs/adr/0002-milestone-criteria-rewritten.md",
+    "docs/revues/j1.md",
 )
 """Repository-relative paths that must contain no French prose."""
 

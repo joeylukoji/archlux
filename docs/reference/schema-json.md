@@ -22,6 +22,30 @@ nord géographique.
   `json.loads` accepte pourtant les littéraux `NaN` et `Infinity`. Un fichier fautif est
   refusé avec **la liste complète** de ses violations, pas seulement la première.
 
+## Schéma publié
+
+Le format est décrit par un **JSON Schema** (draft 2020-12) livré avec le paquet :
+`archlux/io/plan-v1.schema.json`. Un tiers peut valider un fichier sans exécuter
+archlux :
+
+```python
+import json
+from importlib import resources
+
+import jsonschema
+
+schema = json.loads(resources.files("archlux.io").joinpath("plan-v1.schema.json").read_text())
+plan = {"schema": "1", "contour": [[0, 0], [4, 0], [4, 3], [0, 3]],
+        "pieces": [{"id": "a", "type": "sejour", "x": 0, "y": 0, "w": 4, "h": 3}],
+        "murs": [], "ouvertures": [], "certificat": None}
+jsonschema.validate(plan, schema)
+```
+
+Le schéma et le lecteur refusent les mêmes plages (test `test_json_schema.py`), à une
+exception près : JSON Schema ne sait pas exprimer « nombre fini », si bien que seul le
+lecteur refuse `NaN` et `Infinity`. Toute sortie de `Plan.to_json` est valide pour le
+schéma, certificat et `regime` compris (revue du jalon 1, [`revues/j1.md`](../revues/j1.md)).
+
 ## Champs
 
 | Champ | Type | Sens |
