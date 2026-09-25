@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import sys
-import warnings
-from typing import Any
-
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.certify.borne import construire_borne
 from archlux.certify.dual import traduire_duaux
 from archlux.certify.proof import verify_exactly
@@ -19,17 +16,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401 — forwards a renamed attribute
-    """Keep ``certify.verifier_exactement`` until 1.0.0, deprecated (ADR 0001)."""
-    if name == "verifier_exactement":
-        if sys._getframe(1).f_code.co_filename.startswith("<frozen importlib"):
-            # `from module import name` probes with hasattr first: warn only once.
-            return verify_exactly
-        warnings.warn(
-            "archlux.certify.verifier_exactement is deprecated, use "
-            "archlux.certify.verify_exactly (ADR 0001)",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return verify_exactly
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__getattr__ = lazy_aliases(
+    __name__,
+    {"verifier_exactement": Alias(verify_exactly, "archlux.certify.verify_exactly")},
+)

@@ -10,13 +10,12 @@ Le DF moyen d'une pièce suit Littlefair / BRE : baie = WWR × façade éclairé
 
 from __future__ import annotations
 
-import sys
-import warnings
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.erreurs import InvariantViole
 from archlux.light.analytique import SubstitutAnalytique, facteur_secteur
 from archlux.light.jetons import CHAMPS_PAR_PIECE
@@ -249,17 +248,13 @@ class SplitFluxOracle:
         return valeur, gradient
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401 — forwards a renamed attribute
-    """Keep ``SimulateurExact`` until 1.0.0, deprecated (ADR 0001, PLAN.md batch 1.8)."""
-    if name == "SimulateurExact":
-        if sys._getframe(1).f_code.co_filename.startswith("<frozen importlib"):
-            # `from module import name` probes with hasattr first: warn only once.
-            return SplitFluxOracle
-        warnings.warn(
-            "archlux.light.simulateur.SimulateurExact is deprecated, use SplitFluxOracle: "
-            "a frozen split-flux oracle, neither a simulation nor ground truth (ADR 0001)",
-            DeprecationWarning,
-            stacklevel=2,
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "SimulateurExact": Alias(
+            SplitFluxOracle,
+            "SplitFluxOracle",
+            note="a frozen split-flux oracle, neither a simulation nor ground truth",
         )
-        return SplitFluxOracle
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    },
+)
