@@ -29,7 +29,7 @@ def context(plan: ax.Plan) -> ax.Contexte:
 
 
 with OUT.open("w", newline="", encoding="utf-8") as handle:
-    writer = csv.DictWriter(handle, fieldnames=(*FIELDS, "max_displacement_m"))
+    writer = csv.DictWriter(handle, (*FIELDS, "max_displacement_m"), lineterminator="\n")
     writer.writeheader()
     for k, (plan_id, plan) in enumerate(sorted(generer_corpus(TAILLE_MAX, seed=SEED).items())):
         ctx = context(plan)
