@@ -19,9 +19,11 @@ from archlux.geom.rectilineaire import FUSION_DROIT, FUSION_HAUT, PieceRectiline
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.types import Contexte, Piece, Plan
 from tests import checkers
-from tests.proprietes.strategies import realistic_scenarios
+from tests.proprietes.strategies import GATE_EXAMPLES, realistic_scenarios
 
-_SETTINGS = settings(max_examples=60, deadline=None, derandomize=True, report_multiple_bugs=False)
+_SETTINGS = settings(
+    max_examples=GATE_EXAMPLES, deadline=None, derandomize=True, report_multiple_bugs=False
+)
 _EDGE = 1e-9
 """Two scenario edges closer than this coincide: the plans are drawn on a centimetre grid."""
 
