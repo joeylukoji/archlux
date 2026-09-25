@@ -22,6 +22,7 @@ reason; `MILESTONE-N.md` keeps its original text and points to this ADR.
 |---|---|---|
 | J1 | Criterion extended: the round trip is tested on outputs of `legalize` (walls, bound with regime), and the JSON schema is published and tested. **Schema v2 (batch E5) serializes the `Contexte`.** | A certificate file does not carry the minimum areas and structure it was checked against, so nobody can re-check it from the file ([j1](../revues/j1.md)). |
 | J2 | Criterion replayed as written (arbitrary plans and contexts) and with walls, minimum areas and one fault; read as "every returned plan is valid and every refusal is typed". **"Enough for a first publishable paper" withdrawn.** | The closing test drew already-valid plans; as written, 371 of 500 inputs are refused (none certified wrongly). The 3-generator baseline was two hand-made plans ([j2](../revues/j2.md)). |
+| J3 | Criteria 1 and 2 kept, tested on arbitrary plans and with walls and minimum areas. **Criterion 3 rewritten**: same objective value for `theta` and `theta + 360`, same plan only when the optimum is unique. **§7 Rayleigh test withdrawn.** | A flat optimum makes the plan depend on floating-point noise at equal value; the Rayleigh test on 8 equally spaced azimuths could not reject ([j3](../revues/j3.md)). |
 
 ## Consequences
 
