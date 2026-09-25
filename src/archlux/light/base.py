@@ -12,7 +12,7 @@ import math
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 import numpy as np
 
@@ -360,9 +360,11 @@ class SubstitutDense:
         )
         with np.load(Path(chemin), allow_pickle=False) as archive:
             indicateur = str(archive["indicateur"])
-            if indicateur not in indicateurs:
+            # Matching by equality types the result on every mypy version, without a cast.
+            vise = next((known for known in indicateurs if known == indicateur), None)
+            if vise is None:
                 raise InvariantViole((f"indicateur inconnu dans les poids : {indicateur}",))
-            modele = cls(indicateur_vise=cast(Literal["sDA", "ASE", "UDI", "vue"], indicateur))
+            modele = cls(indicateur_vise=vise)
             modele.W1 = np.array(archive["W1"], dtype=float, copy=True)
             modele.b1 = np.array(archive["b1"], dtype=float, copy=True)
             modele.W2 = np.array(archive["W2"], dtype=float, copy=True)

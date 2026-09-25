@@ -177,9 +177,11 @@ def dataset_fingerprint(
 
 
 def _regime(regime: str) -> Regime:
-    if regime not in REGIMES:
-        raise InvariantViole((f"unknown regime {regime!r}, expected {REGIMES}",))
-    return regime  # type: ignore[return-value]
+    # Matching by equality types the result on every mypy version, without an ignore.
+    for known in REGIMES:
+        if regime == known:
+            return known
+    raise InvariantViole((f"unknown regime {regime!r}, expected {REGIMES}",))
 
 
 def _echelle(incertitude: float) -> float:

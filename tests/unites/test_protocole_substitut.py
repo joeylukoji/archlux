@@ -12,6 +12,7 @@ un ``isinstance`` sans broncher.
 from __future__ import annotations
 
 import inspect
+from typing import Generic, Protocol
 
 import pytest
 
@@ -49,11 +50,25 @@ def test_les_signatures_correspondent(classe: type, methode: str) -> None:
     assert obtenue == SIGNATURES_ATTENDUES[methode]
 
 
+def _protocol_members(protocol: type) -> set[str]:
+    """Members declared by ``protocol`` and its parent protocols.
+
+    ``__protocol_attrs__`` only exists from Python 3.12 (``typing.get_protocol_members``
+    from 3.13), and the CI also runs 3.11: read the class bodies instead.
+    """
+    members: set[str] = set()
+    for base in protocol.__mro__:
+        if base in (object, Protocol, Generic):
+            continue
+        members |= set(vars(base)) | set(getattr(base, "__annotations__", {}))
+    return members
+
+
 def test_le_protocole_a_exactement_quatre_membres() -> None:
     """Trois méthodes et un attribut. Élargir le protocole élargit la surface apprise.
 
     Chaque membre ajouté ici est une chose de plus que ``solve`` doit savoir du modèle
     de lumière — donc un pas vers le couplage que l'architecture évite.
     """
-    membres = {m for m in Substitut.__protocol_attrs__ if not m.startswith("_")}
+    membres = {m for m in _protocol_members(Substitut) if not m.startswith("_")}
     assert membres == {"indicateur", "evaluer", "gradient", "incertitude"}

@@ -330,25 +330,15 @@ def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
             f"load-bearing wall {wall.id} is oblique; only axis-aligned load-bearing "
             "walls can be kept exactly"
         )
-    x0, x1, y0, y1 = min(xa, xb), max(xa, xb), min(ya, yb), max(ya, yb)
-    ex0, ey0, ex1, ey1 = envelope if envelope is not None else (-math.inf,) * 2 + (math.inf,) * 2
-    # (penetration, side, bound, room left between that half-plane's bound and the outline)
-    options: list[tuple[float, Side, float, float]] = [
-        (room.x + room.w - x0, "left", x0, x0 - ex0),
-        (x1 - room.x, "right", x1, ex1 - x1),
-        (room.y + room.h - y0, "below", y0, y0 - ey0),
-        (y1 - room.y, "above", y1, ey1 - y1),
-    ]
     return _wall_sides_by_penetration(room, wall, envelope)[0]
 
 
-def _wall_sides_by_penetration(
-    room: Piece, wall: Mur, envelope: Envelope | None
-) -> list[WallSide]:
+def _wall_sides_by_penetration(room: Piece, wall: Mur, envelope: Envelope | None) -> list[WallSide]:
     """The sides of :func:`_wall_side` that tie for the least penetration, best first."""
     (xa, ya), (xb, yb) = wall.a, wall.b
     x0, x1, y0, y1 = min(xa, xb), max(xa, xb), min(ya, yb), max(ya, yb)
     ex0, ey0, ex1, ey1 = envelope if envelope is not None else (-math.inf,) * 2 + (math.inf,) * 2
+    # (penetration, side, bound, room left between that half-plane's bound and the outline)
     options: list[tuple[float, Side, float, float]] = [
         (room.x + room.w - x0, "left", x0, x0 - ex0),
         (x1 - room.x, "right", x1, ex1 - x1),
