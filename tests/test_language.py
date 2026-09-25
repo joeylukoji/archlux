@@ -74,6 +74,8 @@ MIGRATED: tuple[str, ...] = (
     "experiences/j6_active.py",
     "experiences/j6_ifc.py",
     "src/archlux/seeds.py",
+    "src/archlux/validation.py",
+    "tests/unites/test_hostile_inputs.py",
     "tests/unites/test_seeds.py",
     "tests/unites/test_ifc_validation.py",
     "experiences/j5_coverage.py",

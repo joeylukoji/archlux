@@ -15,8 +15,10 @@ from __future__ import annotations
 __all__ = [
     "ArchluxError",
     "CalibrationVerrouillee",
+    "GapNeedsTiling",
     "GridNotRecoverable",
     "Infaisable",
+    "InvalidInput",
     "InvariantViole",
     "ModeleModifie",
     "OrdreIncoherent",
@@ -31,6 +33,31 @@ class ArchluxError(Exception):
 
     Aucun code du projet ne leve ``Exception`` nue ni ne l'attrape.
     """
+
+
+class InvalidInput(ArchluxError, ValueError):
+    """An argument is malformed: wrong type, non-finite, out of range, or inconsistent.
+
+    Raised at the door of the public functions, before any solving, so that a typo never
+    surfaces as ``InvariantViole`` (which means an internal bug). It also is a
+    ``ValueError``: callers that caught ``ValueError`` keep working.
+
+    Parameters
+    ----------
+    field : str
+        Path of the offending argument, e.g. ``"pieces[kitchen].w"`` or ``"budget"``.
+    problem : str
+        What is wrong with it.
+    hint : str, optional
+        How to fix it, when there is a single obvious correction.
+    """
+
+    def __init__(self, field: str, problem: str, hint: str = "") -> None:
+        """Retain the field and compose an actionable message."""
+        self.field = field
+        self.problem = problem
+        self.hint = hint
+        super().__init__(f"{field}: {problem}" + (f". {hint}" if hint else ""))
 
 
 class OrdreIncoherent(ArchluxError):
@@ -213,6 +240,30 @@ class UnsupportedInput(ArchluxError):
     def __init__(self, detail: str) -> None:
         """Compose the message of an unsupported input."""
         super().__init__(detail)
+
+
+class GapNeedsTiling(UnsupportedInput):
+    """The proposed plan leaves a gap, and ``pavage`` was not asked.
+
+    Without the tiling equalities the separations are inequalities, so a plan with a
+    gap is its own closest valid point: the L1 optimum keeps the gap and the exact
+    proof rejects it. An input limit with a known fix, not an internal error: until
+    PLAN.md batch 3.4 it was raised as ``InvariantViole``.
+
+    Parameters
+    ----------
+    violations : tuple of str
+        The ``gap:`` violations reported by the exact proof.
+    """
+
+    def __init__(self, violations: tuple[str, ...]) -> None:
+        """Compose the message: what the proof found and how to fix it."""
+        self.violations = violations
+        super().__init__(
+            "the plan leaves a gap that legalize cannot close on its own ("
+            + " ; ".join(violations)
+            + "). Rerun with pavage=True, which forces the rooms to tile the outline"
+        )
 
 
 class GridNotRecoverable(UnsupportedInput):

@@ -8,6 +8,26 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice A: the door of `legalize` (3.1, 3.3, 3.4, 3.5)
+
+#### Added
+- `InvalidInput` (subclass of `ArchluxError` and `ValueError`, exported by `archlux`):
+  a malformed argument, with the offending `field` and a hint. New leaf module
+  `archlux.validation.validate_inputs`, called once at the top of `legalize`.
+- `UserWarning` when a room type is absent from `referentiel.aires_min` (only when the
+  regulation lists thresholds): a typo such as `"sejuor"` silently removed the minimum
+  area of the room.
+
+#### Changed — error types (behaviour change, refusals only)
+- Before, a negative or `nan` width, duplicate room ids, a plan without room, a negative
+  or `nan` budget all surfaced as `InvariantViole` (an internal-bug exception) or as an
+  LP status; a string coordinate raised a bare `TypeError`. All raise `InvalidInput`.
+  A plan with a gap and `pavage=False` now raises `GapNeedsTiling` (subclass of
+  `UnsupportedInput`, exported with `GridNotRecoverable`): its message says to rerun with
+  `pavage=True`; the gap is read from the proof's flags, never from its text. Valid
+  inputs are unaffected. The two `ValueError`s about `calibration` are now `InvalidInput`
+  (still catchable as `ValueError`).
+
 ### Remediation — PLAN.md phase 2 (in progress): milestone reviews
 
 #### Fixed — IFC export (export behaviour change)

@@ -30,6 +30,8 @@ AUTORISE: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset(),
     "seeds": frozenset(),
+    # Door validation of the public arguments (PLAN.md 3.1): a leaf over `types`.
+    "validation": frozenset({"types", "erreurs"}),
     "geom": frozenset({"types", "erreurs"}),
     "lmo": frozenset({"types", "erreurs", "geom"}),
     "solve": frozenset({"types", "erreurs", "geom", "lmo", "light.protocole"}),
@@ -68,7 +70,17 @@ AUTORISE: dict[str, frozenset[str]] = {
         }
     ),
     "api": frozenset(
-        {"types", "erreurs", "geom", "lmo", "solve", "light.protocole", "certify", "io"}
+        {
+            "types",
+            "erreurs",
+            "validation",
+            "geom",
+            "lmo",
+            "solve",
+            "light.protocole",
+            "certify",
+            "io",
+        }
     ),
 }
 

@@ -25,7 +25,7 @@ from archlux.certify.borne import bound_selected_plan, check_calibration
 from archlux.certify.dual import traduire_duaux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import Infaisable, InvariantViole
+from archlux.erreurs import GapNeedsTiling, Infaisable, InvalidInput, InvariantViole
 from archlux.geom.graphe import OrdreRelatif, deduire_ordre
 from archlux.geom.pavage import deduire_trame, etendre_pavage, snap_to_grid
 from archlux.geom.polytope import (
@@ -45,7 +45,9 @@ from archlux.light.protocole import Baies, Substitut, point_prediction
 from archlux.lmo.coupes import inner_area_constraints, resoudre_avec_surfaces
 from archlux.lmo.solveur import SolutionLP
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
-from archlux.types import Certificat, Contexte, Plan
+from archlux.tolerances import SNAP_M
+from archlux.types import Certificat, Contexte, Plan, PreuveGeometrique
+from archlux.validation import validate_inputs
 
 if TYPE_CHECKING:
     from archlux.certify.borne import Calibration
@@ -117,6 +119,17 @@ def _duaux_traduits(duaux: np.ndarray | None, poly: Polytope) -> tuple[tuple[str
     if duaux is None:
         return ()
     return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL)
+
+
+def _only_a_gap(preuve: PreuveGeometrique, budget: float | None) -> bool:
+    """The proof fails on a gap and on nothing else, read from its flags, never its text."""
+    return (
+        preuve.jours
+        and not preuve.chevauchement
+        and preuve.surfaces_ok
+        and preuve.structure_preservee
+        and (budget is None or preuve.deplacement_max <= budget + SNAP_M)
+    )
 
 
 GRID_LABEL = "tiling grid"
@@ -246,16 +259,23 @@ def legalize(
         carries ``origines`` and, when the conflict is attributable to rows of ``A`` or
         ``A_eq``, ``certificat_farkas`` with its exact verification (``verified``).
         Raised before the LP if ``largeur_min`` already exceeds the envelope.
+    GapNeedsTiling
+        The plan leaves a gap and ``pavage`` is off: rerun with ``pavage=True``
+        (an input limit, subclass of ``UnsupportedInput``).
     InvariantViole
         Sortie du solveur rejetée par la vérification exacte, ou statut LP inattendu.
         Le cas le plus fréquent est une surface minimale encore violée après épuisement
         des coupes de Kelley : le LP se dit « optimal », la vérification exacte non.
+        A calibration unable to give a finite bound (too small for its ``alpha``,
+        non-finite scores) also raises it, before any solving.
+    InvalidInput
+        Malformed argument, refused before any solving: a non-finite or non-numeric
+        value, a non-positive room size, duplicate room ids, no room, an outline with
+        fewer than 3 points, a negative ``budget`` or ``budget_reparation``, a
+        ``calibration`` without ``objective`` or for another indicator. Its ``field``
+        names the argument (a ``ValueError`` subclass).
     TypeError
         ``objective`` fourni n'implémente pas :class:`~archlux.light.protocole.Substitut`.
-    ValueError
-        ``calibration`` without ``objective``, or calibrated for another indicator.
-        A calibration unable to give a finite bound (too small for its ``alpha``,
-        non-finite scores) raises ``InvariantViole``, before any solving.
 
     Guarantees
     ----------
@@ -307,15 +327,20 @@ def legalize(
     """
     if objective is not None and not isinstance(objective, Substitut):
         raise TypeError("objective doit implémenter archlux.light.protocole.Substitut")
+    validate_inputs(plan, ctx, budget=budget, budget_reparation=budget_reparation)
     if calibration is not None:
         if objective is None:
-            raise ValueError(
-                "calibration requires an objective: classic mode claims no performance"
+            raise InvalidInput(
+                "calibration",
+                "requires an objective: classic mode claims no performance",
+                "pass objective=<surrogate> or drop calibration",
             )
         check_calibration(calibration)
         if calibration.indicateur != objective.indicateur:
-            raise ValueError(
-                f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}"
+            raise InvalidInput(
+                "calibration",
+                f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}",
+                "calibrate the same indicator as the objective",
             )
 
     # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
@@ -402,6 +427,8 @@ def legalize(
     )
     preuve = verify_exactly(corrige, ctx, reference=plan, budget=budget, fusions=fusions)
     if not preuve.valide:
+        if trame is None and _only_a_gap(preuve, budget):
+            raise GapNeedsTiling(preuve.violations)
         raise InvariantViole(preuve.violations)
     # sol a été résolu sur poly_l1 : les duaux alignent poly_l1.A / origines, pas poly.
     duaux = _duaux_traduits(sol.duaux, poly_l1)

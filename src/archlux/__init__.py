@@ -30,12 +30,16 @@ from archlux.api import legalize
 from archlux.erreurs import (
     ArchluxError,
     CalibrationVerrouillee,
+    GapNeedsTiling,
+    GridNotRecoverable,
     Infaisable,
+    InvalidInput,
     InvariantViole,
     ModeleModifie,
     OrdreIncoherent,
     SeparationManquante,
     SubstitutInvalide,
+    UnsupportedInput,
 )
 from archlux.types import (
     BornePerformance,
@@ -76,6 +80,10 @@ __all__ = [  # noqa: RUF022
     "OrdreIncoherent",
     "SeparationManquante",
     "Infaisable",
+    "InvalidInput",
+    "UnsupportedInput",
+    "GridNotRecoverable",
+    "GapNeedsTiling",
     "InvariantViole",
     "CalibrationVerrouillee",
     "ModeleModifie",

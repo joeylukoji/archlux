@@ -231,7 +231,7 @@ def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -
     with pytest.raises(Infaisable) as capture:
         archlux.legalize(plan, ctx, budget=0.1)
     assert capture.value.relaxable == ()
-    with pytest.raises(archlux.InvariantViole, match="gap"):
+    with pytest.raises(archlux.GapNeedsTiling, match="gap"):
         archlux.legalize(plan, ctx)
 
 

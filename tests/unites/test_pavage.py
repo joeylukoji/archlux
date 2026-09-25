@@ -258,7 +258,7 @@ def test_legalize_avec_pavage_ferme_un_jour() -> None:
     ctx = _ctx()
     assert not verify_exactly(abime, ctx).valide
 
-    with pytest.raises(ax.InvariantViole, match="gap"):
+    with pytest.raises(ax.GapNeedsTiling, match="pavage=True"):
         ax.legalize(abime, ctx)
 
     corrige = ax.legalize(abime, ctx, pavage=True)
