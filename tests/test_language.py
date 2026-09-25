@@ -85,6 +85,8 @@ MIGRATED: tuple[str, ...] = (
     "tests/unites/test_deprecation_helper.py",
     "tests/unites/test_rename_tool.py",
     "scripts/rename_identifiers.py",
+    "scripts/neutrality.py",
+    "tests/test_neutrality.py",
     "src/archlux/_deprecation.py",
     "tests/unites/test_keyword_only_types.py",
     "docs/plans/phase-3-9-english-api.md",
