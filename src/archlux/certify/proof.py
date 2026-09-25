@@ -206,8 +206,8 @@ def _fused_area(piece: PieceRectilineaire, by_id: dict[str, Room], ctx: Context)
     """
     room_id = piece.id
     members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
-    minimum = max(ctx.referentiel.a_min(member.type) for member in members)
-    seams = _recorded_seams(piece, by_id, max(ctx.referentiel.largeur_min, SNAP_M))
+    minimum = max(ctx.regulation.a_min(member.type) for member in members)
+    seams = _recorded_seams(piece, by_id, max(ctx.regulation.largeur_min, SNAP_M))
     if seams:
         return seams
     if not _edge_connected(members):
@@ -233,7 +233,7 @@ def _areas(
     for room in rooms:
         if room.id in fused:
             continue
-        minimum = ctx.referentiel.a_min(room.type)
+        minimum = ctx.regulation.a_min(room.type)
         if minimum <= 0.0:
             continue
         if room.aire + _AREA_TOLERANCE_M2 < minimum:
@@ -258,7 +258,7 @@ def _interiors(
     Shrinking each sub-rectangle alone would leave out the seam between them, where a
     wall would cut the room in two (review of batches 1.7 and 1.8, C1).
     """
-    by_id = {room.id: room for room in plan.pieces}
+    by_id = {room.id: room for room in plan.rooms}
     interiors: list[tuple[str, Polygon]] = []
     fused: set[str] = set()
     for piece in fusions:
@@ -268,7 +268,7 @@ def _interiors(
         fused.update(member.id for member in members)
         union = unary_union([_rectangle(member) for member in members])
         interiors.append((piece.id, union.buffer(-tol, join_style="mitre")))
-    for room in plan.pieces:
+    for room in plan.rooms:
         if room.id in fused or room.w <= 2 * tol or room.h <= 2 * tol:
             continue  # a degenerate room has no interior to cross
         interiors.append(
@@ -287,11 +287,11 @@ def _structure(
     fused room is one interior, seams included. The test is geometric (shapely), so it
     holds for oblique walls too.
 
-    A plan does not have to repeat the structure in ``plan.murs``: load-bearing walls
+    A plan does not have to repeat the structure in ``plan.walls``: load-bearing walls
     belong to the context. If it does declare a wall of the same id, that wall must
     match the structure, otherwise it was moved.
     """
-    declared = {wall.id: wall for wall in plan.murs}
+    declared = {wall.id: wall for wall in plan.walls}
     violations: list[str] = []
     tol = _WALL_TOLERANCE_M
     interiors = _interiors(plan, fusions, tol)
@@ -376,7 +376,7 @@ def rational_tiling(plan: Plan, ctx: Context) -> tuple[str, ...] | None:
         axis-aligned rectangle, in which case :func:`verify_exactly` falls back on the
         GEOS area checks and their tolerances.
     """
-    bounds = _rectangular_outline(ctx.contour)
+    bounds = _rectangular_outline(ctx.outline)
     if bounds is None:
         return None
     ox0, oy0, ox1, oy1 = bounds
@@ -388,7 +388,7 @@ def rational_tiling(plan: Plan, ctx: Context) -> tuple[str, ...] | None:
             Fraction(room.y),
             Fraction(room.y) + Fraction(room.h),
         )
-        for room in plan.pieces
+        for room in plan.rooms
     ]
     tolerance = Fraction(SNAP_M)
     same_x = _identify([ox0, ox1, *(v for r in raw for v in (r[1], r[2]))], tolerance)
@@ -486,9 +486,9 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
     """
     if reference is None:
         return 0.0
-    by_id = {room.id: room for room in reference.pieces}
+    by_id = {room.id: room for room in reference.rooms}
     delta = 0.0
-    for room in plan.pieces:
+    for room in plan.rooms:
         origin = by_id.get(room.id)
         if origin is None:
             continue
@@ -553,7 +553,7 @@ def verify_exactly(
     malformed = tuple(
         f"room {room.id}: dimensions must be finite and positive "
         f"(x={room.x}, y={room.y}, w={room.w}, h={room.h})"
-        for room in plan.pieces
+        for room in plan.rooms
         if not all(isfinite(v) for v in (room.x, room.y, room.w, room.h))
         or room.w <= 0.0
         or room.h <= 0.0
@@ -572,8 +572,8 @@ def verify_exactly(
         )
     rational = rational_tiling(plan, ctx)
     if rational is None:  # not a rectangular outline: GEOS areas and their tolerances
-        overlap, v_overlap = _overlaps(plan.pieces)
-        gaps, v_gaps = _gaps(plan.pieces, ctx.contour)
+        overlap, v_overlap = _overlaps(plan.rooms)
+        gaps, v_gaps = _gaps(plan.rooms, ctx.outline)
     else:
         v_overlap = tuple(v for v in rational if v.startswith("overlap"))
         v_gaps = tuple(v for v in rational if v.startswith("gap"))
@@ -582,10 +582,10 @@ def verify_exactly(
             # With overlapping rooms the sum of areas no longer measures coverage, so the
             # rational check cannot see a gap: take the gap diagnosis from GEOS. The plan
             # is invalid either way; this keeps the report complete.
-            geos_flag, geos_gaps = _gaps(plan.pieces, ctx.contour)
+            geos_flag, geos_gaps = _gaps(plan.rooms, ctx.outline)
             gaps = gaps or geos_flag
             v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
-    areas_ok, v_areas = _areas(plan.pieces, ctx, fusions)
+    areas_ok, v_areas = _areas(plan.rooms, ctx, fusions)
     structure_ok, v_structure = _structure(plan, ctx, fusions)
     moved = max_displacement(plan, reference)
     budget_ok = budget is None or moved <= budget + SNAP_M

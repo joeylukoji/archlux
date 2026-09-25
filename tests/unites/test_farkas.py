@@ -23,8 +23,8 @@ from archlux.types import Context, Orientation, Regulation, Structure
 _CTX = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
-    contour=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-    referentiel=Regulation(min_areas=(), largeur_min=2.0),
+    outline=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
+    regulation=Regulation(min_areas=(), largeur_min=2.0),
 )
 _TWO_ROOMS_IN_3M = construire_polytope(
     OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")), _CTX
@@ -53,8 +53,8 @@ def test_a_feasible_system_never_verifies() -> None:
         Context(
             structure=_CTX.structure,
             orientation=_CTX.orientation,
-            contour=((0.0, 0.0), (5.0, 0.0), (5.0, 3.0), (0.0, 3.0)),
-            referentiel=_CTX.referentiel,
+            outline=((0.0, 0.0), (5.0, 0.0), (5.0, 3.0), (0.0, 3.0)),
+            regulation=_CTX.regulation,
         ),
     )
     rng = np.random.default_rng(7)

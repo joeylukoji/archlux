@@ -25,13 +25,13 @@ def test_api_publique_stable() -> None:
 
 def test_feasibility_faisable() -> None:
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
             Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=CONTEXTE_DEFAUT.contour,
+        walls=(),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
     )
     verdict = archlux.feasibility.is_feasible(
         plan, Structure(load_bearing_walls=()), CONTEXTE_DEFAUT
@@ -43,19 +43,19 @@ def test_feasibility_faisable() -> None:
 def test_feasibility_infaisable_explique() -> None:
     contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
             Room(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=contour,
+        walls=(),
+        openings=(),
+        outline=contour,
     )
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=contour,
-        referentiel=Regulation(min_areas=(), largeur_min=8.0),
+        outline=contour,
+        regulation=Regulation(min_areas=(), largeur_min=8.0),
     )
     verdict = archlux.feasibility.is_feasible(plan, ctx.structure, ctx)
     assert not verdict

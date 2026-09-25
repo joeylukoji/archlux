@@ -21,7 +21,7 @@
 @given(plan=plans_quelconques(), ctx=contextes())
 @settings(max_examples=500, deadline=None)
 def test_toute_sortie_est_valide(plan, ctx):
-    assert archlux.legalize(plan, ctx).certificat.geometry.valide
+    assert archlux.legalize(plan, ctx).certificate.geometry.valide
 ```
 
 **Mesure à produire pour l'article :** taux de plans valides avant / après correction, sur les sorties de 3 modèles publics.
@@ -60,7 +60,7 @@ class OrdreRelatif:
     horizontal: tuple[tuple[str, str], ...]   # (a, b) : a est à gauche de b
     vertical:   tuple[tuple[str, str], ...]   # (a, b) : a est en dessous de b
 
-def construire_graphe(ordre: OrdreRelatif, pieces: list[str]) -> GrapheContraintes: ...
+def construire_graphe(ordre: OrdreRelatif, rooms: list[str]) -> GrapheContraintes: ...
 def reduction_transitive(g: GrapheContraintes) -> GrapheContraintes: ...
 def deduire_ordre(plan: Plan) -> OrdreRelatif: ...   # depuis un plan proposé
 ```
@@ -93,13 +93,13 @@ def test_cycle_detecte():
 
 @given(ordre=ordres_valides())
 def test_toute_paire_est_separee(ordre):
-    g = construire_graphe(ordre, ordre.pieces)
-    for a, b in itertools.combinations(ordre.pieces, 2):
+    g = construire_graphe(ordre, ordre.rooms)
+    for a, b in itertools.combinations(ordre.rooms, 2):
         assert g.a_separation(a, b)
 
 @given(ordre=ordres_valides())
 def test_reduction_preserve_la_fermeture(ordre):
-    complet = construire_graphe(ordre, ordre.pieces)
+    complet = construire_graphe(ordre, ordre.rooms)
     reduit  = reduction_transitive(complet)
     assert complet.fermeture() == reduit.fermeture()
 ```
@@ -304,8 +304,8 @@ def test_la_coupe_n_exclut_aucun_point_valide(w0, h0):
 @given(ordre=ordres_valides())
 def test_surfaces_minimales_respectees(ordre):
     sol = resoudre(construire_polytope(ordre, CTX), C_PROXIMITE)
-    for piece in ordre.pieces:
-        assert aire(sol, piece) >= CTX.referentiel.a_min(piece) - 1e-6
+    for piece in ordre.rooms:
+        assert aire(sol, piece) >= CTX.regulation.a_min(piece) - 1e-6
 ```
 
 - [ ] Les 2 tests passent
@@ -397,12 +397,12 @@ def legalize(plan, ctx, *, objective=None, budget=None):
     c     = gradient_distance(vectoriser(plan)) if objective is None else ...
     sol   = resoudre(poly, c, duaux=True)
     if sol.statut == "infaisable":
-        raise Infaisable(certificat=sol.certificat_farkas, poly=poly)
+        raise Infaisable(certificate=sol.certificat_farkas, poly=poly)
     q     = devectoriser(sol.x, plan)
     preuve = verifier_exactement(q, ctx)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)   # jamais silencieux
-    return replace(q, certificat=Certificate(geometry=preuve, ...))
+    return replace(q, certificate=Certificate(geometry=preuve, ...))
 ```
 
 ### Le piège de la valeur absolue

@@ -96,15 +96,15 @@ def test_legalized_plans_round_trip_through_a_file(
         assert _errors(json.loads(path.read_text("utf-8"))) == []
         back = Plan.from_json(path)
         assert back == output
-        assert back.certificat is not None
-        if back.certificat.performance is not None:
-            assert back.certificat.performance.regime == "selected"
+        assert back.certificate is not None
+        if back.certificate.performance is not None:
+            assert back.certificate.performance.regime == "selected"
 
 
 def test_a_performance_output_carries_its_regime_in_the_file(tmp_path: Path) -> None:
     """At least one scenario produces a bound: the loop above is not vacuous."""
     plan, ctx = _a_scenario()
-    (output,) = [o for o in _outputs(plan, ctx) if o.certificat and o.certificat.performance]
+    (output,) = [o for o in _outputs(plan, ctx) if o.certificate and o.certificate.performance]
     output.to_json(tmp_path / "plan.json")
     document = json.loads((tmp_path / "plan.json").read_text("utf-8"))
     assert document["certificat"]["performance"]["regime"] == "selected"
@@ -121,16 +121,16 @@ def _a_scenario() -> tuple[Plan, Context]:
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        referentiel=Regulation(min_areas=(("chambre", 20.0),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("chambre", 20.0),), largeur_min=1.0),
     )
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
             Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(wall,),
-        ouvertures=(),
-        contour=ctx.contour,
+        walls=(wall,),
+        openings=(),
+        outline=ctx.outline,
     )
     return plan, ctx
 
@@ -159,7 +159,7 @@ def test_the_schema_and_the_reader_refuse_the_same_values(
 def test_the_schema_refuses_a_bound_without_regime() -> None:
     """Batch 1.6: a bound whose regime is unknown is never read as "exchangeable"."""
     plan, ctx = _a_scenario()
-    (output,) = [o for o in _outputs(plan, ctx) if o.certificat and o.certificat.performance]
+    (output,) = [o for o in _outputs(plan, ctx) if o.certificate and o.certificate.performance]
     document = vers_dict(output)
     del document["certificat"]["performance"]["regime"]
     assert _errors(document)

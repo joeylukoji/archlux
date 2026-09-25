@@ -95,12 +95,12 @@ def test_charge_un_appartement_tourne_et_le_redresse(tmp_path: Path) -> None:
         < 0.5
     )
     assert appart.contexte.orientation.deg == appart.angle_redressement
-    assert len(appart.plan.pieces) == 2
+    assert len(appart.plan.rooms) == 2
     # Les baies sont relatives a leur mur, jamais absolues.
-    for ouverture in appart.plan.ouvertures:
+    for ouverture in appart.plan.openings:
         assert 0.0 <= ouverture.s <= 1.0
         assert 0.0 < ouverture.relative_width <= 1.0
-        assert ouverture.wall_id in {mur.id for mur in appart.plan.murs}
+        assert ouverture.wall_id in {mur.id for mur in appart.plan.walls}
 
 
 def test_referentiel_par_defaut_neutralise_la_largeur_minimale(tmp_path: Path) -> None:
@@ -113,8 +113,8 @@ def test_referentiel_par_defaut_neutralise_la_largeur_minimale(tmp_path: Path) -
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
     appart = next(iter(charger_msd(csv)))
-    assert appart.contexte.referentiel.largeur_min == 0.0
-    assert appart.contexte.referentiel.min_areas == ()
+    assert appart.contexte.regulation.largeur_min == 0.0
+    assert appart.contexte.regulation.min_areas == ()
 
 
 def test_legalize_est_idempotent_sur_un_plan_reel_valide(tmp_path: Path) -> None:
@@ -130,7 +130,7 @@ def test_legalize_est_idempotent_sur_un_plan_reel_valide(tmp_path: Path) -> None
     assert verify_exactly(appart.plan, appart.contexte).valide
 
     corrige = ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)
-    preuve = corrige.certificat.geometry
+    preuve = corrige.certificate.geometry
     assert preuve.valide
     assert preuve.max_displacement == pytest.approx(0.0, abs=1e-9)
 
@@ -190,9 +190,9 @@ def test_angle_de_redressement_est_coherent_avec_la_geometrie(tmp_path: Path) ->
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
     appart = next(iter(charger_msd(csv)))
-    for piece in appart.plan.pieces:
+    for piece in appart.plan.rooms:
         assert piece.w > 0.0
         assert piece.h > 0.0
-    coords = list(appart.plan.contour)
+    coords = list(appart.plan.outline)
     for (x0, y0), (x1, y1) in zip(coords, coords[1:] + coords[:1], strict=True):
         assert math.isclose(x0, x1, abs_tol=1e-6) or math.isclose(y0, y1, abs_tol=1e-6)

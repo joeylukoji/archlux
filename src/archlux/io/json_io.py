@@ -296,7 +296,7 @@ def vers_dict(plan: Plan) -> dict[str, Any]:
     """
     return {
         "schema": VERSION_SCHEMA,
-        "contour": [[x, y] for x, y in plan.contour],
+        "contour": [[x, y] for x, y in plan.outline],
         "pieces": [
             {
                 "id": p.id,
@@ -306,7 +306,7 @@ def vers_dict(plan: Plan) -> dict[str, Any]:
                 "w": p.w,
                 "h": p.h,
             }
-            for p in plan.pieces
+            for p in plan.rooms
         ],
         "murs": [
             {
@@ -316,7 +316,7 @@ def vers_dict(plan: Plan) -> dict[str, Any]:
                 "porteur": m.load_bearing,
                 "epaisseur": m.thickness,
             }
-            for m in plan.murs
+            for m in plan.walls
         ],
         "ouvertures": [
             {
@@ -327,9 +327,9 @@ def vers_dict(plan: Plan) -> dict[str, Any]:
                 "hauteur_allege": o.sill_height,
                 "hauteur_linteau": o.head_height,
             }
-            for o in plan.ouvertures
+            for o in plan.openings
         ],
-        "certificat": _certificat_vers_dict(plan.certificat),
+        "certificat": _certificat_vers_dict(plan.certificate),
     }
 
 
@@ -364,7 +364,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
         # hide every other violation of the file behind the first one.
         _verifier_plages(donnees)
         plan = Plan(
-            pieces=tuple(
+            rooms=tuple(
                 Room(
                     id=str(p["id"]),
                     type=str(p["type"]),
@@ -375,7 +375,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                 )
                 for p in donnees["pieces"]
             ),
-            murs=tuple(
+            walls=tuple(
                 Wall(
                     id=str(m["id"]),
                     a=_point(m["a"], f"mur {m['id']}.a"),
@@ -385,7 +385,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                 )
                 for m in donnees["murs"]
             ),
-            ouvertures=tuple(
+            openings=tuple(
                 Opening(
                     id=str(o["id"]),
                     wall_id=str(o["mur_id"]),
@@ -396,8 +396,8 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                 )
                 for o in donnees["ouvertures"]
             ),
-            contour=tuple(_point(pt, f"contour[{i}]") for i, pt in enumerate(donnees["contour"])),
-            certificat=_certificat_depuis_dict(donnees["certificat"]),
+            outline=tuple(_point(pt, f"contour[{i}]") for i, pt in enumerate(donnees["contour"])),
+            certificate=_certificat_depuis_dict(donnees["certificat"]),
         )
     except (KeyError, TypeError, ValueError) as cause:
         raise InvariantViolation((f"structure JSON invalide : {cause}",)) from cause

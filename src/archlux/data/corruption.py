@@ -71,7 +71,7 @@ class Corruption:
     Attributes
     ----------
     piece_id : str
-        Identifiant de la pièce touchée, tel qu'il figure dans ``Plan.pieces``.
+        Identifiant de la pièce touchée, tel qu'il figure dans ``Plan.rooms``.
     amplitude : float
         Déplacement effectivement appliqué, en mètres. Peut être **inférieur** à
         l'amplitude demandée si le plancher :data:`_TAILLE_MIN` a mordu ; c'est
@@ -163,7 +163,7 @@ def corrompre(
     >>> abime.certificat is None
     True
     """
-    if not plan.pieces:
+    if not plan.rooms:
         raise InvariantViolation(("plan sans piece : rien a corrompre",))
     if n_pieces < 1:
         raise InvariantViolation((f"n_pieces doit etre >= 1 : {n_pieces}",))
@@ -173,13 +173,13 @@ def corrompre(
         raise InvariantViolation(("aucun mode de corruption",))
 
     rng = np.random.default_rng(seed)
-    # Tri par identifiant avant tirage : l'ordre de ``plan.pieces`` ne doit pas
+    # Tri par identifiant avant tirage : l'ordre de ``plan.rooms`` ne doit pas
     # influer sur le resultat, sinon la graine ne suffit pas a rejouer.
-    rangs = sorted(range(len(plan.pieces)), key=lambda i: plan.pieces[i].id)
+    rangs = sorted(range(len(plan.rooms)), key=lambda i: plan.rooms[i].id)
     combien = min(n_pieces, len(rangs))
     choisis = [rangs[int(i)] for i in rng.choice(len(rangs), size=combien, replace=False)]
 
-    pieces = list(plan.pieces)
+    pieces = list(plan.rooms)
     fautes: list[Corruption] = []
     for rang in sorted(choisis):
         mode = modes[int(rng.integers(len(modes)))]
@@ -190,4 +190,4 @@ def corrompre(
             continue
         pieces[rang] = piece
         fautes.append(Corruption(mode=mode, piece_id=piece.id, amplitude=float(applique), axe=axe))
-    return replace(plan, pieces=tuple(pieces), certificat=None), tuple(fautes)
+    return replace(plan, rooms=tuple(pieces), certificate=None), tuple(fautes)

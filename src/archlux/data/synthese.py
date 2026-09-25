@@ -84,7 +84,7 @@ def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:
         )
         identifiant = f"syn-{rang:04d}"
         if rang == _RANG_JUMEAU_DEDUPLICATION:
-            pieces = corpus[_ID_SOURCE_JUMEAU].pieces
+            pieces = corpus[_ID_SOURCE_JUMEAU].rooms
         corpus[identifiant] = Plan(pieces, (), (), _CONTOUR)
     return corpus
 

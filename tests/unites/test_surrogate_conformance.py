@@ -88,9 +88,9 @@ def test_legalize_accepts_a_daylight_objective() -> None:
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=30.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(("chambre", 12.0),), largeur_min=1.0),
+        outline=outline,
+        regulation=Regulation(min_areas=(("chambre", 12.0),), largeur_min=1.0),
     )
-    plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
+    plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     result = archlux.legalize(plan, ctx, objective=Daylight(SubstitutAnalytique(), q_chapeau=1.0))
     assert checkers.violations(result, ctx) == []

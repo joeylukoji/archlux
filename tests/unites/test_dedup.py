@@ -36,7 +36,7 @@ def test_distributions_comparables() -> None:
     decoupage = charger_decoupage(SPLITS)
 
     def largeurs(ids: tuple[str, ...]) -> list[float]:
-        return [next(p.w for p in corpus[i].pieces if p.id == "sw") for i in ids]
+        return [next(p.w for p in corpus[i].rooms if p.id == "sw") for i in ids]
 
     train = largeurs(decoupage.entrainement)
     test = largeurs(decoupage.test)

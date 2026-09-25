@@ -18,14 +18,14 @@ def imputer_ouvertures(plan: Plan, *, ratio: float = RATIO_BAIE_DEFAUT) -> Plan:
     Ne touche pas aux baies déjà présentes. L'effet de cette imputation sur la
     calibration doit être mesuré à part (`docs/donnees/imputation.md`).
     """
-    murs_occupes = {o.wall_id for o in plan.ouvertures}
-    nouvelles: list[Opening] = list(plan.ouvertures)
-    murs: tuple[Wall, ...] = plan.murs
-    if not murs and len(plan.contour) >= 2:
-        contour = (*plan.contour, plan.contour[0])
+    murs_occupes = {o.wall_id for o in plan.openings}
+    nouvelles: list[Opening] = list(plan.openings)
+    murs: tuple[Wall, ...] = plan.walls
+    if not murs and len(plan.outline) >= 2:
+        contour = (*plan.outline, plan.outline[0])
         murs = tuple(
             Wall(id=f"contour-{i}", a=contour[i], b=contour[i + 1])
-            for i in range(len(plan.contour))
+            for i in range(len(plan.outline))
         )
     for mur in murs:
         if mur.id in murs_occupes:
@@ -38,4 +38,4 @@ def imputer_ouvertures(plan: Plan, *, ratio: float = RATIO_BAIE_DEFAUT) -> Plan:
                 relative_width=ratio,
             )
         )
-    return replace(plan, murs=murs, ouvertures=tuple(nouvelles))
+    return replace(plan, walls=murs, openings=tuple(nouvelles))

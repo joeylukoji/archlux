@@ -103,10 +103,10 @@ def test_the_trace_carries_the_stop_status() -> None:
 
 
 def _max_move(result: Plan, proposed: Plan) -> float:
-    before = {room.id: room for room in proposed.pieces}
+    before = {room.id: room for room in proposed.rooms}
     return max(
         abs(getattr(room, field) - getattr(before[room.id], field))
-        for room in result.pieces
+        for room in result.rooms
         for field in ("x", "y", "w", "h")
     )
 
@@ -120,7 +120,7 @@ def test_performance_mode_never_moves_a_room_beyond_the_budget(
     from the proposal could reach twice the budget. The input is corrupted first, so
     that the classic pass does move and consumes part of the budget."""
     plan, ctx = scenario
-    proposed, _ = corrompre(plan, seed=len(plan.pieces), amplitude=0.25)
+    proposed, _ = corrompre(plan, seed=len(plan.rooms), amplitude=0.25)
     budget = 0.3
     try:
         result = archlux.legalize(
@@ -138,7 +138,7 @@ def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Conte
     meets the budget only up to its tolerance; the Frank-Wolfe box must still contain
     the classic result instead of raising InvariantViolation."""
     plan, ctx = scenario
-    proposed, _ = corrompre(plan, seed=len(plan.pieces), amplitude=0.25)
+    proposed, _ = corrompre(plan, seed=len(plan.rooms), amplitude=0.25)
     try:
         classic = archlux.legalize(proposed, ctx, pavage=True)
     except archlux.ArchluxError:

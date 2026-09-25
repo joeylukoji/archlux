@@ -17,8 +17,8 @@ from archlux.types import Context, Orientation, Regulation, Room, Structure
 CTX = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
-    contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Regulation(min_areas=(("sejour", 9.0),), largeur_min=1.5),
+    outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
+    regulation=Regulation(min_areas=(("sejour", 9.0),), largeur_min=1.5),
 )
 
 

@@ -33,7 +33,7 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                         out = ax.legalize(
                             plan, apartment.contexte, fusions=apartment.fusions, pavage=pavage
                         )
-                        proof = out.certificat.geometry  # type: ignore[union-attr]
+                        proof = out.certificate.geometry  # type: ignore[union-attr]
                         result = ("ok", proof.valide, f"{proof.max_displacement:.6f}")
                     except ax.ArchluxError as error:
                         result = (type(error).__name__, False, "")
@@ -42,7 +42,7 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                         fault,
                         amplitude,
                         pavage,
-                        len(plan.pieces),
+                        len(plan.rooms),
                         before,
                     )
                     writer.writerow((*head, *result, seed))

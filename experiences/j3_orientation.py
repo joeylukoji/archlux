@@ -34,15 +34,15 @@ with (OUT / "j3_orientation.csv").open("w", newline="", encoding="utf-8") as han
             ctx = ax.Context(
                 structure=ax.Structure(()),
                 orientation=ax.Orientation(float(deg)),
-                contour=C,
-                referentiel=ref,
+                outline=C,
+                regulation=ref,
             )
-            l1 = {r.id: r for r in ax.legalize(PLAN, ctx).pieces}
+            l1 = {r.id: r for r in ax.legalize(PLAN, ctx).rooms}
             out = ax.legalize(PLAN, ctx, objective=SubstitutAnalytique())
-            moved = sum(abs(r.w - l1[r.id].w) + abs(r.h - l1[r.id].h) for r in out.pieces)
+            moved = sum(abs(r.w - l1[r.id].w) + abs(r.h - l1[r.id].h) for r in out.rooms)
             moves.append(moved)
-            rooms = {r.id: r for r in out.pieces}
-            smallest = min(r.w * r.h for r in out.pieces)
+            rooms = {r.id: r for r in out.rooms}
+            smallest = min(r.w * r.h for r in out.rooms)
             row = (minimum, deg, f"{moved:.6f}", f"{rooms['sw'].h:.6f}", f"{rooms['nw'].h:.6f}")
             writer.writerow(dict(zip(FIELDS, (*row, f"{smallest:.6f}"), strict=True)))
             sheet.append((out, f"{deg} deg"))

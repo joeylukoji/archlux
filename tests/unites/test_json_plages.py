@@ -17,10 +17,10 @@ from archlux.io.json_io import charger, depuis_dict, vers_dict
 from archlux.types import Opening, Plan, Room, Wall
 
 PLAN = Plan(
-    pieces=(Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
-    murs=(Wall(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
-    ouvertures=(Opening(id="f", wall_id="m", s=0.5, relative_width=0.2),),
-    contour=((0.0, 0.0), (4.0, 0.0), (4.0, 3.5), (0.0, 3.5)),
+    rooms=(Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
+    walls=(Wall(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
+    openings=(Opening(id="f", wall_id="m", s=0.5, relative_width=0.2),),
+    outline=((0.0, 0.0), (4.0, 0.0), (4.0, 3.5), (0.0, 3.5)),
 )
 
 
@@ -46,7 +46,7 @@ class TestPlagesOuverture:
     @pytest.mark.parametrize("s", [0.0, 1.0])
     def test_les_bornes_sont_incluses(self, s: float) -> None:
         """Une baie en bout de mur est licite : l'intervalle est fermé."""
-        assert depuis_dict(_avec(["ouvertures", 0, "s"], s)).ouvertures[0].s == s
+        assert depuis_dict(_avec(["ouvertures", 0, "s"], s)).openings[0].s == s
 
     @pytest.mark.parametrize("largeur", [0.0, -0.5, 1.01])
     def test_largeur_relative_hors_plage(self, largeur: float) -> None:
@@ -57,7 +57,7 @@ class TestPlagesOuverture:
     def test_une_baie_pleine_largeur_est_licite(self) -> None:
         """``relative_width = 1`` est la borne haute, incluse."""
         relu = depuis_dict(_avec(["ouvertures", 0, "largeur_rel"], 1.0))
-        assert relu.ouvertures[0].relative_width == 1.0
+        assert relu.openings[0].relative_width == 1.0
 
 
 class TestPlagesPiece:

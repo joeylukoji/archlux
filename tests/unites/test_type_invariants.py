@@ -71,10 +71,10 @@ def test_opening_on_the_boundary_is_allowed() -> None:
 def test_a_plan_with_a_trace_is_hashable_and_equal_without_it() -> None:
     plain = make_plan()
     traced = Plan(
-        pieces=plain.pieces,
-        murs=plain.murs,
-        ouvertures=plain.ouvertures,
-        contour=plain.contour,
+        rooms=plain.rooms,
+        walls=plain.walls,
+        openings=plain.openings,
+        outline=plain.outline,
         trace=np.zeros(3),
     )
     assert hash(traced) == hash(plain)
@@ -87,8 +87,8 @@ def test_unknown_room_type_warns_when_the_regulation_has_thresholds() -> None:
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=SQUARE,
-        referentiel=Regulation(min_areas=(("sejour", 1.0),), largeur_min=1.0),
+        outline=SQUARE,
+        regulation=Regulation(min_areas=(("sejour", 1.0),), largeur_min=1.0),
     )
     typo = make_plan(type="sejuor")
     with pytest.warns(UserWarning, match="sejuor"):

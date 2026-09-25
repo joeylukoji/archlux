@@ -90,7 +90,7 @@ def main() -> None:
             valide = ax.legalize(propose, contexte, pavage=True, budget_reparation=BUDGETS[-1])
         except ax.ArchluxError:
             continue
-        if not valide.certificat.geometry.valide or len(valide.pieces) < 4:
+        if not valide.certificate.geometry.valide or len(valide.rooms) < 4:
             continue
         retenus += 1
 
@@ -107,22 +107,22 @@ def main() -> None:
             apres = _score(variante, ctx_az, substitut)
             bouge = max(
                 max(abs(a.x - b.x), abs(a.y - b.y), abs(a.w - b.w), abs(a.h - b.h))
-                for a, b in zip(valide.pieces, variante.pieces, strict=True)
+                for a, b in zip(valide.rooms, variante.rooms, strict=True)
             )
-            cotes = [min(q.w, q.h) for q in variante.pieces]
-            aires = [q.aire for q in variante.pieces]
+            cotes = [min(q.w, q.h) for q in variante.rooms]
+            aires = [q.aire for q in variante.rooms]
             scores.append((azimut, avant, apres, bouge, min(cotes), min(aires), max(aires)))
             gain = 100 * (apres - avant) / max(abs(avant), 1e-9)
             volets.append((variante, f"{azimut}° — sDA {apres:.0f} ({gain:+.0f} %)"))
 
         nom = plan_json["id"]
         (RACINE / f"{nom}.svg").write_text(
-            planche(tuple(volets), contour=contexte.contour, colonnes=4),
+            planche(tuple(volets), contour=contexte.outline, colonnes=4),
             encoding="utf-8",
         )
         fiche = [
             f"# {nom} — variantes par azimut\n",
-            f"{len(valide.pieces)} pieces, cote caracteristique {diag.cote:.2f} m, "
+            f"{len(valide.rooms)} pieces, cote caracteristique {diag.cote:.2f} m, "
             f"budget {budget:.1f} m.\n",
             "| azimut | sDA legalise | sDA variante | gain | deplacement | "
             "plus petit cote | aire min | aire max |",
@@ -152,7 +152,7 @@ def main() -> None:
         if scores:
             meilleur = max(scores, key=lambda s: s[2])
             index.append(
-                f"| [`{nom}`]({nom}.md) | {len(valide.pieces)} | {meilleur[0]}° | "
+                f"| [`{nom}`]({nom}.md) | {len(valide.rooms)} | {meilleur[0]}° | "
                 f"{100 * (meilleur[2] - meilleur[1]) / max(abs(meilleur[1]), 1e-9):+.0f} % | "
                 f"{meilleur[3]:.2f} m | {min(s[4] for s in scores):.2f} m | "
                 f"{len(scores)} / {len(AZIMUTS)} |"

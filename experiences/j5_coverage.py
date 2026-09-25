@@ -31,7 +31,7 @@ def chosen(xs: tuple, orientations: tuple, q: float) -> tuple:
     fw, ref = Daylight(model, q_chapeau=q), ax.Regulation((), 1.0)
     ctx = [
         ax.Context(
-            structure=ax.Structure(()), orientation=o, contour=TWO_ROOM_OUTLINE, referentiel=ref
+            structure=ax.Structure(()), orientation=o, outline=TWO_ROOM_OUTLINE, regulation=ref
         )
         for o in orientations
     ]

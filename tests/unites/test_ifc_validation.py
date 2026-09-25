@@ -28,13 +28,13 @@ def _plan() -> Plan:
         Wall(id="mid", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True),
     )
     return Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
             Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=walls,
-        ouvertures=(Opening(id="w1", wall_id="south", s=0.3, relative_width=0.2),),
-        contour=CONTEXTE_DEFAUT.contour,
+        walls=walls,
+        openings=(Opening(id="w1", wall_id="south", s=0.3, relative_width=0.2),),
+        outline=CONTEXTE_DEFAUT.outline,
     )
 
 
@@ -47,7 +47,7 @@ def test_every_global_id_is_ifc_base64_and_unique(tmp_path: Path) -> None:
 
 def test_an_opening_on_an_unknown_wall_is_refused(tmp_path: Path) -> None:
     orphan = Opening(id="w9", wall_id="nowhere", s=0.5, relative_width=0.2)
-    plan = Plan(_plan().pieces, _plan().murs, (orphan,), _plan().contour)
+    plan = Plan(_plan().rooms, _plan().walls, (orphan,), _plan().outline)
     assert "ouverture_orpheline:w9" in diagnostiquer(plan).pathologies
     assert not to_ifc(plan, tmp_path / "plan.ifc", validate=True).valide
 
@@ -97,13 +97,13 @@ def test_two_different_plans_share_no_global_id(tmp_path: Path) -> None:
     """Review of phase 2, Major 1: labels alone gave two flats the same IfcSpace ids."""
     first = _plan()
     second = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="cuisine", x=0.0, y=0.0, w=5.0, h=9.0),
             Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
-        murs=first.murs,
-        ouvertures=first.ouvertures,
-        contour=first.contour,
+        walls=first.walls,
+        openings=first.openings,
+        outline=first.outline,
     )
     ids = []
     for k, plan in enumerate((first, second, first)):

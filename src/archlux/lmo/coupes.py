@@ -147,9 +147,7 @@ def _minimum_areas(
 ) -> dict[str, float]:
     """Minimum area of each room: ``minima`` if it names the room, else its type's."""
     overrides = minima or {}
-    return {
-        piece.id: overrides.get(piece.id, ctx.referentiel.a_min(piece.type)) for piece in pieces
-    }
+    return {piece.id: overrides.get(piece.id, ctx.regulation.a_min(piece.type)) for piece in pieces}
 
 
 def _coupes_initiales(

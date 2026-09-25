@@ -128,27 +128,27 @@ import archlux as ax
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
+    rooms=(
         ax.Room(id="living", type="living", x=0.0, y=0.0, w=6.05, h=9.0),
         ax.Room(id="bed", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
         ax.Room(id="bath", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=outline,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
     structure=ax.Structure(
         load_bearing_walls=(ax.Wall(id="axis-3", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True),)
     ),
     orientation=ax.Orientation(deg=12.0),  # north at 12 degrees east
-    contour=outline,
-    referentiel=ax.Regulation(min_areas=(("bathroom", 5.0),), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), largeur_min=1.0),
 )
 
 repaired = ax.legalize(plan, ctx, pavage=True)
-assert repaired.certificat is not None and repaired.certificat.geometry.valide
-print(repaired.certificat.rapport())
+assert repaired.certificate is not None and repaired.certificate.geometry.valide
+print(repaired.certificate.rapport())
 ```
 
 `pavage=True` requires the rooms to tile the outline exactly. Use it whenever the input
@@ -162,7 +162,7 @@ Plans round-trip through JSON with their certificate:
 ```python
 repaired.to_json("repaired.json")
 again = ax.Plan.from_json("repaired.json")
-assert again.certificat is not None and again.certificat.geometry.valide
+assert again.certificate is not None and again.certificate.geometry.valide
 ```
 
 ### Repair while keeping the daylight
@@ -203,7 +203,7 @@ better = ax.legalize(
     budget=0.5,  # maximum displacement from the proposal, in metres, checked by the proof
     pavage=True,
 )
-bound = better.certificat.performance
+bound = better.certificate.performance
 assert bound is not None and bound.regime == "selected"
 assert not bound.coverage_guaranteed  # the optimizer chose this plan
 ```
@@ -228,19 +228,19 @@ Three rooms side by side, each at least 4.5 m wide, in a 12 m wide outline:
 
 ```python
 narrow = ax.Plan(
-    pieces=tuple(
+    rooms=tuple(
         ax.Room(id=name, type="bedroom", x=4.0 * k, y=0.0, w=4.0, h=9.0)
         for k, name in enumerate("abc")
     ),
-    murs=(),
-    ouvertures=(),
-    contour=outline,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 wide_rooms = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
-    contour=outline,
-    referentiel=ax.Regulation(min_areas=(), largeur_min=4.5),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(), largeur_min=4.5),
 )
 verdict = ax.feasibility.is_feasible(narrow, wide_rooms.structure, wide_rooms)
 assert not verdict and verdict.certificat is not None

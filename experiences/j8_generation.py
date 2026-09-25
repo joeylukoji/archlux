@@ -171,14 +171,14 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnos
     x0, y0, x1, y1 = union.bounds
     contour = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
 
-    plan = Plan(pieces=pieces, murs=(), ouvertures=(), contour=contour)
+    plan = Plan(rooms=pieces, walls=(), openings=(), outline=contour)
     contexte = Context(
         structure=Structure(load_bearing_walls=(), columns=()),
         orientation=Orientation(deg=0.0),
-        contour=contour,
+        outline=contour,
         # Le referentiel est remplace essai par essai : voir LARGEUR_DEFAUT.
-        referentiel=Regulation(min_areas=(), largeur_min=LARGEUR_DEFAUT),
-        programme=tuple(sorted(set(plan_json["programme"]))),
+        regulation=Regulation(min_areas=(), largeur_min=LARGEUR_DEFAUT),
+        program=tuple(sorted(set(plan_json["programme"]))),
     )
     return plan, contexte, diagnostiquer(plan)
 
@@ -378,7 +378,7 @@ def main() -> None:
                 cote_min, intact = "", ""
                 contexte_essai = replace(
                     contexte,
-                    referentiel=Regulation(min_areas=(), largeur_min=largeur),
+                    regulation=Regulation(min_areas=(), largeur_min=largeur),
                 )
                 try:
                     corrige = ax.legalize(
@@ -387,10 +387,10 @@ def main() -> None:
                         pavage=(mode == "pavage"),
                         budget_reparation=budget,
                     )
-                    valide = corrige.certificat.geometry.valide
-                    deplacement = f"{corrige.certificat.geometry.max_displacement:.6f}"
-                    n_apres = str(len(corrige.pieces))
-                    petit = min(min(p.w, p.h) for p in corrige.pieces)
+                    valide = corrige.certificate.geometry.valide
+                    deplacement = f"{corrige.certificate.geometry.max_displacement:.6f}"
+                    n_apres = str(len(corrige.rooms))
+                    petit = min(min(p.w, p.h) for p in corrige.rooms)
                     cote_min = f"{petit:.4f}"
                     # « Intact » = valide ET aucune piece reduite a un residu.
                     # Compter les pieces ne suffit pas : une piece ecrasee a
@@ -408,7 +408,7 @@ def main() -> None:
                         "programme": "+".join(plan_json["programme"]),
                         # Absent des premiers JSONL : le champ n'existait pas encore.
                         "graphe": plan_json.get("graphe", "etoile"),
-                        "n_pieces": len(plan.pieces),
+                        "n_pieces": len(plan.rooms),
                         "mode": mode,
                         "budget": budget if mode == "pavage" else "",
                         "largeur_min": f"{largeur:.2f}",

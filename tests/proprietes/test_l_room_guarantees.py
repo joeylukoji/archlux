@@ -54,18 +54,18 @@ def scenarios_with_a_fused_room(
         first = replace(a, id="fused__0")
         second = replace(b, id="fused__1", type=a.type)
         room = PieceRectilineaire(id="fused", rectangles=(first, second), fusions=((0, 1, kind),))
-        return room, [first, second, *(r for r in plan.pieces if r is not a and r is not b)]
+        return room, [first, second, *(r for r in plan.rooms if r is not a and r is not b)]
 
     # Only pairs that make one valid room: no load-bearing wall on their seam (it would
     # cut the room in two) and a seam at least ``largeur_min`` long.
     pairs = [
         (a, b, kind)
-        for a in plan.pieces
-        for b in plan.pieces
+        for a in plan.rooms
+        for b in plan.rooms
         if a is not b
         and (kind := _fusion_kind(a, b)) is not None
         and not checkers.violations(
-            replace(plan, pieces=tuple(fuse(a, b, kind)[1])),
+            replace(plan, rooms=tuple(fuse(a, b, kind)[1])),
             ctx,
             fusions=(fuse(a, b, kind)[0],),
         )
@@ -86,7 +86,7 @@ def scenarios_with_a_fused_room(
         k = draw(st.sampled_from(neighbours))
         shift = draw(st.sampled_from((-0.5, -0.25, 0.25, 0.5)))
         rooms[k] = replace(rooms[k], **{along: getattr(rooms[k], along) + shift})
-    return replace(plan, pieces=tuple(rooms)), ctx, room
+    return replace(plan, rooms=tuple(rooms)), ctx, room
 
 
 @_SETTINGS
@@ -125,7 +125,7 @@ def _end_order(plan: Plan, room: PieceRectilineaire) -> tuple[int, int]:
     aligned, other ends keep their order or meet, when the step of the L closes (an L
     may degenerate into a rectangle, never turn into a T or a Z). Found at 2000
     examples: Frank-Wolfe closing a 1 cm step, which a strict comparison flagged."""
-    by_id = {r.id: r for r in plan.pieces}
+    by_id = {r.id: r for r in plan.rooms}
     a, b = (by_id[r.id] for r in room.rectangles)
     ((_, _, kind),) = room.fusions
     if kind == FUSION_DROIT:

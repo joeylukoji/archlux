@@ -26,22 +26,22 @@ import archlux as ax
 from archlux.light.base import SubstitutDense
 from archlux.light.simulateur import SplitFluxOracle
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
+    rooms=(
         ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=6.05, h=9.0),
         ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=5.0),
         ax.Room(id="sdb", type="salle_de_bain", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
-    contour=contour,
-    referentiel=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
 )
 
 
@@ -109,9 +109,9 @@ objectif = Daylight(modele, q_chapeau=cal.q)  # pessimiste=True par défaut
 q = ax.legalize(
     plan, ctx, objective=objectif, calibration=cal.snapshot(), budget=0.5, pavage=True
 )
-assert q.certificat is not None and q.certificat.performance is not None
-assert q.certificat.performance.regime == "selected"
-print(q.certificat.rapport())
+assert q.certificate is not None and q.certificate.performance is not None
+assert q.certificate.performance.regime == "selected"
+print(q.certificate.rapport())
 ```
 
 `q.certificat.performance` porte alors l'intervalle conforme du plan rendu, en

@@ -22,13 +22,13 @@ def _ctx(outline: tuple[tuple[float, float], ...] = _OUTLINE) -> Context:
     return Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(), largeur_min=0.05),
+        outline=outline,
+        regulation=Regulation(min_areas=(), largeur_min=0.05),
     )
 
 
 def _plan(*rooms: Room, outline: tuple[tuple[float, float], ...] = _OUTLINE) -> Plan:
-    return Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
+    return Plan(rooms=rooms, walls=(), openings=(), outline=outline)
 
 
 def _room(rid: str, x: float, y: float, w: float, h: float) -> Room:
@@ -115,13 +115,13 @@ def test_a_program_that_fills_the_outline_exactly_is_still_legalized() -> None:
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(("chambre", 4.5),), largeur_min=0.5),
+        outline=outline,
+        regulation=Regulation(min_areas=(("chambre", 4.5),), largeur_min=0.5),
     )
     plan = _plan(_room("a", 0.0, 0.0, 1.0, 3.0), _room("b", 1.0, 0.0, 2.0, 3.0), outline=outline)
     result = archlux.legalize(plan, ctx)
-    assert result.certificat is not None and result.certificat.geometry.valide
-    widths = sorted(round(room.w, 6) for room in result.pieces)
+    assert result.certificate is not None and result.certificate.geometry.valide
+    widths = sorted(round(room.w, 6) for room in result.rooms)
     assert widths == [1.5, 1.5]
 
 

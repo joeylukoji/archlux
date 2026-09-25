@@ -33,8 +33,8 @@ class Violation:
 
 def outline_area(ctx: Context) -> float:
     """Area of the axis-aligned rectangle spanned by the outline."""
-    xs = [x for x, _ in ctx.contour]
-    ys = [y for _, y in ctx.contour]
+    xs = [x for x, _ in ctx.outline]
+    ys = [y for _, y in ctx.outline]
     return (max(xs) - min(xs)) * (max(ys) - min(ys))
 
 
@@ -74,10 +74,10 @@ def _fused_area_violations(
             if (
                 a is not None
                 and b is not None
-                and not _fusion_holds(a, b, kind, ctx.referentiel.largeur_min)
+                and not _fusion_holds(a, b, kind, ctx.regulation.largeur_min)
             ):
                 found.append(Violation("area", f"{piece.id}: {a.id} and {b.id} are apart"))
-        minimum = max(ctx.referentiel.a_min(part.type) for part in parts)
+        minimum = max(ctx.regulation.a_min(part.type) for part in parts)
         area = sum(part.w * part.h for part in parts)
         if area < minimum - TOLERANCE:
             found.append(Violation("area", f"{piece.id}: area {area:.6f} < {minimum:.6f}"))
@@ -94,7 +94,7 @@ def violations(
     recorded shared edge, and their areas add up to the room's.
     """
     found: list[Violation] = []
-    rooms = plan.pieces
+    rooms = plan.rooms
 
     for i, a in enumerate(rooms):
         for b in rooms[i + 1 :]:
@@ -114,7 +114,7 @@ def violations(
     for room in rooms:
         if room.id in fused:
             continue
-        minimum = ctx.referentiel.a_min(room.type)
+        minimum = ctx.regulation.a_min(room.type)
         if room.w * room.h < minimum - TOLERANCE:
             found.append(
                 Violation("area", f"{room.id}: area {room.w * room.h:.6f} < {minimum:.6f}")
@@ -158,9 +158,9 @@ def violations(
 
 def budget_violations(plan: Plan, proposed: Plan, budget: float) -> list[Violation]:
     """Rooms moved farther than ``budget`` (L-infinity over x, y, w, h) from ``proposed``."""
-    before = {room.id: room for room in proposed.pieces}
+    before = {room.id: room for room in proposed.rooms}
     found: list[Violation] = []
-    for room in plan.pieces:
+    for room in plan.rooms:
         origin = before.get(room.id)
         if origin is None:
             continue

@@ -23,23 +23,23 @@ def _ctx(contour: tuple[tuple[float, float], ...] = _RECT) -> Context:
     return Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=contour,
-        referentiel=Regulation(min_areas=(), largeur_min=0.0),
+        outline=contour,
+        regulation=Regulation(min_areas=(), largeur_min=0.0),
     )
 
 
 def _pavage_2x2(largeur_sw: float = 5.0) -> Plan:
     """Pavage 2x2 ; `largeur_sw` < 5 ouvre un jour sous la piece nord-ouest."""
     return Plan(
-        pieces=(
+        rooms=(
             Room(id="sw", type="sejour", x=0.0, y=0.0, w=largeur_sw, h=4.0),
             Room(id="se", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
             Room(id="nw", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
             Room(id="ne", type="sdb", x=5.0, y=4.0, w=7.0, h=5.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=_RECT,
+        walls=(),
+        openings=(),
+        outline=_RECT,
     )
 
 
@@ -47,16 +47,16 @@ def _moulin() -> Plan:
     """Moulin a vent : 5 rectangles, dissection **non tranchable**."""
     contour = ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0), (0.0, 9.0))
     return Plan(
-        pieces=(
+        rooms=(
             Room(id="A", type="sejour", x=0.0, y=6.0, w=6.0, h=3.0),
             Room(id="B", type="sejour", x=6.0, y=3.0, w=3.0, h=6.0),
             Room(id="C", type="sejour", x=3.0, y=0.0, w=6.0, h=3.0),
             Room(id="D", type="sejour", x=0.0, y=0.0, w=3.0, h=6.0),
             Room(id="E", type="sejour", x=3.0, y=3.0, w=3.0, h=3.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=contour,
+        walls=(),
+        openings=(),
+        outline=contour,
     )
 
 
@@ -86,14 +86,14 @@ def test_contour_rectilineaire_est_accepte() -> None:
     """
     contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 4.0), (5.0, 4.0), (5.0, 9.0), (0.0, 9.0))
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=4.0),
             Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
             Room(id="c", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=contour,
+        walls=(),
+        openings=(),
+        outline=contour,
     )
     trame = deduire_trame(plan, _ctx(contour))
     assert trame.lignes_x == (0.0, 5.0, 12.0)
@@ -115,13 +115,13 @@ def test_le_support_recupere_la_trame_quelle_que_soit_l_amplitude(jour: float) -
 def test_une_cloison_etroite_n_est_pas_ecrasee() -> None:
     """Le refus d'ecraser une piece borne la consolidation."""
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="couloir", type="couloir", x=0.0, y=0.0, w=0.4, h=9.0),
             Room(id="sejour", type="sejour", x=0.4, y=0.0, w=11.6, h=9.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=_RECT,
+        walls=(),
+        openings=(),
+        outline=_RECT,
     )
     assert deduire_trame(plan, _ctx()).lignes_x == (0.0, 0.4, 12.0)
 
@@ -129,14 +129,14 @@ def test_une_cloison_etroite_n_est_pas_ecrasee() -> None:
 def _trois_pieces_sur_quatre() -> Plan:
     """Pavage 2x2 ampute de sa piece nord-est : une cellule reste vide."""
     return Plan(
-        pieces=(
+        rooms=(
             Room(id="sw", type="sejour", x=0.0, y=0.0, w=5.0, h=4.0),
             Room(id="se", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
             Room(id="nw", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=_RECT,
+        walls=(),
+        openings=(),
+        outline=_RECT,
     )
 
 
@@ -162,21 +162,21 @@ def test_une_piece_manquante_est_absorbee_par_sa_voisine() -> None:
     assert len(trame.incidences) == 3
 
     corrige = ax.legalize(plan, _ctx(), pavage=True)
-    assert corrige.certificat is not None
-    assert corrige.certificat.geometry.valide
-    assert len(corrige.pieces) == 3
+    assert corrige.certificate is not None
+    assert corrige.certificate.geometry.valide
+    assert len(corrige.rooms) == 3
 
 
 def test_le_budget_borne_la_reparation() -> None:
     """Au-dela du budget, la faute n'est plus une cote fausse : on refuse."""
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=3.0),
             Room(id="b", type="chambre", x=4.0, y=6.0, w=2.0, h=3.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=_RECT,
+        walls=(),
+        openings=(),
+        outline=_RECT,
     )
     with pytest.raises(GridNotRecoverable):
         deduire_trame(plan, _ctx(), budget_reparation=1)
@@ -219,13 +219,13 @@ def test_chevauchement_simple_est_resorbe_par_le_support() -> None:
     voisines est une intention d'adjacence mal cotee, pas une incoherence d'ordre.
     """
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
             Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=_RECT,
+        walls=(),
+        openings=(),
+        outline=_RECT,
     )
     trame = deduire_trame(plan, _ctx())
     assert len(trame.lignes_x) == 3
@@ -236,13 +236,13 @@ def test_chevauchement_simple_est_resorbe_par_le_support() -> None:
 def test_chevauchement_structurel_est_refuse() -> None:
     """Une piece **contenue** dans une autre : aucune fusion de lignes ne la sauve."""
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="englobante", type="sejour", x=0.0, y=0.0, w=12.0, h=9.0),
             Room(id="incluse", type="chambre", x=0.0, y=0.0, w=5.0, h=4.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=_RECT,
+        walls=(),
+        openings=(),
+        outline=_RECT,
     )
     with pytest.raises(GridNotRecoverable, match="covered twice"):
         deduire_trame(plan, _ctx())
@@ -262,17 +262,17 @@ def test_legalize_avec_pavage_ferme_un_jour() -> None:
         ax.legalize(abime, ctx)
 
     corrige = ax.legalize(abime, ctx, pavage=True)
-    assert corrige.certificat is not None
-    assert corrige.certificat.geometry.valide
-    assert not corrige.certificat.geometry.gaps
+    assert corrige.certificate is not None
+    assert corrige.certificate.geometry.valide
+    assert not corrige.certificate.geometry.gaps
 
 
 def test_pavage_preserve_l_idempotence() -> None:
     """Sur un plan deja valide, `pavage=True` ne deplace rien."""
     ctx = _ctx()
     corrige = ax.legalize(_pavage_2x2(), ctx, pavage=True)
-    assert corrige.certificat is not None
-    assert corrige.certificat.geometry.max_displacement == pytest.approx(0.0, abs=1e-9)
+    assert corrige.certificate is not None
+    assert corrige.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-9)
 
 
 def test_pavage_est_invariant_par_translation_des_lignes() -> None:
@@ -284,15 +284,15 @@ def test_pavage_est_invariant_par_translation_des_lignes() -> None:
     ctx = _ctx()
     a = deduire_trame(_pavage_2x2(), ctx)
     decale = Plan(
-        pieces=(
+        rooms=(
             Room(id="sw", type="sejour", x=0.0, y=0.0, w=3.0, h=6.0),
             Room(id="se", type="chambre", x=3.0, y=0.0, w=9.0, h=6.0),
             Room(id="nw", type="cuisine", x=0.0, y=6.0, w=3.0, h=3.0),
             Room(id="ne", type="sdb", x=3.0, y=6.0, w=9.0, h=3.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=_RECT,
+        walls=(),
+        openings=(),
+        outline=_RECT,
     )
     b = deduire_trame(decale, ctx)
     assert [inc[1:] for inc in a.incidences] == [inc[1:] for inc in b.incidences]
@@ -305,15 +305,15 @@ def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:
     ctx = _ctx()
     sans = ax.legalize(_pavage_2x2(), ctx)
     avec = ax.legalize(_pavage_2x2(), ctx, pavage=True)
-    assert sans.certificat is not None
-    assert avec.certificat is not None
-    libelles = {libelle for libelle, _ in avec.certificat.duaux}
+    assert sans.certificate is not None
+    assert avec.certificate is not None
+    libelles = {libelle for libelle, _ in avec.certificate.duaux}
     assert not any(nom.startswith(("trame ", "contour ")) for nom in libelles)
 
 
 def test_plan_sans_piece_est_refuse() -> None:
     """Erreur typee, jamais un IndexError nu."""
-    vide = Plan(pieces=(), murs=(), ouvertures=(), contour=_RECT)
+    vide = Plan(rooms=(), walls=(), openings=(), outline=_RECT)
     with pytest.raises(UnsupportedInput, match="no room"):
         deduire_trame(vide, _ctx())
 

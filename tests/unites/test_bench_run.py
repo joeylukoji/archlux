@@ -14,16 +14,16 @@ from archlux.types import ModelTrace, Orientation, Plan, Room
 
 def _plan() -> Plan:
     return Plan(
-        pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),),
-        murs=(),
-        ouvertures=(),
-        contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
+        rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),),
+        walls=(),
+        openings=(),
+        outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
     )
 
 
 def _evaluateur(plan: Plan, methode: object) -> float:
     _ = methode
-    return float(sum(p.w * p.h for p in plan.pieces))
+    return float(sum(p.w * p.h for p in plan.rooms))
 
 
 def test_manifeste_complet(tmp_path: Path) -> None:

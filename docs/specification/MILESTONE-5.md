@@ -344,7 +344,7 @@ NON EVALUABLE
 
 ```python
 def test_certificat_separe_les_natures():
-    r = plan.certificat.rapport()
+    r = plan.certificate.rapport()
     assert "[EXACT]" in r and "[PREDICTION" in r
 
 def test_pas_de_borne_sans_calibration():
@@ -353,7 +353,7 @@ def test_pas_de_borne_sans_calibration():
                          couverture=0.90, sens=">=", n_calibration=0)
 
 def test_non_evaluable_toujours_present():
-    assert "NON EVALUABLE" in plan.certificat.rapport()
+    assert "NON EVALUABLE" in plan.certificate.rapport()
 ```
 
 - [ ] Les 3 tests passent

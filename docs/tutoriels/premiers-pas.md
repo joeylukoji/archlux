@@ -14,28 +14,28 @@ L'enveloppe et les pièces ci-dessous sont celles du corpus de tests publié
 ```python
 import archlux as ax
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
+    rooms=(
         ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
         ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
-    contour=contour,
-    referentiel=ax.Regulation(min_areas=(), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(), largeur_min=1.0),
 )
 
 q = ax.legalize(plan, ctx)
-assert q.certificat is not None
-assert q.certificat.geometry.valide
-assert q.certificat.performance is None  # légalisation classique : pas de borne
-print(q.certificat.rapport())
+assert q.certificate is not None
+assert q.certificate.geometry.valide
+assert q.certificate.performance is None  # légalisation classique : pas de borne
+print(q.certificate.rapport())
 ```
 
 `legalize` renvoie un plan **prouvé** valide (pavage, surfaces, porteurs).
@@ -68,7 +68,7 @@ Path("sortie_generateur.json").write_text(
 
 plan = ax.Plan.from_json("sortie_generateur.json")
 q = ax.legalize(plan, ctx, pavage=True)
-assert q.certificat is not None and q.certificat.geometry.valide
+assert q.certificate is not None and q.certificate.geometry.valide
 q.to_json("plan_legalise.json")
 ```
 

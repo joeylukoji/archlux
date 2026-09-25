@@ -140,10 +140,10 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     >>> round(diag.part_jour, 3), diag.morceaux
     (0.167, 2)
     """
-    if not plan.pieces:
+    if not plan.rooms:
         raise InvalidInput("pieces", "the plan has no room: nothing to diagnose")
 
-    formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in plan.pieces]
+    formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in plan.rooms]
     n = len(formes)
     recouvrements = (
         sum(
@@ -161,8 +161,8 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     parts = list(union.geoms) if isinstance(union, MultiPolygon) else [union]
     aire_trous = sum(Polygon(anneau).area for forme in parts for anneau in forme.interiors)
 
-    lignes_x = {p.x for p in plan.pieces} | {p.x + p.w for p in plan.pieces}
-    lignes_y = {p.y for p in plan.pieces} | {p.y + p.h for p in plan.pieces}
+    lignes_x = {p.x for p in plan.rooms} | {p.x + p.w for p in plan.rooms}
+    lignes_y = {p.y for p in plan.rooms} | {p.y + p.h for p in plan.rooms}
 
     return Diagnostic(
         recouvrements=float(recouvrements),

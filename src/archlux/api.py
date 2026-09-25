@@ -363,9 +363,9 @@ def legalize(
     )
     base = construire_polytope(ordre, ctx)
     for piece_l in fusions:
-        base = etendre_fusions(base, piece_l, min_contact=ctx.referentiel.largeur_min)
+        base = etendre_fusions(base, piece_l, min_contact=ctx.regulation.largeur_min)
     x_ref = vectoriser(plan, base.index)
-    minima = minimum_area_shares(plan.pieces, fusions, ctx.referentiel)
+    minima = minimum_area_shares(plan.rooms, fusions, ctx.regulation)
 
     def domain(*, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
         """The solver's domain, optionally without the tiling grid or the budget."""
@@ -379,7 +379,7 @@ def legalize(
 
     def solve(l1: Polytope) -> SolutionLP:
         return resoudre_avec_surfaces(
-            l1, gradient_distance(x_ref), ctx, plan.pieces, duaux=True, minima=minima
+            l1, gradient_distance(x_ref), ctx, plan.rooms, duaux=True, minima=minima
         )
 
     poly, poly_l1 = domain()
@@ -403,7 +403,7 @@ def legalize(
             relaxed = solve(l1)
             if relaxed.statut != "optimal":
                 return False
-            candidate = replace(devectoriser(relaxed.x, plan, l1.index), contour=ctx.contour)
+            candidate = replace(devectoriser(relaxed.x, plan, l1.index), outline=ctx.outline)
             return verify_exactly(
                 candidate,
                 ctx,
@@ -429,7 +429,7 @@ def legalize(
 
     corrige = replace(
         devectoriser(sol.x, plan, poly_l1.index),
-        contour=ctx.contour,
+        outline=ctx.outline,
     )
     preuve = verify_exactly(corrige, ctx, reference=plan, budget=budget, fusions=fusions)
     if not preuve.valide:
@@ -441,7 +441,7 @@ def legalize(
     if objective is None:
         return replace(
             corrige,
-            certificat=Certificate(geometry=preuve, performance=None, duaux=duaux),
+            certificate=Certificate(geometry=preuve, performance=None, duaux=duaux),
         )
 
     x0 = vectoriser(corrige, poly.index)
@@ -452,8 +452,8 @@ def legalize(
         figer_contacts(poly, x0),
         x0,
         ctx,
-        corrige.pieces,
-        minima=minimum_area_shares(corrige.pieces, fusions, ctx.referentiel),
+        corrige.rooms,
+        minima=minimum_area_shares(corrige.rooms, fusions, ctx.regulation),
     )
     if budget is not None:
         # Centred on the *proposed* plan, not on x0: the budget is spent once over the
@@ -462,11 +462,11 @@ def legalize(
     # Glazing is not part of the decision vector: it is constant during the
     # optimization and passed through unchanged. Without it the surrogate only sees
     # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
-    glazing = Baies(murs=corrige.murs, ouvertures=corrige.ouvertures)
+    glazing = Baies(murs=corrige.walls, ouvertures=corrige.openings)
     resultat = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
     performant = replace(
         devectoriser(resultat.x, corrige, poly.index),
-        contour=ctx.contour,
+        outline=ctx.outline,
     )
     preuve_fw = verify_exactly(performant, ctx, reference=plan, budget=budget, fusions=fusions)
     if not preuve_fw.valide:
@@ -486,6 +486,6 @@ def legalize(
         performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
         performant,
-        certificat=Certificate(geometry=preuve_fw, performance=performance, duaux=duaux_fw),
+        certificate=Certificate(geometry=preuve_fw, performance=performance, duaux=duaux_fw),
         trace=resultat.trace if trace else None,
     )

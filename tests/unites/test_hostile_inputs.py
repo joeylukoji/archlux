@@ -30,7 +30,7 @@ def make_plan(**changes: object) -> Plan:
     """Two valid rooms side by side, with ``changes`` applied to the first one."""
     first = replace(Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0), **changes)  # type: ignore[arg-type]
     second = Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
-    return Plan(pieces=(first, second), murs=(), ouvertures=(), contour=SQUARE)
+    return Plan(rooms=(first, second), walls=(), openings=(), outline=SQUARE)
 
 
 def make_context(*, degrees: float = 0.0, largeur_min: float = 1.0) -> Context:
@@ -38,13 +38,13 @@ def make_context(*, degrees: float = 0.0, largeur_min: float = 1.0) -> Context:
     return Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=degrees),
-        contour=SQUARE,
-        referentiel=Regulation(min_areas=(), largeur_min=largeur_min),
+        outline=SQUARE,
+        regulation=Regulation(min_areas=(), largeur_min=largeur_min),
     )
 
 
 def test_valid_input_is_accepted() -> None:
-    assert legalize(make_plan(), make_context()).certificat is not None
+    assert legalize(make_plan(), make_context()).certificate is not None
 
 
 @pytest.mark.parametrize(
@@ -71,7 +71,7 @@ def test_duplicate_room_ids_are_refused() -> None:
 
 
 def test_plan_without_room_is_refused() -> None:
-    empty = Plan(pieces=(), murs=(), ouvertures=(), contour=SQUARE)
+    empty = Plan(rooms=(), walls=(), openings=(), outline=SQUARE)
     with pytest.raises(InvalidInput, match="no room"):
         legalize(empty, make_context())
 
@@ -100,14 +100,14 @@ def test_non_finite_orientation_is_refused(degrees: float) -> None:
 def test_bad_minimum_width_is_refused(largeur_min: float) -> None:
     with pytest.raises(InvalidInput) as raised:
         legalize(make_plan(), make_context(largeur_min=largeur_min))
-    assert raised.value.field == "referentiel.largeur_min"
+    assert raised.value.field == "regulation.largeur_min"
 
 
 def test_bad_outline_is_refused() -> None:
-    plan = replace(make_plan(), contour=((0.0, 0.0), (1.0, 0.0)))
+    plan = replace(make_plan(), outline=((0.0, 0.0), (1.0, 0.0)))
     with pytest.raises(InvalidInput) as raised:
         legalize(plan, make_context())
-    assert raised.value.field == "contour"
+    assert raised.value.field == "outline"
 
 
 def test_invalid_input_is_a_value_error_and_an_archlux_error() -> None:
@@ -128,7 +128,7 @@ def gapped_plan() -> Plan:
     """A 3 cm gap between the rooms: valid input, but not a tiling."""
     first = Room(id="a", type="sejour", x=0.0, y=0.0, w=5.97, h=9.0)
     second = Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
-    return Plan(pieces=(first, second), murs=(), ouvertures=(), contour=SQUARE)
+    return Plan(rooms=(first, second), walls=(), openings=(), outline=SQUARE)
 
 
 def test_gap_without_tiling_says_to_use_tiling() -> None:
@@ -144,8 +144,8 @@ def test_gap_without_tiling_says_to_use_tiling() -> None:
 
 def test_gap_is_repaired_with_tiling() -> None:
     fixed = legalize(gapped_plan(), make_context(), pavage=True)
-    assert fixed.certificat is not None
-    assert fixed.certificat.geometry.valide
+    assert fixed.certificate is not None
+    assert fixed.certificate.geometry.valide
 
 
 def test_public_exports_input_limits() -> None:
@@ -199,18 +199,18 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
 def test_zero_wall_thickness_is_refused_as_by_the_json_reader() -> None:
     from archlux import Wall
 
-    plan = replace(make_plan(), murs=(Wall(id="m", a=(0.0, 0.0), b=(12.0, 0.0), thickness=0.0),))
+    plan = replace(make_plan(), walls=(Wall(id="m", a=(0.0, 0.0), b=(12.0, 0.0), thickness=0.0),))
     with pytest.raises(InvalidInput) as raised:
         legalize(plan, make_context())
-    assert raised.value.field == "murs[m].epaisseur"
+    assert raised.value.field == "walls[m].thickness"
 
 
 def test_the_type_warning_points_at_the_caller() -> None:
-    ctx = replace(make_context(), referentiel=Regulation(min_areas=(("sejour", 1.0),)))
+    ctx = replace(make_context(), regulation=Regulation(min_areas=(("sejour", 1.0),)))
     with pytest.warns(UserWarning, match="sejuor") as record:
         legalize(
             make_plan(type="sejuor"),
-            replace(ctx, referentiel=replace(ctx.referentiel, largeur_min=1.0)),
+            replace(ctx, regulation=replace(ctx.regulation, largeur_min=1.0)),
         )
     assert record[0].filename == __file__
 
@@ -225,12 +225,12 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     ctx = replace(make_context(), structure=structure)
     plan = replace(
         make_plan(),
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
             Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
     )
-    ctx = replace(ctx, referentiel=Regulation(min_areas=(("sejour", 60.0),), largeur_min=1.0))
+    ctx = replace(ctx, regulation=Regulation(min_areas=(("sejour", 60.0),), largeur_min=1.0))
     verdict = is_feasible(plan, structure, ctx)
     assert not verdict
     assert verdict.certificat is not None

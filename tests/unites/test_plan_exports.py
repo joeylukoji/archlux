@@ -20,25 +20,25 @@ SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
 def sound_plan() -> Plan:
     return Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
             Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=SQUARE,
+        walls=(),
+        openings=(),
+        outline=SQUARE,
     )
 
 
 def overlapping_plan() -> Plan:
     return Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=9.0),
             Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=SQUARE,
+        walls=(),
+        openings=(),
+        outline=SQUARE,
     )
 
 

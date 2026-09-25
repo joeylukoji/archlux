@@ -232,7 +232,7 @@ def deduire_ordre(
     >>> deduire_ordre(Plan((gauche, droite), (), (), ())).horizontal
     (('A', 'B'),)
     """
-    par_id = {piece.id: piece for piece in plan.pieces}
+    par_id = {piece.id: piece for piece in plan.rooms}
     identifiants = sorted(par_id)
     horizontal: list[tuple[str, str]] = []
     vertical: list[tuple[str, str]] = []
@@ -254,9 +254,9 @@ def deduire_ordre(
             vertical.append((id_a, id_b) if (ya, id_a) < (yb, id_b) else (id_b, id_a))
 
     envelope: Envelope | None = None
-    if plan.contour:
-        xs = [x for x, _ in plan.contour]
-        ys = [y for _, y in plan.contour]
+    if plan.outline:
+        xs = [x for x, _ in plan.outline]
+        ys = [y for _, y in plan.outline]
         envelope = (min(xs), min(ys), max(xs), max(ys))
     wall_sides: tuple[WallSide, ...] = ()
     shared_sides: list[tuple[str, tuple[str, ...]]] = []

@@ -101,7 +101,7 @@ def main() -> None:
         corrige, statut = None, "réparé"
         try:
             corrige = ax.legalize(plan, contexte, pavage=True, budget_reparation=BUDGET)
-            if not corrige.certificat.geometry.valide:
+            if not corrige.certificate.geometry.valide:
                 statut = "corrigé mais invalide"
         except ax.Infeasible:
             statut = "infaisable (prouvé)"
@@ -117,24 +117,24 @@ def main() -> None:
 
         dossier = RACINE / statut.replace(" ", "-").replace("(", "").replace(")", "")
         dossier.mkdir(parents=True, exist_ok=True)
-        avant = f"{len(plan.pieces)} pièces, jour {diag.part_jour:.0%}, {diag.morceaux} morceaux"
+        avant = f"{len(plan.rooms)} pièces, jour {diag.part_jour:.0%}, {diag.morceaux} morceaux"
         if corrige is None:
             # Un seul panneau. Redessiner le plan d'entree a droite se lirait
             # « rien n'a change », alors qu'aucun plan n'a ete produit du tout.
             svg = rendre(
                 plan,
-                contour=contexte.contour,
+                contour=contexte.outline,
                 titre=f"{statut} — {avant}",
             )
         else:
             svg = comparer(
                 plan,
                 corrige,
-                contour=contexte.contour,
+                contour=contexte.outline,
                 titres=(
                     f"avant — {avant}",
                     f"après — {statut}, déplacement "
-                    f"{corrige.certificat.geometry.max_displacement:.2f} m",
+                    f"{corrige.certificate.geometry.max_displacement:.2f} m",
                 ),
             )
         nom = plan_json["id"]

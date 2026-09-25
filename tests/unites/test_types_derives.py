@@ -43,14 +43,14 @@ class TestPlan:
         exécution à l'autre, donc des prix duaux impossibles à comparer.
         """
         plan = Plan(
-            pieces=(
+            rooms=(
                 Room(id="wc", type="wc", x=0.0, y=0.0, w=1.0, h=1.0),
                 Room(id="cuisine", type="cuisine", x=0.0, y=0.0, w=1.0, h=1.0),
                 Room(id="bain", type="sdb", x=0.0, y=0.0, w=1.0, h=1.0),
             ),
-            murs=(),
-            ouvertures=(),
-            contour=(),
+            walls=(),
+            openings=(),
+            outline=(),
         )
         assert plan.ids_pieces == ("bain", "cuisine", "wc")
 
@@ -122,10 +122,10 @@ class TestEcritureRobuste:
         ferait sortir du domaine d'erreurs du projet une faute pourtant interne.
         """
         plan = Plan(
-            pieces=(Room(id="a", type="sejour", x=float("nan"), y=0.0, w=1.0, h=1.0),),
-            murs=(),
-            ouvertures=(),
-            contour=(),
+            rooms=(Room(id="a", type="sejour", x=float("nan"), y=0.0, w=1.0, h=1.0),),
+            walls=(),
+            openings=(),
+            outline=(),
         )
         with pytest.raises(InvariantViolation, match="non finie"):
             plan.to_json(tmp_path / "x.json")

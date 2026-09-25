@@ -74,17 +74,17 @@ def to_ifc(plan: Plan, chemin: Path | str, *, validate: bool = True) -> RapportE
         chemin=chemin,
         pathologies=diag.pathologies,
         moteur=moteur,
-        n_espaces=len(plan.pieces),
+        n_espaces=len(plan.rooms),
         ifcopenshell_disponible=importlib.util.find_spec("ifcopenshell") is not None,
     )
 
 
 def _annexe_certificat(plan: Plan) -> str:
     """Annexe texte ; l'échec de rendu ne doit pas bloquer l'export feuille."""
-    if plan.certificat is None:
+    if plan.certificate is None:
         return ""
     try:
-        texte = plan.certificat.rapport()
+        texte = plan.certificate.rapport()
     except (ImportError, AttributeError, ArchluxError):
         # ``rapport()`` importe ``certify`` en local : hors graphe d'``export``.
         texte = "certificat present"
@@ -129,7 +129,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     # GlobalIds must be unique across files, not only within one: salted by the plan
     # geometry, two different plans never share one, and one plan always gets the same.
     salt = hashlib.sha256(
-        repr((plan.pieces, plan.murs, plan.ouvertures, plan.contour)).encode()
+        repr((plan.rooms, plan.walls, plan.openings, plan.outline)).encode()
     ).hexdigest()[:16]
 
     def guid(label: str) -> str:
@@ -239,7 +239,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         )
 
     espaces: list[int] = []
-    for piece in plan.pieces:
+    for piece in plan.rooms:
         coins = (
             (piece.x, piece.y),
             (piece.x + piece.w, piece.y),
@@ -279,7 +279,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
 
     murs_ids: list[int] = []
     wall_entity: dict[str, int] = {}
-    for mur in plan.murs:
+    for mur in plan.walls:
         # Placed at the storey origin: the axis already holds absolute coordinates. The
         # previous placement at ``mur.a`` shifted every wall by ``a`` (drawn from 2a).
         id_ax = axis2(0.0, 0.0, 0.0)
@@ -311,7 +311,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
             f"({','.join(f'#{e}' for e in murs_ids)}),#{id_etage})",
         )
 
-    for ouv in plan.ouvertures:
+    for ouv in plan.openings:
         id_ouv = alloc()
         emit(
             id_ouv,

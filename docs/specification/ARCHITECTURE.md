@@ -172,11 +172,11 @@ class Opening:
 
 @dataclass(frozen=True, slots=True)
 class Plan:
-    pieces: tuple[Room, ...]
-    murs: tuple[Wall, ...] = ()
-    ouvertures: tuple[Opening, ...] = ()
-    contour: tuple[tuple[float, float], ...] = ()   # empty: taken from Contexte.contour
-    certificat: "Certificat | None" = None
+    rooms: tuple[Room, ...]
+    walls: tuple[Wall, ...] = ()
+    openings: tuple[Opening, ...] = ()
+    outline: tuple[tuple[float, float], ...] = ()   # empty: taken from Contexte.contour
+    certificate: "Certificat | None" = None
 ```
 
 **Absolute rules:**

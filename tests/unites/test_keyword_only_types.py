@@ -50,59 +50,59 @@ def test_opening_refuses_positional_arguments() -> None:
 
 
 def test_a_plan_needs_only_its_rooms() -> None:
-    plan = Plan(pieces=rooms())
-    assert plan.murs == ()
-    assert plan.ouvertures == ()
-    assert plan.contour == ()
-    assert plan.certificat is None
+    plan = Plan(rooms=rooms())
+    assert plan.walls == ()
+    assert plan.openings == ()
+    assert plan.outline == ()
+    assert plan.certificate is None
 
 
 def test_the_plan_keeps_its_positional_order() -> None:
     """Only the three types above became keyword-only: existing ``Plan(...)`` calls hold."""
     plan = Plan(rooms(), (), (), SQUARE)
-    assert plan.contour == SQUARE
+    assert plan.outline == SQUARE
 
 
 def context(**changes: object) -> Context:
     base = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        referentiel=Regulation(min_areas=(), largeur_min=1.0),
+        regulation=Regulation(min_areas=(), largeur_min=1.0),
     )
     return replace(base, **changes)  # type: ignore[arg-type]
 
 
 def test_the_context_outline_defaults_to_empty() -> None:
-    assert context().contour == ()
+    assert context().outline == ()
 
 
 def test_legalize_reads_the_outline_from_the_plan() -> None:
-    legal = legalize(Plan(pieces=rooms(), contour=SQUARE), context())
-    assert legal.contour == SQUARE
-    assert legal.certificat is not None
-    assert legal.certificat.geometry.valide
+    legal = legalize(Plan(rooms=rooms(), outline=SQUARE), context())
+    assert legal.outline == SQUARE
+    assert legal.certificate is not None
+    assert legal.certificate.geometry.valide
 
 
 def test_legalize_reads_the_outline_from_the_context() -> None:
-    legal = legalize(Plan(pieces=rooms()), context(contour=SQUARE))
-    assert legal.contour == SQUARE
-    assert legal.certificat is not None
-    assert legal.certificat.geometry.valide
+    legal = legalize(Plan(rooms=rooms()), context(outline=SQUARE))
+    assert legal.outline == SQUARE
+    assert legal.certificate is not None
+    assert legal.certificate.geometry.valide
 
 
 def test_the_context_outline_wins_when_both_are_given() -> None:
     other = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0), (0.0, 9.0))
-    legal = legalize(Plan(pieces=rooms(), contour=other), context(contour=SQUARE))
-    assert legal.contour == SQUARE
+    legal = legalize(Plan(rooms=rooms(), outline=other), context(outline=SQUARE))
+    assert legal.outline == SQUARE
 
 
 def test_no_outline_anywhere_is_refused_with_the_fix() -> None:
-    with pytest.raises(InvalidInput, match=r"Contexte.contour") as raised:
-        legalize(Plan(pieces=rooms()), context())
-    assert raised.value.field == "contour"
+    with pytest.raises(InvalidInput, match=r"Context.outline") as raised:
+        legalize(Plan(rooms=rooms()), context())
+    assert raised.value.field == "outline"
 
 
 def test_a_two_point_outline_is_still_refused() -> None:
     with pytest.raises(InvalidInput) as raised:
-        legalize(Plan(pieces=rooms(), contour=((0.0, 0.0), (1.0, 0.0))), context())
-    assert raised.value.field == "contour"
+        legalize(Plan(rooms=rooms(), outline=((0.0, 0.0), (1.0, 0.0))), context())
+    assert raised.value.field == "outline"

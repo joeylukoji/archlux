@@ -109,13 +109,13 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
     context = Context(
         structure=Structure(load_bearing_walls=(bearing,)),
         orientation=Orientation(deg=float(rng.uniform(0.0, 360.0))),
-        contour=outline,
-        referentiel=Regulation(
+        outline=outline,
+        regulation=Regulation(
             min_areas=tuple(sorted((k, round(ratio * a, 4)) for k, a in smallest.items())),
             largeur_min=1.0,
         ),
     )
-    plan = Plan(pieces=rooms, murs=(bearing,), ouvertures=(), contour=outline)
+    plan = Plan(rooms=rooms, walls=(bearing,), openings=(), outline=outline)
     suffix = "p" if wall == "partial" else ""
     return Scenario(name=f"s{seed}-{index:04d}{suffix}", plan=plan, context=context)
 
@@ -132,6 +132,6 @@ def perturb(plan: Plan, *, seed: int, amplitude_m: float = 0.03) -> Plan:
             w=r.w + float(rng.uniform(-amplitude_m, amplitude_m)),
             h=r.h + float(rng.uniform(-amplitude_m, amplitude_m)),
         )
-        for r in plan.pieces
+        for r in plan.rooms
     )
-    return Plan(pieces=noisy, murs=plan.murs, ouvertures=plan.ouvertures, contour=plan.contour)
+    return Plan(rooms=noisy, walls=plan.walls, openings=plan.openings, outline=plan.outline)

@@ -27,13 +27,13 @@ def _context(outline: tuple[tuple[float, float], ...] = OUTLINE) -> Context:
     return Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(), largeur_min=1.0),
+        outline=outline,
+        regulation=Regulation(min_areas=(), largeur_min=1.0),
     )
 
 
 def _plan(*rooms: Room, outline: tuple[tuple[float, float], ...] = OUTLINE) -> Plan:
-    return Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
+    return Plan(rooms=rooms, walls=(), openings=(), outline=outline)
 
 
 def _room(name: str, left: float, bottom: float, right: float, top: float) -> Room:
@@ -51,8 +51,8 @@ NOISY_RIGHT_EDGE = _plan(
 
 def test_tiling_legalization_of_a_noisy_edge_keeps_every_guarantee() -> None:
     result = archlux.legalize(NOISY_RIGHT_EDGE, _context(), pavage=True)
-    assert result.certificat is not None
-    assert result.certificat.geometry.valide
+    assert result.certificate is not None
+    assert result.certificate.geometry.valide
     assert checkers.violations(result, _context()) == []
 
 
@@ -87,11 +87,11 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
         "r7": (0.0, 2.6, 3.2, 10.4),
     }
     rooms = tuple(replace(_room(name, *edges[name]), type=kind) for name, kind in kinds.items())
-    plan = Plan(pieces=rooms, murs=(wall,), ouvertures=(), contour=outline)
+    plan = Plan(rooms=rooms, walls=(wall,), openings=(), outline=outline)
     ctx = replace(
         _context(outline),
         structure=Structure(load_bearing_walls=(wall,)),
-        referentiel=Regulation(
+        regulation=Regulation(
             min_areas=(
                 ("chambre", 20.5806),
                 ("couloir", 8.6082),
@@ -104,7 +104,7 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
     )
     result = archlux.legalize(plan, ctx, pavage=True)
     assert checkers.violations(result, ctx) == []
-    by_id = {room.id: room for room in result.pieces}
+    by_id = {room.id: room for room in result.rooms}
     assert by_id["r4"].x == pytest.approx(by_id["r7"].x + by_id["r7"].w)
 
 

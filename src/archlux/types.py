@@ -203,11 +203,11 @@ class Plan:
     Frank-Wolfe, **non sérialisée** (elle n'appartient pas au schéma JSON).
     """
 
-    pieces: tuple[Room, ...]
-    murs: tuple[Wall, ...] = ()
-    ouvertures: tuple[Opening, ...] = ()
-    contour: tuple[Point, ...] = ()
-    certificat: Certificate | None = None
+    rooms: tuple[Room, ...]
+    walls: tuple[Wall, ...] = ()
+    openings: tuple[Opening, ...] = ()
+    outline: tuple[Point, ...] = ()
+    certificate: Certificate | None = None
     # Typé ``object`` à dessein : ``solve.Trace`` vivrait une arête ``types → solve``,
     # interdite. La trace n'est pas sérialisée ; seuls les appelants ``trace=True``
     # la consomment.
@@ -218,7 +218,7 @@ class Plan:
     @property
     def ids_pieces(self) -> tuple[str, ...]:
         """Identifiants de pièces, **triés** — garantit le déterminisme."""
-        return tuple(sorted(p.id for p in self.pieces))
+        return tuple(sorted(p.id for p in self.rooms))
 
     @classmethod
     def from_json(cls, chemin: Path | str) -> Plan:
@@ -360,11 +360,11 @@ class Context:
 
     structure: Structure
     orientation: Orientation
-    referentiel: Regulation
-    programme: tuple[str, ...] = ()
-    contour: tuple[Point, ...] = field(default=(), kw_only=True)
+    regulation: Regulation
+    program: tuple[str, ...] = ()
+    outline: tuple[Point, ...] = field(default=(), kw_only=True)
     """Outline of the site. Empty means "the outline of the plan": ``legalize`` takes
-    ``plan.contour`` then (an outline given here wins over the plan's)."""
+    ``plan.outline`` then (an outline given here wins over the plan's)."""
 
 
 # ======================================================================================

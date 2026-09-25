@@ -69,13 +69,13 @@ def _outline(field: str, outline: Iterable[Point]) -> None:
 
 
 def _rooms(plan: Plan) -> None:
-    if not plan.pieces:
-        raise InvalidInput("pieces", "the plan has no room", "add at least one Piece")
+    if not plan.rooms:
+        raise InvalidInput("rooms", "the plan has no room", "add at least one Room")
     seen: set[str] = set()
-    for index, room in enumerate(plan.pieces):
+    for index, room in enumerate(plan.rooms):
         if not isinstance(room.id, str) or not room.id:
-            raise InvalidInput(f"pieces[{index}].id", "must be a non-empty string")
-        label = f"pieces[{room.id}]"
+            raise InvalidInput(f"rooms[{index}].id", "must be a non-empty string")
+        label = f"rooms[{room.id}]"
         if room.id in seen:
             raise InvalidInput(
                 f"{label}.id", "duplicate room id", "room ids must be unique in a plan"
@@ -88,36 +88,36 @@ def _rooms(plan: Plan) -> None:
 
 
 def _walls(plan: Plan) -> None:
-    for wall in plan.murs:
-        _point(f"murs[{wall.id}].a", wall.a)
-        _point(f"murs[{wall.id}].b", wall.b)
+    for wall in plan.walls:
+        _point(f"walls[{wall.id}].a", wall.a)
+        _point(f"walls[{wall.id}].b", wall.b)
         # > 0 as in the JSON reader: the two doors must agree on what a wall is.
-        _positive(f"murs[{wall.id}].epaisseur", wall.thickness)
+        _positive(f"walls[{wall.id}].thickness", wall.thickness)
     # Openings need no check here: ``Opening`` refuses its own ranges at construction.
 
 
 def _context(ctx: Context) -> None:
     _finite("orientation.deg", ctx.orientation.deg)
-    _non_negative("referentiel.largeur_min", ctx.referentiel.largeur_min)
-    for type_piece, threshold in ctx.referentiel.min_areas:
-        _non_negative(f"referentiel.aires_min[{type_piece}]", threshold)
+    _non_negative("regulation.largeur_min", ctx.regulation.largeur_min)
+    for type_piece, threshold in ctx.regulation.min_areas:
+        _non_negative(f"regulation.min_areas[{type_piece}]", threshold)
     for wall in ctx.structure.load_bearing_walls:
-        _point(f"structure.murs_porteurs[{wall.id}].a", wall.a)
-        _point(f"structure.murs_porteurs[{wall.id}].b", wall.b)
+        _point(f"structure.load_bearing_walls[{wall.id}].a", wall.a)
+        _point(f"structure.load_bearing_walls[{wall.id}].b", wall.b)
     for index, post in enumerate(ctx.structure.columns):
-        _point(f"structure.poteaux[{index}]", post)
+        _point(f"structure.columns[{index}]", post)
 
 
 def _outlines(plan: Plan, ctx: Context) -> None:
     """Each outline given must be a polygon, and at least one of the two must be given."""
-    for field, outline in (("contour", plan.contour), ("contexte.contour", ctx.contour)):
+    for field, outline in (("outline", plan.outline), ("context.outline", ctx.outline)):
         if outline:
             _outline(field, outline)
-    if not (plan.contour or ctx.contour):
+    if not (plan.outline or ctx.outline):
         raise InvalidInput(
-            "contour",
+            "outline",
             "neither the plan nor the context has an outline",
-            "give Contexte.contour or Plan.contour",
+            "give Context.outline or Plan.outline",
         )
 
 
@@ -127,7 +127,7 @@ def resolve_outline(plan: Plan, ctx: Context) -> Context:
     An outline in the context wins over the plan's: it is the site, the plan's own is
     what the generator drew. Call after :func:`validate_inputs`.
     """
-    return ctx if ctx.contour else replace(ctx, contour=plan.contour)
+    return ctx if ctx.outline else replace(ctx, outline=plan.outline)
 
 
 def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
@@ -137,13 +137,13 @@ def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
     (``Regulation.a_min`` gives ``0.0`` for an unknown type). Only when the regulation
     lists thresholds: an empty one means "no regulation", not a typo.
     """
-    known = {type_piece for type_piece, _ in ctx.referentiel.min_areas}
+    known = {type_piece for type_piece, _ in ctx.regulation.min_areas}
     if not known:
         return
-    unknown = sorted({room.type for room in plan.pieces} - known)
+    unknown = sorted({room.type for room in plan.rooms} - known)
     if unknown:
         warnings.warn(
-            f"room types {unknown} have no minimum area in referentiel.aires_min "
+            f"room types {unknown} have no minimum area in regulation.min_areas "
             f"(known: {sorted(known)}): no minimum is enforced for them. "
             "Check for a typo, or add the type to the regulation",
             UserWarning,

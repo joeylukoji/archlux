@@ -414,15 +414,15 @@ def deduire_trame(
     Complexité : ``O(n log n)`` pour le regroupement, ``O(Σ cellules)`` pour la
     vérification de partition, soit ``O(n·p·q)`` au pire.
     """
-    if not plan.pieces:
+    if not plan.rooms:
         raise UnsupportedInput("tiling grid: the plan has no room")
-    if not ctx.contour:
+    if not ctx.outline:
         raise UnsupportedInput("tiling grid: the outline is empty, the grid has no anchor")
 
-    xs = [p.x for p in plan.pieces] + [p.x + p.w for p in plan.pieces]
-    ys = [p.y for p in plan.pieces] + [p.y + p.h for p in plan.pieces]
-    xs_contour = [point[0] for point in ctx.contour]
-    ys_contour = [point[1] for point in ctx.contour]
+    xs = [p.x for p in plan.rooms] + [p.x + p.w for p in plan.rooms]
+    ys = [p.y for p in plan.rooms] + [p.y + p.h for p in plan.rooms]
+    xs_contour = [point[0] for point in ctx.outline]
+    ys_contour = [point[1] for point in ctx.outline]
     # Toutes les coordonnees du contour entrent dans la trame, pas seulement les
     # extremes : sur un contour rectilineaire, chaque cellule doit etre entierement
     # dedans ou entierement dehors, sinon le masque ci-dessous n'a pas de sens.
@@ -448,10 +448,10 @@ def deduire_trame(
     if len(lignes_x) < 2 or len(lignes_y) < 2:
         raise UnsupportedInput("tiling grid: fewer than two grid lines on an axis")
 
-    bords_x = [(rang_x[p.x], rang_x[p.x + p.w]) for p in plan.pieces]
-    bords_y = [(rang_y[p.y], rang_y[p.y + p.h]) for p in plan.pieces]
+    bords_x = [(rang_x[p.x], rang_x[p.x + p.w]) for p in plan.rooms]
+    bords_y = [(rang_y[p.y], rang_y[p.y + p.h]) for p in plan.rooms]
     for axe, bords in (("x", bords_x), ("y", bords_y)):
-        for (debut, fin), piece in zip(bords, plan.pieces, strict=True):
+        for (debut, fin), piece in zip(bords, plan.rooms, strict=True):
             if debut >= fin:
                 raise UnsupportedInput(
                     f"tiling grid: room {piece.id} is flat in {axe} (thinner than the "
@@ -469,13 +469,13 @@ def deduire_trame(
 
     incidences = [
         (piece.id, gauche, droite, bas, haut)
-        for piece, (gauche, droite), (bas, haut) in zip(plan.pieces, bords_x, bords_y, strict=True)
+        for piece, (gauche, droite), (bas, haut) in zip(plan.rooms, bords_x, bords_y, strict=True)
     ]
 
     # Partition : chaque cellule **interieure au contour** couverte exactement une
     # fois, et aucune cellule exterieure couverte. Le contour reel est rectilineaire,
     # pas rectangulaire : exiger le pavage de la boite englobante serait faux.
-    enveloppe = Polygon(ctx.contour)
+    enveloppe = Polygon(ctx.outline)
     if not enveloppe.is_valid:
         raise UnsupportedInput("tiling grid: the outline is not a valid polygon")
     centres_x = 0.5 * (np.asarray(lignes_x[:-1]) + np.asarray(lignes_x[1:]))
@@ -538,13 +538,13 @@ def snap_to_grid(plan: Plan, trame: Trame) -> Plan:
         nom: (gauche, droite, bas, haut) for nom, gauche, droite, bas, haut in trame.incidences
     }
     pieces = []
-    for piece in plan.pieces:
+    for piece in plan.rooms:
         gauche, droite, bas, haut = lignes[piece.id]
         x, y = trame.lignes_x[gauche], trame.lignes_y[bas]
         pieces.append(
             replace(piece, x=x, y=y, w=trame.lignes_x[droite] - x, h=trame.lignes_y[haut] - y)
         )
-    return replace(plan, pieces=tuple(pieces))
+    return replace(plan, rooms=tuple(pieces))
 
 
 def contraintes_pavage(

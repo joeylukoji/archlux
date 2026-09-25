@@ -21,7 +21,7 @@ CTX = CONTEXTE_DEFAUT
 
 
 def _plan(*pieces: Room) -> Plan:
-    return Plan(pieces=pieces, murs=(), ouvertures=(), contour=CTX.contour)
+    return Plan(rooms=pieces, walls=(), openings=(), outline=CTX.outline)
 
 
 class TestChevauchement:
@@ -54,8 +54,8 @@ class TestSurfaces:
         ctx = Context(
             structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
-            contour=CTX.contour,
-            referentiel=Regulation(min_areas=(("sdb", 5.0),), largeur_min=1.0),
+            outline=CTX.outline,
+            regulation=Regulation(min_areas=(("sdb", 5.0),), largeur_min=1.0),
         )
         p = Room(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(p), ctx)
@@ -68,14 +68,14 @@ class TestStructure:
         ctx = Context(
             structure=Structure(load_bearing_walls=(mur,)),
             orientation=Orientation(deg=0.0),
-            contour=CTX.contour,
-            referentiel=Regulation(min_areas=(), largeur_min=1.0),
+            outline=CTX.outline,
+            regulation=Regulation(min_areas=(), largeur_min=1.0),
         )
         plan = Plan(
-            pieces=(),
-            murs=(Wall(id="p1", a=(0.0, 1.0), b=(3.0, 1.0), load_bearing=True),),
-            ouvertures=(),
-            contour=CTX.contour,
+            rooms=(),
+            walls=(Wall(id="p1", a=(0.0, 1.0), b=(3.0, 1.0), load_bearing=True),),
+            openings=(),
+            outline=CTX.outline,
         )
         preuve = verify_exactly(plan, ctx)
         assert preuve.structure_kept is False

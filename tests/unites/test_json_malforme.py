@@ -15,10 +15,10 @@ from archlux.io.json_io import charger, depuis_dict, vers_dict
 from archlux.types import Opening, Plan, Room, Wall
 
 PLAN = Plan(
-    pieces=(Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
-    murs=(Wall(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
-    ouvertures=(Opening(id="f", wall_id="m", s=0.5, relative_width=0.2),),
-    contour=((0.0, 0.0), (4.0, 0.0), (4.0, 3.5), (0.0, 3.5)),
+    rooms=(Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),),
+    walls=(Wall(id="m", a=(0.0, 0.0), b=(4.0, 0.0)),),
+    openings=(Opening(id="f", wall_id="m", s=0.5, relative_width=0.2),),
+    outline=((0.0, 0.0), (4.0, 0.0), (4.0, 3.5), (0.0, 3.5)),
 )
 
 

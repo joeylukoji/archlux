@@ -362,7 +362,7 @@ def _contour_simple(pieces: list[Polygon]) -> tuple[tuple[float, float], ...] | 
     """Anneau extérieur de l'union des pièces, ou ``None`` s'il n'est pas simple.
 
     Un plan dont l'union est un ``MultiPolygon`` (appartement en deux morceaux) ou
-    percée d'un anneau intérieur n'est pas représentable : ``Plan.contour`` est un
+    percée d'un anneau intérieur n'est pas représentable : ``Plan.outline`` est un
     anneau unique, et ``certify.proof`` compare une aire d'union à l'aire de **ce**
     contour. Boucher le trou en silence fabriquerait un « jour » inexistant.
     """
@@ -608,14 +608,14 @@ def _convertir(
         (float(redresser(p).centroid.x), float(redresser(p).centroid.y)) for p in poteaux_bruts
     )
 
-    plan = Plan(pieces=tuple(pieces), murs=murs, ouvertures=ouvertures, contour=contour)
+    plan = Plan(rooms=tuple(pieces), walls=murs, openings=ouvertures, outline=contour)
     contexte = Context(
         # MSD n'annote pas la portance : aucun mur n'est declare porteur.
         structure=Structure(load_bearing_walls=(), columns=columns),
         orientation=Orientation(deg=theta),
-        contour=contour,
-        referentiel=reglement,
-        programme=tuple(sorted({sous_type.lower() for sous_type, _ in pieces_brutes})),
+        outline=contour,
+        regulation=reglement,
+        program=tuple(sorted({sous_type.lower() for sous_type, _ in pieces_brutes})),
     )
     return AppartementMSD(
         identifiant=identifiant,

@@ -43,7 +43,7 @@ def to_dxf(plan: Plan, chemin: Path | str) -> None:
         "2",
         "ENTITIES",
     ]
-    for piece in plan.pieces:
+    for piece in plan.rooms:
         x0, y0, x1, y1 = piece.x, piece.y, piece.x + piece.w, piece.y + piece.h
         coins = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
         lignes.extend(
@@ -60,7 +60,7 @@ def to_dxf(plan: Plan, chemin: Path | str) -> None:
         )
         for x, y in coins:
             lignes.extend(["10", f"{x:.6f}", "20", f"{y:.6f}"])
-    for mur in plan.murs:
+    for mur in plan.walls:
         lignes.extend(
             [
                 "0",

@@ -34,16 +34,16 @@ _EPS = 1e-12
 
 def permuter_pieces(plan: Plan, ordre: tuple[int, ...]) -> Plan:
     """Réordonner les pièces sans changer la géométrie."""
-    if len(ordre) != len(plan.pieces):
+    if len(ordre) != len(plan.rooms):
         raise InvalidInput("ordre", "the permutation must have one index per room")
-    pieces = tuple(plan.pieces[i] for i in ordre)
-    return replace(plan, pieces=pieces)
+    pieces = tuple(plan.rooms[i] for i in ordre)
+    return replace(plan, rooms=pieces)
 
 
 def plan_vers_vecteur(plan: Plan) -> np.ndarray:
     """Vecteur de décision ``(x, y, w, h)`` par pièce, même contrat que le polytope."""
     return np.array(
-        [(piece.x, piece.y, piece.w, piece.h) for piece in plan.pieces],
+        [(piece.x, piece.y, piece.w, piece.h) for piece in plan.rooms],
         dtype=float,
     ).ravel()
 
@@ -112,10 +112,10 @@ def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     ``masque_padding[i]`` est vrai si le jeton ``i`` est du remplissage
     (convention PyTorch ``src_key_padding_mask``).
     """
-    n = len(plan.pieces)
-    aire_totale = sum(p.aire for p in plan.pieces)
+    n = len(plan.rooms)
+    aire_totale = sum(p.aire for p in plan.rooms)
     jetons = np.zeros((n, DIM_JETON), dtype=float)
-    for i, piece in enumerate(plan.pieces):
+    for i, piece in enumerate(plan.rooms):
         jetons[i] = _jeton_piece(
             piece.x,
             piece.y,
@@ -126,9 +126,9 @@ def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
             float(n),
             aire_totale,
         )
-    murs_par_id = {mur.id: mur for mur in plan.murs}
+    murs_par_id = {mur.id: mur for mur in plan.walls}
     extra: list[np.ndarray] = []
-    for ouv in plan.ouvertures:
+    for ouv in plan.openings:
         mur = murs_par_id.get(ouv.wall_id)
         if mur is None:
             continue

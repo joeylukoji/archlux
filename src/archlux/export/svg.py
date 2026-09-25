@@ -91,7 +91,7 @@ def _etendue(
     xs: list[float] = []
     ys: list[float] = []
     for plan in plans:
-        for piece in plan.pieces:
+        for piece in plan.rooms:
             xs.extend((piece.x, piece.x + piece.w))
             ys.extend((piece.y, piece.y + piece.h))
     for contour in contours:
@@ -149,7 +149,7 @@ def _panneau(
             'stroke-width="1.4" stroke-dasharray="6 4"/>'
         )
 
-    for piece in plan.pieces:
+    for piece in plan.rooms:
         coin_x, coin_y = vers_svg(piece.x, piece.y + piece.h)
         teinte = _TEINTES.get(piece.type.lower(), _GRIS)
         parties.append(
@@ -166,8 +166,8 @@ def _panneau(
         )
 
     # Walls last, on top of rooms: a load-bearing wall crossed by a room must be visible.
-    declared = {wall.id for wall in plan.murs}
-    for wall in plan.murs + tuple(w for w in walls if w.id not in declared):
+    declared = {wall.id for wall in plan.walls}
+    for wall in plan.walls + tuple(w for w in walls if w.id not in declared):
         (xa, ya), (xb, yb) = vers_svg(*wall.a), vers_svg(*wall.b)
         css_class, colour, width = (
             ("wall-load-bearing", "#1f1f1f", 4.0) if wall.load_bearing else ("wall", "#6b6b6b", 1.5)
@@ -216,7 +216,7 @@ def rendre(
     >>> rendre(plan, titre="essai").startswith("<svg")
     True
     """
-    vise = contour or plan.contour
+    vise = contour or plan.outline
     etendue = _etendue((plan,), (vise,) if vise else ())
     parties = _panneau(plan, vise, titre, etendue, 0.0, walls=walls)
     hauteur = _hauteur(etendue)
@@ -319,7 +319,7 @@ def planche(
     """
     if not volets:
         raise InvalidInput("volets", "empty sheet: nothing to draw")
-    vise = contour or volets[0][0].contour
+    vise = contour or volets[0][0].outline
     etendue = _etendue(tuple(p for p, _ in volets), (vise,) if vise else ())
     pas_x = _LARGEUR_PANNEAU + _ESPACE
     pas_y = _hauteur(etendue) + _ESPACE

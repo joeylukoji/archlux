@@ -40,8 +40,8 @@ def test_surfaces_minimales_respectees(ordre: object) -> None:
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=((0.0, 0.0), (20.0, 0.0), (20.0, 16.0), (0.0, 16.0)),
-        referentiel=Regulation(min_areas=(("sejour", 4.0),), largeur_min=1.0),
+        outline=((0.0, 0.0), (20.0, 0.0), (20.0, 16.0), (0.0, 16.0)),
+        regulation=Regulation(min_areas=(("sejour", 4.0),), largeur_min=1.0),
     )
     poly = construire_polytope(ordre, ctx)  # type: ignore[arg-type]
     pieces = tuple(

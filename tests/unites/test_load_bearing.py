@@ -29,13 +29,13 @@ def _ctx(*walls: Wall, areas: tuple[tuple[str, float], ...] = ()) -> Context:
     return Context(
         structure=Structure(load_bearing_walls=walls),
         orientation=Orientation(deg=30.0),
-        contour=_OUTLINE,
-        referentiel=Regulation(min_areas=areas, largeur_min=1.0),
+        outline=_OUTLINE,
+        regulation=Regulation(min_areas=areas, largeur_min=1.0),
     )
 
 
 def _plan(*rooms: Room, walls: tuple[Wall, ...] = ()) -> Plan:
-    return Plan(pieces=rooms, murs=walls, ouvertures=(), contour=_OUTLINE)
+    return Plan(rooms=rooms, walls=walls, openings=(), outline=_OUTLINE)
 
 
 def _room(rid: str, x: float, y: float, w: float, h: float) -> Room:
@@ -95,7 +95,7 @@ def test_legalize_repairs_a_room_overflowing_a_partial_wall_end() -> None:
     )
     result = archlux.legalize(plan, ctx, pavage=True)
     assert checkers.violations(result, ctx) == []
-    assert np.isclose({r.id: r for r in result.pieces}["high"].y, 3.0)
+    assert np.isclose({r.id: r for r in result.rooms}["high"].y, 3.0)
 
 
 def test_without_structure_the_order_has_no_wall_sides() -> None:
@@ -176,14 +176,14 @@ def test_legalize_never_crosses_a_load_bearing_wall(objective: Substitut | None)
     plan = _plan(_room("a", 0, 0, 6, 3), _room("c", 0, 3, 6, 3), _room("b", 6, 0, 4, 6))
     result = archlux.legalize(plan, ctx, objective=objective)
     assert [v for v in checkers.violations(result, ctx) if v.kind == "wall"] == []
-    assert result.certificat is not None and result.certificat.geometry.structure_kept
+    assert result.certificate is not None and result.certificate.geometry.structure_kept
 
 
 def test_legalize_moves_a_crossing_room_back_behind_the_wall() -> None:
     ctx = _ctx(_FULL)
     plan = _plan(_room("a", 0, 0, 6.4, 6), _room("b", 6.4, 0, 3.6, 6))
     result = archlux.legalize(plan, ctx, pavage=True)  # tiling closes the gap left at 6.4
-    rooms = {r.id: r for r in result.pieces}
+    rooms = {r.id: r for r in result.rooms}
     assert np.isclose(rooms["a"].x + rooms["a"].w, 6.0)
     assert np.isclose(rooms["b"].x, 6.0)
 
@@ -196,14 +196,14 @@ def test_the_audit_grid_keeps_its_load_bearing_wall_in_performance_mode() -> Non
     ctx = Context(
         structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=20.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(), largeur_min=1.0),
+        outline=outline,
+        regulation=Regulation(min_areas=(), largeur_min=1.0),
     )
     rooms = tuple(
         Room(id=f"c{i}{j}", type="chambre", x=3.0 * i, y=3.0 * j, w=3.0, h=3.0)
         for i in range(5)
         for j in range(3)
     )
-    plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
+    plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
     assert checkers.violations(result, ctx) == []

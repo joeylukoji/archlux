@@ -146,13 +146,13 @@ def test_the_fingerprint_is_deterministic_and_column_aware() -> None:
 def _plan() -> archlux.Plan:
     """Two rooms tiling the default 12 m x 9 m outline, off-centre."""
     return archlux.Plan(
-        pieces=(
+        rooms=(
             archlux.Room(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=9.0),
             archlux.Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=CONTEXTE_DEFAUT.contour,
+        walls=(),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
     )
 
 
@@ -162,23 +162,23 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     objective = Daylight(surrogate, q_chapeau=1.0)
     calibration = _calibration(surrogate.indicateur)
     result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=objective, calibration=calibration)
-    assert result.certificat is not None
-    bound = result.certificat.performance
+    assert result.certificate is not None
+    bound = result.certificate.performance
     assert bound is not None
     assert bound.regime == "selected" and not bound.coverage_guaranteed
     assert bound.n_calibration == calibration.n
     # Centred on the surrogate's prediction mu, not on the pessimistic mu - q sigma.
-    x = np.array([v for room in result.pieces for v in (room.x, room.y, room.w, room.h)])
+    x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
     mu, _ = point_prediction(objective, x, CONTEXTE_DEFAUT.orientation)
     assert bound.valeur == pytest.approx(mu, rel=1e-6)
-    assert "couverture NON garantie" in result.certificat.rapport()
+    assert "couverture NON garantie" in result.certificate.rapport()
 
 
 def test_legalize_without_calibration_claims_no_performance() -> None:
     result = archlux.legalize(
         _plan(), CONTEXTE_DEFAUT, objective=Daylight(SubstitutAnalytique(), q_chapeau=1.0)
     )
-    assert result.certificat is not None and result.certificat.performance is None
+    assert result.certificate is not None and result.certificate.performance is None
 
 
 def test_a_calibration_needs_an_objective() -> None:
@@ -200,14 +200,14 @@ def test_a_calibration_of_another_indicator_is_refused() -> None:
 
 def test_the_regime_survives_serialization() -> None:
     certificate = Certificate(geometry=_proof(), performance=_bound(regime="selected"))
-    restored = depuis_dict(vers_dict(replace(_plan(), certificat=certificate)))
-    assert restored.certificat is not None and restored.certificat.performance is not None
-    assert restored.certificat.performance.regime == "selected"
+    restored = depuis_dict(vers_dict(replace(_plan(), certificate=certificate)))
+    assert restored.certificate is not None and restored.certificate.performance is not None
+    assert restored.certificate.performance.regime == "selected"
 
 
 def test_a_serialized_bound_without_regime_is_refused() -> None:
     certificate = Certificate(geometry=_proof(), performance=_bound())
-    data = vers_dict(replace(_plan(), certificat=certificate))
+    data = vers_dict(replace(_plan(), certificate=certificate))
     del data["certificat"]["performance"]["regime"]
     with pytest.raises(InvariantViolation, match="regime"):
         depuis_dict(data)
@@ -226,10 +226,10 @@ def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
         objective=Daylight(surrogate, q_chapeau=1.0),
         calibration=calibration,
     )
-    assert result.certificat is not None
-    bound = result.certificat.performance
+    assert result.certificate is not None
+    bound = result.certificate.performance
     assert bound is not None and bound.indicateur == "ASE"
-    x = np.array([v for room in result.pieces for v in (room.x, room.y, room.w, room.h)])
+    x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
     raw = surrogate.evaluer(x, CONTEXTE_DEFAUT.orientation)
     assert raw < 0.0 < bound.valeur
     assert bound.valeur == pytest.approx(-raw, rel=1e-6)
@@ -256,8 +256,8 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     small_outline = ((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0))
     tiny_ctx = replace(
         CONTEXTE_DEFAUT,
-        contour=small_outline,
-        referentiel=Regulation(min_areas=(), largeur_min=2.0),
+        outline=small_outline,
+        regulation=Regulation(min_areas=(), largeur_min=2.0),
     )
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=SubstitutAnalytique())
@@ -289,8 +289,8 @@ def test_no_uncertainty_at_the_plan_gives_no_bound_not_a_lost_plan() -> None:
         objective=SubstitutAnalytique(sigma_nominal=0.0),
         calibration=_calibration(),
     )
-    assert result.certificat is not None and result.certificat.geometry.valide
-    assert result.certificat.performance is None
+    assert result.certificate is not None and result.certificate.geometry.valide
+    assert result.certificate.performance is None
 
 
 def test_the_fingerprint_is_computed_on_the_raw_uncertainties() -> None:

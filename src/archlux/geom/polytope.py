@@ -211,10 +211,10 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
 
 def _enveloppe(ctx: Context) -> tuple[float, float, float, float]:
     """Boîte englobante du contour : ``(xmin, ymin, xmax, ymax)``."""
-    if not ctx.contour:
+    if not ctx.outline:
         raise InvariantViolation(("contour vide : aucune enveloppe n'est définissable",))
-    xs = [point[0] for point in ctx.contour]
-    ys = [point[1] for point in ctx.contour]
+    xs = [point[0] for point in ctx.outline]
+    ys = [point[1] for point in ctx.outline]
     xmin, xmax, ymin, ymax = min(xs), max(xs), min(ys), max(ys)
     if xmax <= xmin or ymax <= ymin:
         raise InvariantViolation((f"contour dégénéré : {xmax - xmin} x {ymax - ymin}",))
@@ -353,7 +353,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
 
     matrice = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(origines), n_var)).tocsr()
 
-    largeur_min = ctx.referentiel.largeur_min
+    largeur_min = ctx.regulation.largeur_min
     _verifier_enveloppe_admissible(largeur_min, xmax - xmin, ymax - ymin, ordre.pieces)
     bornes_par_champ = {
         "x": (xmin, xmax),
@@ -410,7 +410,7 @@ def decision_vector(plan: Plan) -> VecteurF:
     >>> decision_vector(plan).tolist()
     [0.0, 0.0, 6.0, 9.0, 6.0, 0.0, 6.0, 9.0]
     """
-    return vectoriser(plan, _decision_index(tuple(sorted(room.id for room in plan.pieces))))
+    return vectoriser(plan, _decision_index(tuple(sorted(room.id for room in plan.rooms))))
 
 
 def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
@@ -439,7 +439,7 @@ def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
     O(n).
     """
     point = np.zeros(len(index), dtype=float)
-    par_id = {piece.id: piece for piece in plan.pieces}
+    par_id = {piece.id: piece for piece in plan.rooms}
     for nom, colonne in index.items():
         piece_id, champ = nom.rsplit(".", 1)
         piece = par_id.get(piece_id)
@@ -484,7 +484,7 @@ def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
     """
     if x.shape != (len(index),):
         raise InvariantViolation((f"vecteur de dimension {x.shape}, attendu ({len(index)},)",))
-    manquantes = sorted(piece.id for piece in gabarit.pieces if f"{piece.id}.x" not in index)
+    manquantes = sorted(piece.id for piece in gabarit.rooms if f"{piece.id}.x" not in index)
     if manquantes:
         raise InvariantViolation((f"pièces absentes du polytope : {', '.join(manquantes)}",))
     pieces = tuple(
@@ -495,9 +495,9 @@ def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
             w=float(x[index[f"{piece.id}.w"]]),
             h=float(x[index[f"{piece.id}.h"]]),
         )
-        for piece in gabarit.pieces
+        for piece in gabarit.rooms
     )
-    return replace(gabarit, pieces=pieces, certificat=None)
+    return replace(gabarit, rooms=pieces, certificate=None)
 
 
 def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:

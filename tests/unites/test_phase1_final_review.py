@@ -57,13 +57,13 @@ def _overlapping_pair() -> tuple[Plan, Context]:
     """Two rooms overlapping by 1 m: repairing them moves an edge by at least 0.5 m."""
     ctx = CONTEXTE_DEFAUT
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
             Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=ctx.contour,
+        walls=(),
+        openings=(),
+        outline=ctx.outline,
     )
     return plan, ctx
 
@@ -87,7 +87,7 @@ def test_the_same_plan_without_budget_is_repaired() -> None:
 def test_an_infeasible_order_is_not_blamed_on_a_restriction() -> None:
     """Two rooms side by side, each at least 7 m wide, in 12 m: the order is the cause."""
     plan, ctx = _overlapping_pair()
-    ctx = replace(ctx, referentiel=Regulation(min_areas=(), largeur_min=7.0))
+    ctx = replace(ctx, regulation=Regulation(min_areas=(), largeur_min=7.0))
     with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=1.0)
     assert capture.value.scope == ("budget 1 m",)
@@ -104,8 +104,8 @@ def test_an_infeasible_order_is_not_blamed_on_a_restriction() -> None:
 )
 def test_a_malformed_room_establishes_no_predicate(field: str, value: float) -> None:
     plan, ctx = _overlapping_pair()
-    bad = replace(plan.pieces[1], **{field: value})
-    proof = verify_exactly(replace(plan, pieces=(plan.pieces[0], bad)), ctx)
+    bad = replace(plan.rooms[1], **{field: value})
+    proof = verify_exactly(replace(plan, rooms=(plan.rooms[0], bad)), ctx)
     assert not proof.valide
     assert proof.overlap and proof.gaps  # "no overlap / no gap" not established
     assert not proof.areas_ok and not proof.structure_kept
@@ -117,8 +117,8 @@ def test_a_malformed_room_establishes_no_predicate(field: str, value: float) -> 
 
 def test_a_malformed_room_has_an_unbounded_displacement_when_not_finite() -> None:
     plan, ctx = _overlapping_pair()
-    bad = replace(plan.pieces[1], y=math.nan)
-    proof = verify_exactly(replace(plan, pieces=(plan.pieces[0], bad)), ctx, reference=plan)
+    bad = replace(plan.rooms[1], y=math.nan)
+    proof = verify_exactly(replace(plan, rooms=(plan.rooms[0], bad)), ctx, reference=plan)
     assert proof.max_displacement == math.inf
 
 
@@ -136,7 +136,7 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        referentiel=Regulation(min_areas=(("kitchen", 10.0),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("kitchen", 10.0),), largeur_min=1.0),
     )
     room = decomposer(
         Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", type_piece="kitchen"
@@ -147,7 +147,7 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
         Room(id="r2b", type="living", x=3.0, y=2.0, w=9.0, h=2.0),
         Room(id="r3", type="living", x=0.0, y=4.0, w=12.0, h=5.0),
     )
-    plan = Plan(pieces=room.rectangles + rest, murs=(), ouvertures=(), contour=ctx.contour)
+    plan = Plan(rooms=room.rectangles + rest, walls=(), openings=(), outline=ctx.outline)
     bar, foot = sorted(room.rectangles, key=lambda r: r.x)
     assert (bar.x, bar.w, foot.x, foot.w) == (0.0, 2.0, 2.0, 2.0), "decomposition changed"
     return plan, ctx, (bar.id, foot.id)
@@ -168,8 +168,8 @@ def test_legalize_leaves_a_valid_l_beside_a_partial_wall_in_place() -> None:
     )
     assert not checkers.violations(plan, ctx, fusions=(room,)), "the input must be valid"
     result = archlux.legalize(plan, ctx, fusions=(room,))
-    assert result.certificat is not None and result.certificat.geometry.valide
-    assert result.certificat.geometry.max_displacement == pytest.approx(0.0, abs=1e-6)
+    assert result.certificate is not None and result.certificate.geometry.valide
+    assert result.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-6)
     assert not checkers.violations(result, ctx, fusions=(room,))
 
 
@@ -190,7 +190,7 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        referentiel=Regulation(min_areas=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
     )
     rest = (
         Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
@@ -198,13 +198,13 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
         Room(id="p3", type="sejour", x=2.0, y=0.0, w=10.0, h=2.0),
         Room(id="p5", type="chambre", x=1.01, y=2.0, w=10.99, h=7.0),
     )
-    plan = Plan(pieces=(bar, foot, *rest), murs=(wall,), ouvertures=(), contour=ctx.contour)
+    plan = Plan(rooms=(bar, foot, *rest), walls=(wall,), openings=(), outline=ctx.outline)
     room = PieceRectilineaire(
         id="f", rectangles=(bar, foot), fusions=((0, 1, "partage_bord_haut"),)
     )
     result = archlux.legalize(plan, ctx, fusions=(room,), objective=SubstitutAnalytique())
     assert not checkers.violations(result, ctx, fusions=(room,))
-    by_id = {r.id: r for r in result.pieces}
+    by_id = {r.id: r for r in result.rooms}
     low = (by_id["f__0"].x, by_id["f__1"].x)
     high = (by_id["f__0"].x + by_id["f__0"].w, by_id["f__1"].x + by_id["f__1"].w)
     assert low[0] == pytest.approx(low[1])  # aligned ends stay aligned
@@ -220,13 +220,13 @@ def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -
     The message used to say "Without budget 0.1 m, this order admits a plan"."""
     ctx = CONTEXTE_DEFAUT
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
             Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=8.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=ctx.contour,
+        walls=(),
+        openings=(),
+        outline=ctx.outline,
     )
     with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=0.1)
@@ -238,8 +238,8 @@ def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -
 def test_a_nan_in_the_reference_is_an_unbounded_displacement() -> None:
     """Review M2: max() dropped the NaN and the budget was reported kept."""
     plan, ctx = _overlapping_pair()
-    valid = replace(plan, pieces=(replace(plan.pieces[0], w=6.0), plan.pieces[1]))
-    reference = replace(valid, pieces=(replace(valid.pieces[0], x=math.nan), valid.pieces[1]))
+    valid = replace(plan, rooms=(replace(plan.rooms[0], w=6.0), plan.rooms[1]))
+    reference = replace(valid, rooms=(replace(valid.rooms[0], x=math.nan), valid.rooms[1]))
     proof = verify_exactly(valid, ctx, reference=reference, budget=0.01)
     assert proof.max_displacement == math.inf
     assert not proof.valide

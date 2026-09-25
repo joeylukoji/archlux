@@ -17,13 +17,13 @@ from archlux.types import Plan, Room
 def _plan(*boites: tuple[float, float, float, float]) -> Plan:
     """Plan sans murs ni contour, une pièce par ``(x, y, w, h)``."""
     return Plan(
-        pieces=tuple(
+        rooms=tuple(
             Room(id=f"p{i}", type="salon", x=x, y=y, w=w, h=h)
             for i, (x, y, w, h) in enumerate(boites)
         ),
-        murs=(),
-        ouvertures=(),
-        contour=(),
+        walls=(),
+        openings=(),
+        outline=(),
     )
 
 

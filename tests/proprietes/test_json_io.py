@@ -18,13 +18,13 @@ from archlux.types import Certificate, GeometricProof, Opening, Plan, Room, Wall
 from tests.proprietes.strategies import plans_quelconques
 
 PLAN_T2 = Plan(
-    pieces=(
+    rooms=(
         Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),
         Room(id="sdb", type="sdb", x=4.0, y=0.0, w=2.0, h=2.5),
     ),
-    murs=(Wall(id="m_sud", a=(0.0, 0.0), b=(6.0, 0.0), load_bearing=True),),
-    ouvertures=(Opening(id="f1", wall_id="m_sud", s=0.3, relative_width=0.25),),
-    contour=((0.0, 0.0), (6.0, 0.0), (6.0, 3.5), (0.0, 3.5)),
+    walls=(Wall(id="m_sud", a=(0.0, 0.0), b=(6.0, 0.0), load_bearing=True),),
+    openings=(Opening(id="f1", wall_id="m_sud", s=0.3, relative_width=0.25),),
+    outline=((0.0, 0.0), (6.0, 0.0), (6.0, 3.5), (0.0, 3.5)),
 )
 
 
@@ -54,16 +54,16 @@ def test_le_certificat_survit_a_l_aller_retour() -> None:
         violations=(),
     )
     legalise = Plan(
-        pieces=PLAN_T2.pieces,
-        murs=PLAN_T2.murs,
-        ouvertures=PLAN_T2.ouvertures,
-        contour=PLAN_T2.contour,
-        certificat=Certificate(geometry=preuve),
+        rooms=PLAN_T2.rooms,
+        walls=PLAN_T2.walls,
+        openings=PLAN_T2.openings,
+        outline=PLAN_T2.outline,
+        certificate=Certificate(geometry=preuve),
     )
     relu = depuis_dict(vers_dict(legalise))
-    assert relu.certificat is not None
-    assert relu.certificat.geometry.max_displacement == pytest.approx(0.21)
-    assert relu.certificat.performance is None
+    assert relu.certificate is not None
+    assert relu.certificate.geometry.max_displacement == pytest.approx(0.21)
+    assert relu.certificate.performance is None
 
 
 def test_la_version_du_schema_est_ecrite() -> None:

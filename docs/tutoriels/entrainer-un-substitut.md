@@ -22,22 +22,22 @@ import numpy as np
 
 import archlux as ax
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
+    rooms=(
         ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=6.05, h=9.0),
         ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=5.0),
         ax.Room(id="sdb", type="salle_de_bain", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
-    contour=contour,
-    referentiel=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
 )
 
 
@@ -85,7 +85,7 @@ rapport = valider_gradient(reseau, points, ctx.orientation, seed=17, reference=s
 assert rapport.accord_de_signe > 0.80
 
 q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, pavage=True)
-assert q.certificat is not None and q.certificat.geometry.valide
+assert q.certificate is not None and q.certificate.geometry.valide
 ```
 
 !!! danger "Point de contrôle rouvert (revue de phase 2)"

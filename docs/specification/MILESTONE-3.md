@@ -172,7 +172,7 @@ class SubstitutAnalytique:
 
     def evaluer(self, plan, ctx):
         total = 0.0
-        for piece in plan.pieces:
+        for piece in plan.rooms:
             for ouv in ouvertures_de(piece, plan):
                 profondeur_utile = self.FACTEUR_PROFONDEUR * ouv.head_height
                 penetration = min(profondeur(piece, ouv), profondeur_utile)
@@ -362,7 +362,7 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
     preuve = verifier_exactement(q, ctx)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)
-    return replace(q, certificat=Certificate(geometry=preuve, ...))
+    return replace(q, certificate=Certificate(geometry=preuve, ...))
 ```
 
 - [ ] `budget` implémenté comme boîte `‖x − x₀‖∞ ≤ Δ` ajoutée au polytope
@@ -372,7 +372,7 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
 ```python
 def test_non_regression_jalon2():
     """objective=None doit donner le MÊME résultat qu'au jalon 2."""
-    assert ax.legalize(PLAN, CTX).pieces == RESULTAT_JALON2.pieces
+    assert ax.legalize(PLAN, CTX).rooms == RESULTAT_JALON2.rooms
 ```
 
 ---

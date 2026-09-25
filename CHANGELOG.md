@@ -19,6 +19,10 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   `surfaces_ok`, `structure_preservee`, `deplacement_max` are `overlap`, `gaps`,
   `areas_ok`, `structure_kept`, `max_displacement`; `PerformanceBound.borne_sup` is `upper`;
   `Certificate.geometrie` is `geometry`. Constructor keywords change with them.
+- Batch 3b, type-guided (`scripts/rename_field.py`): `Plan.pieces`, `murs`, `ouvertures`,
+  `contour`, `certificat` are `rooms`, `walls`, `openings`, `outline`, `certificate`;
+  `Context.referentiel`, `programme`, `contour` are `regulation`, `program`, `outline`.
+  `InvalidInput.field` labels follow (`rooms[a].w`, `context.outline`...).
 - The JSON files keep their schema v1 keys (`"porteur"`, `"jours"`...): only the Python
   names moved, so old files still load and the written JSON is byte-identical.
 

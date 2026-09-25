@@ -172,6 +172,11 @@ def _locate(tree: ast.AST, fix: Fix) -> tuple[int, int] | None:
 
 
 def _run_mypy(paths: Sequence[Path], *, no_config: bool) -> str:
+    """The output of mypy over every path, **one run per path**.
+
+    Given several roots at once, mypy stops with "Source file found twice under different
+    module names" when a directory has no ``__init__.py``, and reports no type error at all.
+    """
     command = [
         sys.executable,
         "-m",
@@ -181,13 +186,15 @@ def _run_mypy(paths: Sequence[Path], *, no_config: bool) -> str:
         "--no-error-summary",
         "--no-pretty",
         "--no-incremental",
+        "--ignore-missing-imports",
     ]
     if no_config:
         command.append("--config-file=")
-    result = subprocess.run(
-        [*command, *map(str, paths)], capture_output=True, text=True, check=False
-    )
-    return result.stdout
+    outputs = [
+        subprocess.run([*command, str(path)], capture_output=True, text=True, check=False).stdout
+        for path in paths
+    ]
+    return "\n".join(outputs)
 
 
 def _parse_fields(pairs: Sequence[str]) -> dict[str, str]:

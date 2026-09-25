@@ -76,7 +76,7 @@ def test_decomposition_recompose(poly):
 
 @given(plan=plans_avec_pieces_en_L())
 def test_validite_preservee(plan):
-    assert ax.legalize(plan, CTX).certificat.geometry.valide
+    assert ax.legalize(plan, CTX).certificate.geometry.valide
 ```
 
 - [ ] Les 2 tests passent

@@ -12,33 +12,33 @@ harmoniques d'orientation). Frank-Wolfe réutilise l'oracle LP du jalon 2.
 import archlux as ax
 from archlux.light.analytique import SubstitutAnalytique
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
+    rooms=(
         ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
         ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx_n = ax.Context(
     structure=ax.Structure(()),
     orientation=ax.Orientation(0.0),
-    contour=contour,
-    referentiel=ax.Regulation((), 1.0),
+    outline=outline,
+    regulation=ax.Regulation((), 1.0),
 )
 ctx_s = ax.Context(
     structure=ax.Structure(()),
     orientation=ax.Orientation(180.0),
-    contour=contour,
-    referentiel=ax.Regulation((), 1.0),
+    outline=outline,
+    regulation=ax.Regulation((), 1.0),
 )
 q_l1 = ax.legalize(plan, ctx_n)
 q_n = ax.legalize(plan, ctx_n, objective=SubstitutAnalytique())
 q_s = ax.legalize(plan, ctx_s, objective=SubstitutAnalytique())
-print(q_l1.certificat.geometry.valide)
-print(q_n.pieces == q_s.pieces)
+print(q_l1.certificate.geometry.valide)
+print(q_n.rooms == q_s.rooms)
 ```
 
 **Résultat.**

@@ -28,20 +28,20 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
     writer.writerow(("plan_id", "exported", "validator_errors"))
     accepted = 0
     for plan_id, plan in sorted(generer_corpus(N, seed=17).items()):
-        cut = next(r.x + r.w for r in plan.pieces if r.id == "sw")
+        cut = next(r.x + r.w for r in plan.rooms if r.id == "sw")
         wall = ax.Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), load_bearing=True)
         ctx = ax.Context(
             structure=ax.Structure((wall,)),
             orientation=ax.Orientation(0.0),
-            contour=plan.contour,
-            referentiel=ax.Regulation((), 1.0),
+            outline=plan.outline,
+            regulation=ax.Regulation((), 1.0),
         )
         repaired = ax.legalize(
             corrompre(plan, seed=derive(17, f"ifc/{plan_id}"))[0], ctx, pavage=True
         )
         path = Path(tmp) / f"{plan_id}.ifc"
         exported = to_ifc(
-            ax.Plan(repaired.pieces, (wall,), (), plan.contour), path, validate=True
+            ax.Plan(repaired.rooms, (wall,), (), plan.outline), path, validate=True
         ).valide
         logger = ifcopenshell.validate.json_logger()
         if exported:

@@ -30,10 +30,10 @@ SQUARE = ((0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (0.0, 4.0))
 
 def one_room_plan() -> Plan:
     return Plan(
-        pieces=(Room(id="a", type="sejour", x=0.0, y=0.0, w=4.0, h=4.0),),
-        murs=(),
-        ouvertures=(),
-        contour=SQUARE,
+        rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=4.0, h=4.0),),
+        walls=(),
+        openings=(),
+        outline=SQUARE,
     )
 
 
@@ -46,7 +46,7 @@ def one_room_plan() -> Plan:
         (lambda: regression_circulaire_lineaire([1.0, 2.0], [1.0, 2.0]), "theta"),
         (lambda: stratifier([1.0, 2.0], n_secteurs=0), "n_secteurs"),
         (lambda: planche(()), "volets"),
-        (lambda: diagnostiquer(Plan(pieces=(), murs=(), ouvertures=(), contour=SQUARE)), "pieces"),
+        (lambda: diagnostiquer(Plan(rooms=(), walls=(), openings=(), outline=SQUARE)), "pieces"),
         (lambda: permuter_pieces(one_room_plan(), (0, 1)), "ordre"),
     ],
 )

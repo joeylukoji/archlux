@@ -101,23 +101,23 @@ def test_every_phrase_states_its_local_validity() -> None:
 def test_a_real_certificate_lists_only_business_constraints() -> None:
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 7.0), (0.0, 7.0))
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="sejour", type="sejour", x=0.0, y=0.0, w=6.2, h=7.0),
             Room(id="chambre", type="chambre", x=6.0, y=0.0, w=4.0, h=4.0),
             Room(id="sdb", type="sdb", x=6.0, y=4.0, w=4.0, h=3.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=outline,
+        walls=(),
+        openings=(),
+        outline=outline,
     )
     wall = Wall(id="p1", a=(6.0, 0.0), b=(6.0, 7.0), load_bearing=True)
     ctx = Context(
         structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=0.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(), largeur_min=1.5),
+        outline=outline,
+        regulation=Regulation(min_areas=(), largeur_min=1.5),
     )
-    duals = legalize(plan, ctx, pavage=True).certificat.duaux  # type: ignore[union-attr]
+    duals = legalize(plan, ctx, pavage=True).certificate.duaux  # type: ignore[union-attr]
     assert duals
     assert not any("ecart" in phrase for phrase, _ in duals)
     assert any("load-bearing wall p1" in phrase for phrase, _ in duals)
@@ -142,19 +142,19 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
 
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 7.0), (0.0, 7.0))
     plan = Plan(
-        pieces=(
+        rooms=(
             Room(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=7.0),
             Room(id="b", type="sejour", x=5.0, y=0.0, w=5.0, h=7.0),
         ),
-        murs=(),
-        ouvertures=(),
-        contour=outline,
+        walls=(),
+        openings=(),
+        outline=outline,
     )
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(), largeur_min=1.0),
+        outline=outline,
+        regulation=Regulation(min_areas=(), largeur_min=1.0),
     )
     surrogate = SubstitutAnalytique()
     legalize(plan, ctx, objective=surrogate)

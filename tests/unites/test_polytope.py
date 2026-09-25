@@ -32,20 +32,20 @@ from archlux.types import (
 CTX = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
-    contour=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    referentiel=Regulation(min_areas=(("sdb", 5.0),), largeur_min=1.5),
+    outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
+    regulation=Regulation(min_areas=(("sdb", 5.0),), largeur_min=1.5),
 )
 
 ORDRE_AB = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B"))
 
 PLAN_AB = Plan(
-    pieces=(
+    rooms=(
         Room(id="A", type="sejour", x=0.0, y=0.0, w=4.0, h=8.0),
         Room(id="B", type="sdb", x=4.0, y=0.0, w=6.0, h=8.0),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=CTX.contour,
+    walls=(),
+    openings=(),
+    outline=CTX.outline,
 )
 
 
@@ -169,17 +169,17 @@ class TestVectorisation:
         point = vectoriser(PLAN_AB, poly.index)
         point[poly.index["A.w"]] = 3.0
         resultat = devectoriser(point, PLAN_AB, poly.index)
-        assert resultat.ouvertures == PLAN_AB.ouvertures
-        assert resultat.murs == PLAN_AB.murs
+        assert resultat.openings == PLAN_AB.openings
+        assert resultat.walls == PLAN_AB.walls
 
     def test_une_piece_absente_est_signalee(self) -> None:
         """Vectoriser un plan qui n'a pas les pièces de l'ordre est un bogue interne."""
         poly = construire_polytope(ORDRE_AB, CTX)
         autre = Plan(
-            pieces=(Room(id="Z", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),),
-            murs=(),
-            ouvertures=(),
-            contour=CTX.contour,
+            rooms=(Room(id="Z", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),),
+            walls=(),
+            openings=(),
+            outline=CTX.outline,
         )
         with pytest.raises(InvariantViolation):
             vectoriser(autre, poly.index)
@@ -219,10 +219,10 @@ class TestRefus:
         """
         poly = construire_polytope(ORDRE_AB, CTX)
         etranger = Plan(
-            pieces=(*PLAN_AB.pieces, Room(id="Z", type="wc", x=0.0, y=0.0, w=1.0, h=1.0)),
-            murs=(),
-            ouvertures=(),
-            contour=CTX.contour,
+            rooms=(*PLAN_AB.rooms, Room(id="Z", type="wc", x=0.0, y=0.0, w=1.0, h=1.0)),
+            walls=(),
+            openings=(),
+            outline=CTX.outline,
         )
         with pytest.raises(InvariantViolation, match="Z"):
             devectoriser(vectoriser(PLAN_AB, poly.index), etranger, poly.index)
@@ -247,8 +247,8 @@ class TestRefus:
         ctx = Context(
             structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
-            contour=((0.0, 0.0), (10.0, 0.0), (10.0, 0.0)),
-            referentiel=Regulation(min_areas=()),
+            outline=((0.0, 0.0), (10.0, 0.0), (10.0, 0.0)),
+            regulation=Regulation(min_areas=()),
         )
         with pytest.raises(InvariantViolation, match="dégénéré"):
             construire_polytope(ORDRE_AB, ctx)
@@ -259,8 +259,8 @@ def test_un_contour_degenere_est_refuse() -> None:
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        contour=(),
-        referentiel=Regulation(min_areas=()),
+        outline=(),
+        regulation=Regulation(min_areas=()),
     )
     with pytest.raises(InvariantViolation):
         construire_polytope(ORDRE_AB, ctx)

@@ -22,14 +22,14 @@ moved: list[float] = []
 sizes: list[int] = []
 for apartment in charger_msd(MSD, statistiques=stats, limite=N):
     valid_before += verify_exactly(apartment.plan, apartment.contexte).valide
-    sizes.append(len(apartment.plan.pieces))
+    sizes.append(len(apartment.plan.rooms))
     try:
         out = ax.legalize(apartment.plan, apartment.contexte, fusions=apartment.fusions)
     except ax.ArchluxError:
         refused += 1
         continue
-    valid_after += out.certificat.geometry.valide  # type: ignore[union-attr]
-    moved.append(out.certificat.geometry.max_displacement)  # type: ignore[union-attr]
+    valid_after += out.certificate.geometry.valide  # type: ignore[union-attr]
+    moved.append(out.certificate.geometry.max_displacement)  # type: ignore[union-attr]
 n = stats.retenus
 OUT.write_text(
     "# Milestone 7: idempotence on MSD\n\n"

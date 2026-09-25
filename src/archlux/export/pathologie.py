@@ -38,7 +38,7 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
     -----
     ``arete_nulle``, ``sommets_dupliques``, ``auto_intersection``,
     ``solide_non_ferme``, ``overlap``, ``dimension_non_positive``,
-    ``ouverture_orpheline`` (an opening on a wall absent from ``plan.murs``: IFC4 wants
+    ``ouverture_orpheline`` (an opening on a wall absent from ``plan.walls``: IFC4 wants
     every ``IfcOpeningElement`` to void an element).
     """
     trouves: list[str] = []
@@ -48,7 +48,7 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
     # quadratique, et reconstruire un ``box`` par comparaison l'était aussi.
     pieces_ok: list[tuple[Room, Polygon]] = []
 
-    for piece in plan.pieces:
+    for piece in plan.rooms:
         if piece.w <= _EPS or piece.h <= _EPS:
             trouves.append(f"dimension_non_positive:{piece.id}")
             continue
@@ -57,20 +57,20 @@ def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
             trouves.append(f"auto_intersection:{piece.id}")
         pieces_ok.append((piece, poly))
 
-    for mur in plan.murs:
+    for mur in plan.walls:
         if _arete_nulle(mur):
             trouves.append(f"arete_nulle:{mur.id}")
 
-    walls = {mur.id for mur in plan.murs}
+    walls = {mur.id for mur in plan.walls}
     trouves.extend(
-        f"ouverture_orpheline:{ouv.id}" for ouv in plan.ouvertures if ouv.wall_id not in walls
+        f"ouverture_orpheline:{ouv.id}" for ouv in plan.openings if ouv.wall_id not in walls
     )
 
-    if plan.contour:
-        if _sommets_dupliques(plan.contour):
+    if plan.outline:
+        if _sommets_dupliques(plan.outline):
             trouves.append("sommets_dupliques:contour")
-        if len(plan.contour) >= 3:
-            enveloppe = Polygon(plan.contour)
+        if len(plan.outline) >= 3:
+            enveloppe = Polygon(plan.outline)
             if not enveloppe.is_valid:
                 trouves.append("auto_intersection:contour")
             elif enveloppe.area <= _TOL_AIRE or not enveloppe.exterior.is_ring:

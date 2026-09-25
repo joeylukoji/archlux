@@ -42,7 +42,7 @@ def test_the_input_is_valid_under_its_own_context(scenario: tuple[Plan, Context]
     """Sanity check of the strategy itself: any later violation comes from legalize."""
     plan, ctx = scenario
     assert ctx.structure.load_bearing_walls, "every scenario must contain a load-bearing wall"
-    assert ctx.referentiel.min_areas, "every scenario must declare minimum areas"
+    assert ctx.regulation.min_areas, "every scenario must declare minimum areas"
     assert _independent_violations(plan, ctx) == []
 
 
@@ -123,12 +123,12 @@ def test_the_checker_detects_each_kind_of_violation() -> None:
     ctx = Context(
         structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=0.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(("bedroom", 5.0),), largeur_min=0.5),
+        outline=outline,
+        regulation=Regulation(min_areas=(("bedroom", 5.0),), largeur_min=0.5),
     )
 
     def plan(*rooms: Room) -> Plan:
-        return Plan(pieces=rooms, murs=(wall,), ouvertures=(), contour=outline)
+        return Plan(rooms=rooms, walls=(wall,), openings=(), outline=outline)
 
     valid = plan(
         Room(id="a", type="bedroom", x=0.0, y=0.0, w=2.0, h=2.0),
@@ -155,16 +155,16 @@ def test_the_checker_detects_a_budget_overrun() -> None:
 
     outline = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
     proposed = Plan(
-        pieces=(Room(id="a", type="other", x=0.0, y=0.0, w=2.0, h=2.0),),
-        murs=(),
-        ouvertures=(),
-        contour=outline,
+        rooms=(Room(id="a", type="other", x=0.0, y=0.0, w=2.0, h=2.0),),
+        walls=(),
+        openings=(),
+        outline=outline,
     )
     moved = Plan(
-        pieces=(Room(id="a", type="other", x=0.0, y=0.0, w=2.5, h=2.0),),
-        murs=(),
-        ouvertures=(),
-        contour=outline,
+        rooms=(Room(id="a", type="other", x=0.0, y=0.0, w=2.5, h=2.0),),
+        walls=(),
+        openings=(),
+        outline=outline,
     )
     assert checkers.budget_violations(moved, proposed, 1.0) == []
     (violation,) = checkers.budget_violations(moved, proposed, 0.3)

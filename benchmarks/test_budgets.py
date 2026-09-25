@@ -59,14 +59,14 @@ def _assert_within_budget(benchmark: BenchmarkFixture, budget: str) -> None:
 CTX_15 = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
-    contour=((0.0, 0.0), (15.0, 0.0), (15.0, 12.0), (0.0, 12.0)),
-    referentiel=Regulation(min_areas=(), largeur_min=1.0),
+    outline=((0.0, 0.0), (15.0, 0.0), (15.0, 12.0), (0.0, 12.0)),
+    regulation=Regulation(min_areas=(), largeur_min=1.0),
 )
 
 
 def _plan_15_pieces() -> Plan:
     """Grille 5 x 3 de pièces jointives, le cas de référence du §9."""
-    pieces = tuple(
+    rooms = tuple(
         Room(
             id=f"p{colonne}_{ligne}",
             type="sejour",
@@ -78,7 +78,7 @@ def _plan_15_pieces() -> Plan:
         for colonne in range(5)
         for ligne in range(3)
     )
-    return Plan(pieces=pieces, murs=(), ouvertures=(), contour=CTX_15.contour)
+    return Plan(rooms=rooms, walls=(), openings=(), outline=CTX_15.outline)
 
 
 def _poly_15() -> object:
@@ -168,8 +168,8 @@ def test_budget_legalisation_performantielle(benchmark: BenchmarkFixture) -> Non
 CTX_15_AREAS = Context(
     structure=CTX_15.structure,
     orientation=Orientation(deg=20.0),
-    contour=CTX_15.contour,
-    referentiel=Regulation(min_areas=(("sejour", 11.0),), largeur_min=1.0),
+    outline=CTX_15.outline,
+    regulation=Regulation(min_areas=(("sejour", 11.0),), largeur_min=1.0),
 )
 """The realistic case the budgets missed (AUDIT.md Q-C2): tight minimum areas."""
 
@@ -217,10 +217,10 @@ def test_performance_mode_scales_with_tight_minimum_areas(
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=20.0),
-        contour=outline,
-        referentiel=Regulation(min_areas=(("sejour", 11.0),), largeur_min=1.0),
+        outline=outline,
+        regulation=Regulation(min_areas=(("sejour", 11.0),), largeur_min=1.0),
     )
-    plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=outline)
+    plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     start = time.perf_counter()
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
     elapsed_ms = (time.perf_counter() - start) * 1000

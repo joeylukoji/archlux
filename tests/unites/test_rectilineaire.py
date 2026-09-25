@@ -75,10 +75,10 @@ def _plan_avec_L(*, chevauche: bool = False) -> tuple[Plan, object]:
         Room(id="r3", type="sejour", x=0.0, y=3.0, w=12.0, h=6.0),
     )
     plan = Plan(
-        pieces=piece.rectangles + reste,
-        murs=(),
-        ouvertures=(),
-        contour=CONTEXTE_DEFAUT.contour,
+        rooms=piece.rectangles + reste,
+        walls=(),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
     )
     return plan, piece
 
@@ -101,10 +101,10 @@ def test_legalize_preserve_validite_avec_L() -> None:
 
     plan, piece = _plan_avec_L(chevauche=True)
     q = archlux.legalize(plan, CONTEXTE_DEFAUT, fusions=(piece,))
-    assert q.certificat is not None
-    assert q.certificat.geometry.valide
+    assert q.certificate is not None
+    assert q.certificate.geometry.valide
     sous = sorted(
-        (p for p in q.pieces if p.id.startswith("cuisine__")),
+        (p for p in q.rooms if p.id.startswith("cuisine__")),
         key=lambda p: (p.x, p.y),
     )
     assert len(sous) == 2

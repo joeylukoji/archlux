@@ -36,7 +36,7 @@ def empreinte_geometrique(plan: Plan) -> str:
             round(p.w, 3),
             round(p.h, 3),
         )
-        for p in sorted(plan.pieces, key=lambda piece: piece.id)
+        for p in sorted(plan.rooms, key=lambda piece: piece.id)
     )
     return hashlib.blake2b(repr(pieces).encode(), digest_size=16).hexdigest()
 
@@ -48,8 +48,8 @@ def distance_cotes(a: Plan, b: Plan) -> float:
     elle ne détecte pas un doublon de partition. C'est l'écart des rectangles
     qui compte pour dédupliquer avant de découper.
     """
-    gauche = {p.id: p for p in a.pieces}
-    droite = {p.id: p for p in b.pieces}
+    gauche = {p.id: p for p in a.rooms}
+    droite = {p.id: p for p in b.rooms}
     if gauche.keys() != droite.keys():
         return hausdorff(a, b)
     if not gauche:
@@ -69,8 +69,8 @@ def distance_cotes(a: Plan, b: Plan) -> float:
 
 def hausdorff(a: Plan, b: Plan) -> float:
     """Distance de Hausdorff entre les unions de rectangles, en mètres."""
-    ua = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in a.pieces])
-    ub = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in b.pieces])
+    ua = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in a.rooms])
+    ub = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in b.rooms])
     return float(ua.hausdorff_distance(ub))
 
 

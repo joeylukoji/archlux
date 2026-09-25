@@ -20,7 +20,7 @@ from archlux.types import Plan, Room
 
 
 def _plan(*pieces: Room) -> Plan:
-    return Plan(pieces=pieces, murs=(), ouvertures=(), contour=())
+    return Plan(rooms=pieces, walls=(), openings=(), outline=())
 
 
 def _carre(nom: str, x: float, y: float, cote: float = 1.0) -> Room:

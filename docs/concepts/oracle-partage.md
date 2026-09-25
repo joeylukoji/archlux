@@ -17,21 +17,21 @@ from archlux.geom.polytope import construire_polytope, etendre_ecarts_l1, vector
 from archlux.light import SubstitutAnalytique
 from archlux.lmo import solveur as lmo
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
+    rooms=(
         ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
         ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
-    contour=contour,
-    referentiel=ax.Regulation(min_areas=(), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(), largeur_min=1.0),
 )
 poly = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx)
 Q_propose = vectoriser(plan, poly.index)

@@ -18,7 +18,7 @@ _PARTITION = Wall(id="p", a=(0.0, 1.0), b=(2.0, 1.0), load_bearing=False)
 
 
 def _plan(*walls: Wall) -> Plan:
-    return Plan(pieces=_ROOMS, murs=walls, ouvertures=(), contour=_OUTLINE)
+    return Plan(rooms=_ROOMS, walls=walls, openings=(), outline=_OUTLINE)
 
 
 def _lines(svg: str, css_class: str) -> list[ET.Element]:

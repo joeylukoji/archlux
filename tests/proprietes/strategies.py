@@ -197,11 +197,11 @@ def plans_quelconques(draw: st.DrawFn) -> Plan:
     contour = draw(st.lists(st.tuples(_COORD, _COORD), min_size=3, max_size=8))
     certificat = draw(st.one_of(st.none(), _certificats()))
     return Plan(
-        pieces=tuple(liste_pieces),
-        murs=tuple(liste_murs),
-        ouvertures=tuple(liste_ouv),
-        contour=tuple(contour),
-        certificat=certificat,
+        rooms=tuple(liste_pieces),
+        walls=tuple(liste_murs),
+        openings=tuple(liste_ouv),
+        outline=tuple(contour),
+        certificate=certificat,
     )
 
 
@@ -217,8 +217,8 @@ CONTOUR_DEFAUT_CM = (1200, 900)
 CONTEXTE_DEFAUT = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
-    contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-    referentiel=Regulation(min_areas=(), largeur_min=LARGEUR_MIN_DEFAUT),
+    outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
+    regulation=Regulation(min_areas=(), largeur_min=LARGEUR_MIN_DEFAUT),
 )
 """Contexte de référence des tests, accordé à :func:`plans_valides`."""
 
@@ -289,10 +289,10 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
         for i, (x, y, w, h) in enumerate(rectangles)
     )
     return Plan(
-        pieces=pieces,
-        murs=(),
-        ouvertures=(),
-        contour=CONTEXTE_DEFAUT.contour,
+        rooms=pieces,
+        walls=(),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
     )
 
 
@@ -346,8 +346,8 @@ def contextes(draw: st.DrawFn) -> Context:
     return Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
-        contour=((0.0, 0.0), (largeur, 0.0), (largeur, hauteur), (0.0, hauteur)),
-        referentiel=Regulation(
+        outline=((0.0, 0.0), (largeur, 0.0), (largeur, hauteur), (0.0, hauteur)),
+        regulation=Regulation(
             min_areas=(),
             largeur_min=draw(st.floats(min_value=0.5, max_value=2.0, allow_nan=False)),
         ),
@@ -388,7 +388,7 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     width, height = (c / 100.0 for c in CONTOUR_DEFAUT_CM)
 
     edges: list[tuple[tuple[float, float], tuple[float, float]]] = []
-    for room in plan.pieces:
+    for room in plan.rooms:
         right, top = room.x + room.w, room.y + room.h
         if right < width - 1e-9:
             edges.append(((right, room.y), (right, top)))
@@ -399,7 +399,7 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     walls = (Wall(id="lb0", a=a, b=b, load_bearing=True),)
 
     smallest: dict[str, float] = {}
-    for room in plan.pieces:
+    for room in plan.rooms:
         smallest[room.type] = min(smallest.get(room.type, float("inf")), room.w * room.h)
     ratio = draw(st.floats(min_value=0.5, max_value=1.0, allow_nan=False))
     minimum_areas = tuple(sorted((kind, ratio * area) for kind, area in smallest.items()))
@@ -407,7 +407,7 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     context = Context(
         structure=Structure(load_bearing_walls=walls),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
-        contour=CONTEXTE_DEFAUT.contour,
-        referentiel=Regulation(min_areas=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
+        outline=CONTEXTE_DEFAUT.outline,
+        regulation=Regulation(min_areas=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
     )
-    return Plan(pieces=plan.pieces, murs=walls, ouvertures=(), contour=plan.contour), context
+    return Plan(rooms=plan.rooms, walls=walls, openings=(), outline=plan.outline), context
