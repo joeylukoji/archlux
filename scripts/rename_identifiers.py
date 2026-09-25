@@ -214,14 +214,18 @@ def rename_markdown(text: str, mapping: dict[str, str], *, prose: bool = False) 
     return "\n".join(out), total
 
 
-def _iter_files(paths: Sequence[Path], suffixes: tuple[str, ...]) -> Iterator[Path]:
+def _iter_files(
+    paths: Sequence[Path], suffixes: tuple[str, ...], exclude: Sequence[Path] = ()
+) -> Iterator[Path]:
+    excluded = [path.resolve() for path in exclude]
     for path in paths:
-        if path.is_file():
-            if path.suffix in suffixes:
-                yield path
-            continue
-        for candidate in sorted(path.rglob("*")):
-            skipped = SKIPPED_DIRS & set(candidate.relative_to(path).parts)
+        candidates = [path] if path.is_file() else sorted(path.rglob("*"))
+        for candidate in candidates:
+            parts = set(candidate.relative_to(path).parts) if candidate != path else set()
+            resolved = candidate.resolve()
+            skipped = bool(SKIPPED_DIRS & parts) or any(
+                resolved == out or out in resolved.parents for out in excluded
+            )
             if candidate.is_file() and candidate.suffix in suffixes and not skipped:
                 yield candidate
 
@@ -271,7 +275,9 @@ def verify_inverse(
         return False
 
 
-def find_shared_names(paths: Sequence[Path], names: set[str]) -> dict[str, list[str]]:
+def find_shared_names(
+    paths: Sequence[Path], names: set[str], exclude: Sequence[Path] = ()
+) -> dict[str, list[str]]:
     """Names that several classes or functions define: renaming them is a guess.
 
     An owner is a class that declares the name as a field, a class attribute, a method or
@@ -283,7 +289,7 @@ def find_shared_names(paths: Sequence[Path], names: set[str]) -> dict[str, list[
         For every name defined by more than one owner, the sorted owner names.
     """
     owners: dict[str, set[str]] = defaultdict(set)
-    for path in _iter_files(paths, (".py",)):
+    for path in _iter_files(paths, (".py",), exclude):
         try:
             tree = ast.parse(_read(path)[0])
         except SyntaxError:
@@ -356,11 +362,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--prose", action="store_true", help="also comments, docstrings, markdown")
     parser.add_argument("--allow-shared", action="append", default=[], metavar="NAME")
     parser.add_argument("--no-verify", action="store_true", help="skip the inverse-rename proof")
+    parser.add_argument("--exclude", action="append", default=[], type=Path, metavar="PATH")
     args = parser.parse_args(argv)
 
     mapping = _parse_mapping(args.map)
     check_mapping(mapping)
-    shared = find_shared_names(args.paths, set(mapping) - set(args.allow_shared))
+    shared = find_shared_names(args.paths, set(mapping) - set(args.allow_shared), args.exclude)
     if shared:
         for name, owners in sorted(shared.items()):
             print(f"refused: {name!r} is defined by {', '.join(owners)}")
@@ -368,7 +375,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
     total = files = 0
-    for path in _iter_files(args.paths, (".py", ".md")):
+    for path in _iter_files(args.paths, (".py", ".md"), args.exclude):
         text, _ = _read(path)
         try:
             new, count = _rename(path, text, mapping, args.prose)

@@ -140,3 +140,13 @@ def test_a_mapping_that_merges_two_names_is_refused(tool) -> None:  # type: igno
 def test_string_literal_hits_are_reported_not_changed(tool) -> None:  # type: ignore[no-untyped-def]
     hits = tool.string_hits('x = getattr(plan, "pieces")\ny = "other"\n', {"pieces"})
     assert hits == [(1, "pieces")]
+
+
+def test_excluded_paths_are_left_alone(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
+    (tmp_path / "keep").mkdir()
+    (tmp_path / "keep" / "a.py").write_text("x = Piece()\n", encoding="utf-8")
+    (tmp_path / "b.py").write_text("y = Piece()\n", encoding="utf-8")
+    args = ["--map", "Piece=Room", "--apply", "--exclude", str(tmp_path / "keep"), str(tmp_path)]
+    assert tool.main(args) == 0
+    assert (tmp_path / "keep" / "a.py").read_text(encoding="utf-8") == "x = Piece()\n"
+    assert (tmp_path / "b.py").read_text(encoding="utf-8") == "y = Room()\n"
