@@ -114,7 +114,7 @@ measuring a cold LP.
 
 ```
 types   ← everyone
-tolerances, seeds ← everyone   (leaves: they import nothing from archlux)
+tolerances, seeds, arrays ← everyone   (leaves: they import nothing from archlux)
 validation ← types, erreurs   (door checks of the public arguments; imported by api)
 geom    ← types
 lmo     ← types, geom
@@ -270,6 +270,7 @@ archlux/
 │   ├── tolerances.py        # registry of numerical tolerances
 │   ├── validation.py        # `validate_inputs`: InvalidInput at the door of legalize
 │   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer
+│   ├── arrays.py            # `VecteurF`, the float64 array alias of the numerical core
 │   ├── types.py
 │   ├── geom/{graphe,polytope,pavage,rectilineaire,diagnostic}.py
 │   ├── lmo/{solveur,coupes}.py

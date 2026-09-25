@@ -23,7 +23,7 @@ True
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from archlux._version import __version__
 from archlux.erreurs import (
@@ -97,6 +97,12 @@ __all__ = [  # noqa: RUF022
 _LAZY = frozenset({"light", "bench", "feasibility"})
 
 if TYPE_CHECKING:
+    # For mypy and IDEs only: the runtime resolves these on first use (``__getattr__``).
+    # Without them ``ax.light.Daylight`` was invisible to type checkers (PLAN.md 3.8).
+    # ``bench`` is not listed: no module may import it (ARCHITECTURE.md §5), so it stays
+    # dynamic (``Any``) for type checkers.
+    import archlux.feasibility as feasibility
+    import archlux.light as light
     from archlux.api import legalize as legalize
 
 # ``legalize`` drags in numpy, scipy.sparse, shapely and ortools (about 1 s): it is
@@ -104,7 +110,7 @@ if TYPE_CHECKING:
 _LAZY_FUNCTIONS = {"legalize": "archlux.api"}
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
     """Charger ``light``, ``bench``, ``feasibility`` et ``legalize`` à la première utilisation."""
     # Import local : ne pas polluer ``dir(archlux)`` avec ``importlib``.
     import importlib

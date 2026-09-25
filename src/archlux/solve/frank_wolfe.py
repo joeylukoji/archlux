@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from archlux.arrays import VecteurF
 from archlux.erreurs import Infaisable, InvariantViole
 from archlux.geom.polytope import Polytope
 from archlux.lmo.coupes import MAX_COUPES_PAR_PIECE, Coupe, coupe_surface, surfaces_violees
@@ -57,17 +58,17 @@ class FrankWolfeResult:
         diagnosis of a performance run is often empty.
     """
 
-    x: np.ndarray
+    x: VecteurF
     value: float
     gap: float
     status: StopStatus
     iterations: int
     trace: Trace
-    duals: np.ndarray | None = None
+    duals: VecteurF | None = None
 
 
 def restrict_to_budget(
-    poly: Polytope, centre: np.ndarray, radius: float, *, keep: np.ndarray | None = None
+    poly: Polytope, centre: VecteurF, radius: float, *, keep: VecteurF | None = None
 ) -> Polytope:
     """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``.
 
@@ -102,7 +103,7 @@ def restrict_to_budget(
     return replace(poly, bornes=tuple(bounds))
 
 
-def _vertex_index(vertices: list[np.ndarray], candidate: np.ndarray) -> int | None:
+def _vertex_index(vertices: list[VecteurF], candidate: VecteurF) -> int | None:
     """Index of an already stored vertex, up to tolerance."""
     for rank, vertex in enumerate(vertices):
         if np.allclose(vertex, candidate, atol=1e-9, rtol=0.0):
@@ -112,7 +113,7 @@ def _vertex_index(vertices: list[np.ndarray], candidate: np.ndarray) -> int | No
 
 def _add_cuts(
     cuts: list[Coupe],
-    x: np.ndarray,
+    x: VecteurF,
     domain: Polytope,
     ctx: Contexte | None,
     rooms: tuple[Piece, ...] | None,
@@ -148,7 +149,7 @@ def frank_wolfe(
     poly: Polytope,
     surrogate: Substitut,
     orientation: Orientation,
-    start: np.ndarray,
+    start: VecteurF,
     *,
     max_iter: int = 50,
     tol: float = 1e-4,
@@ -339,7 +340,7 @@ def frank_wolfe(
             else:
                 weights[existing] += gamma
 
-        kept_vertices: list[np.ndarray] = []
+        kept_vertices: list[VecteurF] = []
         kept_weights: list[float] = []
         for vertex, mass in zip(vertices, weights, strict=True):
             if mass > _MIN_WEIGHT:

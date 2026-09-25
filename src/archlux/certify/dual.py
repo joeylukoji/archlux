@@ -24,6 +24,7 @@ import re
 
 import numpy as np
 
+from archlux.arrays import VecteurF
 from archlux.geom.polytope import Polytope
 
 __all__ = ["describe_origin", "traduire_duaux"]
@@ -95,7 +96,7 @@ def _sentence(description: str, price: float, *, objective: str, step_m: float) 
 
 
 def traduire_duaux(
-    duaux: np.ndarray,
+    duaux: VecteurF,
     poly: Polytope,
     *,
     seuil: float = 1e-6,

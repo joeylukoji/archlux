@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
-    import numpy as np
+    from archlux.arrays import VecteurF
 
 __all__ = ["Iteration", "StopStatus", "Trace"]
 
@@ -36,7 +36,7 @@ class Iteration:
     away_step: bool
     lp_ms: float
     n_cuts: int
-    x: np.ndarray
+    x: VecteurF
 
     # --- French names, deprecated until 1.0.0 (ADR 0001) ---------------------------
 
@@ -103,7 +103,7 @@ class Trace:
         return sum(i.lp_ms for i in self.iterations)
 
     @property
-    def iterates(self) -> tuple[np.ndarray, ...]:
+    def iterates(self) -> tuple[VecteurF, ...]:
         """Visited vectors, in order. All belong to the polytope."""
         return tuple(step.x for step in self.iterations)
 
@@ -120,7 +120,7 @@ class Trace:
     # --- French names, deprecated until 1.0.0 (ADR 0001) ---------------------------
 
     @property
-    def iteres(self) -> tuple[np.ndarray, ...]:
+    def iteres(self) -> tuple[VecteurF, ...]:
         """Deprecated alias of :attr:`iterates`."""
         _deprecated("iteres", "iterates")
         return self.iterates

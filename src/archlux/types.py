@@ -28,6 +28,7 @@ __all__ = [
     "BornePerformance",
     "Certificat",
     "Contexte",
+    "Indicateur",
     "Manifeste",
     "ModeleTrace",
     "Mur",
@@ -42,6 +43,11 @@ __all__ = [
 ]
 
 Point = tuple[float, float]
+
+Indicateur = Literal["sDA", "ASE", "UDI", "vue"]
+"""Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
+``BornePerformance``, the ``Substitut`` protocol, the surrogates and the calibration all
+share it."""
 
 
 # ======================================================================================
@@ -423,7 +429,7 @@ class BornePerformance:
     plan does not hold for a plan the optimizer selected (:data:`Regime`).
     """
 
-    indicateur: Literal["sDA", "ASE", "UDI", "vue"]
+    indicateur: Indicateur
     valeur: float
     borne_inf: float
     borne_sup: float

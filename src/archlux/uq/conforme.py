@@ -11,12 +11,11 @@ from __future__ import annotations
 import hashlib
 import math
 from dataclasses import dataclass, field
-from typing import Literal
 
 import numpy as np
 
 from archlux.erreurs import InvariantViole
-from archlux.types import REGIMES, BornePerformance, Regime
+from archlux.types import REGIMES, BornePerformance, Indicateur, Regime
 
 __all__ = [
     "CalibrateurConforme",
@@ -27,7 +26,6 @@ __all__ = [
     "quantile_conforme",
 ]
 
-_Indicateur = Literal["sDA", "ASE", "UDI", "vue"]
 _SIGMA_MIN = 1e-12
 
 
@@ -150,7 +148,7 @@ def quantile_conforme(scores: np.ndarray, alpha: float) -> float:
     return float(ordre[rang - 1])
 
 
-def _indicateur(nom: str) -> _Indicateur:
+def _indicateur(nom: str) -> Indicateur:
     if nom not in ("sDA", "ASE", "UDI", "vue"):
         raise InvariantViole((f"indicateur inconnu : {nom!r}",))
     return nom  # type: ignore[return-value]
@@ -212,7 +210,7 @@ def _intervalle(
     prediction: float,
     marge: float,
     *,
-    indicateur: _Indicateur,
+    indicateur: Indicateur,
     couverture: float,
     n_calibration: int,
     regime: str,
@@ -285,7 +283,7 @@ class CalibrateurConforme:
     ``alpha`` se sérialisent avec les poids.
     """
 
-    indicateur: _Indicateur = "sDA"
+    indicateur: Indicateur = "sDA"
     q: float = 0.0
     n: int = 0
     alpha: float = 0.10

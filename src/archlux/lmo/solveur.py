@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 from ortools.linear_solver import pywraplp
 
+from archlux.arrays import VecteurF
 from archlux.erreurs import InvariantViole
 
 if TYPE_CHECKING:
@@ -65,12 +66,12 @@ class SolutionLP:
         Preuve d'infaisabilité, renseignée seulement si ``statut == "infaisable"``.
     """
 
-    x: np.ndarray
+    x: VecteurF
     valeur: float
     statut: Literal["optimal", "infaisable", "non_borne", "limite"]
-    duaux: np.ndarray | None = None
-    certificat_farkas: np.ndarray | None = None
-    certificat_farkas_eq: np.ndarray | None = None
+    duaux: VecteurF | None = None
+    certificat_farkas: VecteurF | None = None
+    certificat_farkas_eq: VecteurF | None = None
     """Farkas multipliers of the rows of ``A_eq`` (free sign, same convention as
     ``certificat_farkas``), set only when ``statut == "infaisable"``."""
     iterations: int = 0
@@ -181,7 +182,7 @@ def _est_faisable(poly: Polytope, coupes: list[Coupe] | None) -> bool:
     return _statut(solveur.Solve()) == "optimal"
 
 
-def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.ndarray, np.ndarray]:
+def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[VecteurF, VecteurF]:
     """Extraire une preuve d'infaisabilité par le **problème auxiliaire**.
 
     On relâche chaque inégalité ``a_i x ≤ b_i`` par une variable d'écart ``s_i ≥ 0``,
@@ -264,9 +265,9 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.n
 
 def resoudre(
     poly: Polytope,
-    c: np.ndarray,
+    c: VecteurF,
     *,
-    depart: np.ndarray | None = None,
+    depart: VecteurF | None = None,
     coupes: list[Coupe] | None = None,
     duaux: bool = False,
 ) -> SolutionLP:

@@ -8,6 +8,25 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3, slice F: shared types (3.8)
+
+#### Added
+- `archlux.types.Indicateur`: the `Literal["sDA", "ASE", "UDI", "vue"]` written in seven
+  places, now defined once. `Substitut.indicateur` returns it instead of a bare `str`.
+- `archlux.arrays.VecteurF` (`NDArray[np.float64]`), a leaf module, used in place of
+  `np.ndarray` in the numerical core: `geom.polytope`, `lmo`, `solve`, `light.protocole`,
+  `api`, `certify.dual` and `certify.farkas`. **Limit**: mypy 1.19 with numpy 2.4 does not
+  compare dtypes, so it documents the intent and is enforced only by dtype-aware checkers.
+  The other ~120 `np.ndarray` of `src/` are left as they are: converting them buys nothing
+  until a checker enforces the alias.
+
+#### Fixed
+- Type checkers now see `archlux.light`, `archlux.feasibility` and `archlux.legalize`
+  (`TYPE_CHECKING` imports in `archlux/__init__.py`); `archlux.bench` stays dynamic, because
+  no module may import it (ARCHITECTURE.md §5). Since the lazy `legalize` (slice E),
+  `archlux.__getattr__` was typed `object`, which made `ax.feasibility.is_feasible` a mypy
+  error: this restores it.
+
 ### Remediation — PLAN.md phase 3, slice E2: readable dual diagnostic (3.12)
 
 #### Changed — the DIAGNOSTIC section of the certificate (`Certificat.duaux`)

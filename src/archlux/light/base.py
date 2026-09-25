@@ -12,7 +12,6 @@ import math
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
 
 import numpy as np
 
@@ -21,7 +20,7 @@ from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.jetons import vecteur_vers_jetons
 from archlux.light.protocole import Baies
 from archlux.orient.circulaire import encode
-from archlux.types import Orientation
+from archlux.types import Indicateur, Orientation
 
 __all__ = ["SubstitutDense", "descripteurs"]
 
@@ -46,7 +45,7 @@ SIGMA_PLANCHER = 0.02
 
 
 @lru_cache(maxsize=len(("sDA", "ASE", "UDI", "vue")))
-def _analytique(indicateur: Literal["sDA", "ASE", "UDI", "vue"]) -> SubstitutAnalytique:
+def _analytique(indicateur: Indicateur) -> SubstitutAnalytique:
     """Instance analytique partagée : gelée, sans état, réutilisable sans copie.
 
     :meth:`SubstitutDense.gradient` évalue ``2 n`` fois par gradient ; reconstruire le
@@ -124,7 +123,7 @@ def _huber_derivee(residu: float, delta: float = 1.0) -> float:
 class SubstitutDense:
     """Réseau dense 3 couches, poids numpy. Entrée vectorielle uniquement."""
 
-    indicateur_vise: Literal["sDA", "ASE", "UDI", "vue"] = "sDA"
+    indicateur_vise: Indicateur = "sDA"
     largeur: int = 32
     W1: np.ndarray | None = None
     b1: np.ndarray | None = None
@@ -352,7 +351,7 @@ class SubstitutDense:
     @classmethod
     def charger(cls, chemin: Path) -> SubstitutDense:
         """Relire un ``npz`` produit par :meth:`sauver`."""
-        indicateurs: tuple[Literal["sDA", "ASE", "UDI", "vue"], ...] = (
+        indicateurs: tuple[Indicateur, ...] = (
             "sDA",
             "ASE",
             "UDI",

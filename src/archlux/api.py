@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from archlux.arrays import VecteurF
 from archlux.certify.borne import bound_selected_plan, check_calibration
 from archlux.certify.dual import traduire_duaux
 from archlux.certify.farkas import verify_infeasibility
@@ -57,7 +58,7 @@ __all__ = ["gradient_distance", "legalize"]
 _DUAL_SEUIL = 1e-9
 
 
-def gradient_distance(x_propose: np.ndarray) -> np.ndarray:
+def gradient_distance(x_propose: VecteurF) -> VecteurF:
     r"""Vecteur de coûts de l'épigraphe L1 : zéros sur :math:`x`, uns sur :math:`e`.
 
     .. math::
@@ -111,7 +112,7 @@ def _origines_actives(sol: SolutionLP, poly: Polytope) -> tuple[str, ...]:
 
 
 def _duaux_traduits(
-    duaux: np.ndarray | None, poly: Polytope, *, objective: str = "displacement"
+    duaux: VecteurF | None, poly: Polytope, *, objective: str = "displacement"
 ) -> tuple[tuple[str, float], ...]:
     """Apparier les duaux des lignes de ``A`` avec ``poly.origines``.
 

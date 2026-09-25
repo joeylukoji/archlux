@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy import sparse
 
+from archlux.arrays import VecteurF
 from archlux.erreurs import Infaisable, InvariantViole
 from archlux.geom.graphe import construire_graphe, reduction_transitive
 
@@ -73,9 +74,9 @@ class Polytope:
     """
 
     A: sparse.csr_matrix
-    b: np.ndarray
+    b: VecteurF
     A_eq: sparse.csr_matrix
-    b_eq: np.ndarray
+    b_eq: VecteurF
     bornes: tuple[tuple[float, float], ...]
     index: dict[str, int]
     origines: tuple[str, ...]
@@ -89,7 +90,7 @@ class Polytope:
         labels = self.origines_eq[:n_rows]
         return labels + tuple(f"equality {k}" for k in range(len(labels), n_rows))
 
-    def contient(self, x: np.ndarray, tol: float = 1e-9) -> bool:
+    def contient(self, x: VecteurF, tol: float = 1e-9) -> bool:
         """Dire si le point ``x`` satisfait toutes les contraintes, à ``tol`` près.
 
         Vérification **naïve et directe**, indépendante de tout solveur : c'est elle qui
@@ -127,7 +128,7 @@ class Polytope:
         return bool(np.all(x >= bas - tol) and np.all(x <= haut + tol))
 
 
-def figer_contacts(poly: Polytope, x: np.ndarray, *, tol: float = 1e-7) -> Polytope:
+def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytope:
     """Transformer les contacts saturés en égalités, y compris les bords du contour.
 
     Le polytope d'ordre est un **relaxé** : ``x_a + w_a ≤ x_b`` autorise un jour,
@@ -382,7 +383,7 @@ def _decision_index(room_ids: tuple[str, ...]) -> dict[str, int]:
     }
 
 
-def decision_vector(plan: Plan) -> np.ndarray:
+def decision_vector(plan: Plan) -> VecteurF:
     """Decision vector of ``plan``, without building a polytope (AUDIT.md M12).
 
     Rooms sorted by identifier, then ``x, y, w, h``: the column order of
@@ -410,7 +411,7 @@ def decision_vector(plan: Plan) -> np.ndarray:
     return vectoriser(plan, _decision_index(tuple(sorted(room.id for room in plan.pieces))))
 
 
-def vectoriser(plan: Plan, index: dict[str, int]) -> np.ndarray:
+def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
     """Projeter un plan sur le vecteur de décision ordonné par ``index``.
 
     Parameters
@@ -446,7 +447,7 @@ def vectoriser(plan: Plan, index: dict[str, int]) -> np.ndarray:
     return point
 
 
-def devectoriser(x: np.ndarray, gabarit: Plan, index: dict[str, int]) -> Plan:
+def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
     """Reconstruire un plan depuis un vecteur solution.
 
     ``gabarit`` fournit tout ce que le vecteur ne porte pas : murs, ouvertures, contour.
@@ -497,7 +498,7 @@ def devectoriser(x: np.ndarray, gabarit: Plan, index: dict[str, int]) -> Plan:
     return replace(gabarit, pieces=pieces, certificat=None)
 
 
-def etendre_ecarts_l1(poly: Polytope, x_ref: np.ndarray) -> Polytope:
+def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:
     r"""Épigraphe de :math:`\\|x - \\hat{x}\\|_1` : variables d'écart et deux inégalités.
 
     Formule

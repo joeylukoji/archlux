@@ -17,9 +17,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-if TYPE_CHECKING:
-    import numpy as np
+from archlux.types import Indicateur
 
+if TYPE_CHECKING:
+    from archlux.arrays import VecteurF
     from archlux.types import Mur, Orientation, Ouverture
 
 __all__ = ["Baies", "Substitut", "SubstitutParPiece", "WrapsSurrogate", "point_prediction"]
@@ -92,8 +93,8 @@ class SubstitutParPiece(Protocol):
     """
 
     def evaluer_pieces(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
-    ) -> np.ndarray:
+        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
+    ) -> VecteurF:
         """Rendre une valeur par pièce, dans l'ordre de ``Polytope.index``.
 
         Returns
@@ -124,12 +125,12 @@ class Substitut(Protocol):
     """
 
     @property
-    def indicateur(self) -> str:
+    def indicateur(self) -> Indicateur:
         """Nom de l'indicateur modélisé (``"sDA"``, ``"ASE"``, …)."""
         ...
 
     def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
     ) -> float:
         """Estimer l'indicateur pour le plan encodé par ``x``.
 
@@ -159,8 +160,8 @@ class Substitut(Protocol):
         ...
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
-    ) -> np.ndarray:
+        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
+    ) -> VecteurF:
         """Rendre ∂indicateur/∂x, dans la base du polytope.
 
         C'est **tout** ce que l'apprentissage fournit au système : une direction. Le
@@ -174,7 +175,7 @@ class Substitut(Protocol):
         ...
 
     def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
     ) -> float:
         """Écart-type prédictif, en unité de l'indicateur.
 
@@ -199,7 +200,7 @@ class WrapsSurrogate(Protocol):
 
 
 def point_prediction(
-    objective: Substitut, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    objective: Substitut, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
 ) -> tuple[float, float]:
     """Point prediction ``mu`` and uncertainty ``sigma`` behind an objective.
 

@@ -19,7 +19,10 @@ RACINE = Path(__file__).resolve().parents[1] / "src" / "archlux"
 # Ce que chaque paquet a le droit d'importer, à l'intérieur d'archlux.
 # `solve` dépend de `light.protocole` SEULEMENT, jamais d'une implémentation.
 AUTORISE: dict[str, frozenset[str]] = {
-    "__init__": frozenset({"types", "erreurs", "api", "io"}),
+    # `feasibility`, `light`: imported under TYPE_CHECKING only, so that type checkers see
+    # the lazy packages (PLAN.md 3.8). `test_import_cost` proves that `import archlux`
+    # loads none of them. `bench` cannot be listed: nobody imports it.
+    "__init__": frozenset({"types", "erreurs", "api", "io", "feasibility", "light"}),
     # `types` peut joindre `erreurs` : les deux sont des racines du graphe, `erreurs` ne
     # dépend de rien et n'importe surtout pas `types`. L'arête ne crée aucun cycle et
     # évite que chaque type doive lever `Exception` nue faute d'exception typée sous la
@@ -30,6 +33,7 @@ AUTORISE: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset(),
     "seeds": frozenset(),
+    "arrays": frozenset(),
     # Door validation of the public arguments (PLAN.md 3.1): a leaf over `types`.
     "validation": frozenset({"types", "erreurs"}),
     "geom": frozenset({"types", "erreurs"}),
@@ -88,6 +92,7 @@ LEAVES: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset({"__future__", "typing"}),
     "seeds": frozenset({"__future__", "hashlib"}),
+    "arrays": frozenset({"__future__", "typing", "numpy"}),
 }
 """Modules importable by every layer, with the only imports they may make themselves."""
 

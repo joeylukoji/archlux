@@ -13,7 +13,7 @@ from __future__ import annotations
 import sys
 import warnings
 from dataclasses import dataclass
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar
 
 import numpy as np
 
@@ -22,7 +22,7 @@ from archlux.light.analytique import SubstitutAnalytique, facteur_secteur
 from archlux.light.jetons import CHAMPS_PAR_PIECE
 from archlux.light.protocole import Baies
 from archlux.orient.circulaire import encoder
-from archlux.types import Orientation
+from archlux.types import Indicateur, Orientation
 
 __all__ = ["SplitFluxOracle", "facteur_lumiere_jour"]
 
@@ -149,7 +149,7 @@ class SplitFluxOracle:
     l'analytique rend déjà l'opposé ; le split-flux est nié une seule fois.
     """
 
-    indicateur_vise: Literal["sDA", "ASE", "UDI", "vue"] = "sDA"
+    indicateur_vise: Indicateur = "sDA"
     sigma_nominal: float = 0.04
     wwr: float = _WWR_DEFAUT
     ECHELLE_DF: ClassVar[float] = 100.0

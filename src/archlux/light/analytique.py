@@ -17,13 +17,13 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import ClassVar, Literal
+from typing import ClassVar
 
 import numpy as np
 
 from archlux.light.protocole import Baies
 from archlux.orient.circulaire import encoder
-from archlux.types import Orientation
+from archlux.types import Indicateur, Orientation
 
 __all__ = ["FACTEURS_SECTEUR", "SubstitutAnalytique", "facteur_secteur"]
 
@@ -94,7 +94,7 @@ class SubstitutAnalytique:
         Écart-type constant. Ce substitut ne modélise pas son erreur.
     """
 
-    indicateur_vise: Literal["sDA", "ASE", "UDI", "vue"] = "sDA"
+    indicateur_vise: Indicateur = "sDA"
     sigma_nominal: float = 0.08
 
     FACTEUR_PROFONDEUR: ClassVar[float] = 2.5

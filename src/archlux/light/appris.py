@@ -30,7 +30,7 @@ import hashlib
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 from archlux.erreurs import InvariantViole
 from archlux.light.base import SubstitutDense
@@ -39,7 +39,7 @@ from archlux.light.protocole import Baies
 if TYPE_CHECKING:
     import numpy as np
 
-    from archlux.types import Orientation
+    from archlux.types import Indicateur, Orientation
 
 __all__ = ["MAX_PARAMETRES", "SubstitutAppris"]
 
@@ -73,7 +73,7 @@ class SubstitutAppris:
     chemin_poids: Path
     empreinte_poids: str
     gele: bool = False
-    indicateur_vise: Literal["sDA", "ASE", "UDI", "vue"] = "sDA"
+    indicateur_vise: Indicateur = "sDA"
 
     @property
     def indicateur(self) -> str:

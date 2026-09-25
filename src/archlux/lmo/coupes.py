@@ -60,6 +60,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy import sparse
 
+from archlux.arrays import VecteurF
 from archlux.erreurs import InvariantViole
 from archlux.lmo.solveur import resoudre
 from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2, SNAP_M
@@ -255,7 +256,7 @@ def coupe_surface(w0: float, h0: float, a_min: float, *, piece: str = "") -> Cou
 
 
 def surfaces_violees(
-    x: np.ndarray | Sequence[float],
+    x: VecteurF | Sequence[float],
     poly: Polytope,
     ctx: Contexte,
     *,
@@ -287,7 +288,7 @@ def surfaces_violees(
 
 
 def _short_of_area(
-    x: np.ndarray | Sequence[float],
+    x: VecteurF | Sequence[float],
     poly: Polytope,
     need: Mapping[str, float],
     pieces: tuple[Piece, ...],
@@ -339,7 +340,7 @@ def _cible_sur_hyperbole(
 
 def _resserrer_bornes(
     poly: Polytope,
-    x: np.ndarray,
+    x: VecteurF,
     need: Mapping[str, float],
     pieces: tuple[Piece, ...],
     *,
@@ -382,7 +383,7 @@ def _resserrer_bornes(
 
 
 def _identifiants_a_couper(
-    x: np.ndarray,
+    x: VecteurF,
     poly: Polytope,
     need: Mapping[str, float],
     pieces: tuple[Piece, ...],
@@ -403,7 +404,7 @@ def _identifiants_a_couper(
 
 def _empiler_tangentes(
     restantes: list[str],
-    x: np.ndarray,
+    x: VecteurF,
     poly: Polytope,
     need: Mapping[str, float],
     coupes: list[Coupe],
@@ -423,11 +424,11 @@ def _empiler_tangentes(
 
 def resoudre_avec_surfaces(
     poly: Polytope,
-    c: np.ndarray,
+    c: VecteurF,
     ctx: Contexte,
     pieces: tuple[Piece, ...],
     *,
-    depart: np.ndarray | None = None,
+    depart: VecteurF | None = None,
     duaux: bool = False,
     minima: Mapping[str, float] | None = None,
 ) -> SolutionLP:
@@ -501,10 +502,10 @@ def _meets_areas(
 
 def _solve_with_area_cuts(
     poly: Polytope,
-    c: np.ndarray,
+    c: VecteurF,
     need: Mapping[str, float],
     pieces: tuple[Piece, ...],
-    depart: np.ndarray | None,
+    depart: VecteurF | None,
     duaux: bool,
     margin: float,
 ) -> SolutionLP:
@@ -552,7 +553,7 @@ reference gain, at least 0.95 of it in 96 % of scenarios, for +4 ms median; the 
 
 def inner_area_constraints(
     poly: Polytope,
-    x: np.ndarray,
+    x: VecteurF,
     ctx: Contexte,
     pieces: tuple[Piece, ...],
     *,
