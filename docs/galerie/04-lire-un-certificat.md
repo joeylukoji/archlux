@@ -23,23 +23,23 @@ ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     outline=outline,
-    regulation=ax.Regulation(min_areas=(), largeur_min=1.0),
+    regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
 q = ax.legalize(plan, ctx)
 borne = PerformanceBound(
-    indicateur="sDA",
-    valeur=56.2,
-    borne_inf=51.4,
+    indicator="sDA",
+    value=56.2,
+    lower=51.4,
     upper=61.0,
-    couverture=0.90,
+    coverage=0.90,
     n_calibration=1284,
     regime="exchangeable",
 )
 certificate = ax.Certificate(
     geometry=q.certificate.geometry,
     performance=borne,
-    duaux=q.certificate.duaux,
-    manifeste=Manifest(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),
+    duals=q.certificate.duals,
+    manifest=Manifest(version="0.4.0", timestamp="2026-09-09T00:00:00Z", seed=17),
 )
 print(certificate.rapport())
 ```

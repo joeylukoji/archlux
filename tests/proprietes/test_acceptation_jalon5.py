@@ -52,7 +52,7 @@ def test_couverture_empirique() -> None:
     ok = []
     for pred, verite, sigma in zip(p_test, v_test, s_test, strict=True):
         borne = calibrateur.borne(float(pred), float(sigma), ">=", regime="exchangeable")
-        ok.append(borne.borne_inf <= verite <= borne.upper)
+        ok.append(borne.lower <= verite <= borne.upper)
     couv = float(np.mean(ok))
     assert 0.86 <= couv <= 0.94, f"couverture test = {couv:.3f}"
 
@@ -77,7 +77,7 @@ def test_calibration_tient_par_orientation() -> None:
         ok = []
         for i in idx:
             borne = calibrateur.borne(float(mu[i]), float(sigma[i]), ">=", regime="exchangeable")
-            ok.append(borne.borne_inf <= y[i] <= borne.upper)
+            ok.append(borne.lower <= y[i] <= borne.upper)
         couv = float(np.mean(ok))
         assert 0.84 <= couv <= 0.96, f"secteur {secteur} : {couv:.3f}"
 

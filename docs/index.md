@@ -30,7 +30,7 @@ ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     outline=plan.outline,
-    regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), min_width=1.0),
 )
 q = ax.legalize(plan, ctx, pavage=True)  # pavage : les pièces couvrent tout le contour
 print(q.certificate.rapport())

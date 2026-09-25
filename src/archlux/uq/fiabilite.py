@@ -232,14 +232,14 @@ def measure_coverage(
     bounds = [
         calibrator.borne(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
     ]
-    inside = [b.borne_inf <= t <= b.upper for b, t in zip(bounds, y, strict=True)]
+    inside = [b.lower <= t <= b.upper for b, t in zip(bounds, y, strict=True)]
     from scipy.stats import beta  # lazy: scipy.stats costs 1.3 s at import
 
     k, n = int(np.sum(inside)), int(mu.size)
     return CoverageReport(
         n=n,
         coverage=k / n,
-        mean_width=float(np.mean([b.upper - b.borne_inf for b in bounds])),
+        mean_width=float(np.mean([b.upper - b.lower for b in bounds])),
         target_std=float(np.std(y, ddof=1)),
         coverage_low=float(beta.ppf(0.025, k, n - k + 1)) if k > 0 else 0.0,
         coverage_high=float(beta.ppf(0.975, k + 1, n - k)) if k < n else 1.0,

@@ -39,7 +39,7 @@ def make_context(*, degrees: float = 0.0, largeur_min: float = 1.0) -> Context:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=degrees),
         outline=SQUARE,
-        regulation=Regulation(min_areas=(), largeur_min=largeur_min),
+        regulation=Regulation(min_areas=(), min_width=largeur_min),
     )
 
 
@@ -145,7 +145,7 @@ def test_gap_without_tiling_says_to_use_tiling() -> None:
 def test_gap_is_repaired_with_tiling() -> None:
     fixed = legalize(gapped_plan(), make_context(), pavage=True)
     assert fixed.certificate is not None
-    assert fixed.certificate.geometry.valide
+    assert fixed.certificate.geometry.valid
 
 
 def test_public_exports_input_limits() -> None:
@@ -182,7 +182,7 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
     from archlux import GapNeedsTiling, GeometricProof, InvariantViolation
 
     silent = GeometricProof(
-        valide=False,
+        valid=False,
         overlap=False,
         gaps=False,
         areas_ok=True,
@@ -210,7 +210,7 @@ def test_the_type_warning_points_at_the_caller() -> None:
     with pytest.warns(UserWarning, match="sejuor") as record:
         legalize(
             make_plan(type="sejuor"),
-            replace(ctx, regulation=replace(ctx.regulation, largeur_min=1.0)),
+            replace(ctx, regulation=replace(ctx.regulation, min_width=1.0)),
         )
     assert record[0].filename == __file__
 
@@ -230,7 +230,7 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
             Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
     )
-    ctx = replace(ctx, regulation=Regulation(min_areas=(("sejour", 60.0),), largeur_min=1.0))
+    ctx = replace(ctx, regulation=Regulation(min_areas=(("sejour", 60.0),), min_width=1.0))
     verdict = is_feasible(plan, structure, ctx)
     assert not verdict
     assert verdict.certificat is not None

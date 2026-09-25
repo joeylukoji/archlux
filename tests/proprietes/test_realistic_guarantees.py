@@ -124,7 +124,7 @@ def test_the_checker_detects_each_kind_of_violation() -> None:
         structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=0.0),
         outline=outline,
-        regulation=Regulation(min_areas=(("bedroom", 5.0),), largeur_min=0.5),
+        regulation=Regulation(min_areas=(("bedroom", 5.0),), min_width=0.5),
     )
 
     def plan(*rooms: Room) -> Plan:

@@ -198,9 +198,9 @@ def test_the_proof_rejects_a_plan_moved_beyond_the_budget() -> None:
     proposed = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6))
     moved = _plan(_room("a", 0, 0, 7, 6), _room("b", 7, 0, 3, 6))
     ctx = _ctx()
-    assert verify_exactly(moved, ctx, reference=proposed, budget=2.0).valide
+    assert verify_exactly(moved, ctx, reference=proposed, budget=2.0).valid
     proof = verify_exactly(moved, ctx, reference=proposed, budget=0.5)
-    assert not proof.valide
+    assert not proof.valid
     assert any("budget" in violation for violation in proof.violations)
 
 

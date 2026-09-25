@@ -35,7 +35,7 @@ def test_l1_d_un_point_faisable_est_nulle() -> None:
     )
     q = archlux.legalize(plan, CONTEXTE_DEFAUT)
     assert q.certificate is not None
-    assert q.certificate.geometry.valide
+    assert q.certificate.geometry.valid
     assert q.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-5)
 
 
@@ -56,7 +56,7 @@ def test_un_chevauchement_est_corrige() -> None:
     )
     q = archlux.legalize(plan, CONTEXTE_DEFAUT)
     assert q.certificate is not None
-    assert q.certificate.geometry.valide
+    assert q.certificate.geometry.valid
     assert q.certificate.geometry.overlap is False
     gauche = next(p for p in q.rooms if p.id == "a")
     droite = next(p for p in q.rooms if p.id == "b")
@@ -69,7 +69,7 @@ def test_programme_trop_gros_leve_infaisable() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-        regulation=Regulation(min_areas=(), largeur_min=8.0),
+        regulation=Regulation(min_areas=(), min_width=8.0),
     )
     plan = Plan(
         rooms=(
@@ -98,7 +98,7 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-        regulation=Regulation(min_areas=(), largeur_min=4.0),
+        regulation=Regulation(min_areas=(), min_width=4.0),
     )
     plan = Plan(
         rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
@@ -118,7 +118,7 @@ def test_polytope_sans_piece_tolere_une_enveloppe_etroite() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-        regulation=Regulation(min_areas=(), largeur_min=4.0),
+        regulation=Regulation(min_areas=(), min_width=4.0),
     )
     vide = Plan(rooms=(), walls=(), openings=(), outline=ctx.outline)
     poly = construire_polytope(deduire_ordre(vide), ctx)
@@ -151,7 +151,7 @@ def test_objective_analytique_reste_valide() -> None:
     )
     q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique())
     assert q.certificate is not None
-    assert q.certificate.geometry.valide
+    assert q.certificate.geometry.valid
     assert q.certificate.performance is None
 
 
@@ -172,7 +172,7 @@ def test_legalize_trace_remonte_les_iteres() -> None:
     assert isinstance(q.trace, Trace)
     assert q.trace.iterates
     assert q.certificate is not None
-    assert q.certificate.geometry.valide
+    assert q.certificate.geometry.valid
 
 
 def test_budget_zero_reste_au_point_l1() -> None:
@@ -203,7 +203,7 @@ def test_une_surface_insuffisante_est_agrandie() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=CONTEXTE_DEFAUT.outline,
-        regulation=Regulation(min_areas=(("sdb", 20.0),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("sdb", 20.0),), min_width=1.0),
     )
     plan = Plan(
         rooms=(
@@ -218,7 +218,7 @@ def test_une_surface_insuffisante_est_agrandie() -> None:
     sdb = next(p for p in q.rooms if p.id == "sdb")
     assert sdb.aire >= 20.0 - 1e-6
     assert q.certificate is not None
-    assert q.certificate.geometry.valide
+    assert q.certificate.geometry.valid
 
 
 def test_etendre_l1_double_les_variables() -> None:

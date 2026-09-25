@@ -74,10 +74,10 @@ def _fused_area_violations(
             if (
                 a is not None
                 and b is not None
-                and not _fusion_holds(a, b, kind, ctx.regulation.largeur_min)
+                and not _fusion_holds(a, b, kind, ctx.regulation.min_width)
             ):
                 found.append(Violation("area", f"{piece.id}: {a.id} and {b.id} are apart"))
-        minimum = max(ctx.regulation.a_min(part.type) for part in parts)
+        minimum = max(ctx.regulation.min_area(part.type) for part in parts)
         area = sum(part.w * part.h for part in parts)
         if area < minimum - TOLERANCE:
             found.append(Violation("area", f"{piece.id}: area {area:.6f} < {minimum:.6f}"))
@@ -114,7 +114,7 @@ def violations(
     for room in rooms:
         if room.id in fused:
             continue
-        minimum = ctx.regulation.a_min(room.type)
+        minimum = ctx.regulation.min_area(room.type)
         if room.w * room.h < minimum - TOLERANCE:
             found.append(
                 Violation("area", f"{room.id}: area {room.w * room.h:.6f} < {minimum:.6f}")

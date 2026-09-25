@@ -31,7 +31,7 @@ class TestChevauchement:
         b = Room(id="sdb", type="sdb", x=1.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(a, b), CTX)
         assert preuve.overlap is True
-        assert preuve.valide is False
+        assert preuve.valid is False
         assert any("overlap cuisine|sdb" in v for v in preuve.violations)
 
     def test_deux_pieces_disjointes_ne_se_chevauchent_pas(self) -> None:
@@ -46,7 +46,7 @@ class TestJours:
         p = Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(p), CTX)
         assert preuve.gaps is True
-        assert preuve.valide is False
+        assert preuve.valid is False
 
 
 class TestSurfaces:
@@ -55,7 +55,7 @@ class TestSurfaces:
             structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
             outline=CTX.outline,
-            regulation=Regulation(min_areas=(("sdb", 5.0),), largeur_min=1.0),
+            regulation=Regulation(min_areas=(("sdb", 5.0),), min_width=1.0),
         )
         p = Room(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(p), ctx)
@@ -69,7 +69,7 @@ class TestStructure:
             structure=Structure(load_bearing_walls=(mur,)),
             orientation=Orientation(deg=0.0),
             outline=CTX.outline,
-            regulation=Regulation(min_areas=(), largeur_min=1.0),
+            regulation=Regulation(min_areas=(), min_width=1.0),
         )
         plan = Plan(
             rooms=(),

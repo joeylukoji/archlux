@@ -30,7 +30,7 @@ def _ctx(*walls: Wall, areas: tuple[tuple[str, float], ...] = ()) -> Context:
         structure=Structure(load_bearing_walls=walls),
         orientation=Orientation(deg=30.0),
         outline=_OUTLINE,
-        regulation=Regulation(min_areas=areas, largeur_min=1.0),
+        regulation=Regulation(min_areas=areas, min_width=1.0),
     )
 
 
@@ -135,7 +135,7 @@ def test_the_proof_rejects_a_room_crossing_a_load_bearing_wall() -> None:
     ctx = _ctx(_FULL)
     crossing = _plan(_room("a", 0, 0, 7, 6), _room("b", 7, 0, 3, 6), walls=(_FULL,))
     proof = verify_exactly(crossing, ctx)
-    assert not proof.structure_kept and not proof.valide
+    assert not proof.structure_kept and not proof.valid
     assert any("a" in v and "w" in v and "crosses" in v for v in proof.violations)
 
 
@@ -197,7 +197,7 @@ def test_the_audit_grid_keeps_its_load_bearing_wall_in_performance_mode() -> Non
         structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=20.0),
         outline=outline,
-        regulation=Regulation(min_areas=(), largeur_min=1.0),
+        regulation=Regulation(min_areas=(), min_width=1.0),
     )
     rooms = tuple(
         Room(id=f"c{i}{j}", type="chambre", x=3.0 * i, y=3.0 * j, w=3.0, h=3.0)

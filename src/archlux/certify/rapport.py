@@ -52,23 +52,23 @@ def _section_performance(borne: PerformanceBound | None) -> str:
         corps = "  NON EVALUABLE — pas de calibration, ou dérive (échangeabilité rompue)"
         bandeau = "[PREDICTION — non évaluable]"
     else:
-        pct = f"{borne.couverture * 100.0:.0f}"
+        pct = f"{borne.coverage * 100.0:.0f}"
         if borne.coverage_guaranteed:
             bandeau = f"[PREDICTION — couverture {pct} %]"
         else:
             # Batch 1.6: the optimizer chose this plan, the coverage is not guaranteed.
             bandeau = "[PREDICTION — plan selectionne, couverture NON garantie]"
-        if borne.indicateur == "ASE":
+        if borne.indicator == "ASE":
             ligne = (
-                f"  {borne.indicateur}   <= {_fmt(borne.upper)}   "
-                f"(predit {_fmt(borne.valeur)}, "
-                f"marge {_fmt(borne.upper - borne.valeur)})"
+                f"  {borne.indicator}   <= {_fmt(borne.upper)}   "
+                f"(predit {_fmt(borne.value)}, "
+                f"marge {_fmt(borne.upper - borne.value)})"
             )
         else:
             ligne = (
-                f"  {borne.indicateur}   >= {_fmt(borne.borne_inf)}   "
-                f"(predit {_fmt(borne.valeur)}, "
-                f"marge {_fmt(borne.valeur - borne.borne_inf)})"
+                f"  {borne.indicator}   >= {_fmt(borne.lower)}   "
+                f"(predit {_fmt(borne.value)}, "
+                f"marge {_fmt(borne.value - borne.lower)})"
             )
         corps = f"{ligne}\n  calibration : {borne.n_calibration} évaluations de l'oracle gelé"
         if not borne.coverage_guaranteed:
@@ -95,7 +95,7 @@ def _en_tete(manifeste: Manifest | None) -> str:
         return f"CERTIFICAT                              archlux {paquet}"
     return (
         f"CERTIFICAT                              archlux {manifeste.version}     "
-        f"graine {manifeste.graine}"
+        f"graine {manifeste.seed}"
     )
 
 
@@ -110,13 +110,13 @@ def rendre(certificat: Certificate) -> str:
         section ``NON EVALUABLE`` de périmètre est **toujours** présente.
     """
     parties = [
-        _en_tete(certificat.manifeste),
+        _en_tete(certificat.manifest),
         "",
         _section_geometrie(certificat.geometry),
         "",
         _section_performance(certificat.performance),
         "",
-        _section_diagnostic(certificat.duaux),
+        _section_diagnostic(certificat.duals),
         "",
         "NON EVALUABLE",
         f"  {_HORS_PERIMETRE}",

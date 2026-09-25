@@ -461,7 +461,7 @@ def minimum_area_shares(
         members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
         if not members:
             continue
-        minimum = max(referentiel.a_min(member.type) for member in members)
+        minimum = max(referentiel.min_area(member.type) for member in members)
         total = sum(member.w * member.h for member in members)
         if total <= 0.0:
             raise UnsupportedInput(f"fused room {piece.id} has no area in the proposed plan")

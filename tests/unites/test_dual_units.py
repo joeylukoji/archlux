@@ -115,9 +115,9 @@ def test_a_real_certificate_lists_only_business_constraints() -> None:
         structure=Structure(load_bearing_walls=(wall,)),
         orientation=Orientation(deg=0.0),
         outline=outline,
-        regulation=Regulation(min_areas=(), largeur_min=1.5),
+        regulation=Regulation(min_areas=(), min_width=1.5),
     )
-    duals = legalize(plan, ctx, pavage=True).certificate.duaux  # type: ignore[union-attr]
+    duals = legalize(plan, ctx, pavage=True).certificate.duals  # type: ignore[union-attr]
     assert duals
     assert not any("ecart" in phrase for phrase, _ in duals)
     assert any("load-bearing wall p1" in phrase for phrase, _ in duals)
@@ -154,7 +154,7 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=outline,
-        regulation=Regulation(min_areas=(), largeur_min=1.0),
+        regulation=Regulation(min_areas=(), min_width=1.0),
     )
     surrogate = SubstitutAnalytique()
     legalize(plan, ctx, objective=surrogate)

@@ -87,7 +87,7 @@ def test_the_same_plan_without_budget_is_repaired() -> None:
 def test_an_infeasible_order_is_not_blamed_on_a_restriction() -> None:
     """Two rooms side by side, each at least 7 m wide, in 12 m: the order is the cause."""
     plan, ctx = _overlapping_pair()
-    ctx = replace(ctx, regulation=Regulation(min_areas=(), largeur_min=7.0))
+    ctx = replace(ctx, regulation=Regulation(min_areas=(), min_width=7.0))
     with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=1.0)
     assert capture.value.scope == ("budget 1 m",)
@@ -106,7 +106,7 @@ def test_a_malformed_room_establishes_no_predicate(field: str, value: float) -> 
     plan, ctx = _overlapping_pair()
     bad = replace(plan.rooms[1], **{field: value})
     proof = verify_exactly(replace(plan, rooms=(plan.rooms[0], bad)), ctx)
-    assert not proof.valide
+    assert not proof.valid
     assert proof.overlap and proof.gaps  # "no overlap / no gap" not established
     assert not proof.areas_ok and not proof.structure_kept
     assert proof.violations == (
@@ -136,7 +136,7 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        regulation=Regulation(min_areas=(("kitchen", 10.0),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("kitchen", 10.0),), min_width=1.0),
     )
     room = decomposer(
         Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", type_piece="kitchen"
@@ -168,7 +168,7 @@ def test_legalize_leaves_a_valid_l_beside_a_partial_wall_in_place() -> None:
     )
     assert not checkers.violations(plan, ctx, fusions=(room,)), "the input must be valid"
     result = archlux.legalize(plan, ctx, fusions=(room,))
-    assert result.certificate is not None and result.certificate.geometry.valide
+    assert result.certificate is not None and result.certificate.geometry.valid
     assert result.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-6)
     assert not checkers.violations(result, ctx, fusions=(room,))
 
@@ -190,7 +190,7 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        regulation=Regulation(min_areas=(("chambre", 76.93), ("sejour", 1.0)), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("chambre", 76.93), ("sejour", 1.0)), min_width=1.0),
     )
     rest = (
         Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
@@ -242,7 +242,7 @@ def test_a_nan_in_the_reference_is_an_unbounded_displacement() -> None:
     reference = replace(valid, rooms=(replace(valid.rooms[0], x=math.nan), valid.rooms[1]))
     proof = verify_exactly(valid, ctx, reference=reference, budget=0.01)
     assert proof.max_displacement == math.inf
-    assert not proof.valide
+    assert not proof.valid
 
 
 def test_the_scope_names_only_what_the_domain_contains() -> None:

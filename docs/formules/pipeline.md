@@ -56,7 +56,7 @@ says so. The calibration is checked before any solving. Sans calibration,
 | Faire | Ne pas faire |
 |---|---|
 | `legalize(plan, ctx)` sur un pavage presque valide | Attendre 100 % de succès sur `plans_quelconques` × enveloppe petite : le programme peut ne pas tenir → `Infeasible` |
-| Lire `q.certificat.geometry.valide` | Agréger preuve et prédiction en un score |
+| Lire `q.certificat.geometry.valid` | Agréger preuve et prédiction en un score |
 | Importer `light.protocole.Substitut` seulement | Importer `bench` depuis `api` (interdit par `tests/test_dependances.py`) |
 
 Budget `ARCHITECTURE.md` §9 : \(< 20\,\mathrm{ms}\) pour 15 pièces.

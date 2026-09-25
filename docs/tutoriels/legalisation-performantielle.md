@@ -33,7 +33,7 @@ ctx = ax.Context(
 )
 
 q = ax.legalize(plan, ctx, objective=SubstitutAnalytique())
-assert q.certificate.geometry.valide
+assert q.certificate.geometry.valid
 assert q.certificate.performance is None  # borne via certify.borne, pas via api
 ```
 

@@ -126,7 +126,7 @@ def _add_cuts(
     for room_id in surfaces_violees(x, domain, ctx, pieces=rooms):
         width = float(x[domain.index[f"{room_id}.w"]])
         height = float(x[domain.index[f"{room_id}.h"]])
-        a_min = ctx.regulation.a_min(next(r.type for r in rooms if r.id == room_id))
+        a_min = ctx.regulation.min_area(next(r.type for r in rooms if r.id == room_id))
         if width > 0.0 and height > 0.0 and a_min > 0.0:
             cuts.append(coupe_surface(width, height, a_min, piece=room_id))
 

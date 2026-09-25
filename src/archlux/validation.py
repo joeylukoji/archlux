@@ -98,7 +98,7 @@ def _walls(plan: Plan) -> None:
 
 def _context(ctx: Context) -> None:
     _finite("orientation.deg", ctx.orientation.deg)
-    _non_negative("regulation.largeur_min", ctx.regulation.largeur_min)
+    _non_negative("regulation.largeur_min", ctx.regulation.min_width)
     for type_piece, threshold in ctx.regulation.min_areas:
         _non_negative(f"regulation.min_areas[{type_piece}]", threshold)
     for wall in ctx.structure.load_bearing_walls:
@@ -134,7 +134,7 @@ def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
     """Warn about room types the regulation has no threshold for.
 
     A typo such as ``"sejuor"`` silently removes the minimum-area requirement of the room
-    (``Regulation.a_min`` gives ``0.0`` for an unknown type). Only when the regulation
+    (``Regulation.min_area`` gives ``0.0`` for an unknown type). Only when the regulation
     lists thresholds: an empty one means "no regulation", not a typo.
     """
     known = {type_piece for type_piece, _ in ctx.regulation.min_areas}

@@ -24,7 +24,7 @@ def _ctx(contour: tuple[tuple[float, float], ...] = _RECT) -> Context:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=contour,
-        regulation=Regulation(min_areas=(), largeur_min=0.0),
+        regulation=Regulation(min_areas=(), min_width=0.0),
     )
 
 
@@ -163,7 +163,7 @@ def test_une_piece_manquante_est_absorbee_par_sa_voisine() -> None:
 
     corrige = ax.legalize(plan, _ctx(), pavage=True)
     assert corrige.certificate is not None
-    assert corrige.certificate.geometry.valide
+    assert corrige.certificate.geometry.valid
     assert len(corrige.rooms) == 3
 
 
@@ -256,14 +256,14 @@ def test_legalize_avec_pavage_ferme_un_jour() -> None:
     """
     abime = _pavage_2x2(largeur_sw=4.5)
     ctx = _ctx()
-    assert not verify_exactly(abime, ctx).valide
+    assert not verify_exactly(abime, ctx).valid
 
     with pytest.raises(ax.GapNeedsTiling, match="pavage=True"):
         ax.legalize(abime, ctx)
 
     corrige = ax.legalize(abime, ctx, pavage=True)
     assert corrige.certificate is not None
-    assert corrige.certificate.geometry.valide
+    assert corrige.certificate.geometry.valid
     assert not corrige.certificate.geometry.gaps
 
 
@@ -297,7 +297,7 @@ def test_pavage_est_invariant_par_translation_des_lignes() -> None:
     b = deduire_trame(decale, ctx)
     assert [inc[1:] for inc in a.incidences] == [inc[1:] for inc in b.incidences]
     assert a.lignes_x != b.lignes_x
-    assert verify_exactly(decale, ctx).valide
+    assert verify_exactly(decale, ctx).valid
 
 
 def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:
@@ -307,7 +307,7 @@ def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:
     avec = ax.legalize(_pavage_2x2(), ctx, pavage=True)
     assert sans.certificate is not None
     assert avec.certificate is not None
-    libelles = {libelle for libelle, _ in avec.certificate.duaux}
+    libelles = {libelle for libelle, _ in avec.certificate.duals}
     assert not any(nom.startswith(("trame ", "contour ")) for nom in libelles)
 
 

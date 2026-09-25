@@ -113,7 +113,7 @@ def test_referentiel_par_defaut_neutralise_la_largeur_minimale(tmp_path: Path) -
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
     appart = next(iter(charger_msd(csv)))
-    assert appart.contexte.regulation.largeur_min == 0.0
+    assert appart.contexte.regulation.min_width == 0.0
     assert appart.contexte.regulation.min_areas == ()
 
 
@@ -127,11 +127,11 @@ def test_legalize_est_idempotent_sur_un_plan_reel_valide(tmp_path: Path) -> None
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
     appart = next(iter(charger_msd(csv)))
-    assert verify_exactly(appart.plan, appart.contexte).valide
+    assert verify_exactly(appart.plan, appart.contexte).valid
 
     corrige = ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)
     preuve = corrige.certificate.geometry
-    assert preuve.valide
+    assert preuve.valid
     assert preuve.max_displacement == pytest.approx(0.0, abs=1e-9)
 
 
@@ -144,7 +144,7 @@ def test_largeur_minimale_heritee_deforme_un_plan_reel(tmp_path: Path) -> None:
     """
     csv = tmp_path / "msd.csv"
     _ecrire_csv(csv, _appartement_deux_pieces())
-    etroit = Regulation(min_areas=(), largeur_min=6.0)  # plus large que les pieces
+    etroit = Regulation(min_areas=(), min_width=6.0)  # plus large que les pieces
     appart = next(iter(charger_msd(csv, referentiel=etroit)))
     with pytest.raises(ax.ArchluxError):
         ax.legalize(appart.plan, appart.contexte, fusions=appart.fusions)

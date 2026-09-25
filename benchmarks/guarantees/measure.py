@@ -225,7 +225,7 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
     found = checkers.violations(result, scenario.context)
     if mode.budget is not None:
         found += checkers.budget_violations(result, given, mode.budget)
-    certified = bool(result.certificate and result.certificate.geometry.valide)
+    certified = bool(result.certificate and result.certificate.geometry.valid)
     outcome: Outcome = (
         "ok" if not found else "false_certificate" if certified else "invalid_but_flagged"
     )

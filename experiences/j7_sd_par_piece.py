@@ -55,9 +55,9 @@ def paires(lot: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         # pour retrouver la granularite de la simulation.
         somme: dict[int, float] = defaultdict(float)
         surface: dict[int, float] = defaultdict(float)
-        for piece, valeur in zip(appart.plan.pieces, parts, strict=True):
+        for piece, value in zip(appart.plan.pieces, parts, strict=True):
             rang = int(piece.id.split("__")[0][1:])
-            somme[rang] += float(valeur)
+            somme[rang] += float(value)
             surface[rang] += piece.aire
         for rang, aire_id in enumerate(appart.aires_sources):
             cle = (appart.identifiant, aire_id)
@@ -117,8 +117,8 @@ cal.ajuster(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
 bornes = [
     cal.borne(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]
 ]
-couv = float(np.mean([b.borne_inf <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
-largeur = float(np.mean([b.upper - b.borne_inf for b in bornes]))
+couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
+largeur = float(np.mean([b.upper - b.lower for b in bornes]))
 
 Path("resultats").mkdir(exist_ok=True)
 Path("resultats/j7_sd_par_piece.md").write_text(

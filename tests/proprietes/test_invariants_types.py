@@ -42,7 +42,7 @@ def test_la_preuve_geometrique_n_a_aucun_champ_de_probabilite() -> None:
 def test_la_borne_porte_toujours_sa_couverture() -> None:
     """Une borne conforme sans couverture ni taille de calibration est invérifiable."""
     champs = {f.name for f in dataclasses.fields(t.PerformanceBound)}
-    assert {"couverture", "n_calibration"} <= champs
+    assert {"coverage", "n_calibration"} <= champs
 
 
 def test_une_ouverture_ne_stocke_aucune_position_absolue() -> None:

@@ -177,7 +177,7 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnos
         orientation=Orientation(deg=0.0),
         outline=contour,
         # Le referentiel est remplace essai par essai : voir LARGEUR_DEFAUT.
-        regulation=Regulation(min_areas=(), largeur_min=LARGEUR_DEFAUT),
+        regulation=Regulation(min_areas=(), min_width=LARGEUR_DEFAUT),
         program=tuple(sorted(set(plan_json["programme"]))),
     )
     return plan, contexte, diagnostiquer(plan)
@@ -360,7 +360,7 @@ def main() -> None:
                 rejets[bati] = rejets.get(bati, 0) + 1
                 continue
             plan, contexte, diagnostic = bati
-            avant = verify_exactly(plan, contexte).valide
+            avant = verify_exactly(plan, contexte).valid
             # Deux balayages, pas leur produit : les budgets a largeur nominale,
             # puis les largeurs au meilleur budget. Le second existe parce que
             # `largeur_min = 0` laisse le LP annihiler une piece pour fermer un
@@ -374,11 +374,11 @@ def main() -> None:
             ]
             for mode, budget, largeur in essais:
                 debut = time.perf_counter()
-                statut, valide, deplacement, n_apres = "ok", False, "", ""
+                statut, valid, deplacement, n_apres = "ok", False, "", ""
                 cote_min, intact = "", ""
                 contexte_essai = replace(
                     contexte,
-                    regulation=Regulation(min_areas=(), largeur_min=largeur),
+                    regulation=Regulation(min_areas=(), min_width=largeur),
                 )
                 try:
                     corrige = ax.legalize(
@@ -387,7 +387,7 @@ def main() -> None:
                         pavage=(mode == "pavage"),
                         budget_reparation=budget,
                     )
-                    valide = corrige.certificate.geometry.valide
+                    valid = corrige.certificate.geometry.valid
                     deplacement = f"{corrige.certificate.geometry.max_displacement:.6f}"
                     n_apres = str(len(corrige.rooms))
                     petit = min(min(p.w, p.h) for p in corrige.rooms)
@@ -395,7 +395,7 @@ def main() -> None:
                     # « Intact » = valide ET aucune piece reduite a un residu.
                     # Compter les pieces ne suffit pas : une piece ecrasee a
                     # 0 m reste dans le compte.
-                    intact = str(bool(valide and petit >= COTE_INTACT_M))
+                    intact = str(bool(valid and petit >= COTE_INTACT_M))
                 except ax.Infeasible:
                     statut = "infaisable"
                 except GridNotRecoverable:
@@ -413,7 +413,7 @@ def main() -> None:
                         "budget": budget if mode == "pavage" else "",
                         "largeur_min": f"{largeur:.2f}",
                         "valide_avant": avant,
-                        "valide_apres": valide,
+                        "valide_apres": valid,
                         "n_pieces_apres": n_apres,
                         "cote_min_apres": cote_min,
                         "intact": intact,

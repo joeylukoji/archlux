@@ -217,11 +217,11 @@ def _intervalle(
 ) -> PerformanceBound:
     """Intervalle bilatéral ``prédiction ± marge`` ; le sens métier est le côté publié."""
     return PerformanceBound(
-        indicateur=indicateur,
-        valeur=float(prediction),
-        borne_inf=float(prediction) - marge,
+        indicator=indicateur,
+        value=float(prediction),
+        lower=float(prediction) - marge,
         upper=float(prediction) + marge,
-        couverture=couverture,
+        coverage=couverture,
         n_calibration=n_calibration,
         regime=_regime(regime),
     )
@@ -257,7 +257,7 @@ def borner(
     Guarantees
     ----------
     - Performance : **probabiliste**, couverture ``≥ 1 − alpha`` sous hypothèse
-      d'échangeabilité avec le jeu de calibration. ``PerformanceBound.couverture``
+      d'échangeabilité avec le jeu de calibration. ``PerformanceBound.coverage``
       porte le niveau **nominal** ``1 − alpha``, jamais une couverture mesurée.
       Cette hypothèse est **affaiblie** lorsque le plan a été sélectionné par
       l'optimiseur pour maximiser la prédiction ; le projet mesure et publie la

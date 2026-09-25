@@ -94,7 +94,7 @@ def _preuves() -> st.SearchStrategy[GeometricProof]:
     """
     return st.builds(
         _proof,
-        valide=st.booleans(),
+        valid=st.booleans(),
         overlap=st.booleans(),
         gaps=st.booleans(),
         areas_ok=st.booleans(),
@@ -104,9 +104,9 @@ def _preuves() -> st.SearchStrategy[GeometricProof]:
     )
 
 
-def _proof(*, valide: bool, **fields: Any) -> GeometricProof:
+def _proof(*, valid: bool, **fields: Any) -> GeometricProof:
     """Une preuve ``valide`` ne rapporte aucune faute (invariant de ``types``, phase 3.2)."""
-    if valide:
+    if valid:
         fields |= {
             "overlap": False,
             "gaps": False,
@@ -114,7 +114,7 @@ def _proof(*, valide: bool, **fields: Any) -> GeometricProof:
             "structure_kept": True,
             "violations": (),
         }
-    return GeometricProof(valide=valide, **fields)
+    return GeometricProof(valid=valid, **fields)
 
 
 def _bornes() -> st.SearchStrategy[PerformanceBound]:
@@ -124,11 +124,11 @@ def _bornes() -> st.SearchStrategy[PerformanceBound]:
     return st.tuples(reels, reels).flatmap(
         lambda pair: st.builds(
             PerformanceBound,
-            indicateur=st.sampled_from(["sDA", "ASE", "UDI", "vue"]),
-            valeur=reels,
-            borne_inf=st.just(min(pair)),
+            indicator=st.sampled_from(["sDA", "ASE", "UDI", "vue"]),
+            value=reels,
+            lower=st.just(min(pair)),
             upper=st.just(max(pair)),
-            couverture=st.floats(min_value=0.5, max_value=1.0, allow_nan=False),
+            coverage=st.floats(min_value=0.5, max_value=1.0, allow_nan=False),
             n_calibration=st.integers(min_value=1, max_value=100_000),
             regime=st.sampled_from(REGIMES),
         )
@@ -142,7 +142,7 @@ def _manifestes() -> st.SearchStrategy[Manifest]:
         st.none(),
         st.builds(
             ModelTrace,
-            poids=st.text(min_size=1, max_size=32),
+            weights_fingerprint=st.text(min_size=1, max_size=32),
             calibration_n=st.integers(min_value=1, max_value=10_000),
             alpha=st.floats(min_value=0.01, max_value=0.99, allow_nan=False),
         ),
@@ -150,13 +150,13 @@ def _manifestes() -> st.SearchStrategy[Manifest]:
     return st.builds(
         Manifest,
         version=st.text(min_size=1, max_size=10),
-        horodatage=st.text(min_size=1, max_size=32),
-        graine=st.integers(min_value=0, max_value=2**32 - 1),
-        empreinte_donnees=st.one_of(st.none(), st.text(max_size=20)),
-        decoupage=st.one_of(st.none(), st.text(max_size=20)),
-        environnement=paires,
-        parametres=paires,
-        modele=modeles,
+        timestamp=st.text(min_size=1, max_size=32),
+        seed=st.integers(min_value=0, max_value=2**32 - 1),
+        data_fingerprint=st.one_of(st.none(), st.text(max_size=20)),
+        split=st.one_of(st.none(), st.text(max_size=20)),
+        environment=paires,
+        parameters=paires,
+        model=modeles,
     )
 
 
@@ -171,14 +171,14 @@ def _certificats() -> st.SearchStrategy[Certificate]:
         Certificate,
         geometry=_preuves(),
         performance=st.one_of(st.none(), _bornes()),
-        duaux=st.lists(
+        duals=st.lists(
             st.tuples(
                 st.text(max_size=20),
                 st.floats(min_value=-1e3, max_value=1e3, allow_nan=False),
             ),
             max_size=3,
         ).map(tuple),
-        manifeste=st.one_of(st.none(), _manifestes()),
+        manifest=st.one_of(st.none(), _manifestes()),
     )
 
 
@@ -218,7 +218,7 @@ CONTEXTE_DEFAUT = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-    regulation=Regulation(min_areas=(), largeur_min=LARGEUR_MIN_DEFAUT),
+    regulation=Regulation(min_areas=(), min_width=LARGEUR_MIN_DEFAUT),
 )
 """Contexte de référence des tests, accordé à :func:`plans_valides`."""
 
@@ -349,7 +349,7 @@ def contextes(draw: st.DrawFn) -> Context:
         outline=((0.0, 0.0), (largeur, 0.0), (largeur, hauteur), (0.0, hauteur)),
         regulation=Regulation(
             min_areas=(),
-            largeur_min=draw(st.floats(min_value=0.5, max_value=2.0, allow_nan=False)),
+            min_width=draw(st.floats(min_value=0.5, max_value=2.0, allow_nan=False)),
         ),
     )
 
@@ -408,6 +408,6 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
         structure=Structure(load_bearing_walls=walls),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
         outline=CONTEXTE_DEFAUT.outline,
-        regulation=Regulation(min_areas=minimum_areas, largeur_min=LARGEUR_MIN_DEFAUT),
+        regulation=Regulation(min_areas=minimum_areas, min_width=LARGEUR_MIN_DEFAUT),
     )
     return Plan(rooms=plan.rooms, walls=walls, openings=(), outline=plan.outline), context

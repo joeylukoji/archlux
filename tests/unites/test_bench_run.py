@@ -28,7 +28,7 @@ def _evaluateur(plan: Plan, methode: object) -> float:
 
 def test_manifeste_complet(tmp_path: Path) -> None:
     """`MILESTONE-6.md` §5 : run écrit un manifeste avec poids et calibration_n."""
-    modele = ModelTrace(poids="sha256:abc", calibration_n=40, alpha=0.10)
+    modele = ModelTrace(weights_fingerprint="sha256:abc", calibration_n=40, alpha=0.10)
     resultat = run(
         plans=(_plan(), _plan()),
         orientations=(Orientation(0.0), Orientation(45.0)),
@@ -41,8 +41,8 @@ def test_manifeste_complet(tmp_path: Path) -> None:
         repertoire=tmp_path,
     )
     m = resultat.manifest
-    assert m.modele is not None
-    assert m.modele["poids"] and m.modele["calibration_n"] > 0
+    assert m.model is not None
+    assert m.model["weights_fingerprint"] and m.model["calibration_n"] > 0
     assert resultat.chemin_manifeste.is_file()
     assert resultat.chemin_bruts.is_file()
     # bruts écrits avant tout agrégat : le fichier existe dès le retour de run
@@ -56,7 +56,7 @@ def test_evaluate_by_obligatoire() -> None:
 
 
 def test_report_strate_par_orientation(tmp_path: Path) -> None:
-    modele = ModelTrace(poids="sha256:x", calibration_n=10, alpha=0.1)
+    modele = ModelTrace(weights_fingerprint="sha256:x", calibration_n=10, alpha=0.1)
     resultat = run(
         plans=(_plan(), _plan(), _plan(), _plan()),
         orientations=(

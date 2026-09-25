@@ -87,10 +87,10 @@ def main() -> None:
             continue
         propose, contexte, diag = bati
         try:
-            valide = ax.legalize(propose, contexte, pavage=True, budget_reparation=BUDGETS[-1])
+            valid = ax.legalize(propose, contexte, pavage=True, budget_reparation=BUDGETS[-1])
         except ax.ArchluxError:
             continue
-        if not valide.certificate.geometry.valide or len(valide.rooms) < 4:
+        if not valid.certificate.geometry.valid or len(valid.rooms) < 4:
             continue
         retenus += 1
 
@@ -98,16 +98,16 @@ def main() -> None:
         scores: list[tuple[int, float, float, float]] = []
         for azimut in AZIMUTS:
             ctx_az = replace(contexte, orientation=Orientation(deg=float(azimut)))
-            avant = _score(valide, ctx_az, substitut)
+            avant = _score(valid, ctx_az, substitut)
             try:
-                variante = ax.legalize(valide, ctx_az, objective=substitut, budget=budget)
+                variante = ax.legalize(valid, ctx_az, objective=substitut, budget=budget)
             except ax.ArchluxError:
-                volets.append((valide, f"{azimut}° — pas de variante"))
+                volets.append((valid, f"{azimut}° — pas de variante"))
                 continue
             apres = _score(variante, ctx_az, substitut)
             bouge = max(
                 max(abs(a.x - b.x), abs(a.y - b.y), abs(a.w - b.w), abs(a.h - b.h))
-                for a, b in zip(valide.rooms, variante.rooms, strict=True)
+                for a, b in zip(valid.rooms, variante.rooms, strict=True)
             )
             cotes = [min(q.w, q.h) for q in variante.rooms]
             aires = [q.aire for q in variante.rooms]
@@ -122,7 +122,7 @@ def main() -> None:
         )
         fiche = [
             f"# {nom} — variantes par azimut\n",
-            f"{len(valide.rooms)} pieces, cote caracteristique {diag.cote:.2f} m, "
+            f"{len(valid.rooms)} pieces, cote caracteristique {diag.cote:.2f} m, "
             f"budget {budget:.1f} m.\n",
             "| azimut | sDA legalise | sDA variante | gain | deplacement | "
             "plus petit cote | aire min | aire max |",
@@ -152,7 +152,7 @@ def main() -> None:
         if scores:
             meilleur = max(scores, key=lambda s: s[2])
             index.append(
-                f"| [`{nom}`]({nom}.md) | {len(valide.rooms)} | {meilleur[0]}° | "
+                f"| [`{nom}`]({nom}.md) | {len(valid.rooms)} | {meilleur[0]}° | "
                 f"{100 * (meilleur[2] - meilleur[1]) / max(abs(meilleur[1]), 1e-9):+.0f} % | "
                 f"{meilleur[3]:.2f} m | {min(s[4] for s in scores):.2f} m | "
                 f"{len(scores)} / {len(AZIMUTS)} |"

@@ -112,7 +112,7 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
         outline=outline,
         regulation=Regulation(
             min_areas=tuple(sorted((k, round(ratio * a, 4)) for k, a in smallest.items())),
-            largeur_min=1.0,
+            min_width=1.0,
         ),
     )
     plan = Plan(rooms=rooms, walls=(bearing,), openings=(), outline=outline)

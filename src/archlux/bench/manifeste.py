@@ -87,11 +87,11 @@ def emettre(
     """
     return Manifest(
         version=__version__,
-        horodatage=dt.datetime.now(dt.UTC).isoformat(),
-        graine=seed,
-        empreinte_donnees=empreinte_donnees,
-        decoupage=decoupage,
-        environnement=_environnement(),
-        parametres=tuple(sorted((parametres or {}).items())),
-        modele=modele,
+        timestamp=dt.datetime.now(dt.UTC).isoformat(),
+        seed=seed,
+        data_fingerprint=empreinte_donnees,
+        split=decoupage,
+        environment=_environnement(),
+        parameters=tuple(sorted((parametres or {}).items())),
+        model=modele,
     )

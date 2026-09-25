@@ -63,7 +63,7 @@ class TestManifeste:
 
     def test_reporte_la_graine(self) -> None:
         """La graine est la première chose qu'on relit six mois plus tard."""
-        assert emettre(seed=17).graine == 17
+        assert emettre(seed=17).seed == 17
 
     def test_la_graine_est_obligatoire(self) -> None:
         """Aucune valeur par défaut : une graine implicite est une graine perdue."""
@@ -72,17 +72,17 @@ class TestManifeste:
 
     def test_horodatage_utc_lisible(self) -> None:
         """L'horodatage est de l'ISO 8601 en UTC, pas une heure locale ambiguë."""
-        horodatage = emettre(seed=17).horodatage
+        horodatage = emettre(seed=17).timestamp
         instant = dt.datetime.fromisoformat(horodatage)
         assert instant.tzinfo is not None
         assert instant.utcoffset() == dt.timedelta(0)
 
     def test_reporte_l_environnement(self) -> None:
         """La version de Python figure au manifeste ; sans elle il n'identifie rien."""
-        environnement = dict(emettre(seed=17).environnement)
+        environnement = dict(emettre(seed=17).environment)
         assert "python" in environnement
 
     def test_les_parametres_sont_geles_et_ordonnes(self) -> None:
         """Les paramètres deviennent des paires triées : l'empreinte doit être stable."""
         manifeste = emettre(seed=17, parametres={"max_iter": "50", "budget": "0.25"})
-        assert manifeste.parametres == (("budget", "0.25"), ("max_iter", "50"))
+        assert manifeste.parameters == (("budget", "0.25"), ("max_iter", "50"))

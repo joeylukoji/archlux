@@ -43,7 +43,7 @@ def _poly() -> Polytope:
 
 def _preuve() -> GeometricProof:
     return GeometricProof(
-        valide=True,
+        valid=True,
         overlap=False,
         gaps=False,
         areas_ok=True,
@@ -74,19 +74,19 @@ def test_duaux_tries_par_cout_absolu() -> None:
 
 def test_certificat_separe_les_natures() -> None:
     borne = PerformanceBound(
-        indicateur="sDA",
-        valeur=56.2,
-        borne_inf=51.4,
+        indicator="sDA",
+        value=56.2,
+        lower=51.4,
         upper=61.0,
-        couverture=0.90,
+        coverage=0.90,
         n_calibration=1284,
         regime="exchangeable",
     )
     texte = Certificate(
         geometry=_preuve(),
         performance=borne,
-        duaux=(("mur porteur axe 3 : relâchement", -4.1),),
-        manifeste=Manifest(version="0.4.0", horodatage="2026-09-09T00:00:00Z", graine=17),
+        duals=(("mur porteur axe 3 : relâchement", -4.1),),
+        manifest=Manifest(version="0.4.0", timestamp="2026-09-09T00:00:00Z", seed=17),
     ).rapport()
     assert "[EXACT]" in texte and "[PREDICTION" in texte
     assert "1284" in texte

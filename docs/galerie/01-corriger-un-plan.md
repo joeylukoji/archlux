@@ -25,10 +25,10 @@ ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     outline=outline,
-    regulation=ax.Regulation(min_areas=(), largeur_min=1.0),
+    regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
 q = ax.legalize(plan, ctx)
-print(q.certificate.geometry.valide)
+print(q.certificate.geometry.valid)
 print(round(q.certificate.geometry.max_displacement, 2))
 ```
 

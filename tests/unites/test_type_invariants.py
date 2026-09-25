@@ -16,7 +16,7 @@ from tests.unites.test_hostile_inputs import SQUARE, make_plan
 def proof(**changes: object) -> GeometricProof:
     """A coherent, valid proof with ``changes`` applied."""
     fields: dict[str, object] = {
-        "valide": True,
+        "valid": True,
         "overlap": False,
         "gaps": False,
         "areas_ok": True,
@@ -39,12 +39,12 @@ def proof(**changes: object) -> GeometricProof:
     ],
 )
 def test_a_valid_proof_cannot_report_a_fault(changes: dict[str, object]) -> None:
-    with pytest.raises(InvalidInput, match="valide"):
+    with pytest.raises(InvalidInput, match="valid"):
         proof(**changes)
 
 
 def test_an_invalid_proof_may_report_anything() -> None:
-    assert not proof(valide=False, overlap=True, violations=("x",)).valide
+    assert not proof(valid=False, overlap=True, violations=("x",)).valid
 
 
 @pytest.mark.parametrize("value", [-0.1, math.nan])
@@ -55,7 +55,7 @@ def test_displacement_is_never_negative_or_nan(value: float) -> None:
 
 def test_unbounded_displacement_is_allowed_on_an_invalid_proof() -> None:
     """The proof reports ``inf`` for a NaN reference (final review of phase 1)."""
-    assert proof(valide=False, max_displacement=math.inf).max_displacement == math.inf
+    assert proof(valid=False, max_displacement=math.inf).max_displacement == math.inf
 
 
 @pytest.mark.parametrize(("s", "width"), [(2.0, 0.2), (-0.1, 0.2), (0.5, 0.0), (0.5, 1.5)])
@@ -88,7 +88,7 @@ def test_unknown_room_type_warns_when_the_regulation_has_thresholds() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=SQUARE,
-        regulation=Regulation(min_areas=(("sejour", 1.0),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("sejour", 1.0),), min_width=1.0),
     )
     typo = make_plan(type="sejuor")
     with pytest.warns(UserWarning, match="sejuor"):

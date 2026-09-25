@@ -32,7 +32,7 @@ def _returned_plans_are_valid(plan: Plan, ctx: Context, *, pavage: bool) -> None
         result = archlux.legalize(plan, ctx, pavage=pavage)
     except ArchluxError:
         return  # a typed refusal is allowed; any other exception fails the test
-    assert result.certificate is not None and result.certificate.geometry.valide
+    assert result.certificate is not None and result.certificate.geometry.valid
     assert checkers.violations(result, ctx) == []
 
 

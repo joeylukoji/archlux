@@ -60,7 +60,7 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
         "",
         "## Avant — vérification exacte",
         "",
-        f"valide : **{preuve.valide}**",
+        f"valide : **{preuve.valid}**",
         "",
     ]
     lignes += [f"- {v}" for v in preuve.violations] or ["*aucune violation*"]
@@ -78,7 +78,7 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
         lignes += [
             "| grandeur | valeur |",
             "|---|--:|",
-            f"| valide | **{geo.valide}** |",
+            f"| valide | **{geo.valid}** |",
             f"| déplacement max | {geo.max_displacement:.3f} m |",
             f"| rapporté au côté | {geo.max_displacement / diag.cote:.0%} |",
             f"| pièces | {len(corrige.pieces)} |",
@@ -101,7 +101,7 @@ def main() -> None:
         corrige, statut = None, "réparé"
         try:
             corrige = ax.legalize(plan, contexte, pavage=True, budget_reparation=BUDGET)
-            if not corrige.certificate.geometry.valide:
+            if not corrige.certificate.geometry.valid:
                 statut = "corrigé mais invalide"
         except ax.Infeasible:
             statut = "infaisable (prouvé)"

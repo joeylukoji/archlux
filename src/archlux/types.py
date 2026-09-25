@@ -315,9 +315,9 @@ class Regulation:
     """
 
     min_areas: tuple[tuple[str, float], ...]
-    largeur_min: float = 1.80
+    min_width: float = 1.80
 
-    def a_min(self, type_piece: str) -> float:
+    def min_area(self, type_piece: str) -> float:
         """Surface minimale exigée pour ``type_piece``, en mètres carrés.
 
         Parameters
@@ -381,7 +381,7 @@ class GeometricProof:
     prédiction ne sont pas de même nature, et rien ne doit permettre de les mélanger.
     """
 
-    valide: bool
+    valid: bool
     overlap: bool
     gaps: bool
     areas_ok: bool
@@ -397,7 +397,7 @@ class GeometricProof:
         """
         if not self.max_displacement >= 0.0:
             raise InvalidInput("max_displacement", f"must be >= 0, got {self.max_displacement}")
-        if self.valide and (
+        if self.valid and (
             self.overlap
             or self.gaps
             or not self.areas_ok
@@ -405,7 +405,7 @@ class GeometricProof:
             or self.violations
         ):
             raise InvalidInput(
-                "valide", "a valid proof cannot report an overlap, a gap or any violation"
+                "valid", "a valid proof cannot report an overlap, a gap or any violation"
             )
 
 
@@ -433,11 +433,11 @@ class PerformanceBound:
     plan does not hold for a plan the optimizer selected (:data:`Regime`).
     """
 
-    indicateur: Indicateur
-    valeur: float
-    borne_inf: float
+    indicator: Indicateur
+    value: float
+    lower: float
     upper: float
-    couverture: float
+    coverage: float
     n_calibration: int
     regime: Regime
 
@@ -445,12 +445,12 @@ class PerformanceBound:
         """Refuse a bound without calibration, an out-of-range coverage or regime."""
         if self.n_calibration < 1:
             raise InvariantViolation(("n_calibration doit être ≥ 1",))
-        if not 0.0 < self.couverture <= 1.0:
-            raise InvariantViolation((f"couverture hors ]0, 1] : {self.couverture}",))
+        if not 0.0 < self.coverage <= 1.0:
+            raise InvariantViolation((f"couverture hors ]0, 1] : {self.coverage}",))
         if self.regime not in REGIMES:
             raise InvariantViolation((f"unknown regime {self.regime!r}, expected {REGIMES}",))
-        if not self.borne_inf <= self.upper:
-            raise InvariantViolation((f"inverted interval: {self.borne_inf} > {self.upper}",))
+        if not self.lower <= self.upper:
+            raise InvariantViolation((f"inverted interval: {self.lower} > {self.upper}",))
 
     @property
     def coverage_guaranteed(self) -> bool:
@@ -465,13 +465,13 @@ class ModelTrace:
     ``poids`` est une empreinte (SHA), jamais le tenseur lui-même.
     """
 
-    poids: str
+    weights_fingerprint: str
     calibration_n: int
     alpha: float
 
     def __post_init__(self) -> None:
         """Valider empreinte, taille de calibration et niveau α."""
-        if not self.poids:
+        if not self.weights_fingerprint:
             raise InvariantViolation(("empreinte de poids obligatoire",))
         if self.calibration_n < 1:
             raise InvariantViolation(("calibration_n doit être ≥ 1",))
@@ -495,13 +495,13 @@ class Manifest:
     """
 
     version: str
-    horodatage: str
-    graine: int
-    empreinte_donnees: str | None = None
-    decoupage: str | None = None
-    environnement: tuple[tuple[str, str], ...] = ()
-    parametres: tuple[tuple[str, str], ...] = ()
-    modele: ModelTrace | None = None
+    timestamp: str
+    seed: int
+    data_fingerprint: str | None = None
+    split: str | None = None
+    environment: tuple[tuple[str, str], ...] = ()
+    parameters: tuple[tuple[str, str], ...] = ()
+    model: ModelTrace | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -520,8 +520,8 @@ class Certificate:
 
     geometry: GeometricProof
     performance: PerformanceBound | None = None
-    duaux: tuple[tuple[str, float], ...] = ()
-    manifeste: Manifest | None = None
+    duals: tuple[tuple[str, float], ...] = ()
+    manifest: Manifest | None = None
 
     def rapport(self) -> str:
         """Rendre le certificat en texte, sections ``[EXACT]`` et ``[PREDICTION]``.

@@ -353,7 +353,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
 
     matrice = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(origines), n_var)).tocsr()
 
-    largeur_min = ctx.regulation.largeur_min
+    largeur_min = ctx.regulation.min_width
     _verifier_enveloppe_admissible(largeur_min, xmax - xmin, ymax - ymin, ordre.pieces)
     bornes_par_champ = {
         "x": (xmin, xmax),

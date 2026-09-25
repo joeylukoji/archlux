@@ -18,7 +18,7 @@ CTX = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    regulation=Regulation(min_areas=(("sejour", 9.0),), largeur_min=1.5),
+    regulation=Regulation(min_areas=(("sejour", 9.0),), min_width=1.5),
 )
 
 

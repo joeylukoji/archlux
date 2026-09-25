@@ -27,14 +27,14 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                 )
                 if not applied:
                     continue
-                before = verify_exactly(plan, apartment.contexte).valide
+                before = verify_exactly(plan, apartment.contexte).valid
                 for pavage in (False, True):
                     try:
                         out = ax.legalize(
                             plan, apartment.contexte, fusions=apartment.fusions, pavage=pavage
                         )
                         proof = out.certificate.geometry  # type: ignore[union-attr]
-                        result = ("ok", proof.valide, f"{proof.max_displacement:.6f}")
+                        result = ("ok", proof.valid, f"{proof.max_displacement:.6f}")
                     except ax.ArchluxError as error:
                         result = (type(error).__name__, False, "")
                     head = (

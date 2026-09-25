@@ -21,14 +21,14 @@ valid_before = valid_after = refused = 0
 moved: list[float] = []
 sizes: list[int] = []
 for apartment in charger_msd(MSD, statistiques=stats, limite=N):
-    valid_before += verify_exactly(apartment.plan, apartment.contexte).valide
+    valid_before += verify_exactly(apartment.plan, apartment.contexte).valid
     sizes.append(len(apartment.plan.rooms))
     try:
         out = ax.legalize(apartment.plan, apartment.contexte, fusions=apartment.fusions)
     except ax.ArchluxError:
         refused += 1
         continue
-    valid_after += out.certificate.geometry.valide  # type: ignore[union-attr]
+    valid_after += out.certificate.geometry.valid  # type: ignore[union-attr]
     moved.append(out.certificate.geometry.max_displacement)  # type: ignore[union-attr]
 n = stats.retenus
 OUT.write_text(

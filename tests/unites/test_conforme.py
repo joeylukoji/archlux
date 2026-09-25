@@ -44,11 +44,11 @@ def test_pas_de_borne_sans_calibration() -> None:
     """Une borne sans jeu de calibration est invérifiable."""
     with pytest.raises(InvariantViolation, match="n_calibration"):
         PerformanceBound(
-            indicateur="sDA",
-            valeur=56.2,
-            borne_inf=51.4,
+            indicator="sDA",
+            value=56.2,
+            lower=51.4,
             upper=61.0,
-            couverture=0.90,
+            coverage=0.90,
             n_calibration=0,
             regime="exchangeable",
         )
@@ -64,8 +64,8 @@ def test_sens_ase_inverse() -> None:
     calibrateur = CalibrateurConforme(indicateur="ASE")
     calibrateur.ajuster(predictions, verites, incertitudes, alpha=0.10)
     borne = calibrateur.borne(6.1, 1.0, "<=", regime="exchangeable")
-    assert borne.upper > borne.valeur
-    assert borne.indicateur == "ASE"
+    assert borne.upper > borne.value
+    assert borne.indicator == "ASE"
 
 
 def test_borner_reproduit_le_quantile() -> None:
@@ -79,9 +79,9 @@ def test_borner_reproduit_le_quantile() -> None:
     )
     borne = borner(50.0, calibration, incertitude=1.0, regime="exchangeable")
     q = quantile_conforme(scores, 0.10)
-    assert borne.borne_inf == pytest.approx(50.0 - q)
+    assert borne.lower == pytest.approx(50.0 - q)
     assert borne.n_calibration == 60
-    assert borne.couverture == pytest.approx(0.90)
+    assert borne.coverage == pytest.approx(0.90)
 
 
 @given(alpha=st.floats(min_value=0.05, max_value=0.20, allow_nan=False))
@@ -99,7 +99,7 @@ def test_couverture_sur_donnees_synthetiques(alpha: float) -> None:
     sig = np.full(n_test, 1.5)
     ver = pred + sig * rng.normal(0.0, 1.0, n_test)
     couvert = [
-        v >= calibrateur.borne(float(p), float(s), ">=", regime="exchangeable").borne_inf
+        v >= calibrateur.borne(float(p), float(s), ">=", regime="exchangeable").lower
         for p, v, s in zip(pred, ver, sig, strict=True)
     ]
     assert float(np.mean(couvert)) >= 1.0 - alpha - 0.03

@@ -60,7 +60,7 @@ CTX_15 = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     outline=((0.0, 0.0), (15.0, 0.0), (15.0, 12.0), (0.0, 12.0)),
-    regulation=Regulation(min_areas=(), largeur_min=1.0),
+    regulation=Regulation(min_areas=(), min_width=1.0),
 )
 
 
@@ -169,7 +169,7 @@ CTX_15_AREAS = Context(
     structure=CTX_15.structure,
     orientation=Orientation(deg=20.0),
     outline=CTX_15.outline,
-    regulation=Regulation(min_areas=(("sejour", 11.0),), largeur_min=1.0),
+    regulation=Regulation(min_areas=(("sejour", 11.0),), min_width=1.0),
 )
 """The realistic case the budgets missed (AUDIT.md Q-C2): tight minimum areas."""
 
@@ -218,7 +218,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=20.0),
         outline=outline,
-        regulation=Regulation(min_areas=(("sejour", 11.0),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("sejour", 11.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     start = time.perf_counter()

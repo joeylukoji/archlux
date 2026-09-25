@@ -64,7 +64,7 @@ def _geometry(plan: Plan) -> list[object]:
     """What a plan means, with no name in it: rectangles, proof flags, displacement."""
     proof = plan.certificate.geometry if plan.certificate else None  # type: ignore[union-attr]
     rooms = [[round(v, DECIMALS) + 0.0 for v in (p.x, p.y, p.w, p.h)] for p in plan.rooms]
-    flags = [] if proof is None else [proof.valide, round(proof.max_displacement, DECIMALS)]
+    flags = [] if proof is None else [proof.valid, round(proof.max_displacement, DECIMALS)]
     return [rooms, flags]
 
 

@@ -28,7 +28,7 @@ def _context(outline: tuple[tuple[float, float], ...] = OUTLINE) -> Context:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=outline,
-        regulation=Regulation(min_areas=(), largeur_min=1.0),
+        regulation=Regulation(min_areas=(), min_width=1.0),
     )
 
 
@@ -52,7 +52,7 @@ NOISY_RIGHT_EDGE = _plan(
 def test_tiling_legalization_of_a_noisy_edge_keeps_every_guarantee() -> None:
     result = archlux.legalize(NOISY_RIGHT_EDGE, _context(), pavage=True)
     assert result.certificate is not None
-    assert result.certificate.geometry.valide
+    assert result.certificate.geometry.valid
     assert checkers.violations(result, _context()) == []
 
 
@@ -99,7 +99,7 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
                 ("sejour", 12.3352),
                 ("wc", 6.8602),
             ),
-            largeur_min=1.0,
+            min_width=1.0,
         ),
     )
     result = archlux.legalize(plan, ctx, pavage=True)

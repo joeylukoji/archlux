@@ -129,7 +129,7 @@ def _verifier_plages(donnees: Any) -> None:
 def _preuve_vers_dict(preuve: GeometricProof) -> dict[str, Any]:
     """Serialiser une preuve geometrique ; aucun champ de probabilite n'y entre."""
     return {
-        "valide": preuve.valide,
+        "valide": preuve.valid,
         "chevauchement": preuve.overlap,
         "jours": preuve.gaps,
         "surfaces_ok": preuve.areas_ok,
@@ -142,7 +142,7 @@ def _preuve_vers_dict(preuve: GeometricProof) -> dict[str, Any]:
 def _preuve_depuis_dict(donnees: Any) -> GeometricProof:
     """Reconstruire une preuve geometrique depuis sa forme JSON."""
     return GeometricProof(
-        valide=bool(donnees["valide"]),
+        valid=bool(donnees["valide"]),
         overlap=bool(donnees["chevauchement"]),
         gaps=bool(donnees["jours"]),
         areas_ok=bool(donnees["surfaces_ok"]),
@@ -155,11 +155,11 @@ def _preuve_depuis_dict(donnees: Any) -> GeometricProof:
 def _borne_vers_dict(borne: PerformanceBound) -> dict[str, Any]:
     """Serialiser une borne de performance, couverture et n_calibration compris."""
     return {
-        "indicateur": borne.indicateur,
-        "valeur": borne.valeur,
-        "borne_inf": borne.borne_inf,
+        "indicateur": borne.indicator,
+        "valeur": borne.value,
+        "borne_inf": borne.lower,
         "borne_sup": borne.upper,
-        "couverture": borne.couverture,
+        "couverture": borne.coverage,
         "n_calibration": borne.n_calibration,
         "regime": borne.regime,
     }
@@ -179,11 +179,11 @@ def _borne_depuis_dict(donnees: Any) -> PerformanceBound:
     if indicateur not in ("sDA", "ASE", "UDI", "vue"):
         raise InvariantViolation((f"indicateur inconnu : {indicateur!r}",))
     return PerformanceBound(
-        indicateur=indicateur,
-        valeur=_reel(donnees["valeur"], "borne.valeur"),
-        borne_inf=_reel(donnees["borne_inf"], "borne.borne_inf"),
+        indicator=indicateur,
+        value=_reel(donnees["valeur"], "borne.valeur"),
+        lower=_reel(donnees["borne_inf"], "borne.borne_inf"),
         upper=_reel(donnees["borne_sup"], "borne.borne_sup"),
-        couverture=_reel(donnees["couverture"], "borne.couverture"),
+        coverage=_reel(donnees["couverture"], "borne.couverture"),
         n_calibration=int(donnees["n_calibration"]),
         # Files written before batch 1.6 carry no regime. They could only come from a
         # hand-built bound (legalize never filled one), so none is assumed: reading
@@ -194,19 +194,19 @@ def _borne_depuis_dict(donnees: Any) -> PerformanceBound:
 
 def manifeste_vers_dict(manifeste: Manifest) -> dict[str, Any]:
     """Sérialiser un :class:`~archlux.types.Manifeste` (forme unique JSON / banc)."""
-    modele = manifeste.modele
+    modele = manifeste.model
     return {
         "version": manifeste.version,
-        "horodatage": manifeste.horodatage,
-        "graine": manifeste.graine,
-        "empreinte_donnees": manifeste.empreinte_donnees,
-        "decoupage": manifeste.decoupage,
-        "environnement": [list(p) for p in manifeste.environnement],
-        "parametres": [list(p) for p in manifeste.parametres],
+        "horodatage": manifeste.timestamp,
+        "graine": manifeste.seed,
+        "empreinte_donnees": manifeste.data_fingerprint,
+        "decoupage": manifeste.split,
+        "environnement": [list(p) for p in manifeste.environment],
+        "parametres": [list(p) for p in manifeste.parameters],
         "modele": None
         if modele is None
         else {
-            "poids": modele.poids,
+            "poids": modele.weights_fingerprint,
             "calibration_n": modele.calibration_n,
             "alpha": modele.alpha,
         },
@@ -219,19 +219,19 @@ def _manifeste_depuis_dict(donnees: Any) -> Manifest:
     modele = None
     if brut is not None:
         modele = ModelTrace(
-            poids=str(brut["poids"]),
+            weights_fingerprint=str(brut["poids"]),
             calibration_n=int(brut["calibration_n"]),
             alpha=float(brut["alpha"]),
         )
     return Manifest(
         version=str(donnees["version"]),
-        horodatage=str(donnees["horodatage"]),
-        graine=int(donnees["graine"]),
-        empreinte_donnees=donnees["empreinte_donnees"],
-        decoupage=donnees["decoupage"],
-        environnement=_paires(donnees["environnement"]),
-        parametres=_paires(donnees["parametres"]),
-        modele=modele,
+        timestamp=str(donnees["horodatage"]),
+        seed=int(donnees["graine"]),
+        data_fingerprint=donnees["empreinte_donnees"],
+        split=donnees["decoupage"],
+        environment=_paires(donnees["environnement"]),
+        parameters=_paires(donnees["parametres"]),
+        model=modele,
     )
 
 
@@ -240,13 +240,13 @@ def _certificat_vers_dict(certificat: Certificate | None) -> dict[str, Any] | No
     if certificat is None:
         return None
     performance = certificat.performance
-    manifeste = certificat.manifeste
+    manifeste = certificat.manifest
     return {
         "geometrie": _preuve_vers_dict(certificat.geometry),
         # `None` explicite plutôt qu'une clé absente : « aucune garantie de performance »
         # est une information, pas un oubli de sérialisation.
         "performance": None if performance is None else _borne_vers_dict(performance),
-        "duaux": [[libelle, cout] for libelle, cout in certificat.duaux],
+        "duaux": [[libelle, cout] for libelle, cout in certificat.duals],
         "manifeste": None if manifeste is None else manifeste_vers_dict(manifeste),
     }
 
@@ -260,10 +260,10 @@ def _certificat_depuis_dict(donnees: Any) -> Certificate | None:
     return Certificate(
         geometry=_preuve_depuis_dict(donnees["geometrie"]),
         performance=None if performance is None else _borne_depuis_dict(performance),
-        duaux=tuple(
+        duals=tuple(
             (str(libelle), _reel(cout, f"dual {libelle}")) for libelle, cout in donnees["duaux"]
         ),
-        manifeste=None if manifeste is None else _manifeste_depuis_dict(manifeste),
+        manifest=None if manifeste is None else _manifeste_depuis_dict(manifeste),
     )
 
 

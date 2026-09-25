@@ -121,7 +121,7 @@ def _a_scenario() -> tuple[Plan, Context]:
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        regulation=Regulation(min_areas=(("chambre", 20.0),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("chambre", 20.0),), min_width=1.0),
     )
     plan = Plan(
         rooms=(

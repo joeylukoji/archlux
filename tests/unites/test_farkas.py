@@ -24,7 +24,7 @@ _CTX = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     outline=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
-    regulation=Regulation(min_areas=(), largeur_min=2.0),
+    regulation=Regulation(min_areas=(), min_width=2.0),
 )
 _TWO_ROOMS_IN_3M = construire_polytope(
     OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")), _CTX

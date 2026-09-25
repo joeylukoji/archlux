@@ -61,7 +61,7 @@ def test_legalize_keeps_the_aligned_edge_of_an_l() -> None:
 
     legal = archlux.legalize(plan, ctx, fusions=(room,))
 
-    assert legal.certificate is not None and legal.certificate.geometry.valide
+    assert legal.certificate is not None and legal.certificate.geometry.valid
     rooms = _by_id(legal)
     bar, foot = rooms["l__0"], rooms["l__1"]
     # Still an L: the bottoms stay aligned and the foot stays within the bar's side.
@@ -97,7 +97,7 @@ def _small_l() -> tuple[Plan, PieceRectilineaire]:
 
 def _kitchen_minimum(area: float) -> Context:
     return replace(
-        CONTEXTE_DEFAUT, regulation=Regulation(min_areas=(("kitchen", area),), largeur_min=1.0)
+        CONTEXTE_DEFAUT, regulation=Regulation(min_areas=(("kitchen", area),), min_width=1.0)
     )
 
 
@@ -135,7 +135,7 @@ def test_legalize_keeps_an_l_whose_union_meets_the_minimum_area() -> None:
 
     legal = archlux.legalize(plan, _kitchen_minimum(3.5), fusions=(room,))
 
-    assert legal.certificate is not None and legal.certificate.geometry.valide
+    assert legal.certificate is not None and legal.certificate.geometry.valid
     assert legal.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-6)
 
 
@@ -145,7 +145,7 @@ def test_legalize_grows_an_l_whose_union_misses_the_minimum_area() -> None:
 
     legal = archlux.legalize(plan, ctx, fusions=(room,), pavage=True)
 
-    assert legal.certificate is not None and legal.certificate.geometry.valide
+    assert legal.certificate is not None and legal.certificate.geometry.valid
     assert checkers.violations(legal, ctx, fusions=(room,)) == []
     parts = [r for r in legal.rooms if r.id.startswith("l__")]
     assert sum(r.w * r.h for r in parts) >= 4.5 - 1e-6
@@ -177,7 +177,7 @@ def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Context, PieceRecti
     """A kitchen L (bar [0,1]x[0,3], foot [1,2]x[0,1]) tiling 12 x 9 with three rooms."""
     ctx = replace(
         CONTEXTE_DEFAUT,
-        regulation=Regulation(min_areas=(("kitchen", 3.5),), largeur_min=1.0),
+        regulation=Regulation(min_areas=(("kitchen", 3.5),), min_width=1.0),
     )
     if wall_x is not None:
         wall = Wall(id="w", a=(wall_x, 0.0), b=(wall_x, 1.0), load_bearing=True)
@@ -198,7 +198,7 @@ def test_a_wall_on_the_seam_of_an_l_is_a_crossing() -> None:
     """Review C1: the seam is inside the room; a wall on it cuts the kitchen in two."""
     plan, ctx, room = _l_in_tiling(wall_x=1.0)
     proof = verify_exactly(plan, ctx, fusions=(room,))
-    assert not proof.valide and not proof.structure_kept
+    assert not proof.valid and not proof.structure_kept
     assert any(v.kind == "wall" for v in checkers.violations(plan, ctx, fusions=(room,)))
 
 
@@ -210,7 +210,7 @@ def test_legalize_never_puts_a_seam_on_a_wall(pavage: bool) -> None:
         result = archlux.legalize(plan, ctx, fusions=(room,), pavage=pavage)
     except archlux.Infeasible:
         return  # an L straddling a wall has no valid plan in this order: honest refusal
-    assert result.certificate is not None and result.certificate.geometry.valide
+    assert result.certificate is not None and result.certificate.geometry.valid
     assert not checkers.violations(result, ctx, fusions=(room,))
 
 

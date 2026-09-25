@@ -40,11 +40,11 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
             faulty, _ = corrompre(plan, seed=seed, amplitude=amplitude)
             for pavage in (False, True):
                 row = {"plan_id": plan_id, "amplitude_m": amplitude, "pavage": pavage, "seed": seed}
-                row["valid_before"] = verify_exactly(faulty, ctx).valide
+                row["valid_before"] = verify_exactly(faulty, ctx).valid
                 try:
                     out = ax.legalize(faulty, ctx, pavage=pavage)
                     geometry = out.certificate.geometry  # type: ignore[union-attr]
-                    row |= {"status": "ok", "valid_after": geometry.valide}
+                    row |= {"status": "ok", "valid_after": geometry.valid}
                     row["max_displacement_m"] = f"{geometry.max_displacement:.6f}"
                 except ax.ArchluxError as error:
                     row |= {"status": type(error).__name__, "valid_after": False}

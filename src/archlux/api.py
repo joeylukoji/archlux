@@ -363,7 +363,7 @@ def legalize(
     )
     base = construire_polytope(ordre, ctx)
     for piece_l in fusions:
-        base = etendre_fusions(base, piece_l, min_contact=ctx.regulation.largeur_min)
+        base = etendre_fusions(base, piece_l, min_contact=ctx.regulation.min_width)
     x_ref = vectoriser(plan, base.index)
     minima = minimum_area_shares(plan.rooms, fusions, ctx.regulation)
 
@@ -410,7 +410,7 @@ def legalize(
                 reference=plan,
                 budget=budget if bounded else None,
                 fusions=fusions,
-            ).valide
+            ).valid
 
         relaxable: list[str] = []
         if trame is not None and admits(domain(grid=False)[1], bounded=True):
@@ -432,7 +432,7 @@ def legalize(
         outline=ctx.outline,
     )
     preuve = verify_exactly(corrige, ctx, reference=plan, budget=budget, fusions=fusions)
-    if not preuve.valide:
+    if not preuve.valid:
         if trame is None and _only_a_gap(preuve, budget):
             raise GapNeedsTiling(preuve.violations)
         raise InvariantViolation(preuve.violations)
@@ -441,7 +441,7 @@ def legalize(
     if objective is None:
         return replace(
             corrige,
-            certificate=Certificate(geometry=preuve, performance=None, duaux=duaux),
+            certificate=Certificate(geometry=preuve, performance=None, duals=duaux),
         )
 
     x0 = vectoriser(corrige, poly.index)
@@ -469,7 +469,7 @@ def legalize(
         outline=ctx.outline,
     )
     preuve_fw = verify_exactly(performant, ctx, reference=plan, budget=budget, fusions=fusions)
-    if not preuve_fw.valide:
+    if not preuve_fw.valid:
         raise InvariantViolation(preuve_fw.violations)
     # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont
     # les seuls appariables avec poly_fw.origines. À défaut, on garde ceux de la passe
@@ -486,6 +486,6 @@ def legalize(
         performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
         performant,
-        certificate=Certificate(geometry=preuve_fw, performance=performance, duaux=duaux_fw),
+        certificate=Certificate(geometry=preuve_fw, performance=performance, duals=duaux_fw),
         trace=resultat.trace if trace else None,
     )

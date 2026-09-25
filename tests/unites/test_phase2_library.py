@@ -115,7 +115,7 @@ def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
             structure=Structure(load_bearing_walls=(wall,)),
             orientation=Orientation(deg=deg),
             outline=CONTEXTE_DEFAUT.outline,
-            regulation=Regulation(min_areas=(("sejour", 1.41),), largeur_min=1.0),
+            regulation=Regulation(min_areas=(("sejour", 1.41),), min_width=1.0),
         )
         out = archlux.legalize(plan, ctx, objective=surrogate)
         values.append(surrogate.evaluer(decision_vector(out), Orientation(deg=0.0)))

@@ -37,7 +37,7 @@ ctx_s = ax.Context(
 q_l1 = ax.legalize(plan, ctx_n)
 q_n = ax.legalize(plan, ctx_n, objective=SubstitutAnalytique())
 q_s = ax.legalize(plan, ctx_s, objective=SubstitutAnalytique())
-print(q_l1.certificate.geometry.valide)
+print(q_l1.certificate.geometry.valid)
 print(q_n.rooms == q_s.rooms)
 ```
 

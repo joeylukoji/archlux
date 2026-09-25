@@ -22,7 +22,7 @@ ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     outline=outline,
-    regulation=ax.Regulation(min_areas=(), largeur_min=8.0),
+    regulation=ax.Regulation(min_areas=(), min_width=8.0),
 )
 try:
     ax.legalize(plan, ctx)

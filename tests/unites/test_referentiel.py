@@ -12,7 +12,7 @@ from archlux.types import Regulation
 
 REFERENTIEL_FR = Regulation(
     min_areas=(("sejour", 9.0), ("chambre", 9.0), ("sdb", 5.0), ("cuisine", 6.0)),
-    largeur_min=1.80,
+    min_width=1.80,
 )
 
 
@@ -22,7 +22,7 @@ REFERENTIEL_FR = Regulation(
 )
 def test_rend_le_seuil_du_type(type_piece: str, attendu: float) -> None:
     """Chaque type réglementé rend son seuil."""
-    assert REFERENTIEL_FR.a_min(type_piece) == attendu
+    assert REFERENTIEL_FR.min_area(type_piece) == attendu
 
 
 def test_un_type_non_reglemente_ne_contraint_rien() -> None:
@@ -31,10 +31,10 @@ def test_un_type_non_reglemente_ne_contraint_rien() -> None:
     Lever ici forcerait chaque appelant à distinguer « pas de seuil » de « seuil zéro »,
     alors que les deux ont exactement le même effet sur le polytope.
     """
-    assert REFERENTIEL_FR.a_min("couloir") == 0.0
+    assert REFERENTIEL_FR.min_area("couloir") == 0.0
 
 
 def test_le_referentiel_est_gele() -> None:
     """Changer de réglementation crée un nouveau référentiel, jamais une mutation."""
     with pytest.raises(AttributeError):
-        REFERENTIEL_FR.largeur_min = 2.0  # type: ignore[misc]
+        REFERENTIEL_FR.min_width = 2.0  # type: ignore[misc]

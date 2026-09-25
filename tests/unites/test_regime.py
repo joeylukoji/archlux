@@ -26,11 +26,11 @@ from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 def _bound(**changes: object) -> PerformanceBound:
     fields: dict[str, object] = {
-        "indicateur": "sDA",
-        "valeur": 56.2,
-        "borne_inf": 51.4,
+        "indicator": "sDA",
+        "value": 56.2,
+        "lower": 51.4,
         "upper": 61.0,
-        "couverture": 0.90,
+        "coverage": 0.90,
         "n_calibration": 1284,
         "regime": "exchangeable",
     }
@@ -40,7 +40,7 @@ def _bound(**changes: object) -> PerformanceBound:
 
 def _proof() -> GeometricProof:
     return GeometricProof(
-        valide=True,
+        valid=True,
         overlap=False,
         gaps=False,
         areas_ok=True,
@@ -64,11 +64,11 @@ def _calibration(indicator: str = "sDA", n: int = 60) -> Calibration:
 def test_a_bound_without_regime_cannot_be_built() -> None:
     with pytest.raises(TypeError, match="regime"):
         PerformanceBound(  # type: ignore[call-arg]
-            indicateur="sDA",
-            valeur=56.2,
-            borne_inf=51.4,
+            indicator="sDA",
+            value=56.2,
+            lower=51.4,
             upper=61.0,
-            couverture=0.90,
+            coverage=0.90,
             n_calibration=10,
         )
 
@@ -80,7 +80,7 @@ def test_an_unknown_regime_is_refused() -> None:
 
 def test_an_inverted_interval_is_refused() -> None:
     with pytest.raises(InvariantViolation, match="inverted"):
-        _bound(borne_inf=62.0)
+        _bound(lower=62.0)
 
 
 def test_only_an_exchangeable_plan_has_a_guaranteed_coverage() -> None:
@@ -170,7 +170,7 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     # Centred on the surrogate's prediction mu, not on the pessimistic mu - q sigma.
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
     mu, _ = point_prediction(objective, x, CONTEXTE_DEFAUT.orientation)
-    assert bound.valeur == pytest.approx(mu, rel=1e-6)
+    assert bound.value == pytest.approx(mu, rel=1e-6)
     assert "couverture NON garantie" in result.certificate.rapport()
 
 
@@ -228,12 +228,12 @@ def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
     )
     assert result.certificate is not None
     bound = result.certificate.performance
-    assert bound is not None and bound.indicateur == "ASE"
+    assert bound is not None and bound.indicator == "ASE"
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
     raw = surrogate.evaluer(x, CONTEXTE_DEFAUT.orientation)
-    assert raw < 0.0 < bound.valeur
-    assert bound.valeur == pytest.approx(-raw, rel=1e-6)
-    assert bound.borne_inf <= bound.valeur <= bound.upper
+    assert raw < 0.0 < bound.value
+    assert bound.value == pytest.approx(-raw, rel=1e-6)
+    assert bound.lower <= bound.value <= bound.upper
 
 
 def test_every_wrapping_layer_is_removed() -> None:
@@ -257,7 +257,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     tiny_ctx = replace(
         CONTEXTE_DEFAUT,
         outline=small_outline,
-        regulation=Regulation(min_areas=(), largeur_min=2.0),
+        regulation=Regulation(min_areas=(), min_width=2.0),
     )
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=SubstitutAnalytique())
@@ -289,7 +289,7 @@ def test_no_uncertainty_at_the_plan_gives_no_bound_not_a_lost_plan() -> None:
         objective=SubstitutAnalytique(sigma_nominal=0.0),
         calibration=_calibration(),
     )
-    assert result.certificate is not None and result.certificate.geometry.valide
+    assert result.certificate is not None and result.certificate.geometry.valid
     assert result.certificate.performance is None
 
 

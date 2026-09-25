@@ -36,7 +36,7 @@ def test_the_indicator_literal_is_written_once() -> None:
 def test_the_bound_and_the_protocol_share_the_alias() -> None:
     from archlux.light.protocole import Substitut
 
-    assert typing.get_type_hints(PerformanceBound)["indicateur"] == Indicateur
+    assert typing.get_type_hints(PerformanceBound)["indicator"] == Indicateur
     assert typing.get_type_hints(Substitut.indicateur.fget)["return"] == Indicateur  # type: ignore[attr-defined]
 
 

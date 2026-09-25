@@ -73,7 +73,7 @@ class TestCertificat:
         """La délégation produit le gabarit à deux natures, sans score composite."""
         certificat = Certificate(
             geometry=GeometricProof(
-                valide=True,
+                valid=True,
                 overlap=False,
                 gaps=False,
                 areas_ok=True,

@@ -143,11 +143,11 @@ ctx = ax.Context(
     ),
     orientation=ax.Orientation(deg=12.0),  # north at 12 degrees east
     outline=outline,
-    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), largeur_min=1.0),
+    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
 
 repaired = ax.legalize(plan, ctx, pavage=True)
-assert repaired.certificate is not None and repaired.certificate.geometry.valide
+assert repaired.certificate is not None and repaired.certificate.geometry.valid
 print(repaired.certificate.rapport())
 ```
 
@@ -162,7 +162,7 @@ Plans round-trip through JSON with their certificate:
 ```python
 repaired.to_json("repaired.json")
 again = ax.Plan.from_json("repaired.json")
-assert again.certificate is not None and again.certificate.geometry.valide
+assert again.certificate is not None and again.certificate.geometry.valid
 ```
 
 ### Repair while keeping the daylight
@@ -240,7 +240,7 @@ wide_rooms = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     outline=outline,
-    regulation=ax.Regulation(min_areas=(), largeur_min=4.5),
+    regulation=ax.Regulation(min_areas=(), min_width=4.5),
 )
 verdict = ax.feasibility.is_feasible(narrow, wide_rooms.structure, wide_rooms)
 assert not verdict and verdict.certificat is not None
@@ -418,7 +418,7 @@ exchangeable plan, `couverture NON garantie` for a selected one, `NON EVALUABLE`
 without calibration), the dual diagnosis, and an out-of-scope section (summer comfort,
 building services, materials). "Structure preservee" is checked since batch 1.1: no
 room interior contains a stretch of a load-bearing wall. The maximum displacement is a
-checked predicate when a `budget` is given. `Certificate.manifeste` is `None` unless the
+checked predicate when a `budget` is given. `Certificate.manifest` is `None` unless the
 caller attaches one.
 
 ---

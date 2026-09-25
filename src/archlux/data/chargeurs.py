@@ -477,9 +477,7 @@ def charger_msd(
     if not chemin.is_file():
         raise InvariantViolation((f"corpus MSD introuvable : {chemin}",))
     stats = statistiques if statistiques is not None else StatistiquesChargement()
-    reglement = (
-        referentiel if referentiel is not None else Regulation(min_areas=(), largeur_min=0.0)
-    )
+    reglement = referentiel if referentiel is not None else Regulation(min_areas=(), min_width=0.0)
     groupes = _lire_groupes(chemin, types_exclus)
 
     for identifiant, entites in groupes.items():

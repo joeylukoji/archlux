@@ -31,7 +31,7 @@ ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     outline=outline,
-    regulation=ax.Regulation(min_areas=(), largeur_min=1.0),
+    regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
 poly = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx)
 Q_propose = vectoriser(plan, poly.index)

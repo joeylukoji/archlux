@@ -45,7 +45,7 @@ def test_aller_retour_sur_disque(tmp_path: Path) -> None:
 def test_le_certificat_survit_a_l_aller_retour() -> None:
     """Un plan légalisé porte son certificat ; le relire ne doit pas le perdre."""
     preuve = GeometricProof(
-        valide=True,
+        valid=True,
         overlap=False,
         gaps=False,
         areas_ok=True,

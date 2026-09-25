@@ -41,7 +41,7 @@ ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     outline=outline,
-    regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), min_width=1.0),
 )
 
 
@@ -91,8 +91,8 @@ x_nouveau = disposition(rng)  # tiré comme la calibration : échangeable avec e
 prediction = modele.evaluer(x_nouveau, ctx.orientation)
 sigma = modele.incertitude(x_nouveau, ctx.orientation)
 borne = cal.borne(prediction, sigma, ">=", regime="exchangeable")
-assert borne.borne_inf <= prediction <= borne.upper
-# borne.borne_inf, borne.couverture, borne.n_calibration
+assert borne.lower <= prediction <= borne.upper
+# borne.lower, borne.coverage, borne.n_calibration
 ```
 
 Le rang est \(\lceil(n+1)(1-\alpha)\rceil\), pas `np.quantile(s, 0.90)`. ASE

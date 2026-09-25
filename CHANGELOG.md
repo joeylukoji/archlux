@@ -23,6 +23,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   `contour`, `certificat` are `rooms`, `walls`, `openings`, `outline`, `certificate`;
   `Context.referentiel`, `programme`, `contour` are `regulation`, `program`, `outline`.
   `InvalidInput.field` labels follow (`rooms[a].w`, `context.outline`...).
+- Batch 3c, type-guided: `Regulation.largeur_min` and `a_min()` are `min_width` and
+  `min_area()`; `GeometricProof.valide` is `valid`; `PerformanceBound.indicateur`, `valeur`,
+  `borne_inf`, `couverture` are `indicator`, `value`, `lower`, `coverage`;
+  `Certificate.duaux`, `manifeste` are `duals`, `manifest`; `Manifest.horodatage`, `graine`,
+  `empreinte_donnees`, `decoupage`, `environnement`, `parametres`, `modele` are
+  `timestamp`, `seed`, `data_fingerprint`, `split`, `environment`, `parameters`, `model`;
+  `ModelTrace.poids` is `weights_fingerprint` (also the key of `ModelTrace["..."]`).
+  Wave 3 is complete: no French field name is left on the model types.
 - The JSON files keep their schema v1 keys (`"porteur"`, `"jours"`...): only the Python
   names moved, so old files still load and the written JSON is byte-identical.
 

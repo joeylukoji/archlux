@@ -102,8 +102,8 @@ bornes = [
     cal.borne(float(p), float(net.incertitude(x, o)), regime="exchangeable")
     for p, x, o in zip(pred_net, x_te, o_te, strict=True)
 ]
-couv = float(np.mean([b.borne_inf <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
-largeur = float(np.mean([b.upper - b.borne_inf for b in bornes]))
+couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
+largeur = float(np.mean([b.upper - b.lower for b in bornes]))
 
 rapport = (
     f"# Jalon 7 — substitut contre simulations Swiss Dwellings\n\n"

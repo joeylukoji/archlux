@@ -55,7 +55,7 @@ def test_feasibility_infaisable_explique() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=contour,
-        regulation=Regulation(min_areas=(), largeur_min=8.0),
+        regulation=Regulation(min_areas=(), min_width=8.0),
     )
     verdict = archlux.feasibility.is_feasible(plan, ctx.structure, ctx)
     assert not verdict

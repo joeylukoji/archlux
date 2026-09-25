@@ -206,8 +206,8 @@ def _fused_area(piece: PieceRectilineaire, by_id: dict[str, Room], ctx: Context)
     """
     room_id = piece.id
     members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
-    minimum = max(ctx.regulation.a_min(member.type) for member in members)
-    seams = _recorded_seams(piece, by_id, max(ctx.regulation.largeur_min, SNAP_M))
+    minimum = max(ctx.regulation.min_area(member.type) for member in members)
+    seams = _recorded_seams(piece, by_id, max(ctx.regulation.min_width, SNAP_M))
     if seams:
         return seams
     if not _edge_connected(members):
@@ -233,7 +233,7 @@ def _areas(
     for room in rooms:
         if room.id in fused:
             continue
-        minimum = ctx.regulation.a_min(room.type)
+        minimum = ctx.regulation.min_area(room.type)
         if minimum <= 0.0:
             continue
         if room.aire + _AREA_TOLERANCE_M2 < minimum:
@@ -562,7 +562,7 @@ def verify_exactly(
         # Nothing is proved about a malformed plan: every predicate is reported as not
         # established, never as holding (final review of phase 1, M1).
         return GeometricProof(
-            valide=False,
+            valid=False,
             overlap=True,
             gaps=True,
             areas_ok=False,
@@ -593,7 +593,7 @@ def verify_exactly(
     violations = v_overlap + v_gaps + v_areas + v_structure + v_budget
     valid = (not overlap) and (not gaps) and areas_ok and structure_ok and budget_ok
     return GeometricProof(
-        valide=valid,
+        valid=valid,
         overlap=overlap,
         gaps=gaps,
         areas_ok=areas_ok,
