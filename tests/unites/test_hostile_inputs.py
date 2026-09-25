@@ -1,7 +1,7 @@
 """Hostile inputs are refused at the door with a typed, actionable error.
 
 PLAN.md phase 3, slice A (3.1, 3.3, 3.4). Before it, a negative width surfaced as
-``InvariantViole: gap`` (an internal-bug exception for a typo) and ``nan`` as an LP status.
+``InvariantViolation: gap`` (an internal-bug exception for a typo) and ``nan`` as an LP status.
 Now every case raises ``InvalidInput``, which names the offending field.
 """
 
@@ -119,9 +119,9 @@ def test_invalid_input_is_a_value_error_and_an_archlux_error() -> None:
 
 
 def test_invalid_input_is_not_an_internal_bug() -> None:
-    from archlux import InvariantViole
+    from archlux import InvariantViolation
 
-    assert not issubclass(InvalidInput, InvariantViole)
+    assert not issubclass(InvalidInput, InvariantViolation)
 
 
 def gapped_plan() -> Plan:
@@ -179,7 +179,7 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
 ) -> None:
     """The gap is read from the proof's flags, never from the text of its violations."""
     import archlux.api
-    from archlux import GapNeedsTiling, InvariantViole, PreuveGeometrique
+    from archlux import GapNeedsTiling, InvariantViolation, PreuveGeometrique
 
     silent = PreuveGeometrique(
         valide=False,
@@ -191,7 +191,7 @@ def test_an_invalid_proof_without_gap_is_not_blamed_on_tiling(
         violations=(),
     )
     monkeypatch.setattr(archlux.api, "verify_exactly", lambda *a, **k: silent)
-    with pytest.raises(InvariantViole) as raised:
+    with pytest.raises(InvariantViolation) as raised:
         legalize(make_plan(), make_context())
     assert not isinstance(raised.value, GapNeedsTiling)
 
@@ -216,7 +216,7 @@ def test_the_type_warning_points_at_the_caller() -> None:
 
 
 def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
-    """Infeasible *with* restrictions (here the load-bearing sides) must say which."""
+    """A refusal *with* restrictions (here the load-bearing sides) must say which."""
     from archlux import Mur
     from archlux.feasibility import is_feasible
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from archlux.erreurs import OrdreIncoherent, SeparationManquante
+from archlux.erreurs import InconsistentOrder, MissingSeparation
 from archlux.geom.graphe import (
     OrdreRelatif,
     construire_graphe,
@@ -39,7 +39,7 @@ class TestConstruireGraphe:
     def test_cycle_detecte(self) -> None:
         """« A à gauche de B à gauche de A » n'a pas de solution géométrique."""
         ordre = OrdreRelatif(horizontal=(("A", "B"), ("B", "A")), vertical=(), pieces=("A", "B"))
-        with pytest.raises(OrdreIncoherent) as capture:
+        with pytest.raises(InconsistentOrder) as capture:
             construire_graphe(ordre, ["A", "B"])
         assert capture.value.axe == "horizontal"
         assert set(capture.value.cycle) == {"A", "B"}
@@ -47,21 +47,21 @@ class TestConstruireGraphe:
     def test_cycle_vertical_detecte(self) -> None:
         """Le même défaut sur l'axe vertical est rapporté avec le bon axe."""
         ordre = OrdreRelatif(horizontal=(), vertical=(("A", "B"), ("B", "A")), pieces=("A", "B"))
-        with pytest.raises(OrdreIncoherent) as capture:
+        with pytest.raises(InconsistentOrder) as capture:
             construire_graphe(ordre, ["A", "B"])
         assert capture.value.axe == "vertical"
 
     def test_paire_non_separee_refusee(self) -> None:
         """Deux pièces sans séparation peuvent se chevaucher : c'est une erreur d'entrée."""
         ordre = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B", "C"))
-        with pytest.raises(SeparationManquante) as capture:
+        with pytest.raises(MissingSeparation) as capture:
             construire_graphe(ordre, ["A", "B", "C"])
         assert "C" in capture.value.paire
 
     def test_une_piece_inconnue_est_refusee(self) -> None:
         """Une arête vers une pièce absente de l'ensemble déclaré est incohérente."""
         ordre = OrdreRelatif(horizontal=(("A", "Z"),), vertical=(), pieces=("A", "B"))
-        with pytest.raises(OrdreIncoherent):
+        with pytest.raises(InconsistentOrder):
             construire_graphe(ordre, ["A", "B"])
 
 

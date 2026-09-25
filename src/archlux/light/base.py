@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.jetons import vecteur_vers_jetons
 from archlux.light.protocole import Baies
@@ -73,7 +73,7 @@ def descripteurs(x: np.ndarray, orientation: Orientation, baies: Baies | None = 
     if pieces_seules.size:
         valides = pieces_seules
     if valides.size == 0:
-        raise InvariantViole(("vecteur de plan vide : aucun jeton",))
+        raise InvariantViolation(("vecteur de plan vide : aucun jeton",))
     moyen = valides.mean(axis=0)
     aires = valides[:, 4]
     enc = encode(orientation.deg, harmoniques=3)
@@ -169,7 +169,7 @@ class SubstitutDense:
             or self.b2 is None
             or self.W3 is None
         ):
-            raise InvariantViole(("passe avant sur un modèle non entraîné",))
+            raise InvariantViolation(("passe avant sur un modèle non entraîné",))
         z1 = feat @ self.W1 + self.b1
         h1 = np.tanh(z1)
         z2 = h1 @ self.W2 + self.b2
@@ -257,7 +257,7 @@ class SubstitutDense:
         ``a = 1``, ``b = 0`` restaure exactement le comportement antérieur.
         """
         if len(xs) != len(ys) or len(xs) != len(orientations):
-            raise InvariantViole(("xs, ys et orientations doivent avoir la même longueur",))
+            raise InvariantViolation(("xs, ys et orientations doivent avoir la même longueur",))
         analytique = _analytique(self.indicateur_vise)
         brut = np.array(
             [float(analytique.evaluer(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
@@ -326,7 +326,7 @@ class SubstitutDense:
             or self.mu is None
             or self.sigma is None
         ):
-            raise InvariantViole(("sauver un modèle non entraîné",))
+            raise InvariantViolation(("sauver un modèle non entraîné",))
         chemin = Path(chemin)
         if chemin.suffix != ".npz":
             chemin = chemin.with_name(chemin.name + ".npz")
@@ -362,7 +362,7 @@ class SubstitutDense:
             # Matching by equality types the result on every mypy version, without a cast.
             vise = next((known for known in indicateurs if known == indicateur), None)
             if vise is None:
-                raise InvariantViole((f"indicateur inconnu dans les poids : {indicateur}",))
+                raise InvariantViolation((f"indicateur inconnu dans les poids : {indicateur}",))
             modele = cls(indicateur_vise=vise)
             modele.W1 = np.array(archive["W1"], dtype=float, copy=True)
             modele.b1 = np.array(archive["b1"], dtype=float, copy=True)

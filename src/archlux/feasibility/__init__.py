@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from archlux.api import legalize
-from archlux.erreurs import GapNeedsTiling, Infaisable
+from archlux.erreurs import GapNeedsTiling, Infeasible
 from archlux.types import Contexte, Plan, Structure
 
 __all__ = ["CertificatFaisabilite", "Verdict", "is_feasible"]
@@ -24,7 +24,7 @@ class CertificatFaisabilite:
     certificat_farkas: object
     verified: bool | None = None
     scope: tuple[str, ...] = ()
-    """Restrictions beyond the relative order the proof is about (``Infaisable.scope``)."""
+    """Restrictions beyond the relative order the proof is about (``Infeasible.scope``)."""
 
     def expliquer(self) -> str:
         """Rendre le conflit en une phrase lisible."""
@@ -89,7 +89,7 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
     ------
     InvalidInput
         Malformed argument (non-finite size, duplicate ids, ...), before any solving.
-    OrdreIncoherent, SeparationManquante
+    InconsistentOrder, MissingSeparation
         Entrée mal formée (propagées depuis la construction du graphe).
     UnsupportedInput
         An oblique load-bearing wall (propagated from :func:`archlux.legalize`).
@@ -102,7 +102,7 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict
     contexte = replace(ctx, structure=structure)
     try:
         _legalize_any_dimensions(programme, contexte)
-    except Infaisable as err:
+    except Infeasible as err:
         return Verdict(
             faisable=False,
             certificat=CertificatFaisabilite(

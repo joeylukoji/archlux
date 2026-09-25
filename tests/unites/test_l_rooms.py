@@ -208,7 +208,7 @@ def test_legalize_never_puts_a_seam_on_a_wall(pavage: bool) -> None:
     plan, ctx, room = _l_in_tiling(wall_x=1.4)
     try:
         result = archlux.legalize(plan, ctx, fusions=(room,), pavage=pavage)
-    except archlux.Infaisable:
+    except archlux.Infeasible:
         return  # an L straddling a wall has no valid plan in this order: honest refusal
     assert result.certificat is not None and result.certificat.geometrie.valide
     assert not checkers.violations(result, ctx, fusions=(room,))

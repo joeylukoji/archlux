@@ -38,7 +38,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.erreurs import CalibrationVerrouillee, InvariantViole, ModeleModifie
+from archlux.erreurs import CalibrationLocked, InvariantViolation, ModelModified
 
 __all__ = [
     "GestionDonnees",
@@ -66,7 +66,7 @@ class JetonCalibration:
         """
         attendu = emettre_jeton(self.empreinte_poids, self.horodatage_gel)
         if self.signature != attendu.signature:
-            raise CalibrationVerrouillee("signature du jeton de calibration invalide")
+            raise CalibrationLocked("signature du jeton de calibration invalide")
 
 
 def _empreinte_modele(modele: object) -> str:
@@ -86,7 +86,7 @@ def _empreinte_modele(modele: object) -> str:
     if isinstance(b3, (int, float)):
         tampons.append(np.asarray(float(b3), dtype=float).tobytes())
     if not tampons:
-        raise InvariantViole(("modèle sans poids hashables : impossible de geler",))
+        raise InvariantViolation(("modèle sans poids hashables : impossible de geler",))
     return hashlib.sha256(b"".join(tampons)).hexdigest()
 
 
@@ -128,7 +128,7 @@ def emettre_jeton(empreinte_poids: str, horodatage_gel: str) -> JetonCalibration
         Jeton déterministe : mêmes arguments, même signature.
     """
     if not empreinte_poids or not horodatage_gel:
-        raise InvariantViole(("empreinte et horodatage de gel sont obligatoires",))
+        raise InvariantViolation(("empreinte et horodatage de gel sont obligatoires",))
     materiau = f"{empreinte_poids}|{horodatage_gel}".encode()
     signature = hashlib.blake2b(materiau, digest_size=16).hexdigest()
     return JetonCalibration(empreinte_poids, horodatage_gel, signature)
@@ -139,13 +139,13 @@ def ouvrir_calibration(racine: Path, jeton: JetonCalibration) -> Path:
 
     Raises
     ------
-    CalibrationVerrouillee
+    CalibrationLocked
         Jeton absent, invalide, ou répertoire manquant.
     """
     jeton.verifier()
     dossier = Path(racine) / "calibration"
     if not dossier.is_dir():
-        raise CalibrationVerrouillee(f"répertoire de calibration absent : {dossier}")
+        raise CalibrationLocked(f"répertoire de calibration absent : {dossier}")
     return dossier
 
 
@@ -159,14 +159,14 @@ class GestionDonnees:
         """Répertoire ``train/`` — seul chemin exposé pour ajuster les poids."""
         dossier = Path(self.racine) / "train"
         if not dossier.is_dir():
-            raise InvariantViole((f"répertoire d'entraînement absent : {dossier}",))
+            raise InvariantViolation((f"répertoire d'entraînement absent : {dossier}",))
         return dossier
 
     def pour_test(self) -> Path:
         """Répertoire ``test/``, ouvert une seule fois pour la mesure finale."""
         dossier = Path(self.racine) / "test"
         if not dossier.is_dir():
-            raise InvariantViole((f"répertoire de test absent : {dossier}",))
+            raise InvariantViolation((f"répertoire de test absent : {dossier}",))
         return dossier
 
     def pour_calibration(self, jeton: JetonCalibration, modele: object | None = None) -> Path:
@@ -180,5 +180,5 @@ class GestionDonnees:
             Si fourni, son empreinte actuelle doit coincider avec celle du jeton.
         """
         if modele is not None and _empreinte_modele(modele) != jeton.empreinte_poids:
-            raise ModeleModifie("poids du modèle modifiés après le gel")
+            raise ModelModified("poids du modèle modifiés après le gel")
         return ouvrir_calibration(self.racine, jeton)

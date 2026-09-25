@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from archlux.bench.protocole import charger_decoupage
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 SPLITS = Path(__file__).resolve().parents[2] / "splits" / "v1"
 
@@ -37,5 +37,5 @@ def test_identifiant_duplique_leve(tmp_path: Path) -> None:
     (tmp_path / "train.txt").write_text("a\nb\n", encoding="utf-8")
     (tmp_path / "calibration.txt").write_text("b\nc\n", encoding="utf-8")
     (tmp_path / "test.txt").write_text("d\n", encoding="utf-8")
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         charger_decoupage(tmp_path)

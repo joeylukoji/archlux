@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.seeds import derive
 from archlux.types import Orientation, Piece, Plan
 
@@ -48,15 +48,15 @@ def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         ``n`` négatif, ou supérieur au nombre de coupes distinctes de la grille.
         Sans cette garde, ``n > TAILLE_MAX`` levait un ``IndexError`` nu hors du
         domaine d'erreurs du projet (`ARCHITECTURE.md` §7).
     """
     if n < 0:
-        raise InvariantViole((f"n doit être ≥ 0, reçu {n}",))
+        raise InvariantViolation((f"n doit être ≥ 0, reçu {n}",))
     if n > TAILLE_MAX:
-        raise InvariantViole((f"n={n} > {TAILLE_MAX} coupes distinctes disponibles",))
+        raise InvariantViolation((f"n={n} > {TAILLE_MAX} coupes distinctes disponibles",))
     rng = _rng(seed, "corpus")
     grilles_x = np.linspace(4.05, 7.95, _N_COUPES_X)
     grilles_y = np.linspace(3.05, 5.95, _N_COUPES_Y)
@@ -114,11 +114,11 @@ def two_room_vectors(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         ``n`` is negative.
     """
     if n < 0:
-        raise InvariantViole((f"n must be >= 0, got {n}",))
+        raise InvariantViolation((f"n must be >= 0, got {n}",))
     rng = _rng(seed, "two_room_vectors")
     cuts, azimuths = rng.uniform(4.0, 8.0, n), rng.uniform(0.0, 360.0, n)
     vectors = tuple(np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in cuts)

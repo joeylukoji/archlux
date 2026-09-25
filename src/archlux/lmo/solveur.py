@@ -23,7 +23,7 @@ import numpy as np
 from ortools.linear_solver import pywraplp
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
@@ -125,7 +125,7 @@ def _construire_modele(
     """
     solveur = pywraplp.Solver.CreateSolver("GLOP")
     if solveur is None:  # pragma: no cover - dépend de l'installation d'OR-Tools
-        raise InvariantViole(("backend GLOP indisponible",))
+        raise InvariantViolation(("backend GLOP indisponible",))
 
     noms = sorted(poly.index, key=lambda nom: poly.index[nom])
     variables = [
@@ -309,7 +309,7 @@ def resoudre(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Dimension de ``c`` ou de ``depart`` incompatible avec le polytope.
 
     Guarantees
@@ -336,9 +336,9 @@ def resoudre(
     debut = time.perf_counter()
     n_var = len(poly.index)
     if c.shape != (n_var,):
-        raise InvariantViole((f"objectif de dimension {c.shape}, attendu ({n_var},)",))
+        raise InvariantViolation((f"objectif de dimension {c.shape}, attendu ({n_var},)",))
     if depart is not None and depart.shape != (n_var,):
-        raise InvariantViole((f"départ de dimension {depart.shape}, attendu ({n_var},)",))
+        raise InvariantViolation((f"départ de dimension {depart.shape}, attendu ({n_var},)",))
 
     cle = id(poly)
     en_cache = _CACHE.get(cle)

@@ -69,8 +69,8 @@ def deduire_ordre(plan: Plan) -> OrdreRelatif: ...   # depuis un plan proposé
 
 - [ ] `deduire_ordre(plan)` — extraire l'ordre relatif d'un plan proposé (comparer les centres)
 - [ ] `construire_graphe` — deux graphes orientés (`networkx.DiGraph`), un horizontal, un vertical
-- [ ] Détecter les **cycles** → lever `OrdreIncoherent(cycle=[...])`
-- [ ] Détecter les **paires non séparées** → lever `SeparationManquante(paire=(a, b))`
+- [ ] Détecter les **cycles** → lever `InconsistentOrder(cycle=[...])`
+- [ ] Détecter les **paires non séparées** → lever `MissingSeparation(paire=(a, b))`
 - [ ] `reduction_transitive` via `networkx.transitive_reduction`
 
 ### Pourquoi la réduction transitive n'est pas optionnelle
@@ -88,7 +88,7 @@ def test_separation_simple():
 
 def test_cycle_detecte():
     o = OrdreRelatif(horizontal=(("A","B"),("B","A")), vertical=())
-    with pytest.raises(OrdreIncoherent):
+    with pytest.raises(InconsistentOrder):
         construire_graphe(o, ["A","B"])
 
 @given(ordre=ordres_valides())
@@ -454,7 +454,7 @@ housediffusion,000123,False,True,0.18,12.4,17
 
 - [ ] Le test d'acceptation (§0) passe sur 500 cas
 - [ ] Test d'idempotence : `legalize(plan_valide) == plan_valide`
-- [ ] Test d'infaisabilité : programme trop gros → `Infaisable` avec certificat non vide
+- [ ] Test d'infaisabilité : programme trop gros → `Infeasible` avec certificat non vide
 - [ ] `test_le_noyau_n_importe_pas_torch` passe
 - [ ] Couverture > 85 % sur `geom/`, `lmo/`, `certify/`
 

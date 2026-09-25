@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from math import isfinite
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.types import BornePerformance, Regime
 from archlux.uq.conforme import Calibration, borner, quantile_conforme
 from archlux.uq.derive import DiagnosticDerive
@@ -69,12 +69,12 @@ def check_calibration(calibration: object) -> None:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Not a :class:`Calibration`, non-finite scores, ``alpha`` outside ``]0, 1[`` or a
         set too small for ``alpha``: the conformal quantile is computed once here.
     """
     if not isinstance(calibration, Calibration):
-        raise InvariantViole(
+        raise InvariantViolation(
             (f"calibration must be a Calibration, got {type(calibration).__name__}",)
         )
     quantile_conforme(calibration.scores, calibration.alpha)

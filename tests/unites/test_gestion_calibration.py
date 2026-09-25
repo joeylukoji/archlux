@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from archlux.erreurs import CalibrationVerrouillee, ModeleModifie
+from archlux.erreurs import CalibrationLocked, ModelModified
 from archlux.uq.gestion import (
     GestionDonnees,
     emettre_jeton,
@@ -28,7 +28,7 @@ def test_ouvrir_calibration_sans_jeton_valide_leve(tmp_path: Path) -> None:
     faux = emettre_jeton("poids", "2026-01-01T00:00:00Z")
     from dataclasses import replace
 
-    with pytest.raises(CalibrationVerrouillee):
+    with pytest.raises(CalibrationLocked):
         ouvrir_calibration(tmp_path, replace(faux, signature="0" * 16))
 
 
@@ -64,5 +64,5 @@ def test_calibration_refuse_un_modele_modifie(tmp_path: Path) -> None:
     jeton = geler_et_emettre(modele, horodatage="2026-09-09T12:00:00Z")
     GestionDonnees(tmp_path).pour_calibration(jeton, modele)
     modele.poids = modele.poids + 0.01
-    with pytest.raises(ModeleModifie):
+    with pytest.raises(ModelModified):
         GestionDonnees(tmp_path).pour_calibration(jeton, modele)

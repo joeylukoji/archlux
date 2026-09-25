@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 import pytest
 from hypothesis import given, settings
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.export import diagnostiquer, survival_rate, to_dxf, to_ifc
 from archlux.export.wilson import intervalle_wilson
 from archlux.types import Mur, Piece, Plan
@@ -87,7 +87,7 @@ def test_to_dxf_ecrit_lwpolyline(tmp_path: Path) -> None:
 
 
 def test_to_dxf_leve_sur_pathologie(tmp_path: Path) -> None:
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         to_dxf(_plan_pathologique(), tmp_path / "x.dxf")
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from archlux.erreurs import SubstitutInvalide
+from archlux.erreurs import InvalidSurrogate
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.base import SubstitutDense
 from archlux.light.simulateur import SplitFluxOracle
@@ -80,7 +80,7 @@ def test_point_de_controle_gradient() -> None:
 
 
 @pytest.mark.xfail(
-    raises=SubstitutInvalide,
+    raises=InvalidSurrogate,
     strict=True,
     reason="J4 checkpoint reopened (PLAN.md phase 2, docs/revues/j4.md, ADR 0002): "
     "measured at south only it passed; at 0, 90 and 270 degrees it does not",

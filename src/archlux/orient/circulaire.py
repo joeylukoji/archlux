@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvalidInput, InvariantViole
+from archlux.erreurs import InvalidInput, InvariantViolation
 from archlux.types import Orientation
 
 __all__ = [
@@ -165,7 +165,7 @@ def direction_dominante(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Entrée vide, longueurs incohérentes, ``periode`` hors ``]0, 360]``, poids
         négatifs, ou résultante nulle — dans ce dernier cas aucune direction n'est
         dominante et rendre un angle serait inventer une information.
@@ -180,23 +180,23 @@ def direction_dominante(
     """
     angles = np.asarray(degres, dtype=float).ravel()
     if angles.size == 0:
-        raise InvariantViole(("aucun axe : direction dominante indéfinie",))
+        raise InvariantViolation(("aucun axe : direction dominante indéfinie",))
     if not 0.0 < periode <= 360.0:
-        raise InvariantViole((f"periode hors ]0, 360] : {periode}",))
+        raise InvariantViolation((f"periode hors ]0, 360] : {periode}",))
     if poids is None:
         longueurs = np.ones_like(angles)
     else:
         longueurs = np.asarray(poids, dtype=float).ravel()
         if longueurs.size != angles.size:
-            raise InvariantViole(("degres et poids de longueurs distinctes",))
+            raise InvariantViolation(("degres et poids de longueurs distinctes",))
         if bool(np.any(longueurs < 0.0)):
-            raise InvariantViole(("poids négatif",))
+            raise InvariantViolation(("poids négatif",))
     m = 360.0 / periode
     phases = np.radians(m * angles)
     cosinus = float(np.sum(longueurs * np.cos(phases)))
     sinus = float(np.sum(longueurs * np.sin(phases)))
     if math.hypot(cosinus, sinus) <= _EPS_RESULTANTE:
-        raise InvariantViole(("résultante nulle : aucune direction dominante",))
+        raise InvariantViolation(("résultante nulle : aucune direction dominante",))
     deg = float(np.degrees(math.atan2(sinus, cosinus)) / m) % periode
     # Une direction juste sous ``periode`` est la même que ``0`` : sans ce recalage,
     # une trame parfaitement alignée sur l'axe x sort à 89,999999° au lieu de 0°,

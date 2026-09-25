@@ -88,7 +88,7 @@ class TestDuaux:
         assert actives, "aucune contrainte active alors que l'optimum est sur une face"
 
 
-class TestInfaisable:
+class TestInfeasible:
     """Une infaisabilité porte sa preuve, jamais un simple message."""
 
     @staticmethod
@@ -137,9 +137,9 @@ class TestDemarrageAChaud:
 
     def test_un_depart_de_mauvaise_dimension_est_refuse(self) -> None:
         """Un vecteur mal apparié est un bogue d'appel, pas une donnée."""
-        from archlux.erreurs import InvariantViole
+        from archlux.erreurs import InvariantViolation
 
-        with pytest.raises(InvariantViole, match="dimension"):
+        with pytest.raises(InvariantViolation, match="dimension"):
             resoudre(POLY_AB, c=np.zeros(8), depart=np.zeros(3))
 
 
@@ -176,9 +176,9 @@ class TestStatutsRares:
 
     def test_un_objectif_de_mauvaise_dimension_est_refuse(self) -> None:
         """Un vecteur de coûts mal apparié est un bogue d'appel."""
-        from archlux.erreurs import InvariantViole
+        from archlux.erreurs import InvariantViolation
 
-        with pytest.raises(InvariantViole, match="objectif de dimension"):
+        with pytest.raises(InvariantViolation, match="objectif de dimension"):
             resoudre(POLY_1, c=np.zeros(99))
 
 

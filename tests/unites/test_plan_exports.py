@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from archlux import Piece, Plan
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.export import to_dxf
 
 SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
@@ -85,5 +85,5 @@ def test_to_svg_draws_an_invalid_plan(tmp_path: Path) -> None:
 
 
 def test_to_dxf_still_refuses_a_pathological_plan(tmp_path: Path) -> None:
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         overlapping_plan().to_dxf(tmp_path / "bad.dxf")

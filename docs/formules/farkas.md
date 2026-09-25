@@ -29,7 +29,7 @@ libellé. Les composantes \(\lvert y_i\rvert \le 10^{-9}\) sont omises à l'API.
 Un prix dual se lit : « relâcher cette contrainte d'un mètre change l'objectif de
 \(y_i\) ». C'est la dualité LP standard (Bertsimas & Tsitsiklis, ch. 4).
 
-## Infaisable vs non borné
+## Infeasible vs non borné
 
 GLOP rend le code `INFEASIBLE` aussi pour un problème **non borné**. Discriminant :
 le LP à objectif nul sur le même système. Un LP à objectif nul ne peut pas être
@@ -90,7 +90,7 @@ certificate is a proof even if the solver rounded; a noisy one can fail to verif
 verify a feasible system. On the noisy benchmark, 88 of 89 certificates verify.
 
 **Scope.** The certificate proves that the polytope of **this relative order** is empty.
-Another order might admit a valid plan: `Infaisable` and `is_feasible` say so.
+Another order might admit a valid plan: `Infeasible` and `is_feasible` say so.
 
 **Tightened domains.** The area cutting loop tightens variable bounds, which is not an
 outer approximation; an infeasible verdict on a tightened domain said nothing about the
@@ -102,7 +102,7 @@ before concluding.
 | Faire | Ne pas faire |
 |---|---|
 | `depart=` pour réutiliser le modèle (même polytope, nouvel objectif) | Réutiliser le cache si des *coupes* ont été ajoutées — le système a changé |
-| Lire `Infaisable.origines`, pas seulement le message | Traduire un dual par « ligne 47 » |
+| Lire `Infeasible.origines`, pas seulement le message | Traduire un dual par « ligne 47 » |
 | Distinguer `infaisable` / `non_borne` / `limite` | Fusionner en un booléen « pas optimal » |
 
 ## Source

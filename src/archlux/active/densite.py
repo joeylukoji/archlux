@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 __all__ = ["densite_noyau"]
 
@@ -34,11 +34,11 @@ def densite_noyau(
     cand = np.asarray(candidats, dtype=float)
     ref = np.asarray(reference, dtype=float)
     if cand.ndim != 2 or ref.ndim != 2:
-        raise InvariantViole(("candidats et reference doivent être de rang 2",))
+        raise InvariantViolation(("candidats et reference doivent être de rang 2",))
     if cand.shape[1] != ref.shape[1]:
-        raise InvariantViole(("dimensions candidats / reference incompatibles",))
+        raise InvariantViolation(("dimensions candidats / reference incompatibles",))
     if ref.shape[0] == 0 or cand.shape[0] == 0:
-        raise InvariantViole(("reference et candidats non vides exigés",))
+        raise InvariantViolation(("reference et candidats non vides exigés",))
     d = cand.shape[1]
     if bande is None:
         # Scott : n^{-1/(d+4)} * ecart-type moyen.
@@ -46,7 +46,7 @@ def densite_noyau(
         bande = sigma * (ref.shape[0] ** (-1.0 / (d + 4)))
         bande = max(bande, _EPS)
     if bande <= 0.0:
-        raise InvariantViole(("bande doit être > 0",))
+        raise InvariantViolation(("bande doit être > 0",))
     # densite_i ∝ mean_j exp(-||c_i - r_j||² / (2 h²))
     # Pour éviter underflow : travailler en distance au plus proche + moyenne locale.
     diff = cand[:, None, :] - ref[None, :, :]

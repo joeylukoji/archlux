@@ -197,7 +197,7 @@ class Plan:
 | Origin | bottom-left corner of the outline, y axis towards geographic north |
 | Seeds | `seed: int` argument **mandatory, with no default**, on every function that samples |
 | Metrics | return **value + interval**, never a bare scalar |
-| Errors | typed exceptions (`OrdreIncoherent`, `Infaisable`, `InvariantViole`) — never `Exception` |
+| Errors | typed exceptions (`InconsistentOrder`, `Infeasible`, `InvariantViolation`) — never `Exception` |
 | Logs | `structlog`, structured logging, never free text |
 | Style | `ruff check` + `ruff format` + `mypy --strict` on `src/` |
 | Language | **English** for code, API, docstrings, messages, tests and documentation. New code is English now; existing French is migrated batch by batch ([ADR 0001](../adr/0001-english-first.md), [glossary](../glossary.md)). This file was translated in batch E3 |

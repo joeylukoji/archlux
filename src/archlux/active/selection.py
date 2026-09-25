@@ -6,7 +6,7 @@ from typing import Protocol
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 __all__ = ["Aleatoire", "StrategieAcquisition", "UncertaintyTimesDensity"]
 
@@ -34,11 +34,11 @@ def _valider(
     inc = np.asarray(incertitudes, dtype=float).ravel()
     dens = np.asarray(densites, dtype=float).ravel()
     if inc.size != dens.size or inc.size == 0:
-        raise InvariantViole(("incertitudes et densites de longueurs incompatibles",))
+        raise InvariantViolation(("incertitudes et densites de longueurs incompatibles",))
     if n < 1:
-        raise InvariantViole(("n de sélection doit être ≥ 1",))
+        raise InvariantViolation(("n de sélection doit être ≥ 1",))
     if n > inc.size:
-        raise InvariantViole((f"n={n} > nombre de candidats {inc.size}",))
+        raise InvariantViolation((f"n={n} > nombre de candidats {inc.size}",))
     return inc, dens
 
 
@@ -51,7 +51,7 @@ def _masque_disponibles(n_candidats: int, exclus: np.ndarray | None) -> np.ndarr
     if exclus_i.size == 0:
         return masque
     if np.any(exclus_i < 0) or np.any(exclus_i >= n_candidats):
-        raise InvariantViole(("indices exclus hors bornes",))
+        raise InvariantViolation(("indices exclus hors bornes",))
     masque[exclus_i] = False
     return masque
 
@@ -74,7 +74,9 @@ class UncertaintyTimesDensity:
         scores = inc * dens
         disponibles = np.flatnonzero(_masque_disponibles(inc.size, exclus))
         if disponibles.size < n:
-            raise InvariantViole((f"trop peu de candidats libres ({disponibles.size}) pour n={n}",))
+            raise InvariantViolation(
+                (f"trop peu de candidats libres ({disponibles.size}) pour n={n}",)
+            )
         ordre = disponibles[np.argsort(-scores[disponibles], kind="stable")]
         return np.asarray(ordre[:n], dtype=int)
 
@@ -95,7 +97,9 @@ class Aleatoire:
         inc, _dens = _valider(incertitudes, densites, n=n)
         disponibles = np.flatnonzero(_masque_disponibles(inc.size, exclus))
         if disponibles.size < n:
-            raise InvariantViole((f"trop peu de candidats libres ({disponibles.size}) pour n={n}",))
+            raise InvariantViolation(
+                (f"trop peu de candidats libres ({disponibles.size}) pour n={n}",)
+            )
         rng = np.random.default_rng(seed)
         choix = rng.choice(disponibles, size=n, replace=False)
         return np.asarray(np.sort(choix), dtype=int)

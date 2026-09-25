@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.types import Mur, Ouverture
 
 MUR_SUD = Mur(id="m_sud", a=(0.0, 0.0), b=(10.0, 0.0))
@@ -47,6 +47,6 @@ def test_la_baie_suit_le_mur_quand_le_solveur_le_deplace() -> None:
 
 def test_un_mur_etranger_est_refuse() -> None:
     """Dériver une baie sur un autre mur que le sien est un bogue, pas un cas limite."""
-    with pytest.raises(InvariantViole) as capture:
+    with pytest.raises(InvariantViolation) as capture:
         BAIE.segment_absolu(MUR_OBLIQUE)
     assert "m_sud" in str(capture.value)

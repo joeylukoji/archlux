@@ -61,7 +61,7 @@ import numpy as np
 from scipy import sparse
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.lmo.solveur import resoudre
 from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2, SNAP_M
 
@@ -230,7 +230,7 @@ def coupe_surface(w0: float, h0: float, a_min: float, *, piece: str = "") -> Cou
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Point non strictement positif, ou ``a_min`` non strictement positive.
 
     Guarantees
@@ -242,9 +242,9 @@ def coupe_surface(w0: float, h0: float, a_min: float, *, piece: str = "") -> Cou
     Formule et sources : ``docs/formules/coupes-surface.md``.
     """
     if w0 <= 0.0 or h0 <= 0.0:
-        raise InvariantViole((f"point de linéarisation non strictement positif : {(w0, h0)}",))
+        raise InvariantViolation((f"point de linéarisation non strictement positif : {(w0, h0)}",))
     if a_min <= 0.0:
-        raise InvariantViole((f"surface minimale non strictement positive : {a_min}",))
+        raise InvariantViolation((f"surface minimale non strictement positive : {a_min}",))
     produit = w0 * h0
     scale = sqrt(a_min / produit)
     w_star, h_star = w0 * scale, h0 * scale
@@ -617,7 +617,7 @@ def inner_area_constraints(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         The start is below a minimum area by more than the proof tolerance: it is not
         a valid legalized plan.
     """
@@ -635,7 +635,7 @@ def inner_area_constraints(
         if a_min <= 0.0 or w0 <= 0.0 or h0 <= 0.0:
             continue
         if w0 * h0 < a_min - AREA_PROOF_M2:
-            raise InvariantViole(
+            raise InvariantViolation(
                 (f"minimum area {piece.id}: start {w0 * h0:.9f} m² below {a_min:.9f} m²",)
             )
         # A start within the proof tolerance below a_min keeps its own area as target.

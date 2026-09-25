@@ -14,7 +14,7 @@ from benchmarks.guarantees.scenarios import generate
 
 import archlux
 from archlux.certify.farkas import verify_infeasibility
-from archlux.erreurs import Infaisable
+from archlux.erreurs import Infeasible
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.solveur import resoudre
@@ -69,7 +69,7 @@ def test_tiling_conflicts_are_named_and_verified(index: int) -> None:
     scenario = generate(17, index)
     try:
         archlux.legalize(mode.prepare(scenario), scenario.context, pavage=True)
-    except Infaisable as refusal:
+    except Infeasible as refusal:
         assert refusal.origines, "an infeasibility must name its constraints"
         assert refusal.verified is True
     except archlux.ArchluxError:

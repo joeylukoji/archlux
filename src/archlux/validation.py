@@ -2,7 +2,7 @@
 
 PLAN.md phase 3.1. Everything below the door (``geom``, ``lmo``, ``solve``) may assume
 finite numbers, positive sizes and unique ids; a violation found later surfaces as an
-LP status or as ``InvariantViole``, which means "internal bug" and points the user at
+LP status or as ``InvariantViolation``, which means "internal bug" and points the user at
 the wrong place. Every refusal here is an :class:`~archlux.erreurs.InvalidInput` that
 names the field.
 

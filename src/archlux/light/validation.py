@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from archlux.erreurs import SubstitutInvalide
+from archlux.erreurs import InvalidSurrogate
 
 if TYPE_CHECKING:
     from archlux.light.protocole import Substitut
@@ -107,7 +107,7 @@ def valider_gradient(
 
     Raises
     ------
-    SubstitutInvalide
+    InvalidSurrogate
         Auto-contrôle hors tolérance, ou accord de signe sous le seuil.
 
     Notes
@@ -171,14 +171,14 @@ def valider_gradient(
     if oracle is None:
         conforme = rapport.erreur_relative_max <= tolerance
         if not conforme:
-            raise SubstitutInvalide(
+            raise InvalidSurrogate(
                 f"erreur relative {rapport.erreur_relative_max:.3g} > {tolerance}",
                 report=rapport,
             )
     else:
         conforme = rapport.accord_de_signe >= seuil_signe
         if not conforme:
-            raise SubstitutInvalide(
+            raise InvalidSurrogate(
                 f"accord de signe {rapport.accord_de_signe:.3f} < {seuil_signe} "
                 "— ne pas passer au jalon 5",
                 report=rapport,

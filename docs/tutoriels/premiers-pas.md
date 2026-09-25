@@ -75,7 +75,7 @@ q.to_json("plan_legalise.json")
 `pavage=True` impose que les pièces couvrent exactement le contour. Il est nécessaire
 dès que l'entrée peut contenir un vide, ce qui est le cas des sorties de générateur :
 sans lui, les séparations sont des inégalités, le plan troué est déjà son propre point
-le plus proche, et la vérification exacte le rejette (`InvariantViole`).
+le plus proche, et la vérification exacte le rejette (`InvariantViolation`).
 
 Le schéma JSON est versionné, et `certificat` vaut `null` sur un plan proposé ; voir
 [référence](../reference/schema-json.md).

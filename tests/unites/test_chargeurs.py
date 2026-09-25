@@ -169,7 +169,7 @@ def test_statistiques_ventilent_les_rejets(tmp_path: Path) -> None:
 
 def test_fichier_absent_leve_invariant(tmp_path: Path) -> None:
     """Un corpus introuvable est une erreur typee, pas un `FileNotFoundError` nu."""
-    with pytest.raises(ax.InvariantViole, match="introuvable"):
+    with pytest.raises(ax.InvariantViolation, match="introuvable"):
         list(charger_msd(tmp_path / "absent.csv"))
 
 

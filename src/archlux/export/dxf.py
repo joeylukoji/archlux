@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.export.pathologie import diagnostiquer
 from archlux.types import Plan
 
@@ -23,13 +23,13 @@ def to_dxf(plan: Plan, chemin: Path | str) -> None:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Pathologie géométrique bloquante.
     """
     chemin = Path(chemin)
     diag = diagnostiquer(plan)
     if not diag.exportable:
-        raise InvariantViole(diag.pathologies)
+        raise InvariantViolation(diag.pathologies)
 
     lignes: list[str] = [
         "0",

@@ -107,7 +107,7 @@ def test_a_program_that_fills_the_outline_exactly_is_still_legalized() -> None:
     """Review M1: two 4.5 m² bedrooms in 3 m x 3 m leave no room for an area margin.
 
     Batch 1.5a aimed every deficit room 1e-6 m² above its minimum and refused this
-    feasible program with InvariantViole; the loop must fall back on the exact minimum.
+    feasible program with InvariantViolation; the loop must fall back on the exact minimum.
     """
     import archlux
 

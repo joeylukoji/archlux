@@ -103,11 +103,11 @@ def main() -> None:
             corrige = ax.legalize(plan, contexte, pavage=True, budget_reparation=BUDGET)
             if not corrige.certificat.geometrie.valide:
                 statut = "corrigé mais invalide"
-        except ax.Infaisable:
+        except ax.Infeasible:
             statut = "infaisable (prouvé)"
         except GridNotRecoverable:
             statut = "trame irrécupérable"
-        except ax.InvariantViole:
+        except ax.InvariantViolation:
             statut = "invariant violé"
         # Quota par issue : un dossier qui ne montrerait que les reussites
         # donnerait une image fausse du jalon.

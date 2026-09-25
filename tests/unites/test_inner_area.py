@@ -17,7 +17,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 import archlux
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import Polytope, construire_polytope, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
@@ -139,7 +139,7 @@ def test_a_room_whose_height_is_fixed_can_still_narrow() -> None:
 
 def test_a_start_below_the_minimum_area_is_refused() -> None:
     poly, x0, ctx, plan = _setup(4.0, 3.0, 12.5)  # 12 m² for 12.5 required
-    with pytest.raises(InvariantViole, match="minimum area r"):
+    with pytest.raises(InvariantViolation, match="minimum area r"):
         inner_area_constraints(poly, x0, ctx, plan.pieces)
 
 

@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.types import Piece, Plan
 
 if TYPE_CHECKING:
@@ -145,7 +145,7 @@ def corrompre(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Plan sans pièce, ``n_pieces < 1``, ``amplitude <= 0``, ou ``modes`` vide.
 
     Examples
@@ -164,13 +164,13 @@ def corrompre(
     True
     """
     if not plan.pieces:
-        raise InvariantViole(("plan sans piece : rien a corrompre",))
+        raise InvariantViolation(("plan sans piece : rien a corrompre",))
     if n_pieces < 1:
-        raise InvariantViole((f"n_pieces doit etre >= 1 : {n_pieces}",))
+        raise InvariantViolation((f"n_pieces doit etre >= 1 : {n_pieces}",))
     if amplitude <= 0.0:
-        raise InvariantViole((f"amplitude doit etre > 0 : {amplitude}",))
+        raise InvariantViolation((f"amplitude doit etre > 0 : {amplitude}",))
     if not modes:
-        raise InvariantViole(("aucun mode de corruption",))
+        raise InvariantViolation(("aucun mode de corruption",))
 
     rng = np.random.default_rng(seed)
     # Tri par identifiant avant tirage : l'ordre de ``plan.pieces`` ne doit pas

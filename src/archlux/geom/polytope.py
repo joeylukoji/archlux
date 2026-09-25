@@ -18,7 +18,7 @@ import numpy as np
 from scipy import sparse
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import Infaisable, InvariantViole
+from archlux.erreurs import Infeasible, InvariantViolation
 from archlux.geom.graphe import construire_graphe, reduction_transitive
 
 if TYPE_CHECKING:
@@ -110,7 +110,7 @@ class Polytope:
 
         Raises
         ------
-        InvariantViole
+        InvariantViolation
             La dimension de ``x`` ne correspond pas au polytope.
 
         Complexity
@@ -118,7 +118,9 @@ class Polytope:
         O(nnz(A)).
         """
         if x.shape != (len(self.index),):
-            raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(self.index)},)",))
+            raise InvariantViolation(
+                (f"vecteur de dimension {x.shape}, attendu ({len(self.index)},)",)
+            )
         if self.A.shape[0] and np.any(self.A @ x > self.b + tol):
             return False
         if self.A_eq.shape[0] and np.any(np.abs(self.A_eq @ x - self.b_eq) > tol):
@@ -155,7 +157,7 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
         contour figés dans ``bornes``.
     """
     if x.shape != (len(poly.index),):
-        raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(poly.index)},)",))
+        raise InvariantViolation((f"vecteur de dimension {x.shape}, attendu ({len(poly.index)},)",))
     noms = {colonne: nom for nom, colonne in poly.index.items()}
     bornes: list[tuple[float, float]] = []
     for colonne, (lo, hi) in enumerate(poly.bornes):
@@ -210,12 +212,12 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
 def _enveloppe(ctx: Contexte) -> tuple[float, float, float, float]:
     """Boîte englobante du contour : ``(xmin, ymin, xmax, ymax)``."""
     if not ctx.contour:
-        raise InvariantViole(("contour vide : aucune enveloppe n'est définissable",))
+        raise InvariantViolation(("contour vide : aucune enveloppe n'est définissable",))
     xs = [point[0] for point in ctx.contour]
     ys = [point[1] for point in ctx.contour]
     xmin, xmax, ymin, ymax = min(xs), max(xs), min(ys), max(ys)
     if xmax <= xmin or ymax <= ymin:
-        raise InvariantViole((f"contour dégénéré : {xmax - xmin} x {ymax - ymin}",))
+        raise InvariantViolation((f"contour dégénéré : {xmax - xmin} x {ymax - ymin}",))
     return xmin, ymin, xmax, ymax
 
 
@@ -226,14 +228,14 @@ def _verifier_enveloppe_admissible(
 
     Sans ce contrôle, ``bornes`` porte un intervalle **inversé** (``lo > hi``) : GLOP
     répond ``ABNORMAL``, que :func:`archlux.lmo.solveur._statut` traduit en
-    ``"limite"``, et ``api.legalize`` lève ``InvariantViole`` — « bogue interne » — sur
+    ``"limite"``, et ``api.legalize`` lève ``InvariantViolation`` — « bogue interne » — sur
     ce qui est en réalité un programme infaisable. Le certificat de Farkas est de plus
     inexploitable dans ce cas : l'infaisabilité ne vient d'aucune ligne de ``A``, donc
     le problème auxiliaire n'a lui-même pas de solution.
 
     Raises
     ------
-    Infaisable
+    Infeasible
         ``largeur_min`` dépasse une des deux dimensions de l'enveloppe. Sans pièce, il
         n'y a aucune variable ``w``/``h`` et donc rien à refuser.
     """
@@ -245,7 +247,7 @@ def _verifier_enveloppe_admissible(
         if largeur_min > etendue
     )
     if conflits:
-        raise Infaisable(certificat_farkas=None, origines=conflits)
+        raise Infeasible(certificat_farkas=None, origines=conflits)
 
 
 def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
@@ -278,11 +280,11 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
 
     Raises
     ------
-    OrdreIncoherent, SeparationManquante
+    InconsistentOrder, MissingSeparation
         Propagées depuis :func:`archlux.geom.graphe.construire_graphe`.
-    InvariantViole
+    InvariantViolation
         Contour vide ou dégénéré.
-    Infaisable
+    Infeasible
         ``referentiel.largeur_min`` dépasse une dimension de l'enveloppe : aucune pièce
         n'y tient. Détecté ici plutôt que par le LP, qui ne saurait pas le distinguer
         d'une erreur numérique (voir :func:`_verifier_enveloppe_admissible`).
@@ -428,7 +430,7 @@ def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Une pièce attendue par ``index`` est absente du plan. C'est un bogue interne :
         le polytope et le plan doivent venir du même ordre.
 
@@ -442,7 +444,7 @@ def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
         piece_id, champ = nom.rsplit(".", 1)
         piece = par_id.get(piece_id)
         if piece is None:
-            raise InvariantViole((f"pièce {piece_id} absente du plan à vectoriser",))
+            raise InvariantViolation((f"pièce {piece_id} absente du plan à vectoriser",))
         point[colonne] = getattr(piece, champ)
     return point
 
@@ -471,7 +473,7 @@ def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Dimension inattendue, ou pièce du gabarit absente du polytope. Laisser une pièce
         non mise à jour produirait un plan faux que ``certify`` rejetterait plus loin,
         avec un diagnostic sans rapport avec la cause.
@@ -481,10 +483,10 @@ def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
     O(n).
     """
     if x.shape != (len(index),):
-        raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(index)},)",))
+        raise InvariantViolation((f"vecteur de dimension {x.shape}, attendu ({len(index)},)",))
     manquantes = sorted(piece.id for piece in gabarit.pieces if f"{piece.id}.x" not in index)
     if manquantes:
-        raise InvariantViole((f"pièces absentes du polytope : {', '.join(manquantes)}",))
+        raise InvariantViolation((f"pièces absentes du polytope : {', '.join(manquantes)}",))
     pieces = tuple(
         replace(
             piece,
@@ -538,7 +540,7 @@ def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Dimension de ``x_ref`` incompatible.
 
     Notes
@@ -547,7 +549,7 @@ def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:
     """
     n_var = len(poly.index)
     if x_ref.shape != (n_var,):
-        raise InvariantViole((f"référence de dimension {x_ref.shape}, attendu ({n_var},)",))
+        raise InvariantViolation((f"référence de dimension {x_ref.shape}, attendu ({n_var},)",))
     noms = sorted(poly.index, key=lambda nom: poly.index[nom])
     index = dict(poly.index)
     for rang, nom in enumerate(noms):

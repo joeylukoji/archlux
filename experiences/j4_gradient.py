@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.erreurs import SubstitutInvalide
+from archlux.erreurs import InvalidSurrogate
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.base import SubstitutDense
 from archlux.light.simulateur import SplitFluxOracle
@@ -43,7 +43,7 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                 report = valider_gradient(
                     model, points, Orientation(azimuth), seed=SEED, reference=oracle
                 )
-            except SubstitutInvalide as failed:  # below 0.80: recorded, not hidden
+            except InvalidSurrogate as failed:  # below 0.80: recorded, not hidden
                 report = failed.report
             sign = report.accord_de_signe  # lang-ok: French field, renamed with module light
             writer.writerow((name, azimuth, 20, f"{sign:.4f}", f"{mae:.4f}"))

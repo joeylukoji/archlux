@@ -32,7 +32,7 @@ from scipy import sparse
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, unary_union
 
-from archlux.erreurs import InvariantViole, UnsupportedInput
+from archlux.erreurs import InvariantViolation, UnsupportedInput
 from archlux.geom.polytope import Polytope
 from archlux.tolerances import AREA_PROOF_M2
 from archlux.types import Piece, Referentiel
@@ -260,17 +260,17 @@ def _decouper(poly: Polygon) -> list[Polygon]:
     """Partition guillotine récursive : verticale à gauche, puis horizontale en bas."""
     poly = Polygon(poly.exterior)
     if not poly.is_valid or poly.area <= _EPS:
-        raise InvariantViole(("polygone invalide ou d'aire nulle",))
+        raise InvariantViolation(("polygone invalide ou d'aire nulle",))
     if _est_rectangle(poly):
         return [poly]
     coupe = _meilleure_coupe_verticale(poly)
     if coupe is None:
         coupe = _meilleure_coupe_horizontale(poly)
     if coupe is None:
-        raise InvariantViole(("aucune coupe guillotine reproductible trouvée",))
+        raise InvariantViolation(("aucune coupe guillotine reproductible trouvée",))
     parties = [g for g in split(poly, coupe).geoms if g.geom_type == "Polygon" and g.area > _EPS]
     if len(parties) < 2:
-        raise InvariantViole(("la coupe verticale n'a pas séparé le polygone",))
+        raise InvariantViolation(("la coupe verticale n'a pas séparé le polygone",))
     parties.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
     resultat: list[Polygon] = []
     for partie in parties:
@@ -341,21 +341,21 @@ def decomposer(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Polygone non rectilinéaire, invalide, non découpable sous la convention,
         ou dépassant ``max_rectangles``.
     """
     if not isinstance(polygone, Polygon) or polygone.is_empty:
-        raise InvariantViole(("polygone attendu, non vide",))
+        raise InvariantViolation(("polygone attendu, non vide",))
     if not polygone.is_valid:
-        raise InvariantViole(("polygone invalide",))
+        raise InvariantViolation(("polygone invalide",))
     if max_rectangles < 1:
-        raise InvariantViole((f"max_rectangles doit être ≥ 1 : {max_rectangles}",))
+        raise InvariantViolation((f"max_rectangles doit être ≥ 1 : {max_rectangles}",))
     if not _est_rectilineaire(polygone):
-        raise InvariantViole(("polygone non rectilinéaire : arête diagonale",))
+        raise InvariantViolation(("polygone non rectilinéaire : arête diagonale",))
     parties = _decouper(polygone)
     if len(parties) > max_rectangles:
-        raise InvariantViole((f"trop de rectangles ({len(parties)}) : max {max_rectangles}",))
+        raise InvariantViolation((f"trop de rectangles ({len(parties)}) : max {max_rectangles}",))
     parties.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
     rectangles = tuple(
         _vers_piece(p, id=f"{id}__{k}", type_piece=type_piece) for k, p in enumerate(parties)
@@ -373,11 +373,11 @@ def recomposer(piece: PieceRectilineaire) -> Polygon:
         d'entrée de :func:`decomposer`.
     """
     if not piece.rectangles:
-        raise InvariantViole(("PieceRectilineaire sans rectangle",))
+        raise InvariantViolation(("PieceRectilineaire sans rectangle",))
     boites = [box(r.x, r.y, r.x + r.w, r.y + r.h) for r in piece.rectangles]
     union = unary_union(boites)
     if union.geom_type != "Polygon":
-        raise InvariantViole((f"recomposition non connexe : {union.geom_type}",))
+        raise InvariantViolation((f"recomposition non connexe : {union.geom_type}",))
     return union
 
 
@@ -395,7 +395,7 @@ def contraintes_fusion(
         if nature == FUSION_DROIT:
             for nom in (f"{a.id}.x", f"{a.id}.w", f"{b.id}.x"):
                 if nom not in index:
-                    raise InvariantViole((f"variable absente de l'index : {nom}",))
+                    raise InvariantViolation((f"variable absente de l'index : {nom}",))
             egalites.append(
                 (
                     f"fusion verticale {a.id}|{b.id}",
@@ -406,7 +406,7 @@ def contraintes_fusion(
         elif nature == FUSION_HAUT:
             for nom in (f"{a.id}.y", f"{a.id}.h", f"{b.id}.y"):
                 if nom not in index:
-                    raise InvariantViole((f"variable absente de l'index : {nom}",))
+                    raise InvariantViolation((f"variable absente de l'index : {nom}",))
             egalites.append(
                 (
                     f"fusion horizontale {a.id}|{b.id}",
@@ -415,7 +415,7 @@ def contraintes_fusion(
                 )
             )
         else:
-            raise InvariantViole((f"nature de fusion inconnue : {nature!r}",))
+            raise InvariantViolation((f"nature de fusion inconnue : {nature!r}",))
     return tuple(egalites)
 
 
@@ -530,14 +530,14 @@ def overlap_constraints(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         A variable is missing from ``index``, or the fusion kind is unknown.
     """
     equalities: list[_Row] = []
     inequalities: list[_Row] = []
     for i, j, kind in piece.fusions:
         if kind not in (FUSION_DROIT, FUSION_HAUT):
-            raise InvariantViole((f"unknown fusion kind: {kind!r}",))
+            raise InvariantViolation((f"unknown fusion kind: {kind!r}",))
         a, b = piece.rectangles[i], piece.rectangles[j]
         axis = "y" if kind == FUSION_DROIT else "x"
         a0, a1, a_low, a_high = _interval(a, axis)
@@ -561,7 +561,7 @@ def overlap_constraints(
     for _, terms, _ in (*equalities, *inequalities):
         for name in terms:
             if name not in index:
-                raise InvariantViole((f"variable missing from the index: {name}",))
+                raise InvariantViolation((f"variable missing from the index: {name}",))
     return tuple(equalities), tuple(inequalities)
 
 

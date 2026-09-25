@@ -48,7 +48,7 @@ from shapely.errors import ShapelyError
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.geom.rectilineaire import PieceRectilineaire, decomposer
 from archlux.orient.circulaire import direction_dominante
 from archlux.types import (
@@ -464,7 +464,7 @@ def charger_msd(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Fichier absent, ou dépourvu des colonnes attendues.
 
     Notes
@@ -475,7 +475,7 @@ def charger_msd(
     """
     chemin = Path(chemin)
     if not chemin.is_file():
-        raise InvariantViole((f"corpus MSD introuvable : {chemin}",))
+        raise InvariantViolation((f"corpus MSD introuvable : {chemin}",))
     stats = statistiques if statistiques is not None else StatistiquesChargement()
     reglement = (
         referentiel if referentiel is not None else Referentiel(aires_min=(), largeur_min=0.0)
@@ -546,7 +546,7 @@ def _convertir(
         return "aucune arete exploitable"
     try:
         theta = direction_dominante(angles, longueurs, periode=90.0)
-    except InvariantViole:
+    except InvariantViolation:
         return "aucune direction dominante"
 
     def redresser(forme: Polygon) -> Polygon:
@@ -575,7 +575,7 @@ def _convertir(
                 type_piece=sous_type.lower(),
                 max_rectangles=max_rectangles,
             )
-        except InvariantViole as echec:
+        except InvariantViolation as echec:
             motif = str(echec.violations[0])
             if "diagonale" in motif:
                 return "piece oblique"
@@ -639,7 +639,7 @@ def _flux_simulations(chemin: Path) -> Iterator[dict[str, str]]:
         with zipfile.ZipFile(chemin) as archive:
             noms = [nom for nom in archive.namelist() if nom.lower().endswith("simulations.csv")]
             if not noms:
-                raise InvariantViole((f"pas de simulations.csv dans {chemin}",))
+                raise InvariantViolation((f"pas de simulations.csv dans {chemin}",))
             with archive.open(noms[0]) as brut:
                 enveloppe = io.TextIOWrapper(brut, encoding="utf-8", errors="replace", newline="")
                 yield from csv.DictReader(enveloppe)
@@ -670,7 +670,7 @@ def charger_etiquettes_sd(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Fichier absent, archive sans ``simulations.csv``, ou colonne inconnue.
 
     Notes
@@ -680,13 +680,13 @@ def charger_etiquettes_sd(
     """
     chemin = Path(chemin)
     if not chemin.is_file():
-        raise InvariantViole((f"simulations introuvables : {chemin}",))
+        raise InvariantViolation((f"simulations introuvables : {chemin}",))
     table: dict[tuple[str, str], tuple[float, float]] = {}
     connue = False
     for ligne in _flux_simulations(chemin):
         if not connue:
             if colonne not in ligne:
-                raise InvariantViole((f"colonne {colonne!r} absente des simulations",))
+                raise InvariantViolation((f"colonne {colonne!r} absente des simulations",))
             connue = True
         try:
             valeur = float(ligne[colonne])
@@ -698,7 +698,7 @@ def charger_etiquettes_sd(
             surface,
         )
     if not table:
-        raise InvariantViole((f"aucune simulation lue dans {chemin}",))
+        raise InvariantViolation((f"aucune simulation lue dans {chemin}",))
     return table
 
 
@@ -784,18 +784,18 @@ def decouper_par_site(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         ``site_id`` manquant, proportions non positives, ou moins de trois sites.
     """
     if not appartements:
-        raise InvariantViole(("corpus vide : rien a decouper",))
+        raise InvariantViolation(("corpus vide : rien a decouper",))
     if any(not a.site_id for a in appartements):
-        raise InvariantViole(("site_id manquant : decoupage impossible",))
+        raise InvariantViolation(("site_id manquant : decoupage impossible",))
     if any(p <= 0.0 for p in parts) or abs(sum(parts) - 1.0) > 1e-9:
-        raise InvariantViole((f"parts invalides : {parts}",))
+        raise InvariantViolation((f"parts invalides : {parts}",))
     sites = sorted({a.site_id for a in appartements})
     if len(sites) < 3:
-        raise InvariantViole((f"{len(sites)} site(s) : decoupage en trois impossible",))
+        raise InvariantViolation((f"{len(sites)} site(s) : decoupage en trois impossible",))
     rng = np.random.default_rng(seed)
     ordre = rng.permutation(len(sites))
     melanges = [sites[int(i)] for i in ordre]

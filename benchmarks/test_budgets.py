@@ -178,7 +178,7 @@ CTX_15_AREAS = Contexte(
 def test_budget_performance_legalization_with_minimum_areas(benchmark: BenchmarkFixture) -> None:
     """Frank-Wolfe with tight minimum areas stays under the 500 ms budget.
 
-    Until PLAN.md batch 1.2 this case raised InvariantViole, and the tangent cuts it
+    Until PLAN.md batch 1.2 this case raised InvariantViolation, and the tangent cuts it
     needed disabled the LP warm start on every iteration.
     """
     from archlux.light.analytique import SubstitutAnalytique
@@ -198,7 +198,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
     """Performance mode scales with tight minimum areas (AUDIT.md §5.6).
 
     At 15, 50 and 100 rooms with a_min = 11 m² for 12 m² rooms, the performance mode
-    raised InvariantViole at every size. It must now return a valid plan, within a time
+    raised InvariantViolation at every size. It must now return a valid plan, within a time
     that grows reasonably (limits are loose for slow CI machines).
     """
     import time

@@ -72,7 +72,7 @@ calibration = GestionDonnees("splits/v1").pour_calibration(jeton, modele)
 ```
 
 Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
-`ModeleModifie`.
+`ModelModified`.
 
 ## 2. Ajuster un calibrateur par indicateur
 

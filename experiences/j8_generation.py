@@ -396,11 +396,11 @@ def main() -> None:
                     # Compter les pieces ne suffit pas : une piece ecrasee a
                     # 0 m reste dans le compte.
                     intact = str(bool(valide and petit >= COTE_INTACT_M))
-                except ax.Infaisable:
+                except ax.Infeasible:
                     statut = "infaisable"
                 except GridNotRecoverable:
                     statut = "trame"
-                except ax.InvariantViole:
+                except ax.InvariantViolation:
                     statut = "invariant_viole"
                 ecrivain.writerow(
                     {

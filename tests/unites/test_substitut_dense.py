@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.appris import MAX_PARAMETRES, SubstitutAppris
 from archlux.light.base import SubstitutDense
@@ -108,5 +108,5 @@ def test_empreinte_divergente_leve(tmp_path: Path) -> None:
     chemin = tmp_path / "dense.npz"
     dense.sauver(chemin)
     reseau = SubstitutAppris(chemin, "0" * 64, gele=True)
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         reseau.n_parametres()

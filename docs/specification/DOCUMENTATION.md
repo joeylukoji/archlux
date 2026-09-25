@@ -88,10 +88,10 @@ def legalize(plan: Plan, ctx: Contexte, *, objective=None,
 
     Raises                                                           ✱
     ------
-    Infaisable
+    Infeasible
         Le programme ne tient pas dans l'enveloppe. L'exception porte
         ``certificat`` : les contraintes en conflit.
-    InvariantViole
+    InvariantViolation
         Le solveur a produit une sortie invalide (bogue interne).
 
     Guarantees                                                       ✱ SPÉCIFIQUE PROJET

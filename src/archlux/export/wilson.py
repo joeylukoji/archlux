@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 __all__ = ["intervalle_wilson"]
 
@@ -46,15 +46,15 @@ def intervalle_wilson(succes: int, n: int, *, z: float = 1.96) -> tuple[float, f
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         ``n < 1``, ``succes`` hors ``[0, n]``, ou ``z ≤ 0``.
     """
     if n < 1:
-        raise InvariantViole(("n doit être ≥ 1",))
+        raise InvariantViolation(("n doit être ≥ 1",))
     if not 0 <= succes <= n:
-        raise InvariantViole((f"succes={succes} hors [0, {n}]",))
+        raise InvariantViolation((f"succes={succes} hors [0, {n}]",))
     if z <= 0.0:
-        raise InvariantViole(("z doit être > 0",))
+        raise InvariantViolation(("z doit être > 0",))
     phat = succes / n
     z2 = z * z
     denom = 1.0 + z2 / n

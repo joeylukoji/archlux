@@ -3,7 +3,7 @@
 The faulty cases come from the guarantee benchmark (``benchmarks/guarantees``), modes
 ``classic_noisy`` and ``partial_one_fault``. They are written out as literals so that
 the test does not depend on the generator. Inputs the grid cannot describe are refused
-with a typed input error, never with ``InvariantViole`` (reserved for internal bugs).
+with a typed input error, never with ``InvariantViolation`` (reserved for internal bugs).
 """
 
 from __future__ import annotations

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.types import REGIMES, BornePerformance, Indicateur, Regime
 
 __all__ = [
@@ -82,7 +82,7 @@ def n_minimal_conforme(alpha: float) -> int:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Si ``alpha`` sort de ``]0, 1[``.
 
     Examples
@@ -92,7 +92,7 @@ def n_minimal_conforme(alpha: float) -> int:
     (9, 19)
     """
     if not 0.0 < alpha < 1.0:
-        raise InvariantViole((f"alpha hors ]0, 1[ : {alpha}",))
+        raise InvariantViolation((f"alpha hors ]0, 1[ : {alpha}",))
     # Recherche entiere plutot que ceil(1/alpha - 1) : en flottant, 1/0.1 vaut
     # 10.000000000000002 et l'arrondi rendrait 10 au lieu de 9.
     n = max(1, int(1.0 / alpha) - 2)
@@ -118,7 +118,7 @@ def quantile_conforme(scores: np.ndarray, alpha: float) -> float:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Si ``ceil((n + 1)(1 − alpha)) > n`` : le jeu de calibration est trop petit pour
         le niveau demandé. Échec explicite plutôt que borne infinie silencieuse.
 
@@ -136,21 +136,21 @@ def quantile_conforme(scores: np.ndarray, alpha: float) -> float:
     vecteur = np.asarray(scores, dtype=float).ravel()
     n = int(vecteur.size)
     if n == 0:
-        raise InvariantViole(("jeu de calibration vide",))
+        raise InvariantViolation(("jeu de calibration vide",))
     if not bool(np.all(np.isfinite(vecteur))):
-        raise InvariantViole(("scores de calibration non finis",))
+        raise InvariantViolation(("scores de calibration non finis",))
     if not 0.0 < alpha < 1.0:
-        raise InvariantViole((f"alpha hors ]0, 1[ : {alpha}",))
+        raise InvariantViolation((f"alpha hors ]0, 1[ : {alpha}",))
     rang = math.ceil((n + 1) * (1.0 - alpha))
     if rang > n:
-        raise InvariantViole((f"n={n} trop petit pour alpha={alpha} (rang {rang} > n)",))
+        raise InvariantViolation((f"n={n} trop petit pour alpha={alpha} (rang {rang} > n)",))
     ordre = np.sort(vecteur)
     return float(ordre[rang - 1])
 
 
 def _indicateur(nom: str) -> Indicateur:
     if nom not in ("sDA", "ASE", "UDI", "vue"):
-        raise InvariantViole((f"indicateur inconnu : {nom!r}",))
+        raise InvariantViolation((f"indicateur inconnu : {nom!r}",))
     return nom  # type: ignore[return-value]
 
 
@@ -179,7 +179,7 @@ def _regime(regime: str) -> Regime:
     for known in REGIMES:
         if regime == known:
             return known
-    raise InvariantViole((f"unknown regime {regime!r}, expected {REGIMES}",))
+    raise InvariantViolation((f"unknown regime {regime!r}, expected {REGIMES}",))
 
 
 def _echelle(incertitude: float) -> float:
@@ -193,14 +193,14 @@ def _echelle(incertitude: float) -> float:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Si ``incertitude`` n'est pas finie ou n'est pas ``> 0``.
     """
     echelle = float(incertitude)
     if not math.isfinite(echelle):
-        raise InvariantViole((f"incertitude non finie : {incertitude}",))
+        raise InvariantViolation((f"incertitude non finie : {incertitude}",))
     if echelle <= 0.0:
-        raise InvariantViole(
+        raise InvariantViolation(
             (f"incertitude doit être > 0 pour publier une marge conforme : {echelle}",)
         )
     return max(echelle, _SIGMA_MIN)
@@ -251,7 +251,7 @@ def borner(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Si ``incertitude`` n'est pas finie ou n'est pas ``> 0``.
 
     Guarantees
@@ -311,11 +311,13 @@ class CalibrateurConforme:
         verite = np.asarray(verites, dtype=float).ravel()
         brut = np.asarray(incertitudes, dtype=float).ravel()
         if pred.size != verite.size or pred.size != brut.size:
-            raise InvariantViole(("predictions, verites et incertitudes de longueurs distinctes",))
+            raise InvariantViolation(
+                ("predictions, verites et incertitudes de longueurs distinctes",)
+            )
         if pred.size == 0:
-            raise InvariantViole(("jeu de calibration vide",))
+            raise InvariantViolation(("jeu de calibration vide",))
         if not bool(np.all(np.isfinite(brut))) or bool(np.any(brut < 0.0)):
-            raise InvariantViole(("uncertainties must be finite and non-negative",))
+            raise InvariantViolation(("uncertainties must be finite and non-negative",))
         sigma = np.maximum(brut, _SIGMA_MIN)
         scores = np.abs(verite - pred) / sigma
         self.q = quantile_conforme(scores, alpha)
@@ -352,14 +354,16 @@ class CalibrateurConforme:
             See :func:`borner`.
         """
         if self.n < 1:
-            raise InvariantViole(("calibrateur non ajusté",))
+            raise InvariantViolation(("calibrateur non ajusté",))
         attendu = "<=" if self.indicateur == "ASE" else ">="
         if sens is None:
             sens = attendu
         if sens not in (">=", "<="):
-            raise InvariantViole((f"sens inconnu : {sens!r}",))
+            raise InvariantViolation((f"sens inconnu : {sens!r}",))
         if sens != attendu:
-            raise InvariantViole((f"sens {sens!r} incompatible avec indicateur {self.indicateur}",))
+            raise InvariantViolation(
+                (f"sens {sens!r} incompatible avec indicateur {self.indicateur}",)
+            )
         marge = self.q * _echelle(incertitude)
         return _intervalle(
             prediction,
@@ -377,7 +381,7 @@ class CalibrateurConforme:
         du jeu reste journalisée avec la calibration.
         """
         if self.n < 1 or self.scores is None:
-            raise InvariantViole(("calibrateur non ajusté",))
+            raise InvariantViolation(("calibrateur non ajusté",))
         return Calibration(
             scores=np.array(self.scores, dtype=float, copy=True),
             alpha=self.alpha,

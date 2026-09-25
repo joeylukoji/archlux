@@ -11,7 +11,7 @@ import numpy as np
 from archlux.bench.graines import deriver
 from archlux.bench.run import Resultat
 from archlux.bench.stats import Intervalle, bootstrap_apparie
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.orient.circulaire import stratifier
 
 __all__ = ["N_REPLICATIONS", "RapportBanc", "StrateOrientation", "report"]
@@ -71,7 +71,7 @@ def report(
     famille avec :func:`archlux.bench.stats.holm` avant toute publication.
     """
     if n_secteurs < 1:
-        raise InvariantViole(("n_secteurs doit être ≥ 1",))
+        raise InvariantViolation(("n_secteurs doit être ≥ 1",))
 
     # Le binning vient de ``stratifier`` seul : le réimplémenter ici laissait deux
     # conventions de secteur diverger en silence à la moindre retouche d'``orient``.

@@ -3,7 +3,7 @@
 Ce module est une **extension** de l'arborescence de ``ARCHITECTURE.md`` §11 : les
 exceptions y sont exigees (§7, « exceptions typees -- jamais ``Exception`` ») sans qu'un
 fichier leur soit assigne. Elles sont isolees ici plutot que dans :mod:`archlux.types`
-pour une raison de dependance : ``Infaisable`` transporte un polytope et un certificat de
+pour une raison de dependance : ``Infeasible`` transporte un polytope et un certificat de
 Farkas, objets de la couche ``geom``/``lmo``. Les referencer depuis ``types`` creerait un
 cycle. Ici, les champs sont types en ``object`` et la dependance reste nulle.
 
@@ -14,16 +14,16 @@ from __future__ import annotations
 
 __all__ = [
     "ArchluxError",
-    "CalibrationVerrouillee",
+    "CalibrationLocked",
     "GapNeedsTiling",
     "GridNotRecoverable",
-    "Infaisable",
+    "InconsistentOrder",
+    "Infeasible",
     "InvalidInput",
-    "InvariantViole",
-    "ModeleModifie",
-    "OrdreIncoherent",
-    "SeparationManquante",
-    "SubstitutInvalide",
+    "InvalidSurrogate",
+    "InvariantViolation",
+    "MissingSeparation",
+    "ModelModified",
     "UnsupportedInput",
 ]
 
@@ -39,7 +39,7 @@ class InvalidInput(ArchluxError, ValueError):
     """An argument is malformed: wrong type, non-finite, out of range, or inconsistent.
 
     Raised at the door of the public functions, before any solving, so that a typo never
-    surfaces as ``InvariantViole`` (which means an internal bug). It also is a
+    surfaces as ``InvariantViolation`` (which means an internal bug). It also is a
     ``ValueError``: callers that caught ``ValueError`` keep working.
 
     Parameters
@@ -60,7 +60,7 @@ class InvalidInput(ArchluxError, ValueError):
         super().__init__(f"{field}: {problem}" + (f". {hint}" if hint else ""))
 
 
-class OrdreIncoherent(ArchluxError):
+class InconsistentOrder(ArchluxError):
     """L'ordre relatif contient un cycle : ``A`` a gauche de ``B`` a gauche de ``A``.
 
     Parameters
@@ -78,7 +78,7 @@ class OrdreIncoherent(ArchluxError):
         super().__init__(f"cycle {axe} : {' -> '.join(cycle)}")
 
 
-class SeparationManquante(ArchluxError):
+class MissingSeparation(ArchluxError):
     """Une paire de pieces n'est separee sur aucun axe : le chevauchement est possible.
 
     Parameters
@@ -93,7 +93,7 @@ class SeparationManquante(ArchluxError):
         super().__init__(f"aucune separation entre {paire[0]} et {paire[1]}")
 
 
-class Infaisable(ArchluxError):
+class Infeasible(ArchluxError):
     """Le programme ne tient pas dans l'enveloppe : aucun plan valide n'existe.
 
     L'exception **porte la preuve de l'infaisabilite**, jamais un simple message : un
@@ -161,7 +161,7 @@ class Infaisable(ArchluxError):
         super().__init__(f"infeasible for this relative order{within}: {detail}{status}{cause}")
 
 
-class InvariantViole(ArchluxError):
+class InvariantViolation(ArchluxError):
     """Le solveur a rendu une sortie que la verification exacte rejette.
 
     Most often an internal bug; also the documented refusal of a plan with a gap when
@@ -180,7 +180,7 @@ class InvariantViole(ArchluxError):
         super().__init__("invariant viole : " + " ; ".join(violations))
 
 
-class CalibrationVerrouillee(ArchluxError):
+class CalibrationLocked(ArchluxError):
     """Acces au jeu de calibration sans jeton emis apres le gel du modele.
 
     Garde-fou de la seule erreur silencieuse capable d'invalider une publication : un jeu
@@ -193,10 +193,10 @@ class CalibrationVerrouillee(ArchluxError):
         super().__init__(detail)
 
 
-class ModeleModifie(CalibrationVerrouillee):
+class ModelModified(CalibrationLocked):
     """Les poids ont changé après ``geler_et_emettre`` : le jeton ne déverrouille plus.
 
-    Sous-classe de :class:`CalibrationVerrouillee` : c'est la même barrière, avec la
+    Sous-classe de :class:`CalibrationLocked` : c'est la même barrière, avec la
     cause précise (empreinte divergente plutôt que signature invalide).
     """
 
@@ -205,7 +205,7 @@ class ModeleModifie(CalibrationVerrouillee):
         super().__init__(detail)
 
 
-class SubstitutInvalide(ArchluxError):
+class InvalidSurrogate(ArchluxError):
     """Le gradient d'un substitut ne correspond pas a ses differences finies.
 
     Levee par :func:`archlux.light.validation.valider_gradient`. Un substitut dont le
@@ -248,7 +248,7 @@ class GapNeedsTiling(UnsupportedInput):
     Without the tiling equalities the separations are inequalities, so a plan with a
     gap is its own closest valid point: the L1 optimum keeps the gap and the exact
     proof rejects it. An input limit with a known fix, not an internal error: until
-    PLAN.md batch 3.4 it was raised as ``InvariantViole``.
+    PLAN.md batch 3.4 it was raised as ``InvariantViolation``.
 
     Parameters
     ----------
@@ -272,7 +272,7 @@ class GridNotRecoverable(UnsupportedInput):
     Raised by :func:`archlux.geom.pavage.deduire_trame` when the proposed plan is too
     far from a tiling: some grid cells stay covered twice (``excess``) or not at all
     (``missing``) after the bounded repair. An input limit, not an internal error:
-    until batch 1.5c it was raised as ``InvariantViole`` and callers sorted it by
+    until batch 1.5c it was raised as ``InvariantViolation`` and callers sorted it by
     reading the message text.
 
     Parameters

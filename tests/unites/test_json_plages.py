@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.io.json_io import charger, depuis_dict, vers_dict
 from archlux.types import Mur, Ouverture, Piece, Plan
 
@@ -40,7 +40,7 @@ class TestPlagesOuverture:
     @pytest.mark.parametrize("s", [-0.01, 1.5])
     def test_abscisse_hors_plage(self, s: float) -> None:
         """Une baie hors de son mur n'a pas de position dérivable."""
-        with pytest.raises(InvariantViole, match="s"):
+        with pytest.raises(InvariantViolation, match="s"):
             depuis_dict(_avec(["ouvertures", 0, "s"], s))
 
     @pytest.mark.parametrize("s", [0.0, 1.0])
@@ -51,7 +51,7 @@ class TestPlagesOuverture:
     @pytest.mark.parametrize("largeur", [0.0, -0.5, 1.01])
     def test_largeur_relative_hors_plage(self, largeur: float) -> None:
         """Une largeur nulle ou négative n'est pas une baie ; au-delà de 1, elle déborde."""
-        with pytest.raises(InvariantViole, match="largeur_rel"):
+        with pytest.raises(InvariantViolation, match="largeur_rel"):
             depuis_dict(_avec(["ouvertures", 0, "largeur_rel"], largeur))
 
     def test_une_baie_pleine_largeur_est_licite(self) -> None:
@@ -67,7 +67,7 @@ class TestPlagesPiece:
     @pytest.mark.parametrize("valeur", [0.0, -2.0])
     def test_dimension_non_positive(self, champ: str, valeur: float) -> None:
         """Une pièce de largeur nulle ou négative casserait le polytope en silence."""
-        with pytest.raises(InvariantViole, match=champ):
+        with pytest.raises(InvariantViolation, match=champ):
             depuis_dict(_avec(["pieces", 0, champ], valeur))
 
 
@@ -76,7 +76,7 @@ class TestPlagesMur:
 
     def test_epaisseur_non_positive(self) -> None:
         """Une épaisseur nulle rendrait la structure porteuse inexistante."""
-        with pytest.raises(InvariantViole, match="epaisseur"):
+        with pytest.raises(InvariantViolation, match="epaisseur"):
             depuis_dict(_avec(["murs", 0, "epaisseur"], 0.0))
 
 
@@ -89,12 +89,12 @@ class TestValeursNonFinies:
 
     def test_nan_dans_un_champ(self) -> None:
         """Une coordonnée ``NaN`` est refusée à la lecture."""
-        with pytest.raises(InvariantViole, match="non finie"):
+        with pytest.raises(InvariantViolation, match="non finie"):
             depuis_dict(_avec(["pieces", 0, "x"], float("nan")))
 
     def test_infini_dans_un_point(self) -> None:
         """Un sommet de contour infini également."""
-        with pytest.raises(InvariantViole, match="non finie"):
+        with pytest.raises(InvariantViolation, match="non finie"):
             depuis_dict(_avec(["contour", 0], [float("inf"), 0.0]))
 
     def test_nan_lu_depuis_un_fichier(self, tmp_path: Path) -> None:
@@ -105,7 +105,7 @@ class TestValeursNonFinies:
             ' "ouvertures": [], "certificat": null}',
             encoding="utf-8",
         )
-        with pytest.raises(InvariantViole, match="non finie"):
+        with pytest.raises(InvariantViolation, match="non finie"):
             charger(chemin)
 
 
@@ -117,7 +117,7 @@ class TestDiagnostic:
         donnees = vers_dict(PLAN)
         donnees["pieces"][0]["w"] = -1.0
         donnees["ouvertures"][0]["s"] = 3.0
-        with pytest.raises(InvariantViole) as capture:
+        with pytest.raises(InvariantViolation) as capture:
             depuis_dict(donnees)
         message = str(capture.value)
         assert "w" in message

@@ -16,7 +16,7 @@ from typing import ClassVar
 import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique, facteur_secteur
 from archlux.light.jetons import CHAMPS_PAR_PIECE
 from archlux.light.protocole import Baies
@@ -108,7 +108,7 @@ def _split_flux(
 ) -> tuple[float, float, float]:
     """DF fractionnaire et, si demandé, ∂DF/∂w et ∂DF/∂h."""
     if wwr <= 0.0 or wwr > 1.0:
-        raise InvariantViole((f"wwr hors ]0, 1] : {wwr}",))
+        raise InvariantViolation((f"wwr hors ]0, 1] : {wwr}",))
     w = max(float(w), _EPS)
     h = max(float(h), _EPS)
     theta = _THETA_CIEL_DEG * facteur_secteur(orientation)

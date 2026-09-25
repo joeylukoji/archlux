@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.types import BornePerformance
 from archlux.uq.conforme import CalibrateurConforme, Calibration, borner, quantile_conforme
 
@@ -36,13 +36,13 @@ def test_correction_echantillon_fini() -> None:
 
 def test_quantile_refuse_un_jeu_trop_petit() -> None:
     """n trop petit pour 1−α : échec explicite, pas une borne infinie."""
-    with pytest.raises(InvariantViole, match="trop petit"):
+    with pytest.raises(InvariantViolation, match="trop petit"):
         quantile_conforme(_scores(8), alpha=0.10)
 
 
 def test_pas_de_borne_sans_calibration() -> None:
     """Une borne sans jeu de calibration est invérifiable."""
-    with pytest.raises(InvariantViole, match="n_calibration"):
+    with pytest.raises(InvariantViolation, match="n_calibration"):
         BornePerformance(
             indicateur="sDA",
             valeur=56.2,

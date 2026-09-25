@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.uq.conforme import Calibration
 
 __all__ = [
@@ -99,9 +99,9 @@ def controler_derive(
     obs = np.asarray(observations, dtype=float).ravel()
     cal = np.asarray(calibration.scores, dtype=float).ravel()
     if obs.size == 0 or cal.size == 0:
-        raise InvariantViole(("observations et calibration doivent être non vides",))
+        raise InvariantViolation(("observations et calibration doivent être non vides",))
     if not bool(np.all(np.isfinite(obs))) or not bool(np.all(np.isfinite(cal))):
-        raise InvariantViole(("scores non finis pour le contrôle de dérive",))
+        raise InvariantViolation(("scores non finis pour le contrôle de dérive",))
     from scipy.stats import ks_2samp  # lazy: scipy.stats costs 1.3 s at import
 
     # Kolmogorov-Smirnov (pas un test de moyennes) : une derive de variance
@@ -160,7 +160,7 @@ def mesurer_derive(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -
     pred = np.asarray(predictions, dtype=float).ravel()
     verite = np.asarray(verites, dtype=float).ravel()
     if pred.size != verite.size or pred.size == 0:
-        raise InvariantViole(("predictions et verites de longueurs incompatibles",))
+        raise InvariantViolation(("predictions et verites de longueurs incompatibles",))
     _ = int(seed)
     ecarts = pred - verite
     n = int(ecarts.size)

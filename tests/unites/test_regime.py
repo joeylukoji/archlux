@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 
 import archlux
-from archlux.erreurs import Infaisable, InvariantViole
+from archlux.erreurs import Infeasible, InvariantViolation
 from archlux.io.json_io import depuis_dict, vers_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
@@ -74,12 +74,12 @@ def test_a_bound_without_regime_cannot_be_built() -> None:
 
 
 def test_an_unknown_regime_is_refused() -> None:
-    with pytest.raises(InvariantViole, match="regime"):
+    with pytest.raises(InvariantViolation, match="regime"):
         _bound(regime="hopeful")
 
 
 def test_an_inverted_interval_is_refused() -> None:
-    with pytest.raises(InvariantViole, match="inverted"):
+    with pytest.raises(InvariantViolation, match="inverted"):
         _bound(borne_inf=62.0)
 
 
@@ -209,7 +209,7 @@ def test_a_serialized_bound_without_regime_is_refused() -> None:
     certificate = Certificat(geometrie=_proof(), performance=_bound())
     data = vers_dict(replace(_plan(), certificat=certificate))
     del data["certificat"]["performance"]["regime"]
-    with pytest.raises(InvariantViole, match="regime"):
+    with pytest.raises(InvariantViolation, match="regime"):
         depuis_dict(data)
 
 
@@ -251,7 +251,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     """Review m1: a set too small for alpha fails first, not after Frank-Wolfe.
 
     The plan cannot fit (two rooms at least 2 m wide in a 3 m outline): refusing with
-    the calibration error rather than ``Infaisable`` shows nothing was solved.
+    the calibration error rather than ``Infeasible`` shows nothing was solved.
     """
     small_outline = ((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0))
     tiny_ctx = replace(
@@ -259,10 +259,10 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
         contour=small_outline,
         referentiel=Referentiel(aires_min=(), largeur_min=2.0),
     )
-    with pytest.raises(Infaisable):
+    with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=SubstitutAnalytique())
     too_small = Calibration(scores=np.ones(5), alpha=0.10, indicateur="sDA", empreinte_jeu="x")
-    with pytest.raises(InvariantViole, match="trop petit"):
+    with pytest.raises(InvariantViolation, match="trop petit"):
         archlux.legalize(
             _plan(),
             tiny_ctx,
@@ -272,7 +272,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
 
 
 def test_a_calibration_of_the_wrong_type_is_refused() -> None:
-    with pytest.raises(InvariantViole, match="Calibration"):
+    with pytest.raises(InvariantViolation, match="Calibration"):
         archlux.legalize(
             _plan(),
             CONTEXTE_DEFAUT,
@@ -305,5 +305,5 @@ def test_the_fingerprint_is_computed_on_the_raw_uncertainties() -> None:
 
 @pytest.mark.parametrize("bad", [-1.0, np.nan, np.inf])
 def test_a_negative_or_non_finite_uncertainty_is_refused(bad: float) -> None:
-    with pytest.raises(InvariantViole, match="uncertainties"):
+    with pytest.raises(InvariantViolation, match="uncertainties"):
         CalibrateurConforme().ajuster(np.ones(3), np.ones(3), np.array([1.0, bad, 1.0]))

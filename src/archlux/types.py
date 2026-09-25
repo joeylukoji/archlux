@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
-from archlux.erreurs import InvalidInput, InvariantViole
+from archlux.erreurs import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
     from archlux.export import RapportExport
@@ -160,7 +160,7 @@ class Ouverture:
 
         Raises
         ------
-        InvariantViole
+        InvariantViolation
             Si ``mur.id`` ne correspond pas à ``self.mur_id``.
 
         Complexity
@@ -175,7 +175,7 @@ class Ouverture:
         ((4.0, 0.0), (6.0, 0.0))
         """
         if mur.id != self.mur_id:
-            raise InvariantViole(
+            raise InvariantViolation(
                 (f"ouverture {self.id} portée par {self.mur_id}, dérivée sur {mur.id}",)
             )
         (ax, ay), (bx, by) = mur.a, mur.b
@@ -183,7 +183,7 @@ class Ouverture:
         # Direction unitaire du mur ; un mur dégénéré rendrait une division par zéro,
         # ce que la garde ci-dessous transforme en invariant violé plutôt qu'en NaN.
         if longueur == 0.0:
-            raise InvariantViole((f"mur {mur.id} de longueur nulle",))
+            raise InvariantViolation((f"mur {mur.id} de longueur nulle",))
         ux, uy = (bx - ax) / longueur, (by - ay) / longueur
         cx, cy = ax + (bx - ax) * self.s, ay + (by - ay) * self.s
         demi = self.largeur_rel * longueur / 2.0
@@ -239,7 +239,7 @@ class Plan:
 
         Raises
         ------
-        InvariantViole
+        InvariantViolation
             Le fichier ne respecte pas le schéma déclaré.
         """
         from archlux.io.json_io import charger
@@ -260,7 +260,7 @@ class Plan:
 
         Raises
         ------
-        InvariantViole
+        InvariantViolation
             The plan has a blocking geometric pathology (overlap, gap...).
         """
         from archlux.export import to_dxf
@@ -442,13 +442,13 @@ class BornePerformance:
     def __post_init__(self) -> None:
         """Refuse a bound without calibration, an out-of-range coverage or regime."""
         if self.n_calibration < 1:
-            raise InvariantViole(("n_calibration doit être ≥ 1",))
+            raise InvariantViolation(("n_calibration doit être ≥ 1",))
         if not 0.0 < self.couverture <= 1.0:
-            raise InvariantViole((f"couverture hors ]0, 1] : {self.couverture}",))
+            raise InvariantViolation((f"couverture hors ]0, 1] : {self.couverture}",))
         if self.regime not in REGIMES:
-            raise InvariantViole((f"unknown regime {self.regime!r}, expected {REGIMES}",))
+            raise InvariantViolation((f"unknown regime {self.regime!r}, expected {REGIMES}",))
         if not self.borne_inf <= self.borne_sup:
-            raise InvariantViole((f"inverted interval: {self.borne_inf} > {self.borne_sup}",))
+            raise InvariantViolation((f"inverted interval: {self.borne_inf} > {self.borne_sup}",))
 
     @property
     def coverage_guaranteed(self) -> bool:
@@ -470,11 +470,11 @@ class ModeleTrace:
     def __post_init__(self) -> None:
         """Valider empreinte, taille de calibration et niveau α."""
         if not self.poids:
-            raise InvariantViole(("empreinte de poids obligatoire",))
+            raise InvariantViolation(("empreinte de poids obligatoire",))
         if self.calibration_n < 1:
-            raise InvariantViole(("calibration_n doit être ≥ 1",))
+            raise InvariantViolation(("calibration_n doit être ≥ 1",))
         if not 0.0 < self.alpha < 1.0:
-            raise InvariantViole((f"alpha hors ]0, 1[ : {self.alpha}",))
+            raise InvariantViolation((f"alpha hors ]0, 1[ : {self.alpha}",))
 
     def __getitem__(self, cle: str) -> str | int | float:
         """Accès dictionnaire pour les assertions de manifeste (`MILESTONE-6`)."""

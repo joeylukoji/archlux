@@ -11,10 +11,10 @@ from pathlib import Path
 import pytest
 
 from archlux.erreurs import (
-    Infaisable,
-    InvariantViole,
-    OrdreIncoherent,
-    SeparationManquante,
+    InconsistentOrder,
+    Infeasible,
+    InvariantViolation,
+    MissingSeparation,
 )
 from archlux.types import Certificat, Mur, Ouverture, Piece, Plan, PreuveGeometrique
 
@@ -62,7 +62,7 @@ class TestOuvertureDegeneree:
         """Une direction indéfinie doit lever, jamais rendre des ``NaN`` silencieux."""
         mur = Mur(id="m", a=(2.0, 2.0), b=(2.0, 2.0))
         baie = Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.5)
-        with pytest.raises(InvariantViole, match="longueur nulle"):
+        with pytest.raises(InvariantViolation, match="longueur nulle"):
             baie.segment_absolu(mur)
 
 
@@ -92,24 +92,24 @@ class TestExceptions:
 
     def test_ordre_incoherent_expose_le_cycle(self) -> None:
         """Le cycle est exploitable par l'appelant, pas seulement lisible."""
-        erreur = OrdreIncoherent(cycle=("a", "b", "a"), axe="horizontal")
+        erreur = InconsistentOrder(cycle=("a", "b", "a"), axe="horizontal")
         assert erreur.cycle == ("a", "b", "a")
         assert "a -> b -> a" in str(erreur)
 
     def test_separation_manquante_expose_la_paire(self) -> None:
         """La paire non séparée est celle qu'il faut corriger."""
-        erreur = SeparationManquante(paire=("cuisine", "sdb"))
+        erreur = MissingSeparation(paire=("cuisine", "sdb"))
         assert erreur.paire == ("cuisine", "sdb")
 
     def test_infaisable_porte_sa_preuve(self) -> None:
         """Une infaisabilité sans certificat n'apprend rien à personne."""
-        erreur = Infaisable(certificat_farkas=[1.0, 0.0], origines=("mur porteur axe 3",))
+        erreur = Infeasible(certificat_farkas=[1.0, 0.0], origines=("mur porteur axe 3",))
         assert erreur.certificat_farkas == [1.0, 0.0]
         assert "mur porteur axe 3" in str(erreur)
 
     def test_infaisable_sans_origines_le_dit(self) -> None:
         """Le message ne prétend pas à un diagnostic qu'il n'a pas."""
-        assert "no constraint identified" in str(Infaisable(certificat_farkas=None))
+        assert "no constraint identified" in str(Infeasible(certificat_farkas=None))
 
 
 class TestEcritureRobuste:
@@ -127,5 +127,5 @@ class TestEcritureRobuste:
             ouvertures=(),
             contour=(),
         )
-        with pytest.raises(InvariantViole, match="non finie"):
+        with pytest.raises(InvariantViolation, match="non finie"):
             plan.to_json(tmp_path / "x.json")

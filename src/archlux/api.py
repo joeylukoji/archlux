@@ -26,7 +26,7 @@ from archlux.certify.borne import bound_selected_plan, check_calibration
 from archlux.certify.dual import traduire_duaux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import GapNeedsTiling, Infaisable, InvalidInput, InvariantViole
+from archlux.erreurs import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
 from archlux.geom.graphe import OrdreRelatif, deduire_ordre
 from archlux.geom.pavage import deduire_trame, etendre_pavage, snap_to_grid
 from archlux.geom.polytope import (
@@ -202,7 +202,7 @@ def legalize(
     budget : float or None, optional
         Maximum L-infinity displacement from the proposed plan, in metres, over the
         whole legalization (classic pass and Frank-Wolfe share it), checked by the proof.
-        A budget too small for the plan raises ``Infaisable``.
+        A budget too small for the plan raises ``Infeasible``.
     trace : bool, optional
         Si vrai, attache la trace Frank-Wolfe à ``resultat.trace`` (non sérialisée).
     fusions : tuple of PieceRectilineaire, optional
@@ -250,7 +250,7 @@ def legalize(
 
     Raises
     ------
-    OrdreIncoherent, SeparationManquante
+    InconsistentOrder, MissingSeparation
         Propagées depuis la construction du graphe.
     UnsupportedInput
         An oblique load-bearing wall: it cannot be kept by a linear side constraint.
@@ -259,7 +259,7 @@ def legalize(
     GridNotRecoverable
         With ``pavage``: the rooms do not fall into the cells of the recovered grid
         (an input limit, subclass of ``UnsupportedInput``).
-    Infaisable
+    Infeasible
         The program does not fit the envelope for this relative order. The exception
         carries ``origines`` and, when the conflict is attributable to rows of ``A`` or
         ``A_eq``, ``certificat_farkas`` with its exact verification (``verified``).
@@ -267,7 +267,7 @@ def legalize(
     GapNeedsTiling
         The plan leaves a gap and ``pavage`` is off: rerun with ``pavage=True``
         (an input limit, subclass of ``UnsupportedInput``).
-    InvariantViole
+    InvariantViolation
         Sortie du solveur rejetée par la vérification exacte, ou statut LP inattendu.
         Le cas le plus fréquent est une surface minimale encore violée après épuisement
         des coupes de Kelley : le LP se dit « optimal », la vérification exacte non.
@@ -299,7 +299,7 @@ def legalize(
     Mode performantiel : jusqu'à 50 LP à chaud, < 500 ms
     (`ARCHITECTURE.md` §9).
     A refusal costs up to three times the classic mode: the tiling grid and the budget
-    are each dropped once, solved and proved, to fill ``Infaisable.relaxable``. No §9
+    are each dropped once, solved and proved, to fill ``Infeasible.relaxable``. No §9
     budget covers refusals.
 
     Notes
@@ -417,7 +417,7 @@ def legalize(
             relaxable.append(GRID_LABEL)
         if budget is not None and admits(domain(bounded=False)[1], bounded=False):
             relaxable.append(budget_label(budget))
-        raise Infaisable(
+        raise Infeasible(
             certificat_farkas=sol.certificat_farkas,
             origines=_origines_actives(sol, poly_l1),
             verified=None if check is None else check.verified,
@@ -425,7 +425,7 @@ def legalize(
             relaxable=tuple(relaxable),
         )
     if sol.statut != "optimal":
-        raise InvariantViole((f"statut LP inattendu : {sol.statut}",))
+        raise InvariantViolation((f"statut LP inattendu : {sol.statut}",))
 
     corrige = replace(
         devectoriser(sol.x, plan, poly_l1.index),
@@ -435,7 +435,7 @@ def legalize(
     if not preuve.valide:
         if trame is None and _only_a_gap(preuve, budget):
             raise GapNeedsTiling(preuve.violations)
-        raise InvariantViole(preuve.violations)
+        raise InvariantViolation(preuve.violations)
     # sol a été résolu sur poly_l1 : les duaux alignent poly_l1.A / origines, pas poly.
     duaux = _duaux_traduits(sol.duaux, poly_l1)
     if objective is None:
@@ -470,7 +470,7 @@ def legalize(
     )
     preuve_fw = verify_exactly(performant, ctx, reference=plan, budget=budget, fusions=fusions)
     if not preuve_fw.valide:
-        raise InvariantViole(preuve_fw.violations)
+        raise InvariantViolation(preuve_fw.violations)
     # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont
     # les seuls appariables avec poly_fw.origines. À défaut, on garde ceux de la passe
     # L1 — ils décrivent un autre polytope, mais sont au moins étiquetés correctement.

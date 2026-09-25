@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from archlux.data.decoupage import Decoupage, charger_decoupage
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -45,12 +45,12 @@ def compare(
     ------
     TypeError
         ``evaluate_by`` manquant.
-    InvariantViole
+    InvariantViolation
         ``plans`` vide. Un échantillon vide n'a pas de score moyen : rendre ``0.0``
         fabriquait une mesure et faisait passer un substitut pour le pire de tous.
     """
     if not plans:
-        raise InvariantViole(("plans vide : aucune moyenne à calculer",))
+        raise InvariantViolation(("plans vide : aucune moyenne à calculer",))
     return tuple(
         sum(float(evaluate_by(plan, methode)) for plan in plans) / len(plans) for methode in methods
     )

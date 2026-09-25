@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from archlux.arrays import VecteurF
-from archlux.erreurs import Infaisable, InvariantViole
+from archlux.erreurs import Infeasible, InvariantViolation
 from archlux.geom.polytope import Polytope
 from archlux.lmo.coupes import MAX_COUPES_PAR_PIECE, Coupe, coupe_surface, surfaces_violees
 from archlux.lmo.solveur import resoudre
@@ -82,7 +82,7 @@ def restrict_to_budget(
 
     Raises
     ------
-    Infaisable
+    Infeasible
         The box does not intersect the bounds of some variable: the budget is too small
         for this plan. An input problem, not an internal error.
     """
@@ -95,7 +95,7 @@ def restrict_to_budget(
             low, high = min(low, float(keep[i])), max(high, float(keep[i]))
         if low > high + 1e-12:
             label = names.get(i, f"column {i}")
-            raise Infaisable(
+            raise Infeasible(
                 certificat_farkas=None,
                 origines=(f"budget {radius} m cannot reach the bounds of {label}",),
             )
@@ -228,7 +228,7 @@ def frank_wolfe(
     domain = poly if budget is None else restrict_to_budget(poly, start, budget)
     x = np.asarray(start, dtype=float).copy()
     if x.shape != (len(domain.index),):
-        raise InvariantViole((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
+        raise InvariantViolation((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
 
     vertices = [x.copy()]
     weights = [1.0]

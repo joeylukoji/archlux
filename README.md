@@ -154,7 +154,7 @@ print(repaired.certificat.rapport())
 `pavage=True` requires the rooms to tile the outline exactly. Use it whenever the input
 may contain a gap, which is the case of generator outputs: without it, the separations
 are inequalities, a plan with a gap is already the closest point to itself, and the
-exact check then rejects it (`InvariantViole`). If the tiling grid cannot be recovered
+exact check then rejects it (`InvariantViolation`). If the tiling grid cannot be recovered
 from the proposal, `legalize` raises `GridNotRecoverable`, naming the cells.
 
 Plans round-trip through JSON with their certificate:
@@ -255,7 +255,7 @@ The verdict is about the relative order read from the proposal (a left of b left
 another order might fit. The Farkas certificate is checked in exact rational
 arithmetic; when it cannot be (for instance when the conflict involves minimum-area
 cuts, which are not rows of the polytope), the message says "Certificate NOT verified:
-treat as a solver diagnosis, not a proof". `legalize` raises `Infaisable` with the same
+treat as a solver diagnosis, not a proof". `legalize` raises `Infeasible` with the same
 information (`origines`, `certificat_farkas`, `verified`).
 
 Generative models always return something, even when the request is impossible, and

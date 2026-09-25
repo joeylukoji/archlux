@@ -14,7 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.light.protocole import Baies, Substitut
 from archlux.types import Orientation
 
@@ -38,7 +38,7 @@ class Daylight:
     def __post_init__(self) -> None:
         """Refuser un quantile négatif : la marge conforme n'inverse pas le sens."""
         if self.q_chapeau < 0.0:
-            raise InvariantViole(("q_chapeau doit être ≥ 0",))
+            raise InvariantViolation(("q_chapeau doit être ≥ 0",))
 
     @property
     def indicateur(self) -> str:

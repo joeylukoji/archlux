@@ -17,8 +17,8 @@ où \(P\) est le [polytope d'ordre](polytope-separe.md), \(K_p\) le
 plan proposé [vectorisé](epigraphe-l1.md).
 
 Puis : dévectoriser, [vérifier exactement](preuve-exacte.md), attacher le
-`Certificat`. Si la preuve est fausse → `InvariantViole` (bogue interne, jamais
-silencieux). Si le LP est infaisable → `Infaisable` avec
+`Certificat`. Si la preuve est fausse → `InvariantViolation` (bogue interne, jamais
+silencieux). Si le LP est infaisable → `Infeasible` avec
 [Farkas](farkas.md).
 
 ## Chaîne, une ligne par étape
@@ -44,7 +44,7 @@ are replaced by an **inner** polyhedral approximation
 the domain, hence every iterate, keeps every minimum area, and no tangent cut is needed.
 Puis [Frank-Wolfe](frank-wolfe.md) maximise le substitut, **même oracle LP**,
 `depart=x` à chaque tour. La sortie est revérifiée exactement ; un itéré
-invalide lève `InvariantViole` — pas de repli silencieux vers L1.
+invalide lève `InvariantViolation` — pas de repli silencieux vers L1.
 With `legalize(..., calibration=...)`, the surrogate's prediction at the returned
 plan is bounded by `certify.borne.bound_selected_plan`, in the **selected** regime:
 the optimizer chose the plan, so the nominal coverage is not guaranteed and the report
@@ -55,7 +55,7 @@ says so. The calibration is checked before any solving. Sans calibration,
 
 | Faire | Ne pas faire |
 |---|---|
-| `legalize(plan, ctx)` sur un pavage presque valide | Attendre 100 % de succès sur `plans_quelconques` × enveloppe petite : le programme peut ne pas tenir → `Infaisable` |
+| `legalize(plan, ctx)` sur un pavage presque valide | Attendre 100 % de succès sur `plans_quelconques` × enveloppe petite : le programme peut ne pas tenir → `Infeasible` |
 | Lire `q.certificat.geometrie.valide` | Agréger preuve et prédiction en un score |
 | Importer `light.protocole.Substitut` seulement | Importer `bench` depuis `api` (interdit par `tests/test_dependances.py`) |
 

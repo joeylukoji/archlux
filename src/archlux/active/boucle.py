@@ -22,7 +22,7 @@ import structlog
 
 from archlux.active.densite import densite_noyau
 from archlux.active.selection import StrategieAcquisition
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.seeds import derive
 from archlux.uq.conforme import CalibrateurConforme, n_minimal_conforme
 
@@ -155,13 +155,13 @@ class Loop:
     def __post_init__(self) -> None:
         """Valider budget, taille de lot, niveau et part de calibration."""
         if self.budget < 1:
-            raise InvariantViole(("budget doit être ≥ 1",))
+            raise InvariantViolation(("budget doit être ≥ 1",))
         if self.batch < 1:
-            raise InvariantViole(("batch doit être ≥ 1",))
+            raise InvariantViolation(("batch doit être ≥ 1",))
         if not 0.0 < self.alpha < 1.0:
-            raise InvariantViole((f"alpha hors ]0, 1[ : {self.alpha}",))
+            raise InvariantViolation((f"alpha hors ]0, 1[ : {self.alpha}",))
         if not 0.0 <= self.part_calibration < 1.0:
-            raise InvariantViole((f"part_calibration hors [0, 1[ : {self.part_calibration}",))
+            raise InvariantViolation((f"part_calibration hors [0, 1[ : {self.part_calibration}",))
 
     def _calibrer(
         self,
@@ -224,23 +224,23 @@ class Loop:
 
         Raises
         ------
-        InvariantViole
+        InvariantViolation
             Entrées incohérentes, ou calibration trop petite pour ``alpha`` : il faut
             ``n ≥ n_minimal_conforme(alpha)``, soit 9 points à 90 % de couverture.
         """
         if len(propositions) != len(orientations):
-            raise InvariantViole(("propositions et orientations de longueurs distinctes",))
+            raise InvariantViolation(("propositions et orientations de longueurs distinctes",))
         if len(propositions) < self.batch:
-            raise InvariantViole(("pool plus petit que le batch",))
+            raise InvariantViolation(("pool plus petit que le batch",))
         if not reference_optimiseur:
-            raise InvariantViole(("reference_optimiseur vide",))
+            raise InvariantViolation(("reference_optimiseur vide",))
 
         hold_x = holdout if holdout is not None else propositions
         hold_o = holdout_orientations if holdout_orientations is not None else orientations
         if len(hold_x) != len(hold_o):
-            raise InvariantViole(("holdout et orientations de longueurs distinctes",))
+            raise InvariantViolation(("holdout et orientations de longueurs distinctes",))
         if not hold_x:
-            raise InvariantViole(("holdout vide",))
+            raise InvariantViolation(("holdout vide",))
 
         n_min = n_minimal_conforme(self.alpha)
         independante = calibration is not None
@@ -250,11 +250,11 @@ class Loop:
             if calibration_orientations is None or len(calibration) != len(
                 calibration_orientations
             ):
-                raise InvariantViole(
+                raise InvariantViolation(
                     ("calibration et calibration_orientations de longueurs distinctes",)
                 )
             if len(calibration) < n_min:
-                raise InvariantViole(
+                raise InvariantViolation(
                     (f"calibration n={len(calibration)} < {n_min} requis pour alpha={self.alpha}",)
                 )
             xs_cal = [np.asarray(x, dtype=float).copy() for x in calibration]
@@ -325,10 +325,10 @@ class Loop:
                 try:
                     self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
                     historique.append(_largeur_moyenne(calibrateur, self.substitut, hold_x, hold_o))
-                except InvariantViole as echec:
+                except InvariantViolation as echec:
                     # Scores dégénérés en début de campagne : conserver le calibrateur
                     # courant et retenter au cycle suivant. Le rattrapage est tracé —
-                    # ``erreurs.InvariantViole`` interdit de l'avaler en silence — et
+                    # ``erreurs.InvariantViolation`` interdit de l'avaler en silence — et
                     # reste borné : si aucun cycle n'aboutit, ``calibrateur.n < 1`` et
                     # le repli ci-dessous relaie l'échec.
                     _LOG.warning(
@@ -341,7 +341,7 @@ class Loop:
 
         if calibrateur.n < 1:
             if len(xs_cal) < n_min:
-                raise InvariantViole(
+                raise InvariantViolation(
                     (
                         f"calibration insuffisante : n={len(xs_cal)} < {n_min} pour "
                         f"alpha={self.alpha} ; augmenter budget ou part_calibration, "

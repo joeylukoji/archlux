@@ -8,7 +8,7 @@ from hypothesis import given, settings
 
 import archlux
 from archlux.data.synthese import two_room_plan, two_room_vectors
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, decision_vector, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
@@ -45,7 +45,7 @@ def test_two_room_vectors_are_reproducible_and_in_range() -> None:
 
 
 def test_two_room_vectors_refuse_a_negative_size() -> None:
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         two_room_vectors(-1, seed=17)
 
 
@@ -70,14 +70,14 @@ def test_measure_coverage_refuses_a_zero_uncertainty() -> None:
     calibrator = CalibrateurConforme()
     calibrator.ajuster(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
     sigma = np.array([1.0, 0.0, 1.0])
-    with pytest.raises(InvariantViole, match="strictly positive"):
+    with pytest.raises(InvariantViolation, match="strictly positive"):
         measure_coverage(calibrator, np.zeros(3), np.ones(3), sigma, regime="selected")
 
 
 def test_measure_coverage_refuses_misaligned_arrays() -> None:
     calibrator = CalibrateurConforme()
     calibrator.ajuster(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         measure_coverage(calibrator, np.zeros(3), np.ones(3), np.ones(2), regime="selected")
 
 

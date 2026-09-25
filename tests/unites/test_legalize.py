@@ -7,7 +7,7 @@ import pytest
 
 import archlux
 from archlux.api import gradient_distance
-from archlux.erreurs import Infaisable
+from archlux.erreurs import Infeasible
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, etendre_ecarts_l1, vectoriser
 from archlux.types import Contexte, Orientation, Piece, Plan, Referentiel, Structure
@@ -80,7 +80,7 @@ def test_programme_trop_gros_leve_infaisable() -> None:
         ouvertures=(),
         contour=ctx.contour,
     )
-    with pytest.raises(Infaisable) as capture:
+    with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx)
     assert capture.value.certificat_farkas is not None
     assert capture.value.origines
@@ -91,7 +91,7 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
 
     Les bornes de ``w`` valaient alors ``(largeur_min, xmax - xmin)``, un intervalle
     **inversé** : GLOP répondait ``ABNORMAL``, traduit en statut ``"limite"``, et
-    ``legalize`` levait ``InvariantViole`` (« bogue interne ») au lieu d'``Infaisable``,
+    ``legalize`` levait ``InvariantViolation`` (« bogue interne ») au lieu d'``Infeasible``,
     sans aucun diagnostic — alors que le programme est bel et bien infaisable.
     """
     ctx = Contexte(
@@ -106,7 +106,7 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
         ouvertures=(),
         contour=ctx.contour,
     )
-    with pytest.raises(Infaisable) as capture:
+    with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx)
     assert capture.value.origines
     assert any("largeur minimale" in origine for origine in capture.value.origines)

@@ -94,7 +94,7 @@ assert q.certificat is not None and q.certificat.geometrie.valide
     le substitut analytique non entraîné : voir [la revue du jalon 4](../revues/j4.md).
     Passer ce contrôle ici ne dit pas que le gradient est exploitable.
 
-`valider_gradient` lève `SubstitutInvalide` sous le seuil d'accord de signe (0,80) :
+`valider_gradient` lève `InvalidSurrogate` sous le seuil d'accord de signe (0,80) :
 l'`assert` ne fait que rendre le point de contrôle visible. `budget=0.5` borne le
 déplacement de chaque mur à 50 cm autour de la proposition ; sans lui, Frank-Wolfe
 suit le substitut aussi loin que le polytope le permet : dans cet exemple, il réduit

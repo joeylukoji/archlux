@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import stats as scipy_stats
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 __all__ = ["Intervalle", "bootstrap_apparie", "holm", "puissance", "tost"]
 
@@ -32,9 +32,9 @@ def bootstrap_apparie(
 ) -> Intervalle:
     """Intervalle de confiance bootstrap sur la moyenne des différences appariées."""
     if len(a) != len(b) or len(a) < 1:
-        raise InvariantViole(("a et b doivent avoir la même longueur ≥ 1",))
+        raise InvariantViolation(("a et b doivent avoir la même longueur ≥ 1",))
     if n_replications < 1:
-        raise InvariantViole(("n_replications doit être ≥ 1",))
+        raise InvariantViolation(("n_replications doit être ≥ 1",))
     diffs = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
     rng = np.random.default_rng(seed)
     n = len(diffs)
@@ -59,9 +59,9 @@ def tost(
         ``(equivalent, p)`` où ``p = max(p_inf, p_sup)``.
     """
     if len(a) != len(b) or len(a) < 2:
-        raise InvariantViole(("a et b doivent avoir la même longueur ≥ 2",))
+        raise InvariantViolation(("a et b doivent avoir la même longueur ≥ 2",))
     if delta <= 0.0:
-        raise InvariantViole(("delta doit être > 0",))
+        raise InvariantViolation(("delta doit être > 0",))
     diffs = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
     n = len(diffs)
     moyenne = float(diffs.mean())
@@ -103,7 +103,7 @@ def holm(p_valeurs: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Famille vide, ``alpha`` hors ``]0, 1[``, ou p-valeur hors ``[0, 1]``.
 
     Complexity
@@ -118,11 +118,11 @@ def holm(p_valeurs: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]
     """
     p = np.asarray(p_valeurs, dtype=float)
     if p.size == 0:
-        raise InvariantViole(("famille de p-valeurs vide",))
+        raise InvariantViolation(("famille de p-valeurs vide",))
     if not 0.0 < alpha < 1.0:
-        raise InvariantViole((f"alpha hors ]0, 1[ : {alpha}",))
+        raise InvariantViolation((f"alpha hors ]0, 1[ : {alpha}",))
     if bool(np.any(p < 0.0) or np.any(p > 1.0)) or bool(np.any(np.isnan(p))):
-        raise InvariantViole(("p-valeurs hors [0, 1]",))
+        raise InvariantViolation(("p-valeurs hors [0, 1]",))
     m = p.size
     ordre = np.argsort(p, kind="stable")
     seuils = alpha / (m - np.arange(m))
@@ -144,11 +144,11 @@ def puissance(
 ) -> float:
     """Puissance approximative d'un test t bilatéral à un échantillon."""
     if n < 2:
-        raise InvariantViole(("n doit être ≥ 2",))
+        raise InvariantViolation(("n doit être ≥ 2",))
     if sigma <= 0.0:
-        raise InvariantViole(("sigma doit être > 0",))
+        raise InvariantViolation(("sigma doit être > 0",))
     if not 0.0 < alpha < 1.0:
-        raise InvariantViole((f"alpha hors ]0, 1[ : {alpha}",))
+        raise InvariantViolation((f"alpha hors ]0, 1[ : {alpha}",))
     ddl = n - 1
     se = sigma / np.sqrt(n)
     t_crit = float(scipy_stats.t.ppf(1.0 - alpha / 2.0, ddl))

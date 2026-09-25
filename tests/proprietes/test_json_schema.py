@@ -21,7 +21,7 @@ import pytest
 from hypothesis import given, settings
 
 import archlux
-from archlux.erreurs import ArchluxError, InvariantViole
+from archlux.erreurs import ArchluxError, InvariantViolation
 from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
@@ -152,7 +152,7 @@ def test_the_schema_and_the_reader_refuse_the_same_values(
         node = node[key]
     node[path[-1]] = value
     assert _errors(document)
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         depuis_dict(document)
 
 
@@ -163,5 +163,5 @@ def test_the_schema_refuses_a_bound_without_regime() -> None:
     document = vers_dict(output)
     del document["certificat"]["performance"]["regime"]
     assert _errors(document)
-    with pytest.raises(InvariantViole, match="regime"):
+    with pytest.raises(InvariantViolation, match="regime"):
         depuis_dict(document)

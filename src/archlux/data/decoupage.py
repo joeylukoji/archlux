@@ -6,7 +6,7 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 
 __all__ = ["Decoupage", "charger_decoupage"]
 
@@ -25,7 +25,7 @@ class Decoupage:
 def _lignes(chemin: Path) -> tuple[str, ...]:
     """Lire des identifiants, un par ligne, sans doublon ni commentaire."""
     if not chemin.is_file():
-        raise InvariantViole((f"fichier de découpage absent : {chemin}",))
+        raise InvariantViolation((f"fichier de découpage absent : {chemin}",))
     vus: list[str] = []
     deja: set[str] = set()
     for brute in chemin.read_text(encoding="utf-8").splitlines():
@@ -33,7 +33,7 @@ def _lignes(chemin: Path) -> tuple[str, ...]:
         if not identifiant or identifiant.startswith("#"):
             continue
         if identifiant in deja:
-            raise InvariantViole((f"identifiant répété dans {chemin.name} : {identifiant}",))
+            raise InvariantViolation((f"identifiant répété dans {chemin.name} : {identifiant}",))
         deja.add(identifiant)
         vus.append(identifiant)
     return tuple(vus)
@@ -47,7 +47,7 @@ def charger_decoupage(chemin: Path) -> Decoupage:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Un identifiant apparaît dans deux jeux, ou un fichier manque.
     """
     racine = Path(chemin)
@@ -63,7 +63,7 @@ def charger_decoupage(chemin: Path) -> Decoupage:
     if s_calib & s_test:
         conflits.append("calibration ∩ test")
     if conflits:
-        raise InvariantViole((f"identifiants partagés entre jeux : {', '.join(conflits)}",))
+        raise InvariantViolation((f"identifiants partagés entre jeux : {', '.join(conflits)}",))
     materiau = "\n".join((*train, "---", *calib, "---", *test)).encode()
     empreinte = hashlib.blake2b(materiau, digest_size=16).hexdigest()
     return Decoupage(

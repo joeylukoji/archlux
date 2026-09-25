@@ -12,8 +12,9 @@ Tant que les poids sont un ``npz`` du perceptron (:class:`~archlux.light.base.Su
 État réel du transformeur
 -------------------------
 **Il n'existe pas.** Aucune architecture, aucun poids, aucun entraînement dans ce dépôt.
-:meth:`SubstitutAppris._charger_torch` lève **toujours** :class:`~archlux.erreurs.InvariantViole`,
-quel que soit le contenu du ``.pt`` : son type de retour est ``NoReturn``, et le contrôle
+:meth:`SubstitutAppris._charger_torch` lève **toujours**
+:class:`~archlux.erreurs.InvariantViolation`, quel que soit le contenu du ``.pt`` : son
+type de retour est ``NoReturn``, et le contrôle
 de taille contre :data:`MAX_PARAMETRES` qu'elle exécute d'abord ne peut donc que changer
 le message d'erreur, jamais laisser passer un modèle. Le seul substitut appris réellement
 servi par :class:`SubstitutAppris` est le perceptron numpy de
@@ -32,7 +33,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.light.base import SubstitutDense
 from archlux.light.protocole import Baies
 
@@ -52,7 +53,7 @@ def _dense_depuis_disque(chemin: str, empreinte: str) -> SubstitutDense:
     """Charger un ``npz`` une fois par ``(chemin, empreinte)``, après contrôle SHA-256."""
     actuel = hashlib.sha256(Path(chemin).read_bytes()).hexdigest()
     if actuel != empreinte:
-        raise InvariantViole((f"empreinte des poids divergente pour {chemin}",))
+        raise InvariantViolation((f"empreinte des poids divergente pour {chemin}",))
     return SubstitutDense.charger(Path(chemin))
 
 
@@ -99,8 +100,8 @@ class SubstitutAppris:
         etat = torch.load(self.chemin_poids, map_location="cpu", weights_only=True)
         n_params = int(sum(p.numel() for p in etat.values())) if isinstance(etat, dict) else 0
         if n_params >= MAX_PARAMETRES:
-            raise InvariantViole((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETRES}",))
-        raise InvariantViole(
+            raise InvariantViolation((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETRES}",))
+        raise InvariantViolation(
             ("poids .pt : le transformeur n'est servi que hors CI ; utiliser un npz dense",)
         )
 

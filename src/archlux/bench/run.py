@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from archlux.bench.manifeste import emettre
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.io.json_io import manifeste_vers_dict
 from archlux.light.protocole import Substitut
 from archlux.types import Manifeste, ModeleTrace, Orientation, Plan
@@ -57,9 +57,9 @@ def run(
     L'ordre est contraignant (`MILESTONE-6.md` §5) : aucun agrégat avant les bruts.
     """
     if len(plans) != len(orientations):
-        raise InvariantViole(("plans et orientations doivent avoir la même longueur",))
+        raise InvariantViolation(("plans et orientations doivent avoir la même longueur",))
     if not methods:
-        raise InvariantViole(("au moins une méthode est requise",))
+        raise InvariantViolation(("au moins une méthode est requise",))
 
     dossier = Path(repertoire)
     dossier.mkdir(parents=True, exist_ok=True)

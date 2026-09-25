@@ -75,7 +75,7 @@ def geler_et_emettre(modele) -> JetonCalibration:
 def test_calibration_refuse_un_modele_modifie():
     j = geler_et_emettre(modele)
     modele.tete_valeur.weight.data += 0.01
-    with pytest.raises(ModeleModifie):
+    with pytest.raises(ModelModified):
         donnees.pour_calibration(j)
 ```
 

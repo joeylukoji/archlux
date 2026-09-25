@@ -16,11 +16,11 @@ Every output is checked by the independent checker of ``tests/checkers.py``, nev
 - ``false_certificate``: a plan came out, its certificate says *valid*, and the
   independent checker finds a violation. The worst outcome: a proof that lies;
 - ``invalid_but_flagged``: a plan came out with violations, and its certificate says so;
-- ``refused_infeasible``: ``legalize`` raised ``Infaisable``, an honest refusal;
+- ``refused_infeasible``: ``legalize`` raised ``Infeasible``, an honest refusal;
 - ``refused_unsupported``: ``legalize`` raised ``UnsupportedInput`` (for instance a
   tiling grid that cannot be recovered): an input outside what the library handles;
 - ``refused_invariant``: ``legalize`` raised another ``ArchluxError`` (typically
-  ``InvariantViole``: the proof caught a defective solver output). Safe, but a defect;
+  ``InvariantViolation``: the proof caught a defective solver output). Safe, but a defect;
 - ``crash``: any other exception.
 
 Input preparation (corruption, noise) happens before and outside the measured call, so
@@ -47,7 +47,7 @@ from tests import checkers
 
 import archlux
 from archlux.data.corruption import corrompre
-from archlux.erreurs import ArchluxError, Infaisable, UnsupportedInput
+from archlux.erreurs import ArchluxError, Infeasible, UnsupportedInput
 from archlux.export.svg import comparer
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
@@ -212,7 +212,7 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
     start = time.perf_counter()
     try:
         result = mode.run(given, scenario.context)
-    except Infaisable as error:
+    except Infeasible as error:
         return _refusal(scenario, start, "refused_infeasible", error), None
     except UnsupportedInput as error:
         return _refusal(scenario, start, "refused_unsupported", error), None

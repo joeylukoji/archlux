@@ -19,7 +19,7 @@ from hypothesis import given, settings
 import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.data.corruption import corrompre
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.lmo import solveur
 from archlux.lmo.solveur import resoudre
@@ -136,7 +136,7 @@ def test_performance_mode_never_moves_a_room_beyond_the_budget(
 def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Contexte]) -> None:
     """Review M1: with a budget equal to the displacement the classic pass needs, the LP
     meets the budget only up to its tolerance; the Frank-Wolfe box must still contain
-    the classic result instead of raising InvariantViole."""
+    the classic result instead of raising InvariantViolation."""
     plan, ctx = scenario
     proposed, _ = corrompre(plan, seed=len(plan.pieces), amplitude=0.25)
     try:
@@ -149,7 +149,7 @@ def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Conte
     budget = needed - 1e-9  # the LP meets it within its tolerance; the proof accepts it
     try:
         archlux.legalize(proposed, ctx, objective=SubstitutAnalytique(), budget=budget, pavage=True)
-    except InvariantViole as error:
+    except InvariantViolation as error:
         pytest.fail(f"internal error on a saturated budget: {error}")
     except archlux.ArchluxError:
         pass  # an honest refusal is acceptable
@@ -205,11 +205,11 @@ def test_the_proof_rejects_a_plan_moved_beyond_the_budget() -> None:
 
 
 def test_a_budget_too_small_for_the_bounds_is_an_honest_refusal() -> None:
-    """A budget conflict is an input problem: Infaisable naming the variable, not a bug."""
+    """A budget conflict is an input problem: Infeasible naming the variable, not a bug."""
     from archlux.solve.frank_wolfe import restrict_to_budget
 
     centre = _depart_faisable().copy()
     centre[POLY.index["A.w"]] = 0.5  # below the 1.5 m minimum width by 1 m
-    with pytest.raises(archlux.Infaisable) as refusal:
+    with pytest.raises(archlux.Infeasible) as refusal:
         restrict_to_budget(POLY, centre, 0.2)
     assert "A.w" in str(refusal.value.origines)

@@ -26,7 +26,7 @@ ctx = ax.Contexte(
 )
 try:
     ax.legalize(plan, ctx)
-except ax.Infaisable as err:
+except ax.Infeasible as err:
     print(sorted(err.origines))
 ```
 
@@ -40,7 +40,7 @@ Le certificat de Farkas désigne le sous-système en conflit : les deux séparat
 horizontales et les bords droits. Ce n'est pas un message d'erreur, c'est une **preuve**
 d'inexistence (lemme de Farkas).
 
-**Ce qu'il faut retenir.** `Infaisable` n'est pas un échec du solveur. C'est le
+**Ce qu'il faut retenir.** `Infeasible` n'est pas un échec du solveur. C'est le
 programme qui ne tient pas. Les `origines` sont des libellés métier, jamais des
 indices de lignes.
 

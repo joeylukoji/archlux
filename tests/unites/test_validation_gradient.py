@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from archlux.erreurs import SubstitutInvalide
+from archlux.erreurs import InvalidSurrogate
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
@@ -36,7 +36,7 @@ def test_gradient_faux_leve_substitut_invalide() -> None:
             del x, orientation
             return 0.08
 
-    with pytest.raises(SubstitutInvalide):
+    with pytest.raises(InvalidSurrogate):
         valider_gradient(Faux(), X, NORD, seed=17)
 
 
@@ -48,7 +48,7 @@ def test_a_failed_check_carries_its_report() -> None:
         def gradient(self, x, orientation, *, baies=None):  # type: ignore[no-untyped-def]
             return -super().gradient(x, orientation, baies=baies)
 
-    with pytest.raises(SubstitutInvalide) as capture:
+    with pytest.raises(InvalidSurrogate) as capture:
         valider_gradient(Negated(), X, NORD, seed=17, reference=SubstitutAnalytique())
     report = capture.value.report
     assert report is not None and not report.conforme

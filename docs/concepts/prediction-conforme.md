@@ -20,7 +20,7 @@ bas (entre les rangs 90 et 91, interpolation). L'intervalle conforme est
 garantie tombe si on omet la correction.
 
 Si \(k > n\) (jeu trop petit pour \(\alpha\)), `quantile_conforme` lève
-`InvariantViole`. Pas de borne infinie silencieuse.
+`InvariantViolation`. Pas de borne infinie silencieuse.
 
 ## L'hypothèse d'échangeabilité
 

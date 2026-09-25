@@ -19,7 +19,7 @@ import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
-from archlux.erreurs import OrdreIncoherent, SeparationManquante, UnsupportedInput
+from archlux.erreurs import InconsistentOrder, MissingSeparation, UnsupportedInput
 from archlux.tolerances import CONTACT_M, SNAP_M
 
 if TYPE_CHECKING:
@@ -412,11 +412,11 @@ def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe:
     graphe.add_nodes_from(sorted(noeuds))
     for a, b in aretes:
         if a not in graphe or b not in graphe:
-            raise OrdreIncoherent(cycle=(a, b), axe=axe)
+            raise InconsistentOrder(cycle=(a, b), axe=axe)
         graphe.add_edge(a, b)
     if not nx.is_directed_acyclic_graph(graphe):
         cycle = nx.find_cycle(graphe)
-        raise OrdreIncoherent(cycle=tuple(a for a, _ in cycle), axe=axe)
+        raise InconsistentOrder(cycle=tuple(a for a, _ in cycle), axe=axe)
     return graphe
 
 
@@ -439,10 +439,10 @@ def construire_graphe(ordre: OrdreRelatif, pieces: Sequence[str]) -> GrapheContr
 
     Raises
     ------
-    OrdreIncoherent
+    InconsistentOrder
         Un cycle existe sur l'un des axes (« A à gauche de B à gauche de A »), ou une
         arête désigne une pièce inconnue.
-    SeparationManquante
+    MissingSeparation
         Une paire de pièces n'est séparée sur aucun axe. C'est la seule erreur de ce
         module qui laisse passer un chevauchement si on l'ignore.
 
@@ -462,7 +462,7 @@ def construire_graphe(ordre: OrdreRelatif, pieces: Sequence[str]) -> GrapheContr
     )
     for a, b in itertools.combinations(sorted(pieces), 2):
         if not graphe.a_separation(a, b):
-            raise SeparationManquante(paire=(a, b))
+            raise MissingSeparation(paire=(a, b))
     return graphe
 
 

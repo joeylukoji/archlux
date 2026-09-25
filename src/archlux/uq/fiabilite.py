@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.types import Regime
 from archlux.uq.conforme import CalibrateurConforme, quantile_conforme
 
@@ -44,7 +44,7 @@ def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray)
     y = np.asarray(verites, dtype=float).ravel()
     sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
     if mu.size != y.size or mu.size != sigma.size or mu.size == 0:
-        raise InvariantViole(("tableaux CRPS de longueurs incompatibles",))
+        raise InvariantViolation(("tableaux CRPS de longueurs incompatibles",))
     from scipy.special import erf  # lazy: scipy.special costs 0.8 s at import
 
     z = (y - mu) / sigma
@@ -96,7 +96,7 @@ def diagramme_fiabilite(
     verite = np.asarray(verites, dtype=float).ravel()
     sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
     if pred.size != verite.size or pred.size != sigma.size or pred.size == 0:
-        raise InvariantViole(("tableaux du diagramme de longueurs incompatibles",))
+        raise InvariantViolation(("tableaux du diagramme de longueurs incompatibles",))
     if niveaux is None:
         cibles = np.linspace(0.50, 0.99, 20)
     else:
@@ -112,7 +112,7 @@ def diagramme_fiabilite(
         alpha = 1.0 - float(gamma)
         try:
             q_chapeau = quantile_conforme(reference, alpha)
-        except InvariantViole:
+        except InvariantViolation:
             lignes.append([float(gamma), float("nan")])
             continue
         empirique = float(np.mean(scores <= q_chapeau))
@@ -147,7 +147,7 @@ def stratifier_par_orientation(
     partition importe (couverture par strate), pas le nom du secteur.
     """
     if n_secteurs < 2:
-        raise InvariantViole(("n_secteurs doit être ≥ 2",))
+        raise InvariantViolation(("n_secteurs doit être ≥ 2",))
     angles = np.asarray(degres, dtype=float).ravel() % 360.0
     largeur = 360.0 / float(n_secteurs)
     bacs = np.floor(angles / largeur).astype(int)
@@ -214,7 +214,7 @@ def measure_coverage(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Arrays of different lengths, fewer than two points, a non-finite value, or an
         uncertainty that is not strictly positive (``borne`` would refuse it midway).
     """
@@ -222,11 +222,13 @@ def measure_coverage(
         np.asarray(a, dtype=float).ravel() for a in (predictions, uncertainties, truths)
     )
     if not mu.size == sigma.size == y.size or mu.size < 2:
-        raise InvariantViole((f"need >= 2 aligned points, got {mu.size}, {sigma.size}, {y.size}",))
+        raise InvariantViolation(
+            (f"need >= 2 aligned points, got {mu.size}, {sigma.size}, {y.size}",)
+        )
     if not (np.isfinite(mu).all() and np.isfinite(y).all() and np.isfinite(sigma).all()):
-        raise InvariantViole(("predictions, truths and uncertainties must be finite",))
+        raise InvariantViolation(("predictions, truths and uncertainties must be finite",))
     if (sigma <= 0.0).any():
-        raise InvariantViole(("every uncertainty must be strictly positive",))
+        raise InvariantViolation(("every uncertainty must be strictly positive",))
     bounds = [
         calibrator.borne(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
     ]

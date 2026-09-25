@@ -1,7 +1,7 @@
 """Final review of phase 1 (PLAN.md): the fixes committed without their tests.
 
 - C1: a refusal proves the domain **with** the restrictions ``legalize`` added (tiling
-  grid, budget, load-bearing sides...), not the relative order alone; ``Infaisable``
+  grid, budget, load-bearing sides...), not the relative order alone; ``Infeasible``
   names them and says which one, dropped, would admit a plan.
 - M1: ``verify_exactly`` on a plan with a non-finite or non-positive dimension
   establishes nothing and says so, instead of reporting predicates as holding.
@@ -20,7 +20,7 @@ from shapely.geometry import Polygon
 
 import archlux
 from archlux.certify.proof import verify_exactly
-from archlux.erreurs import Infaisable
+from archlux.erreurs import Infeasible
 from archlux.geom.graphe import deduire_ordre
 from archlux.geom.rectilineaire import decomposer
 from archlux.types import Contexte, Mur, Piece, Plan, Referentiel, Structure
@@ -31,7 +31,7 @@ from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
 def test_the_message_names_the_scope_and_the_relaxable_restrictions() -> None:
-    error = Infaisable(
+    error = Infeasible(
         None,
         ("frozen contact a|b",),
         verified=True,
@@ -49,7 +49,7 @@ def test_the_message_names_the_scope_and_the_relaxable_restrictions() -> None:
 
 
 def test_the_message_without_scope_is_about_the_order_alone() -> None:
-    message = str(Infaisable(None, ()))
+    message = str(Infeasible(None, ()))
     assert message == "infeasible for this relative order: no constraint identified"
 
 
@@ -70,7 +70,7 @@ def _overlapping_pair() -> tuple[Plan, Contexte]:
 
 def test_a_budget_too_small_is_named_as_the_cause() -> None:
     plan, ctx = _overlapping_pair()
-    with pytest.raises(Infaisable) as capture:
+    with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=0.1)
     assert capture.value.scope == ("budget 0.1 m",)
     assert capture.value.relaxable == ("budget 0.1 m",)
@@ -88,7 +88,7 @@ def test_an_infeasible_order_is_not_blamed_on_a_restriction() -> None:
     """Two rooms side by side, each at least 7 m wide, in 12 m: the order is the cause."""
     plan, ctx = _overlapping_pair()
     ctx = replace(ctx, referentiel=Referentiel(aires_min=(), largeur_min=7.0))
-    with pytest.raises(Infaisable) as capture:
+    with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=1.0)
     assert capture.value.scope == ("budget 1 m",)
     assert capture.value.relaxable == ()
@@ -228,7 +228,7 @@ def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -
         ouvertures=(),
         contour=ctx.contour,
     )
-    with pytest.raises(Infaisable) as capture:
+    with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx, budget=0.1)
     assert capture.value.relaxable == ()
     with pytest.raises(archlux.GapNeedsTiling, match="gap"):

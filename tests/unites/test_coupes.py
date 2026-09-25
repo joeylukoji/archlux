@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import construire_polytope
 from archlux.lmo.coupes import coupe_surface, surfaces_violees
@@ -43,7 +43,7 @@ class TestTangente:
         assert "sejour" in coupe_surface(3.0, 3.0, 9.0, piece="sejour").origine
 
     def test_un_point_degenere_est_refuse(self) -> None:
-        with pytest.raises(InvariantViole, match="strictement positif"):
+        with pytest.raises(InvariantViolation, match="strictement positif"):
             coupe_surface(0.0, 3.0, 9.0)
 
 

@@ -7,7 +7,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from shapely.geometry import Polygon, box
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.geom.rectilineaire import (
     FUSION_DROIT,
     MAX_RECTANGLES,
@@ -54,7 +54,7 @@ def test_recomposer_inverse_decomposer() -> None:
 
 
 def test_polygone_non_rectilineaire_refuse() -> None:
-    with pytest.raises(InvariantViole, match="rectilinéaire"):
+    with pytest.raises(InvariantViolation, match="rectilinéaire"):
         decomposer(Polygon([(0.0, 0.0), (2.0, 0.0), (1.0, 1.5)]))
 
 
@@ -214,7 +214,7 @@ def test_max_rectangles_par_defaut_reste_a_quatre() -> None:
             (0.0, 2.0),
         ]
     )
-    with pytest.raises(InvariantViole, match="trop de rectangles"):
+    with pytest.raises(InvariantViolation, match="trop de rectangles"):
         decomposer(peigne, id="e", type_piece="sejour")
     piece = decomposer(peigne, id="e", type_piece="sejour", max_rectangles=8)
     assert len(piece.rectangles) == 6

@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.geom.graphe import OrdreRelatif
 from archlux.geom.polytope import (
     construire_polytope,
@@ -181,7 +181,7 @@ class TestVectorisation:
             ouvertures=(),
             contour=CTX.contour,
         )
-        with pytest.raises(InvariantViole):
+        with pytest.raises(InvariantViolation):
             vectoriser(autre, poly.index)
 
 
@@ -202,13 +202,13 @@ class TestRefus:
     def test_contient_refuse_une_dimension_incoherente(self) -> None:
         """Un vecteur de mauvaise taille est un bogue d'appariement, pas un point hors domaine."""
         poly = construire_polytope(ORDRE_AB, CTX)
-        with pytest.raises(InvariantViole, match="dimension"):
+        with pytest.raises(InvariantViolation, match="dimension"):
             poly.contient(np.zeros(3))
 
     def test_devectoriser_refuse_une_dimension_incoherente(self) -> None:
         """Même règle en sortie de solveur."""
         poly = construire_polytope(ORDRE_AB, CTX)
-        with pytest.raises(InvariantViole, match="dimension"):
+        with pytest.raises(InvariantViolation, match="dimension"):
             devectoriser(np.zeros(3), PLAN_AB, poly.index)
 
     def test_devectoriser_refuse_une_piece_hors_polytope(self) -> None:
@@ -224,7 +224,7 @@ class TestRefus:
             ouvertures=(),
             contour=CTX.contour,
         )
-        with pytest.raises(InvariantViole, match="Z"):
+        with pytest.raises(InvariantViolation, match="Z"):
             devectoriser(vectoriser(PLAN_AB, poly.index), etranger, poly.index)
 
     def test_contient_verifie_aussi_les_egalites(self) -> None:
@@ -250,7 +250,7 @@ class TestRefus:
             contour=((0.0, 0.0), (10.0, 0.0), (10.0, 0.0)),
             referentiel=Referentiel(aires_min=()),
         )
-        with pytest.raises(InvariantViole, match="dégénéré"):
+        with pytest.raises(InvariantViolation, match="dégénéré"):
             construire_polytope(ORDRE_AB, ctx)
 
 
@@ -262,7 +262,7 @@ def test_un_contour_degenere_est_refuse() -> None:
         contour=(),
         referentiel=Referentiel(aires_min=()),
     )
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         construire_polytope(ORDRE_AB, ctx)
 
 

@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from hypothesis import given, settings
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
 from archlux.types import Certificat, Mur, Ouverture, Piece, Plan, PreuveGeometrique
 from tests.proprietes.strategies import plans_quelconques
@@ -75,7 +75,7 @@ def test_une_version_inconnue_est_refusee() -> None:
     """Mieux vaut refuser bruyamment que deviner le format."""
     donnees = vers_dict(PLAN_T2)
     donnees["schema"] = "999"
-    with pytest.raises(InvariantViole):
+    with pytest.raises(InvariantViolation):
         depuis_dict(donnees)
 
 

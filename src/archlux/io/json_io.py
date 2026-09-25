@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.types import (
     REGIMES,
     BornePerformance,
@@ -61,14 +61,14 @@ def _reel(valeur: Any, ou: str) -> float:
     """
     reel = float(valeur)
     if not math.isfinite(reel):
-        raise InvariantViole((f"{ou} : valeur non finie ({valeur!r})",))
+        raise InvariantViolation((f"{ou} : valeur non finie ({valeur!r})",))
     return reel
 
 
 def _point(valeur: Any, ou: str = "point") -> Point:
     """Lire un point ``[x, y]``, en refusant tout ce qui n'en est pas un."""
     if not isinstance(valeur, (list, tuple)) or len(valeur) != 2:
-        raise InvariantViole((f"point attendu sous la forme [x, y], reçu {valeur!r}",))
+        raise InvariantViolation((f"point attendu sous la forme [x, y], reçu {valeur!r}",))
     return (_reel(valeur[0], f"{ou}.x"), _reel(valeur[1], f"{ou}.y"))
 
 
@@ -91,7 +91,7 @@ def _verifier_plages(donnees: Any) -> None:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Au moins une valeur est hors de sa plage. ``violations`` les liste toutes.
 
     Complexity
@@ -118,7 +118,7 @@ def _verifier_plages(donnees: Any) -> None:
                 f"ouverture {ouverture['id']} : largeur_rel = {largeur} ; attendu dans ]0, 1]"
             )
     if violations:
-        raise InvariantViole(tuple(violations))
+        raise InvariantViolation(tuple(violations))
 
 
 # ======================================================================================
@@ -169,7 +169,7 @@ def _regime(donnees: Any) -> Regime:
     """The regime of a serialized bound; missing or unknown is refused."""
     regime = donnees.get("regime") if isinstance(donnees, dict) else None
     if regime not in REGIMES:
-        raise InvariantViole((f"borne.regime: expected one of {REGIMES}, got {regime!r}",))
+        raise InvariantViolation((f"borne.regime: expected one of {REGIMES}, got {regime!r}",))
     return regime  # type: ignore[no-any-return]
 
 
@@ -177,7 +177,7 @@ def _borne_depuis_dict(donnees: Any) -> BornePerformance:
     """Reconstruire une borne de performance ; refuser un indicateur inconnu."""
     indicateur = donnees["indicateur"]
     if indicateur not in ("sDA", "ASE", "UDI", "vue"):
-        raise InvariantViole((f"indicateur inconnu : {indicateur!r}",))
+        raise InvariantViolation((f"indicateur inconnu : {indicateur!r}",))
     return BornePerformance(
         indicateur=indicateur,
         valeur=_reel(donnees["valeur"], "borne.valeur"),
@@ -348,7 +348,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Version de schéma absente ou inconnue, ou champ mal formé. Le format est refusé
         bruyamment plutôt que deviné : un plan mal relu produirait un certificat faux.
 
@@ -358,7 +358,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
     """
     version = donnees.get("schema")
     if version != VERSION_SCHEMA:
-        raise InvariantViole((f"schéma JSON {version!r} inconnu, attendu {VERSION_SCHEMA!r}",))
+        raise InvariantViolation((f"schéma JSON {version!r} inconnu, attendu {VERSION_SCHEMA!r}",))
     try:
         # Before building: ``Ouverture`` refuses an out-of-range ``s`` itself, which would
         # hide every other violation of the file behind the first one.
@@ -404,7 +404,7 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
             certificat=_certificat_depuis_dict(donnees["certificat"]),
         )
     except (KeyError, TypeError, ValueError) as cause:
-        raise InvariantViole((f"structure JSON invalide : {cause}",)) from cause
+        raise InvariantViolation((f"structure JSON invalide : {cause}",)) from cause
     return plan
 
 
@@ -423,7 +423,7 @@ def charger(chemin: Path | str) -> Plan:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Le fichier n'est pas de l'UTF-8, n'est pas du JSON, ou ne respecte pas le
         schéma déclaré. Un fichier écrit en ISO-8859-1 par un autre outil remontait
         auparavant en ``UnicodeDecodeError`` nu, hors du domaine d'erreurs du projet
@@ -432,13 +432,13 @@ def charger(chemin: Path | str) -> Plan:
     try:
         texte = Path(chemin).read_text(encoding="utf-8")
     except UnicodeDecodeError as cause:
-        raise InvariantViole((f"{chemin} n'est pas encodé en UTF-8 : {cause}",)) from cause
+        raise InvariantViolation((f"{chemin} n'est pas encodé en UTF-8 : {cause}",)) from cause
     try:
         donnees = json.loads(texte)
     except json.JSONDecodeError as cause:
-        raise InvariantViole((f"{chemin} n'est pas du JSON valide : {cause}",)) from cause
+        raise InvariantViolation((f"{chemin} n'est pas du JSON valide : {cause}",)) from cause
     if not isinstance(donnees, dict):
-        raise InvariantViole((f"{chemin} ne contient pas un objet JSON",))
+        raise InvariantViolation((f"{chemin} ne contient pas un objet JSON",))
     return depuis_dict(donnees)
 
 
@@ -458,7 +458,7 @@ def ecrire(plan: Plan, chemin: Path | str) -> None:
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Le plan contient une valeur non finie (``NaN`` ou infini). C'est typiquement ce
         que produit un solveur bogué ; ``allow_nan=False`` refuse de l'écrire, et
         l'erreur est retypée pour rester dans le domaine d'erreurs du projet
@@ -474,5 +474,5 @@ def ecrire(plan: Plan, chemin: Path | str) -> None:
             allow_nan=False,
         )
     except ValueError as cause:
-        raise InvariantViole((f"valeur non finie dans le plan : {cause}",)) from cause
+        raise InvariantViolation((f"valeur non finie dans le plan : {cause}",)) from cause
     Path(chemin).write_text(texte + "\n", encoding="utf-8", newline="\n")

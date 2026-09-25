@@ -7,7 +7,7 @@ nord géographique.
 ## Règles du format
 
 - **La version est obligatoire.** Un fichier dont `schema` n'est pas `"1"` est refusé par
-  `InvariantViole` : mieux vaut refuser bruyamment que deviner le format, car un plan mal
+  `InvariantViolation` : mieux vaut refuser bruyamment que deviner le format, car un plan mal
   relu produit un certificat faux.
 - **L'écriture est déterministe.** Clés triées, UTF-8, indentation 2, fin de ligne `\n`.
   Deux écritures du même plan donnent les mêmes octets — sans quoi l'empreinte inscrite

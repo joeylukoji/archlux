@@ -69,7 +69,7 @@ from scipy import sparse
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
-from archlux.erreurs import GridNotRecoverable, InvariantViole, UnsupportedInput
+from archlux.erreurs import GridNotRecoverable, InvariantViolation, UnsupportedInput
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -405,7 +405,7 @@ def deduire_trame(
         than two grid lines on an axis, a room flat after grouping (thinner than
         ``tolerance``), or two outline edges closer than ``tolerance`` (one grid line
         cannot lie exactly on both). ``GridNotRecoverable`` is a subclass.
-    InvariantViole
+    InvariantViolation
         Only on an internal defect: a room left degenerate by consolidation or repair,
         which both refuse such moves by construction.
 
@@ -502,7 +502,7 @@ def deduire_trame(
     # indices, et une piece aux bords inverses passerait silencieusement en LP.
     for nom, gauche, droite, bas, haut in incidences:
         if gauche >= droite or bas >= haut:
-            raise InvariantViole((f"piece {nom} degeneree dans la trame",))
+            raise InvariantViolation((f"piece {nom} degeneree dans la trame",))
 
     return Trame(
         lignes_x=tuple(lignes_x),
@@ -569,7 +569,7 @@ def contraintes_pavage(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Une variable attendue manque à ``index``.
     """
     egalites: list[tuple[str, dict[str, float], float]] = []
@@ -580,7 +580,7 @@ def contraintes_pavage(
     for piece_id, gauche, droite, bas, haut in trame.incidences:
         for nom in (f"{piece_id}.x", f"{piece_id}.w", f"{piece_id}.y", f"{piece_id}.h"):
             if nom not in index:
-                raise InvariantViole((f"variable absente de l'index : {nom}",))
+                raise InvariantViolation((f"variable absente de l'index : {nom}",))
         bords_x.setdefault(gauche, []).append((piece_id, {f"{piece_id}.x": 1.0}))
         bords_x.setdefault(droite, []).append(
             (piece_id, {f"{piece_id}.x": 1.0, f"{piece_id}.w": 1.0})

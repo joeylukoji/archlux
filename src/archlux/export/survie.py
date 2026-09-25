@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from archlux.erreurs import InvariantViole
+from archlux.erreurs import InvariantViolation
 from archlux.export.pathologie import diagnostiquer
 from archlux.export.wilson import intervalle_wilson
 from archlux.types import Plan
@@ -29,7 +29,7 @@ def survival_rate(plans: Sequence[Plan], *, z: float = 1.96) -> tuple[float, tup
     """
     n = len(plans)
     if n < 1:
-        raise InvariantViole(("plans doit être non vide",))
+        raise InvariantViolation(("plans doit être non vide",))
     succes = sum(1 for plan in plans if diagnostiquer(plan).exportable)
     taux = succes / n
     return taux, intervalle_wilson(succes, n, z=z)
