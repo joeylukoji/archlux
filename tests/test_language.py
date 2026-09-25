@@ -89,6 +89,8 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/erreurs.py",
     "tests/unites/test_rename_tool.py",
     "scripts/rename_identifiers.py",
+    "scripts/rename_field.py",
+    "tests/unites/test_rename_field_tool.py",
     "scripts/neutrality.py",
     "tests/test_neutrality.py",
     "src/archlux/_deprecation.py",
