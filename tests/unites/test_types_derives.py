@@ -18,7 +18,7 @@ from archlux.errors import (
 )
 from archlux.types import Certificate, GeometricProof, Opening, Plan, Room, Wall
 
-SEJOUR = Room(id="sejour", type="sejour", x=1.0, y=2.0, w=4.0, h=3.0)
+SEJOUR = Room(id="living_room", type="living_room", x=1.0, y=2.0, w=4.0, h=3.0)
 
 
 class TestPiece:
@@ -44,15 +44,15 @@ class TestPlan:
         """
         plan = Plan(
             rooms=(
-                Room(id="wc", type="wc", x=0.0, y=0.0, w=1.0, h=1.0),
-                Room(id="cuisine", type="cuisine", x=0.0, y=0.0, w=1.0, h=1.0),
-                Room(id="bain", type="sdb", x=0.0, y=0.0, w=1.0, h=1.0),
+                Room(id="toilet", type="toilet", x=0.0, y=0.0, w=1.0, h=1.0),
+                Room(id="kitchen", type="kitchen", x=0.0, y=0.0, w=1.0, h=1.0),
+                Room(id="bain", type="bathroom", x=0.0, y=0.0, w=1.0, h=1.0),
             ),
             walls=(),
             openings=(),
             outline=(),
         )
-        assert plan.room_ids == ("bain", "cuisine", "wc")
+        assert plan.room_ids == ("bain", "kitchen", "toilet")
 
 
 class TestOuvertureDegeneree:
@@ -98,8 +98,8 @@ class TestExceptions:
 
     def test_separation_manquante_expose_la_paire(self) -> None:
         """La paire non séparée est celle qu'il faut corriger."""
-        erreur = MissingSeparation(pair=("cuisine", "sdb"))
-        assert erreur.pair == ("cuisine", "sdb")
+        erreur = MissingSeparation(pair=("kitchen", "bathroom"))
+        assert erreur.pair == ("kitchen", "bathroom")
 
     def test_infaisable_porte_sa_preuve(self) -> None:
         """Une infaisabilité sans certificat n'apprend rien à personne."""
@@ -122,7 +122,7 @@ class TestEcritureRobuste:
         ferait sortir du domaine d'erreurs du projet une faute pourtant interne.
         """
         plan = Plan(
-            rooms=(Room(id="a", type="sejour", x=float("nan"), y=0.0, w=1.0, h=1.0),),
+            rooms=(Room(id="a", type="living_room", x=float("nan"), y=0.0, w=1.0, h=1.0),),
             walls=(),
             openings=(),
             outline=(),

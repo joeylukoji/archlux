@@ -18,8 +18,8 @@ from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 def _plan_sain() -> Plan:
     return Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(Wall(id="m1", a=(0.0, 0.0), b=(12.0, 0.0), load_bearing=True),),
         openings=(),
@@ -30,8 +30,8 @@ def _plan_sain() -> Plan:
 def _plan_pathologique() -> Plan:
     return Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(Wall(id="nul", a=(1.0, 1.0), b=(1.0, 1.0), load_bearing=False),),
         openings=(),

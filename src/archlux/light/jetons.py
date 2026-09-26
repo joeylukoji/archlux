@@ -28,7 +28,7 @@ __all__ = [
 DIM_JETON = 32
 CHAMPS_PAR_PIECE = 4
 """``(x, y, w, h)`` par pièce. Dupliqué ici pour que ``light`` n'importe pas ``geom``."""
-_TYPES = ("sejour", "chambre", "cuisine", "sdb", "couloir", "wc")
+_TYPES = ("living_room", "bedroom", "kitchen", "bathroom", "corridor", "toilet")
 _EPS = 1e-12
 
 
@@ -163,7 +163,7 @@ def vecteur_vers_jetons(
     Notes
     -----
     Le type de pièce est inconnu depuis un vecteur nu : toutes les pièces portent
-    donc ``"sejour"``. C'est une perte assumée — le vecteur de décision ne
+    donc ``"living_room"``. C'est une perte assumée — le vecteur de décision ne
     transporte pas le programme.
     """
     vecteur = np.asarray(x, dtype=float).ravel()
@@ -177,7 +177,7 @@ def vecteur_vers_jetons(
             float(pieces[i, 1]),
             float(pieces[i, 2]),
             float(pieces[i, 3]),
-            "sejour",
+            "living_room",
             orientation,
             float(n),
             aire_totale,

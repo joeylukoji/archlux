@@ -39,7 +39,7 @@ def _plan(*rooms: Room, walls: tuple[Wall, ...] = ()) -> Plan:
 
 
 def _room(rid: str, x: float, y: float, w: float, h: float) -> Room:
-    return Room(id=rid, type="chambre", x=x, y=y, w=w, h=h)
+    return Room(id=rid, type="bedroom", x=x, y=y, w=w, h=h)
 
 
 # --- Order: which side of each wall every room stays on -------------------------------
@@ -200,7 +200,7 @@ def test_the_audit_grid_keeps_its_load_bearing_wall_in_performance_mode() -> Non
         regulation=Regulation(min_areas=(), min_width=1.0),
     )
     rooms = tuple(
-        Room(id=f"c{i}{j}", type="chambre", x=3.0 * i, y=3.0 * j, w=3.0, h=3.0)
+        Room(id=f"c{i}{j}", type="bedroom", x=3.0 * i, y=3.0 * j, w=3.0, h=3.0)
         for i in range(5)
         for j in range(3)
     )

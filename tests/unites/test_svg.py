@@ -10,8 +10,8 @@ from archlux.types import Plan, Room, Wall
 
 _OUTLINE = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
 _ROOMS = (
-    Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0),
-    Room(id="b", type="chambre", x=2.0, y=0.0, w=2.0, h=2.0),
+    Room(id="a", type="living_room", x=0.0, y=0.0, w=2.0, h=2.0),
+    Room(id="b", type="bedroom", x=2.0, y=0.0, w=2.0, h=2.0),
 )
 _BEARING = Wall(id="lb", a=(2.0, 0.0), b=(2.0, 2.0), load_bearing=True)
 _PARTITION = Wall(id="p", a=(0.0, 1.0), b=(2.0, 1.0), load_bearing=False)

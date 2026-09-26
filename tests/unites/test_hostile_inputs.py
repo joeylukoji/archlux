@@ -28,8 +28,8 @@ SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
 def make_plan(**changes: object) -> Plan:
     """Two valid rooms side by side, with ``changes`` applied to the first one."""
-    first = replace(Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0), **changes)  # type: ignore[arg-type]
-    second = Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
+    first = replace(Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0), **changes)  # type: ignore[arg-type]
+    second = Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0)
     return Plan(rooms=(first, second), walls=(), openings=(), outline=SQUARE)
 
 
@@ -126,8 +126,8 @@ def test_invalid_input_is_not_an_internal_bug() -> None:
 
 def gapped_plan() -> Plan:
     """A 3 cm gap between the rooms: valid input, but not a tiling."""
-    first = Room(id="a", type="sejour", x=0.0, y=0.0, w=5.97, h=9.0)
-    second = Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0)
+    first = Room(id="a", type="living_room", x=0.0, y=0.0, w=5.97, h=9.0)
+    second = Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0)
     return Plan(rooms=(first, second), walls=(), openings=(), outline=SQUARE)
 
 
@@ -206,7 +206,7 @@ def test_zero_wall_thickness_is_refused_as_by_the_json_reader() -> None:
 
 
 def test_the_type_warning_points_at_the_caller() -> None:
-    ctx = replace(make_context(), regulation=Regulation(min_areas=(("sejour", 1.0),)))
+    ctx = replace(make_context(), regulation=Regulation(min_areas=(("living_room", 1.0),)))
     with pytest.warns(UserWarning, match="sejuor") as record:
         legalize(
             make_plan(type="sejuor"),
@@ -226,11 +226,11 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     plan = replace(
         make_plan(),
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
     )
-    ctx = replace(ctx, regulation=Regulation(min_areas=(("sejour", 60.0),), min_width=1.0))
+    ctx = replace(ctx, regulation=Regulation(min_areas=(("living_room", 60.0),), min_width=1.0))
     verdict = is_feasible(plan, structure, ctx)
     assert not verdict
     assert verdict.certificate is not None

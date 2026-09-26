@@ -29,8 +29,8 @@ def _plan() -> Plan:
     )
     return Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=walls,
         openings=(Opening(id="w1", wall_id="south", s=0.3, relative_width=0.2),),
@@ -98,8 +98,8 @@ def test_two_different_plans_share_no_global_id(tmp_path: Path) -> None:
     first = _plan()
     second = Plan(
         rooms=(
-            Room(id="a", type="cuisine", x=0.0, y=0.0, w=5.0, h=9.0),
-            Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
+            Room(id="a", type="kitchen", x=0.0, y=0.0, w=5.0, h=9.0),
+            Room(id="b", type="bedroom", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
         walls=first.walls,
         openings=first.openings,

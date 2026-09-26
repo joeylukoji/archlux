@@ -51,7 +51,7 @@ _COORD = st.floats(min_value=-1e4, max_value=1e4, allow_nan=False, allow_infinit
 _TAILLE = st.floats(min_value=0.1, max_value=1e3, allow_nan=False, allow_infinity=False)
 _UNITE = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
 _IDS = st.text(alphabet="abcdefghijklmnopqrstuvwxyz_0123456789", min_size=1, max_size=8)
-_TYPES = st.sampled_from(["sejour", "chambre", "cuisine", "sdb", "couloir", "wc"])
+_TYPES = st.sampled_from(["living_room", "bedroom", "kitchen", "bathroom", "corridor", "toilet"])
 
 
 def pieces() -> st.SearchStrategy[Room]:

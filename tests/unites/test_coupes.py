@@ -18,7 +18,7 @@ CTX = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    regulation=Regulation(min_areas=(("sejour", 9.0),), min_width=1.5),
+    regulation=Regulation(min_areas=(("living_room", 9.0),), min_width=1.5),
 )
 
 
@@ -40,7 +40,7 @@ class TestTangente:
         assert not coupe_surface(2.0, 2.0, 9.0).satisfait(2.0, 2.0)
 
     def test_origine_porte_la_piece(self) -> None:
-        assert "sejour" in coupe_surface(3.0, 3.0, 9.0, piece="sejour").origine
+        assert "living_room" in coupe_surface(3.0, 3.0, 9.0, piece="living_room").origine
 
     def test_un_point_degenere_est_refuse(self) -> None:
         with pytest.raises(InvariantViolation, match="strictement positif"):
@@ -54,11 +54,11 @@ class TestSurfacesViolees:
         poly = construire_polytope(OrdreRelatif((), (), ("A",)), CTX)
         # A.x, A.y, A.w, A.h
         x = [0.0, 0.0, 2.0, 2.0]
-        pieces = (Room(id="A", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0),)
+        pieces = (Room(id="A", type="living_room", x=0.0, y=0.0, w=2.0, h=2.0),)
         assert surfaces_violees(x, poly, CTX, pieces=pieces) == ("A",)
 
     def test_une_piece_au_seuil_n_est_pas_listée(self) -> None:
         poly = construire_polytope(OrdreRelatif((), (), ("A",)), CTX)
         x = [0.0, 0.0, 3.0, 3.0]
-        pieces = (Room(id="A", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),)
+        pieces = (Room(id="A", type="living_room", x=0.0, y=0.0, w=3.0, h=3.0),)
         assert surfaces_violees(x, poly, CTX, pieces=pieces) == ()

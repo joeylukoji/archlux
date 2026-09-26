@@ -37,7 +37,7 @@ def _plan(*rooms: Room, outline: tuple[tuple[float, float], ...] = OUTLINE) -> P
 
 
 def _room(name: str, left: float, bottom: float, right: float, top: float) -> Room:
-    return Room(id=name, type="sejour", x=left, y=bottom, w=right - left, h=top - bottom)
+    return Room(id=name, type="living_room", x=left, y=bottom, w=right - left, h=top - bottom)
 
 
 # Two right edges fall a few millimetres on each side of the outline edge at x = 11:
@@ -67,14 +67,14 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
     outline = ((0.0, 0.0), (13.3, 0.0), (13.3, 10.4), (0.0, 10.4))
     wall = Wall(id="refend", a=(0.0, 2.6), b=(3.2, 2.6), load_bearing=True)
     kinds = {
-        "r0": "sejour",
-        "r1": "couloir",
-        "r2": "chambre",
-        "r3": "sdb",
-        "r4": "couloir",
-        "r5": "chambre",
-        "r6": "wc",
-        "r7": "chambre",
+        "r0": "living_room",
+        "r1": "corridor",
+        "r2": "bedroom",
+        "r3": "bathroom",
+        "r4": "corridor",
+        "r5": "bedroom",
+        "r6": "toilet",
+        "r7": "bedroom",
     }
     edges = {
         "r0": (11.1, 3.6, 13.3, 10.4),
@@ -93,11 +93,11 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
         structure=Structure(load_bearing_walls=(wall,)),
         regulation=Regulation(
             min_areas=(
-                ("chambre", 20.5806),
-                ("couloir", 8.6082),
-                ("sdb", 9.2349),
-                ("sejour", 12.3352),
-                ("wc", 6.8602),
+                ("bedroom", 20.5806),
+                ("corridor", 8.6082),
+                ("bathroom", 9.2349),
+                ("living_room", 12.3352),
+                ("toilet", 6.8602),
             ),
             min_width=1.0,
         ),

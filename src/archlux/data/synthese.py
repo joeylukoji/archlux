@@ -21,7 +21,7 @@ __all__ = [
 ]
 
 _CONTOUR = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
-_TYPES = ("sejour", "chambre", "cuisine", "sdb")
+_TYPES = ("living_room", "bedroom", "kitchen", "bathroom")
 _RANG_JUMEAU_DEDUPLICATION = 53
 _ID_SOURCE_JUMEAU = "syn-0000"
 _N_COUPES_X = 10
@@ -142,6 +142,6 @@ def two_room_plan(x: np.ndarray) -> Plan:
     Plan
         Two rooms, no wall, outline :data:`TWO_ROOM_OUTLINE`.
     """
-    a = Room(id="a", type="sejour", x=float(x[0]), y=float(x[1]), w=float(x[2]), h=float(x[3]))
-    b = Room(id="b", type="chambre", x=float(x[4]), y=float(x[5]), w=float(x[6]), h=float(x[7]))
+    a = Room(id="a", type="living_room", x=float(x[0]), y=float(x[1]), w=float(x[2]), h=float(x[3]))
+    b = Room(id="b", type="bedroom", x=float(x[4]), y=float(x[5]), w=float(x[6]), h=float(x[7]))
     return Plan((a, b), (), (), TWO_ROOM_OUTLINE)

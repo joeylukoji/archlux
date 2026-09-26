@@ -26,8 +26,8 @@ def test_api_publique_stable() -> None:
 def test_feasibility_faisable() -> None:
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -44,8 +44,8 @@ def test_feasibility_infaisable_explique() -> None:
     contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
-            Room(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=8.0, h=8.0),
+            Room(id="b", type="living_room", x=8.0, y=0.0, w=8.0, h=8.0),
         ),
         walls=(),
         openings=(),

@@ -153,7 +153,7 @@ def corrompre(
     >>> from archlux.data.corruption import corrompre
     >>> from archlux.types import Plan, Room
     >>> plan = Plan(
-    ...     rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),),
+    ...     rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),),
     ...     walls=(), openings=(),
     ...     outline=((0.0, 0.0), (6.0, 0.0), (6.0, 9.0), (0.0, 9.0)),
     ... )

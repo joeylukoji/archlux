@@ -67,7 +67,7 @@ class Room:
         Stable identifier, unique within a plan. It is a sort key: the iteration order
         is always explicit, never that of a ``set``.
     type : str
-        Program category (``"sejour"``, ``"sdb"``, ...). Determines the regulatory
+        Program category (``"living_room"``, ``"bathroom"``, ...). Determines the regulatory
         thresholds through :class:`Regulation`.
     x, y, w, h : float
         Position and dimensions, in metres.

@@ -70,9 +70,9 @@ def _plan_avec_L(*, chevauche: bool = False) -> tuple[Plan, object]:
     x_r1 = 1.5 if chevauche else 2.0
     w_r1 = 10.5 if chevauche else 10.0
     reste = (
-        Room(id="r1", type="sejour", x=x_r1, y=0.0, w=w_r1, h=1.0),
-        Room(id="r2", type="sejour", x=1.0, y=1.0, w=11.0, h=2.0),
-        Room(id="r3", type="sejour", x=0.0, y=3.0, w=12.0, h=6.0),
+        Room(id="r1", type="living_room", x=x_r1, y=0.0, w=w_r1, h=1.0),
+        Room(id="r2", type="living_room", x=1.0, y=1.0, w=11.0, h=2.0),
+        Room(id="r3", type="living_room", x=0.0, y=3.0, w=12.0, h=6.0),
     )
     plan = Plan(
         rooms=piece.rectangles + reste,

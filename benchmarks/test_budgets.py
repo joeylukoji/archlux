@@ -69,7 +69,7 @@ def _plan_15_pieces() -> Plan:
     rooms = tuple(
         Room(
             id=f"p{colonne}_{ligne}",
-            type="sejour",
+            type="living_room",
             x=colonne * 3.0,
             y=ligne * 4.0,
             w=3.0,
@@ -169,7 +169,7 @@ CTX_15_AREAS = Context(
     structure=CTX_15.structure,
     orientation=Orientation(deg=20.0),
     outline=CTX_15.outline,
-    regulation=Regulation(min_areas=(("sejour", 11.0),), min_width=1.0),
+    regulation=Regulation(min_areas=(("living_room", 11.0),), min_width=1.0),
 )
 """The realistic case the budgets missed (AUDIT.md Q-C2): tight minimum areas."""
 
@@ -210,7 +210,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
     width, height = 3.0 * columns, 4.0 * rows
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
     rooms = tuple(
-        Room(id=f"p{i}_{j}", type="sejour", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
+        Room(id=f"p{i}_{j}", type="living_room", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
         for i in range(columns)
         for j in range(rows)
     )
@@ -218,7 +218,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=20.0),
         outline=outline,
-        regulation=Regulation(min_areas=(("sejour", 11.0),), min_width=1.0),
+        regulation=Regulation(min_areas=(("living_room", 11.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     start = time.perf_counter()

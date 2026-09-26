@@ -227,8 +227,8 @@ def deduire_ordre(
     --------
     >>> from archlux.geom.graphe import deduire_ordre
     >>> from archlux.types import Piece, Plan
-    >>> gauche = Piece(id="A", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0)
-    >>> droite = Piece(id="B", type="sejour", x=5.0, y=0.0, w=1.0, h=1.0)
+    >>> gauche = Piece(id="A", type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
+    >>> droite = Piece(id="B", type="living_room", x=5.0, y=0.0, w=1.0, h=1.0)
     >>> deduire_ordre(Plan((gauche, droite), (), (), ())).horizontal
     (('A', 'B'),)
     """

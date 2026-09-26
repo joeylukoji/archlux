@@ -51,6 +51,19 @@ SCHEMA_VERSION = "1"
 """Version of the JSON schema. Incremented on any non backward compatible change."""
 
 
+_V1_TYPES = {
+    "living_room": "sejour",
+    "bedroom": "chambre",
+    "kitchen": "cuisine",
+    "bathroom": "sdb",
+    "toilet": "wc",
+    "corridor": "couloir",
+}
+"""Room types of the model, and the French values that schema v1 files carry for them."""
+
+_TYPES_FROM_V1 = {old: new for new, old in _V1_TYPES.items()}
+
+
 # ======================================================================================
 # Elementary conversions
 # ======================================================================================
@@ -303,7 +316,7 @@ def to_dict(plan: Plan) -> dict[str, Any]:
         "pieces": [
             {
                 "id": p.id,
-                "type": p.type,
+                "type": _V1_TYPES.get(p.type, p.type),
                 "x": p.x,
                 "y": p.y,
                 "w": p.w,
@@ -370,7 +383,7 @@ def from_dict(data: dict[str, Any]) -> Plan:
             rooms=tuple(
                 Room(
                     id=str(p["id"]),
-                    type=str(p["type"]),
+                    type=_TYPES_FROM_V1.get(str(p["type"]), str(p["type"])),
                     x=_real(p["x"], f"piece {p['id']}.x"),
                     y=_real(p["y"], f"piece {p['id']}.y"),
                     w=_real(p["w"], f"piece {p['id']}.w"),

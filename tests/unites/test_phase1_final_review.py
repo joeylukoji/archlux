@@ -58,8 +58,8 @@ def _overlapping_pair() -> tuple[Plan, Context]:
     ctx = CONTEXTE_DEFAUT
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -185,18 +185,18 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     from archlux.light.analytique import SubstitutAnalytique
 
     wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), load_bearing=True)
-    bar = Room(id="f__0", type="sejour", x=0.0, y=1.0, w=1.0, h=1.0)
-    foot = Room(id="f__1", type="sejour", x=0.0, y=2.0, w=1.01, h=7.0)
+    bar = Room(id="f__0", type="living_room", x=0.0, y=1.0, w=1.0, h=1.0)
+    foot = Room(id="f__1", type="living_room", x=0.0, y=2.0, w=1.01, h=7.0)
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        regulation=Regulation(min_areas=(("chambre", 76.93), ("sejour", 1.0)), min_width=1.0),
+        regulation=Regulation(min_areas=(("bedroom", 76.93), ("living_room", 1.0)), min_width=1.0),
     )
     rest = (
-        Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),
-        Room(id="p2", type="sejour", x=1.0, y=0.0, w=1.0, h=2.0),
-        Room(id="p3", type="sejour", x=2.0, y=0.0, w=10.0, h=2.0),
-        Room(id="p5", type="chambre", x=1.01, y=2.0, w=10.99, h=7.0),
+        Room(id="p0", type="living_room", x=0.0, y=0.0, w=1.0, h=1.0),
+        Room(id="p2", type="living_room", x=1.0, y=0.0, w=1.0, h=2.0),
+        Room(id="p3", type="living_room", x=2.0, y=0.0, w=10.0, h=2.0),
+        Room(id="p5", type="bedroom", x=1.01, y=2.0, w=10.99, h=7.0),
     )
     plan = Plan(rooms=(bar, foot, *rest), walls=(wall,), openings=(), outline=ctx.outline)
     room = PieceRectilineaire(
@@ -221,8 +221,8 @@ def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -
     ctx = CONTEXTE_DEFAUT
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=8.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=8.0),
         ),
         walls=(),
         openings=(),

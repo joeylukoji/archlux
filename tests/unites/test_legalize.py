@@ -26,8 +26,8 @@ def test_l1_d_un_point_faisable_est_nulle() -> None:
     """Si x̂ ∈ P, min ||x − x̂||₁ = 0 et x★ = x̂ (Bertsimas–Tsitsiklis)."""
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -47,8 +47,8 @@ def test_un_chevauchement_est_corrige() -> None:
     """
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -73,8 +73,8 @@ def test_programme_trop_gros_leve_infaisable() -> None:
     )
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=8.0),
-            Room(id="b", type="sejour", x=8.0, y=0.0, w=8.0, h=8.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=8.0, h=8.0),
+            Room(id="b", type="living_room", x=8.0, y=0.0, w=8.0, h=8.0),
         ),
         walls=(),
         openings=(),
@@ -101,7 +101,7 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
         regulation=Regulation(min_areas=(), min_width=4.0),
     )
     plan = Plan(
-        rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=3.0, h=3.0),),
         walls=(),
         openings=(),
         outline=ctx.outline,
@@ -128,7 +128,7 @@ def test_polytope_sans_piece_tolere_une_enveloppe_etroite() -> None:
 
 def test_objective_invalide_leve_typeerror() -> None:
     plan = Plan(
-        rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=3.0, h=3.0),),
         walls=(),
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
@@ -142,8 +142,8 @@ def test_objective_analytique_reste_valide() -> None:
 
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -161,8 +161,8 @@ def test_legalize_trace_remonte_les_iteres() -> None:
 
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -181,10 +181,10 @@ def test_budget_zero_reste_au_point_l1() -> None:
 
     plan = Plan(
         rooms=(
-            Room(id="sw", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
-            Room(id="se", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
-            Room(id="nw", type="sejour", x=0.0, y=4.5, w=6.0, h=4.5),
-            Room(id="ne", type="chambre", x=6.0, y=4.5, w=6.0, h=4.5),
+            Room(id="sw", type="living_room", x=0.0, y=0.0, w=6.0, h=4.5),
+            Room(id="se", type="bedroom", x=6.0, y=0.0, w=6.0, h=4.5),
+            Room(id="nw", type="living_room", x=0.0, y=4.5, w=6.0, h=4.5),
+            Room(id="ne", type="bedroom", x=6.0, y=4.5, w=6.0, h=4.5),
         ),
         walls=(),
         openings=(),
@@ -203,19 +203,19 @@ def test_une_surface_insuffisante_est_agrandie() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=CONTEXTE_DEFAUT.outline,
-        regulation=Regulation(min_areas=(("sdb", 20.0),), min_width=1.0),
+        regulation=Regulation(min_areas=(("bathroom", 20.0),), min_width=1.0),
     )
     plan = Plan(
         rooms=(
-            Room(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=9.0),
-            Room(id="sejour", type="sejour", x=2.0, y=0.0, w=10.0, h=9.0),
+            Room(id="bathroom", type="bathroom", x=0.0, y=0.0, w=2.0, h=9.0),
+            Room(id="living_room", type="living_room", x=2.0, y=0.0, w=10.0, h=9.0),
         ),
         walls=(),
         openings=(),
         outline=ctx.outline,
     )
     q = archlux.legalize(plan, ctx)
-    sdb = next(p for p in q.rooms if p.id == "sdb")
+    sdb = next(p for p in q.rooms if p.id == "bathroom")
     assert sdb.area >= 20.0 - 1e-6
     assert q.certificate is not None
     assert q.certificate.geometry.valid
@@ -223,7 +223,7 @@ def test_une_surface_insuffisante_est_agrandie() -> None:
 
 def test_etendre_l1_double_les_variables() -> None:
     plan = Plan(
-        rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=3.0),),
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=3.0, h=3.0),),
         walls=(),
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,

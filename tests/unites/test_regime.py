@@ -147,8 +147,8 @@ def _plan() -> archlux.Plan:
     """Two rooms tiling the default 12 m x 9 m outline, off-centre."""
     return archlux.Plan(
         rooms=(
-            archlux.Room(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=9.0),
-            archlux.Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
+            archlux.Room(id="a", type="living_room", x=0.0, y=0.0, w=5.0, h=9.0),
+            archlux.Room(id="b", type="bedroom", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
         walls=(),
         openings=(),

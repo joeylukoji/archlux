@@ -33,15 +33,15 @@ CTX = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
-    regulation=Regulation(min_areas=(("sdb", 5.0),), min_width=1.5),
+    regulation=Regulation(min_areas=(("bathroom", 5.0),), min_width=1.5),
 )
 
 ORDRE_AB = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B"))
 
 PLAN_AB = Plan(
     rooms=(
-        Room(id="A", type="sejour", x=0.0, y=0.0, w=4.0, h=8.0),
-        Room(id="B", type="sdb", x=4.0, y=0.0, w=6.0, h=8.0),
+        Room(id="A", type="living_room", x=0.0, y=0.0, w=4.0, h=8.0),
+        Room(id="B", type="bathroom", x=4.0, y=0.0, w=6.0, h=8.0),
     ),
     walls=(),
     openings=(),
@@ -176,7 +176,7 @@ class TestVectorisation:
         """Vectoriser un plan qui n'a pas les pièces de l'ordre est un bogue interne."""
         poly = construire_polytope(ORDRE_AB, CTX)
         autre = Plan(
-            rooms=(Room(id="Z", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0),),
+            rooms=(Room(id="Z", type="living_room", x=0.0, y=0.0, w=1.0, h=1.0),),
             walls=(),
             openings=(),
             outline=CTX.outline,
@@ -219,7 +219,7 @@ class TestRefus:
         """
         poly = construire_polytope(ORDRE_AB, CTX)
         etranger = Plan(
-            rooms=(*PLAN_AB.rooms, Room(id="Z", type="wc", x=0.0, y=0.0, w=1.0, h=1.0)),
+            rooms=(*PLAN_AB.rooms, Room(id="Z", type="toilet", x=0.0, y=0.0, w=1.0, h=1.0)),
             walls=(),
             openings=(),
             outline=CTX.outline,

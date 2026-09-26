@@ -21,9 +21,9 @@ from tests.proprietes.strategies import CONTEXTE_DEFAUT, realistic_scenarios
 def test_the_decision_vector_matches_the_polytope_columns() -> None:
     plan = Plan(
         rooms=(
-            Room(id="c", type="sejour", x=8.0, y=0.0, w=4.0, h=9.0),
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=3.0, h=9.0),
-            Room(id="b", type="sejour", x=3.0, y=0.0, w=5.0, h=9.0),
+            Room(id="c", type="living_room", x=8.0, y=0.0, w=4.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=3.0, h=9.0),
+            Room(id="b", type="living_room", x=3.0, y=0.0, w=5.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -102,11 +102,11 @@ def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
     """J3 review: theta = 0 and 360 give plans 5.2 m apart at the same objective value."""
     wall = Wall(id="lb0", a=(1.01, 0.0), b=(1.01, 9.0), load_bearing=True)
     rooms = (
-        Room(id="p0", type="sejour", x=0.0, y=0.0, w=1.01, h=9.0),
-        Room(id="p1", type="sejour", x=1.01, y=0.0, w=1.41, h=1.0),
-        Room(id="p2", type="sejour", x=1.01, y=1.0, w=1.41, h=8.0),
-        Room(id="p3", type="sejour", x=2.42, y=0.0, w=9.58, h=1.0),
-        Room(id="p4", type="sejour", x=2.42, y=1.0, w=9.58, h=8.0),
+        Room(id="p0", type="living_room", x=0.0, y=0.0, w=1.01, h=9.0),
+        Room(id="p1", type="living_room", x=1.01, y=0.0, w=1.41, h=1.0),
+        Room(id="p2", type="living_room", x=1.01, y=1.0, w=1.41, h=8.0),
+        Room(id="p3", type="living_room", x=2.42, y=0.0, w=9.58, h=1.0),
+        Room(id="p4", type="living_room", x=2.42, y=1.0, w=9.58, h=8.0),
     )
     plan = Plan(rooms, (wall,), (), CONTEXTE_DEFAUT.outline)
     surrogate, values, widths = SubstitutAnalytique(), [], []
@@ -115,7 +115,7 @@ def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
             structure=Structure(load_bearing_walls=(wall,)),
             orientation=Orientation(deg=deg),
             outline=CONTEXTE_DEFAUT.outline,
-            regulation=Regulation(min_areas=(("sejour", 1.41),), min_width=1.0),
+            regulation=Regulation(min_areas=(("living_room", 1.41),), min_width=1.0),
         )
         out = archlux.legalize(plan, ctx, objective=surrogate)
         values.append(surrogate.evaluate(decision_vector(out), Orientation(deg=0.0)))

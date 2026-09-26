@@ -66,8 +66,8 @@ def test_orientation_circulaire(theta: float) -> None:
     """``θ`` et ``θ + 360`` produisent le même plan (encodage périodique)."""
     plan = archlux.Plan(
         rooms=(
-            archlux.Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            archlux.Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            archlux.Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            archlux.Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -93,8 +93,8 @@ def test_non_regression_jalon2() -> None:
     """``objective=None`` reste la légalisation L1 du jalon 2."""
     plan = archlux.Plan(
         rooms=(
-            archlux.Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            archlux.Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            archlux.Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+            archlux.Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -112,10 +112,10 @@ def _plan_grille() -> archlux.Plan:
     """Quatre pièces en 2×2, assez de liberté pour que le nord déplace les cotes."""
     return archlux.Plan(
         rooms=(
-            archlux.Room(id="sw", type="sejour", x=0.0, y=0.0, w=6.0, h=4.5),
-            archlux.Room(id="se", type="chambre", x=6.0, y=0.0, w=6.0, h=4.5),
-            archlux.Room(id="nw", type="sejour", x=0.0, y=4.5, w=6.0, h=4.5),
-            archlux.Room(id="ne", type="chambre", x=6.0, y=4.5, w=6.0, h=4.5),
+            archlux.Room(id="sw", type="living_room", x=0.0, y=0.0, w=6.0, h=4.5),
+            archlux.Room(id="se", type="bedroom", x=6.0, y=0.0, w=6.0, h=4.5),
+            archlux.Room(id="nw", type="living_room", x=0.0, y=4.5, w=6.0, h=4.5),
+            archlux.Room(id="ne", type="bedroom", x=6.0, y=4.5, w=6.0, h=4.5),
         ),
         walls=(),
         openings=(),

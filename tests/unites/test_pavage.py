@@ -32,10 +32,10 @@ def _pavage_2x2(largeur_sw: float = 5.0) -> Plan:
     """Pavage 2x2 ; `largeur_sw` < 5 ouvre un jour sous la piece nord-ouest."""
     return Plan(
         rooms=(
-            Room(id="sw", type="sejour", x=0.0, y=0.0, w=largeur_sw, h=4.0),
-            Room(id="se", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
-            Room(id="nw", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
-            Room(id="ne", type="sdb", x=5.0, y=4.0, w=7.0, h=5.0),
+            Room(id="sw", type="living_room", x=0.0, y=0.0, w=largeur_sw, h=4.0),
+            Room(id="se", type="bedroom", x=5.0, y=0.0, w=7.0, h=4.0),
+            Room(id="nw", type="kitchen", x=0.0, y=4.0, w=5.0, h=5.0),
+            Room(id="ne", type="bathroom", x=5.0, y=4.0, w=7.0, h=5.0),
         ),
         walls=(),
         openings=(),
@@ -48,11 +48,11 @@ def _moulin() -> Plan:
     contour = ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0), (0.0, 9.0))
     return Plan(
         rooms=(
-            Room(id="A", type="sejour", x=0.0, y=6.0, w=6.0, h=3.0),
-            Room(id="B", type="sejour", x=6.0, y=3.0, w=3.0, h=6.0),
-            Room(id="C", type="sejour", x=3.0, y=0.0, w=6.0, h=3.0),
-            Room(id="D", type="sejour", x=0.0, y=0.0, w=3.0, h=6.0),
-            Room(id="E", type="sejour", x=3.0, y=3.0, w=3.0, h=3.0),
+            Room(id="A", type="living_room", x=0.0, y=6.0, w=6.0, h=3.0),
+            Room(id="B", type="living_room", x=6.0, y=3.0, w=3.0, h=6.0),
+            Room(id="C", type="living_room", x=3.0, y=0.0, w=6.0, h=3.0),
+            Room(id="D", type="living_room", x=0.0, y=0.0, w=3.0, h=6.0),
+            Room(id="E", type="living_room", x=3.0, y=3.0, w=3.0, h=3.0),
         ),
         walls=(),
         openings=(),
@@ -87,9 +87,9 @@ def test_contour_rectilineaire_est_accepte() -> None:
     contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 4.0), (5.0, 4.0), (5.0, 9.0), (0.0, 9.0))
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=5.0, h=4.0),
-            Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
-            Room(id="c", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=5.0, h=4.0),
+            Room(id="b", type="bedroom", x=5.0, y=0.0, w=7.0, h=4.0),
+            Room(id="c", type="kitchen", x=0.0, y=4.0, w=5.0, h=5.0),
         ),
         walls=(),
         openings=(),
@@ -116,8 +116,8 @@ def test_une_cloison_etroite_n_est_pas_ecrasee() -> None:
     """Le refus d'ecraser une piece borne la consolidation."""
     plan = Plan(
         rooms=(
-            Room(id="couloir", type="couloir", x=0.0, y=0.0, w=0.4, h=9.0),
-            Room(id="sejour", type="sejour", x=0.4, y=0.0, w=11.6, h=9.0),
+            Room(id="corridor", type="corridor", x=0.0, y=0.0, w=0.4, h=9.0),
+            Room(id="living_room", type="living_room", x=0.4, y=0.0, w=11.6, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -130,9 +130,9 @@ def _trois_pieces_sur_quatre() -> Plan:
     """Pavage 2x2 ampute de sa piece nord-est : une cellule reste vide."""
     return Plan(
         rooms=(
-            Room(id="sw", type="sejour", x=0.0, y=0.0, w=5.0, h=4.0),
-            Room(id="se", type="chambre", x=5.0, y=0.0, w=7.0, h=4.0),
-            Room(id="nw", type="cuisine", x=0.0, y=4.0, w=5.0, h=5.0),
+            Room(id="sw", type="living_room", x=0.0, y=0.0, w=5.0, h=4.0),
+            Room(id="se", type="bedroom", x=5.0, y=0.0, w=7.0, h=4.0),
+            Room(id="nw", type="kitchen", x=0.0, y=4.0, w=5.0, h=5.0),
         ),
         walls=(),
         openings=(),
@@ -171,8 +171,8 @@ def test_le_budget_borne_la_reparation() -> None:
     """Au-dela du budget, la faute n'est plus une cote fausse : on refuse."""
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=3.0),
-            Room(id="b", type="chambre", x=4.0, y=6.0, w=2.0, h=3.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=2.0, h=3.0),
+            Room(id="b", type="bedroom", x=4.0, y=6.0, w=2.0, h=3.0),
         ),
         walls=(),
         openings=(),
@@ -220,8 +220,8 @@ def test_chevauchement_simple_est_resorbe_par_le_support() -> None:
     """
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-            Room(id="b", type="chambre", x=5.0, y=0.0, w=7.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="bedroom", x=5.0, y=0.0, w=7.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -237,8 +237,8 @@ def test_chevauchement_structurel_est_refuse() -> None:
     """Une piece **contenue** dans une autre : aucune fusion de lignes ne la sauve."""
     plan = Plan(
         rooms=(
-            Room(id="englobante", type="sejour", x=0.0, y=0.0, w=12.0, h=9.0),
-            Room(id="incluse", type="chambre", x=0.0, y=0.0, w=5.0, h=4.0),
+            Room(id="englobante", type="living_room", x=0.0, y=0.0, w=12.0, h=9.0),
+            Room(id="incluse", type="bedroom", x=0.0, y=0.0, w=5.0, h=4.0),
         ),
         walls=(),
         openings=(),
@@ -285,10 +285,10 @@ def test_pavage_est_invariant_par_translation_des_lignes() -> None:
     a = deduire_trame(_pavage_2x2(), ctx)
     decale = Plan(
         rooms=(
-            Room(id="sw", type="sejour", x=0.0, y=0.0, w=3.0, h=6.0),
-            Room(id="se", type="chambre", x=3.0, y=0.0, w=9.0, h=6.0),
-            Room(id="nw", type="cuisine", x=0.0, y=6.0, w=3.0, h=3.0),
-            Room(id="ne", type="sdb", x=3.0, y=6.0, w=9.0, h=3.0),
+            Room(id="sw", type="living_room", x=0.0, y=0.0, w=3.0, h=6.0),
+            Room(id="se", type="bedroom", x=3.0, y=0.0, w=9.0, h=6.0),
+            Room(id="nw", type="kitchen", x=0.0, y=6.0, w=3.0, h=3.0),
+            Room(id="ne", type="bathroom", x=3.0, y=6.0, w=9.0, h=3.0),
         ),
         walls=(),
         openings=(),

@@ -121,12 +121,12 @@ def _a_scenario() -> tuple[Plan, Context]:
     ctx = replace(
         CONTEXTE_DEFAUT,
         structure=Structure(load_bearing_walls=(wall,)),
-        regulation=Regulation(min_areas=(("chambre", 20.0),), min_width=1.0),
+        regulation=Regulation(min_areas=(("bedroom", 20.0),), min_width=1.0),
     )
     plan = Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(wall,),
         openings=(),

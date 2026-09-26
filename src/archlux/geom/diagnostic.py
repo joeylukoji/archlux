@@ -121,7 +121,7 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     >>> plan = Plan(
     ...     rooms=(
     ...         Room(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),
-    ...         Room(id="b", type="cuisine", x=3.0, y=0.0, w=2.0, h=2.0),
+    ...         Room(id="b", type="kitchen", x=3.0, y=0.0, w=2.0, h=2.0),
     ...     ),
     ...     walls=(), openings=(), outline=(),
     ... )
@@ -133,7 +133,7 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
 
     >>> troue = Plan(
     ...     rooms=(plan.rooms[0], Room(
-    ...         id="b", type="cuisine", x=4.0, y=0.0, w=2.0, h=2.0)),
+    ...         id="b", type="kitchen", x=4.0, y=0.0, w=2.0, h=2.0)),
     ...     walls=(), openings=(), outline=(),
     ... )
     >>> diag = diagnostiquer(troue)

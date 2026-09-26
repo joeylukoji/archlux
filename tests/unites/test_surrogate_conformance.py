@@ -82,14 +82,14 @@ def test_legalize_accepts_a_daylight_objective() -> None:
     """End to end, the call of the README: it used to raise TypeError."""
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (0.0, 6.0))
     rooms = (
-        Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=6.0),
-        Room(id="b", type="chambre", x=6.0, y=0.0, w=4.0, h=6.0),
+        Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=6.0),
+        Room(id="b", type="bedroom", x=6.0, y=0.0, w=4.0, h=6.0),
     )
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=30.0),
         outline=outline,
-        regulation=Regulation(min_areas=(("chambre", 12.0),), min_width=1.0),
+        regulation=Regulation(min_areas=(("bedroom", 12.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     result = archlux.legalize(plan, ctx, objective=Daylight(SubstitutAnalytique(), q_chapeau=1.0))

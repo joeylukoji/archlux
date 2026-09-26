@@ -88,7 +88,7 @@ def test_unknown_room_type_warns_when_the_regulation_has_thresholds() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=SQUARE,
-        regulation=Regulation(min_areas=(("sejour", 1.0),), min_width=1.0),
+        regulation=Regulation(min_areas=(("living_room", 1.0),), min_width=1.0),
     )
     typo = make_plan(type="sejuor")
     with pytest.warns(UserWarning, match="sejuor"):

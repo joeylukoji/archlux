@@ -21,8 +21,8 @@ SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 def sound_plan() -> Plan:
     return Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),
@@ -33,8 +33,8 @@ def sound_plan() -> Plan:
 def overlapping_plan() -> Plan:
     return Plan(
         rooms=(
-            Room(id="a", type="sejour", x=0.0, y=0.0, w=8.0, h=9.0),
-            Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=8.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
         ),
         walls=(),
         openings=(),

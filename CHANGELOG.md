@@ -8,6 +8,18 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 4, step 1: English room types
+
+#### Changed — data values (pre-1.0)
+- The room types are English in memory: `sejour` is `living_room`, `chambre` is `bedroom`,
+  `cuisine` is `kitchen`, `sdb` is `bathroom`, `wc` is `toilet`, `couloir` is `corridor`.
+  `Regulation.min_areas` keys, the surrogate token encoder, the synthetic corpus and the SVG
+  palette follow. **Code that builds `Room(type="sejour")` or a `Regulation` keyed by the
+  French names must change**: an unknown type gets no minimum area (a warning says so).
+- Schema v1 files are unchanged: the reader maps the six French values to the English ones
+  and any other type passes through, the writer maps them back, so the written JSON is
+  byte-identical (neutrality fingerprints unchanged). Schema v2 comes in the next step.
+
 ### Remediation — PLAN.md phase 3.9, wave 5, third batch: the surrogate protocol and the JSON module
 
 #### Changed — API (pre-1.0)

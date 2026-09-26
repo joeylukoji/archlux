@@ -1,6 +1,6 @@
 """Model types are keyword-only where positions are easy to swap, with light defaults.
 
-PLAN.md 3.6. ``Room("a", "sejour", 0, 0, 6, 9)`` swapped ``x, y, w, h`` without error;
+PLAN.md 3.6. ``Room("a", "living_room", 0, 0, 6, 9)`` swapped ``x, y, w, h`` without error;
 ``Plan`` needed ``murs=()`` and ``ouvertures=()`` even for a plan without walls; and the
 outline had to be given twice, in the ``Plan`` and in the ``Context``.
 """
@@ -29,14 +29,14 @@ SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
 def rooms() -> tuple[Room, ...]:
     return (
-        Room(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
-        Room(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
+        Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+        Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
     )
 
 
 def test_piece_refuses_positional_arguments() -> None:
     with pytest.raises(TypeError):
-        Room("a", "sejour", 0.0, 0.0, 6.0, 9.0)  # type: ignore[misc]
+        Room("a", "living_room", 0.0, 0.0, 6.0, 9.0)  # type: ignore[misc]
 
 
 def test_wall_refuses_positional_arguments() -> None:

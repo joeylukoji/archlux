@@ -17,8 +17,8 @@ import archlux as ax
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     rooms=(
-        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
     walls=(),
     openings=(),
@@ -57,9 +57,9 @@ Path("sortie_generateur.json").write_text(
       "schema": "1",
       "contour": [[0, 0], [12, 0], [12, 9], [0, 9]],
       "pieces": [
-        {"id": "sejour", "type": "sejour", "x": 0, "y": 0, "w": 6.05, "h": 9},
-        {"id": "chambre", "type": "chambre", "x": 6, "y": 0, "w": 6, "h": 5},
-        {"id": "sdb", "type": "salle_de_bain", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
+        {"id": "living_room", "type": "living_room", "x": 0, "y": 0, "w": 6.05, "h": 9},
+        {"id": "bedroom", "type": "bedroom", "x": 6, "y": 0, "w": 6, "h": 5},
+        {"id": "bathroom", "type": "bathroom", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
       ],
       "murs": [], "ouvertures": [], "certificat": null
     }""",

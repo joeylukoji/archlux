@@ -27,23 +27,23 @@ def _plan(*pieces: Room) -> Plan:
 class TestChevauchement:
     def test_detecte_un_chevauchement(self) -> None:
         """Deux carrés 2×2 dont l'intersection fait 1 m²."""
-        a = Room(id="cuisine", type="cuisine", x=0.0, y=0.0, w=2.0, h=2.0)
-        b = Room(id="sdb", type="sdb", x=1.0, y=0.0, w=2.0, h=2.0)
+        a = Room(id="cuisine", type="kitchen", x=0.0, y=0.0, w=2.0, h=2.0)
+        b = Room(id="sdb", type="bathroom", x=1.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(a, b), CTX)
         assert preuve.overlap is True
         assert preuve.valid is False
         assert any("overlap cuisine|sdb" in v for v in preuve.violations)
 
     def test_deux_pieces_disjointes_ne_se_chevauchent_pas(self) -> None:
-        a = Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
-        b = Room(id="b", type="sejour", x=3.0, y=0.0, w=2.0, h=2.0)
+        a = Room(id="a", type="living_room", x=0.0, y=0.0, w=2.0, h=2.0)
+        b = Room(id="b", type="living_room", x=3.0, y=0.0, w=2.0, h=2.0)
         assert verify_exactly(_plan(a, b), CTX).overlap is False
 
 
 class TestJours:
     def test_detecte_un_jour(self) -> None:
         """Une pièce 2×2 dans 12×9 laisse un jour d'aire 108 − 4 = 104 m²."""
-        p = Room(id="a", type="sejour", x=0.0, y=0.0, w=2.0, h=2.0)
+        p = Room(id="a", type="living_room", x=0.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(p), CTX)
         assert preuve.gaps is True
         assert preuve.valid is False
@@ -55,9 +55,9 @@ class TestSurfaces:
             structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
             outline=CTX.outline,
-            regulation=Regulation(min_areas=(("sdb", 5.0),), min_width=1.0),
+            regulation=Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
         )
-        p = Room(id="sdb", type="sdb", x=0.0, y=0.0, w=2.0, h=2.0)
+        p = Room(id="sdb", type="bathroom", x=0.0, y=0.0, w=2.0, h=2.0)
         preuve = verify_exactly(_plan(p), ctx)
         assert preuve.areas_ok is False
 

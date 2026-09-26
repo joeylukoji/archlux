@@ -31,15 +31,15 @@ _OUTLINE = ((0.0, 0.0), (10.0, 0.0), (10.0, 6.0), (0.0, 6.0))
 def _setup(w0: float, h0: float, a_min: float) -> tuple[Polytope, np.ndarray, Context, Plan]:
     """One room of w0 x h0 (plus a filler room) under a minimum area ``a_min``."""
     rooms = (
-        Room(id="r", type="chambre", x=0.0, y=0.0, w=w0, h=h0),
-        Room(id="f", type="couloir", x=w0, y=0.0, w=10.0 - w0, h=6.0),
+        Room(id="r", type="bedroom", x=0.0, y=0.0, w=w0, h=h0),
+        Room(id="f", type="corridor", x=w0, y=0.0, w=10.0 - w0, h=6.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=_OUTLINE)
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=_OUTLINE,
-        regulation=Regulation(min_areas=(("chambre", a_min),), min_width=0.5),
+        regulation=Regulation(min_areas=(("bedroom", a_min),), min_width=0.5),
     )
     poly = construire_polytope(deduire_ordre(plan), ctx)
     return poly, vectoriser(plan, poly.index), ctx, plan
@@ -99,7 +99,7 @@ def test_the_soundness_check_detects_a_weakened_region() -> None:
         structure=ctx.structure,
         orientation=ctx.orientation,
         outline=ctx.outline,
-        regulation=Regulation(min_areas=(("chambre", 12.0 * 0.97),), min_width=0.5),
+        regulation=Regulation(min_areas=(("bedroom", 12.0 * 0.97),), min_width=0.5),
     )
     inner = inner_area_constraints(poly, x0, weak_ctx, plan.rooms)
     w = 4.0 * 1.25**0.5  # between two nodes
@@ -154,7 +154,7 @@ def test_performance_mode_keeps_tight_minimum_areas() -> None:
     """End to end, the case of the benchmark: 3 x 4 rooms with a_min = 11 m²."""
     outline = ((0.0, 0.0), (15.0, 0.0), (15.0, 12.0), (0.0, 12.0))
     rooms = tuple(
-        Room(id=f"p{i}_{j}", type="chambre", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
+        Room(id=f"p{i}_{j}", type="bedroom", x=3.0 * i, y=4.0 * j, w=3.0, h=4.0)
         for i in range(5)
         for j in range(3)
     )
@@ -162,7 +162,7 @@ def test_performance_mode_keeps_tight_minimum_areas() -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=20.0),
         outline=outline,
-        regulation=Regulation(min_areas=(("chambre", 11.0),), min_width=1.0),
+        regulation=Regulation(min_areas=(("bedroom", 11.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)

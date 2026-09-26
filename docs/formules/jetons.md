@@ -68,7 +68,7 @@ faux ; il ne devient utile qu'en lot de plans de tailles différentes.
 
 | Faire | Ne pas faire |
 |---|---|
-| Encoder depuis `Plan` quand murs et baies existent | Croire que `vecteur_vers_jetons` encode les baies : il ne voit que \((x,y,w,h)\) et force le type `"sejour"` |
+| Encoder depuis `Plan` quand murs et baies existent | Croire que `vecteur_vers_jetons` encode les baies : il ne voit que \((x,y,w,h)\) et force le type `"living_room"` |
 | Vérifier l'invariance par permutation | Trier les jetons par position (ce serait un ordre implicite) |
 | Ajouter une composante en fin de vecteur | Réindexer `0:22` — les poids `npz` gelés deviendraient faux sans que rien ne le signale |
 

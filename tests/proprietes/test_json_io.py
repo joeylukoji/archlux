@@ -19,8 +19,8 @@ from tests.proprietes.strategies import plans_quelconques
 
 PLAN_T2 = Plan(
     rooms=(
-        Room(id="sejour", type="sejour", x=0.0, y=0.0, w=4.0, h=3.5),
-        Room(id="sdb", type="sdb", x=4.0, y=0.0, w=2.0, h=2.5),
+        Room(id="living_room", type="living_room", x=0.0, y=0.0, w=4.0, h=3.5),
+        Room(id="bathroom", type="bathroom", x=4.0, y=0.0, w=2.0, h=2.5),
     ),
     walls=(Wall(id="m_sud", a=(0.0, 0.0), b=(6.0, 0.0), load_bearing=True),),
     openings=(Opening(id="f1", wall_id="m_sud", s=0.3, relative_width=0.25),),

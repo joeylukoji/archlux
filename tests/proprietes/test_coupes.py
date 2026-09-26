@@ -41,11 +41,11 @@ def test_surfaces_minimales_respectees(ordre: object) -> None:
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
         outline=((0.0, 0.0), (20.0, 0.0), (20.0, 16.0), (0.0, 16.0)),
-        regulation=Regulation(min_areas=(("sejour", 4.0),), min_width=1.0),
+        regulation=Regulation(min_areas=(("living_room", 4.0),), min_width=1.0),
     )
     poly = construire_polytope(ordre, ctx)  # type: ignore[arg-type]
     pieces = tuple(
-        Room(id=nom, type="sejour", x=0.0, y=0.0, w=1.0, h=1.0)
+        Room(id=nom, type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
         for nom in ordre.pieces  # type: ignore[attr-defined]
     )
     c = np.zeros(len(poly.index))

@@ -29,9 +29,9 @@ from archlux.light.simulateur import SplitFluxOracle
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     rooms=(
-        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=6.05, h=9.0),
-        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=5.0),
-        ax.Room(id="sdb", type="salle_de_bain", x=6.0, y=5.03, w=6.0, h=3.97),
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=6.05, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
+        ax.Room(id="bathroom", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
     walls=(),
     openings=(),
@@ -41,7 +41,7 @@ ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
     outline=outline,
-    regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), min_width=1.0),
+    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
 
 

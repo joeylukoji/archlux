@@ -30,7 +30,7 @@ SQUARE = ((0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (0.0, 4.0))
 
 def one_room_plan() -> Plan:
     return Plan(
-        rooms=(Room(id="a", type="sejour", x=0.0, y=0.0, w=4.0, h=4.0),),
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=4.0, h=4.0),),
         walls=(),
         openings=(),
         outline=SQUARE,
