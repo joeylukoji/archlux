@@ -53,3 +53,19 @@ def test_the_import_is_fast_enough() -> None:
     code = "import time; t = time.perf_counter(); import archlux; print(time.perf_counter() - t)"
     best = min(float(run(code).stdout) for _ in range(3))
     assert best < 0.5, f"import archlux took {best:.2f} s (budget 0.5 s)"
+
+
+def test_importing_legalize_survives_warnings_as_errors() -> None:
+    """``python -W error::DeprecationWarning`` used to crash inside OR-Tools' SWIG import.
+
+    The third-party import is now shielded, so a user who turns warnings into errors can
+    still import the library; its own modules raise no ``DeprecationWarning``.
+    """
+    code = "import archlux\nfrom archlux import legalize\nassert callable(legalize)\n"
+    result = subprocess.run(
+        [sys.executable, "-W", "error::DeprecationWarning", "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (result.returncode, result.stderr[-500:])

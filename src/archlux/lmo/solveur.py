@@ -15,12 +15,19 @@ from __future__ import annotations
 
 import math
 import time
+import warnings
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
-from ortools.linear_solver import pywraplp
+
+# OR-Tools' SWIG bindings emit DeprecationWarnings while they import; with
+# ``python -W error::DeprecationWarning`` the interpreter then crashes inside the C
+# extension. The warnings are the vendor's, not ours: shield the import.
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from ortools.linear_solver import pywraplp
 
 from archlux.arrays import VecteurF
 from archlux.errors import InvariantViolation

@@ -16,7 +16,7 @@ Chaîne complète, hypothèses et contre-indications : ``docs/formules/pipeline.
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -28,7 +28,7 @@ from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
 from archlux.geom.graphe import OrdreRelatif, deduire_ordre
-from archlux.geom.pavage import deduire_trame, etendre_pavage, snap_to_grid
+from archlux.geom.pavage import Trame, deduire_trame, etendre_pavage, snap_to_grid
 from archlux.geom.polytope import (
     Polytope,
     construire_polytope,
@@ -165,6 +165,228 @@ def _scope(
     if budget is not None:
         scope.append(budget_label(budget))
     return tuple(scope)
+
+
+@dataclass(frozen=True, slots=True)
+class _Problem:
+    """What one call of :func:`legalize` solves: the plan, its context and its domain.
+
+    Built once by :func:`_build_problem`; the methods answer the three questions every
+    stage asks: what is the domain, what does the LP say, does the exact proof accept it.
+    """
+
+    plan: Plan
+    ctx: Context
+    fusions: tuple[PieceRectilineaire, ...]
+    budget: float | None
+    grid: Trame | None
+    order: OrdreRelatif
+    base: Polytope
+    x_ref: VecteurF
+    minima: dict[str, float]
+
+    def domain(self, *, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
+        """The solver's domain, optionally without the tiling grid or the budget."""
+        geometric = etendre_pavage(self.base, self.grid) if grid and self.grid else self.base
+        l1 = etendre_ecarts_l1(geometric, self.x_ref)
+        if bounded and self.budget is not None:
+            n_geo = len(geometric.index)
+            bounds = tuple(l1.bornes[:n_geo]) + tuple(
+                (0.0, float(self.budget)) for _ in range(n_geo)
+            )
+            l1 = replace(l1, bornes=bounds)
+        return geometric, l1
+
+    def solve(self, l1: Polytope) -> SolutionLP:
+        """Minimize the L1 displacement over ``l1``, with the area cuts."""
+        return resoudre_avec_surfaces(
+            l1,
+            gradient_distance(self.x_ref),
+            self.ctx,
+            self.plan.rooms,
+            duaux=True,
+            minima=self.minima,
+        )
+
+    def decode(self, x: VecteurF, index: dict[str, int], template: Plan | None = None) -> Plan:
+        """The plan of a decision vector, on the context's outline."""
+        decoded = devectoriser(x, template or self.plan, index)
+        return replace(decoded, outline=self.ctx.outline)
+
+    def prove(self, candidate: Plan, *, bounded: bool = True) -> GeometricProof:
+        """The exact proof of ``candidate`` against the proposed plan (and the budget)."""
+        return verify_exactly(
+            candidate,
+            self.ctx,
+            reference=self.plan,
+            budget=self.budget if bounded else None,
+            fusions=self.fusions,
+        )
+
+
+def _check_calibration(objective: Substitut | None, calibration: Calibration | None) -> None:
+    """Refuse a calibration that cannot bound the objective."""
+    if calibration is None:
+        return
+    if objective is None:
+        raise InvalidInput(
+            "calibration",
+            "requires an objective: classic mode claims no performance",
+            "pass objective=<surrogate> or drop calibration",
+        )
+    check_calibration(calibration)
+    if calibration.indicateur != objective.indicateur:
+        raise InvalidInput(
+            "calibration",
+            f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}",
+            "calibrate the same indicator as the objective",
+        )
+
+
+def _build_problem(
+    plan: Plan,
+    ctx: Context,
+    *,
+    fusions: tuple[PieceRectilineaire, ...],
+    budget: float | None,
+    pavage: bool,
+    budget_reparation: int,
+) -> _Problem:
+    """Derive the relative order, the polytope and the reference vector of a plan."""
+    # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
+    # du plan propose n'est pas recuperable — echec explicite, pas silencieux.
+    grid = deduire_trame(plan, ctx, budget_reparation=budget_reparation) if pavage else None
+    # With a grid, the order is read from the plan snapped onto it: the order read from
+    # the faulty plan could contradict the tiling equalities (a room moved onto its
+    # neighbour overlaps it on both axes).
+    order = deduire_ordre(
+        plan if grid is None else snap_to_grid(plan, grid),
+        structure=ctx.structure,
+        # A fused room keeps one side of every wall: never a wall on its seam.
+        groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in fusions),
+    )
+    base = construire_polytope(order, ctx)
+    for piece_l in fusions:
+        base = etendre_fusions(base, piece_l, min_contact=ctx.regulation.min_width)
+    return _Problem(
+        plan=plan,
+        ctx=ctx,
+        fusions=fusions,
+        budget=budget,
+        grid=grid,
+        order=order,
+        base=base,
+        x_ref=vectoriser(plan, base.index),
+        minima=minimum_area_shares(plan.rooms, fusions, ctx.regulation),
+    )
+
+
+def _admits(problem: _Problem, l1: Polytope, *, bounded: bool) -> bool:
+    """The relaxed optimum is a plan the exact proof accepts, as returned.
+
+    An ``"optimal"`` LP is not enough: without the grid the L1 optimum keeps a gap, and
+    the area cuts are an outer approximation (final review of phase 1, M1).
+    """
+    relaxed = problem.solve(l1)
+    if relaxed.statut != "optimal":
+        return False
+    return problem.prove(problem.decode(relaxed.x, l1.index), bounded=bounded).valid
+
+
+def _refusal(problem: _Problem, poly_l1: Polytope, sol: SolutionLP) -> Infeasible:
+    """The exception for an infeasible domain: the certificate, its scope and its causes."""
+    check = (
+        verify_infeasibility(poly_l1, sol.certificat_farkas, sol.certificat_farkas_eq)
+        if sol.certificat_farkas is not None
+        else None
+    )
+    # The certificate is about this domain, not about the order alone (final review of
+    # phase 1, C1): name every restriction, and test the ones legalize added.
+    scope = _scope(problem.order, problem.fusions, problem.grid is not None, problem.budget)
+    relaxable: list[str] = []
+    if problem.grid is not None and _admits(problem, problem.domain(grid=False)[1], bounded=True):
+        relaxable.append(GRID_LABEL)
+    if problem.budget is not None and _admits(
+        problem, problem.domain(bounded=False)[1], bounded=False
+    ):
+        relaxable.append(budget_label(problem.budget))
+    return Infeasible(
+        farkas_certificate=sol.certificat_farkas,
+        origins=_origines_actives(sol, poly_l1),
+        verified=None if check is None else check.verified,
+        scope=scope,
+        relaxable=tuple(relaxable),
+    )
+
+
+def _classic_result(
+    problem: _Problem, sol: SolutionLP, poly_l1: Polytope
+) -> tuple[Plan, GeometricProof]:
+    """The classically legalized plan and its exact proof, or the typed refusal."""
+    if sol.statut != "optimal":
+        raise InvariantViolation((f"statut LP inattendu : {sol.statut}",))
+    corrected = problem.decode(sol.x, poly_l1.index)
+    proof = problem.prove(corrected)
+    if not proof.valid:
+        if problem.grid is None and _only_a_gap(proof, problem.budget):
+            raise GapNeedsTiling(proof.violations)
+        raise InvariantViolation(proof.violations)
+    return corrected, proof
+
+
+def _optimize_light(
+    problem: _Problem,
+    corrected: Plan,
+    poly: Polytope,
+    objective: Substitut,
+    calibration: Calibration | None,
+    duals_l1: tuple[tuple[str, float], ...],
+    trace: bool,
+) -> Plan:
+    """Frank-Wolfe from the classic plan, inside the polytope, then the exact proof."""
+    ctx, fusions, budget = problem.ctx, problem.fusions, problem.budget
+    x0 = vectoriser(corrected, poly.index)
+    # Inner approximation of the minimum areas, added *after* freezing contacts so that
+    # a tight room is not frozen into an equality: every point of this domain, hence
+    # every Frank-Wolfe iterate, keeps every minimum area (PLAN.md batch 1.2).
+    poly_fw = inner_area_constraints(
+        figer_contacts(poly, x0),
+        x0,
+        ctx,
+        corrected.rooms,
+        minima=minimum_area_shares(corrected.rooms, fusions, ctx.regulation),
+    )
+    if budget is not None:
+        # Centred on the *proposed* plan, not on x0: the budget is spent once over the
+        # whole legalization (AUDIT.md §5.8 measured up to twice the budget).
+        poly_fw = restrict_to_budget(poly_fw, problem.x_ref, budget, keep=x0)
+    # Glazing is not part of the decision vector: it is constant during the
+    # optimization and passed through unchanged. Without it the surrogate only sees
+    # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
+    glazing = Baies(murs=corrected.walls, ouvertures=corrected.openings)
+    result = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
+    performant = problem.decode(result.x, poly.index, template=corrected)
+    proof = problem.prove(performant)
+    if not proof.valid:
+        raise InvariantViolation(proof.violations)
+    # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont
+    # les seuls appariables avec poly_fw.origines. À défaut, on garde ceux de la passe
+    # L1 — ils décrivent un autre polytope, mais sont au moins étiquetés correctement.
+    # Attention : figer_contacts a déplacé les lignes saturées dans A_eq, qui n'est pas
+    # dualisée ; ce diagnostic est donc souvent vide (voir lmo.solveur.resoudre).
+    duals = duals_l1
+    if result.duals is not None:
+        duals = _duaux_traduits(result.duals, poly_fw, objective=objective.indicateur)
+    performance = None
+    if calibration is not None:
+        # Centred on the prediction mu, not on the pessimistic objective mu - q sigma.
+        mu, sigma = point_prediction(objective, result.x, ctx.orientation, baies=glazing)
+        performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
+    return replace(
+        performant,
+        certificate=Certificate(geometry=proof, performance=performance, duals=duals),
+        trace=result.trace if trace else None,
+    )
 
 
 def legalize(
@@ -334,158 +556,26 @@ def legalize(
         raise TypeError("objective doit implémenter archlux.light.protocole.Substitut")
     validate_inputs(plan, ctx, budget=budget, budget_reparation=budget_reparation)
     ctx = resolve_outline(plan, ctx)
-    if calibration is not None:
-        if objective is None:
-            raise InvalidInput(
-                "calibration",
-                "requires an objective: classic mode claims no performance",
-                "pass objective=<surrogate> or drop calibration",
-            )
-        check_calibration(calibration)
-        if calibration.indicateur != objective.indicateur:
-            raise InvalidInput(
-                "calibration",
-                f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}",
-                "calibrate the same indicator as the objective",
-            )
+    _check_calibration(objective, calibration)
 
-    # Rend un jour non representable : voir ``geom.pavage``. Leve si la trame
-    # du plan propose n'est pas recuperable — echec explicite, pas silencieux.
-    trame = deduire_trame(plan, ctx, budget_reparation=budget_reparation) if pavage else None
-    # With a grid, the order is read from the plan snapped onto it: the order read from
-    # the faulty plan could contradict the tiling equalities (a room moved onto its
-    # neighbour overlaps it on both axes).
-    ordre = deduire_ordre(
-        plan if trame is None else snap_to_grid(plan, trame),
-        structure=ctx.structure,
-        # A fused room keeps one side of every wall: never a wall on its seam.
-        groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in fusions),
+    problem = _build_problem(
+        plan,
+        ctx,
+        fusions=fusions,
+        budget=budget,
+        pavage=pavage,
+        budget_reparation=budget_reparation,
     )
-    base = construire_polytope(ordre, ctx)
-    for piece_l in fusions:
-        base = etendre_fusions(base, piece_l, min_contact=ctx.regulation.min_width)
-    x_ref = vectoriser(plan, base.index)
-    minima = minimum_area_shares(plan.rooms, fusions, ctx.regulation)
-
-    def domain(*, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
-        """The solver's domain, optionally without the tiling grid or the budget."""
-        geometric = etendre_pavage(base, trame) if grid and trame is not None else base
-        l1 = etendre_ecarts_l1(geometric, x_ref)
-        if bounded and budget is not None:
-            n_geo = len(geometric.index)
-            bornes = tuple(l1.bornes[:n_geo]) + tuple((0.0, float(budget)) for _ in range(n_geo))
-            l1 = replace(l1, bornes=bornes)
-        return geometric, l1
-
-    def solve(l1: Polytope) -> SolutionLP:
-        return resoudre_avec_surfaces(
-            l1, gradient_distance(x_ref), ctx, plan.rooms, duaux=True, minima=minima
-        )
-
-    poly, poly_l1 = domain()
-    sol = solve(poly_l1)
+    poly, poly_l1 = problem.domain()
+    sol = problem.solve(poly_l1)
     if sol.statut == "infaisable":
-        check = (
-            verify_infeasibility(poly_l1, sol.certificat_farkas, sol.certificat_farkas_eq)
-            if sol.certificat_farkas is not None
-            else None
-        )
-        # The certificate is about this domain, not about the order alone (final review
-        # of phase 1, C1): name every restriction, and test the ones legalize added.
-        scope = _scope(ordre, fusions, trame is not None, budget)
-
-        def admits(l1: Polytope, *, bounded: bool) -> bool:
-            """The relaxed optimum is a plan the exact proof accepts, as returned.
-
-            An ``"optimal"`` LP is not enough: without the grid the L1 optimum keeps a
-            gap, and the area cuts are an outer approximation (final review, M1).
-            """
-            relaxed = solve(l1)
-            if relaxed.statut != "optimal":
-                return False
-            candidate = replace(devectoriser(relaxed.x, plan, l1.index), outline=ctx.outline)
-            return verify_exactly(
-                candidate,
-                ctx,
-                reference=plan,
-                budget=budget if bounded else None,
-                fusions=fusions,
-            ).valid
-
-        relaxable: list[str] = []
-        if trame is not None and admits(domain(grid=False)[1], bounded=True):
-            relaxable.append(GRID_LABEL)
-        if budget is not None and admits(domain(bounded=False)[1], bounded=False):
-            relaxable.append(budget_label(budget))
-        raise Infeasible(
-            farkas_certificate=sol.certificat_farkas,
-            origins=_origines_actives(sol, poly_l1),
-            verified=None if check is None else check.verified,
-            scope=scope,
-            relaxable=tuple(relaxable),
-        )
-    if sol.statut != "optimal":
-        raise InvariantViolation((f"statut LP inattendu : {sol.statut}",))
-
-    corrige = replace(
-        devectoriser(sol.x, plan, poly_l1.index),
-        outline=ctx.outline,
-    )
-    preuve = verify_exactly(corrige, ctx, reference=plan, budget=budget, fusions=fusions)
-    if not preuve.valid:
-        if trame is None and _only_a_gap(preuve, budget):
-            raise GapNeedsTiling(preuve.violations)
-        raise InvariantViolation(preuve.violations)
+        raise _refusal(problem, poly_l1, sol)
+    corrected, proof = _classic_result(problem, sol, poly_l1)
     # sol a été résolu sur poly_l1 : les duaux alignent poly_l1.A / origines, pas poly.
-    duaux = _duaux_traduits(sol.duaux, poly_l1)
+    duals = _duaux_traduits(sol.duaux, poly_l1)
     if objective is None:
         return replace(
-            corrige,
-            certificate=Certificate(geometry=preuve, performance=None, duals=duaux),
+            corrected,
+            certificate=Certificate(geometry=proof, performance=None, duals=duals),
         )
-
-    x0 = vectoriser(corrige, poly.index)
-    # Inner approximation of the minimum areas, added *after* freezing contacts so that
-    # a tight room is not frozen into an equality: every point of this domain, hence
-    # every Frank-Wolfe iterate, keeps every minimum area (PLAN.md batch 1.2).
-    poly_fw = inner_area_constraints(
-        figer_contacts(poly, x0),
-        x0,
-        ctx,
-        corrige.rooms,
-        minima=minimum_area_shares(corrige.rooms, fusions, ctx.regulation),
-    )
-    if budget is not None:
-        # Centred on the *proposed* plan, not on x0: the budget is spent once over the
-        # whole legalization (AUDIT.md §5.8 measured up to twice the budget).
-        poly_fw = restrict_to_budget(poly_fw, x_ref, budget, keep=x0)
-    # Glazing is not part of the decision vector: it is constant during the
-    # optimization and passed through unchanged. Without it the surrogate only sees
-    # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
-    glazing = Baies(murs=corrige.walls, ouvertures=corrige.openings)
-    resultat = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
-    performant = replace(
-        devectoriser(resultat.x, corrige, poly.index),
-        outline=ctx.outline,
-    )
-    preuve_fw = verify_exactly(performant, ctx, reference=plan, budget=budget, fusions=fusions)
-    if not preuve_fw.valid:
-        raise InvariantViolation(preuve_fw.violations)
-    # Le dernier LP de Frank-Wolfe porte sur poly_fw, pas sur poly_l1 : ses duaux sont
-    # les seuls appariables avec poly_fw.origines. À défaut, on garde ceux de la passe
-    # L1 — ils décrivent un autre polytope, mais sont au moins étiquetés correctement.
-    # Attention : figer_contacts a déplacé les lignes saturées dans A_eq, qui n'est pas
-    # dualisée ; ce diagnostic est donc souvent vide (voir lmo.solveur.resoudre).
-    duaux_fw = duaux
-    if resultat.duals is not None:
-        duaux_fw = _duaux_traduits(resultat.duals, poly_fw, objective=objective.indicateur)
-    performance = None
-    if calibration is not None:
-        # Centred on the prediction mu, not on the pessimistic objective mu - q sigma.
-        mu, sigma = point_prediction(objective, resultat.x, ctx.orientation, baies=glazing)
-        performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
-    return replace(
-        performant,
-        certificate=Certificate(geometry=preuve_fw, performance=performance, duals=duaux_fw),
-        trace=resultat.trace if trace else None,
-    )
+    return _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)

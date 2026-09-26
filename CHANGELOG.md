@@ -8,6 +8,20 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Review follow-ups (after waves 0 to 3)
+
+#### Fixed
+- `python -W error::DeprecationWarning` no longer crashes when importing `legalize`: the
+  OR-Tools import, whose SWIG bindings emit their own `DeprecationWarning`s and crash the
+  interpreter when they are errors, is shielded in `lmo.solveur`. archlux's own modules
+  raise no `DeprecationWarning`.
+
+#### Changed — internal, no behaviour change
+- `legalize` (cyclomatic complexity 22, 69 statements) is split into a private `_Problem`
+  (the plan, its context and its domain) and five steps: options check, problem building,
+  refusal, classic result and light optimization. `legalize` itself is now a short pipeline
+  (PLAN.md phase 4, block `api`, done early). The neutrality fingerprints are unchanged.
+
 ### Remediation — PLAN.md phase 3.9, wave 3: English field names (in progress, no alias)
 
 #### Changed — API break (pre-1.0, clean break: no deprecated alias for fields)
