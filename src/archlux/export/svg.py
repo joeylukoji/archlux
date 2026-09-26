@@ -33,12 +33,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
     from archlux.types import Plan, Point, Wall
 
-__all__ = ["comparer", "planche", "rendre"]
+__all__ = ["comparer", "planche", "render"]
 
 _MARGE = 28.0
 _LARGEUR_PANNEAU = 380.0
@@ -180,7 +181,7 @@ def _panneau(
     return parties
 
 
-def rendre(
+def render(
     plan: Plan,
     *,
     contour: tuple[Point, ...] = (),
@@ -353,3 +354,11 @@ def _document(largeur: float, hauteur: float, parties: list[str]) -> str:
         f'  <rect width="{largeur:.0f}" height="{hauteur:.0f}" fill="#f7f6f3"/>\n'
         f"  {corps}\n</svg>\n"
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "rendre": Alias(render, "archlux.export.svg.render"),
+    },
+)

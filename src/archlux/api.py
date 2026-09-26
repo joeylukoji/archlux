@@ -23,7 +23,7 @@ import numpy as np
 
 from archlux.arrays import VecteurF
 from archlux.certify.borne import bound_selected_plan, check_calibration
-from archlux.certify.dual import traduire_duaux
+from archlux.certify.dual import translate_duals
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
@@ -123,7 +123,7 @@ def _duaux_traduits(
     """
     if duaux is None:
         return ()
-    return traduire_duaux(duaux, poly, seuil=_DUAL_SEUIL, objective=objective)
+    return translate_duals(duaux, poly, seuil=_DUAL_SEUIL, objective=objective)
 
 
 def _only_a_gap(preuve: GeometricProof, budget: float | None) -> bool:

@@ -7,10 +7,11 @@ preuve ou d'une prédiction.
 
 from __future__ import annotations
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux._version import __version__
 from archlux.types import Certificate, GeometricProof, Manifest, PerformanceBound
 
-__all__ = ["rendre"]
+__all__ = ["render"]
 
 _HORS_PERIMETRE = (
     "Confort d'été, systèmes techniques, matériaux — hors périmètre "
@@ -99,7 +100,7 @@ def _en_tete(manifeste: Manifest | None) -> str:
     )
 
 
-def rendre(certificat: Certificate) -> str:
+def render(certificat: Certificate) -> str:
     """Rendre le certificat en texte lisible.
 
     Returns
@@ -122,3 +123,11 @@ def rendre(certificat: Certificate) -> str:
         f"  {_HORS_PERIMETRE}",
     ]
     return "\n".join(parties) + "\n"
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "rendre": Alias(render, "archlux.certify.rapport.render"),
+    },
+)

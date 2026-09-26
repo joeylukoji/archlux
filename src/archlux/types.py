@@ -538,9 +538,9 @@ class Certificate:
             Rapport lisible. Les deux natures de garantie sont toujours séparées
             visuellement et jamais agrégées en un score unique.
         """
-        from archlux.certify.rapport import rendre
+        from archlux.certify.rapport import render
 
-        return rendre(self)
+        return render(self)
 
 
 DEPRECATED_NAMES: Final = MappingProxyType(

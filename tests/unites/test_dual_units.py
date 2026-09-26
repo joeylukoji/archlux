@@ -12,7 +12,7 @@ import pytest
 from scipy import sparse
 
 from archlux import Context, Orientation, Plan, Regulation, Room, Structure, Wall, legalize
-from archlux.certify.dual import describe_origin, traduire_duaux
+from archlux.certify.dual import describe_origin, translate_duals
 from archlux.geom.polytope import Polytope
 
 
@@ -61,14 +61,14 @@ def test_an_unknown_label_is_kept_as_is() -> None:
 
 def test_epigraph_rows_never_reach_the_diagnostic() -> None:
     poly = polytope(("ecart plus a.x", "separation horizontale a|b"))
-    phrases = traduire_duaux(np.array([-9.0, -1.0]), poly)
+    phrases = translate_duals(np.array([-9.0, -1.0]), poly)
     assert len(phrases) == 1
     assert "ecart" not in phrases[0][0]
 
 
 def test_the_price_is_converted_to_the_displacement_of_a_step() -> None:
     poly = polytope(("load-bearing p1: chambre right of 6",))
-    ((phrase, price),) = traduire_duaux(np.array([-2.0]), poly)
+    ((phrase, price),) = translate_duals(np.array([-2.0]), poly)
     assert price == -2.0
     assert "10 cm" in phrase
     assert "-0.20 m" in phrase
@@ -77,7 +77,7 @@ def test_the_price_is_converted_to_the_displacement_of_a_step() -> None:
 
 def test_the_step_is_configurable() -> None:
     poly = polytope(("load-bearing p1: chambre right of 6",))
-    ((phrase, _),) = traduire_duaux(np.array([-2.0]), poly, step_m=0.5)
+    ((phrase, _),) = translate_duals(np.array([-2.0]), poly, step_m=0.5)
     assert "50 cm" in phrase
     assert "-1.00 m" in phrase
 
@@ -85,7 +85,7 @@ def test_the_step_is_configurable() -> None:
 def test_an_indicator_objective_is_reported_as_a_gain_of_that_indicator() -> None:
     """The objective of the performance mode is minus the surrogate: a negative price is a gain."""
     poly = polytope(("load-bearing p1: chambre right of 6",))
-    ((phrase, _),) = traduire_duaux(np.array([-2.0]), poly, objective="sDA")
+    ((phrase, _),) = translate_duals(np.array([-2.0]), poly, objective="sDA")
     assert "sDA" in phrase
     assert "+0.20" in phrase
     assert "surrogate" in phrase
@@ -94,7 +94,7 @@ def test_an_indicator_objective_is_reported_as_a_gain_of_that_indicator() -> Non
 
 def test_every_phrase_states_its_local_validity() -> None:
     poly = polytope(("separation horizontale a|b", "mur porteur axe 3"))
-    for phrase, _ in traduire_duaux(np.array([-1.0, -2.0]), poly):
+    for phrase, _ in translate_duals(np.array([-1.0, -2.0]), poly):
         assert "small changes" in phrase
 
 
@@ -131,13 +131,13 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
     import archlux.api as api
 
     seen: list[str] = []
-    original = api.traduire_duaux
+    original = api.translate_duals
 
     def spy(*args: object, **kwargs: object) -> object:
         seen.append(str(kwargs.get("objective")))
         return original(*args, **kwargs)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(api, "traduire_duaux", spy)
+    monkeypatch.setattr(api, "translate_duals", spy)
     from archlux.light.analytique import SubstitutAnalytique
 
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 7.0), (0.0, 7.0))

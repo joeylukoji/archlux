@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.api import legalize
 from archlux.errors import GapNeedsTiling, Infeasible
 from archlux.types import Context, Plan, Structure
 
-__all__ = ["CertificatFaisabilite", "Verdict", "is_feasible"]
+__all__ = ["FeasibilityCertificate", "Verdict", "is_feasible"]
 
 
 @dataclass(frozen=True, slots=True)
-class CertificatFaisabilite:
+class FeasibilityCertificate:
     """Preuve d'inexistence (Farkas), never probabilistic.
 
     Exact when ``verified`` is True: the certificate was checked in rational arithmetic
@@ -26,7 +27,7 @@ class CertificatFaisabilite:
     scope: tuple[str, ...] = ()
     """Restrictions beyond the relative order the proof is about (``Infeasible.scope``)."""
 
-    def expliquer(self) -> str:
+    def explain(self) -> str:
         """Rendre le conflit en une phrase lisible."""
         status = {
             True: " Certificate verified exactly.",
@@ -48,7 +49,7 @@ class Verdict:
     """Réponse de :func:`is_feasible`."""
 
     faisable: bool
-    certificat: CertificatFaisabilite | None = None
+    certificat: FeasibilityCertificate | None = None
 
     def __bool__(self) -> bool:
         """``True`` ssi le programme admet au moins un plan valide."""
@@ -105,7 +106,7 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Context) -> Verdict:
     except Infeasible as err:
         return Verdict(
             faisable=False,
-            certificat=CertificatFaisabilite(
+            certificat=FeasibilityCertificate(
                 origines=err.origins,
                 certificat_farkas=err.farkas_certificate,
                 verified=err.verified,
@@ -113,3 +114,13 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Context) -> Verdict:
             ),
         )
     return Verdict(faisable=True, certificat=None)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "CertificatFaisabilite": Alias(
+            FeasibilityCertificate, "archlux.feasibility.FeasibilityCertificate"
+        ),
+    },
+)

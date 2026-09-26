@@ -10,7 +10,7 @@ un porteur de 20 cm, ou élargir le dégagement ?
 import numpy as np
 from scipy import sparse
 
-from archlux.certify.dual import traduire_duaux
+from archlux.certify.dual import translate_duals
 from archlux.geom.polytope import Polytope
 
 poly = Polytope(
@@ -26,7 +26,7 @@ poly = Polytope(
         "largeur de passage",
     ),
 )
-for phrase, prix in traduire_duaux(np.array([-4.1, -1.7, 0.0]), poly):
+for phrase, prix in translate_duals(np.array([-4.1, -1.7, 0.0]), poly):
     print(f"{prix:+.1f}  {phrase}")
 ```
 

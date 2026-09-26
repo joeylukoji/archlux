@@ -24,10 +24,11 @@ import re
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.arrays import VecteurF
 from archlux.geom.polytope import Polytope
 
-__all__ = ["describe_origin", "traduire_duaux"]
+__all__ = ["describe_origin", "translate_duals"]
 
 _VALIDITY = "valid for small changes only, a few tens of cm"
 
@@ -95,7 +96,7 @@ def _sentence(description: str, price: float, *, objective: str, step_m: float) 
     return f"{description}: relaxing it by {step} {effect} ({_VALIDITY})"
 
 
-def traduire_duaux(
+def translate_duals(
     duaux: VecteurF,
     poly: Polytope,
     *,
@@ -141,3 +142,11 @@ def traduire_duaux(
         paires.append((_sentence(description, prix, objective=objective, step_m=step_m), prix))
     paires.sort(key=lambda paire: -abs(paire[1]))
     return tuple(paires[:n_max])
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "traduire_duaux": Alias(translate_duals, "archlux.certify.dual.translate_duals"),
+    },
+)

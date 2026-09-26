@@ -60,7 +60,7 @@ def test_feasibility_infaisable_explique() -> None:
     verdict = archlux.feasibility.is_feasible(plan, ctx.structure, ctx)
     assert not verdict
     assert verdict.certificat is not None
-    texte = verdict.certificat.expliquer()
+    texte = verdict.certificat.explain()
     assert texte.startswith("Infeasible for this relative order")
     assert "verified exactly" in texte
     assert verdict.certificat.origines

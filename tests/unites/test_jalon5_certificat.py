@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-from archlux.certify.borne import construire_borne
-from archlux.certify.dual import traduire_duaux
+from archlux.certify.borne import build_bound
+from archlux.certify.dual import translate_duals
 from archlux.geom.polytope import Polytope
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import Substitut
@@ -54,21 +54,21 @@ def _preuve() -> GeometricProof:
 
 def test_le_diagnostic_est_lisible() -> None:
     duaux = np.array([-4.1, -1.7, 0.0])
-    phrases = traduire_duaux(duaux, _poly())
+    phrases = translate_duals(duaux, _poly())
     assert all(len(libelle) > 20 for libelle, _prix in phrases)
     assert all("small changes" in libelle for libelle, _prix in phrases)
 
 
 def test_prix_nul_pour_contrainte_non_active() -> None:
     duaux = np.array([-4.1, 0.0, 1e-9])
-    phrases = traduire_duaux(duaux, _poly())
+    phrases = translate_duals(duaux, _poly())
     assert all(prix != 0.0 for _libelle, prix in phrases)
     assert len(phrases) == 1
 
 
 def test_duaux_tries_par_cout_absolu() -> None:
     duaux = np.array([-1.0, 5.0, -3.0])
-    phrases = traduire_duaux(duaux, _poly())
+    phrases = translate_duals(duaux, _poly())
     assert [abs(p) for _, p in phrases] == [5.0, 3.0, 1.0]
 
 
@@ -109,11 +109,9 @@ def test_construire_borne_refuse_la_derive() -> None:
         n_observations=20,
         message="dérive",
     )
-    assert (
-        construire_borne(50.0, calibration, derive, incertitude=1.0, regime="exchangeable") is None
-    )
+    assert build_bound(50.0, calibration, derive, incertitude=1.0, regime="exchangeable") is None
     ok = DiagnosticDerive(True, 0.05, 0.05, 20, "ok")
-    borne = construire_borne(50.0, calibration, ok, incertitude=1.0, regime="exchangeable")
+    borne = build_bound(50.0, calibration, ok, incertitude=1.0, regime="exchangeable")
     assert borne is not None
     assert borne.n_calibration == 40
 

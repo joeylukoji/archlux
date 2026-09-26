@@ -244,7 +244,7 @@ wide_rooms = ax.Context(
 )
 verdict = ax.feasibility.is_feasible(narrow, wide_rooms.structure, wide_rooms)
 assert not verdict and verdict.certificat is not None
-print(verdict.certificat.expliquer())
+print(verdict.certificat.explain())
 ```
 
 ```text

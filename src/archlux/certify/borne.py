@@ -9,15 +9,16 @@ from __future__ import annotations
 
 from math import isfinite
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.types import PerformanceBound, Regime
 from archlux.uq.conforme import Calibration, borner, quantile_conforme
 from archlux.uq.derive import DiagnosticDerive
 
-__all__ = ["Calibration", "bound_selected_plan", "check_calibration", "construire_borne"]
+__all__ = ["Calibration", "bound_selected_plan", "build_bound", "check_calibration"]
 
 
-def construire_borne(
+def build_bound(
     valeur: float,
     calibration: Calibration,
     derive: DiagnosticDerive,
@@ -111,3 +112,11 @@ def bound_selected_plan(
     if not (isfinite(uncertainty) and uncertainty > 0.0):
         return None
     return borner(value, calibration, incertitude=uncertainty, regime="selected")
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "construire_borne": Alias(build_bound, "archlux.certify.borne.build_bound"),
+    },
+)

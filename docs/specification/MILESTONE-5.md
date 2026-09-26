@@ -262,7 +262,7 @@ Les prix duaux du programme linéaire répondent à : *de combien l'objectif s'a
 si je relâchais cette contrainte d'une unité ?*
 
 ```python
-def traduire_duaux(duaux, origines, *, seuil=1e-6) -> tuple[PrixDual, ...]:
+def translate_duals(duaux, origines, *, seuil=1e-6) -> tuple[PrixDual, ...]:
     return tuple(sorted(
         (PrixDual(contrainte=origines[i], prix=float(d),
                   interpretation=phrase(origines[i], d),
@@ -295,11 +295,11 @@ non. Un diagnostic sans intervalle serait trompeur.
 
 ```python
 def test_le_diagnostic_est_lisible():
-    d = traduire_duaux(DUAUX, ORIGINES)
+    d = translate_duals(DUAUX, ORIGINES)
     assert all(len(p.interpretation) > 20 for p in d)     # pas "ligne 47"
 
 def test_prix_nul_pour_contrainte_non_active():
-    d = traduire_duaux(DUAUX, ORIGINES)
+    d = translate_duals(DUAUX, ORIGINES)
     assert all(p.prix != 0 for p in d)
 ```
 

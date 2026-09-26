@@ -77,6 +77,22 @@ Unchanged because they already read as English or are standard terms: `id`, `typ
 Public parameters that follow the same rename: `pavage` becomes `tiling`,
 `budget_reparation` becomes `repair_budget`, `fusions` becomes `merged_rooms`.
 
+## Public functions and methods (rename wave 5, first batch)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `Room.aire`, `Room.centre` | `Room.area`, `Room.center` | properties |
+| `Wall.longueur` | `Wall.length` | property |
+| `Opening.segment_absolu()` | `Opening.absolute_segment()` | derived on demand, never stored |
+| `Plan.ids_pieces` | `Plan.room_ids` | sorted room ids |
+| `Certificate.rapport()` | `Certificate.report()` | text report |
+| `rendre` (`certify.rapport`, `export.svg`) | `render` | |
+| `construire_borne` | `build_bound` | |
+| `traduire_duaux` | `translate_duals` | |
+| `CertificatFaisabilite` | `FeasibilityCertificate` | fields `origines` to `origins`, `certificat_farkas` to `farkas_certificate` |
+| `expliquer()` | `explain()` | |
+| `Verdict.faisable`, `Verdict.certificat` | `Verdict.feasible`, `Verdict.certificate` | |
+
 ## Geometry and solver
 
 | French | English |

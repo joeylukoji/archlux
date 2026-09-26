@@ -126,7 +126,7 @@ Les scores de production sont ceux de plans rendus après calibration, une fois 
 vraie valeur connue : \(|y - \hat{y}| / \hat{\sigma}\), comme à l'ajustement.
 
 ```python
-from archlux.certify.borne import construire_borne
+from archlux.certify.borne import build_bound
 from archlux.uq.derive import controler_derive
 
 plans_production = [disposition(rng) for _ in range(50)]
@@ -138,7 +138,7 @@ scores_production = np.array(
     ]
 )
 derive = controler_derive(scores_production, cal.snapshot(), seed=17)
-certificat_borne = construire_borne(
+certificat_borne = build_bound(
     prediction, cal.snapshot(), derive, incertitude=sigma, regime="exchangeable"
 )
 ```
@@ -151,7 +151,7 @@ détectées :
 derive_forte = controler_derive(3.0 * scores_production, cal.snapshot(), seed=17)
 assert not derive_forte.echangeable
 assert (
-    construire_borne(
+    build_bound(
         prediction, cal.snapshot(), derive_forte, incertitude=sigma, regime="exchangeable"
     )
     is None

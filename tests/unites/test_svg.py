@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 
-from archlux.export.svg import comparer, rendre
+from archlux.export.svg import comparer, render
 from archlux.types import Plan, Room, Wall
 
 _OUTLINE = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
@@ -27,24 +27,24 @@ def _lines(svg: str, css_class: str) -> list[ET.Element]:
 
 
 def test_the_document_is_well_formed_svg() -> None:
-    root = ET.fromstring(rendre(_plan(), titre="t"))
+    root = ET.fromstring(render(_plan(), titre="t"))
     assert root.tag.endswith("svg")
 
 
 def test_every_room_is_drawn() -> None:
-    svg = rendre(_plan())
+    svg = render(_plan())
     assert len(re.findall(r"<rect ", svg)) == 2 + len(_ROOMS)  # background + frame + rooms
 
 
 def test_load_bearing_walls_are_drawn_and_distinguishable() -> None:
-    svg = rendre(_plan(_BEARING, _PARTITION))
+    svg = render(_plan(_BEARING, _PARTITION))
     bearing, partition = _lines(svg, "wall-load-bearing"), _lines(svg, "wall")
     assert len(bearing) == 1 and len(partition) == 1
     assert float(bearing[0].get("stroke-width", 0)) > float(partition[0].get("stroke-width", 0))
 
 
 def test_a_vertical_wall_is_drawn_vertically() -> None:
-    (line,) = _lines(rendre(_plan(_BEARING)), "wall-load-bearing")
+    (line,) = _lines(render(_plan(_BEARING)), "wall-load-bearing")
     assert float(line.get("x1", 0)) == float(line.get("x2", 1))
     assert float(line.get("y1", 0)) != float(line.get("y2", 0))
 
@@ -61,4 +61,4 @@ def test_structure_walls_are_drawn_even_if_the_plan_omits_them() -> None:
 
 
 def test_a_wall_declared_twice_is_drawn_once_per_panel() -> None:
-    assert len(_lines(rendre(_plan(_BEARING), walls=(_BEARING,)), "wall-load-bearing")) == 1
+    assert len(_lines(render(_plan(_BEARING), walls=(_BEARING,)), "wall-load-bearing")) == 1

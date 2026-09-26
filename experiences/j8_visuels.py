@@ -24,7 +24,7 @@ from pathlib import Path
 import archlux as ax
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GridNotRecoverable
-from archlux.export.svg import comparer, rendre
+from archlux.export.svg import comparer, render
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from j8_generation import BUDGETS, _construire, _echelle
@@ -121,7 +121,7 @@ def main() -> None:
         if corrige is None:
             # Un seul panneau. Redessiner le plan d'entree a droite se lirait
             # « rien n'a change », alors qu'aucun plan n'a ete produit du tout.
-            svg = rendre(
+            svg = render(
                 plan,
                 contour=contexte.outline,
                 titre=f"{statut} — {avant}",

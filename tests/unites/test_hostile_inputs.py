@@ -235,4 +235,4 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     assert not verdict
     assert verdict.certificat is not None
     assert "load-bearing sides" in verdict.certificat.scope
-    assert "load-bearing sides" in verdict.certificat.expliquer()
+    assert "load-bearing sides" in verdict.certificat.explain()
