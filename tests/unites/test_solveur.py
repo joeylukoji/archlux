@@ -74,7 +74,7 @@ class TestDuaux:
         """Un dual par ligne de ``A`` — l'appariement avec ``origines`` en dépend."""
         c = np.zeros(8)
         c[POLY_AB.index["A.w"]] = -1.0
-        sol = solve(POLY_AB, c=c, duaux=True)
+        sol = solve(POLY_AB, c=c, duals=True)
         assert sol.duals is not None
         assert sol.duals.shape == (POLY_AB.A.shape[0],)
 
@@ -82,7 +82,7 @@ class TestDuaux:
         """Élargir ``A`` bute sur le contour : cette ligne-là doit coûter quelque chose."""
         c = np.zeros(8)
         c[POLY_AB.index["A.w"]] = -1.0
-        sol = solve(POLY_AB, c=c, duaux=True)
+        sol = solve(POLY_AB, c=c, duals=True)
         assert sol.duals is not None
         actives = {POLY_AB.origins[i] for i, prix in enumerate(sol.duals) if abs(prix) > 1e-9}
         assert actives, "aucune contrainte active alors que l'optimum est sur une face"
@@ -139,7 +139,7 @@ class TestDemarrageAChaud:
         """Un vecteur mal apparié est un bogue d'appel, pas une donnée."""
         from archlux.errors import InvariantViolation
 
-        with pytest.raises(InvariantViolation, match="dimension"):
+        with pytest.raises(InvariantViolation, match="start has shape"):
             solve(POLY_AB, c=np.zeros(8), start=np.zeros(3))
 
 
@@ -178,7 +178,7 @@ class TestStatutsRares:
         """Un vecteur de coûts mal apparié est un bogue d'appel."""
         from archlux.errors import InvariantViolation
 
-        with pytest.raises(InvariantViolation, match="objectif de dimension"):
+        with pytest.raises(InvariantViolation, match="objective has shape"):
             solve(POLY_1, c=np.zeros(99))
 
 

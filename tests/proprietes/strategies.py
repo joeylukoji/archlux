@@ -40,10 +40,10 @@ __all__ = [
     "contextes",
     "murs",
     "ordres_valides",
-    "pieces",
     "plans_quelconques",
     "plans_valides",
     "realistic_scenarios",
+    "rooms",
     "vecteurs_objectifs",
 ]
 
@@ -54,7 +54,7 @@ _IDS = st.text(alphabet="abcdefghijklmnopqrstuvwxyz_0123456789", min_size=1, max
 _TYPES = st.sampled_from(["living_room", "bedroom", "kitchen", "bathroom", "corridor", "toilet"])
 
 
-def pieces() -> st.SearchStrategy[Room]:
+def rooms() -> st.SearchStrategy[Room]:
     """Pièces rectangulaires quelconques, dimensions strictement positives."""
     return st.builds(Room, id=_IDS, type=_TYPES, x=_COORD, y=_COORD, w=_TAILLE, h=_TAILLE)
 
@@ -192,7 +192,7 @@ def plans_quelconques(draw: st.DrawFn) -> Plan:
     """
     liste_murs = draw(st.lists(murs(), min_size=1, max_size=6, unique_by=lambda m: m.id))
     ids_murs = [m.id for m in liste_murs]
-    liste_pieces = draw(st.lists(pieces(), min_size=1, max_size=6, unique_by=lambda p: p.id))
+    liste_pieces = draw(st.lists(rooms(), min_size=1, max_size=6, unique_by=lambda p: p.id))
     liste_ouv = draw(st.lists(_ouvertures(ids_murs), max_size=5, unique_by=lambda o: o.id))
     contour = draw(st.lists(st.tuples(_COORD, _COORD), min_size=3, max_size=8))
     certificat = draw(st.one_of(st.none(), _certificats()))
@@ -277,7 +277,7 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
     rectangles = _decouper(
         draw, 0, 0, largeur, hauteur, profondeur, minimum, force_split=force_split
     )
-    pieces = tuple(
+    rooms = tuple(
         Room(
             id=f"p{i}",
             type=draw(_TYPES),
@@ -289,7 +289,7 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
         for i, (x, y, w, h) in enumerate(rectangles)
     )
     return Plan(
-        rooms=pieces,
+        rooms=rooms,
         walls=(),
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,

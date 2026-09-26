@@ -103,9 +103,9 @@ def test_warm_start_passe_toujours_depart(monkeypatch: pytest.MonkeyPatch) -> No
     appels: list[np.ndarray | None] = []
     original = solve
 
-    def tracer(poly, c, *, start=None, cuts=None, duaux=False):
+    def tracer(poly, c, *, start=None, cuts=None, duals=False):
         appels.append(start)
-        return original(poly, c, start=start, cuts=cuts, duaux=duaux)
+        return original(poly, c, start=start, cuts=cuts, duals=duals)
 
     monkeypatch.setattr("archlux.solve.frank_wolfe.solve", tracer)
     frank_wolfe(

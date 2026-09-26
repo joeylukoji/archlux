@@ -44,7 +44,7 @@ def test_surfaces_minimales_respectees(ordre: object) -> None:
         regulation=Regulation(min_areas=(("living_room", 4.0),), min_width=1.0),
     )
     poly = build_polytope(ordre, ctx)  # type: ignore[arg-type]
-    pieces = tuple(
+    rooms = tuple(
         Room(id=nom, type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
         for nom in ordre.rooms  # type: ignore[attr-defined]
     )
@@ -52,10 +52,10 @@ def test_surfaces_minimales_respectees(ordre: object) -> None:
     for nom, colonne in poly.index.items():
         if nom.endswith(".w") or nom.endswith(".h"):
             c[colonne] = 1.0
-    sol = solve_with_areas(poly, c, ctx, pieces)
+    sol = solve_with_areas(poly, c, ctx, rooms)
     if sol.status != "optimal":
         return
-    for piece in pieces:
+    for piece in rooms:
         w = float(sol.x[poly.index[f"{piece.id}.w"]])
         h = float(sol.x[poly.index[f"{piece.id}.h"]])
         assert w * h >= 4.0 - 1e-6

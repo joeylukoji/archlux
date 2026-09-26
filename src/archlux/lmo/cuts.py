@@ -1,29 +1,29 @@
-r"""Coupes tangentes pour les contraintes de surface minimale.
+r"""Tangent cuts for the minimum-area constraints.
 
-Formule
+Formula
 =======
-L'aire d'un rectangle est le produit :math:`a(w,h) = w h`. La contrainte
-réglementaire :math:`w h \\ge a_{\\min}` n'est **pas linéaire**. GLOP ne sait
-la traiter que via une approximation linéaire.
+The area of a rectangle is the product :math:`a(w,h) = w h`. The regulatory
+constraint :math:`w h \\ge a_{\\min}` is **not linear**. GLOP can only handle it
+through a linear approximation.
 
-Convexité
+Convexity
 ---------
-Sur :math:`\\mathbb{R}_{>0}^2`, :math:`g(w,h) = \\log w + \\log h` est concave
+On :math:`\\mathbb{R}_{>0}^2`, :math:`g(w,h) = \\log w + \\log h` is concave
 (Boyd & Vandenberghe, *Convex Optimization*, Cambridge University Press, 2004,
-§3.1.5, composition avec le log). Ses super-niveaux
+§3.1.5, composition with the log). Its superlevel sets
 
 .. math::
 
     K = \\{(w,h) : w>0,\\ h>0,\\ w h \\ge a_{\\min}\\}
       = \\{ g \\ge \\log a_{\\min} \\}
 
-sont donc **convexes** (ibid., §3.1.6).
+are therefore **convex** (ibid., §3.1.6).
 
-Tangente
---------
-Au point de contact :math:`(w_0,h_0)` de l'hyperbole :math:`w_0 h_0 = a_{\\min}`,
-:math:`\\nabla g = (1/w_0,\\ 1/h_0)` et le demi-espace d'appui contenant :math:`K`
-s'écrit
+Tangent
+-------
+At the contact point :math:`(w_0,h_0)` of the hyperbola :math:`w_0 h_0 = a_{\\min}`,
+:math:`\\nabla g = (1/w_0,\\ 1/h_0)` and the supporting half-space containing
+:math:`K` is written
 
 .. math::
 
@@ -31,21 +31,21 @@ s'écrit
     \\quad\\Longleftrightarrow\\quad
     h_0 w + w_0 h \\ge 2 a_{\\min}.
 
-C'est aussi l'AM-GM (Hardy, Littlewood, Pólya, *Inequalities*, 2e éd., Cambridge,
-1952, th. 16) : :math:`(w/w_0 + h/h_0)/2 \\ge \\sqrt{wh/(w_0 h_0)}`, qui vaut
-:math:`\\ge 1` dès que :math:`wh \\ge a_{\\min}`.
+This is also the AM-GM inequality (Hardy, Littlewood, Polya, *Inequalities*, 2nd ed.,
+Cambridge, 1952, th. 16): :math:`(w/w_0 + h/h_0)/2 \\ge \\sqrt{wh/(w_0 h_0)}`, which is
+:math:`\\ge 1` as soon as :math:`wh \\ge a_{\\min}`.
 
-Si le point courant viole la contrainte, on le **projette** d'abord sur
-l'hyperbole en conservant le rapport d'aspect
-:math:`(w_0,h_0) \\leftarrow \\sqrt{a_{\\min}/(wh)}\\,(w,h)`, sans quoi la
-tangente écrite en un point intérieur à l'infaissable **exclut** des points
-admissibles (même rapport, produit :math:`= a_{\\min}`).
+If the current point violates the constraint, it is first **projected** onto the
+hyperbola while keeping the aspect ratio
+:math:`(w_0,h_0) \\leftarrow \\sqrt{a_{\\min}/(wh)}\\,(w,h)`, without which a
+tangent written at a point inside the infeasible region **excludes** feasible points
+(same ratio, product :math:`= a_{\\min}`).
 
-La boucle de Kelley (Kelley, J. E., *The cutting-plane method for solving convex
-programs*, SIAM J. 8, 1960) ajoute ces tangentes jusqu'à satisfaction ou
-``MAX_COUPES_PAR_PIECE``.
+The Kelley loop (Kelley, J. E., *The cutting-plane method for solving convex
+programs*, SIAM J. 8, 1960) adds these tangents until satisfaction or
+``MAX_CUTS_PER_ROOM``.
 
-Dérivation pas à pas, cas d'usage et DOI : ``docs/formules/coupes-surface.md``.
+Step-by-step derivation, use cases and DOI: ``docs/formules/coupes-surface.md``.
 """
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2, SNAP_M
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
-    from archlux.lmo.solveur import SolutionLP
+    from archlux.lmo.solveur import LPSolution
     from archlux.types import Context, Room
 
 __all__ = [
@@ -81,7 +81,7 @@ __all__ = [
 ]
 
 MAX_CUTS_PER_ROOM = 10
-"""Au-delà, ``log.warning("coupe.limite", piece=...)`` et arrêt pour cette pièce."""
+"""Beyond it, ``log.warning("coupe.limite", piece=...)`` and stop for that room."""
 
 _TOLERANCE_AIRE = AREA_PROOF_M2
 """Acceptance: a room is short of its minimum area when ``w h + tol < a_min``. Equal to
@@ -91,46 +91,45 @@ bound tightening aim at ``_target``, slightly above the minimum, so that LP nois
 leave it below; rooms that meet their minimum are never pushed by the margin."""
 
 
-def _target(a_min: float, margin: float = AREA_TARGET_MARGIN_M2) -> float:
+def _target(min_area: float, margin: float = AREA_TARGET_MARGIN_M2) -> float:
     """Area the cuts aim at: the minimum plus a margin larger than the LP noise."""
-    return a_min + margin
+    return min_area + margin
 
 
 _TOLERANCE_BORNE = 1e-12
-"""Tolérance d'appartenance à la boîte des bornes, en mètres."""
+"""Tolerance for membership in the bounds box, in metres."""
 _TOLERANCE_LONGUEUR = 1e-6
-"""Tolérance de comparaison d'une longueur à une borne, en mètres.
+"""Tolerance for comparing a length to a bound, in metres.
 
-Distincte de :data:`_TOLERANCE_AIRE` : l'une porte sur des
-mètres carrés, l'autre sur des mètres. Les confondre rendrait toute révision de l'une
-silencieusement dépendante de l'autre.
+Distinct from :data:`_TOLERANCE_AIRE`: one is in square metres, the other in metres.
+Conflating them would make any revision of one silently dependent on the other.
 """
 
 
 def _points_appui_hyperbole(
-    a_min: float, w_min: float, w_max: float, h_min: float, h_max: float
+    min_area: float, w_min: float, w_max: float, h_min: float, h_max: float
 ) -> tuple[tuple[float, float], ...]:
-    """Points de l'hyperbole ``wh = a_min`` dans la boîte des bornes.
+    """Points of the hyperbola ``wh = a_min`` within the bounds box.
 
-    Les tangentes en ces points forment l'approximation extérieure initiale
-    (Kelley, 1960) : extrémités de l'arc admissible et le carré, s'il y tient.
+    The tangents at these points form the initial outer approximation (Kelley, 1960):
+    the ends of the feasible arc and the square, if it fits.
     """
     points: list[tuple[float, float]] = []
-    cote = sqrt(a_min)
+    cote = sqrt(min_area)
 
-    def _dans_boite(largeur: float, hauteur: float) -> bool:
-        """Dire si le couple ``(largeur, hauteur)`` tient dans les bornes du LP."""
+    def _in_box(largeur: float, hauteur: float) -> bool:
+        """Say whether the pair ``(largeur, hauteur)`` fits within the LP bounds."""
         return (
             w_min - _TOLERANCE_BORNE <= largeur <= w_max + _TOLERANCE_BORNE
             and h_min - _TOLERANCE_BORNE <= hauteur <= h_max + _TOLERANCE_BORNE
         )
 
-    if _dans_boite(cote, cote):
+    if _in_box(cote, cote):
         points.append((cote, cote))
-    if w_min > 0.0 and _dans_boite(w_min, a_min / w_min):
-        points.append((w_min, a_min / w_min))
-    if h_min > 0.0 and _dans_boite(a_min / h_min, h_min):
-        points.append((a_min / h_min, h_min))
+    if w_min > 0.0 and _in_box(w_min, min_area / w_min):
+        points.append((w_min, min_area / w_min))
+    if h_min > 0.0 and _in_box(min_area / h_min, h_min):
+        points.append((min_area / h_min, h_min))
     uniques: list[tuple[float, float]] = []
     for candidat in points:
         if not any(
@@ -143,21 +142,21 @@ def _points_appui_hyperbole(
 
 
 def _minimum_areas(
-    ctx: Context, pieces: tuple[Room, ...], minima: Mapping[str, float] | None
+    ctx: Context, rooms: tuple[Room, ...], minima: Mapping[str, float] | None
 ) -> dict[str, float]:
     """Minimum area of each room: ``minima`` if it names the room, else its type's."""
     overrides = minima or {}
     return {
-        piece.id: overrides.get(piece.id, ctx.regulation.min_area(piece.type)) for piece in pieces
+        piece.id: overrides.get(piece.id, ctx.regulation.min_area(piece.type)) for piece in rooms
     }
 
 
 def _coupes_initiales(
-    poly: Polytope, need: Mapping[str, float], pieces: tuple[Room, ...]
+    poly: Polytope, need: Mapping[str, float], rooms: tuple[Room, ...]
 ) -> list[Cut]:
-    """Tangentes d'enveloppe, avant la première résolution."""
+    """Envelope tangents, before the first solve."""
     cuts: list[Cut] = []
-    for piece in pieces:
+    for piece in rooms:
         seuil = need[piece.id]
         if seuil <= 0.0:
             continue
@@ -172,14 +171,16 @@ def _coupes_initiales(
 
 @dataclass(frozen=True, slots=True)
 class Cut:
-    """Inégalité linéaire ``Σ coeffs[v]·v ≥ borne_inf`` ajoutée au polytope.
+    """Linear inequality ``Σ coefficients[v]·v ≥ lower_bound`` added to the polytope.
 
     Attributes
     ----------
-    coeffs : tuple of (str, float)
-        Paires ``(nom de variable, coefficient)``, triées.
-    origine : str
-        Libellé reversé dans le diagnostic dual.
+    coefficients : tuple of (str, float)
+        Pairs ``(variable name, coefficient)``, sorted.
+    lower_bound : float
+        Right-hand side of the inequality.
+    origin : str
+        Label fed back into the dual diagnosis.
     """
 
     coefficients: tuple[tuple[str, float], ...]
@@ -187,19 +188,19 @@ class Cut:
     origin: str
 
     def satisfied(self, w: float, h: float, tol: float = 1e-9) -> bool:
-        """Dire si le couple ``(w, h)`` satisfait la coupe de surface.
+        """Say whether the pair ``(w, h)`` satisfies the area cut.
 
         Parameters
         ----------
         w, h : float
-            Largeur et hauteur testées, en mètres.
+            Width and height tested, in metres.
         tol : float, optional
-            Tolérance additive sur l'inégalité.
+            Additive tolerance on the inequality.
 
         Returns
         -------
         bool
-            ``True`` si ``Σ coef·variable ≥ borne_inf - tol``.
+            ``True`` if ``Σ coef·variable ≥ lower_bound - tol``.
         """
         total = 0.0
         for nom, coefficient in self.coefficients:
@@ -211,48 +212,48 @@ class Cut:
         return bool(total + tol >= self.lower_bound)
 
 
-def area_cut(w0: float, h0: float, a_min: float, *, piece: str = "") -> Cut:
-    """Tangente à l'hyperbole ``w h = a_min`` au point projeté de ``(w₀, h₀)``.
+def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
+    """Tangent to the hyperbola ``w h = a_min`` at the projected point of ``(w₀, h₀)``.
 
     Parameters
     ----------
     w0, h0 : float
-        Point de linéarisation, strictement positif (solution courante).
+        Linearisation point, strictly positive (current solution).
     a_min : float
-        Surface minimale, en mètres carrés, strictement positive.
+        Minimum area, in square metres, strictly positive.
     piece : str, optional
-        Identifiant de pièce, préfixe des variables ``<id>.w`` / ``<id>.h``.
+        Room identifier, prefix of the variables ``<id>.w`` / ``<id>.h``.
 
     Returns
     -------
-    Coupe
-        ``h_★ w + w_★ h ≥ 2 a_min`` au point ``(w_★, h_★)`` de l'hyperbole.
+    Cut
+        ``h_★ w + w_★ h ≥ 2 a_min`` at the point ``(w_★, h_★)`` of the hyperbola.
 
     Raises
     ------
     InvariantViolation
-        Point non strictement positif, ou ``a_min`` non strictement positive.
+        Point that is not strictly positive, or ``a_min`` not strictly positive.
 
     Guarantees
     ----------
-    - Géométrique : **exacte**. Aucun ``(w,h)`` de produit ``≥ a_min`` n'est exclu.
+    - Geometric: **exact**. No ``(w,h)`` with product ``≥ a_min`` is excluded.
 
     Notes
     -----
-    Formule et sources : ``docs/formules/coupes-surface.md``.
+    Formula and sources: ``docs/formules/coupes-surface.md``.
     """
     if w0 <= 0.0 or h0 <= 0.0:
-        raise InvariantViolation((f"point de linéarisation non strictement positif : {(w0, h0)}",))
-    if a_min <= 0.0:
-        raise InvariantViolation((f"surface minimale non strictement positive : {a_min}",))
+        raise InvariantViolation((f"linearisation point not strictly positive: {(w0, h0)}",))
+    if min_area <= 0.0:
+        raise InvariantViolation((f"minimum area not strictly positive: {min_area}",))
     produit = w0 * h0
-    scale = sqrt(a_min / produit)
+    scale = sqrt(min_area / produit)
     w_star, h_star = w0 * scale, h0 * scale
     nom_w = f"{piece}.w" if piece else "w"
     nom_h = f"{piece}.h" if piece else "h"
-    coeffs = tuple(sorted(((nom_w, h_star), (nom_h, w_star))))
-    origine = f"surface {piece}" if piece else "surface"
-    return Cut(coefficients=coeffs, lower_bound=2.0 * a_min, origin=origine)
+    coefficients = tuple(sorted(((nom_w, h_star), (nom_h, w_star))))
+    origin = f"surface {piece}" if piece else "surface"
+    return Cut(coefficients=coefficients, lower_bound=2.0 * min_area, origin=origin)
 
 
 def violated_areas(
@@ -260,21 +261,21 @@ def violated_areas(
     poly: Polytope,
     ctx: Context,
     *,
-    pieces: tuple[Room, ...],
+    rooms: tuple[Room, ...],
     minima: Mapping[str, float] | None = None,
 ) -> tuple[str, ...]:
-    """Lister les pièces dont ``w h`` est strictement sous ``a_min``.
+    """List the rooms whose ``w h`` is strictly below ``a_min``.
 
     Parameters
     ----------
     x : numpy.ndarray
-        Solution courante du LP.
+        Current LP solution.
     poly : Polytope
-        Fournit ``index``.
-    ctx : Contexte
-        Fournit ``referentiel.a_min``.
-    pieces : tuple of Piece
-        Identifiants et types — le polytope ne porte pas le programme.
+        Provides ``index``.
+    ctx : Context
+        Provides the regulation's minimum areas.
+    pieces : tuple of Room
+        Identifiers and types — the polytope does not carry the programme.
     minima : mapping of str to float, optional
         Minimum area per room id, overriding the type's (the sub-rectangles of a fused
         room, :func:`archlux.geom.rectilineaire.minimum_area_shares`).
@@ -282,21 +283,21 @@ def violated_areas(
     Returns
     -------
     tuple of str
-        Identifiants triés.
+        Sorted identifiers.
     """
-    return _short_of_area(x, poly, _minimum_areas(ctx, pieces, minima), pieces)
+    return _short_of_area(x, poly, _minimum_areas(ctx, rooms, minima), rooms)
 
 
 def _short_of_area(
     x: VecteurF | Sequence[float],
     poly: Polytope,
     need: Mapping[str, float],
-    pieces: tuple[Room, ...],
+    rooms: tuple[Room, ...],
 ) -> tuple[str, ...]:
     """Rooms whose ``w h`` is strictly below ``need``, sorted."""
     vecteur = np.asarray(x, dtype=float)
     violees: list[str] = []
-    for piece in pieces:
+    for piece in rooms:
         seuil = need[piece.id]
         if seuil <= 0.0:
             continue
@@ -307,32 +308,32 @@ def _short_of_area(
     return tuple(sorted(violees))
 
 
-def _cible_sur_hyperbole(
+def _target_on_hyperbola(
     largeur: float,
     hauteur: float,
-    a_min: float,
+    min_area: float,
     w_min: float,
     w_max: float,
     h_min: float,
     h_max: float,
 ) -> tuple[float, float] | None:
-    """Point de ``wh = a_min`` dans la boîte, même rapport d'aspect si possible.
+    """Point of ``wh = a_min`` in the box, same aspect ratio if possible.
 
-    Si le rayon sort par un bord, on glisse sur l'arc jusqu'à l'intersection
-    hyperbole–boîte (sommet réel de ``K``, atteignable par le simplexe).
+    If the ray leaves through an edge, slide along the arc to the hyperbola–box
+    intersection (a real vertex of ``K``, reachable by the simplex).
     """
-    if largeur <= 0.0 or hauteur <= 0.0 or a_min <= 0.0:
+    if largeur <= 0.0 or hauteur <= 0.0 or min_area <= 0.0:
         return None
-    if largeur * hauteur + _TOLERANCE_AIRE >= a_min:
+    if largeur * hauteur + _TOLERANCE_AIRE >= min_area:
         return None
-    facteur = sqrt(a_min / (largeur * hauteur))
+    facteur = sqrt(min_area / (largeur * hauteur))
     w_star, h_star = largeur * facteur, hauteur * facteur
     w_star = min(max(w_star, w_min), w_max)
-    h_star = a_min / w_star if w_star > 0.0 else h_max
+    h_star = min_area / w_star if w_star > 0.0 else h_max
     if h_min - _TOLERANCE_LONGUEUR <= h_star <= h_max + _TOLERANCE_LONGUEUR:
         return w_star, min(max(h_star, h_min), h_max)
     h_star = min(max(hauteur * facteur, h_min), h_max)
-    w_star = a_min / h_star if h_star > 0.0 else w_max
+    w_star = min_area / h_star if h_star > 0.0 else w_max
     if w_min - _TOLERANCE_LONGUEUR <= w_star <= w_max + _TOLERANCE_LONGUEUR:
         return min(max(w_star, w_min), w_max), h_star
     return None
@@ -342,22 +343,21 @@ def _resserrer_bornes(
     poly: Polytope,
     x: VecteurF,
     need: Mapping[str, float],
-    pieces: tuple[Room, ...],
+    rooms: tuple[Room, ...],
     *,
     margin: float = AREA_TARGET_MARGIN_M2,
 ) -> Polytope:
-    """Élever les bornes inférieures de ``w,h`` jusqu'à l'hyperbole courante.
+    """Raise the lower bounds of ``w,h`` up to the current hyperbola.
 
-    Le simplexe ne rend que des sommets d'un polyèdre. Sur ``{wh ≥ a}``,
-    strictement convexe, l'optimum (AM-GM : minimiser ``w+h``) n'est jamais un
-    sommet d'une approximation finie : les sommets oscillent sur une corde,
-    produit ``a − δ²``. Imposer ``w ≥ w★``, ``h ≥ h★`` force le sommet suivant
-    à respecter l'aire, et laisse GLOP réajuster ``x, y`` (Kelley, 1960, plus
-    resserrement de bornes).
+    The simplex only returns vertices of a polyhedron. On ``{wh ≥ a}``, strictly
+    convex, the optimum (AM-GM: minimise ``w+h``) is never a vertex of a finite
+    approximation: the vertices oscillate on a chord, product ``a − δ²``. Imposing
+    ``w ≥ w★``, ``h ≥ h★`` forces the next vertex to respect the area, and lets GLOP
+    readjust ``x, y`` (Kelley, 1960, plus bound tightening).
     """
     bornes = list(poly.bounds)
     change = False
-    for piece in pieces:
+    for piece in rooms:
         seuil = need[piece.id]
         if seuil <= 0.0:
             continue
@@ -367,7 +367,7 @@ def _resserrer_bornes(
             continue  # not short of its minimum: the margin only serves rooms in deficit
         w_min, w_max = bornes[idx_w]
         h_min, h_max = bornes[idx_h]
-        cible = _cible_sur_hyperbole(
+        cible = _target_on_hyperbola(
             float(x[idx_w]), float(x[idx_h]), _target(seuil, margin), w_min, w_max, h_min, h_max
         )
         if cible is None:
@@ -386,12 +386,12 @@ def _identifiants_a_couper(
     x: VecteurF,
     poly: Polytope,
     need: Mapping[str, float],
-    pieces: tuple[Room, ...],
+    rooms: tuple[Room, ...],
     comptes: Counter[str],
 ) -> list[str]:
-    """Pièces encore sous ``a_min`` et sous le plafond de coupes."""
+    """Rooms still below ``a_min`` and under the cut cap."""
     restantes: list[str] = []
-    for identifiant in _short_of_area(x, poly, need, pieces):
+    for identifiant in _short_of_area(x, poly, need, rooms):
         if comptes[identifiant] >= MAX_CUTS_PER_ROOM:
             # Lazy: structlog costs up to 0.4 s at import and this path is rare.
             import structlog
@@ -412,7 +412,7 @@ def _empiler_tangentes(
     *,
     margin: float = AREA_TARGET_MARGIN_M2,
 ) -> None:
-    """Ajouter une tangente Kelley par pièce restante (Kelley, 1960)."""
+    """Add one Kelley tangent per remaining room (Kelley, 1960)."""
     for identifiant in restantes:
         largeur = float(x[poly.index[f"{identifiant}.w"]])
         hauteur = float(x[poly.index[f"{identifiant}.h"]])
@@ -426,28 +426,28 @@ def solve_with_areas(
     poly: Polytope,
     c: VecteurF,
     ctx: Context,
-    pieces: tuple[Room, ...],
+    rooms: tuple[Room, ...],
     *,
     start: VecteurF | None = None,
-    duaux: bool = False,
+    duals: bool = False,
     minima: Mapping[str, float] | None = None,
-) -> SolutionLP:
-    """Résoudre le LP en ajoutant les tangentes de surface jusqu'à satisfaction.
+) -> LPSolution:
+    """Solve the LP, adding area tangents until satisfaction.
 
     Parameters
     ----------
     poly : Polytope
-        Domaine linéaire (séparations, contour, éventuellement écarts L1).
+        Linear domain (separations, outline, possibly L1 slacks).
     c : numpy.ndarray
-        Objectif, dimension ``len(poly.index)``.
-    ctx : Contexte
-        Référentiel des surfaces.
-    pieces : tuple of Piece
-        Programme, pour typer chaque identifiant.
-    depart : numpy.ndarray or None, optional
-        Warm start du premier appel.
+        Objective, dimension ``len(poly.index)``.
+    ctx : Context
+        Area regulation.
+    pieces : tuple of Room
+        Programme, to give each identifier its type.
+    start : numpy.ndarray or None, optional
+        Warm start of the first call.
     duaux : bool, optional
-        Extraire les duaux du dernier LP.
+        Extract the duals of the last LP.
     minima : mapping of str to float, optional
         Minimum area per room id, overriding the type's. The sub-rectangles of a fused
         room get their share of the room's minimum
@@ -455,47 +455,47 @@ def solve_with_areas(
 
     Returns
     -------
-    SolutionLP
-        Dernière solution. Statut inchangé si le LP d'origine est infaisable.
+    LPSolution
+        Last solution. Status unchanged if the original LP is infeasible.
 
     Warnings
     --------
-    ``statut == "optimal"`` **ne garantit pas** ``w·h ≥ a_min`` :
+    ``status == "optimal"`` **does not guarantee** ``w·h ≥ a_min``:
 
-    - la boucle rend la main dès qu'une pièce atteint ``MAX_COUPES_PAR_PIECE``, avec la
-      dernière solution telle quelle. C'est un plafond de terminaison, pas une preuve ;
-    - :func:`_resserrer_bornes` **restreint** le domaine (``w ≥ w★`` et ``h ≥ h★``
-      simultanément, alors que ``{wh ≥ a_min}`` autorise d'échanger l'un contre
-      l'autre). L'optimum rendu est donc celui du domaine resserré, pas du domaine
-      exact, et il peut être strictement moins bon.
+    - the loop hands back as soon as a room reaches ``MAX_CUTS_PER_ROOM``, with the
+      last solution as is. This is a termination cap, not a proof;
+    - :func:`_resserrer_bornes` **restricts** the domain (``w ≥ w★`` and ``h ≥ h★``
+      simultaneously, whereas ``{wh ≥ a_min}`` allows trading one for the other). The
+      optimum returned is therefore that of the tightened domain, not of the exact
+      domain, and it may be strictly worse.
 
-    Dans les deux cas, seule :func:`archlux.certify.proof.verify_exactly` tranche.
-    Les duaux rendus sont ceux des lignes de ``A``, inchangées par le resserrement : la
-    pression exercée par les surfaces minimales n'y apparaît pas.
+    In both cases, only :func:`archlux.certify.proof.verify_exactly` decides.
+    The duals returned are those of the rows of ``A``, unchanged by the tightening: the
+    pressure exerted by the minimum areas does not appear in them.
 
     Notes
     -----
-    Dérivation, sources et cas d'usage : ``docs/formules/coupes-surface.md``.
+    Derivation, sources and use cases: ``docs/formules/coupes-surface.md``.
     """
-    need = _minimum_areas(ctx, pieces, minima)
-    first = _solve_with_area_cuts(poly, c, need, pieces, start, duaux, AREA_TARGET_MARGIN_M2)
-    if _meets_areas(first, poly, need, pieces):
+    need = _minimum_areas(ctx, rooms, minima)
+    first = _solve_with_area_cuts(poly, c, need, rooms, start, duals, AREA_TARGET_MARGIN_M2)
+    if _meets_areas(first, poly, need, rooms):
         return first
     # The margin needs room the plan may not have (minimum areas that fill the outline
     # exactly, review of batch 1.5): aim at the exact minimum before giving up.
-    exact = _solve_with_area_cuts(poly, c, need, pieces, start, duaux, 0.0)
-    if _meets_areas(exact, poly, need, pieces) or first.status != "optimal":
+    exact = _solve_with_area_cuts(poly, c, need, rooms, start, duals, 0.0)
+    if _meets_areas(exact, poly, need, rooms) or first.status != "optimal":
         return exact
     return first
 
 
 def _meets_areas(
-    solution: SolutionLP, poly: Polytope, need: Mapping[str, float], pieces: tuple[Room, ...]
+    solution: LPSolution, poly: Polytope, need: Mapping[str, float], rooms: tuple[Room, ...]
 ) -> bool:
     """An optimal point inside the polytope (up to SNAP_M) with no area in deficit."""
     return (
         solution.status == "optimal"
-        and not _short_of_area(solution.x, poly, need, pieces)
+        and not _short_of_area(solution.x, poly, need, rooms)
         and poly.contains(solution.x, tol=SNAP_M)
     )
 
@@ -504,37 +504,37 @@ def _solve_with_area_cuts(
     poly: Polytope,
     c: VecteurF,
     need: Mapping[str, float],
-    pieces: tuple[Room, ...],
+    rooms: tuple[Room, ...],
     start: VecteurF | None,
-    duaux: bool,
+    duals: bool,
     margin: float,
-) -> SolutionLP:
+) -> LPSolution:
     """The Kelley loop of :func:`resoudre_avec_surfaces`, aiming ``margin`` above minima."""
     domaine = poly
-    cuts: list[Cut] = _coupes_initiales(domaine, need, pieces)
+    cuts: list[Cut] = _coupes_initiales(domaine, need, rooms)
     comptes: Counter[str] = Counter()
     courant = start
     while True:
-        solution = solve(domaine, c, start=courant, cuts=cuts or None, duaux=duaux)
+        solution = solve(domaine, c, start=courant, cuts=cuts or None, duals=duals)
         if solution.status != "optimal":
             if domaine is not poly:
                 # Tightened bounds are not an outer approximation: an infeasible verdict
                 # on them says nothing about the original problem (AUDIT.md §5.2). Solve
                 # the original domain, so that an infeasibility certificate, if any, is
                 # about the real system; a feasible answer goes on to the exact proof.
-                return solve(poly, c, start=courant, cuts=cuts or None, duaux=duaux)
+                return solve(poly, c, start=courant, cuts=cuts or None, duals=duals)
             return solution
-        if not _short_of_area(solution.x, domaine, need, pieces):
+        if not _short_of_area(solution.x, domaine, need, rooms):
             return solution
-        resserre = _resserrer_bornes(domaine, solution.x, need, pieces, margin=margin)
+        resserre = _resserrer_bornes(domaine, solution.x, need, rooms, margin=margin)
         if resserre is not domaine:
-            affine = solve(resserre, c, start=solution.x, cuts=cuts or None, duaux=duaux)
+            affine = solve(resserre, c, start=solution.x, cuts=cuts or None, duals=duals)
             if affine.status == "optimal":
-                if not _short_of_area(affine.x, resserre, need, pieces):
+                if not _short_of_area(affine.x, resserre, need, rooms):
                     return affine
                 domaine = resserre
                 solution = affine
-        restantes = _identifiants_a_couper(solution.x, domaine, need, pieces, comptes)
+        restantes = _identifiants_a_couper(solution.x, domaine, need, rooms, comptes)
         if not restantes:
             return solution
         _empiler_tangentes(restantes, solution.x, domaine, need, cuts, comptes, margin=margin)
@@ -555,14 +555,14 @@ def inner_area_constraints(
     poly: Polytope,
     x: VecteurF,
     ctx: Context,
-    pieces: tuple[Room, ...],
+    rooms: tuple[Room, ...],
     *,
     spread: tuple[float, ...] = INNER_AREA_SPREAD,
     minima: Mapping[str, float] | None = None,
 ) -> Polytope:
     """Add an **inner** linear approximation of every minimum area ``w h >= a``.
 
-    Tangent cuts (:func:`coupe_surface`) are an *outer* approximation: their vertices
+    Tangent cuts (:func:`area_cut`) are an *outer* approximation: their vertices
     can lie below the hyperbola, so a convex combination of a valid point and such a
     vertex can break the minimum area. That is how Frank-Wolfe went below ``a_min``
     (AUDIT.md §3 n°6). This function does the opposite: every point it keeps satisfies
@@ -627,19 +627,19 @@ def inner_area_constraints(
     vals: list[float] = []
     rhs: list[float] = []
     labels: list[str] = []
-    need = _minimum_areas(ctx, pieces, minima)
-    for piece in pieces:
-        a_min = need[piece.id]
+    need = _minimum_areas(ctx, rooms, minima)
+    for piece in rooms:
+        min_area = need[piece.id]
         iw, ih = poly.index[f"{piece.id}.w"], poly.index[f"{piece.id}.h"]
         w0, h0 = float(x[iw]), float(x[ih])
-        if a_min <= 0.0 or w0 <= 0.0 or h0 <= 0.0:
+        if min_area <= 0.0 or w0 <= 0.0 or h0 <= 0.0:
             continue
-        if w0 * h0 < a_min - AREA_PROOF_M2:
+        if w0 * h0 < min_area - AREA_PROOF_M2:
             raise InvariantViolation(
-                (f"minimum area {piece.id}: start {w0 * h0:.9f} m² below {a_min:.9f} m²",)
+                (f"minimum area {piece.id}: start {w0 * h0:.9f} m² below {min_area:.9f} m²",)
             )
         # A start within the proof tolerance below a_min keeps its own area as target.
-        area = min(a_min, w0 * h0)
+        area = min(min_area, w0 * h0)
         (w_lo, w_hi), (h_lo, h_hi) = bornes[iw], bornes[ih]
         # Nodes are not filtered by the bounds: the region is intersected with them
         # anyway, and filtering froze rooms whose height is fixed by a contact.

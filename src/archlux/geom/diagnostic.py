@@ -1,36 +1,35 @@
-"""Quantifier **comment** un plan est invalide, et pas seulement s'il l'est.
+"""Quantify **how** a plan is invalid, not merely whether it is.
 
-Pourquoi ce module existe
--------------------------
-:func:`~archlux.certify.proof.verify_exactly` rend un verdict et nomme les
-violations. C'est ce qu'il faut pour certifier ; ce n'est pas ce qu'il faut pour
-**caractériser un corpus d'entrées**. « invalide » ne distingue pas un plan dont
-une cloison a glissé de deux centimètres d'un plan dont les pièces flottent en
-archipel — or ces deux régimes n'appellent pas la même correction, et la seconde
-n'est pas réparable au même coût.
+Why this module exists
+----------------------
+:func:`~archlux.certify.proof.verify_exactly` returns a verdict and names the
+violations. That is what certification needs; it is not what **characterising a
+corpus of inputs** needs. "Invalid" does not tell a plan whose partition wall
+slipped by two centimetres from a plan whose rooms float as an archipelago — yet
+these two regimes call for different corrections, and the second is not repairable
+at the same cost.
 
-Les cinq mesures rendues ici sont celles qui décident si
-:func:`~archlux.api.legalize` a une chance :
+The five measures returned here are the ones that decide whether
+:func:`~archlux.api.legalize` stands a chance:
 
-- ``recouvrements`` — combien de pièces chaque pièce en recouvre, en moyenne.
-  C'est la grandeur que les auteurs de MSD rapportent pour leur propre baseline
-  (4,11 ± 2,25), donc la seule directement comparable à la littérature.
-- ``part_jour`` — part de la boîte englobante que l'union ne couvre pas.
-- ``part_trou`` — part occupée par des trous **intérieurs** à l'union. Séparer
-  les deux est indispensable : un jour de bord n'est peut-être qu'une emprise non
-  rectangulaire, alors qu'un trou intérieur est un défaut sans ambiguïté.
-- ``morceaux`` — nombre de composantes connexes. Au-delà de 1, l'« appartement »
-  est un archipel, et aucune trame ne le rattrapera à budget raisonnable. Deux
-  pièces qui ne se touchent **que par un coin** comptent pour deux morceaux :
-  un coin partagé n'est ni un mur mitoyen ni un passage, et pour le pavage il
-  reste un jour.
-- ``cellules`` — taille de la trame implicite, ``(|X| - 1) × (|Y| - 1)`` sur les
-  lignes portées par les bords. Dans un plan réel les pièces partagent leurs
-  murs et ce nombre reste petit ; s'il explose, c'est que la structure
-  combinatoire du pavage **n'existe pas** — voir :mod:`archlux.geom.pavage`.
+- ``overlaps`` — how many rooms each room overlaps, on average. This is the
+  quantity the MSD authors report for their own baseline (4.11 ± 2.25), hence
+  the only one directly comparable to the literature.
+- ``gap_share`` — share of the bounding box that the union does not cover.
+- ``hole_share`` — share taken up by holes **interior** to the union. Separating
+  the two is essential: an edge gap may merely be a non-rectangular footprint,
+  whereas an interior hole is an unambiguous defect.
+- ``fragments`` — number of connected components. Beyond 1, the "apartment" is an
+  archipelago, and no grid will fix it on a reasonable budget. Two rooms that
+  touch **only at a corner** count as two fragments: a shared corner is neither a
+  party wall nor a passage, and for tiling it remains a gap.
+- ``cells`` — size of the implicit grid, ``(|X| - 1) × (|Y| - 1)`` over the lines
+  carried by the edges. In a real plan rooms share their walls and this number
+  stays small; if it explodes, the combinatorial structure of the tiling **does
+  not exist** — see :mod:`archlux.geom.pavage`.
 
-Aucune de ces grandeurs n'est une garantie : ce module décrit, il ne prouve rien.
-La preuve reste dans ``certify``.
+None of these quantities is a guarantee: this module describes, it proves nothing.
+The proof stays in ``certify``.
 """
 
 from __future__ import annotations
@@ -55,25 +54,24 @@ _AIRE_MIN = 1e-6
 
 @dataclass(frozen=True, slots=True)
 class Diagnostic:
-    """Portrait chiffré d'un plan proposé. Aucune de ces valeurs n'est une preuve.
+    """Numeric portrait of a proposed plan. None of these values is a proof.
 
     Attributes
     ----------
-    recouvrements : float
-        Nombre moyen de pièces recouvertes par une pièce. ``0.0`` si aucune paire
-        ne se recouvre.
-    part_jour : float
-        Part de la boîte englobante non couverte, dans ``[0, 1]``.
-    part_trou : float
-        Part occupée par des trous **intérieurs** à l'union, dans ``[0, 1]``.
-        Toujours ``<= part_jour``.
-    morceaux : int
-        Composantes connexes de l'union. ``1`` pour un plan d'un seul tenant.
-    cellules : int
-        Cardinal de la trame implicite portée par les bords des pièces.
-    cote : float
-        Côté caractéristique, ``sqrt(aire de la boîte englobante)``, en mètres.
-        Un déplacement en mètres ne se lit pas sans lui.
+    overlaps : float
+        Mean number of rooms overlapped by a room. ``0.0`` if no pair overlaps.
+    gap_share : float
+        Share of the bounding box that is not covered, in ``[0, 1]``.
+    hole_share : float
+        Share taken up by holes **interior** to the union, in ``[0, 1]``.
+        Always ``<= gap_share``.
+    fragments : int
+        Connected components of the union. ``1`` for a single-piece plan.
+    cells : int
+        Cardinality of the implicit grid carried by the room edges.
+    size : float
+        Characteristic side, ``sqrt(bounding-box area)``, in metres. A displacement
+        in metres cannot be read without it.
     """
 
     overlaps: float
@@ -85,38 +83,38 @@ class Diagnostic:
 
 
 def diagnose(plan: Plan) -> Diagnostic:
-    """Mesurer les cinq pathologies d'un plan proposé.
+    """Measure the five pathologies of a proposed plan.
 
     Parameters
     ----------
     plan : Plan
-        Plan à décrire. Peut être invalide — c'est le cas d'usage.
+        Plan to describe. It may be invalid — that is the use case.
 
     Returns
     -------
     Diagnostic
-        Le portrait chiffré. Voir :class:`Diagnostic` pour chaque champ.
+        The numeric portrait. See :class:`Diagnostic` for each field.
 
     Raises
     ------
     ValueError
-        Le plan ne porte aucune pièce : il n'y a rien à décrire, et rendre des
-        zéros laisserait croire à un plan sain.
+        The plan carries no room: there is nothing to describe, and returning
+        zeros would suggest a sound plan.
 
     Notes
     -----
-    Le contour de ``ctx`` n'est **pas** consulté : les mesures portent sur la
-    boîte englobante de l'union, afin de rester comparables entre des plans dont
-    les contours sont fixés différemment.
+    The outline of ``ctx`` is **not** consulted: the measures bear on the bounding
+    box of the union, so that they stay comparable between plans whose outlines are
+    fixed differently.
 
     Complexity
     ----------
-    O(n²) sur le nombre de pièces, pour le comptage des recouvrements. n est une
-    dizaine en pratique.
+    O(n²) in the number of rooms, for the overlap count. n is around ten in
+    practice.
 
     Examples
     --------
-    Deux pièces jointives pavant exactement leur boîte englobante :
+    Two adjoining rooms exactly tiling their bounding box:
 
     >>> from archlux.types import Plan, Room
     >>> plan = Plan(
@@ -130,7 +128,7 @@ def diagnose(plan: Plan) -> Diagnostic:
     >>> diag.overlaps, diag.gap_share, diag.fragments, diag.cells
     (0.0, 0.0, 1, 2)
 
-    Écarter la seconde pièce ouvre un jour et coupe le plan en deux :
+    Moving the second room away opens a gap and cuts the plan in two:
 
     >>> troue = Plan(
     ...     rooms=(plan.rooms[0], Room(

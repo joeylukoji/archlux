@@ -36,8 +36,8 @@ def permuter_pieces(plan: Plan, ordre: tuple[int, ...]) -> Plan:
     """Réordonner les pièces sans changer la géométrie."""
     if len(ordre) != len(plan.rooms):
         raise InvalidInput("ordre", "the permutation must have one index per room")
-    pieces = tuple(plan.rooms[i] for i in ordre)
-    return replace(plan, rooms=pieces)
+    rooms = tuple(plan.rooms[i] for i in ordre)
+    return replace(plan, rooms=rooms)
 
 
 def plan_vers_vecteur(plan: Plan) -> np.ndarray:
@@ -168,15 +168,15 @@ def vecteur_vers_jetons(
     """
     vecteur = np.asarray(x, dtype=float).ravel()
     n = vecteur.size // CHAMPS_PAR_PIECE
-    pieces = vecteur[: n * CHAMPS_PAR_PIECE].reshape(n, CHAMPS_PAR_PIECE)
-    aire_totale = float(np.sum(pieces[:, 2] * pieces[:, 3]))
+    rooms = vecteur[: n * CHAMPS_PAR_PIECE].reshape(n, CHAMPS_PAR_PIECE)
+    aire_totale = float(np.sum(rooms[:, 2] * rooms[:, 3]))
     jetons = np.zeros((n, DIM_JETON), dtype=float)
     for i in range(n):
         jetons[i] = _jeton_piece(
-            float(pieces[i, 0]),
-            float(pieces[i, 1]),
-            float(pieces[i, 2]),
-            float(pieces[i, 3]),
+            float(rooms[i, 0]),
+            float(rooms[i, 1]),
+            float(rooms[i, 2]),
+            float(rooms[i, 3]),
             "living_room",
             orientation,
             float(n),

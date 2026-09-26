@@ -202,13 +202,13 @@ class TestRefus:
     def test_contient_refuse_une_dimension_incoherente(self) -> None:
         """Un vecteur de mauvaise taille est un bogue d'appariement, pas un point hors domaine."""
         poly = build_polytope(ORDRE_AB, CTX)
-        with pytest.raises(InvariantViolation, match="dimension"):
+        with pytest.raises(InvariantViolation, match="shape"):
             poly.contains(np.zeros(3))
 
     def test_devectoriser_refuse_une_dimension_incoherente(self) -> None:
         """Même règle en sortie de solveur."""
         poly = build_polytope(ORDRE_AB, CTX)
-        with pytest.raises(InvariantViolation, match="dimension"):
+        with pytest.raises(InvariantViolation, match="shape"):
             devectorize(np.zeros(3), PLAN_AB, poly.index)
 
     def test_devectoriser_refuse_une_piece_hors_polytope(self) -> None:
@@ -250,7 +250,7 @@ class TestRefus:
             outline=((0.0, 0.0), (10.0, 0.0), (10.0, 0.0)),
             regulation=Regulation(min_areas=()),
         )
-        with pytest.raises(InvariantViolation, match="dégénéré"):
+        with pytest.raises(InvariantViolation, match="degenerate"):
             build_polytope(ORDRE_AB, ctx)
 
 

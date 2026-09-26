@@ -162,18 +162,18 @@ def mesurer_derive(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -
     if pred.size != verite.size or pred.size == 0:
         raise InvariantViolation(("predictions et verites de longueurs incompatibles",))
     _ = int(seed)
-    ecarts = pred - verite
-    n = int(ecarts.size)
+    slacks = pred - verite
+    n = int(slacks.size)
     if n >= 3:
         from scipy.stats import linregress  # lazy, see controler_derive
 
-        tendance = linregress(np.arange(n, dtype=float), ecarts)
+        tendance = linregress(np.arange(n, dtype=float), slacks)
         pente = float(tendance.slope)
         p_valeur = float(tendance.pvalue)
     else:
         pente, p_valeur = 0.0, 1.0
     return RapportDerive(
-        derive_moyenne=float(ecarts.mean()),
+        derive_moyenne=float(slacks.mean()),
         tendance_pente=pente,
         tendance_pvalue=p_valeur,
         n_echantillons=n,

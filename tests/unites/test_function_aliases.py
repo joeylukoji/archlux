@@ -50,6 +50,7 @@ ALIASES = [
     ("archlux.geom.rectilineaire", "FUSION_DROIT", "MERGE_RIGHT"),
     ("archlux.geom.rectilineaire", "FUSION_HAUT", "MERGE_TOP"),
     ("archlux.geom.diagnostic", "diagnostiquer", "diagnose"),
+    ("archlux.lmo.solveur", "SolutionLP", "LPSolution"),
     ("archlux.lmo.solveur", "resoudre", "solve"),
     ("archlux.lmo.solveur", "vider_cache", "clear_cache"),
     ("archlux.export.pathologie", "diagnostiquer", "diagnose"),

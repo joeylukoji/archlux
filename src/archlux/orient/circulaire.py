@@ -273,12 +273,12 @@ def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Resultat
         raise InvalidInput("theta", "at least three observations are required")
     radians = np.radians(azimut)
     dessin = np.column_stack((np.cos(radians), np.sin(radians), np.ones(azimut.size)))
-    coeffs, *_reste = np.linalg.lstsq(dessin, reponse, rcond=None)
-    residus = reponse - dessin @ coeffs
+    coefficients, *_reste = np.linalg.lstsq(dessin, reponse, rcond=None)
+    residus = reponse - dessin @ coefficients
     return ResultatRegression(
-        a=float(coeffs[0]),
-        b=float(coeffs[1]),
-        c=float(coeffs[2]),
+        a=float(coefficients[0]),
+        b=float(coefficients[1]),
+        c=float(coefficients[2]),
         residus=residus,
     )
 

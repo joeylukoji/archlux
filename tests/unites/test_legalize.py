@@ -109,7 +109,7 @@ def test_largeur_min_plus_grande_que_l_enveloppe_leve_infaisable() -> None:
     with pytest.raises(Infeasible) as capture:
         archlux.legalize(plan, ctx)
     assert capture.value.origins
-    assert any("largeur minimale" in origine for origine in capture.value.origins)
+    assert any("minimum width" in origine for origine in capture.value.origins)
 
 
 def test_polytope_sans_piece_tolere_une_enveloppe_etroite() -> None:

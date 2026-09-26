@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 5, fourth batch (part 2): English prose of geometry and LMO
+
+- Docstrings, comments and messages of `geom.{graphe,polytope,pavage,rectilineaire,diagnostic}`, `lmo.solveur` and `lmo.cuts` are English, and the seven modules are enrolled in the language and identifier guards.
+- `SolutionLP` becomes `LPSolution` (deprecated alias kept). Parameters `duaux`, `pieces` and `a_min` become `duals`, `rooms` and `min_area` in the solver and cut functions (no alias, as for fields).
+- Runtime labels of the `origins` (`separation horizontale…`, `trame x#…`) stay French for now: `certify.dual` parses them.
+
 ### Remediation — PLAN.md phase 3.9, wave 5, fourth batch: geometry and LMO names (rename only)
 
 - Public functions, classes and fields of `geom` (`graphe`, `polytope`, `pavage`, `rectilineaire`, `diagnostic`), `lmo.solveur`, `lmo.cuts` and `export.pathologie` are English (`solve`, `build_polytope`, `RelativeOrder`, `Cut`, `Polytope.bounds`, ...).

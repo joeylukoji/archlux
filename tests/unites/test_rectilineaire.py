@@ -54,7 +54,7 @@ def test_recomposer_inverse_decomposer() -> None:
 
 
 def test_polygone_non_rectilineaire_refuse() -> None:
-    with pytest.raises(InvariantViolation, match="rectilinéaire"):
+    with pytest.raises(InvariantViolation, match="rectilinear"):
         decompose(Polygon([(0.0, 0.0), (2.0, 0.0), (1.0, 1.5)]))
 
 
@@ -214,7 +214,7 @@ def test_max_rectangles_par_defaut_reste_a_quatre() -> None:
             (0.0, 2.0),
         ]
     )
-    with pytest.raises(InvariantViolation, match="trop de rectangles"):
+    with pytest.raises(InvariantViolation, match="too many rectangles"):
         decompose(peigne, id="e", room_type="sejour")
     piece = decompose(peigne, id="e", room_type="sejour", max_rectangles=8)
     assert len(piece.rectangles) == 6

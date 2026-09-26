@@ -43,7 +43,7 @@ class TestTangente:
         assert "living_room" in area_cut(3.0, 3.0, 9.0, piece="living_room").origin
 
     def test_un_point_degenere_est_refuse(self) -> None:
-        with pytest.raises(InvariantViolation, match="strictement positif"):
+        with pytest.raises(InvariantViolation, match="strictly positive"):
             area_cut(0.0, 3.0, 9.0)
 
 
@@ -55,10 +55,10 @@ class TestSurfacesViolees:
         # A.x, A.y, A.w, A.h
         x = [0.0, 0.0, 2.0, 2.0]
         pieces = (Room(id="A", type="living_room", x=0.0, y=0.0, w=2.0, h=2.0),)
-        assert violated_areas(x, poly, CTX, pieces=pieces) == ("A",)
+        assert violated_areas(x, poly, CTX, rooms=pieces) == ("A",)
 
     def test_une_piece_au_seuil_n_est_pas_listée(self) -> None:
         poly = build_polytope(RelativeOrder((), (), ("A",)), CTX)
         x = [0.0, 0.0, 3.0, 3.0]
         pieces = (Room(id="A", type="living_room", x=0.0, y=0.0, w=3.0, h=3.0),)
-        assert violated_areas(x, poly, CTX, pieces=pieces) == ()
+        assert violated_areas(x, poly, CTX, rooms=pieces) == ()

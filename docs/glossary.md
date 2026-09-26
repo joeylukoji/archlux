@@ -110,7 +110,7 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `FUSION_DROIT`, `FUSION_HAUT` | `MERGE_RIGHT`, `MERGE_TOP` | |
 | `diagnostiquer` | `diagnose` | fields `recouvrements`, `part_jour`, `part_trou`, `morceaux`, `cellules`, `cote` become `overlaps`, `gap_share`, `hole_share`, `fragments`, `cells`, `size` |
 | `resoudre`, `vider_cache` | `solve`, `clear_cache` | parameters `depart`, `coupes` become `start`, `cuts` |
-| `SolutionLP` fields | `valeur`, `statut`, `duaux`, `certificat_farkas`, `certificat_farkas_eq`, `temps_ms` become `value`, `status`, `duals`, `farkas_certificate`, `farkas_certificate_eq`, `time_ms` | |
+| `SolutionLP` | `LPSolution`; fields `valeur`, `statut`, `duaux`, `certificat_farkas`, `certificat_farkas_eq`, `temps_ms` become `value`, `status`, `duals`, `farkas_certificate`, `farkas_certificate_eq`, `time_ms` | |
 | `Coupe` (`coeffs`, `borne_inf`, `origine`, `satisfait()`) | `Cut` (`coefficients`, `lower_bound`, `origin`, `satisfied()`) | |
 | `coupe_surface`, `surfaces_violees`, `resoudre_avec_surfaces`, `MAX_COUPES_PAR_PIECE` | `area_cut`, `violated_areas`, `solve_with_areas`, `MAX_CUTS_PER_ROOM` | |
 

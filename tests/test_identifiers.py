@@ -58,6 +58,12 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/uq/__init__.py",
     "src/archlux/uq/fiabilite.py",
     "src/archlux/validation.py",
+    "src/archlux/geom/graphe.py",
+    "src/archlux/geom/polytope.py",
+    "src/archlux/geom/pavage.py",
+    "src/archlux/geom/rectilineaire.py",
+    "src/archlux/lmo/solveur.py",
+    "src/archlux/lmo/cuts.py",
 )
 
 _TICKED = re.compile(r"`([A-Za-z_][A-Za-z0-9_]*)`")

@@ -123,12 +123,12 @@ def _add_cuts(
         return
     if len(cuts) >= MAX_CUTS_PER_ROOM * len(rooms):
         return
-    for room_id in violated_areas(x, domain, ctx, pieces=rooms):
+    for room_id in violated_areas(x, domain, ctx, rooms=rooms):
         width = float(x[domain.index[f"{room_id}.w"]])
         height = float(x[domain.index[f"{room_id}.h"]])
-        a_min = ctx.regulation.min_area(next(r.type for r in rooms if r.id == room_id))
-        if width > 0.0 and height > 0.0 and a_min > 0.0:
-            cuts.append(area_cut(width, height, a_min, piece=room_id))
+        min_area = ctx.regulation.min_area(next(r.type for r in rooms if r.id == room_id))
+        if width > 0.0 and height > 0.0 and min_area > 0.0:
+            cuts.append(area_cut(width, height, min_area, piece=room_id))
 
 
 def _normalize(weights: list[float]) -> None:
@@ -258,7 +258,7 @@ def frank_wolfe(
             -gradient,
             start=x,
             cuts=active_cuts or None,
-            duaux=False,  # duals are computed once, at the returned point
+            duals=False,  # duals are computed once, at the returned point
         )
         last_oracle = oracle
         if oracle.status != "optimal":
@@ -371,7 +371,7 @@ def frank_wolfe(
         final_gradient = np.asarray(
             surrogate.gradient(x, orientation, glazing=glazing), dtype=float
         )
-        final = solve(domain, -final_gradient, start=x, cuts=active_cuts or None, duaux=True)
+        final = solve(domain, -final_gradient, start=x, cuts=active_cuts or None, duals=True)
         if final.status == "optimal":
             gap = float(final_gradient @ (final.x - x))
             duals = final.duals
@@ -383,7 +383,7 @@ def frank_wolfe(
             -np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float),
             start=x,
             cuts=active_cuts or None,
-            duaux=True,
+            duals=True,
         )
         if extra.status == "optimal":
             duals = extra.duals

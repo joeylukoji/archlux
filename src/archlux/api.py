@@ -47,7 +47,7 @@ from archlux.lmo.cuts import (
     inner_area_constraints,
     solve_with_areas,
 )
-from archlux.lmo.solveur import SolutionLP
+from archlux.lmo.solveur import LPSolution
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.tolerances import SNAP_M
 from archlux.types import Certificate, Context, GeometricProof, Plan
@@ -92,7 +92,7 @@ def gradient_distance(x_proposed: VecteurF) -> VecteurF:
     return couts
 
 
-def _active_origins(sol: SolutionLP, poly: Polytope) -> tuple[str, ...]:
+def _active_origins(sol: LPSolution, poly: Polytope) -> tuple[str, ...]:
     """Labels of the rows, inequalities and equalities, with a non-zero Farkas weight.
 
     Without a certificate nothing is identified; listing every constraint, as before
@@ -200,14 +200,14 @@ class _Problem:
             l1 = replace(l1, bounds=bounds)
         return geometric, l1
 
-    def solve(self, l1: Polytope) -> SolutionLP:
+    def solve(self, l1: Polytope) -> LPSolution:
         """Minimize the L1 displacement over ``l1``, with the area cuts."""
         return solve_with_areas(
             l1,
             gradient_distance(self.x_ref),
             self.ctx,
             self.plan.rooms,
-            duaux=True,
+            duals=True,
             minima=self.minima,
         )
 
@@ -296,7 +296,7 @@ def _admits(problem: _Problem, l1: Polytope, *, bounded: bool) -> bool:
     return problem.prove(problem.decode(relaxed.x, l1.index), bounded=bounded).valid
 
 
-def _refusal(problem: _Problem, poly_l1: Polytope, sol: SolutionLP) -> Infeasible:
+def _refusal(problem: _Problem, poly_l1: Polytope, sol: LPSolution) -> Infeasible:
     """The exception for an infeasible domain: the certificate, its scope and its causes."""
     check = (
         verify_infeasibility(poly_l1, sol.farkas_certificate, sol.farkas_certificate_eq)
@@ -323,7 +323,7 @@ def _refusal(problem: _Problem, poly_l1: Polytope, sol: SolutionLP) -> Infeasibl
 
 
 def _classic_result(
-    problem: _Problem, sol: SolutionLP, poly_l1: Polytope
+    problem: _Problem, sol: LPSolution, poly_l1: Polytope
 ) -> tuple[Plan, GeometricProof]:
     """The classically legalized plan and its exact proof, or the typed refusal."""
     if sol.status != "optimal":
