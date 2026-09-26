@@ -187,11 +187,11 @@ for _ in range(200):
     held_out.append(np.array([0, 0, w, 9, w, 0, 12 - w, h, w, h, 12 - w, 9 - h], float))
 
 azimuth = ctx.orientation
-calibrator = CalibrateurConforme(indicateur="sDA")
+calibrator = CalibrateurConforme(indicator="sDA")
 calibrator.ajuster(
-    np.array([surrogate.evaluer(x, azimuth) for x in held_out]),
-    np.array([oracle.evaluer(x, azimuth) for x in held_out]),
-    np.array([surrogate.incertitude(x, azimuth) for x in held_out]),
+    np.array([surrogate.evaluate(x, azimuth) for x in held_out]),
+    np.array([oracle.evaluate(x, azimuth) for x in held_out]),
+    np.array([surrogate.uncertainty(x, azimuth) for x in held_out]),
     alpha=0.10,
 )
 
@@ -315,7 +315,7 @@ Consequences, stated with their limits:
 
 ### Step 3: the surrogate
 
-A surrogate implements the `Substitut` protocol: `evaluer` (value), `gradient`,
+A surrogate implements the `Surrogate` protocol: `evaluate` (value), `gradient`,
 `incertitude` (sigma), each taking the decision vector `(x, y, w, h)` per room, an
 azimuth, and the glazing (`baies`). Shipped implementations:
 
@@ -458,7 +458,7 @@ solver serve both modes.
 | `geom` | relative order, load-bearing sides, tiling grid, polytope, L-shaped fusions |
 | `lmo` | solve `min <c, x>` over the polytope, area cuts; ignores where `c` comes from |
 | `solve` | Frank-Wolfe, warm start, trace |
-| `light` | `Substitut` protocol and its implementations |
+| `light` | `Surrogate` protocol and its implementations |
 | `orient` | circular encoding of the azimuth |
 | `uq` | conformal calibration, drift control, calibration-set access token |
 | `certify` | exact proof, Farkas check, conformal bound, dual translation, report |

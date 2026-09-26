@@ -1,11 +1,11 @@
-"""Oracle d'éclairement — split-flux BRE, même protocole ``Substitut``.
+"""Oracle d'éclairement — split-flux BRE, même protocole ``Surrogate``.
 
 La CI utilise cette forme fermée, **plus riche** que l'analytique (CIBSE profondeur),
 pour que le réseau puisse la battre et que le point de contrôle du gradient soit
 exécutable. Un moteur de lancer de rayons (Radiance) est hors chemin critique.
 
 Le DF moyen d'une pièce suit Littlefair / BRE : baie = WWR × façade éclairée
-(déjà dans le vecteur ``(w, h)``), sans élargir le protocole ``Substitut``.
+(déjà dans le vecteur ``(w, h)``), sans élargir le protocole ``Surrogate``.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique, facteur_secteur
 from archlux.light.jetons import CHAMPS_PAR_PIECE
-from archlux.light.protocole import Baies
+from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encoder
 from archlux.types import Indicateur, Orientation
 
@@ -163,46 +163,46 @@ class SplitFluxOracle:
     """
 
     @property
-    def indicateur(self) -> str:
+    def indicator(self) -> str:
         """Nom de l'étiquette visée. Le scalaire rendu n'est pas un sDA LM-83."""
         return self.indicateur_vise
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Score déterministe. Deux appels identiques rendent le même flottant.
 
         ``baies`` est ignoré : le WWR est une constante du modèle, pas une
         lecture de la fenestration réelle.
         """
-        del baies
+        del glazing
         return float(self._score_et_gradient(x, orientation, avec_gradient=False)[0])
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Gradient analytique du même score (CIBSE + split-flux)."""
-        del baies
+        del glazing
         return self._score_et_gradient(x, orientation, avec_gradient=True)[1]
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Écart-type nominal constant : pas d'erreur apprise."""
-        del x, orientation, baies
+        del x, orientation, glazing
         return float(self.sigma_nominal)
 
-    def evaluer_pieces(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate_rooms(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Contribution de chaque piece : analytique + split-flux, avant sommation.
 
-        ``evaluer`` en est la somme. Voir
+        ``evaluate`` en est la somme. Voir
         :class:`~archlux.light.protocole.SubstitutParPiece`.
         """
-        del baies
+        del glazing
         base = SubstitutAnalytique(indicateur_vise=self.indicateur_vise)
-        parts = np.asarray(base.evaluer_pieces(x, orientation), dtype=float).copy()
+        parts = np.asarray(base.evaluate_rooms(x, orientation), dtype=float).copy()
         vecteur = np.asarray(x, dtype=float).ravel()
         signe = -1.0 if self.indicateur_vise == "ASE" else 1.0
         for i in range(vecteur.size // CHAMPS_PAR_PIECE):
@@ -217,7 +217,7 @@ class SplitFluxOracle:
         self, x: np.ndarray, orientation: Orientation, *, avec_gradient: bool
     ) -> tuple[float, np.ndarray]:
         base = SubstitutAnalytique(indicateur_vise=self.indicateur_vise)
-        valeur = float(base.evaluer(x, orientation))
+        valeur = float(base.evaluate(x, orientation))
         gradient = (
             np.asarray(base.gradient(x, orientation), dtype=float).copy()
             if avec_gradient

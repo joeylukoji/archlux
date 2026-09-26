@@ -133,7 +133,7 @@ def test_objective_invalide_leve_typeerror() -> None:
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
     )
-    with pytest.raises(TypeError, match="Substitut"):
+    with pytest.raises(TypeError, match="Surrogate"):
         archlux.legalize(plan, CONTEXTE_DEFAUT, objective=object())  # type: ignore[arg-type]
 
 

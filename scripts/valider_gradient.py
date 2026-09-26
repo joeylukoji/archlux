@@ -19,7 +19,7 @@ for _ in range(36):
     o = Orientation(deg=float(rng.uniform(0.0, 360.0)))
     xs.append(x)
     oris.append(o)
-    ys.append(SIM.evaluer(x, o))
+    ys.append(SIM.evaluate(x, o))
 dense = SubstitutDense()
 dense.ajuster(tuple(xs), np.array(ys), tuple(oris), seed=17, epoques=40, lr=0.12)
 sud = Orientation(deg=180.0)

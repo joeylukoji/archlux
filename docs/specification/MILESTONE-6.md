@@ -104,7 +104,7 @@ simule des cas déjà maîtrisés. Un facteur nul suffit à écarter un candidat
 
 ```python
 class Loop:
-    def __init__(self, substitut, simulateur, acquire, budget: int): ...
+    def __init__(self, surrogate, simulateur, acquire, budget: int): ...
     def run(self, proposal_distribution) -> RapportActif: ...
 ```
 
@@ -349,6 +349,6 @@ Extensions possibles, aucune n'est requise :
 | Oracle réglementaire déclaratif | Moyen | Marché des bureaux de contrôle |
 | Non-résidentiel (formalisme de circulation) | Élevé | Marché tertiaire |
 
-**Le protocole `Substitut` rend la première ligne quasi gratuite** : écrire une classe à
+**Le protocole `Surrogate` rend la première ligne quasi gratuite** : écrire une classe à
 trois méthodes, zéro ligne modifiée dans le noyau. C'est le dividende de la décision
 d'architecture AD-03.

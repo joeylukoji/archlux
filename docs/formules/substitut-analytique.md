@@ -43,7 +43,7 @@ différences finies centrées.
 
 ## Code
 
-`SubstitutAnalytique.evaluer`, `.gradient`, `.incertitude`.
+`SubstitutAnalytique.evaluate`, `.gradient`, `.incertitude`.
 Constantes : `FACTEUR_PROFONDEUR`, `HAUTEUR_LINTEAU`, `KAPPA_SUD`,
 `FACTEURS_SECTEUR` — `ClassVar`, jamais de magie dans le corps.
 

@@ -1,6 +1,6 @@
 """Aller-retour JSON : le critère de fin du jalon 1.
 
-La propriété centrale est l'identité ``depuis_dict(vers_dict(p)) == p``. Elle n'est pas
+La propriété centrale est l'identité ``from_dict(vers_dict(p)) == p``. Elle n'est pas
 tautologique : l'égalité vient du `dataclass` gelé, pas d'une comparaison réécrite ici,
 et elle casse dès qu'un champ est oublié dans la sérialisation.
 """
@@ -13,7 +13,7 @@ import pytest
 from hypothesis import given, settings
 
 from archlux.errors import InvariantViolation
-from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
+from archlux.io.json_io import VERSION_SCHEMA, from_dict, to_dict
 from archlux.types import Certificate, GeometricProof, Opening, Plan, Room, Wall
 from tests.proprietes.strategies import plans_quelconques
 
@@ -32,7 +32,7 @@ PLAN_T2 = Plan(
 @settings(max_examples=200, deadline=None)
 def test_aller_retour_en_memoire(plan: Plan) -> None:
     """Aucune information n'est perdue entre le plan et sa forme JSON."""
-    assert depuis_dict(vers_dict(plan)) == plan
+    assert from_dict(to_dict(plan)) == plan
 
 
 def test_aller_retour_sur_disque(tmp_path: Path) -> None:
@@ -60,7 +60,7 @@ def test_le_certificat_survit_a_l_aller_retour() -> None:
         outline=PLAN_T2.outline,
         certificate=Certificate(geometry=preuve),
     )
-    relu = depuis_dict(vers_dict(legalise))
+    relu = from_dict(to_dict(legalise))
     assert relu.certificate is not None
     assert relu.certificate.geometry.max_displacement == pytest.approx(0.21)
     assert relu.certificate.performance is None
@@ -68,15 +68,15 @@ def test_le_certificat_survit_a_l_aller_retour() -> None:
 
 def test_la_version_du_schema_est_ecrite() -> None:
     """Un fichier sans version déclarée serait illisible dans deux ans."""
-    assert vers_dict(PLAN_T2)["schema"] == VERSION_SCHEMA
+    assert to_dict(PLAN_T2)["schema"] == VERSION_SCHEMA
 
 
 def test_une_version_inconnue_est_refusee() -> None:
     """Mieux vaut refuser bruyamment que deviner le format."""
-    donnees = vers_dict(PLAN_T2)
+    donnees = to_dict(PLAN_T2)
     donnees["schema"] = "999"
     with pytest.raises(InvariantViolation):
-        depuis_dict(donnees)
+        from_dict(donnees)
 
 
 def test_l_ecriture_est_reproductible(tmp_path: Path) -> None:

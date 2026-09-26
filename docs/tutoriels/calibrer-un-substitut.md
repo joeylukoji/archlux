@@ -54,7 +54,7 @@ def disposition(rng: np.random.Generator) -> np.ndarray:
 oracle = SplitFluxOracle()
 rng = np.random.default_rng(17)
 xs = tuple(disposition(rng) for _ in range(80))
-ys = np.array([oracle.evaluer(x, ctx.orientation) for x in xs])
+ys = np.array([oracle.evaluate(x, ctx.orientation) for x in xs])
 modele = SubstitutDense(largeur=8)
 modele.ajuster(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
 
@@ -80,16 +80,16 @@ Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
 from archlux.uq.conforme import CalibrateurConforme
 
 plans_calibration = [disposition(rng) for _ in range(200)]  # jamais vus à l'entraînement
-predictions = np.array([modele.evaluer(x, ctx.orientation) for x in plans_calibration])
-verites = np.array([oracle.evaluer(x, ctx.orientation) for x in plans_calibration])
-incertitudes = np.array([modele.incertitude(x, ctx.orientation) for x in plans_calibration])
+predictions = np.array([modele.evaluate(x, ctx.orientation) for x in plans_calibration])
+verites = np.array([oracle.evaluate(x, ctx.orientation) for x in plans_calibration])
+incertitudes = np.array([modele.uncertainty(x, ctx.orientation) for x in plans_calibration])
 
-cal = CalibrateurConforme(indicateur="sDA")
+cal = CalibrateurConforme(indicator="sDA")
 cal.ajuster(predictions, verites, incertitudes, alpha=0.10)
 
 x_nouveau = disposition(rng)  # tiré comme la calibration : échangeable avec elle
-prediction = modele.evaluer(x_nouveau, ctx.orientation)
-sigma = modele.incertitude(x_nouveau, ctx.orientation)
+prediction = modele.evaluate(x_nouveau, ctx.orientation)
+sigma = modele.uncertainty(x_nouveau, ctx.orientation)
 borne = cal.borne(prediction, sigma, ">=", regime="exchangeable")
 assert borne.lower <= prediction <= borne.upper
 # borne.lower, borne.coverage, borne.n_calibration
@@ -132,8 +132,8 @@ from archlux.uq.derive import controler_derive
 plans_production = [disposition(rng) for _ in range(50)]
 scores_production = np.array(
     [
-        abs(oracle.evaluer(x, ctx.orientation) - modele.evaluer(x, ctx.orientation))
-        / modele.incertitude(x, ctx.orientation)
+        abs(oracle.evaluate(x, ctx.orientation) - modele.evaluate(x, ctx.orientation))
+        / modele.uncertainty(x, ctx.orientation)
         for x in plans_production
     ]
 )

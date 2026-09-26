@@ -1,4 +1,4 @@
-"""Toute implémentation de ``Substitut`` respecte réellement le protocole.
+"""Toute implémentation de ``Surrogate`` respecte réellement le protocole.
 
 Un `Protocol` est structurel : rien ne signale qu'une implémentation a dérivé, jusqu'au
 jour où ``solve`` reçoit un objet auquel il manque ``incertitude``. Ce test transforme
@@ -18,7 +18,7 @@ import pytest
 
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.appris import SubstitutAppris
-from archlux.light.protocole import Substitut
+from archlux.light.protocole import Surrogate
 
 IMPLEMENTATIONS = [SubstitutAnalytique, SubstitutAppris]
 
@@ -29,16 +29,16 @@ IMPLEMENTATIONS = [SubstitutAnalytique, SubstitutAppris]
 # defaut d'entree, pas de capacite. Le parametre est **nomme et optionnel** : une
 # implementation qui l'ignore reste conforme.
 SIGNATURES_ATTENDUES = {
-    "evaluer": ("self", "x", "orientation", "baies"),
-    "gradient": ("self", "x", "orientation", "baies"),
-    "incertitude": ("self", "x", "orientation", "baies"),
+    "evaluate": ("self", "x", "orientation", "glazing"),
+    "gradient": ("self", "x", "orientation", "glazing"),
+    "uncertainty": ("self", "x", "orientation", "glazing"),
 }
 
 
 @pytest.mark.parametrize("classe", IMPLEMENTATIONS, ids=lambda c: c.__name__)
 def test_implemente_le_protocole(classe: type) -> None:
     """Les quatre membres du protocole sont présents."""
-    for membre in ("indicateur", *SIGNATURES_ATTENDUES):
+    for membre in ("indicator", *SIGNATURES_ATTENDUES):
         assert hasattr(classe, membre), f"{classe.__name__} n'a pas {membre}"
 
 
@@ -70,5 +70,5 @@ def test_le_protocole_a_exactement_quatre_membres() -> None:
     Chaque membre ajouté ici est une chose de plus que ``solve`` doit savoir du modèle
     de lumière — donc un pas vers le couplage que l'architecture évite.
     """
-    membres = {m for m in _protocol_members(Substitut) if not m.startswith("_")}
-    assert membres == {"indicateur", "evaluer", "gradient", "incertitude"}
+    membres = {m for m in _protocol_members(Surrogate) if not m.startswith("_")}
+    assert membres == {"indicator", "evaluate", "gradient", "uncertainty"}

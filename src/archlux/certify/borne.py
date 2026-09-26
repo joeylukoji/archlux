@@ -62,7 +62,7 @@ def build_bound(
     """
     if not drift.echangeable:
         return None
-    return borner(value, calibration, incertitude=uncertainty, regime=regime)
+    return borner(value, calibration, uncertainty=uncertainty, regime=regime)
 
 
 def check_calibration(calibration: object) -> None:
@@ -111,7 +111,7 @@ def bound_selected_plan(
     """
     if not (isfinite(uncertainty) and uncertainty > 0.0):
         return None
-    return borner(value, calibration, incertitude=uncertainty, regime="selected")
+    return borner(value, calibration, uncertainty=uncertainty, regime="selected")
 
 
 __getattr__ = lazy_aliases(

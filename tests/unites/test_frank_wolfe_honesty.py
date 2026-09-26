@@ -35,18 +35,18 @@ class _Misleading:
     """Gradient points up, value goes down: every line search fails."""
 
     c: np.ndarray
-    indicateur: str = "sDA"
+    indicator: str = "sDA"
 
-    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
+    def evaluate(self, x: np.ndarray, orientation: Orientation, *, glazing: object = None) -> float:
         return -float(self.c @ x)
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> np.ndarray:
         return self.c
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> float:
         return 0.1
 

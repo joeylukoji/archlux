@@ -26,7 +26,7 @@ def campaign(acquire: object, seed: int) -> float:
     rng = np.random.default_rng(derive(seed, "reference"))
     reference = [np.array([0, 0, 6, 4.5, 6, 0, 6, 4.5]) + rng.normal(0, 0.05, 8) for _ in range(10)]
     net = SubstitutDense()  # same six starting labels for both strategies
-    ys = np.array([oracle.evaluer(x, o) for x, o in zip(pool[:6], pool_o[:6], strict=True)])
+    ys = np.array([oracle.evaluate(x, o) for x, o in zip(pool[:6], pool_o[:6], strict=True)])
     net.ajuster(pool[:6], ys, pool_o[:6], seed=derive(seed, "init"), epoques=25, lr=0.12)
     loop = Loop(net, oracle, acquire, budget=24, batch=4, seed=seed)  # type: ignore[arg-type]
     kwargs = {"holdout": hold, "holdout_orientations": hold_o, "calibration": calib}

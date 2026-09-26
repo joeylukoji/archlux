@@ -45,7 +45,7 @@ suivent le quotient \(u/v\).
 
 ## Code
 
-`facteur_lumiere_jour`, `SplitFluxOracle.evaluer`, `.gradient`.
+`facteur_lumiere_jour`, `SplitFluxOracle.evaluate`, `.gradient`.
 
 ## Cas d'utilisation
 

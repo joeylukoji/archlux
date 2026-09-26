@@ -47,7 +47,7 @@ x = lmo.resoudre(poly_l1, c=gradient_distance(x_propose))
 s = lmo.resoudre(poly_fw, c=-substitut.gradient(x_k, orientation), depart=x_k)
 ```
 
-**Daylight oracle.** The core only knows the `Substitut` protocol.
+**Daylight oracle.** The core only knows the `Surrogate` protocol.
 Shipped implementations: `SubstitutAnalytique` (closed forms), `SplitFluxOracle`
 (analytic + BRE split-flux: the **frozen oracle** of the CI, a closed form, neither a
 simulation nor a ground truth), `SubstitutDense` (`numpy` perceptron) and
@@ -98,7 +98,7 @@ measuring a cold LP.
 | `geom` | relative order → constraint graph → polytope | no |
 | `lmo` | solve `min <c,x>` over the polytope. **Ignores where `c` comes from** | no |
 | `solve` | Frank-Wolfe (+ away-steps, warm start, cuts) | no |
-| `light` | `Substitut` protocol: `evaluer`, `gradient`, `incertitude` | **yes** |
+| `light` | `Surrogate` protocol: `evaluate`, `gradient`, `incertitude` | **yes** |
 | `orient` | circular encoding and statistics | no |
 | `uq` | conformal calibration, drift control | no |
 | `active` | selection of plans to simulate (uncertainty × density) | no |

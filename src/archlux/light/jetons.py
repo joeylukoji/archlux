@@ -12,7 +12,7 @@ from dataclasses import replace
 import numpy as np
 
 from archlux.errors import InvalidInput
-from archlux.light.protocole import Baies
+from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode, encoder
 from archlux.types import Context, Opening, Orientation, Plan, Wall
 
@@ -140,7 +140,7 @@ def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
 
 
 def vecteur_vers_jetons(
-    x: np.ndarray, orientation: Orientation, baies: Baies | None = None
+    x: np.ndarray, orientation: Orientation, glazing: Glazing | None = None
 ) -> tuple[np.ndarray, np.ndarray]:
     """Même vocabulaire depuis le vecteur de décision, baies comprises.
 
@@ -182,11 +182,11 @@ def vecteur_vers_jetons(
             float(n),
             aire_totale,
         )
-    if baies is not None and not baies.vide:
-        murs_par_id = {mur.id: mur for mur in baies.murs}
+    if glazing is not None and not glazing.empty:
+        murs_par_id = {mur.id: mur for mur in glazing.walls}
         extra = [
             _jeton_ouverture(ouv, murs_par_id[ouv.wall_id], float(n), aire_totale, orientation)
-            for ouv in baies.ouvertures
+            for ouv in glazing.openings
             if ouv.wall_id in murs_par_id
         ]
         if extra:

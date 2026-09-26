@@ -159,4 +159,4 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
     surrogate = SubstitutAnalytique()
     legalize(plan, ctx, objective=surrogate)
     assert "displacement" in seen
-    assert surrogate.indicateur in seen
+    assert surrogate.indicator in seen

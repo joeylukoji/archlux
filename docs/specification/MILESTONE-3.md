@@ -111,20 +111,20 @@ def test_rayleigh_detecte_concentration():
 
 ---
 
-## 3. Étape 2 — Le protocole `Substitut`
+## 3. Étape 2 — Le protocole `Surrogate`
 
 **Fichier :** `src/archlux/light/protocole.py`
 
 ### Le contrat — ne jamais l'élargir
 
 ```python
-class Substitut(Protocol):
+class Surrogate(Protocol):
     """Contrat minimal. Toute implémentation le respectant est acceptée
     par le noyau — y compris un modèle analytique sans apprentissage."""
 
-    def evaluer(self, plan: Plan, ctx: Context) -> Indicateurs: ...
+    def evaluate(self, plan: Plan, ctx: Context) -> Indicateurs: ...
     def gradient(self, plan: Plan, ctx: Context) -> np.ndarray: ...
-    def incertitude(self, plan: Plan, ctx: Context) -> np.ndarray: ...
+    def uncertainty(self, plan: Plan, ctx: Context) -> np.ndarray: ...
 
 
 @dataclass(frozen=True)
@@ -170,7 +170,7 @@ class SubstitutAnalytique:
 
     FACTEUR_PROFONDEUR = 2.5      # règle usuelle : profondeur utile ≈ 2,5 × linteau
 
-    def evaluer(self, plan, ctx):
+    def evaluate(self, plan, ctx):
         total = 0.0
         for piece in plan.rooms:
             for ouv in ouvertures_de(piece, plan):
@@ -183,7 +183,7 @@ class SubstitutAnalytique:
     def gradient(self, plan, ctx):
         """Dérivées analytiques, ou différences finies sur le vecteur de plan."""
 
-    def incertitude(self, plan, ctx):
+    def uncertainty(self, plan, ctx):
         """Constante. Le modèle analytique n'a pas d'incertitude apprise."""
         return np.full(4, self.SIGMA_FIXE)
 ```
@@ -199,7 +199,7 @@ et donc l'expérience Q3 possible dès ce jalon.
 
 ### Tâches
 
-- [ ] `evaluer` — sDA proxy, ASE proxy, UDI proxy, vue proxy
+- [ ] `evaluate` — sDA proxy, ASE proxy, UDI proxy, vue proxy
 - [ ] `gradient` — dérivées analytiques si possible, sinon différences finies
 - [ ] `incertitude` — constante, documentée comme telle
 - [ ] Toutes les constantes en attributs de classe, jamais en dur dans le corps
@@ -210,22 +210,22 @@ et donc l'expérience Q3 possible dès ce jalon.
 def test_plus_de_baie_donne_plus_de_lumiere():
     p1 = plan_avec_baie(relative_width=0.20)
     p2 = plan_avec_baie(relative_width=0.60)
-    assert SUB.evaluer(p2, CTX).sda > SUB.evaluer(p1, CTX).sda
+    assert SUB.evaluate(p2, CTX).sda > SUB.evaluate(p1, CTX).sda
 
 def test_piece_profonde_sature():
     """Au-delà de 2,5 × linteau, agrandir la pièce n'ajoute pas de lumière."""
     p1 = plan_profondeur(5.0)
     p2 = plan_profondeur(9.0)
-    assert SUB.evaluer(p2, CTX).sda <= SUB.evaluer(p1, CTX).sda + 1e-9
+    assert SUB.evaluate(p2, CTX).sda <= SUB.evaluate(p1, CTX).sda + 1e-9
 
 def test_orientation_change_le_resultat():
-    nord = SUB.evaluer(PLAN, ctx_avec(0)).sda
-    sud  = SUB.evaluer(PLAN, ctx_avec(180)).sda
+    nord = SUB.evaluate(PLAN, ctx_avec(0)).sda
+    sud  = SUB.evaluate(PLAN, ctx_avec(180)).sda
     assert abs(nord - sud) > 0.05
 
 def test_gradient_coherent_avec_differences_finies():
     g = SUB.gradient(PLAN, CTX)
-    df = differences_finies(SUB.evaluer, PLAN, CTX, pas=1e-4)
+    df = differences_finies(SUB.evaluate, PLAN, CTX, pas=1e-4)
     assert np.corrcoef(g, df)[0, 1] > 0.99
 ```
 
@@ -450,7 +450,7 @@ def test_non_regression_jalon2():
 
 - [ ] ❌ Commencer le réseau de neurones → jalon 4
 - [ ] ❌ Lancer des simulations → jalon 4
-- [ ] ❌ Ajouter une 4ᵉ méthode au protocole `Substitut`
+- [ ] ❌ Ajouter une 4ᵉ méthode au protocole `Surrogate`
 - [ ] ❌ Coder l'orientation en degrés bruts
 - [ ] ❌ Sauter le pas d'écartement « pour simplifier » → convergence dégradée
 

@@ -24,7 +24,7 @@ diagnostic dual.
 def test_couverture_empirique():
     """Sur le jeu de TEST, jamais sur celui de calibration."""
     bornes  = [modele.borne(p) for p in JEU_TEST]
-    verites = [ORACLE.evaluer(p, CTX) for p in JEU_TEST]  # SplitFluxOracle (forme fermée)
+    verites = [ORACLE.evaluate(p, CTX) for p in JEU_TEST]  # SplitFluxOracle (forme fermée)
     couv = np.mean([v >= b.borne for v, b in zip(verites, bornes)])
     assert 0.86 <= couv <= 0.94          # visée 0,90
 ```
@@ -98,8 +98,8 @@ class CalibrateurConforme:
         self.q = float(np.quantile(scores, min(niveau, 1.0)))
         self.n, self.alpha = n, alpha
 
-    def borne(self, prediction, incertitude, sens) -> PerformanceBound:
-        marge = self.q * incertitude
+    def borne(self, prediction, uncertainty, sens) -> PerformanceBound:
+        marge = self.q * uncertainty
         val = prediction - marge if sens == ">=" else prediction + marge
         return PerformanceBound(borne=val, prediction=prediction, marge=marge,
                                 couverture=1 - self.alpha, sens=sens,
@@ -137,7 +137,7 @@ def test_couverture_sur_donnees_synthetiques(alpha):
     assert couv >= 1 - alpha - 0.03
 
 def test_sens_ase_inverse():
-    b = CAL.borne(prediction=6.1, incertitude=1.0, sens="<=")
+    b = CAL.borne(prediction=6.1, uncertainty=1.0, sens="<=")
     assert b.borne > b.prediction       # ASE : borne SUPÉRIEURE
 ```
 
@@ -226,7 +226,7 @@ réseau**. Personne n'a quantifié ce phénomène sur un substitut environnement
 un résultat scientifique en soi.
 
 ```python
-def mesurer_derive(optimiseur, substitut, simulateur, plans, ctx,
+def mesurer_derive(optimiseur, surrogate, simulateur, plans, ctx,
                    *, n_echantillons=50) -> RapportDerive: ...
 ```
 

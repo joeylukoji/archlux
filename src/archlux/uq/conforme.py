@@ -45,7 +45,7 @@ class Calibration:
 
     scores: np.ndarray
     alpha: float
-    indicateur: str
+    indicator: str
     empreinte_jeu: str
 
     @property
@@ -182,7 +182,7 @@ def _regime(regime: str) -> Regime:
     raise InvariantViolation((f"unknown regime {regime!r}, expected {REGIMES}",))
 
 
-def _echelle(incertitude: float) -> float:
+def _echelle(uncertainty: float) -> float:
     """Valider ``σ̂`` avant d'en faire une marge conforme.
 
     Les scores sont normalisés (``|y − ŷ| / σ``) : la marge publiée n'a de sens que
@@ -196,9 +196,9 @@ def _echelle(incertitude: float) -> float:
     InvariantViolation
         Si ``incertitude`` n'est pas finie ou n'est pas ``> 0``.
     """
-    echelle = float(incertitude)
+    echelle = float(uncertainty)
     if not math.isfinite(echelle):
-        raise InvariantViolation((f"incertitude non finie : {incertitude}",))
+        raise InvariantViolation((f"incertitude non finie : {uncertainty}",))
     if echelle <= 0.0:
         raise InvariantViolation(
             (f"incertitude doit être > 0 pour publier une marge conforme : {echelle}",)
@@ -210,14 +210,14 @@ def _intervalle(
     prediction: float,
     marge: float,
     *,
-    indicateur: Indicateur,
+    indicator: Indicateur,
     couverture: float,
     n_calibration: int,
     regime: str,
 ) -> PerformanceBound:
     """Intervalle bilatéral ``prédiction ± marge`` ; le sens métier est le côté publié."""
     return PerformanceBound(
-        indicator=indicateur,
+        indicator=indicator,
         value=float(prediction),
         lower=float(prediction) - marge,
         upper=float(prediction) + marge,
@@ -228,7 +228,7 @@ def _intervalle(
 
 
 def borner(
-    valeur: float, calibration: Calibration, *, incertitude: float, regime: Regime
+    valeur: float, calibration: Calibration, *, uncertainty: float, regime: Regime
 ) -> PerformanceBound:
     """Assortir une estimation ponctuelle de son intervalle conforme.
 
@@ -264,11 +264,11 @@ def borner(
       couverture réelle sous sélection.
     """
     q_chapeau = quantile_conforme(calibration.scores, calibration.alpha)
-    marge = q_chapeau * _echelle(incertitude)
+    marge = q_chapeau * _echelle(uncertainty)
     return _intervalle(
         valeur,
         marge,
-        indicateur=_indicateur(calibration.indicateur),
+        indicator=_indicateur(calibration.indicator),
         couverture=1.0 - calibration.alpha,
         n_calibration=calibration.n,
         regime=regime,
@@ -283,7 +283,7 @@ class CalibrateurConforme:
     ``alpha`` se sérialisent avec les poids.
     """
 
-    indicateur: Indicateur = "sDA"
+    indicator: Indicateur = "sDA"
     q: float = 0.0
     n: int = 0
     alpha: float = 0.10
@@ -330,7 +330,7 @@ class CalibrateurConforme:
     def borne(
         self,
         prediction: float,
-        incertitude: float,
+        uncertainty: float,
         sens: str | None = None,
         *,
         regime: Regime,
@@ -355,20 +355,20 @@ class CalibrateurConforme:
         """
         if self.n < 1:
             raise InvariantViolation(("calibrateur non ajusté",))
-        attendu = "<=" if self.indicateur == "ASE" else ">="
+        attendu = "<=" if self.indicator == "ASE" else ">="
         if sens is None:
             sens = attendu
         if sens not in (">=", "<="):
             raise InvariantViolation((f"sens inconnu : {sens!r}",))
         if sens != attendu:
             raise InvariantViolation(
-                (f"sens {sens!r} incompatible avec indicateur {self.indicateur}",)
+                (f"sens {sens!r} incompatible avec indicateur {self.indicator}",)
             )
-        marge = self.q * _echelle(incertitude)
+        marge = self.q * _echelle(uncertainty)
         return _intervalle(
             prediction,
             marge,
-            indicateur=self.indicateur,
+            indicator=self.indicator,
             couverture=1.0 - self.alpha,
             n_calibration=self.n,
             regime=regime,
@@ -385,6 +385,6 @@ class CalibrateurConforme:
         return Calibration(
             scores=np.array(self.scores, dtype=float, copy=True),
             alpha=self.alpha,
-            indicateur=self.indicateur,
+            indicator=self.indicator,
             empreinte_jeu=self.empreinte_jeu,
         )

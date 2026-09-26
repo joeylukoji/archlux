@@ -1,6 +1,6 @@
 """The published JSON schema v1 and the round trip of real outputs (PLAN.md phase 2, J1).
 
-Milestone 1 was accepted on ``depuis_dict(vers_dict(p)) == p`` for arbitrary plans
+Milestone 1 was accepted on ``from_dict(vers_dict(p)) == p`` for arbitrary plans
 (``test_json_io.py``). Its review replays it on what the library writes since phase 1:
 legalized plans under load-bearing walls, with a performance bound that states its
 regime. It also checks the published schema (``archlux/io/plan-v1.schema.json``)
@@ -22,7 +22,7 @@ from hypothesis import given, settings
 
 import archlux
 from archlux.errors import ArchluxError, InvariantViolation
-from archlux.io.json_io import VERSION_SCHEMA, depuis_dict, vers_dict
+from archlux.io.json_io import SCHEMA_VERSION, from_dict, to_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
@@ -44,7 +44,7 @@ def _errors(document: dict[str, Any]) -> list[str]:
 
 def test_the_schema_is_a_valid_draft_2020_12_schema() -> None:
     jsonschema.Draft202012Validator.check_schema(_schema())
-    assert _schema()["properties"]["schema"]["const"] == VERSION_SCHEMA
+    assert _schema()["properties"]["schema"]["const"] == SCHEMA_VERSION
 
 
 def test_the_schema_is_shipped_with_the_package() -> None:
@@ -55,13 +55,13 @@ def test_the_schema_is_shipped_with_the_package() -> None:
 @given(plan=plans_quelconques())
 @settings(max_examples=200, deadline=None)
 def test_every_written_plan_matches_the_schema(plan: Plan) -> None:
-    assert _errors(vers_dict(plan)) == []
+    assert _errors(to_dict(plan)) == []
 
 
 def _calibration() -> Calibration:
     rng = np.random.default_rng(5)
     predictions = rng.normal(50.0, 5.0, 60)
-    calibrator = CalibrateurConforme(indicateur="sDA")
+    calibrator = CalibrateurConforme(indicator="sDA")
     calibrator.ajuster(predictions, predictions + rng.normal(0.0, 1.0, 60), np.ones(60))
     return calibrator.snapshot()
 
@@ -146,22 +146,22 @@ def _a_scenario() -> tuple[Plan, Context]:
 def test_the_schema_and_the_reader_refuse_the_same_values(
     path: tuple[str | int, ...], value: object
 ) -> None:
-    document = vers_dict(_a_scenario()[0])
+    document = to_dict(_a_scenario()[0])
     node: Any = document
     for key in path[:-1]:
         node = node[key]
     node[path[-1]] = value
     assert _errors(document)
     with pytest.raises(InvariantViolation):
-        depuis_dict(document)
+        from_dict(document)
 
 
 def test_the_schema_refuses_a_bound_without_regime() -> None:
     """Batch 1.6: a bound whose regime is unknown is never read as "exchangeable"."""
     plan, ctx = _a_scenario()
     (output,) = [o for o in _outputs(plan, ctx) if o.certificate and o.certificate.performance]
-    document = vers_dict(output)
+    document = to_dict(output)
     del document["certificat"]["performance"]["regime"]
     assert _errors(document)
     with pytest.raises(InvariantViolation, match="regime"):
-        depuis_dict(document)
+        from_dict(document)

@@ -48,7 +48,7 @@ Point = tuple[float, float]
 
 Indicateur = Literal["sDA", "ASE", "UDI", "vue"]
 """Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
-``PerformanceBound``, the ``Substitut`` protocol, the surrogates and the calibration all
+``PerformanceBound``, the ``Surrogate`` protocol, the surrogates and the calibration all
 share it."""
 
 
@@ -245,15 +245,15 @@ class Plan:
         InvariantViolation
             The file does not respect the declared schema.
         """
-        from archlux.io.json_io import charger
+        from archlux.io.json_io import load
 
-        return charger(path)
+        return load(path)
 
     def to_json(self, path: Path | str) -> None:
         """Write this plan as JSON, sorted keys, UTF-8 encoding."""
-        from archlux.io.json_io import ecrire
+        from archlux.io.json_io import write
 
-        ecrire(self, path)
+        write(self, path)
 
     def to_dxf(self, path: Path | str) -> None:
         """Write the rooms as ``LWPOLYLINE`` and the walls as ``LINE`` in a DXF file.

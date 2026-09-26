@@ -16,7 +16,7 @@ from archlux.errors import UnsupportedInput
 from archlux.geom.graphe import WallSide, deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.protocole import Substitut
+from archlux.light.protocole import Surrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 
@@ -171,7 +171,7 @@ def test_the_proof_no_longer_requires_the_plan_to_repeat_the_structure() -> None
 
 
 @pytest.mark.parametrize("objective", [None, SubstitutAnalytique()], ids=["classic", "performance"])
-def test_legalize_never_crosses_a_load_bearing_wall(objective: Substitut | None) -> None:
+def test_legalize_never_crosses_a_load_bearing_wall(objective: Surrogate | None) -> None:
     ctx = _ctx(_FULL)
     plan = _plan(_room("a", 0, 0, 6, 3), _room("c", 0, 3, 6, 3), _room("b", 6, 0, 4, 6))
     result = archlux.legalize(plan, ctx, objective=objective)

@@ -1,6 +1,6 @@
 """Critères d'acceptation du jalon 3. Le jalon avance quand ces tests passent.
 
-Le protocole reste **vectoriel** (`ARCHITECTURE.md`) : on n'élargit pas ``Substitut``
+Le protocole reste **vectoriel** (`ARCHITECTURE.md`) : on n'élargit pas ``Surrogate``
 à ``Plan`` / ``Indicateurs``. La trace des itérés est celle de Frank-Wolfe, pas un
 champ nouveau de ``legalize``.
 """

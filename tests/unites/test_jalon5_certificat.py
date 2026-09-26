@@ -12,7 +12,7 @@ from archlux.certify.borne import build_bound
 from archlux.certify.dual import translate_duals
 from archlux.geom.polytope import Polytope
 from archlux.light.objectif import Daylight
-from archlux.light.protocole import Substitut
+from archlux.light.protocole import Surrogate
 from archlux.types import (
     Certificate,
     GeometricProof,
@@ -162,18 +162,18 @@ def test_stratifier_huit_secteurs() -> None:
 class _FauxSubstitut:
     mu: float
     sigma: float
-    indicateur: str = "sDA"
+    indicator: str = "sDA"
 
-    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
+    def evaluate(self, x: np.ndarray, orientation: Orientation, *, glazing: object = None) -> float:
         return self.mu
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> np.ndarray:
         return np.zeros_like(x, dtype=float)
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> float:
         return self.sigma
 
@@ -184,12 +184,12 @@ def test_pessimiste_penalise_l_incertitude() -> None:
     x = np.ones(4)
     certain = Daylight(_FauxSubstitut(50.0, 0.2), q_chapeau=1.64, pessimiste=True)
     incertain = Daylight(_FauxSubstitut(50.0, 2.0), q_chapeau=1.64, pessimiste=True)
-    assert certain.evaluer(x, orientation) > incertain.evaluer(x, orientation)
-    assert isinstance(certain, Substitut)
+    assert certain.evaluate(x, orientation) > incertain.evaluate(x, orientation)
+    assert isinstance(certain, Surrogate)
 
 
 def test_daylight_sans_pessimisme_ignore_sigma() -> None:
     orientation = Orientation(deg=0.0)
     x = np.ones(2)
     j = Daylight(_FauxSubstitut(40.0, 9.0), q_chapeau=2.0, pessimiste=False)
-    assert j.evaluer(x, orientation) == pytest.approx(40.0)
+    assert j.evaluate(x, orientation) == pytest.approx(40.0)

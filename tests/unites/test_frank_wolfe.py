@@ -29,22 +29,22 @@ class ObjectifLineaire:
     """Substitut affine : le maximum sur un polytope est un sommet."""
 
     c: np.ndarray
-    indicateur: str = "sDA"
+    indicator: str = "sDA"
 
-    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
-        del orientation, baies
+    def evaluate(self, x: np.ndarray, orientation: Orientation, *, glazing: object = None) -> float:
+        del orientation, glazing
         return float(self.c @ x)
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> np.ndarray:
-        del x, orientation, baies
+        del x, orientation, glazing
         return self.c
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> float:
-        del x, orientation, baies
+        del x, orientation, glazing
         return 0.08
 
 

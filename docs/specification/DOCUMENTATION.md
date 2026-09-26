@@ -204,7 +204,7 @@ Un exemple qui n'énonce pas d'abord un problème concret ne sert à rien.
 | 1 | `README.md`, `installation.md`, schéma JSON |
 | **2** | **Galerie 01 et 03, `concepts/polytope.md`, `formules/`, docstrings `geom`/`lmo`/`certify`** |
 | 3 | Galerie 02, `concepts/oracle-partage.md`, tutoriel légalisation performantielle |
-| 4 | Tutoriel substitut, doc du protocole `Substitut`, **doc de `valider_gradient`** |
+| 4 | Tutoriel substitut, doc du protocole `Surrogate`, **doc de `valider_gradient`** |
 | 5 | Galerie 04 et 05, `concepts/deux-garanties.md`, `concepts/prediction-conforme.md` |
 | 6 | `limites.md`, guide de contribution, notes de version 1.0 |
 

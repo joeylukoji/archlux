@@ -68,11 +68,11 @@ franchissent alors les frontières et contaminent le jeu de test.
 ```python
 class GestionDonnees:
     def pour_entrainement(self) -> Dataset:
-        return charger(self._train)            # seul chemin exposé ici
+        return load(self._train)            # seul chemin exposé ici
 
     def pour_calibration(self, jeton: JetonCalibration) -> Dataset:
         jeton.verifier()                       # émis après gel du modèle
-        return charger(self._calib)
+        return load(self._calib)
 ```
 
 > **Le jeton n'est pas de la paranoïa.** Une fuite du jeu de calibration produit une
@@ -125,7 +125,7 @@ def test_distributions_comparables():
 **Fichier :** `src/archlux/light/simulateur.py` + `scripts/simuler.py`
 
 L'oracle **obligatoire** est `SplitFluxOracle` (forme fermée, CI). Un lot
-(Radiance) est **hors chemin critique** : même protocole `Substitut`, jamais
+(Radiance) est **hors chemin critique** : même protocole `Surrogate`, jamais
 importé par le noyau, jamais exigé pour passer au jalon 5.
 
 ### Lancer TÔT (Radiance seulement)
@@ -145,7 +145,7 @@ S'il est lancé, le faire pendant qu'on écrit le reste.
 
 ### Tâches
 
-- [ ] `SplitFluxOracle` respecte le protocole `Substitut` (`gradient` par différences finies)
+- [ ] `SplitFluxOracle` respecte le protocole `Surrogate` (`gradient` par différences finies)
 - [ ] (Radiance) Convertisseur `Plan` → modèle de simulation
 - [ ] (Radiance) **Figer** le fichier climatique et le modèle de ciel, et les journaliser
 - [ ] (Radiance) Lancement par lots, parallélisé entre plans
@@ -157,12 +157,12 @@ S'il est lancé, le faire pendant qu'on écrit le reste.
 def test_simulation_deterministe():
     """Non négociable : sans déterminisme, la calibration conforme est invalide."""
     oracle = SplitFluxOracle()
-    a = oracle.evaluer(x, orientation)
-    b = oracle.evaluer(x, orientation)
+    a = oracle.evaluate(x, orientation)
+    b = oracle.evaluate(x, orientation)
     assert a == b
 
 def test_simulateur_respecte_le_protocole():
-    assert isinstance(SplitFluxOracle(), Substitut)
+    assert isinstance(SplitFluxOracle(), Surrogate)
 ```
 
 - [ ] Les 2 tests passent
@@ -333,7 +333,7 @@ Le système tournerait, convergerait, et optimiserait dans la mauvaise direction
 
 ```python
 def valider_gradient(
-    substitut: Substitut, simulateur: SplitFluxOracle,
+    surrogate: Surrogate, simulateur: SplitFluxOracle,
     plans: list[Plan], ctx: Context,
     *, pas: float = 0.10, variables: list[str] | None = None,
 ) -> RapportGradient:

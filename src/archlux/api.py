@@ -1,6 +1,6 @@
 r"""Public interface: one function, one parameter that changes everything.
 
-``objective=None`` gives classic legalization; a ``Substitut`` gives performance
+``objective=None`` gives classic legalization; a ``Surrogate`` gives performance
 legalization. **One function, one parameter.**
 
 Classic pipeline
@@ -42,7 +42,7 @@ from archlux.geom.rectilineaire import (
     etendre_fusions,
     minimum_area_shares,
 )
-from archlux.light.protocole import Baies, Substitut, point_prediction
+from archlux.light.protocole import Glazing, Surrogate, point_prediction
 from archlux.lmo.coupes import (
     inner_area_constraints,
     resoudre_avec_surfaces,  # lang-ok: French identifier of lmo
@@ -227,7 +227,7 @@ class _Problem:
         )
 
 
-def _check_calibration(objective: Substitut | None, calibration: Calibration | None) -> None:
+def _check_calibration(objective: Surrogate | None, calibration: Calibration | None) -> None:
     """Refuse a calibration that cannot bound the objective."""
     if calibration is None:
         return
@@ -238,10 +238,10 @@ def _check_calibration(objective: Substitut | None, calibration: Calibration | N
             "pass objective=<surrogate> or drop calibration",
         )
     check_calibration(calibration)
-    if calibration.indicateur != objective.indicateur:
+    if calibration.indicator != objective.indicator:
         raise InvalidInput(
             "calibration",
-            f"calibration of {calibration.indicateur!r} cannot bound {objective.indicateur!r}",
+            f"calibration of {calibration.indicator!r} cannot bound {objective.indicator!r}",
             "calibrate the same indicator as the objective",
         )
 
@@ -341,7 +341,7 @@ def _optimize_light(
     problem: _Problem,
     corrected: Plan,
     poly: Polytope,
-    objective: Substitut,
+    objective: Surrogate,
     calibration: Calibration | None,
     duals_l1: tuple[tuple[str, float], ...],
     trace: bool,
@@ -366,7 +366,7 @@ def _optimize_light(
     # Glazing is not part of the decision vector: it is constant during the
     # optimization and passed through unchanged. Without it the surrogate only sees
     # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
-    glazing = Baies(murs=corrected.walls, ouvertures=corrected.openings)
+    glazing = Glazing(walls=corrected.walls, openings=corrected.openings)
     result = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
     performant = problem.decode(result.x, poly.index, template=corrected)
     proof = problem.prove(performant)
@@ -379,11 +379,11 @@ def _optimize_light(
     # diagnostic is therefore often empty (see lmo.solveur.resoudre).
     duals = duals_l1
     if result.duals is not None:
-        duals = _translated_duals(result.duals, poly_fw, objective=objective.indicateur)
+        duals = _translated_duals(result.duals, poly_fw, objective=objective.indicator)
     performance = None
     if calibration is not None:
         # Centred on the prediction mu, not on the pessimistic objective mu - q sigma.
-        mu, sigma = point_prediction(objective, result.x, ctx.orientation, baies=glazing)
+        mu, sigma = point_prediction(objective, result.x, ctx.orientation, glazing=glazing)
         performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
         performant,
@@ -396,7 +396,7 @@ def legalize(
     plan: Plan,
     ctx: Context,
     *,
-    objective: Substitut | None = None,
+    objective: Surrogate | None = None,
     calibration: Calibration | None = None,
     budget: float | None = None,
     trace: bool = False,
@@ -407,7 +407,7 @@ def legalize(
     """Correct a plan towards the closest valid plan, or the best performing one.
 
     With ``objective=None``, minimizes the L1 displacement of the decision variables. A
-    ``Substitut`` chains Frank-Wolfe from that point, without leaving the polytope.
+    ``Surrogate`` chains Frank-Wolfe from that point, without leaving the polytope.
 
     Parameters
     ----------
@@ -550,8 +550,8 @@ def legalize(
     >>> q.certificate.geometry.valid
     True
     """
-    if objective is not None and not isinstance(objective, Substitut):
-        raise TypeError("objective must implement archlux.light.protocole.Substitut")
+    if objective is not None and not isinstance(objective, Surrogate):
+        raise TypeError("objective must implement archlux.light.protocole.Surrogate")
     validate_inputs(plan, ctx, budget=budget, budget_reparation=budget_reparation)
     ctx = resolve_outline(plan, ctx)
     _check_calibration(objective, calibration)

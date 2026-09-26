@@ -67,7 +67,7 @@ Détail, protocole et comparaisons avant / après plan par plan :
 
 **C'est la limite la plus profonde du projet, et elle est mesurée.**
 
-Le protocole `Substitut` rend **un scalaire par plan**. L'éclairement est une grandeur
+Le protocole `Surrogate` rend **un scalaire par plan**. L'éclairement est une grandeur
 **par pièce**. Décomposition de la variance sur 367 466 pièces de Swiss Dwellings,
 cible `sun_201803211200_mean` :
 

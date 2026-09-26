@@ -27,7 +27,7 @@ from archlux.seeds import derive
 from archlux.uq.conforme import CalibrateurConforme, n_minimal_conforme
 
 if TYPE_CHECKING:
-    from archlux.light.protocole import Substitut
+    from archlux.light.protocole import Surrogate
     from archlux.types import Orientation
 
 __all__ = ["Loop", "RapportActif"]
@@ -62,7 +62,7 @@ def _empiler(xs: list[np.ndarray]) -> np.ndarray:
 
 
 def _incertitudes_acquisition(
-    substitut: Substitut,
+    surrogate: Surrogate,
     xs: list[np.ndarray],
     orientations: list[Orientation],
     xs_labeled: list[np.ndarray],
@@ -73,7 +73,7 @@ def _incertitudes_acquisition(
     distance aux points déjà labellisés force l'exploration.
     """
     base = np.array(
-        [float(substitut.incertitude(x, o)) for x, o in zip(xs, orientations, strict=True)],
+        [float(surrogate.uncertainty(x, o)) for x, o in zip(xs, orientations, strict=True)],
         dtype=float,
     )
     if not xs_labeled:
@@ -88,15 +88,15 @@ def _incertitudes_acquisition(
 
 def _largeur_moyenne(
     calibrateur: CalibrateurConforme,
-    substitut: Substitut,
+    surrogate: Surrogate,
     xs: list[np.ndarray],
     orientations: list[Orientation],
 ) -> float:
     """Largeur moyenne des intervalles conformes sur le jeu de retenue."""
     largeurs: list[float] = []
     for x, o in zip(xs, orientations, strict=True):
-        pred = float(substitut.evaluer(x, o))
-        sigma = float(substitut.incertitude(x, o))
+        pred = float(surrogate.evaluate(x, o))
+        sigma = float(surrogate.uncertainty(x, o))
         # Held-out plans, never chosen by an optimizer: exchangeable by construction.
         borne = calibrateur.borne(pred, sigma, regime="exchangeable")
         largeurs.append(float(borne.upper - borne.lower))
@@ -143,8 +143,8 @@ class Loop:
     ``RapportActif.calibration_independante`` porte la distinction.
     """
 
-    substitut: Substitut
-    simulateur: Substitut
+    surrogate: Surrogate
+    simulateur: Surrogate
     acquire: StrategieAcquisition
     budget: int
     batch: int = 5
@@ -172,10 +172,10 @@ class Loop:
     ) -> None:
         """Ajuster le quantile conforme sur le jeu de calibration, et lui seul."""
         preds = np.array(
-            [float(self.substitut.evaluer(x, o)) for x, o in zip(xs, orientations, strict=True)]
+            [float(self.surrogate.evaluate(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
         sigmas = np.array(
-            [float(self.substitut.incertitude(x, o)) for x, o in zip(xs, orientations, strict=True)]
+            [float(self.surrogate.uncertainty(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
         calibrateur.ajuster(preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha)
 
@@ -261,7 +261,7 @@ class Loop:
             os_cal = list(calibration_orientations)
         # Vérités du jeu indépendant : simulées une fois, hors budget d'acquisition.
         ys_cal: list[float] = [
-            float(self.simulateur.evaluer(x, o)) for x, o in zip(xs_cal, os_cal, strict=True)
+            float(self.simulateur.evaluate(x, o)) for x, o in zip(xs_cal, os_cal, strict=True)
         ]
 
         dens = densite_noyau(_empiler(propositions), _empiler(reference_optimiseur))
@@ -272,7 +272,7 @@ class Loop:
         historique: list[float] = []
         restantes = self.budget
         cycle = 0
-        calibrateur = CalibrateurConforme(indicateur="sDA")
+        calibrateur = CalibrateurConforme(indicator="sDA")
         # Named sub-streams (AUDIT.md Q-M5): with ``seed + cycle`` the campaign of seed 17
         # at cycle 1 replayed the selection of the campaign of seed 18 at cycle 0.
         rng = np.random.default_rng(derive(self.seed, "split"))
@@ -281,7 +281,7 @@ class Loop:
             n_prendre = min(self.batch, restantes, len(propositions) - len(exclus))
             if n_prendre < 1:
                 break
-            inc = _incertitudes_acquisition(self.substitut, propositions, orientations, xs_lab)
+            inc = _incertitudes_acquisition(self.surrogate, propositions, orientations, xs_lab)
             idxs = self.acquire.selectionner(
                 inc,
                 dens,
@@ -296,7 +296,7 @@ class Loop:
             for rang, i in enumerate(acquis):
                 x = np.asarray(propositions[i], dtype=float).copy()
                 o = orientations[i]
-                y = float(self.simulateur.evaluer(x, o))
+                y = float(self.simulateur.evaluate(x, o))
                 if rang in vers_calibration:
                     xs_cal.append(x)
                     ys_cal.append(y)
@@ -308,7 +308,7 @@ class Loop:
                 exclus.append(i)
             restantes -= len(acquis)
 
-            ajuster = getattr(self.substitut, "ajuster", None)
+            ajuster = getattr(self.surrogate, "ajuster", None)
             if ajuster is not None and len(xs_lab) >= 2:
                 ajuster(
                     tuple(xs_lab),
@@ -324,7 +324,7 @@ class Loop:
             if len(xs_cal) >= n_min:
                 try:
                     self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
-                    historique.append(_largeur_moyenne(calibrateur, self.substitut, hold_x, hold_o))
+                    historique.append(_largeur_moyenne(calibrateur, self.surrogate, hold_x, hold_o))
                 except InvariantViolation as echec:
                     # Scores dégénérés en début de campagne : conserver le calibrateur
                     # courant et retenter au cycle suivant. Le rattrapage est tracé —
@@ -349,7 +349,7 @@ class Loop:
                     )
                 )
             self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
-            historique.append(_largeur_moyenne(calibrateur, self.substitut, hold_x, hold_o))
+            historique.append(_largeur_moyenne(calibrateur, self.surrogate, hold_x, hold_o))
 
         largeur = historique[-1] if historique else float("nan")
         return RapportActif(

@@ -4,7 +4,7 @@ Son intérêt n'est pas la précision : c'est de faire tourner la chaîne compl�
 troisième mois plutôt qu'au dix-huitième. Si l'architecture est fausse, elle est fausse
 ici, avant toute dépense de simulation ou d'entraînement.
 
-Implémente :class:`archlux.light.protocole.Substitut`. Entrée vectorielle uniquement.
+Implémente :class:`archlux.light.protocole.Surrogate`. Entrée vectorielle uniquement.
 
 Le facteur d'orientation passe par :func:`archlux.orient.circulaire.encoder` : jamais
 le degré brut. Formules : ``docs/formules/substitut-analytique.md``.
@@ -21,7 +21,7 @@ from typing import ClassVar
 
 import numpy as np
 
-from archlux.light.protocole import Baies
+from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encoder
 from archlux.types import Indicateur, Orientation
 
@@ -88,7 +88,7 @@ class SubstitutAnalytique:
     Attributes
     ----------
     indicateur_vise : {"sDA", "ASE", "UDI", "vue"}
-        Grandeur rendue par :meth:`evaluer`. ASE est renvoyé *négatif* pour que
+        Grandeur rendue par :meth:`evaluate`. ASE est renvoyé *négatif* pour que
         Frank-Wolfe, qui maximise, réduise l'éblouissement.
     sigma_nominal : float
         Écart-type constant. Ce substitut ne modélise pas son erreur.
@@ -110,12 +110,12 @@ class SubstitutAnalytique:
     """Alias de classe vers :data:`FACTEURS_SECTEUR` (contrat public conservé)."""
 
     @property
-    def indicateur(self) -> str:
+    def indicator(self) -> str:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Estimer l'indicateur en formes fermées.
 
@@ -128,40 +128,40 @@ class SubstitutAnalytique:
         - Performance : **aucune garantie en soi**. La valeur devient bornée seulement
           après passage par :mod:`archlux.uq.conforme`.
         """
-        del baies
+        del glazing
         return float(self._score_et_gradient(x, orientation, avec_gradient=False)[0])
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Gradient analytique, dérivé à la main puis validé par différences finies.
 
         **Exact** partout sauf en deux endroits, tous deux de mesure nulle :
         au coude ``profondeur == profondeur_utile`` (dérivée à gauche retenue) et sous
-        les seuils ``w < 1e-12`` / ``h < 1e-12``, où ``evaluer`` écrête mais où la
+        les seuils ``w < 1e-12`` / ``h < 1e-12``, où ``evaluate`` écrête mais où la
         dérivée écrite ignore l'écrêtage. Hors de ces points, la vérification
         symbolique donne l'égalité stricte avec ``∂ evaluer / ∂ x``.
         """
-        del baies
+        del glazing
         return self._score_et_gradient(x, orientation, avec_gradient=True)[1]
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Écart-type nominal constant : ce substitut ne modélise pas son erreur."""
-        del x, orientation, baies
+        del x, orientation, glazing
         return float(self.sigma_nominal)
 
-    def evaluer_pieces(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate_rooms(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Contribution de chaque pièce, avant sommation.
 
-        ``evaluer`` en est la somme, au signe d'ASE près. Voir
+        ``evaluate`` en est la somme, au signe d'ASE près. Voir
         :class:`~archlux.light.protocole.SubstitutParPiece` : c'est à cette
         granularité que vit 92 % de la variance de l'éclairement réel.
         """
-        del baies
+        del glazing
         parts = self._parts(x, orientation)
         return -parts if self.indicateur_vise == "ASE" else parts
 

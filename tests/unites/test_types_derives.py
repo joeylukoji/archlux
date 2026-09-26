@@ -127,5 +127,5 @@ class TestEcritureRobuste:
             openings=(),
             outline=(),
         )
-        with pytest.raises(InvariantViolation, match="non finie"):
+        with pytest.raises(InvariantViolation, match="non-finite"):
             plan.to_json(tmp_path / "x.json")

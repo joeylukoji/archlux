@@ -44,8 +44,8 @@ Q = sol.x[:n]  # les n premières coordonnées ; les suivantes sont les écarts 
 assert sol.statut == "optimal" and poly.contient(Q)
 
 # une itération Frank-Wolfe — jalon 3 : même appel, coûts = -gradient du substitut
-substitut = SubstitutAnalytique()
-sol = lmo.resoudre(poly, c=-substitut.gradient(Q, ctx.orientation), depart=Q)
+surrogate = SubstitutAnalytique()
+sol = lmo.resoudre(poly, c=-surrogate.gradient(Q, ctx.orientation), depart=Q)
 S = sol.x  # un sommet du polytope
 gamma = 0.5  # pas de l'itération
 Q_suivant = Q + gamma * (S - Q)

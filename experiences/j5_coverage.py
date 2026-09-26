@@ -22,7 +22,7 @@ model, oracle = SubstitutAnalytique(), SplitFluxOracle()
 
 
 def columns(xs: tuple, orientations: tuple) -> list[np.ndarray]:
-    fs = (model.evaluer, oracle.evaluer, model.incertitude)  # the order of cal.ajuster
+    fs = (model.evaluate, oracle.evaluate, model.uncertainty)  # the order of cal.ajuster
     return [np.array([f(x, o) for x, o in zip(xs, orientations, strict=True)]) for f in fs]
 
 

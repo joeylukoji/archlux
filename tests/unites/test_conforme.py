@@ -61,7 +61,7 @@ def test_sens_ase_inverse() -> None:
     predictions = rng.normal(6.0, 0.4, n)
     verites = predictions + rng.normal(0.0, 0.5, n)
     incertitudes = np.ones(n)
-    calibrateur = CalibrateurConforme(indicateur="ASE")
+    calibrateur = CalibrateurConforme(indicator="ASE")
     calibrateur.ajuster(predictions, verites, incertitudes, alpha=0.10)
     borne = calibrateur.borne(6.1, 1.0, "<=", regime="exchangeable")
     assert borne.upper > borne.value
@@ -74,10 +74,10 @@ def test_borner_reproduit_le_quantile() -> None:
     calibration = Calibration(
         scores=scores,
         alpha=0.10,
-        indicateur="sDA",
+        indicator="sDA",
         empreinte_jeu="test",
     )
-    borne = borner(50.0, calibration, incertitude=1.0, regime="exchangeable")
+    borne = borner(50.0, calibration, uncertainty=1.0, regime="exchangeable")
     q = quantile_conforme(scores, 0.10)
     assert borne.lower == pytest.approx(50.0 - q)
     assert borne.n_calibration == 60

@@ -42,7 +42,7 @@ placement vers le sud. Il sert à valider le flux (polytope → Frank-Wolfe →
 preuve) avant toute simulation.
 
 `objective=None` (défaut) reste strictement le jalon 2. Un objet qui n'implémente
-pas `Substitut` lève `TypeError`.
+pas `Surrogate` lève `TypeError`.
 
 ## Ce qu'il faut retenir
 

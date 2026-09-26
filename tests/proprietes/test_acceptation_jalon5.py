@@ -31,9 +31,9 @@ def _evaluer(
     xs: list[np.ndarray],
     os_: list[Orientation],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pred = np.array([modele.evaluer(x, o) for x, o in zip(xs, os_, strict=True)])
-    verite = np.array([oracle.evaluer(x, o) for x, o in zip(xs, os_, strict=True)])
-    sigma = np.array([modele.incertitude(x, o) for x, o in zip(xs, os_, strict=True)])
+    pred = np.array([modele.evaluate(x, o) for x, o in zip(xs, os_, strict=True)])
+    verite = np.array([oracle.evaluate(x, o) for x, o in zip(xs, os_, strict=True)])
+    sigma = np.array([modele.uncertainty(x, o) for x, o in zip(xs, os_, strict=True)])
     return pred, verite, sigma
 
 

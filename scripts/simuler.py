@@ -28,7 +28,7 @@ with out.open("w", newline="", encoding="utf-8") as handle:
     w.writeheader()
     for identifiant, plan in corpus.items():
         debut = time.perf_counter()
-        score = sim.evaluer(plan_vers_vecteur(plan), Orientation(deg=0.0))
+        score = sim.evaluate(plan_vers_vecteur(plan), Orientation(deg=0.0))
         w.writerow(
             {
                 "id": identifiant,

@@ -21,7 +21,7 @@ from archlux.geom.graphe import deduire_ordre
 from archlux.geom.polytope import construire_polytope, vectoriser
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.base import SubstitutDense
-from archlux.light.protocole import Baies
+from archlux.light.protocole import Glazing
 from archlux.uq.conforme import CalibrateurConforme
 
 MSD = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
@@ -56,7 +56,7 @@ def vecteurs(lot: list) -> tuple[tuple, np.ndarray, tuple, tuple]:
         xs.append(vectoriser(appart.plan, poly.index))
         cibles.append(ys[index[id(appart)]])
         oris.append(appart.contexte.orientation)
-        fen.append(Baies(murs=appart.plan.murs, ouvertures=appart.plan.ouvertures))
+        fen.append(Glazing(walls=appart.plan.murs, openings=appart.plan.ouvertures))
     return tuple(xs), np.asarray(cibles, dtype=float), tuple(oris), tuple(fen)
 
 
@@ -69,19 +69,19 @@ print(f"train {len(x_tr)} | calibration {len(x_ca)} | test {len(x_te)} (par site
 ana = SubstitutAnalytique()
 # L'analytique rend un score en unites arbitraires : sans recalage affine ajuste
 # sur le train, le comparer a une irradiance simulee n'a aucun sens.
-brut_tr = np.array([ana.evaluer(x, o) for x, o in zip(x_tr, o_tr, strict=True)])
-brut_te = np.array([ana.evaluer(x, o) for x, o in zip(x_te, o_te, strict=True)])
+brut_tr = np.array([ana.evaluate(x, o) for x, o in zip(x_tr, o_tr, strict=True)])
+brut_te = np.array([ana.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)])
 pente, ordonnee = np.polyfit(brut_tr, y_tr, 1)
 pred_ana = pente * brut_te + ordonnee
 pred_nul = np.full_like(y_te, float(y_tr.mean()))
 net = SubstitutDense()
 net.ajuster(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150)
-pred_net = np.array([net.evaluer(x, o) for x, o in zip(x_te, o_te, strict=True)])
+pred_net = np.array([net.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)])
 # Meme modele, memes hyperparametres, meme graine : seule l'entree change.
 net_b = SubstitutDense()
-net_b.ajuster(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150, baies=b_tr)
+net_b.ajuster(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150, glazing=b_tr)
 pred_netb = np.array(
-    [net_b.evaluer(x, o, baies=b) for x, o, b in zip(x_te, o_te, b_te, strict=True)]
+    [net_b.evaluate(x, o, glazing=b) for x, o, b in zip(x_te, o_te, b_te, strict=True)]
 )
 
 
@@ -94,12 +94,12 @@ def score(pred: np.ndarray, vrai: np.ndarray) -> str:
     )
 
 
-cal = CalibrateurConforme(indicateur="sDA")
-p_ca = np.array([net.evaluer(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
-s_ca = np.array([net.incertitude(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
+cal = CalibrateurConforme(indicator="sDA")
+p_ca = np.array([net.evaluate(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
+s_ca = np.array([net.uncertainty(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 cal.ajuster(p_ca, y_ca, s_ca, alpha=0.10)
 bornes = [
-    cal.borne(float(p), float(net.incertitude(x, o)), regime="exchangeable")
+    cal.borne(float(p), float(net.uncertainty(x, o)), regime="exchangeable")
     for p, x, o in zip(pred_net, x_te, o_te, strict=True)
 ]
 couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))

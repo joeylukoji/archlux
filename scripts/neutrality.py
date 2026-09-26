@@ -11,7 +11,7 @@ another operating system, so ``tests/test_neutrality.py`` compares strictly only
 Two fingerprints, because two things can change:
 
 ``json``
-    The plans as written by ``vers_dict`` (schema v1), floats rounded to a micrometre.
+    The plans as written by ``to_dict`` (schema v1), floats rounded to a micrometre.
     Waves 1 to 3 (names of exceptions, classes, fields) must keep it **identical**: the
     JSON keys are an explicit v1 mapping, not the Python field names.
 ``geometry``
@@ -40,7 +40,7 @@ sys.path.insert(0, str(ROOT))
 from benchmarks.guarantees.scenarios import Scenario, generate, perturb  # noqa: E402
 
 from archlux import ArchluxError, Plan, legalize  # noqa: E402
-from archlux.io.json_io import vers_dict  # noqa: E402
+from archlux.io.json_io import to_dict  # noqa: E402
 from archlux.light.analytique import SubstitutAnalytique  # noqa: E402
 
 REFERENCE = ROOT / "tests" / "references" / "neutrality.json"
@@ -102,7 +102,7 @@ def fingerprints() -> dict[str, object]:
     as_json, as_geometry = hashlib.sha256(), hashlib.sha256()
     for label, plan in outputs:
         text = (
-            "refused" if plan is None else json.dumps(_canonical(vers_dict(plan)), sort_keys=True)
+            "refused" if plan is None else json.dumps(_canonical(to_dict(plan)), sort_keys=True)
         )
         as_json.update(f"{label}:{text}\n".encode())
         meaning = "refused" if plan is None else json.dumps(_geometry(plan))

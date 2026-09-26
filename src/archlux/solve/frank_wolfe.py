@@ -28,7 +28,7 @@ from archlux.solve.trace import Iteration, StopStatus, Trace
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from archlux.light.protocole import Baies, Substitut
+    from archlux.light.protocole import Glazing, Surrogate
     from archlux.types import Context, Orientation, Room
 
 __all__ = ["FrankWolfeResult", "frank_wolfe", "restrict_to_budget"]
@@ -147,7 +147,7 @@ def _normalize(weights: list[float]) -> None:
 
 def frank_wolfe(
     poly: Polytope,
-    surrogate: Substitut,
+    surrogate: Surrogate,
     orientation: Orientation,
     start: VecteurF,
     *,
@@ -158,7 +158,7 @@ def frank_wolfe(
     cuts: Sequence[Coupe] | None = None,
     rooms: tuple[Room, ...] | None = None,
     ctx: Context | None = None,
-    glazing: Baies | None = None,
+    glazing: Glazing | None = None,
 ) -> FrankWolfeResult:
     """Maximize ``surrogate`` over the polytope, starting from ``start``.
 
@@ -236,7 +236,7 @@ def frank_wolfe(
     n_cuts = len(active_cuts)
     gap = float("inf")  # no LP has succeeded yet: nothing is known
     status: StopStatus = "max_iter"
-    value = float(surrogate.evaluer(x, orientation, baies=glazing))
+    value = float(surrogate.evaluate(x, orientation, glazing=glazing))
     history: list[Iteration] = [
         Iteration(
             k=-1,
@@ -252,7 +252,7 @@ def frank_wolfe(
     last_oracle = None
 
     for k in range(max_iter):
-        gradient = np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float)
+        gradient = np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
         oracle = resoudre(
             domain,
             -gradient,
@@ -304,7 +304,7 @@ def frank_wolfe(
         gamma = min(2.0 / (k + 2), gamma_max)
         for _ in range(12):
             candidate = x + gamma * direction
-            new_value = float(surrogate.evaluer(candidate, orientation, baies=glazing))
+            new_value = float(surrogate.evaluate(candidate, orientation, glazing=glazing))
             if new_value >= value - 1e-12:
                 value = new_value
                 x = candidate
@@ -368,7 +368,9 @@ def frank_wolfe(
     if status == "max_iter" and last_oracle is not None:
         # The last step moved x after its LP: the gap and duals of that LP describe the
         # previous point. Solve once more at the returned x.
-        final_gradient = np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float)
+        final_gradient = np.asarray(
+            surrogate.gradient(x, orientation, glazing=glazing), dtype=float
+        )
         final = resoudre(domain, -final_gradient, depart=x, coupes=active_cuts or None, duaux=True)
         if final.statut == "optimal":
             gap = float(final_gradient @ (final.x - x))
@@ -378,7 +380,7 @@ def frank_wolfe(
     elif last_oracle is not None and last_oracle.statut == "optimal":
         extra = resoudre(
             domain,
-            -np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float),
+            -np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float),
             depart=x,
             coupes=active_cuts or None,
             duaux=True,

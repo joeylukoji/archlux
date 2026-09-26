@@ -35,7 +35,7 @@ from typing import TYPE_CHECKING, NoReturn
 
 from archlux.errors import InvariantViolation
 from archlux.light.base import SubstitutDense
-from archlux.light.protocole import Baies
+from archlux.light.protocole import Glazing
 
 if TYPE_CHECKING:
     import numpy as np
@@ -54,7 +54,7 @@ def _dense_depuis_disque(chemin: str, empreinte: str) -> SubstitutDense:
     actuel = hashlib.sha256(Path(chemin).read_bytes()).hexdigest()
     if actuel != empreinte:
         raise InvariantViolation((f"empreinte des poids divergente pour {chemin}",))
-    return SubstitutDense.charger(Path(chemin))
+    return SubstitutDense.load(Path(chemin))
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,7 +77,7 @@ class SubstitutAppris:
     indicateur_vise: Indicateur = "sDA"
 
     @property
-    def indicateur(self) -> str:
+    def indicator(self) -> str:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
@@ -105,23 +105,23 @@ class SubstitutAppris:
             ("poids .pt : le transformeur n'est servi que hors CI ; utiliser un npz dense",)
         )
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Estimer l'indicateur. Charge ``torch`` seulement pour un fichier ``.pt``."""
-        return self._backend().evaluer(x, orientation, baies=baies)
+        return self._backend().evaluate(x, orientation, glazing=glazing)
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Gradient par différences finies du backend, ramené en ``numpy``."""
-        return self._backend().gradient(x, orientation, baies=baies)
+        return self._backend().gradient(x, orientation, glazing=glazing)
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Écart-type prédictif appris."""
-        return self._backend().incertitude(x, orientation, baies=baies)
+        return self._backend().uncertainty(x, orientation, glazing=glazing)
 
     def n_parametres(self) -> int:
         """Taille du modèle chargé."""

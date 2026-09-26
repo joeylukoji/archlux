@@ -15,7 +15,7 @@ import pytest
 
 import archlux
 from archlux.errors import Infeasible, InvariantViolation
-from archlux.io.json_io import depuis_dict, vers_dict
+from archlux.io.json_io import from_dict, to_dict
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import point_prediction
@@ -53,7 +53,7 @@ def _calibration(indicator: str = "sDA", n: int = 60) -> Calibration:
     rng = np.random.default_rng(5)
     predictions = rng.normal(50.0, 5.0, n)
     truths = predictions + rng.normal(0.0, 1.0, n)
-    calibrator = CalibrateurConforme(indicateur=indicator)  # type: ignore[arg-type]
+    calibrator = CalibrateurConforme(indicator=indicator)  # type: ignore[arg-type]
     calibrator.ajuster(predictions, truths, np.ones(n), alpha=0.10)
     return calibrator.snapshot()
 
@@ -114,7 +114,7 @@ def test_the_uncertainty_scale_is_mandatory() -> None:
 
 def test_the_regime_is_mandatory() -> None:
     with pytest.raises(TypeError):
-        borner(50.0, _calibration(), incertitude=1.0)  # type: ignore[call-arg]
+        borner(50.0, _calibration(), uncertainty=1.0)  # type: ignore[call-arg]
 
 
 # --- The fingerprint ----------------------------------------------------------------------
@@ -160,7 +160,7 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     plan = _plan()
     surrogate = SubstitutAnalytique()
     objective = Daylight(surrogate, q_chapeau=1.0)
-    calibration = _calibration(surrogate.indicateur)
+    calibration = _calibration(surrogate.indicator)
     result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=objective, calibration=calibration)
     assert result.certificate is not None
     bound = result.certificate.performance
@@ -188,7 +188,7 @@ def test_a_calibration_needs_an_objective() -> None:
 
 def test_a_calibration_of_another_indicator_is_refused() -> None:
     objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
-    other = "ASE" if objective.indicateur != "ASE" else "sDA"
+    other = "ASE" if objective.indicator != "ASE" else "sDA"
     with pytest.raises(ValueError, match="cannot bound"):
         archlux.legalize(
             _plan(), CONTEXTE_DEFAUT, objective=objective, calibration=_calibration(other)
@@ -200,17 +200,17 @@ def test_a_calibration_of_another_indicator_is_refused() -> None:
 
 def test_the_regime_survives_serialization() -> None:
     certificate = Certificate(geometry=_proof(), performance=_bound(regime="selected"))
-    restored = depuis_dict(vers_dict(replace(_plan(), certificate=certificate)))
+    restored = from_dict(to_dict(replace(_plan(), certificate=certificate)))
     assert restored.certificate is not None and restored.certificate.performance is not None
     assert restored.certificate.performance.regime == "selected"
 
 
 def test_a_serialized_bound_without_regime_is_refused() -> None:
     certificate = Certificate(geometry=_proof(), performance=_bound())
-    data = vers_dict(replace(_plan(), certificate=certificate))
+    data = to_dict(replace(_plan(), certificate=certificate))
     del data["certificat"]["performance"]["regime"]
     with pytest.raises(InvariantViolation, match="regime"):
-        depuis_dict(data)
+        from_dict(data)
 
 
 # --- Review of batch 1.6 ----------------------------------------------------------------------
@@ -230,7 +230,7 @@ def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
     bound = result.certificate.performance
     assert bound is not None and bound.indicator == "ASE"
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
-    raw = surrogate.evaluer(x, CONTEXTE_DEFAUT.orientation)
+    raw = surrogate.evaluate(x, CONTEXTE_DEFAUT.orientation)
     assert raw < 0.0 < bound.value
     assert bound.value == pytest.approx(-raw, rel=1e-6)
     assert bound.lower <= bound.value <= bound.upper
@@ -243,7 +243,7 @@ def test_every_wrapping_layer_is_removed() -> None:
     orientation = CONTEXTE_DEFAUT.orientation
     nested = Daylight(Daylight(surrogate, q_chapeau=1.0), q_chapeau=2.0)
     assert point_prediction(nested, x, orientation)[0] == pytest.approx(
-        surrogate.evaluer(x, orientation)
+        surrogate.evaluate(x, orientation)
     )
 
 
@@ -261,7 +261,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     )
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=SubstitutAnalytique())
-    too_small = Calibration(scores=np.ones(5), alpha=0.10, indicateur="sDA", empreinte_jeu="x")
+    too_small = Calibration(scores=np.ones(5), alpha=0.10, indicator="sDA", empreinte_jeu="x")
     with pytest.raises(InvariantViolation, match="trop petit"):
         archlux.legalize(
             _plan(),

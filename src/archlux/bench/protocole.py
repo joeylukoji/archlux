@@ -14,7 +14,7 @@ from archlux.errors import InvariantViolation
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from archlux.light.protocole import Substitut
+    from archlux.light.protocole import Surrogate
     from archlux.types import Plan
 
 __all__ = ["Decoupage", "charger_decoupage", "compare"]
@@ -23,8 +23,8 @@ __all__ = ["Decoupage", "charger_decoupage", "compare"]
 def compare(
     *,
     plans: Sequence[Plan],
-    methods: Sequence[Substitut],
-    evaluate_by: Callable[[Plan, Substitut], float],
+    methods: Sequence[Surrogate],
+    evaluate_by: Callable[[Plan, Surrogate], float],
 ) -> tuple[float, ...]:
     """Comparer des substituts avec un évaluateur **externe** obligatoire.
 
@@ -32,9 +32,9 @@ def compare(
     (`MILESTONE-4.md` §8). ``evaluate_by`` est typiquement l'oracle gelé.
     **Sans défaut** : omettre l'argument lève ``TypeError``.
 
-    ``Substitut`` est vectoriel : le callback doit transformer le ``Plan`` en
+    ``Surrogate`` est vectoriel : le callback doit transformer le ``Plan`` en
     vecteur ``(x, y, w, h)`` (voir :func:`archlux.light.jetons.plan_vers_vecteur`)
-    avant d'appeler ``evaluer``.
+    avant d'appeler ``evaluate``.
 
     **Limite connue** : la valeur rendue est une moyenne **nue**, sans intervalle, ce
     que `ARCHITECTURE.md` §7 et §10 proscrivent pour une métrique publiée. Utiliser

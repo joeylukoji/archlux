@@ -49,10 +49,10 @@ AZIMUTS = tuple(range(0, 360, 45))
 RACINE = Path("resultats/orientation")
 
 
-def _score(plan, contexte, substitut) -> float:
+def _score(plan, contexte, surrogate) -> float:
     """Valeur du substitut pour ce plan sous cette orientation."""
     poly = construire_polytope(deduire_ordre(plan), contexte)
-    return float(substitut.evaluer(vectoriser(plan, poly.index), contexte.orientation))
+    return float(surrogate.evaluate(vectoriser(plan, poly.index), contexte.orientation))
 
 
 def main() -> None:
@@ -64,7 +64,7 @@ def main() -> None:
         json.loads(x) for x in plans_src.read_text(encoding="utf-8").splitlines() if x.strip()
     ]
     echelle = _echelle(lignes)
-    substitut = SubstitutAnalytique(indicateur_vise="sDA")
+    surrogate = SubstitutAnalytique(indicateur_vise="sDA")
     RACINE.mkdir(parents=True, exist_ok=True)
 
     index = [
@@ -98,13 +98,13 @@ def main() -> None:
         scores: list[tuple[int, float, float, float]] = []
         for azimut in AZIMUTS:
             ctx_az = replace(contexte, orientation=Orientation(deg=float(azimut)))
-            avant = _score(valid, ctx_az, substitut)
+            avant = _score(valid, ctx_az, surrogate)
             try:
-                variante = ax.legalize(valid, ctx_az, objective=substitut, budget=budget)
+                variante = ax.legalize(valid, ctx_az, objective=surrogate, budget=budget)
             except ax.ArchluxError:
                 volets.append((valid, f"{azimut}° — pas de variante"))
                 continue
-            apres = _score(variante, ctx_az, substitut)
+            apres = _score(variante, ctx_az, surrogate)
             bouge = max(
                 max(abs(a.x - b.x), abs(a.y - b.y), abs(a.w - b.w), abs(a.h - b.h))
                 for a, b in zip(valid.rooms, variante.rooms, strict=True)
@@ -140,7 +140,7 @@ def main() -> None:
         )
         fiche.append(
             "Les trois dernieres colonnes ne sont pas decoratives. "
-            "`Substitut.evaluer` rend **une somme sur les pieces** : la maximiser "
+            "`Substitut.evaluate` rend **une somme sur les pieces** : la maximiser "
             "recompense donc de concentrer l'aire dans la piece la mieux orientee "
             "et de ramener les autres au plancher `largeur_min`. C'est le probleme "
             "de granularite documente dans `docs/limites.md`, rendu visible — un "

@@ -118,7 +118,7 @@ def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
             regulation=Regulation(min_areas=(("sejour", 1.41),), min_width=1.0),
         )
         out = archlux.legalize(plan, ctx, objective=surrogate)
-        values.append(surrogate.evaluer(decision_vector(out), Orientation(deg=0.0)))
+        values.append(surrogate.evaluate(decision_vector(out), Orientation(deg=0.0)))
         widths.append(next(r.w for r in out.rooms if r.id == "p1"))
     assert values[0] == pytest.approx(values[1], rel=1e-12)
     assert abs(widths[0] - widths[1]) > 1.0  # not unique: the criterion is on values

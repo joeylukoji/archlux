@@ -10,8 +10,8 @@ from pathlib import Path
 
 from archlux.bench.manifeste import emettre
 from archlux.errors import InvariantViolation
-from archlux.io.json_io import manifeste_vers_dict
-from archlux.light.protocole import Substitut
+from archlux.io.json_io import manifest_to_dict
+from archlux.light.protocole import Surrogate
 from archlux.types import Manifest, ModelTrace, Orientation, Plan
 
 __all__ = ["LigneBrute", "Manifest", "Resultat", "run"]
@@ -41,8 +41,8 @@ def run(
     *,
     plans: Sequence[Plan],
     orientations: Sequence[Orientation],
-    methods: Sequence[Substitut],
-    evaluate_by: Callable[[Plan, Substitut], float],
+    methods: Sequence[Surrogate],
+    evaluate_by: Callable[[Plan, Surrogate], float],
     seed: int,
     empreinte_donnees: str,
     decoupage: str,
@@ -103,7 +103,7 @@ def run(
 def _ecrire_manifeste(chemin: Path, manifeste: Manifest) -> None:
     # Même forme que le schéma JSON des certificats (`io.json_io`) — une seule vérité.
     """Ecrire le manifeste en JSON, cles triees, avant tout resultat."""
-    payload = manifeste_vers_dict(manifeste)
+    payload = manifest_to_dict(manifeste)
     chemin.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 

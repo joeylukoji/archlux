@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from archlux.errors import InvariantViolation
-from archlux.io.json_io import charger, depuis_dict, vers_dict
+from archlux.io.json_io import from_dict, load, to_dict
 from archlux.types import Opening, Plan, Room, Wall
 
 PLAN = Plan(
@@ -27,28 +27,28 @@ class TestStructureInvalide:
 
     def test_un_point_mal_forme(self) -> None:
         """Un contour dont un sommet n'est pas ``[x, y]``."""
-        donnees = vers_dict(PLAN)
+        donnees = to_dict(PLAN)
         donnees["contour"] = [[0.0, 0.0], [1.0, 2.0, 3.0]]
-        with pytest.raises(InvariantViolation, match="point attendu"):
-            depuis_dict(donnees)
+        with pytest.raises(InvariantViolation, match="expected a point"):
+            from_dict(donnees)
 
     def test_un_champ_manquant(self) -> None:
         """Une pièce sans hauteur ne peut pas être devinée."""
-        donnees = vers_dict(PLAN)
+        donnees = to_dict(PLAN)
         del donnees["pieces"][0]["h"]
-        with pytest.raises(InvariantViolation, match="structure JSON invalide"):
-            depuis_dict(donnees)
+        with pytest.raises(InvariantViolation, match="invalid JSON structure"):
+            from_dict(donnees)
 
     def test_un_champ_non_numerique(self) -> None:
         """Une largeur textuelle est refusée, pas convertie au petit bonheur."""
-        donnees = vers_dict(PLAN)
+        donnees = to_dict(PLAN)
         donnees["pieces"][0]["w"] = "large"
-        with pytest.raises(InvariantViolation, match="structure JSON invalide"):
-            depuis_dict(donnees)
+        with pytest.raises(InvariantViolation, match="invalid JSON structure"):
+            from_dict(donnees)
 
     def test_un_indicateur_inconnu(self) -> None:
         """Un indicateur hors des quatre connus invaliderait la borne conforme."""
-        donnees = vers_dict(PLAN)
+        donnees = to_dict(PLAN)
         donnees["certificat"] = {
             "geometrie": {
                 "valide": True,
@@ -70,8 +70,8 @@ class TestStructureInvalide:
             "duaux": [],
             "manifeste": None,
         }
-        with pytest.raises(InvariantViolation, match="indicateur inconnu"):
-            depuis_dict(donnees)
+        with pytest.raises(InvariantViolation, match="unknown indicator"):
+            from_dict(donnees)
 
 
 class TestFichierInvalide:
@@ -81,12 +81,12 @@ class TestFichierInvalide:
         """Un fichier tronqué ou corrompu."""
         chemin = tmp_path / "casse.json"
         chemin.write_text("{ceci n'est pas du json", encoding="utf-8")
-        with pytest.raises(InvariantViolation, match="pas du JSON valide"):
-            charger(chemin)
+        with pytest.raises(InvariantViolation, match="not valid JSON"):
+            load(chemin)
 
     def test_du_json_qui_n_est_pas_un_objet(self, tmp_path: Path) -> None:
         """Une liste de plans n'est pas un plan ; le dire plutôt que d'échouer plus loin."""
         chemin = tmp_path / "liste.json"
         chemin.write_text("[]", encoding="utf-8")
-        with pytest.raises(InvariantViolation, match="objet JSON"):
-            charger(chemin)
+        with pytest.raises(InvariantViolation, match="JSON object"):
+            load(chemin)

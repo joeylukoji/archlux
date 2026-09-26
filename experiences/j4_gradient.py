@@ -28,14 +28,14 @@ def draw(n: int) -> tuple[list[np.ndarray], list[Orientation]]:
 
 (train_x, train_o), (test_x, test_o) = draw(36), draw(80)
 net = SubstitutDense()
-train_y = np.array([oracle.evaluer(x, o) for x, o in zip(train_x, train_o, strict=True)])
+train_y = np.array([oracle.evaluate(x, o) for x, o in zip(train_x, train_o, strict=True)])
 net.ajuster(tuple(train_x), train_y, tuple(train_o), seed=SEED, epoques=40, lr=0.12)
-truth = [oracle.evaluer(x, o) for x, o in zip(test_x, test_o, strict=True)]
+truth = [oracle.evaluate(x, o) for x, o in zip(test_x, test_o, strict=True)]
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(("surrogate", "azimuth", "n_points", "sign_agreement", "mae_test"))
     for name, model in (("dense", net), ("analytic_untrained", SubstitutAnalytique())):
-        pred = [model.evaluer(x, o) for x, o in zip(test_x, test_o, strict=True)]
+        pred = [model.evaluate(x, o) for x, o in zip(test_x, test_o, strict=True)]
         mae = float(np.mean(np.abs(np.array(pred) - truth)))
         for azimuth in (0.0, 90.0, 180.0, 270.0):
             points = np.stack(test_x[int(azimuth) // 90 * 20 :][:20])

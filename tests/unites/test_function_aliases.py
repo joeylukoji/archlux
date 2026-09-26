@@ -19,6 +19,16 @@ ALIASES = [
     ("archlux.certify.rapport", "rendre", "render"),
     ("archlux.export.svg", "rendre", "render"),
     ("archlux.feasibility", "CertificatFaisabilite", "FeasibilityCertificate"),
+    ("archlux.light", "Substitut", "Surrogate"),
+    ("archlux.light.protocole", "Substitut", "Surrogate"),
+    ("archlux.light.protocole", "Baies", "Glazing"),
+    ("archlux.light.protocole", "SubstitutParPiece", "PerRoomSurrogate"),
+    ("archlux.io.json_io", "charger", "load"),
+    ("archlux.io.json_io", "VERSION_SCHEMA", "SCHEMA_VERSION"),
+    ("archlux.io.json_io", "ecrire", "write"),
+    ("archlux.io.json_io", "vers_dict", "to_dict"),
+    ("archlux.io.json_io", "depuis_dict", "from_dict"),
+    ("archlux.io.json_io", "manifeste_vers_dict", "manifest_to_dict"),
 ]
 
 

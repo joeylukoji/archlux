@@ -50,7 +50,7 @@ def paires(lot: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     vrais: list[float] = []
     for appart in lot:
         poly = construire_polytope(deduire_ordre(appart.plan), appart.contexte)
-        parts = ana.evaluer_pieces(vectoriser(appart.plan, poly.index), appart.contexte.orientation)
+        parts = ana.evaluate_rooms(vectoriser(appart.plan, poly.index), appart.contexte.orientation)
         # Les sous-rectangles d'une piece portent le prefixe `pNNN` : on les recompose
         # pour retrouver la granularite de la simulation.
         somme: dict[int, float] = defaultdict(float)
@@ -112,7 +112,7 @@ for nom, pred in modeles.items():
 
 pred_ca = ajuster(p_tr, p_ca)
 sigma = float(np.abs(y_ca - pred_ca).std()) or 1.0
-cal = CalibrateurConforme(indicateur="sDA")
+cal = CalibrateurConforme(indicator="sDA")
 cal.ajuster(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
 bornes = [
     cal.borne(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]

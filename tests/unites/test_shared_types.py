@@ -1,6 +1,6 @@
 """Shared type aliases and the typing of the lazy packages (PLAN.md 3.8).
 
-``Literal["sDA", "ASE", "UDI", "vue"]`` was written in seven places, and ``Substitut``
+``Literal["sDA", "ASE", "UDI", "vue"]`` was written in seven places, and ``Surrogate``
 declared its indicator as a bare ``str`` while ``PerformanceBound`` used the literal.
 """
 
@@ -34,10 +34,10 @@ def test_the_indicator_literal_is_written_once() -> None:
 
 
 def test_the_bound_and_the_protocol_share_the_alias() -> None:
-    from archlux.light.protocole import Substitut
+    from archlux.light.protocole import Surrogate
 
     assert typing.get_type_hints(PerformanceBound)["indicator"] == Indicateur
-    assert typing.get_type_hints(Substitut.indicateur.fget)["return"] == Indicateur  # type: ignore[attr-defined]
+    assert typing.get_type_hints(Surrogate.indicator.fget)["return"] == Indicateur  # type: ignore[attr-defined]
 
 
 def test_the_float_vector_alias_is_a_float64_array() -> None:

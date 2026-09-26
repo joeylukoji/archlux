@@ -1,13 +1,16 @@
-"""Aller-retour JSON des plans. Schéma versionné, sérialisation déterministe.
+"""JSON round trip of plans. Versioned schema, deterministic serialization.
 
-Le schéma porte un numéro de version : un plan écrit par ``0.1.x`` doit rester lisible
-par ``0.2.x``. Les clés sont triées à l'écriture, sinon deux exécutions identiques
-produisent deux empreintes différentes et la reproductibilité annoncée n'est pas tenue.
+The schema carries a version number: a plan written by ``0.1.x`` must stay readable by
+``0.2.x``. The keys are sorted at write time, otherwise two identical runs produce two
+different fingerprints and the announced reproducibility is not held.
 
-La conversion est écrite **à la main**, champ par champ, plutôt que dérivée par
-introspection des `dataclass`. C'est plus long et c'est voulu : ajouter un champ au
-modèle doit obliger à décider ce qu'il devient dans le format publié, au lieu
-d'apparaître silencieusement dans des fichiers que d'autres outils lisent déjà.
+The conversion is written **by hand**, field by field, rather than derived by
+introspection of the ``dataclass`` types. It is longer and that is deliberate: adding a
+field to the model must force a decision about what it becomes in the published format,
+instead of silently appearing in files that other tools already read.
+
+The JSON keys are those of schema v1 (French names such as ``"porteur"`` or ``"jours"``):
+the Python names of the model are English, and this module is the mapping between the two.
 """
 
 from __future__ import annotations
@@ -17,6 +20,7 @@ import math
 from pathlib import Path
 from typing import Any
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.types import (
     REGIMES,
@@ -34,89 +38,88 @@ from archlux.types import (
 )
 
 __all__ = [
-    "VERSION_SCHEMA",
-    "charger",
-    "depuis_dict",
-    "ecrire",
-    "manifeste_vers_dict",
-    "vers_dict",
+    "SCHEMA_VERSION",
+    "SCHEMA_VERSION",
+    "from_dict",
+    "load",
+    "manifest_to_dict",
+    "to_dict",
+    "write",
 ]
 
-VERSION_SCHEMA = "1"
-"""Version du schéma JSON. Incrémentée à tout changement non rétrocompatible."""
+SCHEMA_VERSION = "1"
+"""Version of the JSON schema. Incremented on any non backward compatible change."""
 
 
 # ======================================================================================
-# Conversions élémentaires
+# Elementary conversions
 # ======================================================================================
 
 
-def _reel(valeur: Any, ou: str) -> float:
-    """Lire un flottant **fini**.
+def _real(value: Any, where: str) -> float:
+    """Read a **finite** float.
 
-    ``json.loads`` accepte les littéraux ``NaN`` et ``Infinity``. Sans cette garde, un
-    fichier produit par un autre outil introduirait des valeurs non finies dans le
-    solveur, où elles se propagent silencieusement jusqu'à un certificat absurde.
-    ``ecrire`` refusant déjà de les écrire, la lecture doit refuser de les lire.
+    ``json.loads`` accepts the literals ``NaN`` and ``Infinity``. Without this guard, a
+    file produced by another tool would bring non-finite values into the solver, where
+    they propagate silently up to an absurd certificate. ``write`` already refuses to
+    write them, so reading must refuse to read them.
     """
-    reel = float(valeur)
-    if not math.isfinite(reel):
-        raise InvariantViolation((f"{ou} : valeur non finie ({valeur!r})",))
-    return reel
+    real = float(value)
+    if not math.isfinite(real):
+        raise InvariantViolation((f"{where}: non-finite value ({value!r})",))
+    return real
 
 
-def _point(valeur: Any, ou: str = "point") -> Point:
-    """Lire un point ``[x, y]``, en refusant tout ce qui n'en est pas un."""
-    if not isinstance(valeur, (list, tuple)) or len(valeur) != 2:
-        raise InvariantViolation((f"point attendu sous la forme [x, y], reçu {valeur!r}",))
-    return (_reel(valeur[0], f"{ou}.x"), _reel(valeur[1], f"{ou}.y"))
+def _point(value: Any, where: str = "point") -> Point:
+    """Read a point ``[x, y]``, refusing anything that is not one."""
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise InvariantViolation((f"expected a point as [x, y], got {value!r}",))
+    return (_real(value[0], f"{where}.x"), _real(value[1], f"{where}.y"))
 
 
-def _paires(valeur: Any) -> tuple[tuple[str, str], ...]:
-    """Normaliser une liste JSON de paires en tuple de couples de chaines."""
-    return tuple((str(cle), str(val)) for cle, val in valeur)
+def _pairs(value: Any) -> tuple[tuple[str, str], ...]:
+    """Normalize a JSON list of pairs into a tuple of string pairs."""
+    return tuple((str(cle), str(val)) for cle, val in value)
 
 
-def _verifier_plages(donnees: Any) -> None:
-    """Vérifier les plages documentées par `ARCHITECTURE.md` §6.
+def _check_ranges(data: Any) -> None:
+    """Check the ranges documented by `ARCHITECTURE.md` §6.
 
-    **La validation a lieu ici et pas dans les constructeurs** (ADR-6). La frontière JSON
-    est l'endroit où les données viennent de l'extérieur ; c'est donc là qu'il faut les
-    refuser. Valider dans ``__post_init__`` interdirait au solveur de traverser un état
-    intermédiaire hors plage, et ferait payer une vérification à chaque construction dans
-    une boucle de Frank-Wolfe qui en fait des milliers.
+    **The validation happens here and not in the constructors** (ADR-6, amended for
+    ``Opening`` and ``GeometricProof``). The JSON boundary is where data comes from the
+    outside, so that is where to refuse it. Validating in ``__post_init__`` for every type
+    would forbid the solver to cross an out-of-range intermediate state, and would make
+    every construction pay a check in a Frank-Wolfe loop that builds thousands of them.
 
-    Toutes les violations sont rapportées ensemble : corriger un fichier une erreur à la
-    fois est un supplice, et rien n'oblige à ne rendre que la première.
+    All the violations are reported together: fixing a file one error at a time is a
+    torment, and nothing requires returning only the first.
 
     Raises
     ------
     InvariantViolation
-        Au moins une valeur est hors de sa plage. ``violations`` les liste toutes.
+        At least one value is out of its range. ``violations`` lists them all.
 
     Complexity
     ----------
-    O(n) sur le nombre d'éléments du plan.
+    O(n) in the number of elements of the plan.
     """
     violations: list[str] = []
-    for piece in donnees["pieces"]:
-        for champ in ("w", "h"):
-            valeur = _reel(piece[champ], f"piece {piece['id']}.{champ}")
-            if valeur <= 0.0:
-                violations.append(f"piece {piece['id']} : {champ} = {valeur} ; attendu > 0")
-    for mur in donnees["murs"]:
-        thickness = _reel(mur["epaisseur"], f"mur {mur['id']}.epaisseur")
+    for room in data["pieces"]:
+        for field in ("w", "h"):
+            value = _real(room[field], f"room {room['id']}.{field}")
+            if value <= 0.0:
+                violations.append(f"room {room['id']}: {field} = {value}; expected > 0")
+    for wall in data["murs"]:
+        thickness = _real(wall["epaisseur"], f"mur {wall['id']}.epaisseur")
         if thickness <= 0.0:
-            violations.append(f"mur {mur['id']} : epaisseur = {thickness} ; attendu > 0")
-    for ouverture in donnees["ouvertures"]:
-        s = _reel(ouverture["s"], f"ouverture {ouverture['id']}.s")
-        largeur = _reel(ouverture["largeur_rel"], f"ouverture {ouverture['id']}.largeur_rel")
+            violations.append(f"mur {wall['id']} : epaisseur = {thickness} ; attendu > 0")
+    for opening in data["ouvertures"]:
+        s = _real(opening["s"], f"ouverture {opening['id']}.s")
+        width = _real(opening["largeur_rel"], f"ouverture {opening['id']}.largeur_rel")
         if not 0.0 <= s <= 1.0:
-            violations.append(f"ouverture {ouverture['id']} : s = {s} ; attendu dans [0, 1]")
-        if not 0.0 < largeur <= 1.0:
-            violations.append(
-                f"ouverture {ouverture['id']} : largeur_rel = {largeur} ; attendu dans ]0, 1]"
-            )
+            violations.append(f"opening {opening['id']}: s = {s}; expected in [0, 1]")
+        if not 0.0 < width <= 1.0:
+            violations.append(f"opening {opening['id']}: largeur_rel = {width}; expected in ]0, 1]")
     if violations:
         raise InvariantViolation(tuple(violations))
 
@@ -126,83 +129,83 @@ def _verifier_plages(donnees: Any) -> None:
 # ======================================================================================
 
 
-def _preuve_vers_dict(preuve: GeometricProof) -> dict[str, Any]:
-    """Serialiser une preuve geometrique ; aucun champ de probabilite n'y entre."""
+def _proof_to_dict(proof: GeometricProof) -> dict[str, Any]:
+    """Serialize a geometric proof; no probability field enters it."""
     return {
-        "valide": preuve.valid,
-        "chevauchement": preuve.overlap,
-        "jours": preuve.gaps,
-        "surfaces_ok": preuve.areas_ok,
-        "structure_preservee": preuve.structure_kept,
-        "deplacement_max": preuve.max_displacement,
-        "violations": list(preuve.violations),
+        "valide": proof.valid,
+        "chevauchement": proof.overlap,
+        "jours": proof.gaps,
+        "surfaces_ok": proof.areas_ok,
+        "structure_preservee": proof.structure_kept,
+        "deplacement_max": proof.max_displacement,
+        "violations": list(proof.violations),
     }
 
 
-def _preuve_depuis_dict(donnees: Any) -> GeometricProof:
-    """Reconstruire une preuve geometrique depuis sa forme JSON."""
+def _proof_from_dict(data: Any) -> GeometricProof:
+    """Rebuild a geometric proof from its JSON form."""
     return GeometricProof(
-        valid=bool(donnees["valide"]),
-        overlap=bool(donnees["chevauchement"]),
-        gaps=bool(donnees["jours"]),
-        areas_ok=bool(donnees["surfaces_ok"]),
-        structure_kept=bool(donnees["structure_preservee"]),
-        max_displacement=_reel(donnees["deplacement_max"], "preuve.deplacement_max"),
-        violations=tuple(str(v) for v in donnees["violations"]),
+        valid=bool(data["valide"]),
+        overlap=bool(data["chevauchement"]),
+        gaps=bool(data["jours"]),
+        areas_ok=bool(data["surfaces_ok"]),
+        structure_kept=bool(data["structure_preservee"]),
+        max_displacement=_real(data["deplacement_max"], "preuve.deplacement_max"),
+        violations=tuple(str(v) for v in data["violations"]),
     )
 
 
-def _borne_vers_dict(borne: PerformanceBound) -> dict[str, Any]:
-    """Serialiser une borne de performance, couverture et n_calibration compris."""
+def _bound_to_dict(bound: PerformanceBound) -> dict[str, Any]:
+    """Serialize a performance bound, coverage and n_calibration included."""
     return {
-        "indicateur": borne.indicator,
-        "valeur": borne.value,
-        "borne_inf": borne.lower,
-        "borne_sup": borne.upper,
-        "couverture": borne.coverage,
-        "n_calibration": borne.n_calibration,
-        "regime": borne.regime,
+        "indicateur": bound.indicator,
+        "valeur": bound.value,
+        "borne_inf": bound.lower,
+        "borne_sup": bound.upper,
+        "couverture": bound.coverage,
+        "n_calibration": bound.n_calibration,
+        "regime": bound.regime,
     }
 
 
-def _regime(donnees: Any) -> Regime:
+def _regime(data: Any) -> Regime:
     """The regime of a serialized bound; missing or unknown is refused."""
-    regime = donnees.get("regime") if isinstance(donnees, dict) else None
+    regime = data.get("regime") if isinstance(data, dict) else None
     if regime not in REGIMES:
         raise InvariantViolation((f"borne.regime: expected one of {REGIMES}, got {regime!r}",))
     return regime  # type: ignore[no-any-return]
 
 
-def _borne_depuis_dict(donnees: Any) -> PerformanceBound:
-    """Reconstruire une borne de performance ; refuser un indicateur inconnu."""
-    indicateur = donnees["indicateur"]
-    if indicateur not in ("sDA", "ASE", "UDI", "vue"):
-        raise InvariantViolation((f"indicateur inconnu : {indicateur!r}",))
+def _bound_from_dict(data: Any) -> PerformanceBound:
+    """Rebuild a performance bound; refuse an unknown indicator."""
+    indicator = data["indicateur"]
+    if indicator not in ("sDA", "ASE", "UDI", "vue"):
+        raise InvariantViolation((f"unknown indicator: {indicator!r}",))
     return PerformanceBound(
-        indicator=indicateur,
-        value=_reel(donnees["valeur"], "borne.valeur"),
-        lower=_reel(donnees["borne_inf"], "borne.borne_inf"),
-        upper=_reel(donnees["borne_sup"], "borne.borne_sup"),
-        coverage=_reel(donnees["couverture"], "borne.couverture"),
-        n_calibration=int(donnees["n_calibration"]),
+        indicator=indicator,
+        value=_real(data["valeur"], "borne.valeur"),
+        lower=_real(data["borne_inf"], "borne.borne_inf"),
+        upper=_real(data["borne_sup"], "borne.borne_sup"),
+        coverage=_real(data["couverture"], "borne.couverture"),
+        n_calibration=int(data["n_calibration"]),
         # Files written before batch 1.6 carry no regime. They could only come from a
         # hand-built bound (legalize never filled one), so none is assumed: reading
         # such a bound as "exchangeable" would upgrade an unknown guarantee.
-        regime=_regime(donnees),
+        regime=_regime(data),
     )
 
 
-def manifeste_vers_dict(manifeste: Manifest) -> dict[str, Any]:
-    """Sérialiser un :class:`~archlux.types.Manifeste` (forme unique JSON / banc)."""
-    modele = manifeste.model
+def manifest_to_dict(manifest: Manifest) -> dict[str, Any]:
+    """Serialize a :class:`~archlux.types.Manifest` (single JSON / benchmark form)."""
+    modele = manifest.model
     return {
-        "version": manifeste.version,
-        "horodatage": manifeste.timestamp,
-        "graine": manifeste.seed,
-        "empreinte_donnees": manifeste.data_fingerprint,
-        "decoupage": manifeste.split,
-        "environnement": [list(p) for p in manifeste.environment],
-        "parametres": [list(p) for p in manifeste.parameters],
+        "version": manifest.version,
+        "horodatage": manifest.timestamp,
+        "graine": manifest.seed,
+        "empreinte_donnees": manifest.data_fingerprint,
+        "decoupage": manifest.split,
+        "environnement": [list(p) for p in manifest.environment],
+        "parametres": [list(p) for p in manifest.parameters],
         "modele": None
         if modele is None
         else {
@@ -213,9 +216,9 @@ def manifeste_vers_dict(manifeste: Manifest) -> dict[str, Any]:
     }
 
 
-def _manifeste_depuis_dict(donnees: Any) -> Manifest:
-    """Reconstruire un manifeste, ``ModelTrace`` compris s'il est present."""
-    brut = donnees.get("modele")
+def _manifest_from_dict(data: Any) -> Manifest:
+    """Rebuild a manifest, ``ModelTrace`` included if present."""
+    brut = data.get("modele")
     modele = None
     if brut is not None:
         modele = ModelTrace(
@@ -224,46 +227,46 @@ def _manifeste_depuis_dict(donnees: Any) -> Manifest:
             alpha=float(brut["alpha"]),
         )
     return Manifest(
-        version=str(donnees["version"]),
-        timestamp=str(donnees["horodatage"]),
-        seed=int(donnees["graine"]),
-        data_fingerprint=donnees["empreinte_donnees"],
-        split=donnees["decoupage"],
-        environment=_paires(donnees["environnement"]),
-        parameters=_paires(donnees["parametres"]),
+        version=str(data["version"]),
+        timestamp=str(data["horodatage"]),
+        seed=int(data["graine"]),
+        data_fingerprint=data["empreinte_donnees"],
+        split=data["decoupage"],
+        environment=_pairs(data["environnement"]),
+        parameters=_pairs(data["parametres"]),
         model=modele,
     )
 
 
-def _certificat_vers_dict(certificat: Certificate | None) -> dict[str, Any] | None:
-    """Serialiser un certificat ; ``None`` en performance reste explicite."""
-    if certificat is None:
+def _certificate_to_dict(certificate: Certificate | None) -> dict[str, Any] | None:
+    """Serialize a certificate; ``None`` for performance stays explicit."""
+    if certificate is None:
         return None
-    performance = certificat.performance
-    manifeste = certificat.manifest
+    performance = certificate.performance
+    manifest = certificate.manifest
     return {
-        "geometrie": _preuve_vers_dict(certificat.geometry),
-        # `None` explicite plutôt qu'une clé absente : « aucune garantie de performance »
-        # est une information, pas un oubli de sérialisation.
-        "performance": None if performance is None else _borne_vers_dict(performance),
-        "duaux": [[libelle, cout] for libelle, cout in certificat.duals],
-        "manifeste": None if manifeste is None else manifeste_vers_dict(manifeste),
+        "geometrie": _proof_to_dict(certificate.geometry),
+        # An explicit `None` rather than an absent key: "no performance guarantee" is
+        # information, not a serialization oversight.
+        "performance": None if performance is None else _bound_to_dict(performance),
+        "duaux": [[libelle, cout] for libelle, cout in certificate.duals],
+        "manifeste": None if manifest is None else manifest_to_dict(manifest),
     }
 
 
-def _certificat_depuis_dict(donnees: Any) -> Certificate | None:
-    """Reconstruire un certificat, ou ``None`` si le plan n'en porte pas."""
-    if donnees is None:
+def _certificate_from_dict(data: Any) -> Certificate | None:
+    """Rebuild a certificate, or ``None`` if the plan carries none."""
+    if data is None:
         return None
-    performance = donnees["performance"]
-    manifeste = donnees["manifeste"]
+    performance = data["performance"]
+    manifest = data["manifeste"]
     return Certificate(
-        geometry=_preuve_depuis_dict(donnees["geometrie"]),
-        performance=None if performance is None else _borne_depuis_dict(performance),
+        geometry=_proof_from_dict(data["geometrie"]),
+        performance=None if performance is None else _bound_from_dict(performance),
         duals=tuple(
-            (str(libelle), _reel(cout, f"dual {libelle}")) for libelle, cout in donnees["duaux"]
+            (str(libelle), _real(cout, f"dual {libelle}")) for libelle, cout in data["duaux"]
         ),
-        manifest=None if manifeste is None else _manifeste_depuis_dict(manifeste),
+        manifest=None if manifest is None else _manifest_from_dict(manifest),
     )
 
 
@@ -272,30 +275,30 @@ def _certificat_depuis_dict(donnees: Any) -> Certificate | None:
 # ======================================================================================
 
 
-def vers_dict(plan: Plan) -> dict[str, Any]:
-    """Projeter un plan en structure JSON-compatible, ordre stable.
+def to_dict(plan: Plan) -> dict[str, Any]:
+    """Project a plan onto a JSON-compatible structure, in a stable order.
 
     Parameters
     ----------
     plan : Plan
-        Plan à encoder, proposé ou légalisé.
+        Plan to encode, proposed or legalized.
 
     Returns
     -------
     dict
-        Structure portant ``schema``, la géométrie et le certificat éventuel.
+        A structure carrying ``schema``, the geometry and the certificate if any.
 
     Guarantees
     ----------
-    - Aucune : cette fonction ne fait que transcrire. Les garanties d'un plan sont
-      portées par son ``certificat``, transcrit tel quel.
+    - None: this function only transcribes. The guarantees of a plan are carried by its
+      ``certificate``, transcribed as is.
 
     Complexity
     ----------
-    O(n) sur le nombre d'éléments du plan.
+    O(n) in the number of elements of the plan.
     """
     return {
-        "schema": VERSION_SCHEMA,
+        "schema": SCHEMA_VERSION,
         "contour": [[x, y] for x, y in plan.outline],
         "pieces": [
             {
@@ -329,51 +332,51 @@ def vers_dict(plan: Plan) -> dict[str, Any]:
             }
             for o in plan.openings
         ],
-        "certificat": _certificat_vers_dict(plan.certificate),
+        "certificat": _certificate_to_dict(plan.certificate),
     }
 
 
-def depuis_dict(donnees: dict[str, Any]) -> Plan:
-    """Reconstruire un plan depuis une structure JSON-compatible.
+def from_dict(data: dict[str, Any]) -> Plan:
+    """Rebuild a plan from a JSON-compatible structure.
 
     Parameters
     ----------
     donnees : dict
-        Structure telle que rendue par :func:`vers_dict`.
+        Structure as returned by :func:`to_dict`.
 
     Returns
     -------
     Plan
-        Plan reconstruit, certificat compris s'il est présent.
+        The rebuilt plan, certificate included if present.
 
     Raises
     ------
     InvariantViolation
-        Version de schéma absente ou inconnue, ou champ mal formé. Le format est refusé
-        bruyamment plutôt que deviné : un plan mal relu produirait un certificat faux.
+        Missing or unknown schema version, or malformed field. The format is refused
+        loudly rather than guessed: a misread plan would produce a false certificate.
 
     Complexity
     ----------
-    O(n) sur le nombre d'éléments du plan.
+    O(n) in the number of elements of the plan.
     """
-    version = donnees.get("schema")
-    if version != VERSION_SCHEMA:
-        raise InvariantViolation((f"schéma JSON {version!r} inconnu, attendu {VERSION_SCHEMA!r}",))
+    version = data.get("schema")
+    if version != SCHEMA_VERSION:
+        raise InvariantViolation((f"unknown JSON schema {version!r}, expected {SCHEMA_VERSION!r}",))
     try:
         # Before building: ``Opening`` refuses an out-of-range ``s`` itself, which would
         # hide every other violation of the file behind the first one.
-        _verifier_plages(donnees)
+        _check_ranges(data)
         plan = Plan(
             rooms=tuple(
                 Room(
                     id=str(p["id"]),
                     type=str(p["type"]),
-                    x=_reel(p["x"], f"piece {p['id']}.x"),
-                    y=_reel(p["y"], f"piece {p['id']}.y"),
-                    w=_reel(p["w"], f"piece {p['id']}.w"),
-                    h=_reel(p["h"], f"piece {p['id']}.h"),
+                    x=_real(p["x"], f"piece {p['id']}.x"),
+                    y=_real(p["y"], f"piece {p['id']}.y"),
+                    w=_real(p["w"], f"piece {p['id']}.w"),
+                    h=_real(p["h"], f"piece {p['id']}.h"),
                 )
-                for p in donnees["pieces"]
+                for p in data["pieces"]
             ),
             walls=tuple(
                 Wall(
@@ -381,94 +384,106 @@ def depuis_dict(donnees: dict[str, Any]) -> Plan:
                     a=_point(m["a"], f"mur {m['id']}.a"),
                     b=_point(m["b"], f"mur {m['id']}.b"),
                     load_bearing=bool(m["porteur"]),
-                    thickness=_reel(m["epaisseur"], f"mur {m['id']}.epaisseur"),
+                    thickness=_real(m["epaisseur"], f"mur {m['id']}.epaisseur"),
                 )
-                for m in donnees["murs"]
+                for m in data["murs"]
             ),
             openings=tuple(
                 Opening(
                     id=str(o["id"]),
                     wall_id=str(o["mur_id"]),
-                    s=_reel(o["s"], f"ouverture {o['id']}.s"),
-                    relative_width=_reel(o["largeur_rel"], f"ouverture {o['id']}.largeur_rel"),
-                    sill_height=_reel(o["hauteur_allege"], f"ouverture {o['id']}.hauteur_allege"),
-                    head_height=_reel(o["hauteur_linteau"], f"ouverture {o['id']}.hauteur_linteau"),
+                    s=_real(o["s"], f"ouverture {o['id']}.s"),
+                    relative_width=_real(o["largeur_rel"], f"ouverture {o['id']}.largeur_rel"),
+                    sill_height=_real(o["hauteur_allege"], f"ouverture {o['id']}.hauteur_allege"),
+                    head_height=_real(o["hauteur_linteau"], f"ouverture {o['id']}.hauteur_linteau"),
                 )
-                for o in donnees["ouvertures"]
+                for o in data["ouvertures"]
             ),
-            outline=tuple(_point(pt, f"contour[{i}]") for i, pt in enumerate(donnees["contour"])),
-            certificate=_certificat_depuis_dict(donnees["certificat"]),
+            outline=tuple(_point(pt, f"contour[{i}]") for i, pt in enumerate(data["contour"])),
+            certificate=_certificate_from_dict(data["certificat"]),
         )
     except (KeyError, TypeError, ValueError) as cause:
-        raise InvariantViolation((f"structure JSON invalide : {cause}",)) from cause
+        raise InvariantViolation((f"invalid JSON structure: {cause}",)) from cause
     return plan
 
 
-def charger(chemin: Path | str) -> Plan:
-    """Lire un plan depuis un fichier JSON.
+def load(path: Path | str) -> Plan:
+    """Read a plan from a JSON file.
 
     Parameters
     ----------
     chemin : Path or str
-        Fichier source, encodé en UTF-8.
+        Source file, UTF-8 encoded.
 
     Returns
     -------
     Plan
-        Plan reconstruit, certificat compris s'il est présent.
+        The rebuilt plan, certificate included if present.
 
     Raises
     ------
     InvariantViolation
-        Le fichier n'est pas de l'UTF-8, n'est pas du JSON, ou ne respecte pas le
-        schéma déclaré. Un fichier écrit en ISO-8859-1 par un autre outil remontait
-        auparavant en ``UnicodeDecodeError`` nu, hors du domaine d'erreurs du projet
+        The file is not UTF-8, is not JSON, or does not respect the declared schema. A
+        file written in ISO-8859-1 by another tool used to surface as a bare
+        ``UnicodeDecodeError``, outside the error domain of the project
         (`ARCHITECTURE.md` §7).
     """
     try:
-        texte = Path(chemin).read_text(encoding="utf-8")
+        texte = Path(path).read_text(encoding="utf-8")
     except UnicodeDecodeError as cause:
-        raise InvariantViolation((f"{chemin} n'est pas encodé en UTF-8 : {cause}",)) from cause
+        raise InvariantViolation((f"{path} is not UTF-8 encoded: {cause}",)) from cause
     try:
-        donnees = json.loads(texte)
+        data = json.loads(texte)
     except json.JSONDecodeError as cause:
-        raise InvariantViolation((f"{chemin} n'est pas du JSON valide : {cause}",)) from cause
-    if not isinstance(donnees, dict):
-        raise InvariantViolation((f"{chemin} ne contient pas un objet JSON",))
-    return depuis_dict(donnees)
+        raise InvariantViolation((f"{path} is not valid JSON: {cause}",)) from cause
+    if not isinstance(data, dict):
+        raise InvariantViolation((f"{path} does not contain a JSON object",))
+    return from_dict(data)
 
 
-def ecrire(plan: Plan, chemin: Path | str) -> None:
-    r"""Écrire un plan en JSON, clés triées, encodage UTF-8, fin de ligne ``\n``.
+def write(plan: Plan, path: Path | str) -> None:
+    r"""Write a plan as JSON, sorted keys, UTF-8 encoding, ``\n`` line ending.
 
-    Le tri des clés et la fin de ligne fixée ne sont pas cosmétiques : sans eux, deux
-    écritures du même plan donnent des octets différents, et l'empreinte inscrite dans un
-    manifeste cesse d'identifier quoi que ce soit.
+    The sorted keys and the fixed line ending are not cosmetic: without them, two writes
+    of the same plan give different bytes, and the fingerprint recorded in a manifest
+    stops identifying anything.
 
     Parameters
     ----------
     plan : Plan
-        Plan à écrire.
+        Plan to write.
     chemin : Path or str
-        Fichier de destination ; son répertoire parent doit exister.
+        Destination file; its parent directory must exist.
 
     Raises
     ------
     InvariantViolation
-        Le plan contient une valeur non finie (``NaN`` ou infini). C'est typiquement ce
-        que produit un solveur bogué ; ``allow_nan=False`` refuse de l'écrire, et
-        l'erreur est retypée pour rester dans le domaine d'erreurs du projet
-        (`ARCHITECTURE.md` §7) plutôt que de remonter en ``ValueError`` de la
-        bibliothèque standard.
+        The plan contains a non-finite value (``NaN`` or infinity). This is typically what
+        a buggy solver produces; ``allow_nan=False`` refuses to write it, and the error is
+        retyped to stay in the error domain of the project (`ARCHITECTURE.md` §7) rather
+        than surface as a ``ValueError`` of the standard library.
     """
     try:
         texte = json.dumps(
-            vers_dict(plan),
+            to_dict(plan),
             sort_keys=True,
             ensure_ascii=False,
             indent=2,
             allow_nan=False,
         )
     except ValueError as cause:
-        raise InvariantViolation((f"valeur non finie dans le plan : {cause}",)) from cause
-    Path(chemin).write_text(texte + "\n", encoding="utf-8", newline="\n")
+        raise InvariantViolation((f"non-finite value in the plan: {cause}",)) from cause
+    Path(path).write_text(texte + "\n", encoding="utf-8", newline="\n")
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "VERSION_SCHEMA": Alias(SCHEMA_VERSION, "archlux.io.json_io.SCHEMA_VERSION"),
+        "charger": Alias(load, "archlux.io.json_io.load"),
+        "ecrire": Alias(write, "archlux.io.json_io.write"),
+        "vers_dict": Alias(to_dict, "archlux.io.json_io.to_dict"),
+        "depuis_dict": Alias(from_dict, "archlux.io.json_io.from_dict"),
+        "manifeste_vers_dict": Alias(manifest_to_dict, "archlux.io.json_io.manifest_to_dict"),
+    },
+)

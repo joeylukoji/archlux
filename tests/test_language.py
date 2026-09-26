@@ -87,6 +87,8 @@ MIGRATED: tuple[str, ...] = (
     "tests/unites/test_model_aliases.py",
     "tests/unites/test_function_aliases.py",
     "src/archlux/errors.py",
+    "src/archlux/io/json_io.py",
+    "src/archlux/light/protocole.py",
     "tests/test_doctests.py",
     "src/archlux/certify/borne.py",
     "src/archlux/certify/rapport.py",

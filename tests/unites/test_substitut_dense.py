@@ -11,7 +11,7 @@ from archlux.errors import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.appris import MAX_PARAMETRES, SubstitutAppris
 from archlux.light.base import SubstitutDense
-from archlux.light.protocole import Substitut
+from archlux.light.protocole import Surrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
@@ -34,7 +34,7 @@ def _jeu(
         ori = Orientation(deg=deg)
         xs.append(x)
         orients.append(ori)
-        ys.append(_SIM.evaluer(x, ori))
+        ys.append(_SIM.evaluate(x, ori))
     return tuple(xs), np.array(ys), tuple(orients)
 
 
@@ -48,7 +48,7 @@ def _entraine(tmp_path: Path) -> SubstitutAppris:
 
 
 def test_dense_respecte_le_protocole() -> None:
-    assert isinstance(SubstitutDense(), Substitut)
+    assert isinstance(SubstitutDense(), Surrogate)
 
 
 def test_meilleur_que_analytique(tmp_path: Path) -> None:
@@ -57,7 +57,7 @@ def test_meilleur_que_analytique(tmp_path: Path) -> None:
 
     def mae(modele) -> float:
         return float(
-            np.mean([abs(modele.evaluer(x, o) - y) for x, o, y in zip(xs, oris, ys, strict=True)])
+            np.mean([abs(modele.evaluate(x, o) - y) for x, o, y in zip(xs, oris, ys, strict=True)])
         )
 
     assert mae(reseau) < mae(_ANA)
@@ -75,7 +75,7 @@ def test_erreur_stratifiee_par_orientation(tmp_path: Path) -> None:
     errors: dict[str, list[float]] = {nom: [] for nom in noms}
     for x, y, ori in zip(xs, ys, oris, strict=True):
         secteur = noms[int(((ori.deg % 360.0) + 22.5) // 45.0) % 8]
-        errors[secteur].append(abs(reseau.evaluer(x, ori) - y))
+        errors[secteur].append(abs(reseau.evaluate(x, ori) - y))
     for secteur, vals in errors.items():
         if not vals:
             continue

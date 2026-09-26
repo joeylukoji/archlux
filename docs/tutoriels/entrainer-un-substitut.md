@@ -59,7 +59,7 @@ rng = np.random.default_rng(17)
 # xs, ys, orientations : jeu d'entraînement uniquement — jamais la calibration
 xs = tuple(disposition(rng) for _ in range(80))
 orientations = tuple(ax.Orientation(deg=float(d)) for d in rng.uniform(0.0, 360.0, len(xs)))
-ys = np.array([sim.evaluer(x, o) for x, o in zip(xs, orientations, strict=True)])
+ys = np.array([sim.evaluate(x, o) for x, o in zip(xs, orientations, strict=True)])
 
 dense = SubstitutDense(largeur=8)
 dense.ajuster(xs, ys, orientations, seed=17, epoques=30)

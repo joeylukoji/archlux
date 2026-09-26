@@ -8,6 +8,26 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 5, third batch: the surrogate protocol and the JSON module
+
+#### Changed — API (pre-1.0)
+- **Surrogate protocol**, deprecated aliases until 1.0.0 for the classes: `Substitut` is
+  `Surrogate`, `Baies` is `Glazing`, `SubstitutParPiece` is `PerRoomSurrogate`. **The
+  methods and the keyword of the protocol change, with no alias**: `evaluer()` is
+  `evaluate()`, `incertitude()` is `uncertainty()`, `indicateur` is `indicator`,
+  `evaluer_pieces()` is `evaluate_rooms()`, the keyword `baies=` is `glazing=`,
+  `Glazing.murs`, `ouvertures`, `vide` are `walls`, `openings`, `empty`, and
+  `WrapsSurrogate.substitut` is `surrogate`. A user-written surrogate must rename its
+  methods: `isinstance(x, Surrogate)` checks them, and `legalize` raises `TypeError` for an
+  object that still has the French ones.
+- **`archlux.io.json_io`**, aliases until 1.0.0: `charger` is `load`, `ecrire` is `write`,
+  `vers_dict` is `to_dict`, `depuis_dict` is `from_dict`, `manifeste_vers_dict` is
+  `manifest_to_dict`, `VERSION_SCHEMA` is `SCHEMA_VERSION`. The messages of the reader
+  and the writer are in English.
+- The JSON keys stay those of schema v1 and, deliberately, so does the key `indicateur`
+  inside the `.npz` archives of saved surrogates: models saved before this change still
+  load. (A token rename had changed it silently; a test caught it.)
+
 ### Remediation — PLAN.md phase 3.9, wave 5, second batch: English prose of the public core
 
 #### Changed

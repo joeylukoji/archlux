@@ -27,7 +27,7 @@ def test_reseau_predit_mieux_que_analytique() -> None:
         ori = Orientation(deg=float(rng.uniform(0.0, 360.0)))
         xs.append(x)
         oris.append(ori)
-        ys.append(_SIM.evaluer(x, ori))
+        ys.append(_SIM.evaluate(x, ori))
     dense = SubstitutDense()
     dense.ajuster(tuple(xs), np.array(ys), tuple(oris), seed=21, epoques=50, lr=0.12)
     hold_x, hold_y, hold_o = [], [], []
@@ -37,13 +37,13 @@ def test_reseau_predit_mieux_que_analytique() -> None:
         ori = Orientation(deg=float(rng.uniform(0.0, 360.0)))
         hold_x.append(x)
         hold_o.append(ori)
-        hold_y.append(_SIM.evaluer(x, ori))
+        hold_y.append(_SIM.evaluate(x, ori))
 
     def mae(modele) -> float:
         return float(
             np.mean(
                 [
-                    abs(modele.evaluer(x, o) - y)
+                    abs(modele.evaluate(x, o) - y)
                     for x, o, y in zip(hold_x, hold_o, hold_y, strict=True)
                 ]
             )
@@ -66,7 +66,7 @@ def test_point_de_controle_gradient() -> None:
         ori = Orientation(deg=float(rng.uniform(0.0, 360.0)))
         xs.append(x)
         oris.append(ori)
-        ys.append(_SIM.evaluer(x, ori))
+        ys.append(_SIM.evaluate(x, ori))
     dense = SubstitutDense()
     dense.ajuster(tuple(xs), np.array(ys), tuple(oris), seed=8, epoques=50, lr=0.12)
     sud = Orientation(deg=180.0)
@@ -96,7 +96,7 @@ def test_gradient_checkpoint_as_written_on_80_points_at_four_azimuths() -> None:
 
     (train_x, train_o), (test_x, _) = draw(36), draw(80)
     dense = SubstitutDense()
-    ys = np.array([_SIM.evaluer(x, o) for x, o in zip(train_x, train_o, strict=True)])
+    ys = np.array([_SIM.evaluate(x, o) for x, o in zip(train_x, train_o, strict=True)])
     dense.ajuster(tuple(train_x), ys, tuple(train_o), seed=17, epoques=40, lr=0.12)
     for k, azimuth in enumerate((0.0, 90.0, 180.0, 270.0)):
         points = np.stack(test_x[20 * k : 20 * (k + 1)])

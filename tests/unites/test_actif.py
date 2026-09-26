@@ -40,26 +40,26 @@ def test_densite_plus_haute_pres_de_la_reference() -> None:
 class _OracleRegion:
     """Vérité : y = x[0] ; bruit faible près de 0, fort loin (|x[0]| > 2)."""
 
-    indicateur: str = "sDA"
+    indicator: str = "sDA"
 
-    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
-        del orientation, baies
+    def evaluate(self, x: np.ndarray, orientation: Orientation, *, glazing: object = None) -> float:
+        del orientation, glazing
         z = float(np.asarray(x, dtype=float).ravel()[0])
         bruit = 0.05 if abs(z) <= 2.0 else 2.0
         # Déterministe : « bruit » = offset fixe selon la région (reproductible).
         return z + (0.01 if bruit < 1.0 else 1.5)
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> np.ndarray:
         g = np.zeros_like(np.asarray(x, dtype=float).ravel())
         g[0] = 1.0
         return g
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> float:
-        del x, orientation, baies
+        del x, orientation, glazing
         return 1.0
 
 
@@ -67,13 +67,13 @@ class _OracleRegion:
 class _ModeleLocal:
     """Régression constante locale : moyenne des y labellisés proches."""
 
-    indicateur: str = "sDA"
+    indicator: str = "sDA"
     xs: list[np.ndarray] = field(default_factory=list)
     ys: list[float] = field(default_factory=list)
     _sigma: float = 1.0
 
-    def evaluer(self, x: np.ndarray, orientation: Orientation, *, baies: object = None) -> float:
-        del orientation, baies
+    def evaluate(self, x: np.ndarray, orientation: Orientation, *, glazing: object = None) -> float:
+        del orientation, glazing
         if not self.ys:
             return 0.0
         z = float(np.asarray(x, dtype=float).ravel()[0])
@@ -82,15 +82,15 @@ class _ModeleLocal:
         return float(np.average(self.ys, weights=poids))
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> np.ndarray:
         return np.zeros_like(np.asarray(x, dtype=float).ravel())
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: object = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: object = None
     ) -> float:
         """Distance au plus proche labellisé (explore l'inconnu)."""
-        del orientation, baies
+        del orientation, glazing
         if not self.xs:
             return 1.0
         z = float(np.asarray(x, dtype=float).ravel()[0])
@@ -110,7 +110,7 @@ class _ModeleLocal:
         del orientations, seed, epoques, lr
         self.xs = [np.asarray(x, dtype=float).copy() for x in xs]
         self.ys = [float(y) for y in ys]
-        preds = np.array([self.evaluer(x, Orientation(0.0)) for x in self.xs])
+        preds = np.array([self.evaluate(x, Orientation(0.0)) for x in self.xs])
         self._sigma = float(max(np.std(preds - np.asarray(ys)), 0.05))
 
 
@@ -140,10 +140,10 @@ def test_actif_bat_l_aleatoire() -> None:
         modele = _ModeleLocal()
         # Amorçage : 4 points utiles.
         xs0 = tuple(utiles[:4])
-        ys0 = np.array([_OracleRegion().evaluer(x, Orientation(0.0)) for x in xs0])
+        ys0 = np.array([_OracleRegion().evaluate(x, Orientation(0.0)) for x in xs0])
         modele.ajuster(xs0, ys0, tuple(Orientation(0.0) for _ in xs0), seed=0)
         boucle = Loop(
-            substitut=modele,
+            surrogate=modele,
             simulateur=_OracleRegion(),
             acquire=acquire,  # type: ignore[arg-type]
             budget=20,

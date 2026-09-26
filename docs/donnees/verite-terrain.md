@@ -72,7 +72,7 @@ Le seul chemin vers un **vrai sDA₍₃₀₀/₅₀ %₎** au sens IES LM-83.
   existe pour éviter — et c'est ce qui rend l'apprentissage actif (`archlux.active`)
   pertinent plutôt que décoratif.
 - L'extra `sim` du `pyproject.toml` est **vide à dessein** : le moteur se branche
-  derrière `light.simulateur` sans toucher au protocole `Substitut`.
+  derrière `light.simulateur` sans toucher au protocole `Surrogate`.
 
 Ordre de grandeur pour un article : 2 000 à 5 000 plans simulés suffisent à un
 découpage 60/20/20 honnête, avec **n ≥ 500 en calibration** — au niveau α = 0,10,
@@ -152,7 +152,7 @@ est le facteur limitant.
 |---|---|
 | Chargeur WKT → `Plan` (Swiss Dwellings / MSD) | `data/chargeurs.py` (n'existe pas) |
 | Projection ouverture WKT → `(mur_id, s, largeur_rel)` | idem |
-| Adaptateur Radiance derrière `Substitut` | `light/radiance.py`, extra `sim` |
+| Adaptateur Radiance derrière `Surrogate` | `light/radiance.py`, extra `sim` |
 | Transformeur sur jetons | `light/appris.py` — aujourd'hui `_charger_torch` lève toujours |
 | Résultats de couverture sur corpus réel | `resultats/` |
 

@@ -1,4 +1,4 @@
-"""Every surrogate honours the full ``Substitut`` signature (PLAN.md batch 1.3).
+"""Every surrogate honours the full ``Surrogate`` signature (PLAN.md batch 1.3).
 
 ``isinstance(x, Substitut)`` only checks method *names* (``runtime_checkable``), so
 ``Daylight`` passed it while rejecting the ``baies`` keyword that Frank-Wolfe always
@@ -18,63 +18,63 @@ from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.appris import SubstitutAppris
 from archlux.light.base import SubstitutDense
 from archlux.light.objectif import Daylight
-from archlux.light.protocole import Baies, Substitut
+from archlux.light.protocole import Glazing, Surrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers
 
 IMPLEMENTATIONS = (SubstitutAnalytique, SubstitutAppris, SubstitutDense, SplitFluxOracle, Daylight)
-METHODS = ("evaluer", "gradient", "incertitude")
+METHODS = ("evaluate", "gradient", "uncertainty")
 
 
 @pytest.mark.parametrize("cls", IMPLEMENTATIONS, ids=lambda c: c.__name__)
 @pytest.mark.parametrize("method", METHODS)
 def test_every_method_accepts_the_protocol_keywords(cls: type, method: str) -> None:
     """Same positional parameters as the protocol, and ``baies`` keyword-only, optional."""
-    expected = inspect.signature(getattr(Substitut, method)).parameters
+    expected = inspect.signature(getattr(Surrogate, method)).parameters
     actual = inspect.signature(getattr(cls, method)).parameters
     assert list(actual)[:3] == list(expected)[:3], f"{cls.__name__}.{method} positional"
-    baies = actual.get("baies")
-    assert baies is not None, f"{cls.__name__}.{method} has no 'baies' parameter"
-    assert baies.kind is inspect.Parameter.KEYWORD_ONLY
-    assert baies.default is None
+    glazing = actual.get("glazing")
+    assert glazing is not None, f"{cls.__name__}.{method} has no 'baies' parameter"
+    assert glazing.kind is inspect.Parameter.KEYWORD_ONLY
+    assert glazing.default is None
 
 
 class _Recorder:
     """A surrogate that records the ``baies`` it receives."""
 
-    indicateur = "sDA"
+    indicator = "sDA"
 
     def __init__(self) -> None:
         self.seen: list[object] = []
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        self.seen.append(baies)
+        self.seen.append(glazing)
         return float(np.sum(x))
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        self.seen.append(baies)
+        self.seen.append(glazing)
         return np.ones_like(x)
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        self.seen.append(baies)
+        self.seen.append(glazing)
         return 1.0 + 0.01 * float(np.sum(x))
 
 
 def test_daylight_forwards_the_glazing_to_the_wrapped_surrogate() -> None:
     inner = _Recorder()
     objective = Daylight(inner, q_chapeau=1.5)
-    glazing = Baies(murs=(), ouvertures=())
+    glazing = Glazing(walls=(), openings=())
     x, orientation = np.ones(8), Orientation(deg=0.0)
-    objective.evaluer(x, orientation, baies=glazing)
-    objective.gradient(x, orientation, baies=glazing)
-    objective.incertitude(x, orientation, baies=glazing)
+    objective.evaluate(x, orientation, glazing=glazing)
+    objective.gradient(x, orientation, glazing=glazing)
+    objective.uncertainty(x, orientation, glazing=glazing)
     assert inner.seen and all(seen is glazing for seen in inner.seen)
 
 

@@ -114,7 +114,7 @@ def test_the_orientation_is_circular_with_walls_and_minimum_areas(
             outcomes.append(type(error))
             continue
         assert checkers.violations(result, ctx) == []
-        outcomes.append(ANALYTIC.evaluer(vectoriser(result, index), Orientation(deg=theta)))
+        outcomes.append(ANALYTIC.evaluate(vectoriser(result, index), Orientation(deg=theta)))
     first, second = outcomes
     if isinstance(first, float) and isinstance(second, float):
         assert first == pytest.approx(second, rel=1e-9, abs=1e-9)

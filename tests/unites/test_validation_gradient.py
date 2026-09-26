@@ -22,9 +22,9 @@ def test_analytique_est_coherent_avec_ses_differences_finies() -> None:
 
 def test_gradient_faux_leve_substitut_invalide() -> None:
     class Faux:
-        indicateur = "sDA"
+        indicator = "sDA"
 
-        def evaluer(self, x, orientation):
+        def evaluate(self, x, orientation):
             del orientation
             return float(np.sum(x))
 
@@ -32,7 +32,7 @@ def test_gradient_faux_leve_substitut_invalide() -> None:
             del orientation
             return np.ones_like(x) * 7.0
 
-        def incertitude(self, x, orientation):
+        def uncertainty(self, x, orientation):
             del x, orientation
             return 0.08
 
@@ -45,8 +45,8 @@ def test_a_failed_check_carries_its_report() -> None:
     from archlux.light.analytique import SubstitutAnalytique
 
     class Negated(SubstitutAnalytique):
-        def gradient(self, x, orientation, *, baies=None):  # type: ignore[no-untyped-def]
-            return -super().gradient(x, orientation, baies=baies)
+        def gradient(self, x, orientation, *, glazing=None):  # type: ignore[no-untyped-def]
+            return -super().gradient(x, orientation, glazing=glazing)
 
     with pytest.raises(InvalidSurrogate) as capture:
         valider_gradient(Negated(), X, NORD, seed=17, reference=SubstitutAnalytique())
