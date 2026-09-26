@@ -67,4 +67,4 @@ def test_mypy_sees_the_lazy_packages(tmp_path: Path) -> None:
         check=False,
     )
     assert "error" not in result.stdout, result.stdout
-    assert "def (programme: archlux.types.Plan" in result.stdout, result.stdout
+    assert "def (program: archlux.types.Plan" in result.stdout, result.stdout

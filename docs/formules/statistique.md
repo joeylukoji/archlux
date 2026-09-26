@@ -71,7 +71,7 @@ de `np.quantile(s, 0.90)` seul.
 | Calibrer **après** le gel, sur un jeu jamais vu à l'entraînement | Lire `calibration/` pendant `ajuster` des poids |
 | Afficher `n_calibration` à côté de la borne | Publier \(\hat\sigma\) du réseau comme si c'était \(1-\alpha\) |
 | Un calibrateur par indicateur, ASE en `<=` | Réutiliser le \(q̂\) du sDA pour l'ASE |
-| `NON EVALUABLE` si le test d'échangeabilité rejette | Élargir silencieusement l'intervalle |
+| `NOT EVALUABLE` si le test d'échangeabilité rejette | Élargir silencieusement l'intervalle |
 
 ## Source
 

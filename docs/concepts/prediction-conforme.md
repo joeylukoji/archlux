@@ -34,7 +34,7 @@ couverture n'est pas garantie et le rapport ne l'annonce pas). `legalize` rend
 toujours `"selected"`. Une procédure valide sous sélection (sélection conforme,
 Jin & Candès 2023 ; conforme pondéré, Fannjiang et al. 2022) est prévue en phase
 6.4 du plan. Pour un plan échangeable, si un test d'échangeabilité rejette,
-`construire_borne` rend `None` et le certificat porte `NON EVALUABLE`.
+`build_bound` rend `None` et le certificat porte `NOT EVALUABLE`.
 
 ## Sens des indicateurs
 

@@ -120,7 +120,7 @@ substitut surestime le plus (malédiction du vainqueur), donc la couverture
 nominale n'est **pas** garantie. Le rapport le dit. Pour publier une couverture,
 réévaluer le plan avec l'oracle.
 
-## 4. Dérive et `NON EVALUABLE`
+## 4. Dérive et `NOT EVALUABLE`
 
 Les scores de production sont ceux de plans rendus après calibration, une fois leur
 vraie valeur connue : \(|y - \hat{y}| / \hat{\sigma}\), comme à l'ajustement.
@@ -139,7 +139,7 @@ scores_production = np.array(
 )
 derive = controler_derive(scores_production, cal.snapshot(), seed=17)
 certificat_borne = build_bound(
-    prediction, cal.snapshot(), derive, incertitude=sigma, regime="exchangeable"
+    prediction, cal.snapshot(), derive, uncertainty=sigma, regime="exchangeable"
 )
 ```
 
@@ -152,14 +152,14 @@ derive_forte = controler_derive(3.0 * scores_production, cal.snapshot(), seed=17
 assert not derive_forte.echangeable
 assert (
     build_bound(
-        prediction, cal.snapshot(), derive_forte, incertitude=sigma, regime="exchangeable"
+        prediction, cal.snapshot(), derive_forte, uncertainty=sigma, regime="exchangeable"
     )
     is None
 )
 ```
 
-Si `derive.echangeable` est faux, `construire_borne` rend `None` : le rapport
-écrit `NON EVALUABLE` plutôt qu'un intervalle. L'inverse ne vaut pas preuve :
+Si `derive.echangeable` est faux, `build_bound` rend `None` : le rapport
+écrit `NOT EVALUABLE` plutôt qu'un intervalle. L'inverse ne vaut pas preuve :
 `echangeable=True` signifie « dérive non détectée », et à faible effectif le test
 n'a presque aucune puissance.
 

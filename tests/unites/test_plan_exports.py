@@ -73,7 +73,7 @@ def test_to_ifc_reports_a_pathological_plan_without_writing(tmp_path: Path) -> N
 @pytest.mark.parametrize("as_text", [True, False])
 def test_to_svg_accepts_str_and_path(tmp_path: Path, as_text: bool) -> None:
     target = tmp_path / "plan.svg"
-    sound_plan().to_svg(str(target) if as_text else target, titre="essai")
+    sound_plan().to_svg(str(target) if as_text else target, title="essai")
     assert target.read_text(encoding="utf-8").startswith("<svg")
 
 

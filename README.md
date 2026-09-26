@@ -214,7 +214,7 @@ is most optimistic, and the nominal 90 % coverage no longer holds (winner's curs
 report says so:
 
 ```text
-PERFORMANCE                        [PREDICTION — plan selectionne, couverture NON garantie]
+PERFORMANCE                        [PREDICTION: selected plan, coverage NOT guaranteed]
 ```
 
 A guaranteed coverage needs a plan exchangeable with the calibration set, for instance
@@ -405,16 +405,16 @@ start plan reads (the report text is still in French):
 ```text
 CERTIFICAT                              archlux 0.10.0.dev0
 
-GEOMETRIE                                       [EXACT]
-  Chevauchement          aucun         verifie
+GEOMETRY                                        [EXACT]
+  Overlap                none          verified
   Jours                  aucun         verifie
   Surfaces minimales     ok            verifie
   Structure preservee    oui           verifie
   Deplacement maximal    0,05 m
 ```
 
-It then prints the daylight section (`[PREDICTION — couverture 90 %]` for an
-exchangeable plan, `couverture NON garantie` for a selected one, `NON EVALUABLE`
+It then prints the daylight section (`[PREDICTION: coverage 90 %]` for an
+exchangeable plan, `couverture NON garantie` for a selected one, `NOT EVALUABLE`
 without calibration), the dual diagnosis, and an out-of-scope section (summer comfort,
 building services, materials). "Structure preservee" is checked since batch 1.1: no
 room interior contains a stretch of a load-bearing wall. The maximum displacement is a

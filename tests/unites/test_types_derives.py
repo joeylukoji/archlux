@@ -62,7 +62,7 @@ class TestOuvertureDegeneree:
         """Une direction indéfinie doit lever, jamais rendre des ``NaN`` silencieux."""
         mur = Wall(id="m", a=(2.0, 2.0), b=(2.0, 2.0))
         baie = Opening(id="f", wall_id="m", s=0.5, relative_width=0.5)
-        with pytest.raises(InvariantViolation, match="longueur nulle"):
+        with pytest.raises(InvariantViolation, match="zero length"):
             baie.absolute_segment(mur)
 
 
@@ -84,7 +84,7 @@ class TestCertificat:
         texte = certificat.report()
         assert "[EXACT]" in texte
         assert "[PREDICTION" in texte
-        assert "NON EVALUABLE" in texte
+        assert "NOT EVALUABLE" in texte
 
 
 class TestExceptions:

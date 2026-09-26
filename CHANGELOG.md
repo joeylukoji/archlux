@@ -8,6 +8,21 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 5, second batch: English prose of the public core
+
+#### Changed
+- `types`, `api`, the package root, `feasibility`, `certify.rapport` and `certify.borne`
+  are fully in English: docstrings, comments, error messages.
+- **The text of the certificate report is in English**: `GEOMETRY`, `Overlap`, `Gaps`,
+  `verified`, `NOT EVALUABLE`, `[PREDICTION: coverage 90 %]`, decimal point instead of
+  decimal comma. Code that matches the French text of `Certificate.report()` must change;
+  documentation and tests were updated.
+- Parameters: `build_bound(value, calibration, drift, *, uncertainty, regime)` (was
+  `valeur`, `derive`, `incertitude`), `is_feasible(program, ...)` (was `programme`),
+  `Plan.to_svg(path, title=...)`, `translate_duals(..., threshold=...)`.
+- `tests/test_doctests.py` runs the `>>>` examples of every module: six examples had
+  rotted after the renames (`Piece(...)`, `pieces=`) and were repaired.
+
 ### Remediation — PLAN.md phase 3.9, wave 5, first batch: public methods and functions
 
 #### Changed — API (pre-1.0)

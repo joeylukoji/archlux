@@ -137,9 +137,9 @@ Les plans produits par un optimiseur sont *sélectionnés* pour maximiser la
 prédiction : la couverture réelle sous cette sélection est une question de
 recherche ouverte, mesurée et publiée par le projet (dérive, banc d'essai).
 Le certificat le dit : la borne d'un plan rendu par `legalize` porte
-`regime="selected"`, et le rapport écrit « couverture NON garantie » au lieu d'un
+`regime="selected"`, et le rapport écrit « coverage NOT guaranteed » au lieu d'un
 pourcentage. Pour un plan échangeable, si la dérive est détectée, le certificat
-affiche `NON EVALUABLE` plutôt qu'un intervalle trompeur.
+affiche `NOT EVALUABLE` plutôt qu'un intervalle trompeur.
 
 ## Load-bearing structure: what is and is not certified
 
@@ -155,9 +155,9 @@ and the solver keeps every room on its side of each wall. It does not certify mo
 - Each room keeps **one** side of each wall, read from the proposed plan: a valid
   arrangement on another side of a partial wall is not explored.
 
-## `NON EVALUABLE`
+## `NOT EVALUABLE`
 
-Le champ **`NON EVALUABLE`** couvre les articles dont la vérification exige une
+Le champ **`NOT EVALUABLE`** couvre les articles dont la vérification exige une
 information absente du plan — matériaux, systèmes techniques, confort d'été —
 ou une interprétation réglementaire. Ce n'est pas un oubli de calcul : c'est un
 refus explicite d'inventer une couverture.

@@ -209,12 +209,12 @@ def render(
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
+    >>> from archlux.types import Plan, Room
     >>> plan = Plan(
-    ...     pieces=(Piece(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),),
-    ...     murs=(), ouvertures=(), contour=(),
+    ...     rooms=(Room(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),),
+    ...     walls=(), openings=(), outline=(),
     ... )
-    >>> rendre(plan, titre="essai").startswith("<svg")
+    >>> render(plan, titre="essai").startswith("<svg")
     True
     """
     vise = contour or plan.outline
@@ -257,11 +257,11 @@ def comparer(
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
-    >>> a = Plan(pieces=(Piece(id="p", type="salon", x=0.0, y=0.0, w=4.0, h=3.0),),
-    ...          murs=(), ouvertures=(), contour=())
-    >>> b = Plan(pieces=(Piece(id="p", type="salon", x=0.0, y=0.0, w=2.0, h=3.0),),
-    ...          murs=(), ouvertures=(), contour=())
+    >>> from archlux.types import Plan, Room
+    >>> a = Plan(rooms=(Room(id="p", type="salon", x=0.0, y=0.0, w=4.0, h=3.0),),
+    ...          walls=(), openings=(), outline=())
+    >>> b = Plan(rooms=(Room(id="p", type="salon", x=0.0, y=0.0, w=2.0, h=3.0),),
+    ...          walls=(), openings=(), outline=())
     >>> svg = comparer(a, b)
     >>> svg.count("<rect") >= 4        # deux cadres, deux pièces
     True
@@ -308,11 +308,11 @@ def planche(
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
+    >>> from archlux.types import Plan, Room
     >>> plans = tuple(
-    ...     (Plan(pieces=(Piece(id="p", type="salon", x=float(k), y=0.0,
+    ...     (Plan(rooms=(Room(id="p", type="salon", x=float(k), y=0.0,
     ...                        w=3.0, h=2.0),),
-    ...           murs=(), ouvertures=(), contour=()), f"{k}°")
+    ...           walls=(), openings=(), outline=()), f"{k}°")
     ...     for k in range(3)
     ... )
     >>> planche(plans, colonnes=2).startswith("<svg")

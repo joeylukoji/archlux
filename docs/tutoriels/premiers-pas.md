@@ -39,7 +39,7 @@ print(q.certificate.report())
 ```
 
 `legalize` renvoie un plan **prouvé** valide (pavage, surfaces, porteurs).
-La section `[PREDICTION]` du rapport reste `NON EVALUABLE` tant qu'aucune
+La section `[PREDICTION]` du rapport reste `NOT EVALUABLE` tant qu'aucune
 calibration conforme n'a été attachée.
 
 ## Charger depuis un fichier

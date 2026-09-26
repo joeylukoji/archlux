@@ -405,8 +405,13 @@ def decision_vector(plan: Plan) -> VecteurF:
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
-    >>> plan = Plan((Piece("b", "x", 6, 0, 6, 9), Piece("a", "x", 0, 0, 6, 9)), (), (), ())
+    >>> from archlux.types import Plan, Room
+    >>> plan = Plan(
+    ...     rooms=(
+    ...         Room(id="b", type="x", x=6, y=0, w=6, h=9),
+    ...         Room(id="a", type="x", x=0, y=0, w=6, h=9),
+    ...     )
+    ... )
     >>> decision_vector(plan).tolist()
     [0.0, 0.0, 6.0, 9.0, 6.0, 0.0, 6.0, 9.0]
     """

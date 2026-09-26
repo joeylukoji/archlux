@@ -49,7 +49,7 @@ With `legalize(..., calibration=...)`, the surrogate's prediction at the returne
 plan is bounded by `certify.borne.bound_selected_plan`, in the **selected** regime:
 the optimizer chose the plan, so the nominal coverage is not guaranteed and the report
 says so. The calibration is checked before any solving. Sans calibration,
-`performance is None` et le rapport écrit `NON EVALUABLE`.
+`performance is None` et le rapport écrit `NOT EVALUABLE`.
 
 ## Cas d'utilisation
 

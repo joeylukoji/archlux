@@ -97,10 +97,10 @@ def _sentence(description: str, price: float, *, objective: str, step_m: float) 
 
 
 def translate_duals(
-    duaux: VecteurF,
+    duals: VecteurF,
     poly: Polytope,
     *,
-    seuil: float = 1e-6,
+    threshold: float = 1e-6,
     n_max: int = 10,
     objective: str = "displacement",
     step_m: float = 0.10,
@@ -132,16 +132,16 @@ def translate_duals(
         gives the change for ``step_m`` and states its local validity. Rows of the L1
         epigraph are never reported.
     """
-    vecteur = np.asarray(duaux, dtype=float).ravel()
-    paires: list[tuple[str, float]] = []
-    for libelle, brut in zip(poly.origines, vecteur, strict=True):
-        prix = float(brut)
-        description = describe_origin(libelle)
-        if abs(prix) <= seuil or description is None:
+    vector = np.asarray(duals, dtype=float).ravel()
+    pairs: list[tuple[str, float]] = []
+    for label, raw in zip(poly.origines, vector, strict=True):
+        price = float(raw)
+        description = describe_origin(label)
+        if abs(price) <= threshold or description is None:
             continue
-        paires.append((_sentence(description, prix, objective=objective, step_m=step_m), prix))
-    paires.sort(key=lambda paire: -abs(paire[1]))
-    return tuple(paires[:n_max])
+        pairs.append((_sentence(description, price, objective=objective, step_m=step_m), price))
+    pairs.sort(key=lambda pair: -abs(pair[1]))
+    return tuple(pairs[:n_max])
 
 
 __getattr__ = lazy_aliases(

@@ -93,13 +93,13 @@ def test_only_an_exchangeable_plan_has_a_guaranteed_coverage() -> None:
 
 def test_the_report_claims_the_coverage_of_an_exchangeable_plan() -> None:
     text = Certificate(geometry=_proof(), performance=_bound()).report()
-    assert "[PREDICTION — couverture 90 %]" in text
+    assert "[PREDICTION: coverage 90 %]" in text
 
 
 def test_the_report_never_claims_the_coverage_of_a_selected_plan() -> None:
     text = Certificate(geometry=_proof(), performance=_bound(regime="selected")).report()
-    assert "couverture 90 %]" not in text
-    assert "couverture NON garantie" in text
+    assert "coverage 90 %]" not in text
+    assert "coverage NOT guaranteed" in text
     assert "oracle" in text
 
 
@@ -171,7 +171,7 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
     mu, _ = point_prediction(objective, x, CONTEXTE_DEFAUT.orientation)
     assert bound.value == pytest.approx(mu, rel=1e-6)
-    assert "couverture NON garantie" in result.certificate.report()
+    assert "coverage NOT guaranteed" in result.certificate.report()
 
 
 def test_legalize_without_calibration_claims_no_performance() -> None:

@@ -90,12 +90,12 @@ def test_certificat_separe_les_natures() -> None:
     ).report()
     assert "[EXACT]" in texte and "[PREDICTION" in texte
     assert "1284" in texte
-    assert "NON EVALUABLE" in texte
+    assert "NOT EVALUABLE" in texte
 
 
 def test_non_evaluable_toujours_present() -> None:
     texte = Certificate(geometry=_preuve()).report()
-    assert "NON EVALUABLE" in texte
+    assert "NOT EVALUABLE" in texte
     assert "[PREDICTION" in texte
 
 
@@ -109,9 +109,9 @@ def test_construire_borne_refuse_la_derive() -> None:
         n_observations=20,
         message="dérive",
     )
-    assert build_bound(50.0, calibration, derive, incertitude=1.0, regime="exchangeable") is None
+    assert build_bound(50.0, calibration, derive, uncertainty=1.0, regime="exchangeable") is None
     ok = DiagnosticDerive(True, 0.05, 0.05, 20, "ok")
-    borne = build_bound(50.0, calibration, ok, incertitude=1.0, regime="exchangeable")
+    borne = build_bound(50.0, calibration, ok, uncertainty=1.0, regime="exchangeable")
     assert borne is not None
     assert borne.n_calibration == 40
 

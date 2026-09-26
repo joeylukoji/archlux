@@ -1,4 +1,4 @@
-"""Faisabilité géométrique d'un programme (preuve exacte, sans lumière)."""
+"""Geometric feasibility of a program (exact proof, no daylight)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ __all__ = ["FeasibilityCertificate", "Verdict", "is_feasible"]
 
 @dataclass(frozen=True, slots=True)
 class FeasibilityCertificate:
-    """Preuve d'inexistence (Farkas), never probabilistic.
+    """Proof of non-existence (Farkas), never probabilistic.
 
     Exact when ``verified`` is True: the certificate was checked in rational arithmetic
     (:func:`archlux.certify.farkas.verify_infeasibility`). It is about the relative order
@@ -28,7 +28,7 @@ class FeasibilityCertificate:
     """Restrictions beyond the relative order the proof is about (``Infeasible.scope``)."""
 
     def explain(self) -> str:
-        """Rendre le conflit en une phrase lisible."""
+        """Render the conflict as one readable sentence."""
         status = {
             True: " Certificate verified exactly.",
             False: " Certificate NOT verified: treat as a solver diagnosis, not a proof.",
@@ -46,63 +46,63 @@ class FeasibilityCertificate:
 
 @dataclass(frozen=True, slots=True)
 class Verdict:
-    """Réponse de :func:`is_feasible`."""
+    """Answer of :func:`is_feasible`."""
 
     feasible: bool
     certificate: FeasibilityCertificate | None = None
 
     def __bool__(self) -> bool:
-        """``True`` ssi le programme admet au moins un plan valide."""
+        """``True`` if and only if the program admits at least one valid plan."""
         return self.feasible
 
 
-def _legalize_any_dimensions(programme: Plan, ctx: Context) -> None:
+def _legalize_any_dimensions(program: Plan, ctx: Context) -> None:
     """Legalize, closing a gap of the proposal with the tiling grid if needed.
 
     The program is not asked to keep its dimensions: a gap in the proposal is not a
     reason to refuse. The retry adds the tiling grid to the scope of any refusal.
     """
     try:
-        legalize(programme, ctx)
+        legalize(program, ctx)
     except GapNeedsTiling:
-        legalize(programme, ctx, pavage=True)
+        legalize(program, ctx, pavage=True)
 
 
-def is_feasible(programme: Plan, structure: Structure, ctx: Context) -> Verdict:
-    """Décider si un programme (ordre relatif fixé) admet un plan valide.
+def is_feasible(program: Plan, structure: Structure, ctx: Context) -> Verdict:
+    """Decide whether a program (relative order fixed) admits a valid plan.
 
     Parameters
     ----------
-    programme : Plan
-        Identités, types et disposition proposée ; l'**ordre relatif** est déduit.
-        Les cotes ne sont pas un objectif à préserver (contrairement à ``legalize``).
+    program : Plan
+        Identities, types and proposed layout; the **relative order** is deduced. The
+        dimensions are not an objective to preserve (unlike in ``legalize``).
     structure : Structure
-        Remplace ``ctx.structure`` pour cette requête.
-    ctx : Contexte
-        Contour et référentiel. L'orientation n'entre pas dans la décision géométrique.
+        Replaces ``ctx.structure`` for this query.
+    ctx : Context
+        Outline and regulation. The orientation plays no part in the geometric decision.
 
     Returns
     -------
     Verdict
-        ``faisable`` exact ; si faux, ``certificat.expliquer()`` cite les origines Farkas.
+        ``feasible`` is exact; if false, ``certificate.explain()`` cites the Farkas origins.
 
     Raises
     ------
     InvalidInput
         Malformed argument (non-finite size, duplicate ids, ...), before any solving.
     InconsistentOrder, MissingSeparation
-        Entrée mal formée (propagées depuis la construction du graphe).
+        Malformed input (propagated from the construction of the graph).
     UnsupportedInput
         An oblique load-bearing wall (propagated from :func:`archlux.legalize`).
 
     Guarantees
     ----------
-    - Géométrique : **exacte** (même oracle LP / Farkas que ``legalize``).
-    - Performance : **aucune** — ce module ne parle pas de lumière.
+    - Geometric: **exact** (same LP / Farkas oracle as ``legalize``).
+    - Performance: **none**; this module says nothing about daylight.
     """
-    contexte = replace(ctx, structure=structure)
+    context = replace(ctx, structure=structure)
     try:
-        _legalize_any_dimensions(programme, contexte)
+        _legalize_any_dimensions(program, context)
     except Infeasible as err:
         return Verdict(
             feasible=False,
