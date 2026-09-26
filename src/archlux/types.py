@@ -17,7 +17,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final, Literal
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput, InvariantViolation
@@ -542,18 +543,20 @@ class Certificate:
         return rendre(self)
 
 
-DEPRECATED_NAMES = {
-    "Piece": "Room",
-    "Mur": "Wall",
-    "Ouverture": "Opening",
-    "Contexte": "Context",
-    "Referentiel": "Regulation",
-    "Certificat": "Certificate",
-    "PreuveGeometrique": "GeometricProof",
-    "BornePerformance": "PerformanceBound",
-    "Manifeste": "Manifest",
-    "ModeleTrace": "ModelTrace",
-}
+DEPRECATED_NAMES: Final = MappingProxyType(
+    {
+        "Piece": "Room",
+        "Mur": "Wall",
+        "Ouverture": "Opening",
+        "Contexte": "Context",
+        "Referentiel": "Regulation",
+        "Certificat": "Certificate",
+        "PreuveGeometrique": "GeometricProof",
+        "BornePerformance": "PerformanceBound",
+        "Manifeste": "Manifest",
+        "ModeleTrace": "ModelTrace",
+    }
+)
 """Former French names of the model classes, kept as deprecated aliases until 1.0.0 (ADR 0001,
 PLAN.md 3.9 wave 2). Not part of ``__all__``."""
 

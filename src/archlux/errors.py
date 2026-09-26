@@ -10,6 +10,9 @@ of every layer.
 
 from __future__ import annotations
 
+from types import MappingProxyType
+from typing import Final
+
 __all__ = [
     "ArchluxError",
     "CalibrationLocked",
@@ -287,14 +290,16 @@ class GridNotRecoverable(UnsupportedInput):
         )
 
 
-DEPRECATED_NAMES = {
-    "OrdreIncoherent": "InconsistentOrder",
-    "SeparationManquante": "MissingSeparation",
-    "Infaisable": "Infeasible",
-    "InvariantViole": "InvariantViolation",
-    "CalibrationVerrouillee": "CalibrationLocked",
-    "ModeleModifie": "ModelModified",
-    "SubstitutInvalide": "InvalidSurrogate",
-}
+DEPRECATED_NAMES: Final = MappingProxyType(
+    {
+        "OrdreIncoherent": "InconsistentOrder",
+        "SeparationManquante": "MissingSeparation",
+        "Infaisable": "Infeasible",
+        "InvariantViole": "InvariantViolation",
+        "CalibrationVerrouillee": "CalibrationLocked",
+        "ModeleModifie": "ModelModified",
+        "SubstitutInvalide": "InvalidSurrogate",
+    }
+)
 """Former French names of the exceptions, kept as deprecated aliases until 1.0.0 (ADR 0001,
 PLAN.md 3.9 wave 1). Not part of ``__all__``."""

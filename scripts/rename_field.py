@@ -234,7 +234,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("class_name")
     parser.add_argument("paths", nargs="+", type=Path)
     parser.add_argument("--field", action="append", default=[], required=True, metavar="OLD=NEW")
-    parser.add_argument("--apply", action="store_true", help="write the files")
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="write the files (without it, the class is renamed and restored to count places)",
+    )
     parser.add_argument("--no-config", action="store_true", help="ignore the mypy configuration")
     args = parser.parse_args(argv)
     mapping = _parse_fields(args.field)
@@ -269,7 +273,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _dry_run_count(args: argparse.Namespace, mapping: dict[str, str]) -> int:
-    """How many places would be fixed, by renaming in a scratch copy of the class only."""
+    """How many places would be fixed, by renaming the class **in place**, then undoing it.
+
+    The count needs mypy to see the renamed class, and mypy resolves ``archlux`` from the
+    real tree, so a copy would not do: the files are edited for the length of the run and
+    restored in a ``finally``. Interrupt it with care.
+    """
     rename_in_class(args.paths, args.class_name, mapping, apply=True)
     try:
         output = _run_mypy(args.paths, no_config=args.no_config)
