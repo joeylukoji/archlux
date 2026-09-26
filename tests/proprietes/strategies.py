@@ -17,7 +17,7 @@ from typing import Any
 import numpy as np
 from hypothesis import strategies as st
 
-from archlux.geom.graphe import OrdreRelatif
+from archlux.geom.graphe import RelativeOrder
 from archlux.types import (
     REGIMES,
     Certificate,
@@ -297,7 +297,7 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
 
 
 @st.composite
-def ordres_valides(draw: st.DrawFn, max_pieces: int = 6) -> OrdreRelatif:
+def ordres_valides(draw: st.DrawFn, max_pieces: int = 6) -> RelativeOrder:
     """Ordres relatifs acycliques dont toute paire est séparée.
 
     Construit **sans réutiliser ``deduire_ordre``** : deux rangs totaux tirés au hasard,
@@ -326,10 +326,10 @@ def ordres_valides(draw: st.DrawFn, max_pieces: int = 6) -> OrdreRelatif:
         else:
             vertical.append((a, b) if rang_y[a] < rang_y[b] else (b, a))
 
-    return OrdreRelatif(
+    return RelativeOrder(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
-        pieces=tuple(sorted(identifiants)),
+        rooms=tuple(sorted(identifiants)),
     )
 
 

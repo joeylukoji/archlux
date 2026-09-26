@@ -56,7 +56,7 @@ Une pièce en L = deux rectangles + une contrainte les rendant solidaires.
 
 ```python
 @dataclass(frozen=True)
-class PieceRectilineaire:
+class RectilinearRoom:
     id: str
     rectangles: tuple[Room, ...]          # 2 à 4
     fusions: tuple[tuple[int, int, str], ...]   # (i, j, "partage_bord_droit")
@@ -72,7 +72,7 @@ class PieceRectilineaire:
 ```python
 @given(poly=polygones_rectilineaires())
 def test_decomposition_recompose(poly):
-    assert recomposer(decomposer(poly)).equals(poly)
+    assert recompose(decompose(poly)).equals(poly)
 
 @given(plan=plans_avec_pieces_en_L())
 def test_validite_preservee(plan):

@@ -8,8 +8,8 @@ import pytest
 import archlux
 from archlux.api import gradient_distance
 from archlux.errors import Infeasible
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, etendre_ecarts_l1, vectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, extend_l1_slack, vectorize
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
@@ -121,9 +121,9 @@ def test_polytope_sans_piece_tolere_une_enveloppe_etroite() -> None:
         regulation=Regulation(min_areas=(), min_width=4.0),
     )
     vide = Plan(rooms=(), walls=(), openings=(), outline=ctx.outline)
-    poly = construire_polytope(deduire_ordre(vide), ctx)
+    poly = build_polytope(deduce_order(vide), ctx)
     assert poly.index == {}
-    assert poly.bornes == ()
+    assert poly.bounds == ()
 
 
 def test_objective_invalide_leve_typeerror() -> None:
@@ -228,8 +228,8 @@ def test_etendre_l1_double_les_variables() -> None:
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
     )
-    poly = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT)
-    x = vectoriser(plan, poly.index)
-    etendu = etendre_ecarts_l1(poly, x)
+    poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
+    x = vectorize(plan, poly.index)
+    etendu = extend_l1_slack(poly, x)
     assert len(etendu.index) == 2 * len(poly.index)
     assert etendu.A.shape[1] == 2 * len(poly.index)

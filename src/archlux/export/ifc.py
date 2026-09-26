@@ -9,7 +9,7 @@ from pathlib import Path
 
 from archlux._version import __version__
 from archlux.errors import ArchluxError
-from archlux.export.pathologie import diagnostiquer
+from archlux.export.pathologie import diagnose
 from archlux.types import Plan
 
 __all__ = ["RapportExport", "to_ifc"]
@@ -57,7 +57,7 @@ def to_ifc(plan: Plan, chemin: Path | str, *, validate: bool = True) -> RapportE
         ``find_spec``, alors qu'aucune ligne du fichier n'en venait.
     """
     chemin = Path(chemin)
-    diag = diagnostiquer(plan)
+    diag = diagnose(plan)
     if validate and not diag.exportable:
         return RapportExport(
             valide=False,

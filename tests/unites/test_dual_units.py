@@ -23,9 +23,9 @@ def polytope(labels: tuple[str, ...]) -> Polytope:
         b=np.ones(n),
         A_eq=sparse.csr_matrix((0, n)),
         b_eq=np.zeros(0),
-        bornes=((0.0, 1.0),) * n,
+        bounds=((0.0, 1.0),) * n,
         index={f"v{k}": k for k in range(n)},
-        origines=labels,
+        origins=labels,
     )
 
 

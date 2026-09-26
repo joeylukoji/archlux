@@ -21,8 +21,8 @@ from shapely.geometry import Polygon
 import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.errors import Infeasible
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.rectilineaire import decomposer
+from archlux.geom.graphe import deduce_order
+from archlux.geom.rectilineaire import decompose
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
@@ -138,8 +138,8 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
         structure=Structure(load_bearing_walls=(wall,)),
         regulation=Regulation(min_areas=(("kitchen", 10.0),), min_width=1.0),
     )
-    room = decomposer(
-        Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", type_piece="kitchen"
+    room = decompose(
+        Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", room_type="kitchen"
     )
     rest = (
         Room(id="r1", type="living", x=4.0, y=0.0, w=8.0, h=2.0),
@@ -155,7 +155,7 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
 
 def test_each_member_of_an_l_keeps_its_own_side_when_none_are_opposite() -> None:
     plan, ctx, (bar, foot) = _l_beside_a_partial_wall()
-    ordre = deduire_ordre(plan, ctx.structure, groups=((bar, foot),))
+    ordre = deduce_order(plan, ctx.structure, groups=((bar, foot),))
     sides = {ws.room: ws.side for ws in ordre.wall_sides}
     assert sides[bar] == "left"
     assert sides[foot] == "below"
@@ -163,8 +163,8 @@ def test_each_member_of_an_l_keeps_its_own_side_when_none_are_opposite() -> None
 
 def test_legalize_leaves_a_valid_l_beside_a_partial_wall_in_place() -> None:
     plan, ctx, _ = _l_beside_a_partial_wall()
-    room = decomposer(
-        Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", type_piece="kitchen"
+    room = decompose(
+        Polygon([(0, 0), (4, 0), (4, 2), (2, 2), (2, 4), (0, 4)]), id="l", room_type="kitchen"
     )
     assert not checkers.violations(plan, ctx, fusions=(room,)), "the input must be valid"
     result = archlux.legalize(plan, ctx, fusions=(room,))
@@ -181,7 +181,7 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
 
     Frank-Wolfe meets the ends (the L degenerates into a rectangle): the non-strict order
     of ``overlap_constraints`` allows it, and every exact guarantee holds."""
-    from archlux.geom.rectilineaire import PieceRectilineaire
+    from archlux.geom.rectilineaire import RectilinearRoom
     from archlux.light.analytique import SubstitutAnalytique
 
     wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), load_bearing=True)
@@ -199,9 +199,7 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
         Room(id="p5", type="bedroom", x=1.01, y=2.0, w=10.99, h=7.0),
     )
     plan = Plan(rooms=(bar, foot, *rest), walls=(wall,), openings=(), outline=ctx.outline)
-    room = PieceRectilineaire(
-        id="f", rectangles=(bar, foot), fusions=((0, 1, "partage_bord_haut"),)
-    )
+    room = RectilinearRoom(id="f", rectangles=(bar, foot), merges=((0, 1, "partage_bord_haut"),))
     result = archlux.legalize(plan, ctx, fusions=(room,), objective=SubstitutAnalytique())
     assert not checkers.violations(result, ctx, fusions=(room,))
     by_id = {r.id: r for r in result.rooms}
@@ -248,10 +246,10 @@ def test_a_nan_in_the_reference_is_an_unbounded_displacement() -> None:
 def test_the_scope_names_only_what_the_domain_contains() -> None:
     """Review m1: no shared side when every member of the L keeps its own side."""
     plan, ctx, (bar, foot) = _l_beside_a_partial_wall()
-    ordre = deduire_ordre(plan, ctx.structure, groups=((bar, foot),))
+    ordre = deduce_order(plan, ctx.structure, groups=((bar, foot),))
     assert ordre.shared_sides == ()
     zero = Wall(id="z", a=(3.0, 3.0), b=(3.0, 3.0), load_bearing=True)
-    assert deduire_ordre(plan, Structure(load_bearing_walls=(zero,))).wall_sides == ()
+    assert deduce_order(plan, Structure(load_bearing_walls=(zero,))).wall_sides == ()
 
 
 def test_members_on_opposite_sides_share_the_side_of_their_bounding_box() -> None:
@@ -260,6 +258,6 @@ def test_members_on_opposite_sides_share_the_side_of_their_bounding_box() -> Non
 
     plan, ctx, room = _l_in_tiling(wall_x=1.4)
     members = tuple(r.id for r in room.rectangles)
-    ordre = deduire_ordre(plan, ctx.structure, groups=(members,))
+    ordre = deduce_order(plan, ctx.structure, groups=(members,))
     assert ordre.shared_sides == (("w", members),)
     assert len({ws.side for ws in ordre.wall_sides if ws.room in members}) == 1

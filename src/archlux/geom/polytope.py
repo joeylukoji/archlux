@@ -17,26 +17,27 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy import sparse
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.arrays import VecteurF
 from archlux.errors import Infeasible, InvariantViolation
-from archlux.geom.graphe import construire_graphe, reduction_transitive
+from archlux.geom.graphe import build_graph, transitive_reduction
 
 if TYPE_CHECKING:
-    from archlux.geom.graphe import OrdreRelatif
+    from archlux.geom.graphe import RelativeOrder
     from archlux.types import Context, Plan
 
 __all__ = [
-    "CHAMPS",
+    "FIELDS",
     "Polytope",
-    "construire_polytope",
+    "build_polytope",
     "decision_vector",
-    "devectoriser",
-    "etendre_ecarts_l1",
-    "figer_contacts",
-    "vectoriser",
+    "devectorize",
+    "extend_l1_slack",
+    "freeze_contacts",
+    "vectorize",
 ]
 
-CHAMPS = ("x", "y", "w", "h")
+FIELDS = ("x", "y", "w", "h")
 """Les quatre variables d'une pièce, **dans cet ordre**.
 
 L'ordre est un contrat : ``lmo`` et ``solve`` supposent des colonnes contiguës par pièce,
@@ -77,20 +78,20 @@ class Polytope:
     b: VecteurF
     A_eq: sparse.csr_matrix
     b_eq: VecteurF
-    bornes: tuple[tuple[float, float], ...]
+    bounds: tuple[tuple[float, float], ...]
     index: dict[str, int]
-    origines: tuple[str, ...]
-    origines_eq: tuple[str, ...] = ()
+    origins: tuple[str, ...]
+    origins_eq: tuple[str, ...] = ()
     """Label of each row of ``A_eq`` (tiling, fusion, frozen contact). Needed to name
     the constraints of an infeasibility certificate; see :meth:`labels_eq`."""
 
-    def labels_eq(self) -> tuple[str, ...]:
+    def eq_labels(self) -> tuple[str, ...]:
         """One label per row of ``A_eq``; rows added without a label get a generic one."""
         n_rows = self.A_eq.shape[0]
-        labels = self.origines_eq[:n_rows]
+        labels = self.origins_eq[:n_rows]
         return labels + tuple(f"equality {k}" for k in range(len(labels), n_rows))
 
-    def contient(self, x: VecteurF, tol: float = 1e-9) -> bool:
+    def contains(self, x: VecteurF, tol: float = 1e-9) -> bool:
         """Dire si le point ``x`` satisfait toutes les contraintes, à ``tol`` près.
 
         Vérification **naïve et directe**, indépendante de tout solveur : c'est elle qui
@@ -125,12 +126,12 @@ class Polytope:
             return False
         if self.A_eq.shape[0] and np.any(np.abs(self.A_eq @ x - self.b_eq) > tol):
             return False
-        bas = np.array([b[0] for b in self.bornes])
-        haut = np.array([b[1] for b in self.bornes])
+        bas = np.array([b[0] for b in self.bounds])
+        haut = np.array([b[1] for b in self.bounds])
         return bool(np.all(x >= bas - tol) and np.all(x <= haut + tol))
 
 
-def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytope:
+def freeze_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytope:
     """Transformer les contacts saturés en égalités, y compris les bords du contour.
 
     Le polytope d'ordre est un **relaxé** : ``x_a + w_a ≤ x_b`` autorise un jour,
@@ -160,7 +161,7 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
         raise InvariantViolation((f"vecteur de dimension {x.shape}, attendu ({len(poly.index)},)",))
     noms = {colonne: nom for nom, colonne in poly.index.items()}
     bornes: list[tuple[float, float]] = []
-    for colonne, (lo, hi) in enumerate(poly.bornes):
+    for colonne, (lo, hi) in enumerate(poly.bounds):
         val = float(x[colonne])
         champ = noms[colonne].rsplit(".", 1)[1]
         bas, haut = lo, hi
@@ -172,11 +173,11 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
         bornes.append((bas, haut))
 
     if poly.A.shape[0] == 0:
-        return replace(poly, bornes=tuple(bornes))
+        return replace(poly, bounds=tuple(bornes))
     marge = poly.b - np.ravel(poly.A @ x)
     saturees = marge <= tol
     if not np.any(saturees):
-        return replace(poly, bornes=tuple(bornes))
+        return replace(poly, bounds=tuple(bornes))
     libres = ~saturees
     n_var = len(poly.index)
     a_libres = poly.A[libres]
@@ -192,10 +193,10 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
         a_eq = a_saturees.tocsr()
         b_eq = b_saturees
     origines = tuple(
-        libelle for libelle, garder in zip(poly.origines, libres, strict=True) if garder
+        libelle for libelle, garder in zip(poly.origins, libres, strict=True) if garder
     )
     frozen = tuple(
-        f"contact {libelle}" for libelle, fige in zip(poly.origines, saturees, strict=True) if fige
+        f"contact {libelle}" for libelle, fige in zip(poly.origins, saturees, strict=True) if fige
     )
     return replace(
         poly,
@@ -203,9 +204,9 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
         b=np.asarray(b_libres, dtype=float),
         A_eq=a_eq,
         b_eq=np.asarray(b_eq, dtype=float),
-        bornes=tuple(bornes),
-        origines=origines,
-        origines_eq=poly.labels_eq() + frozen,
+        bounds=tuple(bornes),
+        origins=origines,
+        origins_eq=poly.eq_labels() + frozen,
     )
 
 
@@ -250,7 +251,7 @@ def _verifier_enveloppe_admissible(
         raise Infeasible(farkas_certificate=None, origins=conflits)
 
 
-def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
+def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
     """Assembler le système linéaire décrivant tous les plans valides de cet ordre.
 
     Contraintes produites :
@@ -302,9 +303,9 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
     Budget : < 5 ms pour 15 pièces (`ARCHITECTURE.md` §9).
     """
     xmin, ymin, xmax, ymax = _enveloppe(ctx)
-    graphe = reduction_transitive(construire_graphe(ordre, ordre.pieces))
+    graphe = transitive_reduction(build_graph(ordre, ordre.rooms))
 
-    index = _decision_index(ordre.pieces)
+    index = _decision_index(ordre.rooms)
     n_var = len(index)
 
     lignes: list[int] = []
@@ -332,7 +333,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
                 f"separation {libelle} {a}|{b}",
             )
 
-    for piece in ordre.pieces:
+    for piece in ordre.rooms:
         _ajouter({f"{piece}.x": 1.0, f"{piece}.w": 1.0}, xmax, f"contour droit {piece}")
         _ajouter({f"{piece}.y": 1.0, f"{piece}.h": 1.0}, ymax, f"contour haut {piece}")
 
@@ -354,14 +355,14 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
     matrice = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(origines), n_var)).tocsr()
 
     largeur_min = ctx.regulation.min_width
-    _verifier_enveloppe_admissible(largeur_min, xmax - xmin, ymax - ymin, ordre.pieces)
+    _verifier_enveloppe_admissible(largeur_min, xmax - xmin, ymax - ymin, ordre.rooms)
     bornes_par_champ = {
         "x": (xmin, xmax),
         "y": (ymin, ymax),
         "w": (largeur_min, xmax - xmin),
         "h": (largeur_min, ymax - ymin),
     }
-    bornes = tuple(bornes_par_champ[champ] for _ in ordre.pieces for champ in CHAMPS)
+    bornes = tuple(bornes_par_champ[champ] for _ in ordre.rooms for champ in FIELDS)
 
     return Polytope(
         A=matrice,
@@ -370,9 +371,9 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Context) -> Polytope:
         # not equalities: a room only has to stay on its side of a wall.
         A_eq=sparse.csr_matrix((0, n_var)),
         b_eq=np.zeros(0, dtype=float),
-        bornes=bornes,
+        bounds=bornes,
         index=index,
-        origines=tuple(origines),
+        origins=tuple(origines),
     )
 
 
@@ -381,7 +382,7 @@ def _decision_index(room_ids: tuple[str, ...]) -> dict[str, int]:
     return {
         f"{room}.{field}": 4 * rank + offset
         for rank, room in enumerate(room_ids)
-        for offset, field in enumerate(CHAMPS)
+        for offset, field in enumerate(FIELDS)
     }
 
 
@@ -401,7 +402,7 @@ def decision_vector(plan: Plan) -> VecteurF:
     Returns
     -------
     numpy.ndarray
-        Vector of dimension ``4 * len(plan.pieces)``.
+        Vector of dimension ``4 * len(plan.rooms)``.
 
     Examples
     --------
@@ -415,10 +416,10 @@ def decision_vector(plan: Plan) -> VecteurF:
     >>> decision_vector(plan).tolist()
     [0.0, 0.0, 6.0, 9.0, 6.0, 0.0, 6.0, 9.0]
     """
-    return vectoriser(plan, _decision_index(tuple(sorted(room.id for room in plan.rooms))))
+    return vectorize(plan, _decision_index(tuple(sorted(room.id for room in plan.rooms))))
 
 
-def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
+def vectorize(plan: Plan, index: dict[str, int]) -> VecteurF:
     """Projeter un plan sur le vecteur de décision ordonné par ``index``.
 
     Parameters
@@ -454,7 +455,7 @@ def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
     return point
 
 
-def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
+def devectorize(x: VecteurF, template: Plan, index: dict[str, int]) -> Plan:
     """Reconstruire un plan depuis un vecteur solution.
 
     ``gabarit`` fournit tout ce que le vecteur ne porte pas : murs, ouvertures, contour.
@@ -489,7 +490,7 @@ def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
     """
     if x.shape != (len(index),):
         raise InvariantViolation((f"vecteur de dimension {x.shape}, attendu ({len(index)},)",))
-    manquantes = sorted(piece.id for piece in gabarit.rooms if f"{piece.id}.x" not in index)
+    manquantes = sorted(piece.id for piece in template.rooms if f"{piece.id}.x" not in index)
     if manquantes:
         raise InvariantViolation((f"pièces absentes du polytope : {', '.join(manquantes)}",))
     pieces = tuple(
@@ -500,12 +501,12 @@ def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
             w=float(x[index[f"{piece.id}.w"]]),
             h=float(x[index[f"{piece.id}.h"]]),
         )
-        for piece in gabarit.rooms
+        for piece in template.rooms
     )
-    return replace(gabarit, rooms=pieces, certificate=None)
+    return replace(template, rooms=pieces, certificate=None)
 
 
-def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:
+def extend_l1_slack(poly: Polytope, x_ref: VecteurF) -> Polytope:
     r"""Épigraphe de :math:`\\|x - \\hat{x}\\|_1` : variables d'écart et deux inégalités.
 
     Formule
@@ -599,8 +600,21 @@ def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:
         b=np.concatenate([poly.b, np.asarray(second, dtype=float)]),
         A_eq=a_eq_pad,
         b_eq=poly.b_eq,
-        bornes=tuple(poly.bornes) + tuple((0.0, inf) for _ in range(n_var)),
+        bounds=tuple(poly.bounds) + tuple((0.0, inf) for _ in range(n_var)),
         index=index,
-        origines=tuple(poly.origines) + tuple(origines_extra),
-        origines_eq=poly.labels_eq(),
+        origins=tuple(poly.origins) + tuple(origines_extra),
+        origins_eq=poly.eq_labels(),
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "construire_polytope": Alias(build_polytope, "archlux.geom.polytope.build_polytope"),
+        "figer_contacts": Alias(freeze_contacts, "archlux.geom.polytope.freeze_contacts"),
+        "vectoriser": Alias(vectorize, "archlux.geom.polytope.vectorize"),
+        "devectoriser": Alias(devectorize, "archlux.geom.polytope.devectorize"),
+        "etendre_ecarts_l1": Alias(extend_l1_slack, "archlux.geom.polytope.extend_l1_slack"),
+        "CHAMPS": Alias(FIELDS, "archlux.geom.polytope.FIELDS"),
+    },
+)

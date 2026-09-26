@@ -6,9 +6,10 @@ from dataclasses import dataclass
 
 from shapely.geometry import LineString, Polygon, box
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.types import Plan, Room, Wall
 
-__all__ = ["DiagnosticPathologie", "diagnostiquer"]
+__all__ = ["DiagnosticPathologie", "diagnose"]
 
 _EPS = 1e-9
 _TOL_AIRE = 1e-9
@@ -31,7 +32,7 @@ def _piece_box(piece: Room) -> Polygon:
     return box(piece.x, piece.y, piece.x + piece.w, piece.y + piece.h)
 
 
-def diagnostiquer(plan: Plan) -> DiagnosticPathologie:
+def diagnose(plan: Plan) -> DiagnosticPathologie:
     """Recenser les pathologies qui cassent un export IFC/DXF.
 
     Codes
@@ -101,3 +102,11 @@ def _sommets_dupliques(contour: tuple[tuple[float, float], ...]) -> bool:
             return True
         vus.add(cle)
     return False
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "diagnostiquer": Alias(diagnose, "archlux.export.pathologie.diagnose"),
+    },
+)

@@ -16,8 +16,8 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, devectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, devectorize
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
@@ -99,9 +99,9 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
     plan, ctx = scenario
     result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)
     assert result.trace is not None
-    index = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx).index
+    index = build_polytope(deduce_order(plan, structure=ctx.structure), ctx).index
     for step, x in enumerate(result.trace.iterates):
-        iterate = devectoriser(x, result, index)
+        iterate = devectorize(x, result, index)
         assert _independent_violations(iterate, ctx) == [], f"iterate {step}"
 
 

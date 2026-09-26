@@ -18,10 +18,10 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import Polytope, construire_polytope, vectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import Polytope, build_polytope, vectorize
 from archlux.light.analytique import SubstitutAnalytique
-from archlux.lmo.coupes import inner_area_constraints
+from archlux.lmo.cuts import inner_area_constraints
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers
 
@@ -41,8 +41,8 @@ def _setup(w0: float, h0: float, a_min: float) -> tuple[Polytope, np.ndarray, Co
         outline=_OUTLINE,
         regulation=Regulation(min_areas=(("bedroom", a_min),), min_width=0.5),
     )
-    poly = construire_polytope(deduire_ordre(plan), ctx)
-    return poly, vectoriser(plan, poly.index), ctx, plan
+    poly = build_polytope(deduce_order(plan), ctx)
+    return poly, vectorize(plan, poly.index), ctx, plan
 
 
 def _satisfies_new_rows(poly: Polytope, inner: Polytope, w: float, h: float) -> bool:
@@ -51,20 +51,20 @@ def _satisfies_new_rows(poly: Polytope, inner: Polytope, w: float, h: float) -> 
     x[inner.index["r.w"]], x[inner.index["r.h"]] = w, h
     n_old = poly.A.shape[0]
     ok_rows = bool(np.all(inner.A[n_old:] @ x <= inner.b[n_old:] + 1e-12))
-    (w_lo, _), (h_lo, _) = inner.bornes[inner.index["r.w"]], inner.bornes[inner.index["r.h"]]
+    (w_lo, _), (h_lo, _) = inner.bounds[inner.index["r.w"]], inner.bounds[inner.index["r.h"]]
     return ok_rows and w >= w_lo - 1e-12 and h >= h_lo - 1e-12
 
 
 def _boundary_height(poly: Polytope, inner: Polytope, w: float) -> float | None:
     """Lowest h admitted for room ``r`` at width ``w`` (None if w is below the bound)."""
     iw, ih = inner.index["r.w"], inner.index["r.h"]
-    if w < inner.bornes[iw][0]:
+    if w < inner.bounds[iw][0]:
         return None
     n_old = poly.A.shape[0]
     rows, rhs = inner.A[n_old:].toarray(), inner.b[n_old:]
     # Row: slope * w - h <= rhs  <=>  h >= slope * w - rhs.
     floors = [row[iw] * w - bound for row, bound in zip(rows, rhs, strict=True)]
-    return max([inner.bornes[ih][0], *floors])
+    return max([inner.bounds[ih][0], *floors])
 
 
 @settings(max_examples=400, deadline=None, derandomize=True)
@@ -83,7 +83,7 @@ def test_every_point_of_the_inner_region_keeps_the_minimum_area(
     a_min = w0 * h0 / slack
     poly, x0, ctx, plan = _setup(w0, h0, a_min)
     inner = inner_area_constraints(poly, x0, ctx, plan.rooms)
-    w_lo = inner.bornes[inner.index["r.w"]][0]
+    w_lo = inner.bounds[inner.index["r.w"]][0]
     w = w_lo + position * (4.0 * w0 - w_lo)
     floor = _boundary_height(poly, inner, w)
     assert floor is not None
@@ -113,7 +113,7 @@ def test_the_start_point_stays_admissible(w0: float, aspect: float, slack: float
     h0 = min(max(w0 * aspect, 0.6), 6.0)  # within the base polytope (width >= 0.5)
     poly, x0, ctx, plan = _setup(w0, h0, w0 * h0 / slack)
     inner = inner_area_constraints(poly, x0, ctx, plan.rooms)
-    assert inner.contient(x0)
+    assert inner.contains(x0)
 
 
 def test_a_room_at_its_minimum_area_can_still_change_shape() -> None:
@@ -130,9 +130,9 @@ def test_a_room_whose_height_is_fixed_can_still_narrow() -> None:
     """Review M1: a contact freezing h used to leave only w >= w0 instead of w >= a/h0."""
     poly, x0, ctx, plan = _setup(4.0, 6.0, 20.0)  # full height, 24 m² for 20 m² required
     ih = poly.index["r.h"]
-    frozen = list(poly.bornes)
+    frozen = list(poly.bounds)
     frozen[ih] = (6.0, 6.0)
-    poly = replace(poly, bornes=tuple(frozen))
+    poly = replace(poly, bounds=tuple(frozen))
     inner = inner_area_constraints(poly, x0, ctx, plan.rooms)
     assert _satisfies_new_rows(poly, inner, 3.45, 6.0)  # 20.7 m² >= 20 m², narrower
 
@@ -146,7 +146,7 @@ def test_a_start_below_the_minimum_area_is_refused() -> None:
 def test_rooms_without_minimum_area_get_no_row() -> None:
     poly, x0, ctx, plan = _setup(4.0, 3.0, 12.0)
     inner = inner_area_constraints(poly, x0, ctx, plan.rooms)
-    labels = [o for o in inner.origines if o.startswith("minimum area")]
+    labels = [o for o in inner.origins if o.startswith("minimum area")]
     assert labels and all(o.startswith("minimum area r:") for o in labels)
 
 

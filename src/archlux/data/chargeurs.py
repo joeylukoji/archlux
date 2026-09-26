@@ -49,7 +49,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from archlux.errors import InvariantViolation
-from archlux.geom.rectilineaire import PieceRectilineaire, decomposer
+from archlux.geom.rectilineaire import RectilinearRoom, decompose
 from archlux.orient.circulaire import direction_dominante
 from archlux.types import (
     Context,
@@ -129,7 +129,7 @@ class AppartementMSD:
     identifiant: str
     plan: Plan
     contexte: Context
-    fusions: tuple[PieceRectilineaire, ...]
+    fusions: tuple[RectilinearRoom, ...]
     angle_redressement: float
     site_id: str = ""
     aires_sources: tuple[str, ...] = ()
@@ -562,15 +562,15 @@ def _convertir(
         return "piece degeneree apres recollage"
 
     pieces: list[Room] = []
-    fusions: list[PieceRectilineaire] = []
+    fusions: list[RectilinearRoom] = []
     for rang, ((sous_type, _), droit) in enumerate(
         zip(pieces_brutes, polygones_pieces, strict=True)
     ):
         try:
-            morceau = decomposer(
+            morceau = decompose(
                 droit,
                 id=f"p{rang:03d}",
-                type_piece=sous_type.lower(),
+                room_type=sous_type.lower(),
                 max_rectangles=max_rectangles,
             )
         except InvariantViolation as echec:

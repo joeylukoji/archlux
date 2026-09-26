@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 5, fourth batch: geometry and LMO names (rename only)
+
+- Public functions, classes and fields of `geom` (`graphe`, `polytope`, `pavage`, `rectilineaire`, `diagnostic`), `lmo.solveur`, `lmo.cuts` and `export.pathologie` are English (`solve`, `build_polytope`, `RelativeOrder`, `Cut`, `Polytope.bounds`, ...).
+- The French function and class names stay importable with a `DeprecationWarning` until 1.0.0; `archlux.lmo.coupes` is a module shim for `archlux.lmo.cuts`. Fields are renamed without alias.
+- The prose of these modules is translated in the next commit. Neutrality fingerprints are unchanged.
+
 ### Remediation — PLAN.md phase 3.9, wave 4, step 2: JSON schema v2
 
 #### Changed — file format (pre-1.0)

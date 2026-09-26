@@ -42,12 +42,13 @@ from typing import TYPE_CHECKING
 from shapely.geometry import MultiPolygon, Polygon, box
 from shapely.ops import unary_union
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
     from archlux.types import Plan
 
-__all__ = ["Diagnostic", "diagnostiquer"]
+__all__ = ["Diagnostic", "diagnose"]
 
 _AIRE_MIN = 1e-6
 
@@ -75,15 +76,15 @@ class Diagnostic:
         Un déplacement en mètres ne se lit pas sans lui.
     """
 
-    recouvrements: float
-    part_jour: float
-    part_trou: float
-    morceaux: int
-    cellules: int
-    cote: float
+    overlaps: float
+    gap_share: float
+    hole_share: float
+    fragments: int
+    cells: int
+    size: float
 
 
-def diagnostiquer(plan: Plan) -> Diagnostic:
+def diagnose(plan: Plan) -> Diagnostic:
     """Mesurer les cinq pathologies d'un plan proposé.
 
     Parameters
@@ -125,8 +126,8 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     ...     ),
     ...     walls=(), openings=(), outline=(),
     ... )
-    >>> diag = diagnostiquer(plan)
-    >>> diag.recouvrements, diag.part_jour, diag.morceaux, diag.cellules
+    >>> diag = diagnose(plan)
+    >>> diag.overlaps, diag.gap_share, diag.fragments, diag.cells
     (0.0, 0.0, 1, 2)
 
     Écarter la seconde pièce ouvre un jour et coupe le plan en deux :
@@ -136,8 +137,8 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     ...         id="b", type="kitchen", x=4.0, y=0.0, w=2.0, h=2.0)),
     ...     walls=(), openings=(), outline=(),
     ... )
-    >>> diag = diagnostiquer(troue)
-    >>> round(diag.part_jour, 3), diag.morceaux
+    >>> diag = diagnose(troue)
+    >>> round(diag.gap_share, 3), diag.fragments
     (0.167, 2)
     """
     if not plan.rooms:
@@ -165,10 +166,18 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     lignes_y = {p.y for p in plan.rooms} | {p.y + p.h for p in plan.rooms}
 
     return Diagnostic(
-        recouvrements=float(recouvrements),
-        part_jour=float(1.0 - union.area / aire_boite) if aire_boite > 0 else 0.0,
-        part_trou=float(aire_trous / aire_boite) if aire_boite > 0 else 0.0,
-        morceaux=len(parts),
-        cellules=(len(lignes_x) - 1) * (len(lignes_y) - 1),
-        cote=math.sqrt(aire_boite),
+        overlaps=float(recouvrements),
+        gap_share=float(1.0 - union.area / aire_boite) if aire_boite > 0 else 0.0,
+        hole_share=float(aire_trous / aire_boite) if aire_boite > 0 else 0.0,
+        fragments=len(parts),
+        cells=(len(lignes_x) - 1) * (len(lignes_y) - 1),
+        size=math.sqrt(aire_boite),
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "diagnostiquer": Alias(diagnose, "archlux.geom.diagnostic.diagnose"),
+    },
+)

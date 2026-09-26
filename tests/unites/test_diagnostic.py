@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from archlux.geom.diagnostic import Diagnostic, diagnostiquer
+from archlux.geom.diagnostic import Diagnostic, diagnose
 from archlux.types import Plan, Room
 
 
@@ -29,14 +29,14 @@ def _plan(*boites: tuple[float, float, float, float]) -> Plan:
 
 def test_un_pavage_exact_ne_montre_aucune_pathologie() -> None:
     """Deux pièces jointives : rien à signaler, et la trame vaut 2 cellules."""
-    diag = diagnostiquer(_plan((0.0, 0.0, 3.0, 2.0), (3.0, 0.0, 2.0, 2.0)))
+    diag = diagnose(_plan((0.0, 0.0, 3.0, 2.0), (3.0, 0.0, 2.0, 2.0)))
     assert diag == Diagnostic(
-        recouvrements=0.0,
-        part_jour=0.0,
-        part_trou=0.0,
-        morceaux=1,
-        cellules=2,
-        cote=pytest.approx(10.0**0.5),
+        overlaps=0.0,
+        gap_share=0.0,
+        hole_share=0.0,
+        fragments=1,
+        cells=2,
+        size=pytest.approx(10.0**0.5),
     )
 
 
@@ -46,13 +46,13 @@ def test_le_recouvrement_se_compte_dans_les_deux_sens() -> None:
     Compter la paire une seule fois donnerait 0,5 et ne serait plus comparable au
     chiffre publié par les auteurs de MSD (4,11 pièces recouvertes par pièce).
     """
-    diag = diagnostiquer(_plan((0.0, 0.0, 3.0, 2.0), (2.0, 0.0, 3.0, 2.0)))
-    assert diag.recouvrements == 1.0
+    diag = diagnose(_plan((0.0, 0.0, 3.0, 2.0), (2.0, 0.0, 3.0, 2.0)))
+    assert diag.overlaps == 1.0
 
 
 def test_un_contact_par_arete_ne_compte_pas_comme_recouvrement() -> None:
     """Deux pièces mitoyennes partagent une arête d'aire nulle, pas une surface."""
-    assert diagnostiquer(_plan((0.0, 0.0, 3.0, 2.0), (3.0, 0.0, 2.0, 2.0))).recouvrements == 0.0
+    assert diagnose(_plan((0.0, 0.0, 3.0, 2.0), (3.0, 0.0, 2.0, 2.0))).overlaps == 0.0
 
 
 def test_un_jour_de_bord_n_est_pas_un_trou_interieur() -> None:
@@ -61,18 +61,18 @@ def test_un_jour_de_bord_n_est_pas_un_trou_interieur() -> None:
     Sans elle, on impute au générateur un défaut qui n'est peut-être que le choix
     d'une boîte englobante rectangulaire sur une emprise en L.
     """
-    diag = diagnostiquer(_plan((0.0, 0.0, 2.0, 2.0), (2.0, 2.0, 2.0, 2.0)))
-    assert diag.part_jour == pytest.approx(0.5)
-    assert diag.part_trou == 0.0
+    diag = diagnose(_plan((0.0, 0.0, 2.0, 2.0), (2.0, 2.0, 2.0, 2.0)))
+    assert diag.gap_share == pytest.approx(0.5)
+    assert diag.hole_share == 0.0
     # Elles ne se touchent que par un coin : deux composantes, pas une. C'est la
     # bonne sémantique ici — un coin partagé n'est ni un mur mitoyen ni un
     # passage, et pour le pavage il reste un jour.
-    assert diag.morceaux == 2
+    assert diag.fragments == 2
 
 
 def test_un_trou_ferme_est_compte_deux_fois() -> None:
     """Un anneau de quatre pièces : le trou central compte en jour **et** en trou."""
-    diag = diagnostiquer(
+    diag = diagnose(
         _plan(
             (0.0, 0.0, 3.0, 1.0),  # bas
             (0.0, 2.0, 3.0, 1.0),  # haut
@@ -80,8 +80,8 @@ def test_un_trou_ferme_est_compte_deux_fois() -> None:
             (2.0, 1.0, 1.0, 1.0),  # droite
         )
     )
-    assert diag.part_trou == pytest.approx(1.0 / 9.0)
-    assert diag.part_jour == pytest.approx(diag.part_trou)
+    assert diag.hole_share == pytest.approx(1.0 / 9.0)
+    assert diag.gap_share == pytest.approx(diag.hole_share)
 
 
 def test_des_pieces_separees_forment_un_archipel() -> None:
@@ -91,9 +91,9 @@ def test_des_pieces_separees_forment_un_archipel() -> None:
     les rattrapera à budget raisonnable. C'est le régime observé sur les sorties
     de HouseDiffusion (`resultats/j8_*.md`).
     """
-    diag = diagnostiquer(_plan((0.0, 0.0, 1.0, 1.0), (3.0, 0.0, 1.0, 1.0), (6.0, 0.0, 1.0, 1.0)))
-    assert diag.morceaux == 3
-    assert diag.recouvrements == 0.0
+    diag = diagnose(_plan((0.0, 0.0, 1.0, 1.0), (3.0, 0.0, 1.0, 1.0), (6.0, 0.0, 1.0, 1.0)))
+    assert diag.fragments == 3
+    assert diag.overlaps == 0.0
 
 
 def test_les_cellules_explosent_quand_aucun_bord_ne_coincide() -> None:
@@ -103,25 +103,21 @@ def test_les_cellules_explosent_quand_aucun_bord_ne_coincide() -> None:
     plan réel les pièces partagent leurs murs ; sur une sortie de modèle, presque
     aucune coordonnée ne coïncide et la trame enfle.
     """
-    alignees = diagnostiquer(
-        _plan((0.0, 0.0, 1.0, 2.0), (1.0, 0.0, 1.0, 2.0), (2.0, 0.0, 1.0, 2.0))
-    )
-    decalees = diagnostiquer(
-        _plan((0.0, 0.0, 1.0, 2.0), (1.3, 0.4, 1.1, 2.0), (2.7, 0.9, 1.2, 2.0))
-    )
-    assert alignees.cellules == 3
-    assert decalees.cellules == 25
+    alignees = diagnose(_plan((0.0, 0.0, 1.0, 2.0), (1.0, 0.0, 1.0, 2.0), (2.0, 0.0, 1.0, 2.0)))
+    decalees = diagnose(_plan((0.0, 0.0, 1.0, 2.0), (1.3, 0.4, 1.1, 2.0), (2.7, 0.9, 1.2, 2.0)))
+    assert alignees.cells == 3
+    assert decalees.cells == 25
 
 
 def test_le_cote_donne_l_echelle_du_deplacement() -> None:
     """``cote`` est la racine de l'aire englobante : 5 m sur 10 m se lit autrement."""
-    assert diagnostiquer(_plan((0.0, 0.0, 4.0, 9.0))).cote == pytest.approx(6.0)
+    assert diagnose(_plan((0.0, 0.0, 4.0, 9.0))).size == pytest.approx(6.0)
 
 
 def test_un_plan_sans_piece_leve() -> None:
     """Rendre des zéros laisserait croire à un plan sain : on refuse."""
     with pytest.raises(ValueError, match="nothing to diagnose"):
-        diagnostiquer(_plan())
+        diagnose(_plan())
 
 
 @pytest.mark.parametrize("facteur", [0.1, 1.0, 7.5])
@@ -133,11 +129,11 @@ def test_les_parts_sont_invariantes_d_echelle(facteur: float) -> None:
     les taux rapportés.
     """
     boites = ((0.0, 0.0, 2.0, 2.0), (1.0, 2.0, 2.0, 2.0))
-    reference = diagnostiquer(_plan(*boites))
-    mis_a_l_echelle = diagnostiquer(
+    reference = diagnose(_plan(*boites))
+    mis_a_l_echelle = diagnose(
         _plan(*((x * facteur, y * facteur, w * facteur, h * facteur) for x, y, w, h in boites))
     )
-    assert mis_a_l_echelle.part_jour == pytest.approx(reference.part_jour)
-    assert mis_a_l_echelle.part_trou == pytest.approx(reference.part_trou)
-    assert mis_a_l_echelle.recouvrements == reference.recouvrements
-    assert mis_a_l_echelle.cote == pytest.approx(reference.cote * facteur)
+    assert mis_a_l_echelle.gap_share == pytest.approx(reference.gap_share)
+    assert mis_a_l_echelle.hole_share == pytest.approx(reference.hole_share)
+    assert mis_a_l_echelle.overlaps == reference.overlaps
+    assert mis_a_l_echelle.size == pytest.approx(reference.size * facteur)

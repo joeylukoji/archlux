@@ -32,28 +32,29 @@ from scipy import sparse
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, unary_union
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation, UnsupportedInput
 from archlux.geom.polytope import Polytope
 from archlux.tolerances import AREA_PROOF_M2
 from archlux.types import Regulation, Room
 
 __all__ = [
-    "FUSION_DROIT",
-    "FUSION_HAUT",
     "MAX_RECTANGLES",
-    "PieceRectilineaire",
-    "contraintes_fusion",
-    "decomposer",
-    "etendre_fusions",
+    "MERGE_RIGHT",
+    "MERGE_TOP",
+    "RectilinearRoom",
+    "decompose",
+    "extend_merges",
+    "merge_constraints",
     "minimum_area_shares",
     "overlap_constraints",
-    "recomposer",
+    "recompose",
 ]
 
-FUSION_DROIT = "partage_bord_droit"
+MERGE_RIGHT = "partage_bord_droit"
 """Le bord droit du rectangle ``i`` coïncide avec le bord gauche de ``j``."""
 
-FUSION_HAUT = "partage_bord_haut"
+MERGE_TOP = "partage_bord_haut"
 """Le bord haut du rectangle ``i`` coïncide avec le bord bas de ``j``."""
 
 MAX_RECTANGLES = 4
@@ -69,7 +70,7 @@ _TOL_RECT = 1e-7
 
 
 @dataclass(frozen=True, slots=True)
-class PieceRectilineaire:
+class RectilinearRoom:
     """Pièce non rectangulaire, vue comme rectangles solidaires.
 
     Attributes
@@ -84,7 +85,7 @@ class PieceRectilineaire:
 
     id: str
     rectangles: tuple[Room, ...]
-    fusions: tuple[tuple[int, int, str], ...]
+    merges: tuple[tuple[int, int, str], ...]
 
 
 def _coords_ouverts(poly: Polygon) -> list[tuple[float, float]]:
@@ -115,12 +116,12 @@ def _est_rectangle(poly: Polygon) -> bool:
     return bool(abs(poly.area - candidat.area) <= _TOL_RECT and poly.equals(candidat))
 
 
-def _vers_piece(poly: Polygon, *, id: str, type_piece: str) -> Room:
+def _vers_piece(poly: Polygon, *, id: str, room_type: str) -> Room:
     """Convertir un rectangle Shapely en :class:`~archlux.types.Piece`."""
     minx, miny, maxx, maxy = poly.bounds
     return Room(
         id=id,
-        type=type_piece,
+        type=room_type,
         x=float(minx),
         y=float(miny),
         w=float(maxx - minx),
@@ -288,33 +289,33 @@ def _detecter_fusions(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ..
                 y0 = max(a.y, b.y)
                 y1 = min(a.y + a.h, b.y + b.h)
                 if y1 - y0 > _TOL_RECT:
-                    propres.append((i, j, FUSION_DROIT))
+                    propres.append((i, j, MERGE_RIGHT))
             elif abs((b.x + b.w) - a.x) <= _TOL_RECT:
                 y0 = max(a.y, b.y)
                 y1 = min(a.y + a.h, b.y + b.h)
                 if y1 - y0 > _TOL_RECT:
-                    propres.append((j, i, FUSION_DROIT))
+                    propres.append((j, i, MERGE_RIGHT))
             if abs((a.y + a.h) - b.y) <= _TOL_RECT:
                 x0 = max(a.x, b.x)
                 x1 = min(a.x + a.w, b.x + b.w)
                 if x1 - x0 > _TOL_RECT:
-                    propres.append((i, j, FUSION_HAUT))
+                    propres.append((i, j, MERGE_TOP))
             elif abs((b.y + b.h) - a.y) <= _TOL_RECT:
                 x0 = max(a.x, b.x)
                 x1 = min(a.x + a.w, b.x + b.w)
                 if x1 - x0 > _TOL_RECT:
-                    propres.append((j, i, FUSION_HAUT))
+                    propres.append((j, i, MERGE_TOP))
     propres.sort()
     return tuple(propres)
 
 
-def decomposer(
-    polygone: Polygon,
+def decompose(
+    polygon: Polygon,
     *,
     id: str = "piece",
-    type_piece: str = "piece",
+    room_type: str = "piece",
     max_rectangles: int = MAX_RECTANGLES,
-) -> PieceRectilineaire:
+) -> RectilinearRoom:
     """Découper un polygone rectilinéaire en rectangles solidaires.
 
     Coupe guillotine récursive : verticale d'abscisse minimale d'abord
@@ -345,25 +346,25 @@ def decomposer(
         Polygone non rectilinéaire, invalide, non découpable sous la convention,
         ou dépassant ``max_rectangles``.
     """
-    if not isinstance(polygone, Polygon) or polygone.is_empty:
+    if not isinstance(polygon, Polygon) or polygon.is_empty:
         raise InvariantViolation(("polygone attendu, non vide",))
-    if not polygone.is_valid:
+    if not polygon.is_valid:
         raise InvariantViolation(("polygone invalide",))
     if max_rectangles < 1:
         raise InvariantViolation((f"max_rectangles doit être ≥ 1 : {max_rectangles}",))
-    if not _est_rectilineaire(polygone):
+    if not _est_rectilineaire(polygon):
         raise InvariantViolation(("polygone non rectilinéaire : arête diagonale",))
-    parties = _decouper(polygone)
+    parties = _decouper(polygon)
     if len(parties) > max_rectangles:
         raise InvariantViolation((f"trop de rectangles ({len(parties)}) : max {max_rectangles}",))
     parties.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
     rectangles = tuple(
-        _vers_piece(p, id=f"{id}__{k}", type_piece=type_piece) for k, p in enumerate(parties)
+        _vers_piece(p, id=f"{id}__{k}", room_type=room_type) for k, p in enumerate(parties)
     )
-    return PieceRectilineaire(id=id, rectangles=rectangles, fusions=_detecter_fusions(rectangles))
+    return RectilinearRoom(id=id, rectangles=rectangles, merges=_detecter_fusions(rectangles))
 
 
-def recomposer(piece: PieceRectilineaire) -> Polygon:
+def recompose(piece: RectilinearRoom) -> Polygon:
     """Recomposer le polygone d'origine depuis ses rectangles.
 
     Returns
@@ -381,8 +382,8 @@ def recomposer(piece: PieceRectilineaire) -> Polygon:
     return union
 
 
-def contraintes_fusion(
-    piece: PieceRectilineaire, index: dict[str, int]
+def merge_constraints(
+    piece: RectilinearRoom, index: dict[str, int]
 ) -> tuple[tuple[str, dict[str, float], float], ...]:
     """Traduire les fusions en égalités affines ``Σ a_k v_k = b``.
 
@@ -390,9 +391,9 @@ def contraintes_fusion(
     ``partage_bord_haut`` : ``y_i + h_i − y_j = 0``.
     """
     egalites: list[tuple[str, dict[str, float], float]] = []
-    for i, j, nature in piece.fusions:
+    for i, j, nature in piece.merges:
         a, b = piece.rectangles[i], piece.rectangles[j]
-        if nature == FUSION_DROIT:
+        if nature == MERGE_RIGHT:
             for nom in (f"{a.id}.x", f"{a.id}.w", f"{b.id}.x"):
                 if nom not in index:
                     raise InvariantViolation((f"variable absente de l'index : {nom}",))
@@ -403,7 +404,7 @@ def contraintes_fusion(
                     0.0,
                 )
             )
-        elif nature == FUSION_HAUT:
+        elif nature == MERGE_TOP:
             for nom in (f"{a.id}.y", f"{a.id}.h", f"{b.id}.y"):
                 if nom not in index:
                     raise InvariantViolation((f"variable absente de l'index : {nom}",))
@@ -421,7 +422,7 @@ def contraintes_fusion(
 
 def minimum_area_shares(
     rooms: tuple[Room, ...],
-    fusions: tuple[PieceRectilineaire, ...],
+    fusions: tuple[RectilinearRoom, ...],
     referentiel: Regulation,
 ) -> dict[str, float]:
     """Split the minimum area of each fused room across its sub-rectangles.
@@ -497,7 +498,7 @@ def _difference(left: dict[str, float], right: dict[str, float]) -> dict[str, fl
 
 
 def overlap_constraints(
-    piece: PieceRectilineaire, index: dict[str, int], *, min_contact: float = 0.0
+    piece: RectilinearRoom, index: dict[str, int], *, min_contact: float = 0.0
 ) -> tuple[tuple[_Row, ...], tuple[_Row, ...]]:
     """Keep the shape of a fused room on the axis orthogonal to each shared edge.
 
@@ -535,11 +536,11 @@ def overlap_constraints(
     """
     equalities: list[_Row] = []
     inequalities: list[_Row] = []
-    for i, j, kind in piece.fusions:
-        if kind not in (FUSION_DROIT, FUSION_HAUT):
+    for i, j, kind in piece.merges:
+        if kind not in (MERGE_RIGHT, MERGE_TOP):
             raise InvariantViolation((f"unknown fusion kind: {kind!r}",))
         a, b = piece.rectangles[i], piece.rectangles[j]
-        axis = "y" if kind == FUSION_DROIT else "x"
+        axis = "y" if kind == MERGE_RIGHT else "x"
         a0, a1, a_low, a_high = _interval(a, axis)
         b0, b1, b_low, b_high = _interval(b, axis)
         pair = f"{a.id}|{b.id}"
@@ -580,9 +581,7 @@ def _rows(rows: tuple[_Row, ...], index: dict[str, int]) -> tuple[sparse.csr_mat
     return matrix, np.asarray([rhs for _, _, rhs in rows], dtype=float)
 
 
-def etendre_fusions(
-    poly: Polytope, piece: PieceRectilineaire, *, min_contact: float = 0.0
-) -> Polytope:
+def extend_merges(poly: Polytope, piece: RectilinearRoom, *, min_contact: float = 0.0) -> Polytope:
     """Add the fusion equalities and the overlap constraints of a fused room.
 
     Parameters
@@ -605,7 +604,7 @@ def etendre_fusions(
     """
     fusions = tuple(
         (f"fusion {label}", terms, rhs)
-        for label, terms, rhs in contraintes_fusion(piece, poly.index)
+        for label, terms, rhs in merge_constraints(piece, poly.index)
     )
     aligned, ordered = overlap_constraints(piece, poly.index, min_contact=min_contact)
     equalities = fusions + aligned
@@ -626,6 +625,22 @@ def etendre_fusions(
         b=b,
         A_eq=a_eq,
         b_eq=b_eq,
-        origines=(*poly.origines, *(label for label, _, _ in ordered)),
-        origines_eq=poly.labels_eq() + tuple(label for label, _, _ in equalities),
+        origins=(*poly.origins, *(label for label, _, _ in ordered)),
+        origins_eq=poly.eq_labels() + tuple(label for label, _, _ in equalities),
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "PieceRectilineaire": Alias(RectilinearRoom, "archlux.geom.rectilineaire.RectilinearRoom"),
+        "decomposer": Alias(decompose, "archlux.geom.rectilineaire.decompose"),
+        "recomposer": Alias(recompose, "archlux.geom.rectilineaire.recompose"),
+        "contraintes_fusion": Alias(
+            merge_constraints, "archlux.geom.rectilineaire.merge_constraints"
+        ),
+        "etendre_fusions": Alias(extend_merges, "archlux.geom.rectilineaire.extend_merges"),
+        "FUSION_DROIT": Alias(MERGE_RIGHT, "archlux.geom.rectilineaire.MERGE_RIGHT"),
+        "FUSION_HAUT": Alias(MERGE_TOP, "archlux.geom.rectilineaire.MERGE_TOP"),
+    },
+)

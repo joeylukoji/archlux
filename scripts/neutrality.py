@@ -104,9 +104,7 @@ def fingerprints() -> dict[str, object]:
     outputs = _outputs()
     as_json, as_geometry = hashlib.sha256(), hashlib.sha256()
     for label, plan in outputs:
-        text = (
-            "refused" if plan is None else json.dumps(_canonical(to_dict(plan)), sort_keys=True)
-        )
+        text = "refused" if plan is None else json.dumps(_canonical(to_dict(plan)), sort_keys=True)
         as_json.update(f"{label}:{text}\n".encode())
         meaning = "refused" if plan is None else json.dumps(_geometry(plan))
         as_geometry.update(f"{label}:{meaning}\n".encode())

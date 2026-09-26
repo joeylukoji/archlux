@@ -17,8 +17,8 @@ from archlux.data.chargeurs import (
     decouper_par_site,
     etiqueter,
 )
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, vectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.base import SubstitutDense
 from archlux.light.protocole import Glazing
@@ -52,8 +52,8 @@ index = {id(a): k for k, a in enumerate(retenus)}
 def vecteurs(lot: list) -> tuple[tuple, np.ndarray, tuple, tuple]:
     xs, cibles, oris, fen = [], [], [], []
     for appart in lot:
-        poly = construire_polytope(deduire_ordre(appart.plan), appart.contexte)
-        xs.append(vectoriser(appart.plan, poly.index))
+        poly = build_polytope(deduce_order(appart.plan), appart.contexte)
+        xs.append(vectorize(appart.plan, poly.index))
         cibles.append(ys[index[id(appart)]])
         oris.append(appart.contexte.orientation)
         fen.append(Glazing(walls=appart.plan.murs, openings=appart.plan.ouvertures))

@@ -18,8 +18,8 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, devectoriser, vectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, devectorize, vectorize
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
@@ -50,9 +50,9 @@ def _iterates_are_valid(plan: Plan, ctx: Context) -> None:
     if traced is None:
         return
     result, trace = traced
-    index = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx).index
+    index = build_polytope(deduce_order(plan, structure=ctx.structure), ctx).index
     for step, x in enumerate(trace.iterates):
-        assert checkers.violations(devectoriser(x, result, index), ctx) == [], f"iterate {step}"
+        assert checkers.violations(devectorize(x, result, index), ctx) == [], f"iterate {step}"
 
 
 def _objective_is_monotone(plan: Plan, ctx: Context) -> None:
@@ -103,7 +103,7 @@ def test_the_orientation_is_circular_with_walls_and_minimum_areas(
     face (two rooms trading width at equal daylight), and ``sin(360°) = -2.4e-16``
     breaks the tie elsewhere. Found at 2000 examples; see ``docs/revues/j3.md``."""
     plan, ctx = scenario
-    index = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx).index
+    index = build_polytope(deduce_order(plan, structure=ctx.structure), ctx).index
     outcomes: list[float | type] = []
     for azimuth in (theta, theta + 360.0):
         try:
@@ -114,7 +114,7 @@ def test_the_orientation_is_circular_with_walls_and_minimum_areas(
             outcomes.append(type(error))
             continue
         assert checkers.violations(result, ctx) == []
-        outcomes.append(ANALYTIC.evaluate(vectoriser(result, index), Orientation(deg=theta)))
+        outcomes.append(ANALYTIC.evaluate(vectorize(result, index), Orientation(deg=theta)))
     first, second = outcomes
     if isinstance(first, float) and isinstance(second, float):
         assert first == pytest.approx(second, rel=1e-9, abs=1e-9)

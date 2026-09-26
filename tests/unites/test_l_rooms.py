@@ -15,15 +15,15 @@ from shapely.geometry import Polygon
 
 import archlux
 from archlux.certify.proof import verify_exactly
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, vectoriser
-from archlux.geom.rectilineaire import PieceRectilineaire, decomposer, etendre_fusions
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, vectorize
+from archlux.geom.rectilineaire import RectilinearRoom, decompose, extend_merges
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
-def _pushed_l_plan() -> tuple[Plan, Context, PieceRectilineaire]:
+def _pushed_l_plan() -> tuple[Plan, Context, RectilinearRoom]:
     """A 12 x 9 tiling where a load-bearing wall pushes the foot of an L upwards.
 
     The L is a bar ``l__0`` = [0, 2] x [1, 5.5] and a foot ``l__1`` = [2, 6] x [1, 3],
@@ -33,7 +33,7 @@ def _pushed_l_plan() -> tuple[Plan, Context, PieceRectilineaire]:
     shrinks under ``f``) is valid too and keeps the L.
     """
     outline = Polygon([(0, 1), (6, 1), (6, 3), (2, 3), (2, 5.5), (0, 5.5)])
-    room = decomposer(outline, id="l", type_piece="kitchen")
+    room = decompose(outline, id="l", room_type="kitchen")
     others = (
         Room(id="h", type="living", x=0.0, y=0.0, w=2.0, h=2.0),
         Room(id="d", type="living", x=2.0, y=0.0, w=4.0, h=2.0),
@@ -74,23 +74,21 @@ def test_legalize_keeps_the_aligned_edge_of_an_l() -> None:
 def test_fused_polytope_excludes_a_slid_foot(foot_y: float, shape: str) -> None:
     """Bar [0, 1] x [0, 3], foot [1, 2] x [0, 1]: sliding the foot up leaves the domain."""
     outline = Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)])
-    room = decomposer(outline, id="l", type_piece="kitchen")
+    room = decompose(outline, id="l", room_type="kitchen")
     plan = Plan(rooms=room.rectangles, walls=(), openings=(), outline=CONTEXTE_DEFAUT.outline)
-    poly = etendre_fusions(
-        construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT), room, min_contact=0.5
-    )
-    assert poly.contient(vectoriser(plan, poly.index))
+    poly = extend_merges(build_polytope(deduce_order(plan), CONTEXTE_DEFAUT), room, min_contact=0.5)
+    assert poly.contains(vectorize(plan, poly.index))
 
     bar, foot = room.rectangles
     slid = replace(plan, rooms=(bar, replace(foot, y=foot_y)))
 
-    assert not poly.contient(vectoriser(slid, poly.index)), shape
+    assert not poly.contains(vectorize(slid, poly.index)), shape
 
 
-def _small_l() -> tuple[Plan, PieceRectilineaire]:
+def _small_l() -> tuple[Plan, RectilinearRoom]:
     """Bar [0, 1] x [0, 3] (3 m²) and foot [1, 2] x [0, 1] (1 m²): 4 m² in total."""
     outline = Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)])
-    room = decomposer(outline, id="l", type_piece="kitchen")
+    room = decompose(outline, id="l", room_type="kitchen")
     plan = Plan(rooms=room.rectangles, walls=(), openings=(), outline=CONTEXTE_DEFAUT.outline)
     return plan, room
 
@@ -104,7 +102,7 @@ def _kitchen_minimum(area: float) -> Context:
 def test_proof_accepts_an_l_whose_union_meets_the_minimum_area() -> None:
     plan, room = _small_l()
 
-    proof = verify_exactly(plan, _kitchen_minimum(3.5), fusions=(room,))
+    proof = verify_exactly(plan, _kitchen_minimum(3.5), merges=(room,))
 
     assert proof.areas_ok, proof.violations
 
@@ -112,13 +110,13 @@ def test_proof_accepts_an_l_whose_union_meets_the_minimum_area() -> None:
 def test_proof_refuses_an_l_whose_union_misses_the_minimum_area() -> None:
     plan, room = _small_l()
 
-    proof = verify_exactly(plan, _kitchen_minimum(4.5), fusions=(room,))
+    proof = verify_exactly(plan, _kitchen_minimum(4.5), merges=(room,))
 
     assert not proof.areas_ok
     assert any(v.startswith("area l:") for v in proof.violations), proof.violations
 
 
-def _tiling_with_small_l() -> tuple[Plan, PieceRectilineaire]:
+def _tiling_with_small_l() -> tuple[Plan, RectilinearRoom]:
     """The 4 m² L of :func:`_small_l` inside a valid 12 x 9 tiling."""
     plan, room = _small_l()
     rest = (
@@ -173,7 +171,7 @@ def test_checker_refuses_a_detached_fused_room() -> None:
 # --- Review of the merged batches 1.7 and 1.8 ---------------------------------------------
 
 
-def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Context, PieceRectilineaire]:
+def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Context, RectilinearRoom]:
     """A kitchen L (bar [0,1]x[0,3], foot [1,2]x[0,1]) tiling 12 x 9 with three rooms."""
     ctx = replace(
         CONTEXTE_DEFAUT,
@@ -182,8 +180,8 @@ def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Context, PieceRecti
     if wall_x is not None:
         wall = Wall(id="w", a=(wall_x, 0.0), b=(wall_x, 1.0), load_bearing=True)
         ctx = replace(ctx, structure=Structure(load_bearing_walls=(wall,)))
-    room = decomposer(
-        Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)]), id="l", type_piece="kitchen"
+    room = decompose(
+        Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)]), id="l", room_type="kitchen"
     )
     rest = (
         Room(id="r1", type="living", x=2.0, y=0.0, w=10.0, h=1.0),
@@ -197,7 +195,7 @@ def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Context, PieceRecti
 def test_a_wall_on_the_seam_of_an_l_is_a_crossing() -> None:
     """Review C1: the seam is inside the room; a wall on it cuts the kitchen in two."""
     plan, ctx, room = _l_in_tiling(wall_x=1.0)
-    proof = verify_exactly(plan, ctx, fusions=(room,))
+    proof = verify_exactly(plan, ctx, merges=(room,))
     assert not proof.valid and not proof.structure_kept
     assert any(v.kind == "wall" for v in checkers.violations(plan, ctx, fusions=(room,)))
 
@@ -221,7 +219,7 @@ def test_the_proof_checks_every_recorded_seam_with_the_minimum_width() -> None:
     for foot_y in (3.0 - 5e-7, 2.9):  # a hair of contact, then 0.1 m < largeur_min
         slid = replace(rooms["l__1"], y=foot_y)
         moved = replace(plan, rooms=(rooms["l__0"], slid, *plan.rooms[2:]))
-        proof = verify_exactly(moved, ctx, fusions=(room,))
+        proof = verify_exactly(moved, ctx, merges=(room,))
         assert not proof.areas_ok
         assert any("seam" in v for v in proof.violations)
         assert checkers.violations(moved, ctx, fusions=(room,))

@@ -14,8 +14,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 import archlux
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, figer_contacts
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, freeze_contacts
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
@@ -46,9 +46,9 @@ def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
     resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
     assert isinstance(resultat.trace, Trace)
     assert resultat.trace.iterates
-    poly = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT)
-    poly_fw = figer_contacts(poly, resultat.trace.iterates[0])
-    assert all(poly_fw.contient(point, tol=1e-6) for point in resultat.trace.iterates)
+    poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
+    poly_fw = freeze_contacts(poly, resultat.trace.iterates[0])
+    assert all(poly_fw.contains(point, tol=1e-6) for point in resultat.trace.iterates)
 
 
 @given(plan=plans_valides())

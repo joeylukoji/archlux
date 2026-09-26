@@ -17,12 +17,12 @@ REFERENTIEL_FR = Regulation(
 
 
 @pytest.mark.parametrize(
-    ("type_piece", "attendu"),
+    ("room_type", "attendu"),
     [("living_room", 9.0), ("bedroom", 9.0), ("bathroom", 5.0), ("kitchen", 6.0)],
 )
-def test_rend_le_seuil_du_type(type_piece: str, attendu: float) -> None:
+def test_rend_le_seuil_du_type(room_type: str, attendu: float) -> None:
     """Chaque type réglementé rend son seuil."""
-    assert REFERENTIEL_FR.min_area(type_piece) == attendu
+    assert REFERENTIEL_FR.min_area(room_type) == attendu
 
 
 def test_un_type_non_reglemente_ne_contraint_rien() -> None:

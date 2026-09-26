@@ -515,7 +515,7 @@ class Certificate:
     Attributes
     ----------
     duaux : tuple of (str, float)
-        Dual prices **already translated** through ``Polytope.origines``:
+        Dual prices **already translated** through ``Polytope.origins``:
         ``("load-bearing wall p1 at x = 6 m: ...", 4.1)``. Never a bare row index.
     """
 

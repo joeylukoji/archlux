@@ -22,7 +22,7 @@ from archlux.data.corruption import corrompre
 from archlux.errors import InvariantViolation
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.lmo import solveur
-from archlux.lmo.solveur import resoudre
+from archlux.lmo.solveur import solve
 from archlux.solve import frank_wolfe as fw_module
 from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.types import Context, Orientation, Plan
@@ -65,7 +65,7 @@ def test_a_run_cut_short_says_so_and_reports_the_gap_at_the_returned_point() -> 
     objective = _objective()
     result = frank_wolfe(POLY, objective, NORD, _depart_faisable(), max_iter=1)
     assert result.status == "max_iter"
-    vertex = resoudre(POLY, -objective.c).x
+    vertex = solve(POLY, -objective.c).x
     assert result.gap == pytest.approx(float(objective.c @ (vertex - result.x)), abs=1e-9)
 
 
@@ -78,12 +78,12 @@ def test_a_failed_line_search_is_reported() -> None:
 
 def test_no_successful_lp_gives_an_infinite_gap(monkeypatch: pytest.MonkeyPatch) -> None:
     """A gap of 0 would read as 'optimum reached' (AUDIT.md §5.1)."""
-    real = resoudre(POLY, np.zeros(4))
+    real = solve(POLY, np.zeros(4))
 
     def failing(*args: object, **kwargs: object) -> solveur.SolutionLP:
-        return replace(real, statut="limite")
+        return replace(real, status="limite")
 
-    monkeypatch.setattr(fw_module, "resoudre", failing)
+    monkeypatch.setattr(fw_module, "solve", failing)
     result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable())
     assert result.status == "lp_not_optimal"
     assert result.gap == float("inf")
@@ -161,10 +161,10 @@ def test_a_failing_lp_after_a_step_reports_an_unknown_gap(monkeypatch: pytest.Mo
 
     def second_call_fails(*args: object, **kwargs: object) -> solveur.SolutionLP:
         calls["n"] += 1
-        solution = resoudre(*args, **kwargs)  # type: ignore[arg-type]
-        return solution if calls["n"] == 1 else replace(solution, statut="limite")
+        solution = solve(*args, **kwargs)  # type: ignore[arg-type]
+        return solution if calls["n"] == 1 else replace(solution, status="limite")
 
-    monkeypatch.setattr(fw_module, "resoudre", second_call_fails)
+    monkeypatch.setattr(fw_module, "solve", second_call_fails)
     result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=10)
     assert result.status == "lp_not_optimal"
     assert result.iterations >= 1
@@ -177,10 +177,10 @@ def test_a_failing_final_lp_reports_an_unknown_gap(monkeypatch: pytest.MonkeyPat
 
     def final_call_fails(*args: object, **kwargs: object) -> solveur.SolutionLP:
         calls["n"] += 1
-        solution = resoudre(*args, **kwargs)  # type: ignore[arg-type]
-        return solution if calls["n"] <= 1 else replace(solution, statut="limite")
+        solution = solve(*args, **kwargs)  # type: ignore[arg-type]
+        return solution if calls["n"] <= 1 else replace(solution, status="limite")
 
-    monkeypatch.setattr(fw_module, "resoudre", final_call_fails)
+    monkeypatch.setattr(fw_module, "solve", final_call_fails)
     result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=1)
     assert result.status == "max_iter"
     assert result.gap == float("inf")

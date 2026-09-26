@@ -15,9 +15,9 @@ from benchmarks.guarantees.scenarios import generate
 import archlux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.errors import Infeasible
-from archlux.geom.graphe import OrdreRelatif
-from archlux.geom.polytope import construire_polytope
-from archlux.lmo.solveur import resoudre
+from archlux.geom.graphe import RelativeOrder
+from archlux.geom.polytope import build_polytope
+from archlux.lmo.solveur import solve
 from archlux.types import Context, Orientation, Regulation, Structure
 
 _CTX = Context(
@@ -26,17 +26,17 @@ _CTX = Context(
     outline=((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0)),
     regulation=Regulation(min_areas=(), min_width=2.0),
 )
-_TWO_ROOMS_IN_3M = construire_polytope(
-    OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")), _CTX
+_TWO_ROOMS_IN_3M = build_polytope(
+    RelativeOrder(horizontal=(("a", "b"),), vertical=(), rooms=("a", "b")), _CTX
 )
 
 
 def test_a_genuine_certificate_verifies_exactly() -> None:
     """Two rooms at least 2 m wide, side by side, in 3 m: no plan exists."""
-    solution = resoudre(_TWO_ROOMS_IN_3M, np.zeros(8))
-    assert solution.statut == "infaisable"
+    solution = solve(_TWO_ROOMS_IN_3M, np.zeros(8))
+    assert solution.status == "infaisable"
     check = verify_infeasibility(
-        _TWO_ROOMS_IN_3M, solution.certificat_farkas, solution.certificat_farkas_eq
+        _TWO_ROOMS_IN_3M, solution.farkas_certificate, solution.farkas_certificate_eq
     )
     assert check.verified and check.margin > 0
 
@@ -48,8 +48,8 @@ def test_a_forged_certificate_does_not_verify() -> None:
 
 
 def test_a_feasible_system_never_verifies() -> None:
-    wide = construire_polytope(
-        OrdreRelatif(horizontal=(("a", "b"),), vertical=(), pieces=("a", "b")),
+    wide = build_polytope(
+        RelativeOrder(horizontal=(("a", "b"),), vertical=(), rooms=("a", "b")),
         Context(
             structure=_CTX.structure,
             orientation=_CTX.orientation,

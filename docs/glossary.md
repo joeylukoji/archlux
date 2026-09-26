@@ -93,6 +93,27 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `expliquer()` | `explain()` | |
 | `Verdict.faisable`, `Verdict.certificat` | `Verdict.feasible`, `Verdict.certificate` | |
 
+## Geometry and LMO modules (rename wave 5, batch 4)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `OrdreRelatif` (field `pieces`) | `RelativeOrder` (field `rooms`) | |
+| `GrapheContraintes` (`a_separation`, `fermeture`) | `ConstraintGraph` (`has_separation`, `closure`) | |
+| `deduire_ordre`, `construire_graphe`, `reduction_transitive` | `deduce_order`, `build_graph`, `transitive_reduction` | |
+| `construire_polytope`, `figer_contacts`, `vectoriser`, `devectoriser`, `etendre_ecarts_l1` | `build_polytope`, `freeze_contacts`, `vectorize`, `devectorize`, `extend_l1_slack` | parameter `gabarit` becomes `template` |
+| `Polytope.bornes`, `origines`, `origines_eq`, `labels_eq()`, `contient()` | `bounds`, `origins`, `origins_eq`, `eq_labels()`, `contains()` | |
+| `CHAMPS` | `FIELDS` | |
+| `Trame` | `Grid` | fields `lignes_x`, `lignes_y`, `ancrees_x`, `ancrees_y` become `x_lines`, `y_lines`, `anchored_x`, `anchored_y`; `n_cellules` becomes `n_cells` |
+| `deduire_trame`, `contraintes_pavage`, `etendre_pavage` | `deduce_grid`, `tiling_constraints`, `extend_tiling` | parameters `trame`, `support_min` become `grid`, `min_support` |
+| `PieceRectilineaire` (field `fusions`) | `RectilinearRoom` (field `merges`) | |
+| `decomposer`, `recomposer`, `contraintes_fusion`, `etendre_fusions` | `decompose`, `recompose`, `merge_constraints`, `extend_merges` | parameters `polygone`, `type_piece` become `polygon`, `room_type` |
+| `FUSION_DROIT`, `FUSION_HAUT` | `MERGE_RIGHT`, `MERGE_TOP` | |
+| `diagnostiquer` | `diagnose` | fields `recouvrements`, `part_jour`, `part_trou`, `morceaux`, `cellules`, `cote` become `overlaps`, `gap_share`, `hole_share`, `fragments`, `cells`, `size` |
+| `resoudre`, `vider_cache` | `solve`, `clear_cache` | parameters `depart`, `coupes` become `start`, `cuts` |
+| `SolutionLP` fields | `valeur`, `statut`, `duaux`, `certificat_farkas`, `certificat_farkas_eq`, `temps_ms` become `value`, `status`, `duals`, `farkas_certificate`, `farkas_certificate_eq`, `time_ms` | |
+| `Coupe` (`coeffs`, `borne_inf`, `origine`, `satisfait()`) | `Cut` (`coefficients`, `lower_bound`, `origin`, `satisfied()`) | |
+| `coupe_surface`, `surfaces_violees`, `resoudre_avec_surfaces`, `MAX_COUPES_PAR_PIECE` | `area_cut`, `violated_areas`, `solve_with_areas`, `MAX_CUTS_PER_ROOM` | |
+
 ## Geometry and solver
 
 | French | English |

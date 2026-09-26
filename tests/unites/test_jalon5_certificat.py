@@ -31,9 +31,9 @@ def _poly() -> Polytope:
         b=np.ones(3),
         A_eq=sparse.csr_matrix((0, 3)),
         b_eq=np.zeros(0),
-        bornes=((0.0, 1.0),) * 3,
+        bounds=((0.0, 1.0),) * 3,
         index={"a.x": 0, "a.y": 1, "a.w": 2},
-        origines=(
+        origins=(
             "mur porteur axe 3",
             "surface minimale cuisine",
             "largeur de passage",

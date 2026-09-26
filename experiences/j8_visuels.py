@@ -50,13 +50,13 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
         "",
         "| grandeur | valeur |",
         "|---|--:|",
-        f"| pièces | {len(plan.pieces)} |",
-        f"| pièces recouvertes par pièce | {diag.recouvrements:.2f} |",
-        f"| part de jour dans l'enveloppe | {diag.part_jour:.1%} |",
-        f"| dont trous intérieurs | {diag.part_trou:.1%} |",
-        f"| morceaux disjoints | {diag.morceaux} |",
+        f"| pièces | {len(plan.rooms)} |",
+        f"| pièces recouvertes par pièce | {diag.overlaps:.2f} |",
+        f"| part de jour dans l'enveloppe | {diag.gap_share:.1%} |",
+        f"| dont trous intérieurs | {diag.hole_share:.1%} |",
+        f"| morceaux disjoints | {diag.fragments} |",
         f"| cellules de la trame implicite | {diag.cellules} |",
-        f"| côté caractéristique | {diag.cote:.2f} m |",
+        f"| côté caractéristique | {diag.size:.2f} m |",
         "",
         "## Avant — vérification exacte",
         "",
@@ -80,8 +80,8 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
             "|---|--:|",
             f"| valide | **{geo.valid}** |",
             f"| déplacement max | {geo.max_displacement:.3f} m |",
-            f"| rapporté au côté | {geo.max_displacement / diag.cote:.0%} |",
-            f"| pièces | {len(corrige.pieces)} |",
+            f"| rapporté au côté | {geo.max_displacement / diag.size:.0%} |",
+            f"| pièces | {len(corrige.rooms)} |",
         ]
     return "\n".join(lignes) + "\n"
 
@@ -117,7 +117,7 @@ def main() -> None:
 
         dossier = RACINE / statut.replace(" ", "-").replace("(", "").replace(")", "")
         dossier.mkdir(parents=True, exist_ok=True)
-        avant = f"{len(plan.rooms)} pièces, jour {diag.part_jour:.0%}, {diag.morceaux} morceaux"
+        avant = f"{len(plan.rooms)} pièces, jour {diag.gap_share:.0%}, {diag.fragments} morceaux"
         if corrige is None:
             # Un seul panneau. Redessiner le plan d'entree a droite se lirait
             # « rien n'a change », alors qu'aucun plan n'a ete produit du tout.
@@ -143,7 +143,7 @@ def main() -> None:
             _fiche(nom, plan, diag, preuve, corrige, statut, echelle),
             encoding="utf-8",
         )
-        index.append((statut, nom, f"{diag.part_jour:.0%}", str(diag.morceaux)))
+        index.append((statut, nom, f"{diag.gap_share:.0%}", str(diag.fragments)))
 
     RACINE.mkdir(parents=True, exist_ok=True)
     table = [
@@ -154,10 +154,10 @@ def main() -> None:
         "| issue | plan | jour avant | morceaux avant | fiche |",
         "|---|---|--:|--:|---|",
     ]
-    for statut, nom, jour, morceaux in sorted(index):
+    for statut, nom, jour, fragments in sorted(index):
         rep = statut.replace(" ", "-").replace("(", "").replace(")", "")
         table.append(
-            f"| {statut} | `{nom}` | {jour} | {morceaux} | "
+            f"| {statut} | `{nom}` | {jour} | {fragments} | "
             f"[svg]({rep}/{nom}.svg) · [métriques]({rep}/{nom}.md) |"
         )
     (RACINE / "index.md").write_text("\n".join(table) + "\n", encoding="utf-8")

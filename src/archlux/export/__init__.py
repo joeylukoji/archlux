@@ -7,7 +7,7 @@ suffisant pour la CI et les plans rectangulaires.
 
 from archlux.export.dxf import to_dxf
 from archlux.export.ifc import RapportExport, to_ifc
-from archlux.export.pathologie import DiagnosticPathologie, diagnostiquer
+from archlux.export.pathologie import DiagnosticPathologie, diagnose
 from archlux.export.survie import survival_rate
 from archlux.export.svg import render as render_svg
 from archlux.export.wilson import intervalle_wilson
@@ -15,7 +15,7 @@ from archlux.export.wilson import intervalle_wilson
 __all__ = [
     "DiagnosticPathologie",
     "RapportExport",
-    "diagnostiquer",
+    "diagnose",
     "intervalle_wilson",
     "render_svg",
     "survival_rate",

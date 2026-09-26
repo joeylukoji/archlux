@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given, settings
 
 from archlux.errors import InvariantViolation
-from archlux.export import diagnostiquer, survival_rate, to_dxf, to_ifc
+from archlux.export import diagnose, survival_rate, to_dxf, to_ifc
 from archlux.export.wilson import intervalle_wilson
 from archlux.types import Plan, Room, Wall
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
@@ -43,7 +43,7 @@ def _plan_pathologique() -> Plan:
 @settings(max_examples=40, deadline=None)
 def test_export_valide(plan: Plan) -> None:
     """`MILESTONE-6.md` §4 : to_ifc sur plans_valides reste valide."""
-    assert diagnostiquer(plan).exportable
+    assert diagnose(plan).exportable
     with TemporaryDirectory() as tmp:
         chemin = Path(tmp) / "plan.ifc"
         rapport = to_ifc(plan, chemin, validate=True)
@@ -92,6 +92,6 @@ def test_to_dxf_leve_sur_pathologie(tmp_path: Path) -> None:
 
 
 def test_pathologie_arete_nulle() -> None:
-    diag = diagnostiquer(_plan_pathologique())
+    diag = diagnose(_plan_pathologique())
     assert any(p.startswith("arete_nulle:") for p in diag.pathologies)
     assert any(p.startswith("chevauchement:") for p in diag.pathologies)

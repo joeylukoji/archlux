@@ -69,6 +69,7 @@ from scipy import sparse
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import GridNotRecoverable, InvariantViolation, UnsupportedInput
 
 if TYPE_CHECKING:
@@ -77,13 +78,13 @@ if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
     from archlux.types import Context, Plan
 
-__all__ = ["Trame", "contraintes_pavage", "deduire_trame", "etendre_pavage", "snap_to_grid"]
+__all__ = ["Grid", "deduce_grid", "extend_tiling", "snap_to_grid", "tiling_constraints"]
 
 _EPS = 1e-9
 
 
 @dataclass(frozen=True, slots=True)
-class Trame:
+class Grid:
     """Structure combinatoire d'une dissection rectangulaire.
 
     Attributes
@@ -97,16 +98,16 @@ class Trame:
         ``lignes_x`` / ``lignes_y``. ``gauche < droite`` et ``bas < haut``.
     """
 
-    lignes_x: tuple[float, ...]
-    lignes_y: tuple[float, ...]
+    x_lines: tuple[float, ...]
+    y_lines: tuple[float, ...]
     incidences: tuple[tuple[str, int, int, int, int], ...]
-    ancrees_x: frozenset[int] = frozenset()
-    ancrees_y: frozenset[int] = frozenset()
+    anchored_x: frozenset[int] = frozenset()
+    anchored_y: frozenset[int] = frozenset()
 
     @property
-    def n_cellules(self) -> int:
+    def n_cells(self) -> int:
         """Nombre de cellules du tableau, ``(p - 1) × (q - 1)``."""
-        return (len(self.lignes_x) - 1) * (len(self.lignes_y) - 1)
+        return (len(self.x_lines) - 1) * (len(self.y_lines) - 1)
 
 
 def _regrouper(valeurs: Sequence[float], tolerance: float) -> tuple[list[float], dict[float, int]]:
@@ -138,7 +139,7 @@ def _consolider(
     lignes: list[float],
     bords: list[tuple[int, int]],
     protegees: set[int],
-    support_min: int,
+    min_support: int,
 ) -> tuple[list[float], list[tuple[int, int]], set[int]]:
     """Résorber les lignes **orphelines** dans leur voisine la plus proche.
 
@@ -176,7 +177,7 @@ def _consolider(
             support[basse] += 1
             support[haute] += 1
         candidates = sorted(
-            (k for k, n in support.items() if n < support_min and k not in protegees),
+            (k for k, n in support.items() if n < min_support and k not in protegees),
             key=lambda k: (support[k], k),
         )
         fusion: tuple[int, int] | None = None
@@ -360,14 +361,14 @@ def _reparer_partition(
     return None if reste else incidences
 
 
-def deduire_trame(
+def deduce_grid(
     plan: Plan,
     ctx: Context,
     *,
     tolerance: float = 0.01,
-    support_min: int = 2,
+    min_support: int = 2,
     budget_reparation: int = 4,
-) -> Trame:
+) -> Grid:
     """Récupérer la trame du plan proposé et **prouver** qu'elle pave le contour.
 
     Parameters
@@ -463,9 +464,9 @@ def deduire_trame(
     ancrees_x = {rang_x[v] for v in xs_contour}
     ancrees_y = {rang_y[v] for v in ys_contour}
 
-    if support_min > 1:
-        lignes_x, bords_x, ancrees_x = _consolider(lignes_x, bords_x, ancrees_x, support_min)
-        lignes_y, bords_y, ancrees_y = _consolider(lignes_y, bords_y, ancrees_y, support_min)
+    if min_support > 1:
+        lignes_x, bords_x, ancrees_x = _consolider(lignes_x, bords_x, ancrees_x, min_support)
+        lignes_y, bords_y, ancrees_y = _consolider(lignes_y, bords_y, ancrees_y, min_support)
 
     incidences = [
         (piece.id, gauche, droite, bas, haut)
@@ -504,16 +505,16 @@ def deduire_trame(
         if gauche >= droite or bas >= haut:
             raise InvariantViolation((f"piece {nom} degeneree dans la trame",))
 
-    return Trame(
-        lignes_x=tuple(lignes_x),
-        lignes_y=tuple(lignes_y),
+    return Grid(
+        x_lines=tuple(lignes_x),
+        y_lines=tuple(lignes_y),
         incidences=tuple(incidences),
-        ancrees_x=frozenset(ancrees_x),
-        ancrees_y=frozenset(ancrees_y),
+        anchored_x=frozenset(ancrees_x),
+        anchored_y=frozenset(ancrees_y),
     )
 
 
-def snap_to_grid(plan: Plan, trame: Trame) -> Plan:
+def snap_to_grid(plan: Plan, grid: Grid) -> Plan:
     """Place every room of ``plan`` on the reference lines of its recovered grid.
 
     The result is an exact tiling of the outline (the partition of ``trame`` is
@@ -535,20 +536,20 @@ def snap_to_grid(plan: Plan, trame: Trame) -> Plan:
         New plan, rooms in the same order, only their coordinates changed.
     """
     lignes = {
-        nom: (gauche, droite, bas, haut) for nom, gauche, droite, bas, haut in trame.incidences
+        nom: (gauche, droite, bas, haut) for nom, gauche, droite, bas, haut in grid.incidences
     }
     pieces = []
     for piece in plan.rooms:
         gauche, droite, bas, haut = lignes[piece.id]
-        x, y = trame.lignes_x[gauche], trame.lignes_y[bas]
+        x, y = grid.x_lines[gauche], grid.y_lines[bas]
         pieces.append(
-            replace(piece, x=x, y=y, w=trame.lignes_x[droite] - x, h=trame.lignes_y[haut] - y)
+            replace(piece, x=x, y=y, w=grid.x_lines[droite] - x, h=grid.y_lines[haut] - y)
         )
     return replace(plan, rooms=tuple(pieces))
 
 
-def contraintes_pavage(
-    trame: Trame, index: dict[str, int]
+def tiling_constraints(
+    grid: Grid, index: dict[str, int]
 ) -> tuple[tuple[str, dict[str, float], float], ...]:
     """Traduire la trame en égalités affines ``Σ a_k v_k = b``.
 
@@ -577,7 +578,7 @@ def contraintes_pavage(
     # bord droit = x + w. Meme chose en y.
     bords_x: dict[int, list[tuple[str, dict[str, float]]]] = {}
     bords_y: dict[int, list[tuple[str, dict[str, float]]]] = {}
-    for piece_id, gauche, droite, bas, haut in trame.incidences:
+    for piece_id, gauche, droite, bas, haut in grid.incidences:
         for nom in (f"{piece_id}.x", f"{piece_id}.w", f"{piece_id}.y", f"{piece_id}.h"):
             if nom not in index:
                 raise InvariantViolation((f"variable absente de l'index : {nom}",))
@@ -591,8 +592,8 @@ def contraintes_pavage(
         )
 
     for axe, bords, lignes, ancrees in (
-        ("x", bords_x, trame.lignes_x, trame.ancrees_x),
-        ("y", bords_y, trame.lignes_y, trame.ancrees_y),
+        ("x", bords_x, grid.x_lines, grid.anchored_x),
+        ("y", bords_y, grid.y_lines, grid.anchored_y),
     ):
         for ligne, membres in sorted(bords.items()):
             if ligne in ancrees:
@@ -619,7 +620,7 @@ def contraintes_pavage(
     return tuple(egalites)
 
 
-def etendre_pavage(poly: Polytope, trame: Trame) -> Polytope:
+def extend_tiling(poly: Polytope, grid: Grid) -> Polytope:
     """Ajouter les égalités de pavage au polytope (``A_eq``, ``b_eq``).
 
     Parameters
@@ -636,7 +637,7 @@ def etendre_pavage(poly: Polytope, trame: Trame) -> Polytope:
         des inégalités dualisées — elles n'apparaissent donc **pas** dans le
         diagnostic dual du certificat.
     """
-    egalites = contraintes_pavage(trame, poly.index)
+    egalites = tiling_constraints(grid, poly.index)
     if not egalites:
         return poly
     n_var = len(poly.index)
@@ -659,4 +660,15 @@ def etendre_pavage(poly: Polytope, trame: Trame) -> Polytope:
     else:
         a_eq = a_extra
         b_eq = np.asarray(seconds, dtype=float)
-    return replace(poly, A_eq=a_eq, b_eq=b_eq, origines_eq=poly.labels_eq() + tuple(labels))
+    return replace(poly, A_eq=a_eq, b_eq=b_eq, origins_eq=poly.eq_labels() + tuple(labels))
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "Trame": Alias(Grid, "archlux.geom.pavage.Grid"),
+        "deduire_trame": Alias(deduce_grid, "archlux.geom.pavage.deduce_grid"),
+        "contraintes_pavage": Alias(tiling_constraints, "archlux.geom.pavage.tiling_constraints"),
+        "etendre_pavage": Alias(extend_tiling, "archlux.geom.pavage.extend_tiling"),
+    },
+)

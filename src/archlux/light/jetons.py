@@ -53,7 +53,7 @@ def _jeton_piece(
     y: float,
     w: float,
     h: float,
-    type_piece: str,
+    room_type: str,
     orientation: Orientation,
     n_pieces: float,
     aire_totale: float,
@@ -65,8 +65,8 @@ def _jeton_piece(
     peri = 2.0 * (w + h)
     compact = 4.0 * aire / (peri * peri)
     type_oh = np.zeros(len(_TYPES) + 1, dtype=float)
-    if type_piece in _TYPES:
-        type_oh[_TYPES.index(type_piece)] = 1.0
+    if room_type in _TYPES:
+        type_oh[_TYPES.index(room_type)] = 1.0
     else:
         type_oh[-1] = 1.0
     azimut = encoder(orientation, harmoniques=3)

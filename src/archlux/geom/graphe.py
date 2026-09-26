@@ -19,6 +19,7 @@ import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InconsistentOrder, MissingSeparation, UnsupportedInput
 from archlux.tolerances import CONTACT_M, SNAP_M
 
@@ -30,12 +31,12 @@ if TYPE_CHECKING:
     from archlux.types import Plan, Room, Structure, Wall
 
 __all__ = [
-    "GrapheContraintes",
-    "OrdreRelatif",
+    "ConstraintGraph",
+    "RelativeOrder",
     "WallSide",
-    "construire_graphe",
-    "deduire_ordre",
-    "reduction_transitive",
+    "build_graph",
+    "deduce_order",
+    "transitive_reduction",
 ]
 
 Axe = Literal["horizontal", "vertical"]
@@ -75,7 +76,7 @@ class WallSide:
 
 
 @dataclass(frozen=True, slots=True)
-class OrdreRelatif:
+class RelativeOrder:
     """Ordre partiel des pièces sur les deux axes.
 
     Attributes
@@ -95,13 +96,13 @@ class OrdreRelatif:
 
     horizontal: tuple[tuple[str, str], ...]
     vertical: tuple[tuple[str, str], ...]
-    pieces: tuple[str, ...]
+    rooms: tuple[str, ...]
     wall_sides: tuple[WallSide, ...] = ()
     shared_sides: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
-class GrapheContraintes:
+class ConstraintGraph:
     """Deux graphes orientés acycliques, un par axe.
 
     Le `dataclass` est gelé, mais un ``DiGraph`` reste mutable : **traiter les deux
@@ -113,7 +114,7 @@ class GrapheContraintes:
     horizontal: nx.DiGraph
     vertical: nx.DiGraph
 
-    def a_separation(self, a: str, b: str) -> bool:
+    def has_separation(self, a: str, b: str) -> bool:
         """Dire si la paire ``(a, b)`` est séparée sur au moins un axe.
 
         Parameters
@@ -143,7 +144,7 @@ class GrapheContraintes:
             for graphe in (self.horizontal, self.vertical)
         )
 
-    def fermeture(self) -> frozenset[tuple[str, str, str]]:
+    def closure(self) -> frozenset[tuple[str, str, str]]:
         """Fermeture transitive des deux graphes, en triplets ``(axe, a, b)``.
 
         Returns
@@ -165,11 +166,11 @@ class GrapheContraintes:
         return frozenset(triplets)
 
 
-def deduire_ordre(
+def deduce_order(
     plan: Plan,
     structure: Structure | None = None,
     groups: tuple[tuple[str, ...], ...] = (),
-) -> OrdreRelatif:
+) -> RelativeOrder:
     """Extraire l'ordre relatif d'un plan proposé, en comparant les centres.
 
     C'est ici qu'est appliqué le principe fondateur : **le générateur décide l'ordre**.
@@ -291,10 +292,10 @@ def deduire_ordre(
                         sides[wall.id, m.id] = replace(shared, room=m.id)
                     shared_sides.append((wall.id, tuple(m.id for m in members)))
         wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiants)
-    return OrdreRelatif(
+    return RelativeOrder(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
-        pieces=tuple(identifiants),
+        rooms=tuple(identifiants),
         wall_sides=wall_sides,
         shared_sides=tuple(shared_sides),
     )
@@ -420,7 +421,7 @@ def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe:
     return graphe
 
 
-def construire_graphe(ordre: OrdreRelatif, pieces: Sequence[str]) -> GrapheContraintes:
+def build_graph(ordre: RelativeOrder, pieces: Sequence[str]) -> ConstraintGraph:
     """Assembler les deux graphes orientés et valider l'ordre.
 
     Parameters
@@ -456,17 +457,17 @@ def construire_graphe(ordre: OrdreRelatif, pieces: Sequence[str]) -> GrapheContr
     O(n² + m), m = nombre d'arêtes. Le terme quadratique vient du contrôle de
     séparation, qui doit examiner toutes les paires.
     """
-    graphe = GrapheContraintes(
+    graphe = ConstraintGraph(
         horizontal=_graphe_axe(ordre.horizontal, pieces, "horizontal"),
         vertical=_graphe_axe(ordre.vertical, pieces, "vertical"),
     )
     for a, b in itertools.combinations(sorted(pieces), 2):
-        if not graphe.a_separation(a, b):
+        if not graphe.has_separation(a, b):
             raise MissingSeparation(pair=(a, b))
     return graphe
 
 
-def reduction_transitive(g: GrapheContraintes) -> GrapheContraintes:
+def transitive_reduction(g: ConstraintGraph) -> ConstraintGraph:
     """Retirer les arêtes impliquées par transitivité, sans changer la fermeture.
 
     **Cette étape n'est pas optionnelle.** 15 pièces donnent ~210 contraintes brutes et
@@ -502,4 +503,18 @@ def reduction_transitive(g: GrapheContraintes) -> GrapheContraintes:
         # le seul autre axe disparaîtrait du graphe, et le polytope perdrait ses bornes.
         reduit.add_nodes_from(origine.nodes)
         reduits[axe] = reduit
-    return GrapheContraintes(horizontal=reduits["horizontal"], vertical=reduits["vertical"])
+    return ConstraintGraph(horizontal=reduits["horizontal"], vertical=reduits["vertical"])
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "OrdreRelatif": Alias(RelativeOrder, "archlux.geom.graphe.RelativeOrder"),
+        "GrapheContraintes": Alias(ConstraintGraph, "archlux.geom.graphe.ConstraintGraph"),
+        "deduire_ordre": Alias(deduce_order, "archlux.geom.graphe.deduce_order"),
+        "construire_graphe": Alias(build_graph, "archlux.geom.graphe.build_graph"),
+        "reduction_transitive": Alias(
+            transitive_reduction, "archlux.geom.graphe.transitive_reduction"
+        ),
+    },
+)

@@ -60,7 +60,7 @@ import archlux as ax
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GridNotRecoverable
 from archlux.export.wilson import intervalle_wilson
-from archlux.geom.diagnostic import Diagnostic, diagnostiquer
+from archlux.geom.diagnostic import Diagnostic, diagnose
 from archlux.types import (
     Context,
     Orientation,
@@ -101,7 +101,7 @@ LARGEURS = (0.0, 0.25, 1.00, 1.80)
 # pas. Sert a distinguer « valide » de « valide ET programme preserve ».
 COTE_INTACT_M = 0.50
 
-CHAMPS = (
+FIELDS = (
     "plan_id",
     "programme",
     "graphe",
@@ -156,8 +156,8 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnos
         return "piece degeneree"
 
     pieces = tuple(
-        Room(id=f"p{rang:03d}", type=type_piece, x=x, y=y, w=w, h=h)
-        for rang, (type_piece, (x, y, w, h)) in enumerate(boites)
+        Room(id=f"p{rang:03d}", type=room_type, x=x, y=y, w=w, h=h)
+        for rang, (room_type, (x, y, w, h)) in enumerate(boites)
     )
     formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in pieces]
     union = unary_union(formes)
@@ -180,7 +180,7 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnos
         regulation=Regulation(min_areas=(), min_width=LARGEUR_DEFAUT),
         program=tuple(sorted(set(plan_json["programme"]))),
     )
-    return plan, contexte, diagnostiquer(plan)
+    return plan, contexte, diagnose(plan)
 
 
 def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
@@ -198,7 +198,7 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
     recouv = np.asarray([float(r["recouvrements_avant"]) for r in diag])
     jour = np.asarray([float(r["part_jour_avant"]) for r in diag])
     trou = np.asarray([float(r["part_trou_avant"]) for r in diag])
-    morceaux = np.asarray([float(r["morceaux_avant"]) for r in diag])
+    fragments = np.asarray([float(r["morceaux_avant"]) for r in diag])
 
     lignes = [
         "| mode | budget | n | réparés | IC 95 % | t médian | déplacement médian |",
@@ -313,8 +313,8 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
         f"{jour.mean():.1%} | {np.quantile(jour, 0.95):.1%} |\n"
         f"| dont trous **intérieurs** | {np.median(trou):.1%} | "
         f"{trou.mean():.1%} | {np.quantile(trou, 0.95):.1%} |\n"
-        f"| morceaux disjoints de l'union | {np.median(morceaux):.0f} | "
-        f"{morceaux.mean():.2f} | {np.quantile(morceaux, 0.95):.0f} |\n"
+        f"| morceaux disjoints de l'union | {np.median(fragments):.0f} | "
+        f"{fragments.mean():.2f} | {np.quantile(fragments, 0.95):.0f} |\n"
         f"| cellules de la trame implicite | {np.median(cellules):.0f} | "
         f"{cellules.mean():.0f} | {np.quantile(cellules, 0.95):.0f} |\n\n"
         "## Réparation\n\n"
@@ -352,7 +352,7 @@ def main() -> None:
     sortie = Path(f"resultats/j8_{etiquette}_brut.csv")
     rejets: dict[str, int] = {}
     with sortie.open("w", newline="", encoding="utf-8") as flux:
-        ecrivain = csvmod.DictWriter(flux, fieldnames=CHAMPS)
+        ecrivain = csvmod.DictWriter(flux, fieldnames=FIELDS)
         ecrivain.writeheader()
         for plan_json in lignes:
             bati = _construire(plan_json, echelle)
@@ -417,15 +417,15 @@ def main() -> None:
                         "n_pieces_apres": n_apres,
                         "cote_min_apres": cote_min,
                         "intact": intact,
-                        "cellules": diagnostic.cellules,
-                        "recouvrements_avant": f"{diagnostic.recouvrements:.3f}",
-                        "part_jour_avant": f"{diagnostic.part_jour:.4f}",
-                        "part_trou_avant": f"{diagnostic.part_trou:.4f}",
-                        "morceaux_avant": diagnostic.morceaux,
-                        "cote_m": f"{diagnostic.cote:.3f}",
+                        "cellules": diagnostic.cells,
+                        "recouvrements_avant": f"{diagnostic.overlaps:.3f}",
+                        "part_jour_avant": f"{diagnostic.gap_share:.4f}",
+                        "part_trou_avant": f"{diagnostic.hole_share:.4f}",
+                        "morceaux_avant": diagnostic.fragments,
+                        "cote_m": f"{diagnostic.size:.3f}",
                         "deplacement_max_m": deplacement,
                         "deplacement_relatif": (
-                            f"{float(deplacement) / diagnostic.cote:.4f}" if deplacement else ""
+                            f"{float(deplacement) / diagnostic.size:.4f}" if deplacement else ""
                         ),
                         "temps_ms": f"{(time.perf_counter() - debut) * 1000:.3f}",
                         "statut": statut,

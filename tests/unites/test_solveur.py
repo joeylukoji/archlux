@@ -12,10 +12,10 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-from archlux.geom.graphe import OrdreRelatif
-from archlux.geom.polytope import construire_polytope
-from archlux.lmo.coupes import Coupe
-from archlux.lmo.solveur import resoudre
+from archlux.geom.graphe import RelativeOrder
+from archlux.geom.polytope import build_polytope
+from archlux.lmo.cuts import Cut
+from archlux.lmo.solveur import solve
 from archlux.types import Context, Orientation, Regulation, Structure
 
 CTX = Context(
@@ -25,11 +25,11 @@ CTX = Context(
     regulation=Regulation(min_areas=(), min_width=1.5),
 )
 
-ORDRE_1 = OrdreRelatif(horizontal=(), vertical=(), pieces=("A",))
-ORDRE_AB = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B"))
+ORDRE_1 = RelativeOrder(horizontal=(), vertical=(), rooms=("A",))
+ORDRE_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
 
-POLY_1 = construire_polytope(ORDRE_1, CTX)
-POLY_AB = construire_polytope(ORDRE_AB, CTX)
+POLY_1 = build_polytope(ORDRE_1, CTX)
+POLY_AB = build_polytope(ORDRE_AB, CTX)
 
 
 class TestResolutionSimple:
@@ -37,29 +37,29 @@ class TestResolutionSimple:
 
     def test_lp_trivial(self) -> None:
         """Une seule pièce, minimiser ``x`` : la solution est la borne basse."""
-        sol = resoudre(POLY_1, c=np.array([1.0, 0.0, 0.0, 0.0]))
-        assert sol.statut == "optimal"
+        sol = solve(POLY_1, c=np.array([1.0, 0.0, 0.0, 0.0]))
+        assert sol.status == "optimal"
         assert sol.x[POLY_1.index["A.x"]] == pytest.approx(0.0)
 
     def test_maximiser_revient_a_minimiser_l_oppose(self) -> None:
         """``c = −e_x`` pousse ``x`` à sa borne haute, sans que le solveur sache pourquoi."""
         c = np.zeros(4)
         c[POLY_1.index["A.x"]] = -1.0
-        sol = resoudre(POLY_1, c=c)
+        sol = solve(POLY_1, c=c)
         # x + w <= 10 et w >= 1,5 : le maximum de x vaut 8,5.
         assert sol.x[POLY_1.index["A.x"]] == pytest.approx(8.5)
 
     def test_la_solution_est_dans_le_polytope(self) -> None:
         """Vérifié par ``Polytope.contient``, qui n'emprunte rien au solveur."""
         c = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0])
-        sol = resoudre(POLY_AB, c=c)
-        assert sol.statut == "optimal"
-        assert POLY_AB.contient(sol.x, tol=1e-7)
+        sol = solve(POLY_AB, c=c)
+        assert sol.status == "optimal"
+        assert POLY_AB.contains(sol.x, tol=1e-7)
 
     def test_les_diagnostics_sont_renseignes(self) -> None:
         """``temps_ms`` et ``iterations`` ne sont pas décoratifs : le §9 les mesure."""
-        sol = resoudre(POLY_AB, c=np.zeros(8))
-        assert sol.temps_ms > 0.0
+        sol = solve(POLY_AB, c=np.zeros(8))
+        assert sol.time_ms > 0.0
         assert sol.iterations >= 0
 
 
@@ -68,23 +68,23 @@ class TestDuaux:
 
     def test_absents_par_defaut(self) -> None:
         """Les extraire coûte ; ne pas les demander doit vouloir dire ne pas les payer."""
-        assert resoudre(POLY_AB, c=np.zeros(8)).duaux is None
+        assert solve(POLY_AB, c=np.zeros(8)).duals is None
 
     def test_presents_sur_demande(self) -> None:
         """Un dual par ligne de ``A`` — l'appariement avec ``origines`` en dépend."""
         c = np.zeros(8)
         c[POLY_AB.index["A.w"]] = -1.0
-        sol = resoudre(POLY_AB, c=c, duaux=True)
-        assert sol.duaux is not None
-        assert sol.duaux.shape == (POLY_AB.A.shape[0],)
+        sol = solve(POLY_AB, c=c, duaux=True)
+        assert sol.duals is not None
+        assert sol.duals.shape == (POLY_AB.A.shape[0],)
 
     def test_une_contrainte_active_a_un_prix_non_nul(self) -> None:
         """Élargir ``A`` bute sur le contour : cette ligne-là doit coûter quelque chose."""
         c = np.zeros(8)
         c[POLY_AB.index["A.w"]] = -1.0
-        sol = resoudre(POLY_AB, c=c, duaux=True)
-        assert sol.duaux is not None
-        actives = {POLY_AB.origines[i] for i, prix in enumerate(sol.duaux) if abs(prix) > 1e-9}
+        sol = solve(POLY_AB, c=c, duaux=True)
+        assert sol.duals is not None
+        actives = {POLY_AB.origins[i] for i, prix in enumerate(sol.duals) if abs(prix) > 1e-9}
         assert actives, "aucune contrainte active alors que l'optimum est sur une face"
 
 
@@ -100,23 +100,23 @@ class TestInfeasible:
             outline=((0.0, 0.0), (3.0, 0.0), (3.0, 8.0), (0.0, 8.0)),
             regulation=Regulation(min_areas=(), min_width=2.0),
         )
-        return construire_polytope(ORDRE_AB, ctx)
+        return build_polytope(ORDRE_AB, ctx)
 
     def test_infaisable_produit_un_certificat(self) -> None:
         """Le programme ne tient pas dans l'enveloppe : il faut le prouver, pas l'affirmer."""
         poly = self._polytope_surcontraint()
-        sol = resoudre(poly, c=np.zeros(8))  # type: ignore[arg-type]
-        assert sol.statut == "infaisable"
-        assert sol.certificat_farkas is not None
-        assert sol.certificat_farkas.shape == (poly.A.shape[0],)  # type: ignore[attr-defined]
+        sol = solve(poly, c=np.zeros(8))  # type: ignore[arg-type]
+        assert sol.status == "infaisable"
+        assert sol.farkas_certificate is not None
+        assert sol.farkas_certificate.shape == (poly.A.shape[0],)
 
     def test_le_certificat_designe_des_contraintes_reelles(self) -> None:
         """Un certificat de Farkas non nul, sinon il n'explique rien."""
         poly = self._polytope_surcontraint()
-        sol = resoudre(poly, c=np.zeros(8))  # type: ignore[arg-type]
-        assert sol.certificat_farkas is not None
-        assert np.any(np.abs(sol.certificat_farkas) > 1e-9)
-        assert np.all(sol.certificat_farkas >= -1e-9), "les multiplicateurs sont positifs"
+        sol = solve(poly, c=np.zeros(8))  # type: ignore[arg-type]
+        assert sol.farkas_certificate is not None
+        assert np.any(np.abs(sol.farkas_certificate) > 1e-9)
+        assert np.all(sol.farkas_certificate >= -1e-9), "les multiplicateurs sont positifs"
 
 
 class TestDemarrageAChaud:
@@ -130,9 +130,9 @@ class TestDemarrageAChaud:
         """
         c1 = np.array([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
         c2 = np.array([0.0, 1.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0])
-        froid = resoudre(POLY_AB, c=c2)
-        chaud = resoudre(POLY_AB, c=c2, depart=resoudre(POLY_AB, c=c1).x)
-        assert chaud.statut == froid.statut
+        froid = solve(POLY_AB, c=c2)
+        chaud = solve(POLY_AB, c=c2, start=solve(POLY_AB, c=c1).x)
+        assert chaud.status == froid.status
         assert np.allclose(chaud.x, froid.x, atol=1e-7)
 
     def test_un_depart_de_mauvaise_dimension_est_refuse(self) -> None:
@@ -140,7 +140,7 @@ class TestDemarrageAChaud:
         from archlux.errors import InvariantViolation
 
         with pytest.raises(InvariantViolation, match="dimension"):
-            resoudre(POLY_AB, c=np.zeros(8), depart=np.zeros(3))
+            solve(POLY_AB, c=np.zeros(8), start=np.zeros(3))
 
 
 class TestStatutsRares:
@@ -153,9 +153,9 @@ class TestStatutsRares:
         que ``solve`` puisse distinguer « domaine ouvert » de « programme impossible »
         au lieu de confondre les deux sous un booléen.
         """
-        ouvert = replace(POLY_1, bornes=tuple((-np.inf, np.inf) for _ in POLY_1.bornes))
-        sol = resoudre(ouvert, c=np.array([1.0, 0.0, 0.0, 0.0]))
-        assert sol.statut in ("non_borne", "limite")
+        ouvert = replace(POLY_1, bounds=tuple((-np.inf, np.inf) for _ in POLY_1.bounds))
+        sol = solve(ouvert, c=np.array([1.0, 0.0, 0.0, 0.0]))
+        assert sol.status in ("non_borne", "limite")
 
     def test_les_egalites_sont_honorees(self) -> None:
         """``A_eq`` est vide aujourd'hui, mais portera la structure porteuse (ADR-7).
@@ -170,8 +170,8 @@ class TestStatutsRares:
             ),
             b_eq=np.array([2.5]),
         )
-        sol = resoudre(avec_egalite, c=np.array([1.0, 0.0, 0.0, 0.0]))
-        assert sol.statut == "optimal"
+        sol = solve(avec_egalite, c=np.array([1.0, 0.0, 0.0, 0.0]))
+        assert sol.status == "optimal"
         assert sol.x[POLY_1.index["A.x"]] == pytest.approx(2.5)
 
     def test_un_objectif_de_mauvaise_dimension_est_refuse(self) -> None:
@@ -179,7 +179,7 @@ class TestStatutsRares:
         from archlux.errors import InvariantViolation
 
         with pytest.raises(InvariantViolation, match="objectif de dimension"):
-            resoudre(POLY_1, c=np.zeros(99))
+            solve(POLY_1, c=np.zeros(99))
 
 
 class TestCoupes:
@@ -189,17 +189,17 @@ class TestCoupes:
         """``w_A ≥ 4`` interdit la solution que le LP choisirait sans elle."""
         c = np.zeros(8)
         c[POLY_AB.index["A.w"]] = 1.0  # minimiser w_A → il irait à 1,5
-        sans = resoudre(POLY_AB, c=c)
-        avec = resoudre(
+        sans = solve(POLY_AB, c=c)
+        avec = solve(
             POLY_AB,
             c=c,
-            coupes=[Coupe(coeffs=(("A.w", 1.0),), borne_inf=4.0, origine="essai")],
+            cuts=[Cut(coefficients=(("A.w", 1.0),), lower_bound=4.0, origin="essai")],
         )
         assert sans.x[POLY_AB.index["A.w"]] == pytest.approx(1.5)
         assert avec.x[POLY_AB.index["A.w"]] == pytest.approx(4.0)
 
     def test_une_coupe_infaisable_est_signalee(self) -> None:
         """Une coupe impossible rend le système infaisable, pas silencieusement ignorée."""
-        coupe = Coupe(coeffs=(("A.w", 1.0),), borne_inf=99.0, origine="impossible")
-        sol = resoudre(POLY_AB, c=np.zeros(8), coupes=[coupe])
-        assert sol.statut == "infaisable"
+        coupe = Cut(coefficients=(("A.w", 1.0),), lower_bound=99.0, origin="impossible")
+        sol = solve(POLY_AB, c=np.zeros(8), cuts=[coupe])
+        assert sol.status == "infaisable"

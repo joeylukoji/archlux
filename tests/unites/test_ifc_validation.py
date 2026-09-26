@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from hypothesis import given, settings
 
-from archlux.export import diagnostiquer, to_ifc
+from archlux.export import diagnose, to_ifc
 from archlux.types import Opening, Plan, Room, Wall
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 
@@ -48,7 +48,7 @@ def test_every_global_id_is_ifc_base64_and_unique(tmp_path: Path) -> None:
 def test_an_opening_on_an_unknown_wall_is_refused(tmp_path: Path) -> None:
     orphan = Opening(id="w9", wall_id="nowhere", s=0.5, relative_width=0.2)
     plan = Plan(_plan().rooms, _plan().walls, (orphan,), _plan().outline)
-    assert "ouverture_orpheline:w9" in diagnostiquer(plan).pathologies
+    assert "ouverture_orpheline:w9" in diagnose(plan).pathologies
     assert not to_ifc(plan, tmp_path / "plan.ifc", validate=True).valide
 
 

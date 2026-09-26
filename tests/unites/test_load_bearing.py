@@ -13,8 +13,8 @@ import pytest
 import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.errors import UnsupportedInput
-from archlux.geom.graphe import WallSide, deduire_ordre
-from archlux.geom.polytope import construire_polytope, vectoriser
+from archlux.geom.graphe import WallSide, deduce_order
+from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.protocole import Surrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
@@ -47,7 +47,7 @@ def _room(rid: str, x: float, y: float, w: float, h: float) -> Room:
 
 def test_rooms_on_each_side_of_a_full_wall() -> None:
     plan = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6))
-    sides = deduire_ordre(plan, structure=Structure((_FULL,))).wall_sides
+    sides = deduce_order(plan, structure=Structure((_FULL,))).wall_sides
     assert set(sides) == {
         WallSide(room="a", wall="w", side="left", bound=6.0),
         WallSide(room="b", wall="w", side="right", bound=6.0),
@@ -56,14 +56,14 @@ def test_rooms_on_each_side_of_a_full_wall() -> None:
 
 def test_a_room_crossing_the_wall_is_sent_to_the_side_of_its_centre() -> None:
     plan = _plan(_room("a", 0, 0, 7, 6), _room("b", 7, 0, 3, 6))  # a crosses x = 6
-    sides = {s.room: s.side for s in deduire_ordre(plan, structure=Structure((_FULL,))).wall_sides}
+    sides = {s.room: s.side for s in deduce_order(plan, structure=Structure((_FULL,))).wall_sides}
     assert sides == {"a": "left", "b": "right"}
 
 
 def test_a_room_beyond_the_end_of_a_partial_wall_stays_beyond_it() -> None:
     plan = _plan(_room("low", 0, 0, 6, 3), _room("high", 0, 3, 10, 3), _room("r", 6, 0, 4, 3))
     sides = {
-        s.room: (s.side, s.bound) for s in deduire_ordre(plan, Structure((_PARTIAL,))).wall_sides
+        s.room: (s.side, s.bound) for s in deduce_order(plan, Structure((_PARTIAL,))).wall_sides
     }
     assert sides["high"] == ("above", 3.0)
     assert sides["low"] == ("left", 6.0)
@@ -76,7 +76,7 @@ def test_a_room_overflowing_the_end_of_a_partial_wall_is_moved_past_the_end() ->
         _room("low", 0, 0, 6, 2.99), _room("high", 0, 2.99, 10, 3.01), _room("r", 6, 0, 4, 2.99)
     )
     sides = {
-        s.room: (s.side, s.bound) for s in deduire_ordre(plan, Structure((_PARTIAL,))).wall_sides
+        s.room: (s.side, s.bound) for s in deduce_order(plan, Structure((_PARTIAL,))).wall_sides
     }
     assert sides["high"] == ("above", 3.0)
 
@@ -84,7 +84,7 @@ def test_a_room_overflowing_the_end_of_a_partial_wall_is_moved_past_the_end() ->
 def test_a_wide_room_across_a_full_wall_is_never_sent_beyond_the_outline() -> None:
     """A full wall ends on the outline: going 'below' or 'above' it is impossible."""
     plan = _plan(_room("wide", 0, 0, 10, 2), _room("top", 0, 2, 10, 4))
-    sides = {s.room: s.side for s in deduire_ordre(plan, Structure((_FULL,))).wall_sides}
+    sides = {s.room: s.side for s in deduce_order(plan, Structure((_FULL,))).wall_sides}
     assert sides["wide"] in ("left", "right")
 
 
@@ -99,13 +99,13 @@ def test_legalize_repairs_a_room_overflowing_a_partial_wall_end() -> None:
 
 
 def test_without_structure_the_order_has_no_wall_sides() -> None:
-    assert deduire_ordre(_plan(_room("a", 0, 0, 10, 6))).wall_sides == ()
+    assert deduce_order(_plan(_room("a", 0, 0, 10, 6))).wall_sides == ()
 
 
 def test_an_oblique_load_bearing_wall_is_refused_not_ignored() -> None:
     oblique = Wall(id="o", a=(0.0, 0.0), b=(10.0, 6.0), load_bearing=True)
     with pytest.raises(UnsupportedInput, match="axis-aligned"):
-        deduire_ordre(_plan(_room("a", 0, 0, 10, 6)), structure=Structure((oblique,)))
+        deduce_order(_plan(_room("a", 0, 0, 10, 6)), structure=Structure((oblique,)))
 
 
 # --- Polytope: one row per (room, wall), satisfied by a valid plan --------------------
@@ -114,18 +114,18 @@ def test_an_oblique_load_bearing_wall_is_refused_not_ignored() -> None:
 def test_the_polytope_carries_one_row_per_room_and_wall() -> None:
     plan = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6))
     ctx = _ctx(_FULL)
-    poly = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx)
-    rows = [o for o in poly.origines if o.startswith("load-bearing")]
+    poly = build_polytope(deduce_order(plan, structure=ctx.structure), ctx)
+    rows = [o for o in poly.origins if o.startswith("load-bearing")]
     assert sorted(rows) == ["load-bearing w: a left of 6", "load-bearing w: b right of 6"]
-    assert poly.contient(vectoriser(plan, poly.index))
+    assert poly.contains(vectorize(plan, poly.index))
 
 
 def test_the_polytope_excludes_a_plan_crossing_the_wall() -> None:
     valid = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6))
     ctx = _ctx(_FULL)
-    poly = construire_polytope(deduire_ordre(valid, structure=ctx.structure), ctx)
+    poly = build_polytope(deduce_order(valid, structure=ctx.structure), ctx)
     crossing = _plan(_room("a", 0, 0, 7, 6), _room("b", 7, 0, 3, 6))
-    assert not poly.contient(vectoriser(crossing, poly.index))
+    assert not poly.contains(vectorize(crossing, poly.index))
 
 
 # --- Proof: a crossing is a violation, whatever the wall's direction ------------------

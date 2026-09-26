@@ -22,8 +22,8 @@ from archlux.data.chargeurs import (
     charger_msd,
     decouper_par_site,
 )
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, vectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.uq.conforme import CalibrateurConforme
 
@@ -49,13 +49,13 @@ def paires(lot: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     aires: list[float] = []
     vrais: list[float] = []
     for appart in lot:
-        poly = construire_polytope(deduire_ordre(appart.plan), appart.contexte)
-        parts = ana.evaluate_rooms(vectoriser(appart.plan, poly.index), appart.contexte.orientation)
+        poly = build_polytope(deduce_order(appart.plan), appart.contexte)
+        parts = ana.evaluate_rooms(vectorize(appart.plan, poly.index), appart.contexte.orientation)
         # Les sous-rectangles d'une piece portent le prefixe `pNNN` : on les recompose
         # pour retrouver la granularite de la simulation.
         somme: dict[int, float] = defaultdict(float)
         surface: dict[int, float] = defaultdict(float)
-        for piece, value in zip(appart.plan.pieces, parts, strict=True):
+        for piece, value in zip(appart.plan.rooms, parts, strict=True):
             rang = int(piece.id.split("__")[0][1:])
             somme[rang] += float(value)
             surface[rang] += piece.aire

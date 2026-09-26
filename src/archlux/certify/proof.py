@@ -55,7 +55,7 @@ from math import inf, isfinite, isnan
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
-from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
+from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
 from archlux.types import Context, GeometricProof, Plan, Room, Wall
 
@@ -172,7 +172,7 @@ def _edge_connected(members: list[Room]) -> bool:
 
 
 def _recorded_seams(
-    piece: PieceRectilineaire, by_id: dict[str, Room], min_contact: float
+    piece: RectilinearRoom, by_id: dict[str, Room], min_contact: float
 ) -> tuple[str, ...]:
     """Every seam recorded in the decomposition still holds, at least ``min_contact`` long.
 
@@ -181,11 +181,11 @@ def _recorded_seams(
     another edge, or a neck of 1e-7 m.
     """
     violations: list[str] = []
-    for i, j, kind in piece.fusions:
+    for i, j, kind in piece.merges:
         a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
         if a is None or b is None:
             continue
-        if kind == FUSION_DROIT:
+        if kind == MERGE_RIGHT:
             gap, span = abs(a.x + a.w - b.x), min(a.y + a.h, b.y + b.h) - max(a.y, b.y)
         else:
             gap, span = abs(a.y + a.h - b.y), min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
@@ -197,7 +197,7 @@ def _recorded_seams(
     return tuple(violations)
 
 
-def _fused_area(piece: PieceRectilineaire, by_id: dict[str, Room], ctx: Context) -> tuple[str, ...]:
+def _fused_area(piece: RectilinearRoom, by_id: dict[str, Room], ctx: Context) -> tuple[str, ...]:
     """Area of the recomposed polygon of a fused room against its minimum.
 
     The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
@@ -219,13 +219,13 @@ def _fused_area(piece: PieceRectilineaire, by_id: dict[str, Room], ctx: Context)
 
 
 def _areas(
-    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[PieceRectilineaire, ...] = ()
+    rooms: tuple[Room, ...], ctx: Context, merges: tuple[RectilinearRoom, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
     """Area ``w h`` against ``a_min`` of the room type; fused rooms as a whole."""
     by_id = {room.id: room for room in rooms}
     fused: set[str] = set()
     violations: list[str] = []
-    for piece in fusions:
+    for piece in merges:
         members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
         fused.update(member.id for member in members)
         if members:
@@ -251,7 +251,7 @@ def _same_wall(a: Wall, b: Wall) -> bool:
 
 
 def _interiors(
-    plan: Plan, fusions: tuple[PieceRectilineaire, ...], tol: float
+    plan: Plan, merges: tuple[RectilinearRoom, ...], tol: float
 ) -> list[tuple[str, Polygon]]:
     """Interior of every room shrunk by ``tol``; a fused room as the union of its parts.
 
@@ -261,7 +261,7 @@ def _interiors(
     by_id = {room.id: room for room in plan.rooms}
     interiors: list[tuple[str, Polygon]] = []
     fused: set[str] = set()
-    for piece in fusions:
+    for piece in merges:
         members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
         if not members:
             continue
@@ -278,7 +278,7 @@ def _interiors(
 
 
 def _structure(
-    plan: Plan, ctx: Context, fusions: tuple[PieceRectilineaire, ...] = ()
+    plan: Plan, ctx: Context, merges: tuple[RectilinearRoom, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
     """No room crosses a load-bearing wall, and no load-bearing wall was moved.
 
@@ -294,7 +294,7 @@ def _structure(
     declared = {wall.id: wall for wall in plan.walls}
     violations: list[str] = []
     tol = _WALL_TOLERANCE_M
-    interiors = _interiors(plan, fusions, tol)
+    interiors = _interiors(plan, merges, tol)
     for wall in ctx.structure.load_bearing_walls:
         stated = declared.get(wall.id)
         if stated is not None and not _same_wall(wall, stated):
@@ -511,7 +511,7 @@ def verify_exactly(
     *,
     reference: Plan | None = None,
     budget: float | None = None,
-    fusions: tuple[PieceRectilineaire, ...] = (),
+    merges: tuple[RectilinearRoom, ...] = (),
 ) -> GeometricProof:
     """Check that a plan is valid, borrowing nothing from the solver.
 
@@ -527,7 +527,7 @@ def verify_exactly(
         Maximum displacement allowed from ``reference``, in metres. When given, a
         larger ``max_displacement`` (beyond ``SNAP_M``) makes the plan invalid. Without
         ``reference`` the displacement is 0 and the budget cannot be violated.
-    fusions : tuple of PieceRectilineaire, optional
+    merges : tuple of PieceRectilineaire, optional
         Rooms decomposed into sub-rectangles (L, T, U, Z), as passed to
         :func:`archlux.api.legalize`. The minimum area of such a room applies to the
         union of its sub-rectangles found in ``plan`` (by id), which must form a single
@@ -585,8 +585,8 @@ def verify_exactly(
             geos_flag, geos_gaps = _gaps(plan.rooms, ctx.outline)
             gaps = gaps or geos_flag
             v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
-    areas_ok, v_areas = _areas(plan.rooms, ctx, fusions)
-    structure_ok, v_structure = _structure(plan, ctx, fusions)
+    areas_ok, v_areas = _areas(plan.rooms, ctx, merges)
+    structure_ok, v_structure = _structure(plan, ctx, merges)
     moved = max_displacement(plan, reference)
     budget_ok = budget is None or moved <= budget + SNAP_M
     v_budget = () if budget_ok else (f"budget: max displacement {moved:.6f} m > {budget} m",)

@@ -9,8 +9,8 @@ import numpy as np
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
-from archlux.geom.polytope import construire_polytope
-from archlux.lmo.coupes import coupe_surface, resoudre_avec_surfaces
+from archlux.geom.polytope import build_polytope
+from archlux.lmo.cuts import area_cut, solve_with_areas
 from archlux.types import Context, Orientation, Regulation, Room, Structure
 from tests.proprietes.strategies import ordres_valides
 
@@ -30,7 +30,7 @@ def test_la_coupe_n_exclut_aucun_point_valide(w0: float, h0: float, w: float, h:
     """
     a = w0 * h0
     assume(w * h + 1e-12 >= a)
-    assert coupe_surface(w0, h0, a).satisfait(w, h)
+    assert area_cut(w0, h0, a).satisfied(w, h)
 
 
 @given(ordre=ordres_valides(max_pieces=4))
@@ -43,17 +43,17 @@ def test_surfaces_minimales_respectees(ordre: object) -> None:
         outline=((0.0, 0.0), (20.0, 0.0), (20.0, 16.0), (0.0, 16.0)),
         regulation=Regulation(min_areas=(("living_room", 4.0),), min_width=1.0),
     )
-    poly = construire_polytope(ordre, ctx)  # type: ignore[arg-type]
+    poly = build_polytope(ordre, ctx)  # type: ignore[arg-type]
     pieces = tuple(
         Room(id=nom, type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
-        for nom in ordre.pieces  # type: ignore[attr-defined]
+        for nom in ordre.rooms  # type: ignore[attr-defined]
     )
     c = np.zeros(len(poly.index))
     for nom, colonne in poly.index.items():
         if nom.endswith(".w") or nom.endswith(".h"):
             c[colonne] = 1.0
-    sol = resoudre_avec_surfaces(poly, c, ctx, pieces)
-    if sol.statut != "optimal":
+    sol = solve_with_areas(poly, c, ctx, pieces)
+    if sol.status != "optimal":
         return
     for piece in pieces:
         w = float(sol.x[poly.index[f"{piece.id}.w"]])

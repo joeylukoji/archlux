@@ -99,8 +99,8 @@ def _walls(plan: Plan) -> None:
 def _context(ctx: Context) -> None:
     _finite("orientation.deg", ctx.orientation.deg)
     _non_negative("regulation.largeur_min", ctx.regulation.min_width)
-    for type_piece, threshold in ctx.regulation.min_areas:
-        _non_negative(f"regulation.min_areas[{type_piece}]", threshold)
+    for room_type, threshold in ctx.regulation.min_areas:
+        _non_negative(f"regulation.min_areas[{room_type}]", threshold)
     for wall in ctx.structure.load_bearing_walls:
         _point(f"structure.load_bearing_walls[{wall.id}].a", wall.a)
         _point(f"structure.load_bearing_walls[{wall.id}].b", wall.b)
@@ -137,7 +137,7 @@ def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
     (``Regulation.min_area`` gives ``0.0`` for an unknown type). Only when the regulation
     lists thresholds: an empty one means "no regulation", not a typo.
     """
-    known = {type_piece for type_piece, _ in ctx.regulation.min_areas}
+    known = {room_type for room_type, _ in ctx.regulation.min_areas}
     if not known:
         return
     unknown = sorted({room.type for room in plan.rooms} - known)

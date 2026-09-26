@@ -36,8 +36,8 @@ from pathlib import Path
 
 import archlux as ax
 from archlux.export.svg import planche
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, vectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.types import Orientation
 
@@ -51,8 +51,8 @@ RACINE = Path("resultats/orientation")
 
 def _score(plan, contexte, surrogate) -> float:
     """Valeur du substitut pour ce plan sous cette orientation."""
-    poly = construire_polytope(deduire_ordre(plan), contexte)
-    return float(surrogate.evaluate(vectoriser(plan, poly.index), contexte.orientation))
+    poly = build_polytope(deduce_order(plan), contexte)
+    return float(surrogate.evaluate(vectorize(plan, poly.index), contexte.orientation))
 
 
 def main() -> None:
@@ -122,17 +122,17 @@ def main() -> None:
         )
         fiche = [
             f"# {nom} — variantes par azimut\n",
-            f"{len(valid.rooms)} pieces, cote caracteristique {diag.cote:.2f} m, "
+            f"{len(valid.rooms)} pieces, cote caracteristique {diag.size:.2f} m, "
             f"budget {budget:.1f} m.\n",
             "| azimut | sDA legalise | sDA variante | gain | deplacement | "
             "plus petit cote | aire min | aire max |",
             "|--:|--:|--:|--:|--:|--:|--:|--:|",
         ]
-        for azimut, avant, apres, bouge, cote, amin, amax in scores:
+        for azimut, avant, apres, bouge, size, amin, amax in scores:
             fiche.append(
                 f"| {azimut}° | {avant:.2f} | {apres:.2f} | "
                 f"{100 * (apres - avant) / max(abs(avant), 1e-9):+.1f} % | "
-                f"{bouge:.2f} m | {cote:.2f} m | {amin:.1f} m² | {amax:.1f} m² |"
+                f"{bouge:.2f} m | {size:.2f} m | {amin:.1f} m² | {amax:.1f} m² |"
             )
         fiche.append(
             "\nToutes les variantes listees sont **certifiees valides** : "

@@ -9,10 +9,10 @@ from shapely.geometry import Polygon, box
 
 from archlux.errors import InvariantViolation
 from archlux.geom.rectilineaire import (
-    FUSION_DROIT,
     MAX_RECTANGLES,
-    decomposer,
-    recomposer,
+    MERGE_RIGHT,
+    decompose,
+    recompose,
 )
 from archlux.types import Plan, Room
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
@@ -25,18 +25,18 @@ def _L() -> Polygon:
 
 def test_rectangle_reste_un_seul_morceau() -> None:
     poly = box(0.0, 0.0, 4.0, 3.0)
-    piece = decomposer(poly, id="sejour", type_piece="sejour")
+    piece = decompose(poly, id="sejour", room_type="sejour")
     assert len(piece.rectangles) == 1
-    assert piece.fusions == ()
-    assert recomposer(piece).equals(poly)
+    assert piece.merges == ()
+    assert recompose(piece).equals(poly)
 
 
 def test_L_se_decoupe_en_deux_par_coupe_verticale_gauche() -> None:
     """Convention jalon 6 : coupe verticale au réflexe le plus à gauche."""
-    piece = decomposer(_L(), id="cuisine", type_piece="cuisine")
+    piece = decompose(_L(), id="cuisine", room_type="cuisine")
     assert len(piece.rectangles) == 2
-    assert len(piece.fusions) >= 1
-    assert recomposer(piece).equals(_L())
+    assert len(piece.merges) >= 1
+    assert recompose(piece).equals(_L())
     # La coupe en x=1 produit (0,0,1,3) et (1,0,1,1) — ordre déterministe.
     a, b = piece.rectangles
     assert {
@@ -49,24 +49,24 @@ def test_L_se_decoupe_en_deux_par_coupe_verticale_gauche() -> None:
 
 
 def test_recomposer_inverse_decomposer() -> None:
-    piece = decomposer(_L(), id="p", type_piece="sejour")
-    assert recomposer(piece).equals(_L())
+    piece = decompose(_L(), id="p", room_type="sejour")
+    assert recompose(piece).equals(_L())
 
 
 def test_polygone_non_rectilineaire_refuse() -> None:
     with pytest.raises(InvariantViolation, match="rectilinéaire"):
-        decomposer(Polygon([(0.0, 0.0), (2.0, 0.0), (1.0, 1.5)]))
+        decompose(Polygon([(0.0, 0.0), (2.0, 0.0), (1.0, 1.5)]))
 
 
 def test_decomposition_est_deterministe() -> None:
-    a = decomposer(_L(), id="p", type_piece="sejour")
-    b = decomposer(_L(), id="p", type_piece="sejour")
+    a = decompose(_L(), id="p", room_type="sejour")
+    b = decompose(_L(), id="p", room_type="sejour")
     assert a == b
 
 
 def _plan_avec_L(*, chevauche: bool = False) -> tuple[Plan, object]:
     """Pavage 12×9 contenant un L décomposé + trois rectangles complémentaires."""
-    piece = decomposer(_L(), id="cuisine", type_piece="cuisine")
+    piece = decompose(_L(), id="cuisine", room_type="cuisine")
     x_r1 = 1.5 if chevauche else 2.0
     w_r1 = 10.5 if chevauche else 10.0
     reste = (
@@ -84,15 +84,15 @@ def _plan_avec_L(*, chevauche: bool = False) -> tuple[Plan, object]:
 
 
 def test_etendre_fusions_impose_egalite() -> None:
-    from archlux.geom.graphe import deduire_ordre
-    from archlux.geom.polytope import construire_polytope, vectoriser
-    from archlux.geom.rectilineaire import etendre_fusions
+    from archlux.geom.graphe import deduce_order
+    from archlux.geom.polytope import build_polytope, vectorize
+    from archlux.geom.rectilineaire import extend_merges
 
     plan, piece = _plan_avec_L()
-    poly = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT)
-    poly = etendre_fusions(poly, piece)
+    poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
+    poly = extend_merges(poly, piece)
     assert poly.A_eq.shape[0] >= 1
-    assert poly.contient(vectoriser(plan, poly.index), tol=1e-6)
+    assert poly.contains(vectorize(plan, poly.index), tol=1e-6)
 
 
 def test_legalize_preserve_validite_avec_L() -> None:
@@ -139,8 +139,8 @@ def polygones_rectilineaires(draw: st.DrawFn) -> Polygon:
 @settings(max_examples=40, deadline=None)
 def test_decomposition_recompose(poly: Polygon) -> None:
     """`MILESTONE-6.md` §2 : recomposer(decomposer(P)) = P."""
-    piece = decomposer(poly, id="p", type_piece="sejour")
-    assert recomposer(piece).equals(poly)
+    piece = decompose(poly, id="p", room_type="sejour")
+    assert recompose(piece).equals(poly)
     assert 1 <= len(piece.rectangles) <= 4
 
 
@@ -163,10 +163,10 @@ def test_coupe_verticale_reunit_les_morceaux_colineaires() -> None:
             (-1.785, -2.995),
         ]
     )
-    piece = decomposer(poly, id="p", type_piece="sejour")
+    piece = decompose(poly, id="p", room_type="sejour")
     assert len(piece.rectangles) == 2
-    assert piece.fusions == ((0, 1, FUSION_DROIT),)
-    assert recomposer(piece).equals(poly)
+    assert piece.merges == ((0, 1, MERGE_RIGHT),)
+    assert recompose(piece).equals(poly)
 
 
 def test_repli_horizontal_quand_aucune_verticale_ne_separe() -> None:
@@ -187,8 +187,8 @@ def test_repli_horizontal_quand_aucune_verticale_ne_separe() -> None:
             (0.0, 3.0),
         ]
     )
-    piece = decomposer(poly, id="u", type_piece="sejour", max_rectangles=8)
-    assert recomposer(piece).equals(poly)
+    piece = decompose(poly, id="u", room_type="sejour", max_rectangles=8)
+    assert recompose(piece).equals(poly)
     assert len(piece.rectangles) >= 3
 
 
@@ -215,7 +215,7 @@ def test_max_rectangles_par_defaut_reste_a_quatre() -> None:
         ]
     )
     with pytest.raises(InvariantViolation, match="trop de rectangles"):
-        decomposer(peigne, id="e", type_piece="sejour")
-    piece = decomposer(peigne, id="e", type_piece="sejour", max_rectangles=8)
+        decompose(peigne, id="e", room_type="sejour")
+    piece = decompose(peigne, id="e", room_type="sejour", max_rectangles=8)
     assert len(piece.rectangles) == 6
-    assert recomposer(piece).equals(peigne)
+    assert recompose(piece).equals(peigne)

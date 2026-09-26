@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from hypothesis import given, settings
 
-from archlux.geom.graphe import OrdreRelatif, deduire_ordre
-from archlux.geom.polytope import construire_polytope, vectoriser
+from archlux.geom.graphe import RelativeOrder, deduce_order
+from archlux.geom.polytope import build_polytope, vectorize
 from archlux.types import Context, Plan
 from tests.proprietes.strategies import (
     CONTEXTE_DEFAUT,
@@ -22,13 +22,13 @@ from tests.proprietes.strategies import (
 
 @given(ordre=ordres_valides(), ctx=contextes())
 @settings(max_examples=200, deadline=None)
-def test_dimensions_coherentes(ordre: OrdreRelatif, ctx: Context) -> None:
+def test_dimensions_coherentes(ordre: RelativeOrder, ctx: Context) -> None:
     """Une origine par ligne, une colonne par variable."""
-    poly = construire_polytope(ordre, ctx)
-    assert poly.A.shape[0] == len(poly.origines)
+    poly = build_polytope(ordre, ctx)
+    assert poly.A.shape[0] == len(poly.origins)
     assert poly.A.shape[1] == len(poly.index)
     assert poly.b.shape[0] == poly.A.shape[0]
-    assert len(poly.bornes) == len(poly.index)
+    assert len(poly.bounds) == len(poly.index)
 
 
 @given(plan=plans_valides())
@@ -39,16 +39,16 @@ def test_un_plan_valide_est_dans_le_polytope(plan: Plan) -> None:
     Un pavage exact du contour satisfait nécessairement l'ordre qu'on en déduit — sans
     quoi ``legalize`` déplacerait des murs sur un plan qui n'avait aucun défaut.
     """
-    poly = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT)
-    assert poly.contient(vectoriser(plan, poly.index), tol=1e-9)
+    poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
+    assert poly.contains(vectorize(plan, poly.index), tol=1e-9)
 
 
 @given(plan=plans_valides())
 @settings(max_examples=100, deadline=None)
 def test_la_legalisation_d_un_plan_valide_est_idempotente_en_domaine(plan: Plan) -> None:
     """Le point reste dans le polytope après aller-retour de vectorisation."""
-    from archlux.geom.polytope import devectoriser
+    from archlux.geom.polytope import devectorize
 
-    poly = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT)
-    point = vectoriser(plan, poly.index)
-    assert devectoriser(point, plan, poly.index) == plan
+    poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
+    point = vectorize(plan, poly.index)
+    assert devectorize(point, plan, poly.index) == plan

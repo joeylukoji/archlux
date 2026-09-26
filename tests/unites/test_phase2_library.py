@@ -9,8 +9,8 @@ from hypothesis import given, settings
 import archlux
 from archlux.data.synthese import two_room_plan, two_room_vectors
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, decision_vector, vectoriser
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, decision_vector, vectorize
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from archlux.uq.conforme import CalibrateurConforme
@@ -29,8 +29,8 @@ def test_the_decision_vector_matches_the_polytope_columns() -> None:
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
     )
-    index = construire_polytope(deduire_ordre(plan), CONTEXTE_DEFAUT).index
-    assert np.array_equal(decision_vector(plan), vectoriser(plan, index))
+    index = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT).index
+    assert np.array_equal(decision_vector(plan), vectorize(plan, index))
 
 
 def test_two_room_vectors_are_reproducible_and_in_range() -> None:
@@ -94,8 +94,8 @@ def test_the_decision_vector_matches_the_columns_of_every_polytope(
 ) -> None:
     """Review of phase 2, Minor 11: the invariant on every plan, not on one."""
     plan, ctx = scenario
-    index = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx).index
-    assert np.array_equal(decision_vector(plan), vectoriser(plan, index))
+    index = build_polytope(deduce_order(plan, structure=ctx.structure), ctx).index
+    assert np.array_equal(decision_vector(plan), vectorize(plan, index))
 
 
 def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:

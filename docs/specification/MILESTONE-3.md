@@ -344,12 +344,12 @@ def test_warm_start_utilise(monkeypatch):
 
 ```python
 def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
-    ordre = deduire_ordre(plan)
-    poly  = construire_polytope(ordre, ctx)
+    ordre = deduce_order(plan)
+    poly  = build_polytope(ordre, ctx)
     if budget is not None:
-        poly = poly.avec_boite(vectoriser(plan), budget)     # région de confiance
+        poly = poly.avec_boite(vectorize(plan), budget)     # région de confiance
 
-    x0 = lmo.resoudre(poly, gradient_distance(vectoriser(plan))).x
+    x0 = lmo.solve(poly, gradient_distance(vectorize(plan))).x
 
     if objective is None:
         x, res = x0, None
@@ -358,7 +358,7 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
         res = frank_wolfe(poly, f, x0, trace=trace)
         x = res.x
 
-    q = devectoriser(x, plan)
+    q = devectorize(x, plan)
     preuve = verifier_exactement(q, ctx)
     if not preuve.valide:
         raise InvariantViole(preuve.violations)

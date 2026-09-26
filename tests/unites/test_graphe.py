@@ -11,10 +11,10 @@ import pytest
 
 from archlux.errors import InconsistentOrder, MissingSeparation
 from archlux.geom.graphe import (
-    OrdreRelatif,
-    construire_graphe,
-    deduire_ordre,
-    reduction_transitive,
+    RelativeOrder,
+    build_graph,
+    deduce_order,
+    transitive_reduction,
 )
 from archlux.types import Plan, Room
 
@@ -32,37 +32,37 @@ class TestConstruireGraphe:
 
     def test_separation_simple(self) -> None:
         """Une arête horizontale déclarée se retrouve dans le graphe horizontal."""
-        ordre = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B"))
-        graphe = construire_graphe(ordre, ["A", "B"])
+        ordre = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
+        graphe = build_graph(ordre, ["A", "B"])
         assert ("A", "B") in graphe.horizontal.edges
 
     def test_cycle_detecte(self) -> None:
         """« A à gauche de B à gauche de A » n'a pas de solution géométrique."""
-        ordre = OrdreRelatif(horizontal=(("A", "B"), ("B", "A")), vertical=(), pieces=("A", "B"))
+        ordre = RelativeOrder(horizontal=(("A", "B"), ("B", "A")), vertical=(), rooms=("A", "B"))
         with pytest.raises(InconsistentOrder) as capture:
-            construire_graphe(ordre, ["A", "B"])
+            build_graph(ordre, ["A", "B"])
         assert capture.value.axis == "horizontal"
         assert set(capture.value.cycle) == {"A", "B"}
 
     def test_cycle_vertical_detecte(self) -> None:
         """Le même défaut sur l'axe vertical est rapporté avec le bon axe."""
-        ordre = OrdreRelatif(horizontal=(), vertical=(("A", "B"), ("B", "A")), pieces=("A", "B"))
+        ordre = RelativeOrder(horizontal=(), vertical=(("A", "B"), ("B", "A")), rooms=("A", "B"))
         with pytest.raises(InconsistentOrder) as capture:
-            construire_graphe(ordre, ["A", "B"])
+            build_graph(ordre, ["A", "B"])
         assert capture.value.axis == "vertical"
 
     def test_paire_non_separee_refusee(self) -> None:
         """Deux pièces sans séparation peuvent se chevaucher : c'est une erreur d'entrée."""
-        ordre = OrdreRelatif(horizontal=(("A", "B"),), vertical=(), pieces=("A", "B", "C"))
+        ordre = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B", "C"))
         with pytest.raises(MissingSeparation) as capture:
-            construire_graphe(ordre, ["A", "B", "C"])
+            build_graph(ordre, ["A", "B", "C"])
         assert "C" in capture.value.pair
 
     def test_une_piece_inconnue_est_refusee(self) -> None:
         """Une arête vers une pièce absente de l'ensemble déclaré est incohérente."""
-        ordre = OrdreRelatif(horizontal=(("A", "Z"),), vertical=(), pieces=("A", "B"))
+        ordre = RelativeOrder(horizontal=(("A", "Z"),), vertical=(), rooms=("A", "B"))
         with pytest.raises(InconsistentOrder):
-            construire_graphe(ordre, ["A", "B"])
+            build_graph(ordre, ["A", "B"])
 
 
 class TestDeduireOrdre:
@@ -70,13 +70,13 @@ class TestDeduireOrdre:
 
     def test_deux_pieces_cote_a_cote(self) -> None:
         """Centres écartés en x : la séparation est horizontale."""
-        ordre = deduire_ordre(_plan(_carre("A", 0.0, 0.0), _carre("B", 5.0, 0.0)))
+        ordre = deduce_order(_plan(_carre("A", 0.0, 0.0), _carre("B", 5.0, 0.0)))
         assert ordre.horizontal == (("A", "B"),)
         assert ordre.vertical == ()
 
     def test_deux_pieces_superposees(self) -> None:
         """Centres écartés en y : la séparation est verticale."""
-        ordre = deduire_ordre(_plan(_carre("A", 0.0, 0.0), _carre("B", 0.0, 5.0)))
+        ordre = deduce_order(_plan(_carre("A", 0.0, 0.0), _carre("B", 0.0, 5.0)))
         assert ordre.vertical == (("A", "B"),)
         assert ordre.horizontal == ()
 
@@ -89,7 +89,7 @@ class TestDeduireOrdre:
         l'axe dominant produisait ``y_A + h_A ≤ y_B``, soit ``1 ≤ 0`` — une contrainte
         que le plan d'origine, pourtant valide, violait.
         """
-        ordre = deduire_ordre(
+        ordre = deduce_order(
             _plan(
                 Room(id="A", type="living_room", x=0.0, y=0.0, w=1.0, h=1.0),
                 Room(id="B", type="living_room", x=1.0, y=0.0, w=1.0, h=9.0),
@@ -104,7 +104,7 @@ class TestDeduireOrdre:
         C'est le seul cas où l'heuristique s'applique — et c'est précisément le défaut
         que ``legalize`` existe pour corriger.
         """
-        ordre = deduire_ordre(
+        ordre = deduce_order(
             _plan(
                 Room(id="A", type="living_room", x=0.0, y=0.0, w=4.0, h=4.0),
                 Room(id="B", type="living_room", x=1.0, y=3.0, w=4.0, h=4.0),
@@ -124,7 +124,7 @@ class TestDeduireOrdre:
         gauche = Room(id="A", type="living_room", x=1.0, y=0.0, w=3.47, h=9.0)
         droite = Room(id="B", type="living_room", x=4.47, y=0.0, w=1.0, h=1.0)
         assert gauche.x + gauche.w != droite.x  # le piège, en une ligne
-        ordre = deduire_ordre(_plan(gauche, droite))
+        ordre = deduce_order(_plan(gauche, droite))
         assert ordre.horizontal == (("A", "B"),)
 
     def test_est_deterministe(self) -> None:
@@ -134,7 +134,7 @@ class TestDeduireOrdre:
         d'une exécution à l'autre, donc des prix duaux incomparables.
         """
         plan = _plan(_carre("c", 4.0, 0.0), _carre("a", 0.0, 0.0), _carre("b", 2.0, 3.0))
-        assert deduire_ordre(plan) == deduire_ordre(plan)
+        assert deduce_order(plan) == deduce_order(plan)
 
     def test_l_ordre_deduit_est_accepte(self) -> None:
         """Un ordre déduit d'un plan réel passe la validation sans exception.
@@ -147,9 +147,9 @@ class TestDeduireOrdre:
             _carre("kitchen", 5.0, 0.0, 3.0),
             _carre("bathroom", 0.0, 5.0, 2.0),
         )
-        graphe = construire_graphe(deduire_ordre(plan), list(plan.room_ids))
-        assert graphe.a_separation("living_room", "kitchen")
-        assert graphe.a_separation("living_room", "bathroom")
+        graphe = build_graph(deduce_order(plan), list(plan.room_ids))
+        assert graphe.has_separation("living_room", "kitchen")
+        assert graphe.has_separation("living_room", "bathroom")
 
 
 class TestReductionTransitive:
@@ -161,22 +161,22 @@ class TestReductionTransitive:
         Le gain n'est pas cosmétique : 15 pièces passent de ~210 contraintes à ~30, et
         le solveur est appelé 50 fois par légalisation performantielle.
         """
-        ordre = OrdreRelatif(
+        ordre = RelativeOrder(
             horizontal=(("A", "B"), ("B", "C"), ("A", "C")),
             vertical=(),
-            pieces=("A", "B", "C"),
+            rooms=("A", "B", "C"),
         )
-        reduit = reduction_transitive(construire_graphe(ordre, ["A", "B", "C"]))
+        reduit = transitive_reduction(build_graph(ordre, ["A", "B", "C"]))
         assert ("A", "C") not in reduit.horizontal.edges
         assert ("A", "B") in reduit.horizontal.edges
         assert ("B", "C") in reduit.horizontal.edges
 
     def test_conserve_toutes_les_pieces(self) -> None:
         """Réduire les arêtes ne doit jamais faire disparaître une pièce."""
-        ordre = OrdreRelatif(
+        ordre = RelativeOrder(
             horizontal=(("A", "B"), ("B", "C"), ("A", "C")),
             vertical=(),
-            pieces=("A", "B", "C"),
+            rooms=("A", "B", "C"),
         )
-        reduit = reduction_transitive(construire_graphe(ordre, ["A", "B", "C"]))
+        reduit = transitive_reduction(build_graph(ordre, ["A", "B", "C"]))
         assert set(reduit.horizontal.nodes) == {"A", "B", "C"}

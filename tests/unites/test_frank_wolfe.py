@@ -1,4 +1,4 @@
-"""Frank-Wolfe — `MILESTONE-3.md` §5. L'oracle est ``lmo.resoudre``."""
+"""Frank-Wolfe — `MILESTONE-3.md` §5. L'oracle est ``lmo.solve``."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from itertools import pairwise
 import numpy as np
 import pytest
 
-from archlux.geom.graphe import OrdreRelatif
-from archlux.geom.polytope import construire_polytope
-from archlux.lmo.solveur import resoudre
+from archlux.geom.graphe import RelativeOrder
+from archlux.geom.polytope import build_polytope
+from archlux.lmo.solveur import solve
 from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.types import Context, Orientation, Regulation, Structure
 
@@ -20,7 +20,7 @@ CTX = Context(
     outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
     regulation=Regulation(min_areas=(), min_width=1.5),
 )
-POLY = construire_polytope(OrdreRelatif(horizontal=(), vertical=(), pieces=("A",)), CTX)
+POLY = build_polytope(RelativeOrder(horizontal=(), vertical=(), rooms=("A",)), CTX)
 NORD = Orientation(deg=0.0)
 
 
@@ -55,7 +55,7 @@ def _depart_faisable() -> np.ndarray:
     x[POLY.index["A.y"]] = 0.0
     x[POLY.index["A.w"]] = 4.0
     x[POLY.index["A.h"]] = 4.0
-    assert POLY.contient(x)
+    assert POLY.contains(x)
     return x
 
 
@@ -63,7 +63,7 @@ def test_tous_les_iteres_sont_dans_le_polytope() -> None:
     objectif = ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 1.0]))
     resultat = frank_wolfe(POLY, objectif, NORD, _depart_faisable(), max_iter=8)
     assert resultat.trace.iterates
-    assert all(POLY.contient(point, tol=1e-7) for point in resultat.trace.iterates)
+    assert all(POLY.contains(point, tol=1e-7) for point in resultat.trace.iterates)
 
 
 def test_objectif_non_decroissant() -> None:
@@ -79,8 +79,8 @@ def test_gap_majore_l_ecart_a_l_optimum_lineaire() -> None:
     objectif = ObjectifLineaire(c=c)
     x0 = _depart_faisable()
     resultat = frank_wolfe(POLY, objectif, NORD, x0, max_iter=10, away_steps=False)
-    optimum = resoudre(POLY, -c, depart=x0)
-    assert optimum.statut == "optimal"
+    optimum = solve(POLY, -c, start=x0)
+    assert optimum.status == "optimal"
     ecart = float(c @ optimum.x) - resultat.value
     assert ecart <= resultat.gap + 1e-6
 
@@ -101,13 +101,13 @@ def test_dualite_terminale_petite_sur_lineaire() -> None:
 def test_warm_start_passe_toujours_depart(monkeypatch: pytest.MonkeyPatch) -> None:
     """ARCHITECTURE.md §10 : omettre ``depart=`` coûte un facteur 3 à 5."""
     appels: list[np.ndarray | None] = []
-    original = resoudre
+    original = solve
 
-    def tracer(poly, c, *, depart=None, coupes=None, duaux=False):
-        appels.append(depart)
-        return original(poly, c, depart=depart, coupes=coupes, duaux=duaux)
+    def tracer(poly, c, *, start=None, cuts=None, duaux=False):
+        appels.append(start)
+        return original(poly, c, start=start, cuts=cuts, duaux=duaux)
 
-    monkeypatch.setattr("archlux.solve.frank_wolfe.resoudre", tracer)
+    monkeypatch.setattr("archlux.solve.frank_wolfe.solve", tracer)
     frank_wolfe(
         POLY,
         ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 0.0])),
@@ -117,4 +117,4 @@ def test_warm_start_passe_toujours_depart(monkeypatch: pytest.MonkeyPatch) -> No
         away_steps=False,
     )
     assert appels
-    assert all(depart is not None for depart in appels)
+    assert all(start is not None for start in appels)

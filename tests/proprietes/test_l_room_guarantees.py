@@ -15,7 +15,7 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.rectilineaire import FUSION_DROIT, FUSION_HAUT, PieceRectilineaire
+from archlux.geom.rectilineaire import MERGE_RIGHT, MERGE_TOP, RectilinearRoom
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.types import Context, Plan, Room
 from tests import checkers
@@ -31,16 +31,16 @@ _EDGE = 1e-9
 def _fusion_kind(a: Room, b: Room) -> str | None:
     """How ``b`` continues ``a`` across a shared edge of positive length, if it does."""
     if abs(a.x + a.w - b.x) <= _EDGE and min(a.y + a.h, b.y + b.h) - max(a.y, b.y) > _EDGE:
-        return FUSION_DROIT
+        return MERGE_RIGHT
     if abs(a.y + a.h - b.y) <= _EDGE and min(a.x + a.w, b.x + b.w) - max(a.x, b.x) > _EDGE:
-        return FUSION_HAUT
+        return MERGE_TOP
     return None
 
 
 @st.composite
 def scenarios_with_a_fused_room(
     draw: st.DrawFn, *, fault: bool = True
-) -> tuple[Plan, Context, PieceRectilineaire]:
+) -> tuple[Plan, Context, RectilinearRoom]:
     """A realistic scenario in which two adjacent rooms become one fused room.
 
     Both parts take the type of the first one. The union is larger than the first
@@ -50,10 +50,10 @@ def scenarios_with_a_fused_room(
     """
     plan, ctx = draw(realistic_scenarios())
 
-    def fuse(a: Room, b: Room, kind: str) -> tuple[PieceRectilineaire, list[Room]]:
+    def fuse(a: Room, b: Room, kind: str) -> tuple[RectilinearRoom, list[Room]]:
         first = replace(a, id="fused__0")
         second = replace(b, id="fused__1", type=a.type)
-        room = PieceRectilineaire(id="fused", rectangles=(first, second), fusions=((0, 1, kind),))
+        room = RectilinearRoom(id="fused", rectangles=(first, second), merges=((0, 1, kind),))
         return room, [first, second, *(r for r in plan.rooms if r is not a and r is not b)]
 
     # Only pairs that make one valid room: no load-bearing wall on their seam (it would
@@ -76,7 +76,7 @@ def scenarios_with_a_fused_room(
     second = rooms[1]
     # The fault that slides a part: a neighbour of the second part pushed into it along
     # the shared edge, which the fusion equality alone does not resist.
-    along = "y" if kind == FUSION_DROIT else "x"
+    along = "y" if kind == MERGE_RIGHT else "x"
     neighbours = [
         k
         for k in range(2, len(rooms))
@@ -92,7 +92,7 @@ def scenarios_with_a_fused_room(
 @_SETTINGS
 @given(scenario=scenarios_with_a_fused_room(fault=False))
 def test_the_fused_input_is_valid_under_its_own_context(
-    scenario: tuple[Plan, Context, PieceRectilineaire],
+    scenario: tuple[Plan, Context, RectilinearRoom],
 ) -> None:
     """Sanity check of the strategy: any later violation comes from legalize."""
     plan, ctx, room = scenario
@@ -102,7 +102,7 @@ def test_the_fused_input_is_valid_under_its_own_context(
 @_SETTINGS
 @given(scenario=scenarios_with_a_fused_room())
 def test_legalize_never_certifies_a_broken_fused_room(
-    scenario: tuple[Plan, Context, PieceRectilineaire],
+    scenario: tuple[Plan, Context, RectilinearRoom],
 ) -> None:
     """Either an honest, typed refusal or a plan whose fused room is still one room,
     with its minimum area met by the union, and every other exact guarantee kept."""
@@ -117,7 +117,7 @@ def test_legalize_never_certifies_a_broken_fused_room(
             assert after in (before, 0), "an end of the L changed order"
 
 
-def _end_order(plan: Plan, room: PieceRectilineaire) -> tuple[int, int]:
+def _end_order(plan: Plan, room: RectilinearRoom) -> tuple[int, int]:
     """Order (-1, 0 or 1) of the low ends, and of the high ends, of the two parts along
     the shared edge: the shape of the room.
 
@@ -127,8 +127,8 @@ def _end_order(plan: Plan, room: PieceRectilineaire) -> tuple[int, int]:
     examples: Frank-Wolfe closing a 1 cm step, which a strict comparison flagged."""
     by_id = {r.id: r for r in plan.rooms}
     a, b = (by_id[r.id] for r in room.rectangles)
-    ((_, _, kind),) = room.fusions
-    if kind == FUSION_DROIT:
+    ((_, _, kind),) = room.merges
+    if kind == MERGE_RIGHT:
         ends = ((a.y, b.y), (a.y + a.h, b.y + b.h))
     else:
         ends = ((a.x, b.x), (a.x + a.w, b.x + b.w))

@@ -14,7 +14,7 @@ import pytest
 
 import archlux
 from archlux.errors import UnsupportedInput
-from archlux.geom.pavage import deduire_trame
+from archlux.geom.pavage import deduce_grid
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 
@@ -109,11 +109,11 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
 
 
 def test_outer_grid_lines_lie_exactly_on_the_outline() -> None:
-    grid = deduire_trame(NOISY_RIGHT_EDGE, _context())
-    assert grid.lignes_x[0] == 0.0
-    assert grid.lignes_x[-1] == WIDTH
-    assert grid.lignes_y[0] == 0.0
-    assert grid.lignes_y[-1] == HEIGHT
+    grid = deduce_grid(NOISY_RIGHT_EDGE, _context())
+    assert grid.x_lines[0] == 0.0
+    assert grid.x_lines[-1] == WIDTH
+    assert grid.y_lines[0] == 0.0
+    assert grid.y_lines[-1] == HEIGHT
 
 
 STEPPED_OUTLINE = (
@@ -159,4 +159,4 @@ INPUT_LIMITS = {
 def test_an_input_the_grid_cannot_describe_is_a_typed_refusal(case: str) -> None:
     plan, ctx = INPUT_LIMITS[case]
     with pytest.raises(UnsupportedInput):
-        deduire_trame(plan, ctx)
+        deduce_grid(plan, ctx)
