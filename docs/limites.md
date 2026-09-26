@@ -112,8 +112,8 @@ Détail et protocole : `resultats/j7_variance.md`.
 
 Les étiquettes **livrées dans ce dépôt** viennent de
 `light.simulateur.SplitFluxOracle`, une **forme fermée** (analytique CIBSE +
-split-flux BRE). Le perceptron `light.base.SubstitutDense` y apprend le *résidu* entre
-cette forme fermée et `SubstitutAnalytique` : deux formules connues, sur 90 pavages
+split-flux BRE). Le perceptron `light.base.DenseSurrogate` y apprend le *résidu* entre
+cette forme fermée et `AnalyticSurrogate` : deux formules connues, sur 90 pavages
 2×2 à deux degrés de liberté, sans murs ni ouvertures.
 
 Des étiquettes réelles sont désormais atteignables — `data.chargeurs` joint MSD aux
@@ -123,7 +123,7 @@ ci-dessus.
 
 Autrement dit : la chaîne tokenisation → entraînement → gel → calibration conforme →
 Frank-Wolfe est **exercée de bout en bout**, et aucune grandeur physique n'a été
-mesurée. Le transformeur annoncé au jalon 4 n'existe pas — `SubstitutAppris` refuse
+mesurée. Le transformeur annoncé au jalon 4 n'existe pas — `LearnedSurrogate` refuse
 les poids `.pt`.
 
 Toute couverture rapportée par ce dépôt est donc une couverture **sur l'oracle gelé**,

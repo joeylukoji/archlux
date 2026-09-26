@@ -16,11 +16,11 @@ from typing import Generic, Protocol
 
 import pytest
 
-from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.appris import SubstitutAppris
+from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.appris import LearnedSurrogate
 from archlux.light.protocole import Surrogate
 
-IMPLEMENTATIONS = [SubstitutAnalytique, SubstitutAppris]
+IMPLEMENTATIONS = [AnalyticSurrogate, LearnedSurrogate]
 
 # `baies` est arrive avec l'extension du protocole : le vecteur de decision ne porte
 # que (x, y, w, h) par piece, donc aucune information de fenestration. Mesure sur 369

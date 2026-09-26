@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from archlux.errors import InvariantViolation
-from archlux.types import REGIMES, Indicateur, PerformanceBound, Regime
+from archlux.types import REGIMES, Indicator, PerformanceBound, Regime
 
 __all__ = [
     "CalibrateurConforme",
@@ -148,7 +148,7 @@ def quantile_conforme(scores: np.ndarray, alpha: float) -> float:
     return float(ordre[rang - 1])
 
 
-def _indicateur(nom: str) -> Indicateur:
+def _indicateur(nom: str) -> Indicator:
     if nom not in ("sDA", "ASE", "UDI", "vue"):
         raise InvariantViolation((f"indicateur inconnu : {nom!r}",))
     return nom  # type: ignore[return-value]
@@ -210,7 +210,7 @@ def _intervalle(
     prediction: float,
     marge: float,
     *,
-    indicator: Indicateur,
+    indicator: Indicator,
     couverture: float,
     n_calibration: int,
     regime: str,
@@ -283,14 +283,14 @@ class CalibrateurConforme:
     ``alpha`` se sérialisent avec les poids.
     """
 
-    indicator: Indicateur = "sDA"
+    indicator: Indicator = "sDA"
     q: float = 0.0
     n: int = 0
     alpha: float = 0.10
     empreinte_jeu: str = ""
     scores: np.ndarray | None = field(default=None, repr=False, compare=False)
 
-    def ajuster(
+    def fit(
         self,
         predictions: np.ndarray,
         verites: np.ndarray,

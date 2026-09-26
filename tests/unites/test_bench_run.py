@@ -8,7 +8,7 @@ import pytest
 
 from archlux.bench import compare, report, run
 from archlux.bench.stats import bootstrap_apparie, puissance, tost
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import ModelTrace, Orientation, Plan, Room
 
 
@@ -32,7 +32,7 @@ def test_manifeste_complet(tmp_path: Path) -> None:
     resultat = run(
         plans=(_plan(), _plan()),
         orientations=(Orientation(0.0), Orientation(45.0)),
-        methods=(SubstitutAnalytique(),),
+        methods=(AnalyticSurrogate(),),
         evaluate_by=_evaluateur,
         seed=17,
         empreinte_donnees="sha256:donnees",
@@ -52,7 +52,7 @@ def test_manifeste_complet(tmp_path: Path) -> None:
 def test_evaluate_by_obligatoire() -> None:
     """`MILESTONE-6.md` §5 : compare refuse sans évaluateur externe."""
     with pytest.raises(TypeError):
-        compare(plans=(_plan(),), methods=(SubstitutAnalytique(),))
+        compare(plans=(_plan(),), methods=(AnalyticSurrogate(),))
 
 
 def test_report_strate_par_orientation(tmp_path: Path) -> None:
@@ -65,7 +65,7 @@ def test_report_strate_par_orientation(tmp_path: Path) -> None:
             Orientation(180.0),
             Orientation(190.0),
         ),
-        methods=(SubstitutAnalytique(),),
+        methods=(AnalyticSurrogate(),),
         evaluate_by=_evaluateur,
         seed=3,
         empreinte_donnees="d",

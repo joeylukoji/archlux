@@ -207,3 +207,15 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `protocole.py` (bench) | `protocol.py` | | `json_io.py` | `json_io.py` |
 | `tests/unites` | `tests/unit` | | `tests/proprietes` | `tests/properties` |
 | `experiences/` | `experiments/` | | `resultats/` | `results/` |
+
+## Light modules (rename wave 5, batch 5)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `SubstitutAnalytique`, `SubstitutAppris`, `SubstitutDense` | `AnalyticSurrogate`, `LearnedSurrogate`, `DenseSurrogate` | |
+| `facteur_secteur`, `descripteurs`, `facteur_lumiere_jour` | `sector_factor`, `descriptors`, `daylight_factor` | |
+| `permuter_pieces`, `plan_vers_vecteur`, `plan_vers_jetons`, `vecteur_vers_jetons` | `permute_rooms`, `plan_to_vector`, `plan_to_tokens`, `vector_to_tokens` | |
+| `DIM_JETON`, `CHAMPS_PAR_PIECE` | `TOKEN_DIM`, `FIELDS_PER_ROOM` | |
+| `RapportGradient`, `valider_gradient` | `GradientReport`, `validate_gradient` | |
+| `Indicateur` | `Indicator` | type alias in `archlux.types` |
+| methods `ajuster`, `sauver`, `n_parametres` | `fit`, `save`, `n_parameters` | surrogates and `CalibrateurConforme` |

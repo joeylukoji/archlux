@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 
 import archlux as ax
-from archlux.light.base import SubstitutDense
+from archlux.light.base import DenseSurrogate
 from archlux.light.simulateur import SplitFluxOracle
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
@@ -55,8 +55,8 @@ oracle = SplitFluxOracle()
 rng = np.random.default_rng(17)
 xs = tuple(disposition(rng) for _ in range(80))
 ys = np.array([oracle.evaluate(x, ctx.orientation) for x in xs])
-modele = SubstitutDense(largeur=8)
-modele.ajuster(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
+modele = DenseSurrogate(largeur=8)
+modele.fit(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
 
 for sous_dossier in ("train", "calibration", "test"):
     Path("splits/v1", sous_dossier).mkdir(parents=True, exist_ok=True)
@@ -85,7 +85,7 @@ verites = np.array([oracle.evaluate(x, ctx.orientation) for x in plans_calibrati
 incertitudes = np.array([modele.uncertainty(x, ctx.orientation) for x in plans_calibration])
 
 cal = CalibrateurConforme(indicator="sDA")
-cal.ajuster(predictions, verites, incertitudes, alpha=0.10)
+cal.fit(predictions, verites, incertitudes, alpha=0.10)
 
 x_nouveau = disposition(rng)  # tiré comme la calibration : échangeable avec elle
 prediction = modele.evaluate(x_nouveau, ctx.orientation)

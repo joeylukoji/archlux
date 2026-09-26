@@ -15,7 +15,7 @@ from archlux import InvalidInput, Plan, Room
 from archlux.data.chargeurs import _convertir
 from archlux.export.svg import planche
 from archlux.geom.diagnostic import diagnose
-from archlux.light.jetons import permuter_pieces
+from archlux.light.jetons import permute_rooms
 from archlux.orient.circulaire import (
     encode,
     regression_circulaire_lineaire,
@@ -47,7 +47,7 @@ def one_room_plan() -> Plan:
         (lambda: stratifier([1.0, 2.0], n_secteurs=0), "n_secteurs"),
         (lambda: planche(()), "volets"),
         (lambda: diagnose(Plan(rooms=(), walls=(), openings=(), outline=SQUARE)), "rooms"),
-        (lambda: permuter_pieces(one_room_plan(), (0, 1)), "ordre"),
+        (lambda: permute_rooms(one_room_plan(), (0, 1)), "ordre"),
     ],
 )
 def test_bad_argument_raises_invalid_input_naming_the_field(call: object, field: str) -> None:

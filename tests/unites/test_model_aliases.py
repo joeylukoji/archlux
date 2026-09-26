@@ -23,6 +23,7 @@ RENAMED = {
     "BornePerformance": "PerformanceBound",
     "Manifeste": "Manifest",
     "ModeleTrace": "ModelTrace",
+    "Indicateur": "Indicator",
 }
 ON_THE_ROOT = {old: new for old, new in RENAMED.items() if new in archlux.__all__}
 

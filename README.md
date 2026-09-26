@@ -176,10 +176,10 @@ factor, not a simulation).
 ```python
 import numpy as np
 
-from archlux.light import Daylight, SplitFluxOracle, SubstitutAnalytique
+from archlux.light import Daylight, SplitFluxOracle, AnalyticSurrogate
 from archlux.uq.conforme import CalibrateurConforme
 
-surrogate, oracle = SubstitutAnalytique(), SplitFluxOracle()
+surrogate, oracle = AnalyticSurrogate(), SplitFluxOracle()
 rng = np.random.default_rng(17)
 held_out = []  # layouts of the same three rooms, never used to fit the surrogate
 for _ in range(200):
@@ -188,7 +188,7 @@ for _ in range(200):
 
 azimuth = ctx.orientation
 calibrator = CalibrateurConforme(indicator="sDA")
-calibrator.ajuster(
+calibrator.fit(
     np.array([surrogate.evaluate(x, azimuth) for x in held_out]),
     np.array([oracle.evaluate(x, azimuth) for x in held_out]),
     np.array([surrogate.uncertainty(x, azimuth) for x in held_out]),
@@ -321,10 +321,10 @@ azimuth, and the glazing (`baies`). Shipped implementations:
 
 | Class | What it is |
 |---|---|
-| `SubstitutAnalytique` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
+| `AnalyticSurrogate` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
 | `SplitFluxOracle` | Analytic part + BRE split-flux daylight factor: the **frozen oracle** of the CI, used to test the chain end to end. A closed form, not a simulation and not ground truth |
-| `light.base.SubstitutDense` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
-| `light.appris.SubstitutAppris` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
+| `light.base.DenseSurrogate` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
+| `light.appris.LearnedSurrogate` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
 | `Daylight` | Wraps a surrogate and returns the pessimistic value `mu - q sigma` |
 
 The input is a set of numbers per room, not an image: moving a wall by 2 cm changes no
@@ -580,7 +580,7 @@ Not implemented yet:
 |---|---|
 | **Non-Manhattan geometry** (oblique walls, non-rectilinear rooms) | Not supported. An oblique load-bearing wall raises `UnsupportedInput`; oblique MSD plans are rejected by the loader |
 | **sDA / ASE trade-off curve** (Pareto front with warm restarts) | No code |
-| Learned token transformer (PyTorch) | Not implemented: `SubstitutAppris` refuses `.pt` weights |
+| Learned token transformer (PyTorch) | Not implemented: `LearnedSurrogate` refuses `.pt` weights |
 | Daylight labels from a physical simulation (Swiss Dwellings `sun_*`, Radiance) | Not wired; the CI oracle is a closed form |
 | Coverage measured on real data, and on plans selected by the optimizer | Open research question (PLAN.md, J5) |
 | Dual prices translated into daylight points | Prices are listed in LP units |

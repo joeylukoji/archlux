@@ -24,7 +24,7 @@ from archlux.data.chargeurs import (
 )
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.uq.conforme import CalibrateurConforme
 
 MSD = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
@@ -37,7 +37,7 @@ CIBLE = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
 GRAINE = 17
 
 etiquettes = charger_etiquettes_sd(SD, colonne=COLONNE_SOLEIL_DEFAUT)
-ana = SubstitutAnalytique()
+ana = AnalyticSurrogate()
 retenus = [a for a in charger_msd(MSD, limite=CIBLE) if a.site_id and a.aires_sources]
 train, calib, test = decouper_par_site(retenus, seed=GRAINE)
 print(f"appartements : {len(retenus)}  sites : {len({a.site_id for a in retenus})}")
@@ -78,7 +78,7 @@ p_te, a_te, y_te = paires(test)
 print(f"pieces : train {p_tr.size} | calibration {p_ca.size} | test {p_te.size}")
 
 
-def ajuster(entree_tr: np.ndarray, entree_te: np.ndarray) -> np.ndarray:
+def fit(entree_tr: np.ndarray, entree_te: np.ndarray) -> np.ndarray:
     """Recalage affine sur le train. L'analytique est en unites arbitraires."""
     pente, ordonnee = np.polyfit(entree_tr, y_tr, 1)
     return pente * entree_te + ordonnee
@@ -98,8 +98,8 @@ def score(pred: np.ndarray) -> tuple[float, float, float]:
 
 modeles = {
     "constante (moyenne du train)": np.full_like(y_te, float(y_tr.mean())),
-    "surface au sol seule": ajuster(a_tr, a_te),
-    "analytique par piece": ajuster(p_tr, p_te),
+    "surface au sol seule": fit(a_tr, a_te),
+    "analytique par piece": fit(p_tr, p_te),
 }
 
 lignes = ["| modele | MAE | MAE relative | R2 | rho de Spearman |", "|---|--:|--:|--:|--:|"]
@@ -110,10 +110,10 @@ for nom, pred in modeles.items():
     )
     print(f"{nom:30s} MAE {mae:.3f}  R2 {r2:+.3f}  rho {rho:+.3f}")
 
-pred_ca = ajuster(p_tr, p_ca)
+pred_ca = fit(p_tr, p_ca)
 sigma = float(np.abs(y_ca - pred_ca).std()) or 1.0
 cal = CalibrateurConforme(indicator="sDA")
-cal.ajuster(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
+cal.fit(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
 bornes = [
     cal.borne(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]
 ]

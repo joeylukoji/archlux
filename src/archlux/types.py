@@ -30,7 +30,7 @@ __all__ = [
     "Certificate",
     "Context",
     "GeometricProof",
-    "Indicateur",
+    "Indicator",
     "Manifest",
     "ModelTrace",
     "Opening",
@@ -46,7 +46,7 @@ __all__ = [
 
 Point = tuple[float, float]
 
-Indicateur = Literal["sDA", "ASE", "UDI", "vue"]
+Indicator = Literal["sDA", "ASE", "UDI", "vue"]
 """Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
 ``PerformanceBound``, the ``Surrogate`` protocol, the surrogates and the calibration all
 share it."""
@@ -434,7 +434,7 @@ class PerformanceBound:
     plan does not hold for a plan the optimizer selected (:data:`Regime`).
     """
 
-    indicator: Indicateur
+    indicator: Indicator
     value: float
     lower: float
     upper: float
@@ -554,6 +554,7 @@ DEPRECATED_NAMES: Final = MappingProxyType(
         "BornePerformance": "PerformanceBound",
         "Manifeste": "Manifest",
         "ModeleTrace": "ModelTrace",
+        "Indicateur": "Indicator",
     }
 )
 """Former French names of the model classes, kept as deprecated aliases until 1.0.0 (ADR 0001,

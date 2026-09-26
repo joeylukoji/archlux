@@ -13,8 +13,8 @@ silence invaliderait toute publication.
 | Corpus | 90 pavages 2×2 synthétiques, enveloppe 12 m × 9 m figée (`data.synthese`) |
 | Découpage | 54 / 18 / 18 (`splits/v1/`) |
 | Étiquettes | `light.simulateur.SplitFluxOracle` — **une forme fermée** |
-| Modèle | `light.base.SubstitutDense`, perceptron 3 couches, poids `numpy` |
-| Cible apprise | le **résidu** `SplitFluxOracle − SubstitutAnalytique` |
+| Modèle | `light.base.DenseSurrogate`, perceptron 3 couches, poids `numpy` |
+| Cible apprise | le **résidu** `SplitFluxOracle − AnalyticSurrogate` |
 
 Les deux termes de ce résidu sont analytiques. Le réseau apprend donc la
 différence entre deux formules connues, sur une famille de plans à **deux degrés
@@ -33,7 +33,7 @@ Ces deux chiffres ne se reproduisent plus avec le code livré (le même script d
     **exercée de bout en bout**, ce qui est un résultat d'ingénierie réel ; la
     grandeur physique, elle, n'a jamais été mesurée.
 
-    Corollaire : `SubstitutAppris._charger_torch` **lève systématiquement**. Le
+    Corollaire : `LearnedSurrogate._charger_torch` **lève systématiquement**. Le
     transformeur annoncé au jalon 4 n'existe pas dans le dépôt.
 
 ---

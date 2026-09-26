@@ -11,7 +11,7 @@ from archlux.data.synthese import two_room_plan, two_room_vectors
 from archlux.errors import InvariantViolation
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, decision_vector, vectorize
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from archlux.uq.conforme import CalibrateurConforme
 from archlux.uq.fiabilite import measure_coverage
@@ -55,7 +55,7 @@ def test_measure_coverage_on_gaussian_noise() -> None:
     mu = rng.normal(50.0, 10.0, 4000)
     y = mu + rng.normal(0.0, 1.0, 4000)
     calibrator = CalibrateurConforme()
-    calibrator.ajuster(mu[:2000], y[:2000], np.ones(2000), alpha=0.10)
+    calibrator.fit(mu[:2000], y[:2000], np.ones(2000), alpha=0.10)
     report = measure_coverage(calibrator, mu[2000:], y[2000:], np.ones(2000), regime="exchangeable")
     assert report.n == 2000
     assert report.coverage == pytest.approx(0.90, abs=0.02)
@@ -68,7 +68,7 @@ def test_measure_coverage_on_gaussian_noise() -> None:
 
 def test_measure_coverage_refuses_a_zero_uncertainty() -> None:
     calibrator = CalibrateurConforme()
-    calibrator.ajuster(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
+    calibrator.fit(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
     sigma = np.array([1.0, 0.0, 1.0])
     with pytest.raises(InvariantViolation, match="strictly positive"):
         measure_coverage(calibrator, np.zeros(3), np.ones(3), sigma, regime="selected")
@@ -76,7 +76,7 @@ def test_measure_coverage_refuses_a_zero_uncertainty() -> None:
 
 def test_measure_coverage_refuses_misaligned_arrays() -> None:
     calibrator = CalibrateurConforme()
-    calibrator.ajuster(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
+    calibrator.fit(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
     with pytest.raises(InvariantViolation):
         measure_coverage(calibrator, np.zeros(3), np.ones(3), np.ones(2), regime="selected")
 
@@ -109,7 +109,7 @@ def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
         Room(id="p4", type="living_room", x=2.42, y=1.0, w=9.58, h=8.0),
     )
     plan = Plan(rooms, (wall,), (), CONTEXTE_DEFAUT.outline)
-    surrogate, values, widths = SubstitutAnalytique(), [], []
+    surrogate, values, widths = AnalyticSurrogate(), [], []
     for deg in (0.0, 360.0):
         ctx = Context(
             structure=Structure(load_bearing_walls=(wall,)),

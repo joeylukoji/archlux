@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from archlux.bench.protocole import compare
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import Plan, Room
 
 
@@ -17,4 +17,4 @@ def test_pas_d_evaluation_circulaire() -> None:
         outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
     )
     with pytest.raises(TypeError):
-        compare(plans=(plan,), methods=(SubstitutAnalytique(),))
+        compare(plans=(plan,), methods=(AnalyticSurrogate(),))

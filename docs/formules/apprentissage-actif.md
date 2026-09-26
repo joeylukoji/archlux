@@ -39,7 +39,7 @@ densité de probabilité et ne doit pas être publiée comme telle.
     à \(d = 60\), \(m^{-1/64}\) est presque \(1\) quel que soit \(m\), et toutes
     les densités s'écrasent vers la même valeur. La sélection tend alors vers
     l'incertitude seule. Sur des plans à plus d'une dizaine de pièces, réduire la
-    dimension (ACP, ou distance sur les descripteurs de `light.base`) **avant**
+    dimension (ACP, ou distance sur les descriptors de `light.base`) **avant**
     d'estimer la densité.
 
 ### La boucle

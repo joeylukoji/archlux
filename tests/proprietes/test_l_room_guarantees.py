@@ -16,7 +16,7 @@ from hypothesis import strategies as st
 import archlux
 from archlux.errors import ArchluxError
 from archlux.geom.rectilineaire import MERGE_RIGHT, MERGE_TOP, RectilinearRoom
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import Context, Plan, Room
 from tests import checkers
 from tests.proprietes.strategies import GATE_EXAMPLES, realistic_scenarios
@@ -107,7 +107,7 @@ def test_legalize_never_certifies_a_broken_fused_room(
     """Either an honest, typed refusal or a plan whose fused room is still one room,
     with its minimum area met by the union, and every other exact guarantee kept."""
     plan, ctx, room = scenario
-    for objective in (None, SubstitutAnalytique()):
+    for objective in (None, AnalyticSurrogate()):
         try:
             result = archlux.legalize(plan, ctx, objective=objective, fusions=(room,))
         except ArchluxError:

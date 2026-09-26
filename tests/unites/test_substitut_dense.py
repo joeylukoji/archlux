@@ -8,16 +8,16 @@ import numpy as np
 import pytest
 
 from archlux.errors import InvariantViolation
-from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.appris import MAX_PARAMETRES, SubstitutAppris
-from archlux.light.base import SubstitutDense
+from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.appris import MAX_PARAMETRES, LearnedSurrogate
+from archlux.light.base import DenseSurrogate
 from archlux.light.protocole import Surrogate
 from archlux.light.simulateur import SplitFluxOracle
-from archlux.light.validation import valider_gradient
+from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 
 _SIM = SplitFluxOracle()
-_ANA = SubstitutAnalytique()
+_ANA = AnalyticSurrogate()
 
 
 def _jeu(
@@ -38,17 +38,17 @@ def _jeu(
     return tuple(xs), np.array(ys), tuple(orients)
 
 
-def _entraine(tmp_path: Path) -> SubstitutAppris:
+def _entraine(tmp_path: Path) -> LearnedSurrogate:
     xs, ys, oris = _jeu(seed=17, n=48)
-    dense = SubstitutDense()
-    dense.ajuster(xs, ys, oris, seed=17, epoques=40, lr=0.12)
+    dense = DenseSurrogate()
+    dense.fit(xs, ys, oris, seed=17, epoques=40, lr=0.12)
     chemin = tmp_path / "dense.npz"
-    empreinte = dense.sauver(chemin)
-    return SubstitutAppris(chemin, empreinte, gele=True)
+    empreinte = dense.save(chemin)
+    return LearnedSurrogate(chemin, empreinte, gele=True)
 
 
 def test_dense_respecte_le_protocole() -> None:
-    assert isinstance(SubstitutDense(), Surrogate)
+    assert isinstance(DenseSurrogate(), Surrogate)
 
 
 def test_meilleur_que_analytique(tmp_path: Path) -> None:
@@ -65,7 +65,7 @@ def test_meilleur_que_analytique(tmp_path: Path) -> None:
 
 def test_taille_raisonnable(tmp_path: Path) -> None:
     reseau = _entraine(tmp_path)
-    assert reseau.n_parametres() < MAX_PARAMETRES
+    assert reseau.n_parameters() < MAX_PARAMETRES
 
 
 def test_erreur_stratifiee_par_orientation(tmp_path: Path) -> None:
@@ -88,7 +88,7 @@ def test_accord_de_signe_point_de_controle(tmp_path: Path) -> None:
     points = np.stack(
         [np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (4.5, 5.5, 6.5, 7.5)]
     )
-    rapport = valider_gradient(
+    rapport = validate_gradient(
         reseau,
         points,
         sud,
@@ -103,10 +103,10 @@ def test_accord_de_signe_point_de_controle(tmp_path: Path) -> None:
 
 def test_empreinte_divergente_leve(tmp_path: Path) -> None:
     xs, ys, oris = _jeu(seed=3, n=12)
-    dense = SubstitutDense()
-    dense.ajuster(xs, ys, oris, seed=3, epoques=8, lr=0.12)
+    dense = DenseSurrogate()
+    dense.fit(xs, ys, oris, seed=3, epoques=8, lr=0.12)
     chemin = tmp_path / "dense.npz"
-    dense.sauver(chemin)
-    reseau = SubstitutAppris(chemin, "0" * 64, gele=True)
+    dense.save(chemin)
+    reseau = LearnedSurrogate(chemin, "0" * 64, gele=True)
     with pytest.raises(InvariantViolation):
-        reseau.n_parametres()
+        reseau.n_parameters()

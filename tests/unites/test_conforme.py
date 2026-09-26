@@ -28,7 +28,7 @@ def test_correction_echantillon_fini() -> None:
     incertitudes = np.ones(n)
     scores = np.abs(verites - predictions) / incertitudes
     calibrateur = CalibrateurConforme()
-    calibrateur.ajuster(predictions, verites, incertitudes, alpha=0.10)
+    calibrateur.fit(predictions, verites, incertitudes, alpha=0.10)
     assert calibrateur.q > float(np.quantile(scores, 0.90))
     rang = math.ceil((n + 1) * 0.90)
     assert calibrateur.q == pytest.approx(float(np.sort(scores)[rang - 1]))
@@ -62,7 +62,7 @@ def test_sens_ase_inverse() -> None:
     verites = predictions + rng.normal(0.0, 0.5, n)
     incertitudes = np.ones(n)
     calibrateur = CalibrateurConforme(indicator="ASE")
-    calibrateur.ajuster(predictions, verites, incertitudes, alpha=0.10)
+    calibrateur.fit(predictions, verites, incertitudes, alpha=0.10)
     borne = calibrateur.borne(6.1, 1.0, "<=", regime="exchangeable")
     assert borne.upper > borne.value
     assert borne.indicator == "ASE"
@@ -94,7 +94,7 @@ def test_couverture_sur_donnees_synthetiques(alpha: float) -> None:
     sig_cal = np.full(n_cal, 1.5)
     ver_cal = pred_cal + sig_cal * rng.normal(0.0, 1.0, n_cal)
     calibrateur = CalibrateurConforme()
-    calibrateur.ajuster(pred_cal, ver_cal, sig_cal, alpha=alpha)
+    calibrateur.fit(pred_cal, ver_cal, sig_cal, alpha=alpha)
     pred = rng.normal(40.0, 2.0, n_test)
     sig = np.full(n_test, 1.5)
     ver = pred + sig * rng.normal(0.0, 1.0, n_test)

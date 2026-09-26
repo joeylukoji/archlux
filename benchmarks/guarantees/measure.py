@@ -49,7 +49,7 @@ import archlux
 from archlux.data.corruption import corrompre
 from archlux.errors import ArchluxError, Infeasible, UnsupportedInput
 from archlux.export.svg import comparer
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
 
@@ -125,7 +125,7 @@ def _classic_tiling(plan: Plan, ctx: Context) -> Plan:
 
 
 def _performance(plan: Plan, ctx: Context) -> Plan:
-    return archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate())
 
 
 BUDGET_M = 0.3
@@ -134,13 +134,11 @@ what Frank-Wolfe would like to move, so that the budget actually binds."""
 
 
 def _performance_tiling_budget(plan: Plan, ctx: Context) -> Plan:
-    return archlux.legalize(
-        plan, ctx, objective=SubstitutAnalytique(), pavage=True, budget=BUDGET_M
-    )
+    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), pavage=True, budget=BUDGET_M)
 
 
 def _daylight(plan: Plan, ctx: Context) -> Plan:
-    objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
     return archlux.legalize(plan, ctx, objective=objective)
 
 

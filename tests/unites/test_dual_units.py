@@ -138,7 +138,7 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
         return original(*args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr(api, "translate_duals", spy)
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 7.0), (0.0, 7.0))
     plan = Plan(
@@ -156,7 +156,7 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
         outline=outline,
         regulation=Regulation(min_areas=(), min_width=1.0),
     )
-    surrogate = SubstitutAnalytique()
+    surrogate = AnalyticSurrogate()
     legalize(plan, ctx, objective=surrogate)
     assert "displacement" in seen
     assert surrogate.indicator in seen

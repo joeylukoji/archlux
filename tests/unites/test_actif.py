@@ -97,7 +97,7 @@ class _ModeleLocal:
         zs = np.array([float(np.asarray(v, dtype=float).ravel()[0]) for v in self.xs])
         return float(np.min(np.abs(zs - z)) + self._sigma * 0.1)
 
-    def ajuster(
+    def fit(
         self,
         xs: tuple[np.ndarray, ...],
         ys: np.ndarray,
@@ -141,7 +141,7 @@ def test_actif_bat_l_aleatoire() -> None:
         # Amorçage : 4 points utiles.
         xs0 = tuple(utiles[:4])
         ys0 = np.array([_OracleRegion().evaluate(x, Orientation(0.0)) for x in xs0])
-        modele.ajuster(xs0, ys0, tuple(Orientation(0.0) for _ in xs0), seed=0)
+        modele.fit(xs0, ys0, tuple(Orientation(0.0) for _ in xs0), seed=0)
         boucle = Loop(
             surrogate=modele,
             simulateur=_OracleRegion(),

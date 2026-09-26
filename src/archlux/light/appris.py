@@ -33,32 +33,33 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
-from archlux.light.base import SubstitutDense
+from archlux.light.base import DenseSurrogate
 from archlux.light.protocole import Glazing
 
 if TYPE_CHECKING:
     import numpy as np
 
-    from archlux.types import Indicateur, Orientation
+    from archlux.types import Indicator, Orientation
 
-__all__ = ["MAX_PARAMETRES", "SubstitutAppris"]
+__all__ = ["MAX_PARAMETRES", "LearnedSurrogate"]
 
 MAX_PARAMETRES = 2_000_000
 """Plafond `MILESTONE-4.md` : au-delà, le modèle mémorise hors distribution."""
 
 
 @lru_cache(maxsize=8)
-def _dense_depuis_disque(chemin: str, empreinte: str) -> SubstitutDense:
+def _dense_depuis_disque(chemin: str, empreinte: str) -> DenseSurrogate:
     """Charger un ``npz`` une fois par ``(chemin, empreinte)``, après contrôle SHA-256."""
     actuel = hashlib.sha256(Path(chemin).read_bytes()).hexdigest()
     if actuel != empreinte:
         raise InvariantViolation((f"empreinte des poids divergente pour {chemin}",))
-    return SubstitutDense.load(Path(chemin))
+    return DenseSurrogate.load(Path(chemin))
 
 
 @dataclass(frozen=True, slots=True)
-class SubstitutAppris:
+class LearnedSurrogate:
     """Tête publique du substitut entraîné.
 
     Attributes
@@ -74,14 +75,14 @@ class SubstitutAppris:
     chemin_poids: Path
     empreinte_poids: str
     gele: bool = False
-    indicateur_vise: Indicateur = "sDA"
+    indicateur_vise: Indicator = "sDA"
 
     @property
     def indicator(self) -> str:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
-    def _backend(self) -> SubstitutDense:
+    def _backend(self) -> DenseSurrogate:
         chemin = Path(self.chemin_poids)
         if chemin.suffix.lower() == ".pt":
             self._charger_torch()
@@ -123,6 +124,14 @@ class SubstitutAppris:
         """Écart-type prédictif appris."""
         return self._backend().uncertainty(x, orientation, glazing=glazing)
 
-    def n_parametres(self) -> int:
+    def n_parameters(self) -> int:
         """Taille du modèle chargé."""
-        return self._backend().n_parametres()
+        return self._backend().n_parameters()
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "SubstitutAppris": Alias(LearnedSurrogate, "archlux.light.appris.LearnedSurrogate"),
+    },
+)

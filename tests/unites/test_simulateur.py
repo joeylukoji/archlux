@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 
 from archlux.light.protocole import Surrogate
-from archlux.light.simulateur import SplitFluxOracle, facteur_lumiere_jour
-from archlux.light.validation import valider_gradient
+from archlux.light.simulateur import SplitFluxOracle, daylight_factor
+from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 
 
@@ -33,28 +33,28 @@ def test_ase_est_l_oppose_du_sda() -> None:
 
 def test_df_piece_canonique_dans_la_plage_bre() -> None:
     """Pièce 6 m × 4 m, WWR 30 %, sud, ciel dégagé : DF moyen typique 1–5 %."""
-    df = facteur_lumiere_jour(6.0, 4.0, Orientation(deg=180.0), wwr=0.30)
+    df = daylight_factor(6.0, 4.0, Orientation(deg=180.0), wwr=0.30)
     assert 0.008 <= df <= 0.05
 
 
 def test_df_baisse_si_la_piece_s_approfondit() -> None:
     sud = Orientation(deg=180.0)
-    peu = facteur_lumiere_jour(6.0, 4.0, sud, wwr=0.30)
-    beaucoup = facteur_lumiere_jour(6.0, 8.0, sud, wwr=0.30)
+    peu = daylight_factor(6.0, 4.0, sud, wwr=0.30)
+    beaucoup = daylight_factor(6.0, 8.0, sud, wwr=0.30)
     assert beaucoup < peu
 
 
 def test_df_sud_vaut_mieux_que_nord() -> None:
     x_w, y_d = 6.0, 4.0
-    assert facteur_lumiere_jour(x_w, y_d, Orientation(deg=180.0)) > facteur_lumiere_jour(
+    assert daylight_factor(x_w, y_d, Orientation(deg=180.0)) > daylight_factor(
         x_w, y_d, Orientation(deg=0.0)
     )
 
 
 def test_df_augmente_avec_le_wwr() -> None:
     sud = Orientation(deg=180.0)
-    etroit = facteur_lumiere_jour(6.0, 4.0, sud, wwr=0.20)
-    large = facteur_lumiere_jour(6.0, 4.0, sud, wwr=0.40)
+    etroit = daylight_factor(6.0, 4.0, sud, wwr=0.20)
+    large = daylight_factor(6.0, 4.0, sud, wwr=0.40)
     assert large > etroit
 
 
@@ -65,7 +65,7 @@ def test_simulateur_suit_le_wwr() -> None:
 
 
 def test_gradient_coherent_avec_le_split_flux() -> None:
-    rapport = valider_gradient(
+    rapport = validate_gradient(
         SplitFluxOracle(),
         np.array([[0.0, 0.0, 6.0, 4.0, 6.0, 0.0, 6.0, 4.5]]),
         Orientation(deg=180.0),

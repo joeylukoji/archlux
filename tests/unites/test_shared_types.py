@@ -14,13 +14,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from archlux.types import Indicateur, PerformanceBound
+from archlux.types import Indicator, PerformanceBound
 
 SRC = Path(__file__).resolve().parents[2] / "src" / "archlux"
 
 
 def test_the_indicator_alias_lists_the_four_indicators() -> None:
-    assert typing.get_args(Indicateur) == ("sDA", "ASE", "UDI", "vue")
+    assert typing.get_args(Indicator) == ("sDA", "ASE", "UDI", "vue")
 
 
 def test_the_indicator_literal_is_written_once() -> None:
@@ -36,8 +36,8 @@ def test_the_indicator_literal_is_written_once() -> None:
 def test_the_bound_and_the_protocol_share_the_alias() -> None:
     from archlux.light.protocole import Surrogate
 
-    assert typing.get_type_hints(PerformanceBound)["indicator"] == Indicateur
-    assert typing.get_type_hints(Surrogate.indicator.fget)["return"] == Indicateur  # type: ignore[attr-defined]
+    assert typing.get_type_hints(PerformanceBound)["indicator"] == Indicator
+    assert typing.get_type_hints(Surrogate.indicator.fget)["return"] == Indicator  # type: ignore[attr-defined]
 
 
 def test_the_float_vector_alias_is_a_float64_array() -> None:

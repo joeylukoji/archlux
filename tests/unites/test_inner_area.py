@@ -20,7 +20,7 @@ import archlux
 from archlux.errors import InvariantViolation
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import Polytope, build_polytope, vectorize
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.lmo.cuts import inner_area_constraints
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers
@@ -165,7 +165,7 @@ def test_performance_mode_keeps_tight_minimum_areas() -> None:
         regulation=Regulation(min_areas=(("bedroom", 11.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
-    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)
+    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), trace=True)
     assert checkers.violations(result, ctx) == []
     for iteration in result.trace.iterates:  # type: ignore[union-attr]
         areas = iteration.reshape(-1, 4)[:, 2] * iteration.reshape(-1, 4)[:, 3]

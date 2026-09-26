@@ -20,6 +20,7 @@ ALIASES = [
     ("archlux.export.svg", "rendre", "render"),
     ("archlux.feasibility", "CertificatFaisabilite", "FeasibilityCertificate"),
     ("archlux.light", "Substitut", "Surrogate"),
+    ("archlux.light", "SubstitutAnalytique", "AnalyticSurrogate"),
     ("archlux.light.protocole", "Substitut", "Surrogate"),
     ("archlux.light.protocole", "Baies", "Glazing"),
     ("archlux.light.protocole", "SubstitutParPiece", "PerRoomSurrogate"),
@@ -54,6 +55,20 @@ ALIASES = [
     ("archlux.lmo.solveur", "resoudre", "solve"),
     ("archlux.lmo.solveur", "vider_cache", "clear_cache"),
     ("archlux.export.pathologie", "diagnostiquer", "diagnose"),
+    ("archlux.light.analytique", "facteur_secteur", "sector_factor"),
+    ("archlux.light.appris", "SubstitutAppris", "LearnedSurrogate"),
+    ("archlux.light.base", "SubstitutDense", "DenseSurrogate"),
+    ("archlux.light.base", "descripteurs", "descriptors"),
+    ("archlux.light.jetons", "permuter_pieces", "permute_rooms"),
+    ("archlux.light.jetons", "plan_vers_vecteur", "plan_to_vector"),
+    ("archlux.light.jetons", "plan_vers_jetons", "plan_to_tokens"),
+    ("archlux.light.jetons", "vecteur_vers_jetons", "vector_to_tokens"),
+    ("archlux.light.jetons", "DIM_JETON", "TOKEN_DIM"),
+    ("archlux.light.jetons", "CHAMPS_PAR_PIECE", "FIELDS_PER_ROOM"),
+    ("archlux.light.simulateur", "facteur_lumiere_jour", "daylight_factor"),
+    ("archlux.light.validation", "RapportGradient", "GradientReport"),
+    ("archlux.light.validation", "valider_gradient", "validate_gradient"),
+    ("archlux.types", "Indicateur", "Indicator"),
 ]
 
 

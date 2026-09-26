@@ -18,7 +18,7 @@ import archlux
 from archlux.errors import ArchluxError
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, devectorize
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
 from tests import checkers
@@ -68,7 +68,7 @@ def test_legalize_never_certifies_a_broken_guarantee(
     PLAN.md phase 1 exit criterion, with load-bearing walls, minimum areas and a
     budget: run it with ``ARCHLUX_GATE_EXAMPLES=2000``."""
     plan, ctx = scenario
-    for objective in (None, SubstitutAnalytique()):
+    for objective in (None, AnalyticSurrogate()):
         try:
             result = archlux.legalize(plan, ctx, objective=objective, budget=budget)
         except ArchluxError:
@@ -84,7 +84,7 @@ def test_performance_legalization_keeps_every_guarantee(
     scenario: tuple[Plan, Context],
 ) -> None:
     plan, ctx = scenario
-    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate())
     assert _independent_violations(result, ctx) == []
 
 
@@ -97,7 +97,7 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
 
     This is what makes an interrupted run usable, a claim of the README."""
     plan, ctx = scenario
-    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique(), trace=True)
+    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), trace=True)
     assert result.trace is not None
     index = build_polytope(deduce_order(plan, structure=ctx.structure), ctx).index
     for step, x in enumerate(result.trace.iterates):
@@ -109,7 +109,7 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
 @given(scenario=realistic_scenarios())
 def test_daylight_objective_is_accepted_by_legalize(scenario: tuple[Plan, Context]) -> None:
     plan, ctx = scenario
-    objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
     result = archlux.legalize(plan, ctx, objective=objective)
     assert _independent_violations(result, ctx) == []
 

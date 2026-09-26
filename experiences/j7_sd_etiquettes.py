@@ -19,8 +19,8 @@ from archlux.data.chargeurs import (
 )
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.base import SubstitutDense
+from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.base import DenseSurrogate
 from archlux.light.protocole import Glazing
 from archlux.uq.conforme import CalibrateurConforme
 
@@ -66,7 +66,7 @@ x_te, y_te, o_te, b_te = vecteurs(test)
 print(f"baies par appartement : median {int(np.median([len(b.ouvertures) for b in b_tr]))}")
 print(f"train {len(x_tr)} | calibration {len(x_ca)} | test {len(x_te)} (par site)")
 
-ana = SubstitutAnalytique()
+ana = AnalyticSurrogate()
 # L'analytique rend un score en unites arbitraires : sans recalage affine ajuste
 # sur le train, le comparer a une irradiance simulee n'a aucun sens.
 brut_tr = np.array([ana.evaluate(x, o) for x, o in zip(x_tr, o_tr, strict=True)])
@@ -74,12 +74,12 @@ brut_te = np.array([ana.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)]
 pente, ordonnee = np.polyfit(brut_tr, y_tr, 1)
 pred_ana = pente * brut_te + ordonnee
 pred_nul = np.full_like(y_te, float(y_tr.mean()))
-net = SubstitutDense()
-net.ajuster(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150)
+net = DenseSurrogate()
+net.fit(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150)
 pred_net = np.array([net.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)])
 # Meme modele, memes hyperparametres, meme graine : seule l'entree change.
-net_b = SubstitutDense()
-net_b.ajuster(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150, glazing=b_tr)
+net_b = DenseSurrogate()
+net_b.fit(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150, glazing=b_tr)
 pred_netb = np.array(
     [net_b.evaluate(x, o, glazing=b) for x, o, b in zip(x_te, o_te, b_te, strict=True)]
 )
@@ -97,7 +97,7 @@ def score(pred: np.ndarray, vrai: np.ndarray) -> str:
 cal = CalibrateurConforme(indicator="sDA")
 p_ca = np.array([net.evaluate(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 s_ca = np.array([net.uncertainty(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
-cal.ajuster(p_ca, y_ca, s_ca, alpha=0.10)
+cal.fit(p_ca, y_ca, s_ca, alpha=0.10)
 bornes = [
     cal.borne(float(p), float(net.uncertainty(x, o)), regime="exchangeable")
     for p, x, o in zip(pred_net, x_te, o_te, strict=True)

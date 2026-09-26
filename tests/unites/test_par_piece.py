@@ -11,12 +11,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.protocole import PerRoomSurrogate, Surrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.types import Orientation
 
-IMPLEMENTATIONS = [SubstitutAnalytique, SplitFluxOracle]
+IMPLEMENTATIONS = [AnalyticSurrogate, SplitFluxOracle]
 INDICATEURS = ["sDA", "ASE", "UDI", "vue"]
 
 

@@ -14,7 +14,7 @@ import archlux as ax
 from archlux.api import gradient_distance
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, extend_l1_slack, vectorize
-from archlux.light import SubstitutAnalytique
+from archlux.light import AnalyticSurrogate
 from archlux.lmo import solveur as lmo
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
@@ -44,7 +44,7 @@ Q = sol.x[:n]  # les n premières coordonnées ; les suivantes sont les écarts 
 assert sol.status == "optimal" and poly.contains(Q)
 
 # une itération Frank-Wolfe — jalon 3 : même appel, coûts = -gradient du substitut
-surrogate = SubstitutAnalytique()
+surrogate = AnalyticSurrogate()
 sol = lmo.solve(poly, c=-surrogate.gradient(Q, ctx.orientation), start=Q)
 S = sol.x  # un sommet du polytope
 gamma = 0.5  # pas de l'itération

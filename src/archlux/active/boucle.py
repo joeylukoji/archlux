@@ -177,7 +177,7 @@ class Loop:
         sigmas = np.array(
             [float(self.surrogate.uncertainty(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
-        calibrateur.ajuster(preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha)
+        calibrateur.fit(preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha)
 
     def _repartir(self, n_acquis: int, rng: np.random.Generator, *, independante: bool) -> set[int]:
         """Rangs du lot courant à verser en calibration plutôt qu'en entraînement.
@@ -308,9 +308,9 @@ class Loop:
                 exclus.append(i)
             restantes -= len(acquis)
 
-            ajuster = getattr(self.surrogate, "ajuster", None)
-            if ajuster is not None and len(xs_lab) >= 2:
-                ajuster(
+            fit = getattr(self.surrogate, "fit", None)
+            if fit is not None and len(xs_lab) >= 2:
+                fit(
                     tuple(xs_lab),
                     np.asarray(ys_lab, dtype=float),
                     tuple(os_lab),

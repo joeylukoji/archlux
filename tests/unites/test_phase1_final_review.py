@@ -182,7 +182,7 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     Frank-Wolfe meets the ends (the L degenerates into a rectangle): the non-strict order
     of ``overlap_constraints`` allows it, and every exact guarantee holds."""
     from archlux.geom.rectilineaire import RectilinearRoom
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), load_bearing=True)
     bar = Room(id="f__0", type="living_room", x=0.0, y=1.0, w=1.0, h=1.0)
@@ -200,7 +200,7 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
     )
     plan = Plan(rooms=(bar, foot, *rest), walls=(wall,), openings=(), outline=ctx.outline)
     room = RectilinearRoom(id="f", rectangles=(bar, foot), merges=((0, 1, "partage_bord_haut"),))
-    result = archlux.legalize(plan, ctx, fusions=(room,), objective=SubstitutAnalytique())
+    result = archlux.legalize(plan, ctx, fusions=(room,), objective=AnalyticSurrogate())
     assert not checkers.violations(result, ctx, fusions=(room,))
     by_id = {r.id: r for r in result.rooms}
     low = (by_id["f__0"].x, by_id["f__1"].x)

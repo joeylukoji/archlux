@@ -15,14 +15,15 @@ from pathlib import Path
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
-from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.jetons import vecteur_vers_jetons
+from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.jetons import vector_to_tokens
 from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode
-from archlux.types import Indicateur, Orientation
+from archlux.types import Indicator, Orientation
 
-__all__ = ["SubstitutDense", "descripteurs"]
+__all__ = ["DenseSurrogate", "descriptors"]
 
 _EPS = 1e-8
 
@@ -45,17 +46,17 @@ SIGMA_PLANCHER = 0.02
 
 
 @lru_cache(maxsize=len(("sDA", "ASE", "UDI", "vue")))
-def _analytique(indicator: Indicateur) -> SubstitutAnalytique:
+def _analytique(indicator: Indicator) -> AnalyticSurrogate:
     """Instance analytique partagée : gelée, sans état, réutilisable sans copie.
 
     :meth:`SubstitutDense.gradient` évalue ``2 n`` fois par gradient ; reconstruire le
     substitut à chaque évaluation était du travail pur perte sur le chemin critique du
     §9 d'``ARCHITECTURE.md``.
     """
-    return SubstitutAnalytique(indicateur_vise=indicator)
+    return AnalyticSurrogate(indicateur_vise=indicator)
 
 
-def descripteurs(
+def descriptors(
     x: np.ndarray, orientation: Orientation, glazing: Glazing | None = None
 ) -> np.ndarray:
     """Descripteurs continus : statistiques de pièces × harmoniques d'orientation.
@@ -64,7 +65,7 @@ def descripteurs(
     synthétique et absent de l'analytique — sans lui le perceptron ne peut pas
     gagner.
     """
-    jetons, masque = vecteur_vers_jetons(x, orientation, glazing)
+    jetons, masque = vector_to_tokens(x, orientation, glazing)
     valides = jetons[~masque]
     # Les jetons de baie portent leur drapeau en colonne 27 ; les separer evite de
     # moyenner des pieces et des fenetres dans un meme vecteur, ce qui n'a pas de
@@ -122,10 +123,10 @@ def _huber_derivee(residu: float, delta: float = 1.0) -> float:
 
 
 @dataclass
-class SubstitutDense:
+class DenseSurrogate:
     """Réseau dense 3 couches, poids numpy. Entrée vectorielle uniquement."""
 
-    indicateur_vise: Indicateur = "sDA"
+    indicateur_vise: Indicator = "sDA"
     largeur: int = 32
     W1: np.ndarray | None = None
     b1: np.ndarray | None = None
@@ -145,7 +146,7 @@ class SubstitutDense:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
-    def n_parametres(self) -> int:
+    def n_parameters(self) -> int:
         """Nombre de scalaires entraînés."""
         if (
             self.W1 is None
@@ -189,7 +190,7 @@ class SubstitutDense:
         )
         if self.W1 is None:
             return base
-        feat = self._normaliser(descripteurs(x, orientation, glazing))
+        feat = self._normaliser(descriptors(x, orientation, glazing))
         y_hat, _, _ = self._forward(feat)
         return base + y_hat * self.sigma_y + self.mu_y
 
@@ -233,7 +234,7 @@ class SubstitutDense:
         del x, orientation, glazing
         return float(max(self.sigma_y * FRACTION_SIGMA_RESIDUEL, SIGMA_PLANCHER))
 
-    def ajuster(
+    def fit(
         self,
         xs: tuple[np.ndarray, ...],
         ys: np.ndarray,
@@ -276,7 +277,7 @@ class SubstitutDense:
         residus = cible_brute - (self.echelle_base * brut + self.decalage_base)
         fenestration = glazing if glazing is not None else (None,) * len(xs)
         feats = np.stack(
-            [descripteurs(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
+            [descriptors(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
         )
         self.mu = feats.mean(axis=0)
         self.sigma = feats.std(axis=0)
@@ -311,7 +312,7 @@ class SubstitutDense:
                 self.W1 -= lr * np.outer(feat, d_h1)
                 self.b1 -= lr * d_h1
 
-    def sauver(self, chemin: Path) -> str:
+    def save(self, chemin: Path) -> str:
         """Écrire les poids en ``npz``. Rend l'empreinte SHA-256 du fichier **écrit**.
 
         ``numpy.savez`` ajoute lui-même ``.npz`` quand le chemin n'en porte pas ; le
@@ -354,9 +355,9 @@ class SubstitutDense:
         return hashlib.sha256(chemin.read_bytes()).hexdigest()
 
     @classmethod
-    def load(cls, chemin: Path) -> SubstitutDense:
+    def load(cls, chemin: Path) -> DenseSurrogate:
         """Relire un ``npz`` produit par :meth:`sauver`."""
-        indicateurs: tuple[Indicateur, ...] = (
+        indicateurs: tuple[Indicator, ...] = (
             "sDA",
             "ASE",
             "UDI",
@@ -384,3 +385,12 @@ class SubstitutDense:
                 modele.echelle_base = float(archive["echelle_base"])
                 modele.decalage_base = float(archive["decalage_base"])
         return modele
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "SubstitutDense": Alias(DenseSurrogate, "archlux.light.base.DenseSurrogate"),
+        "descripteurs": Alias(descriptors, "archlux.light.base.descriptors"),
+    },
+)

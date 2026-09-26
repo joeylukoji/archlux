@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.types import Orientation
 from archlux.uq.conforme import CalibrateurConforme
@@ -26,7 +26,7 @@ def _tirer(rng: np.random.Generator, n: int) -> tuple[list[np.ndarray], list[Ori
 
 
 def _evaluer(
-    modele: SubstitutAnalytique,
+    modele: AnalyticSurrogate,
     oracle: SplitFluxOracle,
     xs: list[np.ndarray],
     os_: list[Orientation],
@@ -40,13 +40,13 @@ def _evaluer(
 def test_couverture_empirique() -> None:
     """Sur le jeu de TEST, jamais sur celui de calibration. Visée 0,90 ± 4 pts."""
     rng = np.random.default_rng(17)
-    modele = SubstitutAnalytique()
+    modele = AnalyticSurrogate()
     oracle = SplitFluxOracle()
     xs_cal, os_cal = _tirer(rng, 220)
     xs_test, os_test = _tirer(rng, 280)
     p_cal, v_cal, s_cal = _evaluer(modele, oracle, xs_cal, os_cal)
     calibrateur = CalibrateurConforme()
-    calibrateur.ajuster(p_cal, v_cal, s_cal, alpha=0.10)
+    calibrateur.fit(p_cal, v_cal, s_cal, alpha=0.10)
     p_test, v_test, s_test = _evaluer(modele, oracle, xs_test, os_test)
     # Couverture d'intervalle (les deux côtés) : « la borne haute compte autant ».
     ok = []
@@ -68,7 +68,7 @@ def test_calibration_tient_par_orientation() -> None:
     cal = slice(0, 800)
     test = slice(800, 1600)
     calibrateur = CalibrateurConforme()
-    calibrateur.ajuster(mu[cal], y[cal], sigma[cal], alpha=0.10)
+    calibrateur.fit(mu[cal], y[cal], sigma[cal], alpha=0.10)
     bacs = stratifier_par_orientation(degres[test])
     for secteur, idx_rel in bacs.items():
         if idx_rel.size < 40:
@@ -87,7 +87,7 @@ def test_derive_bornee_sur_oracle_gelé() -> None:
     from archlux.uq.derive import mesurer_derive
 
     rng = np.random.default_rng(9)
-    modele = SubstitutAnalytique()
+    modele = AnalyticSurrogate()
     oracle = SplitFluxOracle()
     xs, os_ = _tirer(rng, 40)
     pred, verite, _sigma = _evaluer(modele, oracle, xs, os_)

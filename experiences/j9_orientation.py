@@ -38,7 +38,7 @@ import archlux as ax
 from archlux.export.svg import planche
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import Orientation
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -64,7 +64,7 @@ def main() -> None:
         json.loads(x) for x in plans_src.read_text(encoding="utf-8").splitlines() if x.strip()
     ]
     echelle = _echelle(lignes)
-    surrogate = SubstitutAnalytique(indicateur_vise="sDA")
+    surrogate = AnalyticSurrogate(indicateur_vise="sDA")
     RACINE.mkdir(parents=True, exist_ok=True)
 
     index = [

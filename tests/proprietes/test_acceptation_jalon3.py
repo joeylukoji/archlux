@@ -16,12 +16,12 @@ from hypothesis import strategies as st
 import archlux
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, freeze_contacts
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 
-ANALYTIQUE = SubstitutAnalytique()
+ANALYTIQUE = AnalyticSurrogate()
 
 
 @given(plan=plans_valides())

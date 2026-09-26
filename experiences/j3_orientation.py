@@ -13,7 +13,7 @@ from pathlib import Path
 
 import archlux as ax
 from archlux.export.svg import planche
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.orient.circulaire import regression_circulaire_lineaire as fit
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats")
@@ -38,7 +38,7 @@ with (OUT / "j3_orientation.csv").open("w", newline="", encoding="utf-8") as han
                 regulation=ref,
             )
             l1 = {r.id: r for r in ax.legalize(PLAN, ctx).rooms}
-            out = ax.legalize(PLAN, ctx, objective=SubstitutAnalytique())
+            out = ax.legalize(PLAN, ctx, objective=AnalyticSurrogate())
             moved = sum(abs(r.w - l1[r.id].w) + abs(r.h - l1[r.id].h) for r in out.rooms)
             moves.append(moved)
             rooms = {r.id: r for r in out.rooms}

@@ -15,7 +15,7 @@ from archlux.certify.proof import verify_exactly
 from archlux.errors import UnsupportedInput
 from archlux.geom.graphe import WallSide, deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.protocole import Surrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
@@ -170,7 +170,7 @@ def test_the_proof_no_longer_requires_the_plan_to_repeat_the_structure() -> None
 # --- End to end: both modes keep the wall ----------------------------------------------
 
 
-@pytest.mark.parametrize("objective", [None, SubstitutAnalytique()], ids=["classic", "performance"])
+@pytest.mark.parametrize("objective", [None, AnalyticSurrogate()], ids=["classic", "performance"])
 def test_legalize_never_crosses_a_load_bearing_wall(objective: Surrogate | None) -> None:
     ctx = _ctx(_FULL)
     plan = _plan(_room("a", 0, 0, 6, 3), _room("c", 0, 3, 6, 3), _room("b", 6, 0, 4, 6))
@@ -205,5 +205,5 @@ def test_the_audit_grid_keeps_its_load_bearing_wall_in_performance_mode() -> Non
         for j in range(3)
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
-    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate())
     assert checkers.violations(result, ctx) == []

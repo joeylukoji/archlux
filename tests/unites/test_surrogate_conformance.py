@@ -14,16 +14,16 @@ import numpy as np
 import pytest
 
 import archlux
-from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.appris import SubstitutAppris
-from archlux.light.base import SubstitutDense
+from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.appris import LearnedSurrogate
+from archlux.light.base import DenseSurrogate
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import Glazing, Surrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers
 
-IMPLEMENTATIONS = (SubstitutAnalytique, SubstitutAppris, SubstitutDense, SplitFluxOracle, Daylight)
+IMPLEMENTATIONS = (AnalyticSurrogate, LearnedSurrogate, DenseSurrogate, SplitFluxOracle, Daylight)
 METHODS = ("evaluate", "gradient", "uncertainty")
 
 
@@ -92,5 +92,5 @@ def test_legalize_accepts_a_daylight_objective() -> None:
         regulation=Regulation(min_areas=(("bedroom", 12.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
-    result = archlux.legalize(plan, ctx, objective=Daylight(SubstitutAnalytique(), q_chapeau=1.0))
+    result = archlux.legalize(plan, ctx, objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0))
     assert checkers.violations(result, ctx) == []

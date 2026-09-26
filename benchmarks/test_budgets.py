@@ -157,10 +157,10 @@ def test_budget_legalisation_classique(benchmark: BenchmarkFixture) -> None:
 @pytest.mark.budget
 def test_budget_legalisation_performantielle(benchmark: BenchmarkFixture) -> None:
     """Frank-Wolfe + substitut analytique < 500 ms (`ARCHITECTURE.md` §9)."""
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     plan = _plan_15_pieces()
-    objectif = SubstitutAnalytique()
+    objectif = AnalyticSurrogate()
     benchmark(archlux.legalize, plan, CTX_15, objective=objectif)
     _assert_within_budget(benchmark, "legalisation_performantielle")
 
@@ -181,10 +181,10 @@ def test_budget_performance_legalization_with_minimum_areas(benchmark: Benchmark
     Until PLAN.md batch 1.2 this case raised InvariantViolation, and the tangent cuts it
     needed disabled the LP warm start on every iteration.
     """
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     plan = _plan_15_pieces()
-    benchmark(archlux.legalize, plan, CTX_15_AREAS, objective=SubstitutAnalytique())
+    benchmark(archlux.legalize, plan, CTX_15_AREAS, objective=AnalyticSurrogate())
     _assert_within_budget(benchmark, "legalisation_performantielle")
 
 
@@ -205,7 +205,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
 
     from tests import checkers
 
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     width, height = 3.0 * columns, 4.0 * rows
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
@@ -222,7 +222,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     start = time.perf_counter()
-    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate())
     elapsed_ms = (time.perf_counter() - start) * 1000
     assert checkers.violations(result, ctx) == []
     assert elapsed_ms < limit_ms, f"{len(rooms)} rooms: {elapsed_ms:.0f} ms > {limit_ms} ms"

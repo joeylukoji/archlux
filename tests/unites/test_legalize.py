@@ -138,7 +138,7 @@ def test_objective_invalide_leve_typeerror() -> None:
 
 
 def test_objective_analytique_reste_valide() -> None:
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     plan = Plan(
         rooms=(
@@ -149,14 +149,14 @@ def test_objective_analytique_reste_valide() -> None:
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
     )
-    q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique())
+    q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=AnalyticSurrogate())
     assert q.certificate is not None
     assert q.certificate.geometry.valid
     assert q.certificate.performance is None
 
 
 def test_legalize_trace_remonte_les_iteres() -> None:
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
     from archlux.solve.trace import Trace
 
     plan = Plan(
@@ -168,7 +168,7 @@ def test_legalize_trace_remonte_les_iteres() -> None:
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
     )
-    q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique(), trace=True)
+    q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=AnalyticSurrogate(), trace=True)
     assert isinstance(q.trace, Trace)
     assert q.trace.iterates
     assert q.certificate is not None
@@ -177,7 +177,7 @@ def test_legalize_trace_remonte_les_iteres() -> None:
 
 def test_budget_zero_reste_au_point_l1() -> None:
     """``budget=0`` interdit tout déplacement performantiel : on reste au L1."""
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     plan = Plan(
         rooms=(
@@ -191,7 +191,7 @@ def test_budget_zero_reste_au_point_l1() -> None:
         outline=CONTEXTE_DEFAUT.outline,
     )
     l1 = archlux.legalize(plan, CONTEXTE_DEFAUT)
-    bloque = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=SubstitutAnalytique(), budget=0.0)
+    bloque = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=AnalyticSurrogate(), budget=0.0)
     xl1 = np.array([(p.x, p.y, p.w, p.h) for p in l1.rooms])
     xb = np.array([(p.x, p.y, p.w, p.h) for p in bloque.rooms])
     assert np.allclose(xl1, xb, atol=1e-6)

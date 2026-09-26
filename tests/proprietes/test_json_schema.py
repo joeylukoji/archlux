@@ -23,7 +23,7 @@ from hypothesis import given, settings
 import archlux
 from archlux.errors import ArchluxError, InvariantViolation
 from archlux.io.json_io import SCHEMA_VERSION, from_dict, to_dict
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
 from archlux.uq.conforme import CalibrateurConforme, Calibration
@@ -62,7 +62,7 @@ def _calibration() -> Calibration:
     rng = np.random.default_rng(5)
     predictions = rng.normal(50.0, 5.0, 60)
     calibrator = CalibrateurConforme(indicator="sDA")
-    calibrator.ajuster(predictions, predictions + rng.normal(0.0, 1.0, 60), np.ones(60))
+    calibrator.fit(predictions, predictions + rng.normal(0.0, 1.0, 60), np.ones(60))
     return calibrator.snapshot()
 
 
@@ -72,7 +72,7 @@ def _outputs(plan: Plan, ctx: Context) -> list[Plan]:
     for kwargs in (
         {},
         {
-            "objective": Daylight(SubstitutAnalytique(), q_chapeau=1.0),
+            "objective": Daylight(AnalyticSurrogate(), q_chapeau=1.0),
             "calibration": _calibration(),
         },
     ):

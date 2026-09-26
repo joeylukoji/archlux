@@ -59,7 +59,7 @@ de `np.quantile(s, 0.90)` seul.
 | Symbole | Fonction |
 |---|---|
 | \(s_{(k)}\) | `quantile_conforme` |
-| \(\hat q\) | `CalibrateurConforme.ajuster` / `.q` |
+| \(\hat q\) | `CalibrateurConforme.fit` / `.q` |
 | intervalle | `CalibrateurConforme.borne` → `PerformanceBound` |
 | CRPS | `uq.fiabilite.crps` |
 | \(J=\hat\mu-\hat q\,\hat\sigma\) | `light.objectif.Daylight` |
@@ -68,7 +68,7 @@ de `np.quantile(s, 0.90)` seul.
 
 | Faire | Ne pas faire |
 |---|---|
-| Calibrer **après** le gel, sur un jeu jamais vu à l'entraînement | Lire `calibration/` pendant `ajuster` des poids |
+| Calibrer **après** le gel, sur un jeu jamais vu à l'entraînement | Lire `calibration/` pendant `fit` des poids |
 | Afficher `n_calibration` à côté de la borne | Publier \(\hat\sigma\) du réseau comme si c'était \(1-\alpha\) |
 | Un calibrateur par indicateur, ASE en `<=` | Réutiliser le \(q̂\) du sDA pour l'ASE |
 | `NOT EVALUABLE` si le test d'échangeabilité rejette | Élargir silencieusement l'intervalle |
