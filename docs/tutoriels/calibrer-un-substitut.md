@@ -111,7 +111,7 @@ q = ax.legalize(
 )
 assert q.certificate is not None and q.certificate.performance is not None
 assert q.certificate.performance.regime == "selected"
-print(q.certificate.rapport())
+print(q.certificate.report())
 ```
 
 `q.certificat.performance` porte alors l'intervalle conforme du plan rendu, en

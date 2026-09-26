@@ -216,7 +216,7 @@ def test_une_surface_insuffisante_est_agrandie() -> None:
     )
     q = archlux.legalize(plan, ctx)
     sdb = next(p for p in q.rooms if p.id == "sdb")
-    assert sdb.aire >= 20.0 - 1e-6
+    assert sdb.area >= 20.0 - 1e-6
     assert q.certificate is not None
     assert q.certificate.geometry.valid
 

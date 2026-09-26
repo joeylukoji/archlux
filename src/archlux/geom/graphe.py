@@ -239,7 +239,7 @@ def deduire_ordre(
 
     for id_a, id_b in itertools.combinations(identifiants, 2):
         a, b = par_id[id_a], par_id[id_b]
-        (xa, ya), (xb, yb) = a.centre, b.centre
+        (xa, ya), (xb, yb) = a.center, b.center
         # Jeu entre les deux pièces sur chaque axe : positif si elles sont disjointes.
         jeu_x = max(b.x - (a.x + a.w), a.x - (b.x + b.w))
         jeu_y = max(b.y - (a.y + a.h), a.y - (b.y + b.h))
@@ -262,9 +262,7 @@ def deduire_ordre(
     shared_sides: list[tuple[str, tuple[str, ...]]] = []
     if structure is not None:
         walls = [
-            m
-            for m in sorted(structure.load_bearing_walls, key=lambda m: m.id)
-            if m.longueur > SNAP_M
+            m for m in sorted(structure.load_bearing_walls, key=lambda m: m.id) if m.length > SNAP_M
         ]
         for wall in walls:
             _check_axis_aligned(wall)

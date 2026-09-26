@@ -113,7 +113,7 @@ def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     (convention PyTorch ``src_key_padding_mask``).
     """
     n = len(plan.rooms)
-    aire_totale = sum(p.aire for p in plan.rooms)
+    aire_totale = sum(p.area for p in plan.rooms)
     jetons = np.zeros((n, DIM_JETON), dtype=float)
     for i, piece in enumerate(plan.rooms):
         jetons[i] = _jeton_piece(

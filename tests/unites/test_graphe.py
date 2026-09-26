@@ -147,7 +147,7 @@ class TestDeduireOrdre:
             _carre("cuisine", 5.0, 0.0, 3.0),
             _carre("sdb", 0.0, 5.0, 2.0),
         )
-        graphe = construire_graphe(deduire_ordre(plan), list(plan.ids_pieces))
+        graphe = construire_graphe(deduire_ordre(plan), list(plan.room_ids))
         assert graphe.a_separation("sejour", "cuisine")
         assert graphe.a_separation("sejour", "sdb")
 

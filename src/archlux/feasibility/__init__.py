@@ -21,8 +21,8 @@ class FeasibilityCertificate:
     read from the proposed plan: another order might admit a valid plan.
     """
 
-    origines: tuple[str, ...]
-    certificat_farkas: object
+    origins: tuple[str, ...]
+    farkas_certificate: object
     verified: bool | None = None
     scope: tuple[str, ...] = ()
     """Restrictions beyond the relative order the proof is about (``Infeasible.scope``)."""
@@ -35,9 +35,9 @@ class FeasibilityCertificate:
             None: "",
         }[self.verified]
         within = f" with {', '.join(self.scope)}" if self.scope else ""
-        if not self.origines:
+        if not self.origins:
             return f"Infeasible for this relative order{within}: no constraint identified.{status}"
-        causes = ", ".join(self.origines)
+        causes = ", ".join(self.origins)
         return (
             f"Infeasible for this relative order{within}: "
             f"conflicting constraints [{causes}].{status}"
@@ -48,12 +48,12 @@ class FeasibilityCertificate:
 class Verdict:
     """Réponse de :func:`is_feasible`."""
 
-    faisable: bool
-    certificat: FeasibilityCertificate | None = None
+    feasible: bool
+    certificate: FeasibilityCertificate | None = None
 
     def __bool__(self) -> bool:
         """``True`` ssi le programme admet au moins un plan valide."""
-        return self.faisable
+        return self.feasible
 
 
 def _legalize_any_dimensions(programme: Plan, ctx: Context) -> None:
@@ -105,15 +105,15 @@ def is_feasible(programme: Plan, structure: Structure, ctx: Context) -> Verdict:
         _legalize_any_dimensions(programme, contexte)
     except Infeasible as err:
         return Verdict(
-            faisable=False,
-            certificat=FeasibilityCertificate(
-                origines=err.origins,
-                certificat_farkas=err.farkas_certificate,
+            feasible=False,
+            certificate=FeasibilityCertificate(
+                origins=err.origins,
+                farkas_certificate=err.farkas_certificate,
                 verified=err.verified,
                 scope=err.scope,
             ),
         )
-    return Verdict(faisable=True, certificat=None)
+    return Verdict(feasible=True, certificate=None)
 
 
 __getattr__ = lazy_aliases(

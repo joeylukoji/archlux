@@ -110,7 +110,7 @@ def main() -> None:
                 for a, b in zip(valid.rooms, variante.rooms, strict=True)
             )
             cotes = [min(q.w, q.h) for q in variante.rooms]
-            aires = [q.aire for q in variante.rooms]
+            aires = [q.area for q in variante.rooms]
             scores.append((azimut, avant, apres, bouge, min(cotes), min(aires), max(aires)))
             gain = 100 * (apres - avant) / max(abs(avant), 1e-9)
             volets.append((variante, f"{azimut}° — sDA {apres:.0f} ({gain:+.0f} %)"))

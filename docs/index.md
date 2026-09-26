@@ -33,7 +33,7 @@ ctx = ax.Context(
     regulation=ax.Regulation(min_areas=(("salle_de_bain", 5.0),), min_width=1.0),
 )
 q = ax.legalize(plan, ctx, pavage=True)  # pavage : les pièces couvrent tout le contour
-print(q.certificate.rapport())
+print(q.certificate.report())
 ```
 
 Le plus rapide pour commencer : la [galerie d'exemples](galerie/01-corriger-un-plan.md).

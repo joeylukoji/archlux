@@ -8,6 +8,19 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 5, first batch: public methods and functions
+
+#### Changed — API (pre-1.0)
+- Functions and one class, deprecated aliases until 1.0.0: `rendre` is `render`,
+  `construire_borne` is `build_bound`, `traduire_duaux` is `translate_duals`,
+  `CertificatFaisabilite` is `FeasibilityCertificate` (method `expliquer()` is `explain()`,
+  no alias).
+- Methods and fields, **no alias**: `Room.aire` and `centre` are `area` and `center`,
+  `Wall.longueur` is `length`, `Opening.segment_absolu()` is `absolute_segment()`,
+  `Plan.ids_pieces` is `room_ids`, `Certificate.rapport()` is `report()`,
+  `Verdict.faisable` and `certificat` are `feasible` and `certificate`, and
+  `FeasibilityCertificate.origines`, `certificat_farkas` are `origins`, `farkas_certificate`.
+
 ### Review follow-ups (after waves 0 to 3)
 
 #### Fixed

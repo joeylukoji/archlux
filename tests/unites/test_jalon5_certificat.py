@@ -87,14 +87,14 @@ def test_certificat_separe_les_natures() -> None:
         performance=borne,
         duals=(("mur porteur axe 3 : relâchement", -4.1),),
         manifest=Manifest(version="0.4.0", timestamp="2026-09-09T00:00:00Z", seed=17),
-    ).rapport()
+    ).report()
     assert "[EXACT]" in texte and "[PREDICTION" in texte
     assert "1284" in texte
     assert "NON EVALUABLE" in texte
 
 
 def test_non_evaluable_toujours_present() -> None:
-    texte = Certificate(geometry=_preuve()).rapport()
+    texte = Certificate(geometry=_preuve()).report()
     assert "NON EVALUABLE" in texte
     assert "[PREDICTION" in texte
 

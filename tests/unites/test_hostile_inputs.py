@@ -160,8 +160,8 @@ def test_is_feasible_answers_for_a_plan_with_a_gap() -> None:
     from archlux.feasibility import is_feasible
 
     verdict = is_feasible(gapped_plan(), Structure(load_bearing_walls=()), make_context())
-    assert verdict.faisable
-    assert verdict.certificat is None
+    assert verdict.feasible
+    assert verdict.certificate is None
 
 
 def test_is_feasible_refuses_a_malformed_program_with_invalid_input() -> None:
@@ -233,6 +233,6 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     ctx = replace(ctx, regulation=Regulation(min_areas=(("sejour", 60.0),), min_width=1.0))
     verdict = is_feasible(plan, structure, ctx)
     assert not verdict
-    assert verdict.certificat is not None
-    assert "load-bearing sides" in verdict.certificat.scope
-    assert "load-bearing sides" in verdict.certificat.explain()
+    assert verdict.certificate is not None
+    assert "load-bearing sides" in verdict.certificate.scope
+    assert "load-bearing sides" in verdict.certificate.explain()

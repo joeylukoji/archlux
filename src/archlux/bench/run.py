@@ -76,7 +76,7 @@ def run(
     for plan, orientation in zip(plans, orientations, strict=True):
         # ``ids_pieces`` est trié : l'identifiant de banc ne dépend pas de l'ordre
         # d'insertion du tuple ``pieces``.
-        plan_id = "-".join(plan.ids_pieces) if plan.ids_pieces else "vide"
+        plan_id = "-".join(plan.room_ids) if plan.room_ids else "vide"
         for methode in methods:
             nom = type(methode).__name__
             score = float(evaluate_by(plan, methode))

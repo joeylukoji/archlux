@@ -84,7 +84,7 @@ def _annexe_certificat(plan: Plan) -> str:
     if plan.certificate is None:
         return ""
     try:
-        texte = plan.certificate.rapport()
+        texte = plan.certificate.report()
     except (ImportError, AttributeError, ArchluxError):
         # ``rapport()`` importe ``certify`` en local : hors graphe d'``export``.
         texte = "certificat present"

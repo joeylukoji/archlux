@@ -37,7 +37,7 @@ def test_feasibility_faisable() -> None:
         plan, Structure(load_bearing_walls=()), CONTEXTE_DEFAUT
     )
     assert verdict
-    assert verdict.certificat is None
+    assert verdict.certificate is None
 
 
 def test_feasibility_infaisable_explique() -> None:
@@ -59,11 +59,11 @@ def test_feasibility_infaisable_explique() -> None:
     )
     verdict = archlux.feasibility.is_feasible(plan, ctx.structure, ctx)
     assert not verdict
-    assert verdict.certificat is not None
-    texte = verdict.certificat.explain()
+    assert verdict.certificate is not None
+    texte = verdict.certificate.explain()
     assert texte.startswith("Infeasible for this relative order")
     assert "verified exactly" in texte
-    assert verdict.certificat.origines
+    assert verdict.certificate.origins
 
 
 def test_import_archlux_ne_charge_pas_torch() -> None:

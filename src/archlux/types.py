@@ -81,12 +81,12 @@ class Room:
     h: float
 
     @property
-    def aire(self) -> float:
+    def area(self) -> float:
         """Surface, en mètres carrés."""
         return self.w * self.h
 
     @property
-    def centre(self) -> Point:
+    def center(self) -> Point:
         """Centre géométrique, utilisé par ``geom.graphe.deduire_ordre``."""
         return (self.x + self.w / 2.0, self.y + self.h / 2.0)
 
@@ -110,7 +110,7 @@ class Wall:
     thickness: float = 0.10
 
     @property
-    def longueur(self) -> float:
+    def length(self) -> float:
         """Longueur du segment, en mètres."""
         return math.dist(self.a, self.b)
 
@@ -148,7 +148,7 @@ class Opening:
                 f"must be in ]0, 1], got {self.relative_width}",
             )
 
-    def segment_absolu(self, mur: Wall) -> tuple[Point, Point]:
+    def absolute_segment(self, mur: Wall) -> tuple[Point, Point]:
         """Dériver les deux extrémités de la baie sur ``mur``.
 
         Parameters
@@ -182,7 +182,7 @@ class Opening:
                 (f"ouverture {self.id} portée par {self.wall_id}, dérivée sur {mur.id}",)
             )
         (ax, ay), (bx, by) = mur.a, mur.b
-        longueur = mur.longueur
+        longueur = mur.length
         # Direction unitaire du mur ; un mur dégénéré rendrait une division par zéro,
         # ce que la garde ci-dessous transforme en invariant violé plutôt qu'en NaN.
         if longueur == 0.0:
@@ -217,7 +217,7 @@ class Plan:
     trace: object | None = field(default=None, compare=False, repr=False)
 
     @property
-    def ids_pieces(self) -> tuple[str, ...]:
+    def room_ids(self) -> tuple[str, ...]:
         """Identifiants de pièces, **triés** — garantit le déterminisme."""
         return tuple(sorted(p.id for p in self.rooms))
 
@@ -524,7 +524,7 @@ class Certificate:
     duals: tuple[tuple[str, float], ...] = ()
     manifest: Manifest | None = None
 
-    def rapport(self) -> str:
+    def report(self) -> str:
         """Rendre le certificat en texte, sections ``[EXACT]`` et ``[PREDICTION]``.
 
         Façade sur :func:`archlux.certify.rapport.rendre`, par import local — même

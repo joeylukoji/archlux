@@ -26,11 +26,11 @@ class TestPiece:
 
     def test_aire(self) -> None:
         """4 m x 3 m = 12 m²."""
-        assert SEJOUR.aire == 12.0
+        assert SEJOUR.area == 12.0
 
     def test_centre(self) -> None:
         """Coin bas-gauche en (1, 2), donc centre en (3, 3,5)."""
-        assert SEJOUR.centre == (3.0, 3.5)
+        assert SEJOUR.center == (3.0, 3.5)
 
 
 class TestPlan:
@@ -52,7 +52,7 @@ class TestPlan:
             openings=(),
             outline=(),
         )
-        assert plan.ids_pieces == ("bain", "cuisine", "wc")
+        assert plan.room_ids == ("bain", "cuisine", "wc")
 
 
 class TestOuvertureDegeneree:
@@ -63,7 +63,7 @@ class TestOuvertureDegeneree:
         mur = Wall(id="m", a=(2.0, 2.0), b=(2.0, 2.0))
         baie = Opening(id="f", wall_id="m", s=0.5, relative_width=0.5)
         with pytest.raises(InvariantViolation, match="longueur nulle"):
-            baie.segment_absolu(mur)
+            baie.absolute_segment(mur)
 
 
 class TestCertificat:
@@ -81,7 +81,7 @@ class TestCertificat:
                 max_displacement=0.0,
             )
         )
-        texte = certificat.rapport()
+        texte = certificat.report()
         assert "[EXACT]" in texte
         assert "[PREDICTION" in texte
         assert "NON EVALUABLE" in texte

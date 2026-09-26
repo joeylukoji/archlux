@@ -35,7 +35,7 @@ q = ax.legalize(plan, ctx)
 assert q.certificate is not None
 assert q.certificate.geometry.valid
 assert q.certificate.performance is None  # légalisation classique : pas de borne
-print(q.certificate.rapport())
+print(q.certificate.report())
 ```
 
 `legalize` renvoie un plan **prouvé** valide (pavage, surfaces, porteurs).

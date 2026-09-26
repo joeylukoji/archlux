@@ -236,8 +236,8 @@ def _areas(
         minimum = ctx.regulation.min_area(room.type)
         if minimum <= 0.0:
             continue
-        if room.aire + _AREA_TOLERANCE_M2 < minimum:
-            violations.append(f"area {room.id}: {_format_m2(room.aire)} < {_format_m2(minimum)}")
+        if room.area + _AREA_TOLERANCE_M2 < minimum:
+            violations.append(f"area {room.id}: {_format_m2(room.area)} < {_format_m2(minimum)}")
     return (not violations, tuple(violations))
 
 

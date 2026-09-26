@@ -41,7 +41,7 @@ certificate = ax.Certificate(
     duals=q.certificate.duals,
     manifest=Manifest(version="0.4.0", timestamp="2026-09-09T00:00:00Z", seed=17),
 )
-print(certificate.rapport())
+print(certificate.report())
 ```
 
 On construit ici la borne à la main pour lire le gabarit. `regime="exchangeable"`

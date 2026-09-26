@@ -148,7 +148,7 @@ ctx = ax.Context(
 
 repaired = ax.legalize(plan, ctx, pavage=True)
 assert repaired.certificate is not None and repaired.certificate.geometry.valid
-print(repaired.certificate.rapport())
+print(repaired.certificate.report())
 ```
 
 `pavage=True` requires the rooms to tile the outline exactly. Use it whenever the input
@@ -243,8 +243,8 @@ wide_rooms = ax.Context(
     regulation=ax.Regulation(min_areas=(), min_width=4.5),
 )
 verdict = ax.feasibility.is_feasible(narrow, wide_rooms.structure, wide_rooms)
-assert not verdict and verdict.certificat is not None
-print(verdict.certificat.explain())
+assert not verdict and verdict.certificate is not None
+print(verdict.certificate.explain())
 ```
 
 ```text
