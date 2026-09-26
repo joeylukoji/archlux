@@ -54,14 +54,14 @@ from pathlib import Path
 
 Path("sortie_generateur.json").write_text(
     """{
-      "schema": "1",
-      "contour": [[0, 0], [12, 0], [12, 9], [0, 9]],
-      "pieces": [
+      "schema": "2",
+      "outline": [[0, 0], [12, 0], [12, 9], [0, 9]],
+      "rooms": [
         {"id": "living_room", "type": "living_room", "x": 0, "y": 0, "w": 6.05, "h": 9},
         {"id": "bedroom", "type": "bedroom", "x": 6, "y": 0, "w": 6, "h": 5},
         {"id": "bathroom", "type": "bathroom", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
       ],
-      "murs": [], "ouvertures": [], "certificat": null
+      "walls": [], "openings": [], "certificate": null
     }""",
     encoding="utf-8",
 )
@@ -77,7 +77,7 @@ dès que l'entrée peut contenir un vide, ce qui est le cas des sorties de gén�
 sans lui, les séparations sont des inégalités, le plan troué est déjà son propre point
 le plus proche, et la vérification exacte le rejette (`InvariantViolation`).
 
-Le schéma JSON est versionné, et `certificat` vaut `null` sur un plan proposé ; voir
+Le schéma JSON est versionné, et `certificate` vaut `null` sur un plan proposé ; voir
 [référence](../reference/schema-json.md).
 
 ## Suite

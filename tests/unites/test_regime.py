@@ -208,7 +208,7 @@ def test_the_regime_survives_serialization() -> None:
 def test_a_serialized_bound_without_regime_is_refused() -> None:
     certificate = Certificate(geometry=_proof(), performance=_bound())
     data = to_dict(replace(_plan(), certificate=certificate))
-    del data["certificat"]["performance"]["regime"]
+    del data["certificate"]["performance"]["regime"]
     with pytest.raises(InvariantViolation, match="regime"):
         from_dict(data)
 

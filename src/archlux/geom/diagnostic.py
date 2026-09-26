@@ -141,7 +141,7 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     (0.167, 2)
     """
     if not plan.rooms:
-        raise InvalidInput("pieces", "the plan has no room: nothing to diagnose")
+        raise InvalidInput("rooms", "the plan has no room: nothing to diagnose")
 
     formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in plan.rooms]
     n = len(formes)

@@ -1,9 +1,9 @@
-"""The published JSON schema v1 and the round trip of real outputs (PLAN.md phase 2, J1).
+"""The published JSON schema v2 and the round trip of real outputs (PLAN.md phase 2, J1).
 
 Milestone 1 was accepted on ``from_dict(vers_dict(p)) == p`` for arbitrary plans
 (``test_json_io.py``). Its review replays it on what the library writes since phase 1:
 legalized plans under load-bearing walls, with a performance bound that states its
-regime. It also checks the published schema (``archlux/io/plan-v1.schema.json``)
+regime. It also checks the published schema (``archlux/io/plan-v2.schema.json``)
 against the writer and the reader, so that a third party can validate a file without
 running archlux.
 """
@@ -31,7 +31,7 @@ from tests.proprietes.strategies import plans_quelconques, realistic_scenarios
 
 
 def _schema() -> dict[str, Any]:
-    text = resources.files("archlux.io").joinpath("plan-v1.schema.json").read_text("utf-8")
+    text = resources.files("archlux.io").joinpath("plan-v2.schema.json").read_text("utf-8")
     return json.loads(text)  # type: ignore[no-any-return]
 
 
@@ -49,7 +49,7 @@ def test_the_schema_is_a_valid_draft_2020_12_schema() -> None:
 
 def test_the_schema_is_shipped_with_the_package() -> None:
     """A file in the source tree only would not reach a ``pip install``."""
-    assert resources.files("archlux.io").joinpath("plan-v1.schema.json").is_file()
+    assert resources.files("archlux.io").joinpath("plan-v2.schema.json").is_file()
 
 
 @given(plan=plans_quelconques())
@@ -107,8 +107,10 @@ def test_a_performance_output_carries_its_regime_in_the_file(tmp_path: Path) -> 
     (output,) = [o for o in _outputs(plan, ctx) if o.certificate and o.certificate.performance]
     output.to_json(tmp_path / "plan.json")
     document = json.loads((tmp_path / "plan.json").read_text("utf-8"))
-    assert document["certificat"]["performance"]["regime"] == "selected"
-    assert any(wall["porteur"] for wall in document["murs"]) or ctx.structure.load_bearing_walls
+    assert document["certificate"]["performance"]["regime"] == "selected"
+    assert (
+        any(wall["load_bearing"] for wall in document["walls"]) or ctx.structure.load_bearing_walls
+    )
 
 
 def _a_scenario() -> tuple[Plan, Context]:
@@ -138,9 +140,9 @@ def _a_scenario() -> tuple[Plan, Context]:
 @pytest.mark.parametrize(
     ("path", "value"),
     [
-        (("pieces", 0, "w"), 0.0),
-        (("murs", 0, "epaisseur"), 0.0),
-        (("schema",), "2"),
+        (("rooms", 0, "w"), 0.0),
+        (("walls", 0, "thickness"), 0.0),
+        (("schema",), "3"),
     ],
 )
 def test_the_schema_and_the_reader_refuse_the_same_values(
@@ -161,7 +163,7 @@ def test_the_schema_refuses_a_bound_without_regime() -> None:
     plan, ctx = _a_scenario()
     (output,) = [o for o in _outputs(plan, ctx) if o.certificate and o.certificate.performance]
     document = to_dict(output)
-    del document["certificat"]["performance"]["regime"]
+    del document["certificate"]["performance"]["regime"]
     assert _errors(document)
     with pytest.raises(InvariantViolation, match="regime"):
         from_dict(document)

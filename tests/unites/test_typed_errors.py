@@ -46,7 +46,7 @@ def one_room_plan() -> Plan:
         (lambda: regression_circulaire_lineaire([1.0, 2.0], [1.0, 2.0]), "theta"),
         (lambda: stratifier([1.0, 2.0], n_secteurs=0), "n_secteurs"),
         (lambda: planche(()), "volets"),
-        (lambda: diagnostiquer(Plan(rooms=(), walls=(), openings=(), outline=SQUARE)), "pieces"),
+        (lambda: diagnostiquer(Plan(rooms=(), walls=(), openings=(), outline=SQUARE)), "rooms"),
         (lambda: permuter_pieces(one_room_plan(), (0, 1)), "ordre"),
     ],
 )

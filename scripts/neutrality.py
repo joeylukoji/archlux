@@ -11,9 +11,12 @@ another operating system, so ``tests/test_neutrality.py`` compares strictly only
 Two fingerprints, because two things can change:
 
 ``json``
-    The plans as written by ``to_dict`` (schema v1), floats rounded to a micrometre.
-    Waves 1 to 3 (names of exceptions, classes, fields) must keep it **identical**: the
-    JSON keys are an explicit v1 mapping, not the Python field names.
+    The plans as written by ``to_dict``, floats rounded to a micrometre. Waves 1 to 3
+    (exceptions, classes, fields) and the first step of wave 4 (English room types) kept
+    it **identical**: the JSON keys were an explicit schema v1 mapping. The second step of
+    wave 4 (schema v2, English keys) changed the text on purpose and the reference was
+    recorded again; the ``geometry`` fingerprint, which did not move, is the proof that
+    the plans mean the same.
 ``geometry``
     Only what the plans *mean*: the rectangles, the validity flags and the displacement,
     with no key and no type name. Wave 4 (JSON v2, English room types) changes the text of

@@ -8,6 +8,24 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 4, step 2: JSON schema v2
+
+#### Changed — file format (pre-1.0)
+- **`Plan.to_json` writes schema v2**: English keys (`outline`, `rooms`, `walls`,
+  `openings`, `certificate`, `load_bearing`, `wall_id`, `relative_width`, `geometry`,
+  `valid`, `gaps`, `duals`, `manifest`, `seed`...) and English room types.
+  `SCHEMA_VERSION` is `"2"`. **A file written by this release cannot be read by an older
+  one**: v1 files are still read, v2 files are not readable before this release.
+- **`Plan.from_json` reads v1 and v2.** A v1 file is converted by the explicit
+  `archlux.io.json_io.upgrade_v1` (keys and the six French room types), then read as v2;
+  loading and saving a v1 file converts it. An unknown version is refused and the message
+  says `'2'` or `'1'` are accepted.
+- New `archlux/io/plan-v2.schema.json` (the v1 schema stays, for reading tests); the
+  reference page `docs/reference/schema-json.md` is rewritten in English for v2, with the
+  v1 to v2 key table. Reader error messages that named French keys now name the v2 keys.
+- The `json` neutrality fingerprint was recorded again (the text changed on purpose); the
+  `geometry` fingerprint did not move: the plans mean the same.
+
 ### Remediation — PLAN.md phase 3.9, wave 4, step 1: English room types
 
 #### Changed — data values (pre-1.0)

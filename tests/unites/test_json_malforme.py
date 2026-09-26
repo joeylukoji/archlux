@@ -28,47 +28,47 @@ class TestStructureInvalide:
     def test_un_point_mal_forme(self) -> None:
         """Un contour dont un sommet n'est pas ``[x, y]``."""
         donnees = to_dict(PLAN)
-        donnees["contour"] = [[0.0, 0.0], [1.0, 2.0, 3.0]]
+        donnees["outline"] = [[0.0, 0.0], [1.0, 2.0, 3.0]]
         with pytest.raises(InvariantViolation, match="expected a point"):
             from_dict(donnees)
 
     def test_un_champ_manquant(self) -> None:
         """Une pièce sans hauteur ne peut pas être devinée."""
         donnees = to_dict(PLAN)
-        del donnees["pieces"][0]["h"]
+        del donnees["rooms"][0]["h"]
         with pytest.raises(InvariantViolation, match="invalid JSON structure"):
             from_dict(donnees)
 
     def test_un_champ_non_numerique(self) -> None:
         """Une largeur textuelle est refusée, pas convertie au petit bonheur."""
         donnees = to_dict(PLAN)
-        donnees["pieces"][0]["w"] = "large"
+        donnees["rooms"][0]["w"] = "large"
         with pytest.raises(InvariantViolation, match="invalid JSON structure"):
             from_dict(donnees)
 
     def test_un_indicateur_inconnu(self) -> None:
         """Un indicateur hors des quatre connus invaliderait la borne conforme."""
         donnees = to_dict(PLAN)
-        donnees["certificat"] = {
-            "geometrie": {
-                "valide": True,
-                "chevauchement": False,
-                "jours": False,
-                "surfaces_ok": True,
-                "structure_preservee": True,
-                "deplacement_max": 0.0,
+        donnees["certificate"] = {
+            "geometry": {
+                "valid": True,
+                "overlap": False,
+                "gaps": False,
+                "areas_ok": True,
+                "structure_kept": True,
+                "max_displacement": 0.0,
                 "violations": [],
             },
             "performance": {
-                "indicateur": "confort_thermique",
-                "valeur": 0.5,
-                "borne_inf": 0.4,
-                "borne_sup": 0.6,
-                "couverture": 0.9,
+                "indicator": "confort_thermique",
+                "value": 0.5,
+                "lower": 0.4,
+                "upper": 0.6,
+                "coverage": 0.9,
                 "n_calibration": 100,
             },
-            "duaux": [],
-            "manifeste": None,
+            "duals": [],
+            "manifest": None,
         }
         with pytest.raises(InvariantViolation, match="unknown indicator"):
             from_dict(donnees)
