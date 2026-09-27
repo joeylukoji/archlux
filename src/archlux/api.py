@@ -534,22 +534,22 @@ def legalize(
     ...     Contexte, Orientation, Piece, Plan, Referentiel, Structure,
     ... )
     >>> plan = Plan(
-    ...     pieces=(
+    ...     rooms=(
     ...         Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),
     ...         Piece(id="b", type="sejour", x=6.0, y=0.0, w=6.0, h=9.0),
     ...     ),
-    ...     murs=(),
-    ...     ouvertures=(),
-    ...     contour=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
+    ...     walls=(),
+    ...     openings=(),
+    ...     outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
     ... )
     >>> ctx = Contexte(
-    ...     structure=Structure(murs_porteurs=()),
+    ...     structure=Structure(load_bearing_walls=()),
     ...     orientation=Orientation(deg=0.0),
-    ...     contour=plan.contour,
-    ...     referentiel=Referentiel(aires_min=(), largeur_min=1.0),
+    ...     outline=plan.outline,
+    ...     regulation=Referentiel(min_areas=(), min_width=1.0),
     ... )
     >>> q = legalize(plan, ctx)
-    >>> q.certificat.geometrie.valide
+    >>> q.certificate.geometry.valid
     True
     """
     if objective is not None and not isinstance(objective, Substitut):

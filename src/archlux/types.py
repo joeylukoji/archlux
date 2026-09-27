@@ -174,7 +174,7 @@ class Opening:
         --------
         >>> from archlux.types import Mur, Ouverture
         >>> mur = Mur(id="m", a=(0.0, 0.0), b=(10.0, 0.0))
-        >>> Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.2).segment_absolu(mur)
+        >>> Ouverture(id="f", wall_id="m", s=0.5, relative_width=0.2).segment_absolu(mur)
         ((4.0, 0.0), (6.0, 0.0))
         """
         if mur.id != self.wall_id:
