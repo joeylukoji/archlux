@@ -1,7 +1,8 @@
 # Refactor plan: an English public API (PLAN.md 3.9, tracks E4 to E21)
 
-Status: **proposed, not started** (2026-09-25). Written with the `request-refactor-plan`
-skill, after measuring the codebase. Nothing below has been implemented.
+Status: **waves 0 to 6 implemented** (2026-09-27). Written with the `request-refactor-plan`
+skill, after measuring the codebase. The open question below (parameter aliases) is still
+unresolved; PLAN.md phase 4 (the design-pattern restructuring) starts after it.
 
 ## Problem Statement
 
@@ -17,7 +18,7 @@ PLAN.md sized this at "about 25 symbols". Measured on 2026-09-25 it is much larg
 - the main types are used everywhere: `Piece` about 370 times, `Contexte` about 240,
   `Referentiel` about 130, `InvariantViole` about 350, of which 247 in the library itself;
 - about 35 module files and 5 directory names (`tests/unit`, `tests/properties`,
-  `experiences`, `resultats`, `tests/references`) are French;
+  `experiments`, `results`, `tests/references`) are French;
 - the room types are French *data* (`sejour`, `chambre`, `sdb`...) stored in JSON files,
   regulations and surrogate encoders.
 
@@ -126,8 +127,8 @@ For each module:
 
 ### Wave 6: directory names
 
-25. `tests/unit`, `tests/properties`, `tests/references`, then `experiences` and
-    `resultats` (these two touch the Makefile, the results script, the fingerprint file,
+25. `tests/unit`, `tests/properties`, `tests/references`, then `experiments` and
+    `results` (these two touch the Makefile, the results script, the fingerprint file,
     the CI workflow and the documentation), one commit each.
 
 ## Decision Document
@@ -164,7 +165,7 @@ For each module:
   benchmark that measures 0 false certificates.
 - Gate for every commit: full suite, `ruff`, `mypy src/`, the documentation examples test,
   and from wave 0.6 the neutrality check. Gate for every wave: the guarantee benchmark
-  counts equal to the recorded baseline, and `make check-resultats`.
+  counts equal to the recorded baseline, and `make check-results`.
 
 ## Out of Scope
 

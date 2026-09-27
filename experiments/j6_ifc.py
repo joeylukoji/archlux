@@ -21,7 +21,7 @@ from archlux.export import to_ifc
 from archlux.export.wilson import wilson_interval
 from archlux.seeds import derive
 
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j6_ifc.csv"
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j6_ifc.csv"
 N = int(sys.argv[2]) if len(sys.argv) > 2 else MAX_SIZE  # 2.8 s of validation per file
 with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")

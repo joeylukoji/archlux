@@ -2,7 +2,7 @@
 
 Budget de deplacement 3.0 m (norme infinie autour du point L1), `largeur_min = 0.50 m`.
 
-**L'objectif optimise n'est pas l'eclairement reel** : voir l'en-tete de `experiences/j9_orientation.py`. Ce qui est garanti est geometrique.
+**L'objectif optimise n'est pas l'eclairement reel** : voir l'en-tete de `experiments/j9_orientation.py`. Ce qui est garanti est geometrique.
 
 | plan | pieces | azimut du meilleur sDA | gain | deplacement | plus petit cote | variantes valides |
 |---|--:|--:|--:|--:|--:|--:|

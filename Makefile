@@ -1,15 +1,15 @@
-# Figures of resultats/ (PLAN.md phase 2). The runner is portable: on Windows, call
-# `python scripts/resultats.py` directly with the same options.
+# Figures of results/ (PLAN.md phase 2). The runner is portable: on Windows, call
+# `python scripts/results.py` directly with the same options.
 PYTHON ?= python
 
-.PHONY: resultats check-resultats resultats-corpus
+.PHONY: results check-results results-corpus
 
-resultats:
-	$(PYTHON) scripts/resultats.py
+results:
+	$(PYTHON) scripts/results.py
 
-check-resultats:
-	$(PYTHON) scripts/resultats.py --check
+check-results:
+	$(PYTHON) scripts/results.py --check
 
-# make resultats-corpus MSD=/path/mds_V2_5.372k.csv HD=/path/j8_plans.jsonl LABEL=etoile
-resultats-corpus:
-	$(PYTHON) scripts/resultats.py $(if $(MSD),--msd $(MSD)) $(if $(HD),--hd $(HD) --label $(or $(LABEL),etoile))
+# make results-corpus MSD=/path/mds_V2_5.372k.csv HD=/path/j8_plans.jsonl LABEL=etoile
+results-corpus:
+	$(PYTHON) scripts/results.py $(if $(MSD),--msd $(MSD)) $(if $(HD),--hd $(HD) --label $(or $(LABEL),etoile))

@@ -60,7 +60,7 @@ with `1.2.0` must remain reproducible with `1.2.x`.
 | `tests/` | Units, properties, budgets |
 | `docs/` | MkDocs site (`mkdocs build --strict`) |
 | `docs/specification/ARCHITECTURE.md` | Binding rules |
-| `experiences/` | Scripts reproducing the tables |
+| `experiments/` | Scripts reproducing the tables |
 
 ## AI-assisted development
 

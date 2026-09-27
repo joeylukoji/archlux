@@ -17,7 +17,7 @@ from archlux.seeds import derive
 from archlux.uq.conforme import ConformalCalibrator
 from archlux.uq.fiabilite import measure_coverage
 
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j5_coverage.csv"
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j5_coverage.csv"
 model, oracle = AnalyticSurrogate(), SplitFluxOracle()
 
 

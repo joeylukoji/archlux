@@ -13,7 +13,7 @@ from archlux.data.synthese import MAX_SIZE, generate_corpus
 from archlux.seeds import derive
 
 SEED = 17
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j2_validity_raw.csv"
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j2_validity_raw.csv"
 FIELDS = ("plan_id", "amplitude_m", "pavage", "valid_before", "status", "valid_after", "seed")
 
 

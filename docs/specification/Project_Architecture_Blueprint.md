@@ -105,8 +105,8 @@ archlux/
 │   └── references/              # certificats gelés, comparés octet à octet
 │
 ├── benchmarks/test_budgets.py   # les budgets §9 sont des contrats, pas des mesures
-├── experiences/                 # scripts jetables, < 50 lignes, API publique seulement
-├── resultats/                   # bruts, avant toute agrégation
+├── experiments/                 # scripts jetables, < 50 lignes, API publique seulement
+├── results/                   # bruts, avant toute agrégation
 └── docs/                        # galerie → tutoriels → concepts → référence
 ```
 
@@ -454,7 +454,7 @@ dans `io`, la mise en forme dans `certify`. Le coût est réel et assumé : deux
 > **État au lot 1.8 (PLAN.md).** Ce tableau décrit le squelette du jalon 1 et n'est
 > plus à jour : les jalons 1 à 5 sont implémentés ; le jalon 6 l'est en partie
 > (pièces en L, apprentissage actif, export IFC ; **pas** le non-Manhattan) ; les
-> jalons 7 à 9 sont des expériences (`experiences/`, `resultats/`). La phrase
+> jalons 7 à 9 sont des expériences (`experiments/`, `results/`). La phrase
 > « hors jalon 1, aucun corps de fonction n'est implémenté » est retirée.
 
 Le jalon 1 livre au passage ce qui ne se voit pas dans le tableau : `plans_quelconques`,

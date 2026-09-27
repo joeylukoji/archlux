@@ -15,7 +15,7 @@ from archlux.light.base import DenseSurrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.seeds import derive
 
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j6_active.csv"
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j6_active.csv"
 oracle = SplitFluxOracle()
 
 

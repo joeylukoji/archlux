@@ -8,6 +8,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 6 (final step): rename experiences/ and resultats/
+
+- `experiences/` becomes `experiments/`, `resultats/` becomes `results/`; `scripts/resultats.py` becomes `scripts/results.py`, and the Makefile targets follow (`results`, `check-results`, `results-corpus`).
+- `src/archlux/bench/run.py`'s output filename `resultats_bruts.csv` becomes `raw_results.csv` (not asserted by any test).
+- Historical, dated documents (`AUDIT.md`, `PLAN.md`, `docs/revues/*.md`, `docs/specification/MILESTONE-2.md`, and the older `CHANGELOG.md` entries) keep their old path mentions, as a record of what was written at the time.
+- `docs/plans/phase-3-9-english-api.md` marks waves 0–6 done; the parameter-alias question stays open.
+- **This closes PLAN.md 3.9's wave 6 and the whole English-API rename plan** (waves 0 to 6). Phase 4 (the design-pattern restructuring) is next.
+
 ### Remediation — PLAN.md phase 3.9, wave 6: rename tests/unites and tests/proprietes
 
 - `tests/unites` becomes `tests/unit` (the glossary's own documented target, not `tests/units`); `tests/proprietes` becomes `tests/properties`. Every Python import, doc reference and the `pyproject.toml` comment are updated. `tests/references` needs no rename: the name already reads correctly in English.

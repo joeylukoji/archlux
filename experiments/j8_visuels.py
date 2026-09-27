@@ -33,7 +33,7 @@ PLANS = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/j8_plans.
 ETIQUETTE = sys.argv[2] if len(sys.argv) > 2 else "etoile"
 PAR_CATEGORIE = int(sys.argv[3]) if len(sys.argv) > 3 else 8
 BUDGET = BUDGETS[-1]
-RACINE = Path("resultats/visuels") / ETIQUETTE
+RACINE = Path("results/visuels") / ETIQUETTE
 
 
 def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: float) -> str:

@@ -120,8 +120,8 @@ bornes = [
 couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
 largeur = float(np.mean([b.upper - b.lower for b in bornes]))
 
-Path("resultats").mkdir(exist_ok=True)
-Path("resultats/j7_sd_par_piece.md").write_text(
+Path("results").mkdir(exist_ok=True)
+Path("results/j7_sd_par_piece.md").write_text(
     f"# Jalon 7 — prediction **par piece**\n\n"
     f"cible `{DEFAULT_SUN_COLUMN}`, decoupage par site (graine {GRAINE})\n"
     f"pieces : train {p_tr.size} / calibration {p_ca.size} / test {p_te.size}\n\n"

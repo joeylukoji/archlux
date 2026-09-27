@@ -1,13 +1,13 @@
-"""Regenerate every figure of ``resultats/`` with one command (PLAN.md phase 2 exit gate).
+"""Regenerate every figure of ``results/`` with one command (PLAN.md phase 2 exit gate).
 
 Usage (from the repository root)::
 
-    python scripts/resultats.py                 # synthetic experiments + SHA256SUMS
-    python scripts/resultats.py --check         # regenerate elsewhere, compare fingerprints
-    python scripts/resultats.py --msd CSV       # + milestone 7 on the MSD corpus
-    python scripts/resultats.py --hd JSONL --label etoile   # + milestones 8 and 9
+    python scripts/results.py                 # synthetic experiments + SHA256SUMS
+    python scripts/results.py --check         # regenerate elsewhere, compare fingerprints
+    python scripts/results.py --msd CSV       # + milestone 7 on the MSD corpus
+    python scripts/results.py --hd JSONL --label etoile   # + milestones 8 and 9
 
-``make resultats``, ``make check-resultats`` and ``make resultats-corpus`` call it. The
+``make results``, ``make check-results`` and ``make results-corpus`` call it. The
 synthetic experiments take a few minutes (IFC validation: about 4); the corpora are not
 redistributed (``docs/donnees/``). Every script has a fixed seed and writes no timing, so
 its output is byte-stable on one platform; ``SHA256SUMS`` records it.
@@ -23,7 +23,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPERIMENTS = ROOT / "experiences"
+EXPERIMENTS = ROOT / "experiments"
 SYNTHETIC: dict[str, tuple[str, ...]] = {
     "j2_validity.py": ("j2_validity_raw.csv",),
     "j3_orientation.py": (
@@ -68,8 +68,8 @@ def _read_sums(path: Path) -> dict[str, str]:
 
 
 def check() -> int:
-    """Regenerate into a temporary directory and compare with ``resultats/SHA256SUMS``."""
-    expected = _read_sums(ROOT / "resultats" / SUMS)
+    """Regenerate into a temporary directory and compare with ``results/SHA256SUMS``."""
+    expected = _read_sums(ROOT / "results" / SUMS)
     with tempfile.TemporaryDirectory() as tmp:
         found = synthetic(Path(tmp))
     differ = sorted(name for name in expected if found.get(name) != expected[name])
@@ -81,7 +81,7 @@ def check() -> int:
 
 def corpus(msd: Path | None, hd: Path | None, label: str) -> None:
     """Milestones 7 (MSD) and 8-9 (HouseDiffusion outputs), when their data is given."""
-    out = ROOT / "resultats"
+    out = ROOT / "results"
     if msd is not None:
         _run("j7_msd_repair.py", str(msd), "300", str(out))
         _run("j7_msd_summary.py", str(out / "j7_repair_raw.csv"), str(out / "j7_repair.md"))
@@ -100,7 +100,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.check:
         return check()
-    _write_sums(synthetic(ROOT / "resultats"), ROOT / "resultats" / SUMS)
+    _write_sums(synthetic(ROOT / "results"), ROOT / "results" / SUMS)
     corpus(args.msd, args.hd, args.label)
     return 0
 

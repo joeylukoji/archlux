@@ -16,7 +16,7 @@ from archlux.export.svg import sheet
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.orient.circulaire import circular_linear_regression as fit
 
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats")
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results")
 C = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 ROOMS = (("sw", "living_room", 0, 0), ("se", "bedroom", 6, 0), ("nw", "living_room", 0, 4.5))
 ROOMS += (("ne", "bedroom", 6, 4.5),)

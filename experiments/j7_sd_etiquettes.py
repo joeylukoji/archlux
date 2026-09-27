@@ -129,8 +129,8 @@ rapport = (
     f"conforme alpha=0,10 : couverture mesuree **{100 * couv:.1f} %** "
     f"(visee 90 %), largeur moyenne {largeur:.3f}, n_calibration {cal.n}\n"
 )
-Path("resultats").mkdir(exist_ok=True)
-Path("resultats/j7_sd_etiquettes.md").write_text(rapport, encoding="utf-8")
+Path("results").mkdir(exist_ok=True)
+Path("results/j7_sd_etiquettes.md").write_text(rapport, encoding="utf-8")
 print("\nconstante  :", score(pred_nul, y_te))
 print("analytique :", score(pred_ana, y_te), f"[recale {pente:.4f}f{ordonnee:+.3f}]")
 print("perceptron :", score(pred_net, y_te))

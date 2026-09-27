@@ -61,7 +61,7 @@ contrainte a sa place *dans* le générateur — ce que ce dépôt permet de chi
 qu'il fournit.
 
 Détail, protocole et comparaisons avant / après plan par plan :
-`resultats/j8_generation.md` et `resultats/visuels/`.
+`results/j8_generation.md` et `results/visuels/`.
 
 ## Le substitut prédit à la mauvaise granularité
 
@@ -106,7 +106,7 @@ Aucune géométrie d'environnement bâti n'est d'ailleurs publiée dans le corpu
 masque n'existe que dans les sorties de simulation. S'en servir comme entrée exigerait
 de simuler pour prédire, ce qui vide le substitut de sa raison d'être.
 
-Détail et protocole : `resultats/j7_variance.md`.
+Détail et protocole : `results/j7_variance.md`.
 
 ## Le substitut appris n'a jamais vu de mesure
 

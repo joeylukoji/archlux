@@ -89,7 +89,7 @@ def test_des_pieces_separees_forment_un_archipel() -> None:
 
     Trois pièces disjointes ne sont pas un appartement à réparer : aucune trame ne
     les rattrapera à budget raisonnable. C'est le régime observé sur les sorties
-    de HouseDiffusion (`resultats/j8_*.md`).
+    de HouseDiffusion (`results/j8_*.md`).
     """
     diag = diagnose(_plan((0.0, 0.0, 1.0, 1.0), (3.0, 0.0, 1.0, 1.0), (6.0, 0.0, 1.0, 1.0)))
     assert diag.fragments == 3

@@ -206,7 +206,7 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `graines.py` | `seeds.py` | | `manifeste.py` | `manifest.py` |
 | `protocole.py` (bench) | `protocol.py` | | `json_io.py` | `json_io.py` |
 | `tests/unites` | `tests/unit` (done) | | `tests/proprietes` | `tests/properties` (done) |
-| `experiences/` | `experiments/` | | `resultats/` | `results/` |
+| `experiences/` | `experiments/` (done) | | `resultats/` | `results/` (done) |
 
 ## Light modules (rename wave 5, batch 5)
 

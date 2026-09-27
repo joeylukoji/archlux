@@ -17,7 +17,7 @@ Ce que ce jalon ne montre PAS
 mesure contre 4 239 pieces simulees de Swiss Dwellings : une fois normalise par
 l'aire, son rang tombe a `rho = +0,085`, l'aire au sol seule le bat
 (`rho = +0,590` contre `+0,403`), et sur des sites disjoints de l'entrainement le
-rang **s'inverse** (`-0,342`). Voir `resultats/j7_sd_par_piece.md`.
+rang **s'inverse** (`-0,342`). Voir `results/j7_sd_par_piece.md`.
 
 Ces variantes sont donc « ce que le substitut croit », pas « ce que la lumiere
 fait ». Ce qui est garanti ici est **geometrique** : chaque variante pave son
@@ -46,7 +46,7 @@ from j8_generation import BUDGETS, LARGEUR_DEFAUT, _construire, _echelle
 
 DEFAUT = Path("D:/archlux-donnees/j8_plans_divers.jsonl")
 AZIMUTS = tuple(range(0, 360, 45))
-RACINE = Path("resultats/orientation")
+RACINE = Path("results/orientation")
 
 
 def _score(plan, context, surrogate) -> float:
@@ -70,7 +70,7 @@ def main() -> None:
         f"Budget de deplacement {budget:.1f} m (norme infinie autour du point L1), "
         f"`largeur_min = {LARGEUR_DEFAUT:.2f} m`.\n",
         "**L'objectif optimise n'est pas l'eclairement reel** : voir l'en-tete de "
-        "`experiences/j9_orientation.py`. Ce qui est garanti est geometrique.\n",
+        "`experiments/j9_orientation.py`. Ce qui est garanti est geometrique.\n",
         "| plan | pieces | azimut du meilleur sDA | gain | deplacement | "
         "plus petit cote | variantes valides |",
         "|---|--:|--:|--:|--:|--:|--:|",

@@ -1,6 +1,6 @@
 """Summary table of milestone 7 from its raw rows (PLAN.md phase 2).
 
-Usage: python experiences/j7_msd_summary.py [RAW_CSV] [OUT_MD]. Fallback: try pavage,
+Usage: python experiments/j7_msd_summary.py [RAW_CSV] [OUT_MD]. Fallback: try pavage,
 fall back on plain legalize when it refuses, for any reason (the rule behind the published
 93.9 %; falling back only on an unrecoverable grid gives 93.5 %). Wilson 95 % intervals.
 """
@@ -12,8 +12,8 @@ from pathlib import Path
 
 from archlux.export.wilson import wilson_interval
 
-RAW = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats/j7_repair_raw.csv")
-OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "resultats/j7_repair.md")
+RAW = Path(sys.argv[1] if len(sys.argv) > 1 else "results/j7_repair_raw.csv")
+OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "results/j7_repair.md")
 OLD = {"mode": "fault", "valide_apres": "valid_after", "statut": "status"}  # 2026-09 raw rows
 cases: dict[tuple[str, str, str], dict[str, dict[str, str]]] = defaultdict(dict)
 with RAW.open(encoding="utf-8") as handle:

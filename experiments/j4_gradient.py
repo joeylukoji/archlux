@@ -17,7 +17,7 @@ from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 
 SEED = 17
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j4_gradient.csv"
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j4_gradient.csv"
 oracle, rng = SplitFluxOracle(), np.random.default_rng(SEED)
 
 

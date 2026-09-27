@@ -13,7 +13,7 @@ from archlux.data.corruption import MODES, corrupt
 from archlux.seeds import derive
 
 MSD, N = Path(sys.argv[1]), int(sys.argv[2]) if len(sys.argv) > 2 else 300
-OUT = Path(sys.argv[3] if len(sys.argv) > 3 else "resultats") / "j7_repair_raw.csv"
+OUT = Path(sys.argv[3] if len(sys.argv) > 3 else "results") / "j7_repair_raw.csv"
 FIELDS = ("plan_id", "fault", "amplitude_m", "pavage", "n_rooms", "valid_before", "status")
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")

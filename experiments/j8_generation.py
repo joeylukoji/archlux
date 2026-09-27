@@ -348,8 +348,8 @@ def main() -> None:
     echelle = _echelle(rows)
     print(f"{len(rows)} plans generes, echelle {echelle:.4f} m/unite")
 
-    Path("resultats").mkdir(exist_ok=True)
-    sortie = Path(f"resultats/j8_{etiquette}_brut.csv")
+    Path("results").mkdir(exist_ok=True)
+    sortie = Path(f"results/j8_{etiquette}_brut.csv")
     rejections: dict[str, int] = {}
     with sortie.open("w", newline="", encoding="utf-8") as flux:
         ecrivain = csvmod.DictWriter(flux, fieldnames=FIELDS)
@@ -432,7 +432,7 @@ def main() -> None:
                     }
                 )
     print("bruts ecrits :", sortie)
-    summary = Path(f"resultats/j8_{etiquette}.md")
+    summary = Path(f"results/j8_{etiquette}.md")
     summary.write_text(_resumer(sortie, echelle, rejections), encoding="utf-8")
     print("resume ecrit :", summary)
     if rejections:

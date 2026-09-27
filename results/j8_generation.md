@@ -1,6 +1,6 @@
 # Jalon 8 — synthèse : légaliser des plans **réellement générés**
 
-Synthèse des trois exécutions de `experiences/j8_generation.py`. Les tables détaillées
+Synthèse des trois exécutions de `experiments/j8_generation.py`. Les tables détaillées
 sont dans `j8_etoile.md`, `j8_plausible.md` et `j8_divers.md`, les mesures individuelles
 dans les CSV de même préfixe. Les comparaisons **avant / après**, plan par plan, sont
 dans [`visuels/`](visuels/index.md).
@@ -250,8 +250,8 @@ python vendor/j8_generer.py plans.jsonl --n 40 --pas 1000 --graphe plausible
 python vendor/j8_generer.py divers.jsonl --n 4  --pas 1000 --catalogue divers
 
 # etage 2, dans le depot (Apache-2.0) : tables, puis fiches avant/apres
-python experiences/j8_generation.py plans.jsonl 999 plausible
-python experiences/j8_visuels.py    plans.jsonl plausible 8
+python experiments/j8_generation.py plans.jsonl 999 plausible
+python experiments/j8_visuels.py    plans.jsonl plausible 8
 ```
 
 Le lot d'echantillonnage est **heterogene** — un programme par element — parce que le
