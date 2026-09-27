@@ -1,6 +1,6 @@
 # Jetons d'un plan
 
-**Code :** `light.jetons.plan_vers_jetons`, `vecteur_vers_jetons`, `permuter_pieces`.
+**Code :** `light.jetons.plan_to_tokens`, `vector_to_tokens`, `permute_rooms`.
 
 ## Énoncé
 
@@ -41,7 +41,7 @@ grandeur à un facteur \(\pi\) près.
 
 ## Le masque de remplissage
 
-`plan_vers_jetons` rend le couple \((\text{jetons }[N,d],\ \text{masque }[N])\), où
+`plan_to_tokens` rend le couple \((\text{jetons }[N,d],\ \text{masque }[N])\), où
 `masque[i]` est **vrai si le jeton i est du remplissage** — convention PyTorch
 `src_key_padding_mask`, pas l'inverse. Sur un plan seul le masque est entièrement
 faux ; il ne devient utile qu'en lot de plans de tailles différentes.
@@ -56,10 +56,10 @@ faux ; il ne devient utile qu'en lot de plans de tailles différentes.
   gradient est nul presque partout, et l'optimiseur est aveugle
   (`ARCHITECTURE.md` §10, premier anti-pattern).
 - Toute statistique d'ensemble (moyenne, somme) est **invariante par permutation**
-  des pièces : `permuter_pieces` ne doit pas changer le score. C'est ce que teste
-  `tests/unites/test_jetons.py`.
+  des pièces : `permute_rooms` ne doit pas changer le score. C'est ce que teste
+  `tests/unit/test_jetons.py`.
 - Une ouverture dont le `wall_id` ne correspond à aucun mur du plan est
-  **silencieusement ignorée** (`plan_vers_jetons`). C'est un choix : un corpus
+  **silencieusement ignorée** (`plan_to_tokens`). C'est un choix : un corpus
   lacunaire ne doit pas faire tomber l'encodage. La contrepartie est qu'une erreur
   d'appariement mur/baie ne se signale pas ici — elle se signale à la
   dévectorisation.
@@ -68,12 +68,12 @@ faux ; il ne devient utile qu'en lot de plans de tailles différentes.
 
 | Faire | Ne pas faire |
 |---|---|
-| Encoder depuis `Plan` quand murs et baies existent | Croire que `vecteur_vers_jetons` encode les baies : il ne voit que \((x,y,w,h)\) et force le type `"living_room"` |
+| Encoder depuis `Plan` quand murs et baies existent | Croire que `vector_to_tokens` encode les baies : il ne voit que \((x,y,w,h)\) et force le type `"living_room"` |
 | Vérifier l'invariance par permutation | Trier les jetons par position (ce serait un ordre implicite) |
 | Ajouter une composante en fin de vecteur | Réindexer `0:22` — les poids `npz` gelés deviendraient faux sans que rien ne le signale |
 
 !!! warning "Le corpus livré n'exerce pas les jetons de baie"
-    `data.synthese.generer_corpus` produit des plans avec `murs=()` et
+    `data.synthese.generate_corpus` produit des plans avec `murs=()` et
     `ouvertures=()`. Les colonnes `22:29` y sont donc **identiquement nulles**, et
     `SplitFluxOracle` utilise son WWR par défaut (0,30) quelle que soit la
     fenestration. Voir [vérité terrain](../donnees/verite-terrain.md).

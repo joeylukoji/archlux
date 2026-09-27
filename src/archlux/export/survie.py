@@ -1,35 +1,35 @@
-"""Taux de survie à l'export validé, avec intervalle de Wilson."""
+"""Survival rate on validated export, with Wilson interval."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
 from archlux.errors import InvariantViolation
-from archlux.export.pathologie import diagnostiquer
-from archlux.export.wilson import intervalle_wilson
+from archlux.export.pathologie import diagnose
+from archlux.export.wilson import wilson_interval
 from archlux.types import Plan
 
 __all__ = ["survival_rate"]
 
 
 def survival_rate(plans: Sequence[Plan], *, z: float = 1.96) -> tuple[float, tuple[float, float]]:
-    """Proportion de plans exportables + intervalle de Wilson.
+    """Proportion of exportable plans + Wilson interval.
 
     Parameters
     ----------
     plans : Sequence[Plan]
-        Échantillon (``n ≥ 1``).
+        Sample (``n >= 1``).
     z : float, optional
-        Quantile gaussien (1,96 ≈ 95 %).
+        Gaussian quantile (1.96 ~= 95%).
 
     Returns
     -------
     tuple
-        ``(taux, (lo, hi))`` avec ``0 ≤ lo ≤ taux ≤ hi ≤ 1``.
+        ``(rate, (lo, hi))`` with ``0 <= lo <= rate <= hi <= 1``.
     """
     n = len(plans)
     if n < 1:
-        raise InvariantViolation(("plans doit être non vide",))
-    succes = sum(1 for plan in plans if diagnostiquer(plan).exportable)
-    taux = succes / n
-    return taux, intervalle_wilson(succes, n, z=z)
+        raise InvariantViolation(("plans must be non-empty",))
+    successes = sum(1 for plan in plans if diagnose(plan).exportable)
+    taux = successes / n
+    return taux, wilson_interval(successes, n, z=z)

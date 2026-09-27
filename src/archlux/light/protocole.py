@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.types import Indicateur
+from archlux.types import Indicator
 
 if TYPE_CHECKING:
     from archlux.arrays import VecteurF
@@ -122,7 +122,7 @@ class Surrogate(Protocol):
     """
 
     @property
-    def indicator(self) -> Indicateur:
+    def indicator(self) -> Indicator:
         """Name of the modelled indicator (``"sDA"``, ``"ASE"``, ...)."""
         ...
 

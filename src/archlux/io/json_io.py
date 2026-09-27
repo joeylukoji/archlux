@@ -39,7 +39,6 @@ from archlux.types import (
 
 __all__ = [
     "SCHEMA_VERSION",
-    "SCHEMA_VERSION",
     "from_dict",
     "load",
     "manifest_to_dict",
@@ -339,6 +338,13 @@ def _rename_keys(section: Any, kind: str) -> Any:
     return {mapping.get(key, key): value for key, value in section.items()}
 
 
+def _room_from_v1(room: Any) -> Any:
+    """A v1 room with its French type mapped; a malformed room is returned unchanged."""
+    if not isinstance(room, dict) or not isinstance(room.get("type"), str):
+        return room
+    return {**room, "type": _TYPES_FROM_V1.get(room["type"], room["type"])}
+
+
 def upgrade_v1(data: dict[str, Any]) -> dict[str, Any]:
     """Convert a schema v1 document into the equivalent schema v2 document.
 
@@ -359,12 +365,15 @@ def upgrade_v1(data: dict[str, Any]) -> dict[str, Any]:
     """
     plan: dict[str, Any] = _rename_keys(data, "plan")
     plan["schema"] = SCHEMA_VERSION
-    plan["rooms"] = [
-        {**room, "type": _TYPES_FROM_V1.get(room.get("type"), room.get("type"))}
-        for room in plan.get("rooms", [])
-    ]
-    plan["walls"] = [_rename_keys(wall, "wall") for wall in plan.get("walls", [])]
-    plan["openings"] = [_rename_keys(o, "opening") for o in plan.get("openings", [])]
+    # Only well-formed parts are converted; anything else passes through unchanged, so
+    # that the v2 reader refuses it with a typed error, never a bare TypeError.
+    rooms = plan.get("rooms", [])
+    if isinstance(rooms, list):
+        plan["rooms"] = [_room_from_v1(room) for room in rooms]
+    for key, kind in (("walls", "wall"), ("openings", "opening")):
+        items = plan.get(key, [])
+        if isinstance(items, list):
+            plan[key] = [_rename_keys(item, kind) for item in items]
     certificate = _rename_keys(plan.get("certificate"), "certificate")
     if isinstance(certificate, dict):
         certificate["geometry"] = _rename_keys(certificate.get("geometry"), "geometry")

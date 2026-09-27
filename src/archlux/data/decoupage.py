@@ -1,4 +1,4 @@
-"""Découpage figé 60 / 20 / 20. Dédupliquer **avant**, sinon les quasi-doublons fuient."""
+"""Fixed 60 / 20 / 20 split. Deduplicate **before**, otherwise near-duplicates leak across."""
 
 from __future__ import annotations
 
@@ -6,51 +6,52 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 
-__all__ = ["Decoupage", "charger_decoupage"]
+__all__ = ["Split", "load_split"]
 
 
 @dataclass(frozen=True, slots=True)
-class Decoupage:
-    """Trois jeux disjoints : 60 / 20 / 20, publiés sous forme de listes d'identifiants."""
+class Split:
+    """Three disjoint sets: 60 / 20 / 20, published as lists of identifiers."""
 
-    nom: str
-    entrainement: tuple[str, ...]
+    name: str
+    train: tuple[str, ...]
     calibration: tuple[str, ...]
     test: tuple[str, ...]
-    empreinte: str
+    fingerprint: str
 
 
-def _lignes(chemin: Path) -> tuple[str, ...]:
-    """Lire des identifiants, un par ligne, sans doublon ni commentaire."""
-    if not chemin.is_file():
-        raise InvariantViolation((f"fichier de découpage absent : {chemin}",))
+def _lignes(path: Path) -> tuple[str, ...]:
+    """Read identifiers, one per line, without duplicates or comments."""
+    if not path.is_file():
+        raise InvariantViolation((f"missing split file: {path}",))
     vus: list[str] = []
     deja: set[str] = set()
-    for brute in chemin.read_text(encoding="utf-8").splitlines():
-        identifiant = brute.strip()
-        if not identifiant or identifiant.startswith("#"):
+    for brute in path.read_text(encoding="utf-8").splitlines():
+        id = brute.strip()
+        if not id or id.startswith("#"):
             continue
-        if identifiant in deja:
-            raise InvariantViolation((f"identifiant répété dans {chemin.name} : {identifiant}",))
-        deja.add(identifiant)
-        vus.append(identifiant)
+        if id in deja:
+            raise InvariantViolation((f"repeated identifier in {path.name}: {id}",))
+        deja.add(id)
+        vus.append(id)
     return tuple(vus)
 
 
-def charger_decoupage(chemin: Path) -> Decoupage:
-    """Charger un découpage figé et vérifier la disjonction des trois jeux.
+def load_split(path: Path) -> Split:
+    """Load a fixed split and verify that the three sets are disjoint.
 
-    ``chemin`` est un répertoire contenant ``train.txt``, ``calibration.txt``
-    et ``test.txt`` (un identifiant par ligne).
+    ``path`` is a directory containing ``train.txt``, ``calibration.txt``
+    and ``test.txt`` (one identifier per line).
 
     Raises
     ------
     InvariantViolation
-        Un identifiant apparaît dans deux jeux, ou un fichier manque.
+        An identifier appears in two sets, or a file is missing.
     """
-    racine = Path(chemin)
+    racine = Path(path)
     train = _lignes(racine / "train.txt")
     calib = _lignes(racine / "calibration.txt")
     test = _lignes(racine / "test.txt")
@@ -63,13 +64,22 @@ def charger_decoupage(chemin: Path) -> Decoupage:
     if s_calib & s_test:
         conflits.append("calibration ∩ test")
     if conflits:
-        raise InvariantViolation((f"identifiants partagés entre jeux : {', '.join(conflits)}",))
+        raise InvariantViolation((f"identifiers shared between sets: {', '.join(conflits)}",))
     materiau = "\n".join((*train, "---", *calib, "---", *test)).encode()
-    empreinte = hashlib.blake2b(materiau, digest_size=16).hexdigest()
-    return Decoupage(
-        nom=racine.name,
-        entrainement=train,
+    fingerprint = hashlib.blake2b(materiau, digest_size=16).hexdigest()
+    return Split(
+        name=racine.name,
+        train=train,
         calibration=calib,
         test=test,
-        empreinte=empreinte,
+        fingerprint=fingerprint,
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "Decoupage": Alias(Split, "archlux.data.decoupage.Split"),
+        "charger_decoupage": Alias(load_split, "archlux.data.decoupage.load_split"),
+    },
+)

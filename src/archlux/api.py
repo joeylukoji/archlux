@@ -27,27 +27,27 @@ from archlux.certify.dual import translate_duals
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
-from archlux.geom.graphe import OrdreRelatif, deduire_ordre
-from archlux.geom.pavage import Trame, deduire_trame, etendre_pavage, snap_to_grid
+from archlux.geom.graphe import RelativeOrder, deduce_order
+from archlux.geom.pavage import Grid, deduce_grid, extend_tiling, snap_to_grid
 from archlux.geom.polytope import (
     Polytope,
-    construire_polytope,
-    devectoriser,
-    etendre_ecarts_l1,
-    figer_contacts,
-    vectoriser,
+    build_polytope,
+    devectorize,
+    extend_l1_slack,
+    freeze_contacts,
+    vectorize,
 )
 from archlux.geom.rectilineaire import (
-    PieceRectilineaire,
-    etendre_fusions,
+    RectilinearRoom,
+    extend_merges,
     minimum_area_shares,
 )
 from archlux.light.protocole import Glazing, Surrogate, point_prediction
-from archlux.lmo.coupes import (
+from archlux.lmo.cuts import (
     inner_area_constraints,
-    resoudre_avec_surfaces,  # lang-ok: French identifier of lmo
+    solve_with_areas,
 )
-from archlux.lmo.solveur import SolutionLP
+from archlux.lmo.solveur import LPSolution
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.tolerances import SNAP_M
 from archlux.types import Certificate, Context, GeometricProof, Plan
@@ -92,23 +92,23 @@ def gradient_distance(x_proposed: VecteurF) -> VecteurF:
     return couts
 
 
-def _active_origins(sol: SolutionLP, poly: Polytope) -> tuple[str, ...]:
+def _active_origins(sol: LPSolution, poly: Polytope) -> tuple[str, ...]:
     """Labels of the rows, inequalities and equalities, with a non-zero Farkas weight.
 
     Without a certificate nothing is identified; listing every constraint, as before
     batch 1.5c, wrongly presented all of them as conflicting.
     """
     labels: list[str] = []
-    if sol.certificat_farkas is not None:
+    if sol.farkas_certificate is not None:
         labels += [
             label
-            for label, weight in zip(poly.origines, sol.certificat_farkas, strict=True)
+            for label, weight in zip(poly.origins, sol.farkas_certificate, strict=True)
             if abs(float(weight)) > _DUAL_THRESHOLD
         ]
-    if sol.certificat_farkas_eq is not None:
+    if sol.farkas_certificate_eq is not None:
         labels += [
             label
-            for label, weight in zip(poly.labels_eq(), sol.certificat_farkas_eq, strict=True)
+            for label, weight in zip(poly.eq_labels(), sol.farkas_certificate_eq, strict=True)
             if abs(float(weight)) > _DUAL_THRESHOLD
         ]
     return tuple(labels)
@@ -117,7 +117,7 @@ def _active_origins(sol: SolutionLP, poly: Polytope) -> tuple[str, ...]:
 def _translated_duals(
     duals: VecteurF | None, poly: Polytope, *, objective: str = "displacement"
 ) -> tuple[tuple[str, float], ...]:
-    """Pair the duals of the rows of ``A`` with ``poly.origines``.
+    """Pair the duals of the rows of ``A`` with ``poly.origins``.
 
     ``duals`` must come from an LP solved on **this** polytope: the pairing is
     positional, and ``origines`` only covers ``A``, never ``A_eq`` nor the cuts.
@@ -150,8 +150,8 @@ def budget_label(budget: float) -> str:
 
 
 def _scope(
-    ordre: OrdreRelatif,
-    fusions: tuple[PieceRectilineaire, ...],
+    ordre: RelativeOrder,
+    fusions: tuple[RectilinearRoom, ...],
     grid: bool,
     budget: float | None,
 ) -> tuple[str, ...]:
@@ -180,40 +180,40 @@ class _Problem:
 
     plan: Plan
     ctx: Context
-    fusions: tuple[PieceRectilineaire, ...]
+    fusions: tuple[RectilinearRoom, ...]
     budget: float | None
-    grid: Trame | None
-    order: OrdreRelatif
+    grid: Grid | None
+    order: RelativeOrder
     base: Polytope
     x_ref: VecteurF
     minima: dict[str, float]
 
     def domain(self, *, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
         """The solver's domain, optionally without the tiling grid or the budget."""
-        geometric = etendre_pavage(self.base, self.grid) if grid and self.grid else self.base
-        l1 = etendre_ecarts_l1(geometric, self.x_ref)
+        geometric = extend_tiling(self.base, self.grid) if grid and self.grid else self.base
+        l1 = extend_l1_slack(geometric, self.x_ref)
         if bounded and self.budget is not None:
             n_geo = len(geometric.index)
-            bounds = tuple(l1.bornes[:n_geo]) + tuple(
+            bounds = tuple(l1.bounds[:n_geo]) + tuple(
                 (0.0, float(self.budget)) for _ in range(n_geo)
             )
-            l1 = replace(l1, bornes=bounds)
+            l1 = replace(l1, bounds=bounds)
         return geometric, l1
 
-    def solve(self, l1: Polytope) -> SolutionLP:
+    def solve(self, l1: Polytope) -> LPSolution:
         """Minimize the L1 displacement over ``l1``, with the area cuts."""
-        return resoudre_avec_surfaces(  # lang-ok: French identifier of lmo
+        return solve_with_areas(
             l1,
             gradient_distance(self.x_ref),
             self.ctx,
             self.plan.rooms,
-            duaux=True,
+            duals=True,
             minima=self.minima,
         )
 
     def decode(self, x: VecteurF, index: dict[str, int], template: Plan | None = None) -> Plan:
         """The plan of a decision vector, on the context's outline."""
-        decoded = devectoriser(x, template or self.plan, index)
+        decoded = devectorize(x, template or self.plan, index)
         return replace(decoded, outline=self.ctx.outline)
 
     def prove(self, candidate: Plan, *, bounded: bool = True) -> GeometricProof:
@@ -223,7 +223,7 @@ class _Problem:
             self.ctx,
             reference=self.plan,
             budget=self.budget if bounded else None,
-            fusions=self.fusions,
+            merges=self.fusions,
         )
 
 
@@ -250,7 +250,7 @@ def _build_problem(
     plan: Plan,
     ctx: Context,
     *,
-    fusions: tuple[PieceRectilineaire, ...],
+    fusions: tuple[RectilinearRoom, ...],
     budget: float | None,
     pavage: bool,
     budget_reparation: int,
@@ -258,19 +258,19 @@ def _build_problem(
     """Derive the relative order, the polytope and the reference vector of a plan."""
     # Makes a gap unrepresentable: see ``geom.pavage``. Raises if the grid of the
     # proposed plan cannot be recovered: an explicit failure, not a silent one.
-    grid = deduire_trame(plan, ctx, budget_reparation=budget_reparation) if pavage else None
+    grid = deduce_grid(plan, ctx, budget_reparation=budget_reparation) if pavage else None
     # With a grid, the order is read from the plan snapped onto it: the order read from
     # the faulty plan could contradict the tiling equalities (a room moved onto its
     # neighbour overlaps it on both axes).
-    order = deduire_ordre(
+    order = deduce_order(
         plan if grid is None else snap_to_grid(plan, grid),
         structure=ctx.structure,
         # A fused room keeps one side of every wall: never a wall on its seam.
         groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in fusions),
     )
-    base = construire_polytope(order, ctx)
+    base = build_polytope(order, ctx)
     for piece_l in fusions:
-        base = etendre_fusions(base, piece_l, min_contact=ctx.regulation.min_width)
+        base = extend_merges(base, piece_l, min_contact=ctx.regulation.min_width)
     return _Problem(
         plan=plan,
         ctx=ctx,
@@ -279,7 +279,7 @@ def _build_problem(
         grid=grid,
         order=order,
         base=base,
-        x_ref=vectoriser(plan, base.index),
+        x_ref=vectorize(plan, base.index),
         minima=minimum_area_shares(plan.rooms, fusions, ctx.regulation),
     )
 
@@ -291,16 +291,16 @@ def _admits(problem: _Problem, l1: Polytope, *, bounded: bool) -> bool:
     the area cuts are an outer approximation (final review of phase 1, M1).
     """
     relaxed = problem.solve(l1)
-    if relaxed.statut != "optimal":
+    if relaxed.status != "optimal":
         return False
     return problem.prove(problem.decode(relaxed.x, l1.index), bounded=bounded).valid
 
 
-def _refusal(problem: _Problem, poly_l1: Polytope, sol: SolutionLP) -> Infeasible:
+def _refusal(problem: _Problem, poly_l1: Polytope, sol: LPSolution) -> Infeasible:
     """The exception for an infeasible domain: the certificate, its scope and its causes."""
     check = (
-        verify_infeasibility(poly_l1, sol.certificat_farkas, sol.certificat_farkas_eq)
-        if sol.certificat_farkas is not None
+        verify_infeasibility(poly_l1, sol.farkas_certificate, sol.farkas_certificate_eq)
+        if sol.farkas_certificate is not None
         else None
     )
     # The certificate is about this domain, not about the order alone (final review of
@@ -314,7 +314,7 @@ def _refusal(problem: _Problem, poly_l1: Polytope, sol: SolutionLP) -> Infeasibl
     ):
         relaxable.append(budget_label(problem.budget))
     return Infeasible(
-        farkas_certificate=sol.certificat_farkas,
+        farkas_certificate=sol.farkas_certificate,
         origins=_active_origins(sol, poly_l1),
         verified=None if check is None else check.verified,
         scope=scope,
@@ -323,11 +323,11 @@ def _refusal(problem: _Problem, poly_l1: Polytope, sol: SolutionLP) -> Infeasibl
 
 
 def _classic_result(
-    problem: _Problem, sol: SolutionLP, poly_l1: Polytope
+    problem: _Problem, sol: LPSolution, poly_l1: Polytope
 ) -> tuple[Plan, GeometricProof]:
     """The classically legalized plan and its exact proof, or the typed refusal."""
-    if sol.statut != "optimal":
-        raise InvariantViolation((f"statut LP inattendu : {sol.statut}",))
+    if sol.status != "optimal":
+        raise InvariantViolation((f"statut LP inattendu : {sol.status}",))
     corrected = problem.decode(sol.x, poly_l1.index)
     proof = problem.prove(corrected)
     if not proof.valid:
@@ -348,12 +348,12 @@ def _optimize_light(
 ) -> Plan:
     """Frank-Wolfe from the classic plan, inside the polytope, then the exact proof."""
     ctx, fusions, budget = problem.ctx, problem.fusions, problem.budget
-    x0 = vectoriser(corrected, poly.index)
+    x0 = vectorize(corrected, poly.index)
     # Inner approximation of the minimum areas, added *after* freezing contacts so that
     # a tight room is not frozen into an equality: every point of this domain, hence
     # every Frank-Wolfe iterate, keeps every minimum area (PLAN.md batch 1.2).
     poly_fw = inner_area_constraints(
-        figer_contacts(poly, x0),
+        freeze_contacts(poly, x0),
         x0,
         ctx,
         corrected.rooms,
@@ -373,7 +373,7 @@ def _optimize_light(
     if not proof.valid:
         raise InvariantViolation(proof.violations)
     # The last Frank-Wolfe LP is on poly_fw, not on poly_l1: its duals are the only ones
-    # that pair with poly_fw.origines. Failing that, keep those of the L1 pass: they
+    # that pair with poly_fw.origins. Failing that, keep those of the L1 pass: they
     # describe another polytope, but are at least labelled correctly. Careful:
     # figer_contacts moved the saturated rows into A_eq, which is not dualized; this
     # diagnostic is therefore often empty (see lmo.solveur.resoudre).
@@ -392,6 +392,29 @@ def _optimize_light(
     )
 
 
+_RENAMED_MEMBERS = {
+    "evaluer": "evaluate",
+    "incertitude": "uncertainty",
+    "indicateur": "indicator",
+    "evaluer_pieces": "evaluate_rooms",
+}
+"""Surrogate protocol members renamed in wave 5 without an alias (users implement them)."""
+
+
+def _not_a_surrogate(objective: object) -> str:
+    """Build the TypeError message for ``objective``.
+
+    It names the members to rename when the object has the pre-rename French ones
+    (review of the stack, #9).
+    """
+    message = "objective must implement archlux.light.protocole.Surrogate"
+    legacy = [old for old in _RENAMED_MEMBERS if hasattr(objective, old)]
+    if not legacy:
+        return message
+    renames = ", ".join(f"{old} -> {_RENAMED_MEMBERS[old]}" for old in legacy)
+    return f"{message}; it has the pre-0.10 French members, rename them: {renames}"
+
+
 def legalize(
     plan: Plan,
     ctx: Context,
@@ -400,7 +423,7 @@ def legalize(
     calibration: Calibration | None = None,
     budget: float | None = None,
     trace: bool = False,
-    fusions: tuple[PieceRectilineaire, ...] = (),
+    fusions: tuple[RectilinearRoom, ...] = (),
     pavage: bool = False,
     budget_reparation: int = 4,
 ) -> Plan:
@@ -444,7 +467,7 @@ def legalize(
 
         Turn it on as soon as the input may carry a **gap**: this is the case of the
         outputs of generative models. Measured on 4,796 corruptions of 300 real MSD
-        plans (`resultats/j7_reparation.md`): repair goes from 35.9 % to 93.0 %, and on
+        plans (`results/j7_reparation.md`): repair goes from 35.9 % to 93.0 %, and on
         gaps alone from 10.0 % to 97.6 % (column ``pavage=True``; the 93.9 % of the
         README is the "fallback" column: ``pavage=True``, otherwise ``legalize`` alone).
         Figures measured before batch 1.1.
@@ -551,7 +574,7 @@ def legalize(
     True
     """
     if objective is not None and not isinstance(objective, Surrogate):
-        raise TypeError("objective must implement archlux.light.protocole.Surrogate")
+        raise TypeError(_not_a_surrogate(objective))
     validate_inputs(plan, ctx, budget=budget, budget_reparation=budget_reparation)
     ctx = resolve_outline(plan, ctx)
     _check_calibration(objective, calibration)
@@ -566,11 +589,11 @@ def legalize(
     )
     poly, poly_l1 = problem.domain()
     sol = problem.solve(poly_l1)
-    if sol.statut == "infaisable":
+    if sol.status == "infaisable":
         raise _refusal(problem, poly_l1, sol)
     corrected, proof = _classic_result(problem, sol, poly_l1)
     # sol was solved on poly_l1: the duals line up with poly_l1.A / origines, not poly.
-    duals = _translated_duals(sol.duaux, poly_l1)
+    duals = _translated_duals(sol.duals, poly_l1)
     if objective is None:
         return replace(
             corrected,

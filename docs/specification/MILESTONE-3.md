@@ -79,7 +79,7 @@ def encode(deg: float, harmoniques: int = 3) -> np.ndarray:
 def moyenne_circulaire(degres: Sequence[float]) -> float: ...
 def variance_circulaire(degres: Sequence[float]) -> float: ...
 def test_rayleigh(degres: Sequence[float]) -> tuple[float, float]:  # (R, p)
-def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Resultat: ...
+def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Result: ...
 def stratifier(donnees, par_orientation: int = 8) -> dict[str, np.ndarray]: ...
 ```
 
@@ -276,7 +276,7 @@ def frank_wolfe(
 @dataclass(frozen=True)
 class ResultatFW:
     x: np.ndarray
-    valeur: float
+    value: float
     ecart_dualite: float        # MAJORE l'écart à l'optimum — garantie
     iterations: int
     valide_partout: bool
@@ -318,7 +318,7 @@ def test_dualite_majore_l_ecart_reel():
     """Sur un petit cas résoluble exactement."""
     r = frank_wolfe(POLY_PETIT, OBJ, X0, max_iter=10)
     opt = resoudre_exactement(POLY_PETIT, OBJ)
-    assert opt - r.valeur <= r.ecart_dualite + 1e-6
+    assert opt - r.value <= r.ecart_dualite + 1e-6
 
 def test_ecartement_converge_plus_vite():
     a = frank_wolfe(POLY, OBJ, X0, pas="standard",   tol_dualite=1e-5)
@@ -344,12 +344,12 @@ def test_warm_start_utilise(monkeypatch):
 
 ```python
 def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
-    ordre = deduire_ordre(plan)
-    poly  = construire_polytope(ordre, ctx)
+    ordre = deduce_order(plan)
+    poly  = build_polytope(ordre, ctx)
     if budget is not None:
-        poly = poly.avec_boite(vectoriser(plan), budget)     # région de confiance
+        poly = poly.avec_boite(vectorize(plan), budget)     # région de confiance
 
-    x0 = lmo.resoudre(poly, gradient_distance(vectoriser(plan))).x
+    x0 = lmo.solve(poly, gradient_distance(vectorize(plan))).x
 
     if objective is None:
         x, res = x0, None
@@ -358,9 +358,9 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
         res = frank_wolfe(poly, f, x0, trace=trace)
         x = res.x
 
-    q = devectoriser(x, plan)
+    q = devectorize(x, plan)
     preuve = verifier_exactement(q, ctx)
-    if not preuve.valide:
+    if not preuve.valid:
         raise InvariantViole(preuve.violations)
     return replace(q, certificate=Certificate(geometry=preuve, ...))
 ```

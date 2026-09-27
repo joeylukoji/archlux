@@ -50,9 +50,9 @@ def disposition(rng: np.random.Generator) -> np.ndarray:
 ## 2. Entraîner, sauver, geler
 
 ```python
-from archlux.light.base import SubstitutDense
+from archlux.light.base import DenseSurrogate
 from archlux.light.simulateur import SplitFluxOracle
-from archlux.uq.gestion import emettre_jeton
+from archlux.uq.gestion import issue_token
 
 sim = SplitFluxOracle()
 rng = np.random.default_rng(17)
@@ -61,12 +61,12 @@ xs = tuple(disposition(rng) for _ in range(80))
 orientations = tuple(ax.Orientation(deg=float(d)) for d in rng.uniform(0.0, 360.0, len(xs)))
 ys = np.array([sim.evaluate(x, o) for x, o in zip(xs, orientations, strict=True)])
 
-dense = SubstitutDense(largeur=8)
-dense.ajuster(xs, ys, orientations, seed=17, epoques=30)
+dense = DenseSurrogate(largeur=8)
+dense.fit(xs, ys, orientations, seed=17, epoques=30)
 Path("poids").mkdir(exist_ok=True)
-chemin = Path("poids/dense.npz")
-empreinte = dense.sauver(chemin)
-jeton = emettre_jeton(empreinte, "2026-09-09T10:00:00Z")  # après gel
+path = Path("poids/dense.npz")
+fingerprint = dense.save(path)
+token = issue_token(fingerprint, "2026-09-09T10:00:00Z")  # après gel
 ```
 
 `sauver` rend l'empreinte SHA-256 du fichier écrit ; le jeton la lie à l'instant du
@@ -76,12 +76,12 @@ gel. C'est lui qui ouvrira le jeu de calibration au
 ## 3. Valider le gradient, puis légaliser
 
 ```python
-from archlux.light.appris import SubstitutAppris
-from archlux.light.validation import valider_gradient
+from archlux.light.appris import LearnedSurrogate
+from archlux.light.validation import validate_gradient
 
-reseau = SubstitutAppris(chemin, empreinte, gele=True)
+reseau = LearnedSurrogate(path, fingerprint, gele=True)
 points = np.stack([disposition(rng) for _ in range(8)])
-rapport = valider_gradient(reseau, points, ctx.orientation, seed=17, reference=sim)
+rapport = validate_gradient(reseau, points, ctx.orientation, seed=17, reference=sim)
 assert rapport.accord_de_signe > 0.80
 
 q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, pavage=True)
@@ -94,7 +94,7 @@ assert q.certificate is not None and q.certificate.geometry.valid
     le substitut analytique non entraîné : voir [la revue du jalon 4](../revues/j4.md).
     Passer ce contrôle ici ne dit pas que le gradient est exploitable.
 
-`valider_gradient` lève `InvalidSurrogate` sous le seuil d'accord de signe (0,80) :
+`validate_gradient` lève `InvalidSurrogate` sous le seuil d'accord de signe (0,80) :
 l'`assert` ne fait que rendre le point de contrôle visible. `budget=0.5` borne le
 déplacement de chaque mur à 50 cm autour de la proposition ; sans lui, Frank-Wolfe
 suit le substitut aussi loin que le polytope le permet : dans cet exemple, il réduit
@@ -104,7 +104,7 @@ le séjour à 1 m, la largeur minimale.
 numpy (`light.base`).
 
 !!! warning "Le transformeur n'est pas implémenté"
-    `SubstitutAppris._charger_torch` **lève systématiquement** : l'extra
+    `LearnedSurrogate._charger_torch` **lève systématiquement** : l'extra
     `archlux[ml]` installe `torch`, mais aucun modèle `.pt` n'est servi. La seule
     implémentation apprise du dépôt est le perceptron `numpy` ci-dessus.
 

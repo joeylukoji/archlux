@@ -18,7 +18,7 @@ prove.
 Usage::
 
     python scripts/rename_field.py Plan --field pieces=rooms --field murs=walls \\
-        src tests benchmarks experiences scripts            # dry run
+        src tests benchmarks experiments scripts            # dry run
     python scripts/rename_field.py Plan --field pieces=rooms --apply src tests ...
 """
 

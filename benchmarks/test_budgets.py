@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 
 import archlux
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope
-from archlux.lmo.solveur import resoudre, vider_cache
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope
+from archlux.lmo.solveur import clear_cache, solve
 from archlux.types import (
     Context,
     Orientation,
@@ -68,21 +68,21 @@ def _plan_15_pieces() -> Plan:
     """Grille 5 x 3 de pièces jointives, le cas de référence du §9."""
     rooms = tuple(
         Room(
-            id=f"p{colonne}_{ligne}",
+            id=f"p{column}_{ligne}",
             type="living_room",
-            x=colonne * 3.0,
+            x=column * 3.0,
             y=ligne * 4.0,
             w=3.0,
             h=4.0,
         )
-        for colonne in range(5)
+        for column in range(5)
         for ligne in range(3)
     )
     return Plan(rooms=rooms, walls=(), openings=(), outline=CTX_15.outline)
 
 
 def _poly_15() -> object:
-    return construire_polytope(deduire_ordre(_plan_15_pieces()), CTX_15)
+    return build_polytope(deduce_order(_plan_15_pieces()), CTX_15)
 
 
 @pytest.mark.budget
@@ -90,8 +90,8 @@ def test_budget_lp_a_froid(benchmark: BenchmarkFixture) -> None:
     """Un appel LP à froid < 10 ms : construction du modèle **comprise**."""
     poly = _poly_15()
     c = np.ones(len(poly.index))  # type: ignore[attr-defined]
-    vider_cache()
-    benchmark(resoudre, poly, c)
+    clear_cache()
+    benchmark(solve, poly, c)
     _assert_within_budget(benchmark, "lp_froid")
 
 
@@ -100,8 +100,8 @@ def test_budget_lp_a_chaud(benchmark: BenchmarkFixture) -> None:
     """Un appel LP à chaud < 3 ms : le modèle est réutilisé, seul l'objectif change."""
     poly = _poly_15()
     n = len(poly.index)  # type: ignore[attr-defined]
-    froid = resoudre(poly, np.ones(n))
-    benchmark(resoudre, poly, -np.ones(n), depart=froid.x)
+    froid = solve(poly, np.ones(n))
+    benchmark(solve, poly, -np.ones(n), start=froid.x)
     _assert_within_budget(benchmark, "lp_chaud")
 
 
@@ -116,17 +116,17 @@ def test_warm_start_est_plus_rapide() -> None:
     """
     poly = _poly_15()
     n = len(poly.index)  # type: ignore[attr-defined]
-    vider_cache()
-    reference = resoudre(poly, np.ones(n))
+    clear_cache()
+    reference = solve(poly, np.ones(n))
 
     froids: list[float] = []
     chauds: list[float] = []
     for k in range(15):
         c = np.full(n, (-1.0) ** k)
-        vider_cache()
-        froids.append(resoudre(poly, c).temps_ms)
-        resoudre(poly, c, depart=reference.x)  # amorce le modèle en cache
-        chauds.append(resoudre(poly, c, depart=reference.x).temps_ms)
+        clear_cache()
+        froids.append(solve(poly, c).time_ms)
+        solve(poly, c, start=reference.x)  # amorce le modèle en cache
+        chauds.append(solve(poly, c, start=reference.x).time_ms)
 
     median_froid, median_chaud = median(froids), median(chauds)
     assert median_chaud < median_froid, (
@@ -141,8 +141,8 @@ def test_budget_polytope(benchmark: BenchmarkFixture) -> None:
     L'ordre est déduit **hors mesure** : le budget du §9 porte sur l'assemblage du
     système, et mélanger les deux rendrait le dépassement impossible à imputer.
     """
-    ordre = deduire_ordre(_plan_15_pieces())
-    benchmark(construire_polytope, ordre, CTX_15)
+    ordre = deduce_order(_plan_15_pieces())
+    benchmark(build_polytope, ordre, CTX_15)
     _assert_within_budget(benchmark, "polytope")
 
 
@@ -157,10 +157,10 @@ def test_budget_legalisation_classique(benchmark: BenchmarkFixture) -> None:
 @pytest.mark.budget
 def test_budget_legalisation_performantielle(benchmark: BenchmarkFixture) -> None:
     """Frank-Wolfe + substitut analytique < 500 ms (`ARCHITECTURE.md` §9)."""
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     plan = _plan_15_pieces()
-    objectif = SubstitutAnalytique()
+    objectif = AnalyticSurrogate()
     benchmark(archlux.legalize, plan, CTX_15, objective=objectif)
     _assert_within_budget(benchmark, "legalisation_performantielle")
 
@@ -181,10 +181,10 @@ def test_budget_performance_legalization_with_minimum_areas(benchmark: Benchmark
     Until PLAN.md batch 1.2 this case raised InvariantViolation, and the tangent cuts it
     needed disabled the LP warm start on every iteration.
     """
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     plan = _plan_15_pieces()
-    benchmark(archlux.legalize, plan, CTX_15_AREAS, objective=SubstitutAnalytique())
+    benchmark(archlux.legalize, plan, CTX_15_AREAS, objective=AnalyticSurrogate())
     _assert_within_budget(benchmark, "legalisation_performantielle")
 
 
@@ -205,7 +205,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
 
     from tests import checkers
 
-    from archlux.light.analytique import SubstitutAnalytique
+    from archlux.light.analytique import AnalyticSurrogate
 
     width, height = 3.0 * columns, 4.0 * rows
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
@@ -222,7 +222,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     start = time.perf_counter()
-    result = archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate())
     elapsed_ms = (time.perf_counter() - start) * 1000
     assert checkers.violations(result, ctx) == []
     assert elapsed_ms < limit_ms, f"{len(rooms)} rooms: {elapsed_ms:.0f} ms > {limit_ms} ms"
