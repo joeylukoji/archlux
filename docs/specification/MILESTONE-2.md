@@ -21,7 +21,7 @@
 @given(plan=plans_quelconques(), ctx=contextes())
 @settings(max_examples=500, deadline=None)
 def test_toute_sortie_est_valide(plan, ctx):
-    assert archlux.legalize(plan, ctx).certificate.geometry.valide
+    assert archlux.legalize(plan, ctx).certificate.geometry.valid
 ```
 
 **Mesure à produire pour l'article :** taux de plans valides avant / après correction, sur les sorties de 3 modèles publics.
@@ -203,7 +203,7 @@ def solve(
 @dataclass(frozen=True)
 class SolutionLP:
     x: np.ndarray
-    valeur: float
+    value: float
     statut: Literal["optimal", "infaisable", "non_borne", "limite"]
     duaux: np.ndarray | None = None
     certificat_farkas: np.ndarray | None = None
@@ -331,7 +331,7 @@ def verifier_exactement(plan: Plan, ctx: Context) -> GeometricProof: ...
 
 @dataclass(frozen=True)
 class GeometricProof:
-    valide: bool
+    valid: bool
     overlap: bool
     gaps: bool
     areas_ok: bool
@@ -361,7 +361,7 @@ def test_detecte_un_jour():
 
 @given(plan=plans_valides())
 def test_un_plan_valide_passe(plan):
-    assert verifier_exactement(plan, CTX).valide
+    assert verifier_exactement(plan, CTX).valid
 ```
 
 - [ ] Les 3 tests passent
@@ -400,7 +400,7 @@ def legalize(plan, ctx, *, objective=None, budget=None):
         raise Infaisable(certificate=sol.certificat_farkas, poly=poly)
     q     = devectorize(sol.x, plan)
     preuve = verifier_exactement(q, ctx)
-    if not preuve.valide:
+    if not preuve.valid:
         raise InvariantViole(preuve.violations)   # jamais silencieux
     return replace(q, certificate=Certificate(geometry=preuve, ...))
 ```

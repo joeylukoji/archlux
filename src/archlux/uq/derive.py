@@ -1,11 +1,12 @@
-"""Contrôle de dérive : dire quand la garantie conforme cesse de s'appliquer.
+"""Drift control: say when the conformal guarantee stops applying.
 
-L'échangeabilité avec le jeu de calibration n'est pas une propriété permanente. Un
-corpus de plans issu d'un nouveau générateur peut sortir du domaine calibré ; la borne
-reste alors calculable, mais elle ne garantit plus rien. Ce module le détecte et le dit.
+Exchangeability with the calibration set is not a permanent property. A batch of
+plans from a new generator can fall outside the calibrated domain; the bound is then
+still computable, but it no longer guarantees anything. This module detects that and
+says so.
 
-``uq`` n'importe ni ``light`` ni ``solve`` : :func:`mesurer_derive` travaille sur des
-tableaux déjà évalués.
+``uq`` imports neither ``light`` nor ``solve``: :func:`mesurer_derive` works on
+arrays that are already evaluated.
 """
 
 from __future__ import annotations
@@ -14,14 +15,15 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.uq.conforme import Calibration
 
 __all__ = [
-    "DiagnosticDerive",
-    "RapportDerive",
-    "controler_derive",
-    "mesurer_derive",
+    "DriftDiagnostic",
+    "DriftReport",
+    "check_drift",
+    "measure_drift",
 ]
 
 _SEUIL_P = 0.05
@@ -29,22 +31,22 @@ _N_PERMUTATIONS = 199
 
 
 @dataclass(frozen=True, slots=True)
-class DiagnosticDerive:
-    """Verdict d'échangeabilité, avec sa statistique et son seuil."""
+class DriftDiagnostic:
+    """Exchangeability verdict, with its statistic and threshold."""
 
     echangeable: bool
     statistique: float
-    seuil: float
+    threshold: float
     n_observations: int
     message: str
 
 
 @dataclass(frozen=True, slots=True)
-class RapportDerive:
-    """Écart prédiction − vérité sur des plans **sélectionnés**, pas sur la calibration.
+class DriftReport:
+    """Prediction - truth gap on **selected** plans, not on the calibration set.
 
-    Une dérive positive croissante signifie que l'optimiseur exploite les erreurs du
-    substitut. Ce n'est pas une couverture conforme : l'échangeabilité y est douteuse.
+    A growing positive drift means the optimizer is exploiting the surrogate's
+    errors. This is not conformal coverage: exchangeability is doubtful here.
     """
 
     derive_moyenne: float
@@ -53,59 +55,60 @@ class RapportDerive:
     n_echantillons: int
 
 
-def controler_derive(
+def check_drift(
     observations: np.ndarray, calibration: Calibration, *, seed: int
-) -> DiagnosticDerive:
-    """Tester l'échangeabilité des observations avec le jeu de calibration.
+) -> DriftDiagnostic:
+    """Test exchangeability of the observations with the calibration set.
 
     Parameters
     ----------
     observations : numpy.ndarray
-        Scores de non-conformité observés en production.
+        Non-conformity scores observed in production.
     calibration : Calibration
-        Référence.
+        Reference.
     seed : int
-        Graine du test de permutation. **Obligatoire, sans défaut.**
+        Seed of the permutation test. **Mandatory, no default.**
 
     Returns
     -------
-    DiagnosticDerive
-        Verdict lisible. Une dérive détectée **invalide la borne**, elle ne l'élargit
-        pas : le certificat doit alors porter ``NON EVALUABLE``, jamais un intervalle.
+    DriftDiagnostic
+        Readable verdict. A detected drift **invalidates the bound**, it does not
+        widen it: the certificate must then carry ``NOT EVALUABLE``, never an
+        interval.
 
     Notes
     -----
-    Ce que le test garantit, et ce qu'il ne garantit pas :
+    What the test guarantees, and what it does not:
 
-    - **Niveau exact.** Le p de Monte-Carlo ``(dépassements + 1) / (B + 1)`` avec
-      ``B = 199`` (Phipson & Smyth, 2010) est valide à distance finie ; comme
-      ``0,05 × 200 = 10`` est entier, rejeter à ``p ≤ 0,05`` donne un niveau
-      exactement 5 % sous l'hypothèse nulle d'échangeabilité.
-    - **Aucune correction de multiplicité.** Chaque appel est un test indépendant.
-      Un contrôle exécuté à chaque lot dérivera vers un faux positif quasi certain
-      (``1 − 0,95^k``). Une surveillance continue doit passer par un test séquentiel
-      (e-value, mélange conforme martingale) ou au minimum un seuil corrigé.
-    - **Puissance non caractérisée.** Aucune analyse de puissance n'accompagne le
-      seuil : pour ``n_observations`` petit, ``echangeable=True`` signifie « dérive
-      non détectée », pas « pas de dérive ». :func:`archlux.certify.borne.construire_borne`
-      traite pourtant ce booléen comme une autorisation de publier.
-    - **Statistique mal ciblée.** Kolmogorov-Smirnov est le plus sensible au centre de
-      la distribution, alors que la couverture conforme ne dépend que de la **queue
-      haute** des scores, au voisinage de ``q̂``. Une dérive qui n'épaissit que cette
-      queue est précisément celle qui casse la couverture, et celle que KS voit le
-      moins bien. Un test dédié à la queue (ou directement un suivi de
-      ``mean(score > q̂)``) serait mieux aligné sur la garantie protégée.
+    - **Exact level.** The Monte-Carlo p-value ``(exceedances + 1) / (B + 1)`` with
+      ``B = 199`` (Phipson & Smyth, 2010) is valid at finite distance; since
+      ``0.05 x 200 = 10`` is an integer, rejecting at ``p <= 0.05`` gives a level of
+      exactly 5 % under the null hypothesis of exchangeability.
+    - **No multiplicity correction.** Each call is an independent test. A check run on
+      every batch will drift toward an almost certain false positive
+      (``1 - 0.95^k``). Continuous monitoring must go through a sequential test
+      (e-value, conformal martingale mixture) or at least a corrected threshold.
+    - **Power not characterized.** No power analysis accompanies the threshold: for
+      small ``n_observations``, ``echangeable=True`` means "drift not detected", not
+      "no drift". :func:`archlux.certify.borne.construire_borne` nonetheless treats
+      this boolean as authorization to publish.
+    - **Poorly targeted statistic.** Kolmogorov-Smirnov is most sensitive to the
+      center of the distribution, while conformal coverage depends only on the
+      **upper tail** of the scores, near ``q_hat``. A drift that only thickens that
+      tail is precisely the one that breaks coverage, and the one KS sees least well.
+      A test dedicated to the tail (or directly a tracker of ``mean(score > q_hat)``)
+      would be better aligned with the guarantee being protected.
     """
     obs = np.asarray(observations, dtype=float).ravel()
     cal = np.asarray(calibration.scores, dtype=float).ravel()
     if obs.size == 0 or cal.size == 0:
-        raise InvariantViolation(("observations et calibration doivent être non vides",))
+        raise InvariantViolation(("observations and calibration must be non-empty",))
     if not bool(np.all(np.isfinite(obs))) or not bool(np.all(np.isfinite(cal))):
-        raise InvariantViolation(("scores non finis pour le contrôle de dérive",))
+        raise InvariantViolation(("non-finite scores for drift control",))
     from scipy.stats import ks_2samp  # lazy: scipy.stats costs 1.3 s at import
 
-    # Kolmogorov-Smirnov (pas un test de moyennes) : une derive de variance
-    # rompt aussi l'echangeabilite, meme a moyenne inchangee.
+    # Kolmogorov-Smirnov (not a test of means): a variance drift also breaks
+    # exchangeability, even with an unchanged mean.
     statistique = float(ks_2samp(obs, cal).statistic)
     rng = np.random.default_rng(seed)
     pooled = np.concatenate([obs, cal])
@@ -119,48 +122,48 @@ def controler_derive(
     p_valeur = (depassements + 1) / (_N_PERMUTATIONS + 1)
     echangeable = p_valeur > _SEUIL_P
     if echangeable:
-        message = "échangeabilité tenable : la borne conforme reste interprétable"
+        message = "exchangeability holds: the conformal bound remains interpretable"
     else:
         message = (
-            "dérive détectée : l'échangeabilité est rejetée, "
-            "la borne n'est plus garantie (NON EVALUABLE)"
+            "drift detected: exchangeability is rejected, "
+            "the bound is no longer guaranteed (NOT EVALUABLE)"
         )
-    return DiagnosticDerive(
+    return DriftDiagnostic(
         echangeable=echangeable,
         statistique=statistique,
-        seuil=_SEUIL_P,
+        threshold=_SEUIL_P,
         n_observations=n_obs,
         message=message,
     )
 
 
-def mesurer_derive(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -> RapportDerive:
-    """Écart moyen prédiction − vérité, et tendance sur l'ordre d'arrivée.
+def measure_drift(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -> DriftReport:
+    """Mean prediction - truth gap, and trend over the arrival order.
 
     Parameters
     ----------
     predictions, verites : numpy.ndarray
-        Évaluations déjà calculées (substitut et oracle gelé), même longueur.
+        Already computed evaluations (surrogate and frozen oracle), same length.
     seed : int
-        Conservé pour la signature reproductible ; la régression est déterministe.
+        Kept for the reproducible signature; the regression is deterministic.
 
     Returns
     -------
-    RapportDerive
-        ``derive_moyenne`` positive : le substitut surestime l'oracle.
+    DriftReport
+        Positive ``derive_moyenne``: the surrogate overestimates the oracle.
 
     Notes
     -----
-    ``tendance_pvalue`` vient d'une régression des moindres carrés sur l'indice
-    d'arrivée : elle suppose des écarts **indépendants et homoscédastiques**. Sur une
-    séquence produite par un optimiseur qui réutilise ses itérés, les écarts sont
-    autocorrélés et cette p-valeur est anti-conservatrice. À lire comme un indicateur
-    de tendance, jamais comme un test formel.
+    ``tendance_pvalue`` comes from an ordinary least-squares regression on the
+    arrival index: it assumes **independent and homoscedastic** gaps. On a sequence
+    produced by an optimizer that reuses its iterates, the gaps are autocorrelated
+    and this p-value is anti-conservative. Read it as a trend indicator, never as a
+    formal test.
     """
     pred = np.asarray(predictions, dtype=float).ravel()
     verite = np.asarray(verites, dtype=float).ravel()
     if pred.size != verite.size or pred.size == 0:
-        raise InvariantViolation(("predictions et verites de longueurs incompatibles",))
+        raise InvariantViolation(("predictions and truths have incompatible lengths",))
     _ = int(seed)
     slacks = pred - verite
     n = int(slacks.size)
@@ -172,9 +175,20 @@ def mesurer_derive(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -
         p_valeur = float(tendance.pvalue)
     else:
         pente, p_valeur = 0.0, 1.0
-    return RapportDerive(
+    return DriftReport(
         derive_moyenne=float(slacks.mean()),
         tendance_pente=pente,
         tendance_pvalue=p_valeur,
         n_echantillons=n,
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "DiagnosticDerive": Alias(DriftDiagnostic, "archlux.uq.derive.DriftDiagnostic"),
+        "RapportDerive": Alias(DriftReport, "archlux.uq.derive.DriftReport"),
+        "controler_derive": Alias(check_drift, "archlux.uq.derive.check_drift"),
+        "mesurer_derive": Alias(measure_drift, "archlux.uq.derive.measure_drift"),
+    },
+)
