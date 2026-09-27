@@ -46,10 +46,10 @@ from benchmarks.guarantees.scenarios import Scenario, WallKind, generate, pertur
 from tests import checkers
 
 import archlux
-from archlux.data.corruption import corrompre
+from archlux.data.corruption import corrupt
 from archlux.errors import ArchluxError, Infeasible, UnsupportedInput
-from archlux.export.svg import comparer
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.export.svg import compare
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
 
@@ -106,7 +106,7 @@ def _as_is(s: Scenario) -> Plan:
 
 def _one_fault(s: Scenario) -> Plan:
     """AUDIT.md J7 regime: one room off by up to 25 cm, the grid still exists."""
-    corrupted, _ = corrompre(s.plan, seed=zlib.crc32(s.name.encode()), amplitude=0.25)
+    corrupted, _ = corrupt(s.plan, seed=zlib.crc32(s.name.encode()), amplitude=0.25)
     return corrupted
 
 
@@ -125,7 +125,7 @@ def _classic_tiling(plan: Plan, ctx: Context) -> Plan:
 
 
 def _performance(plan: Plan, ctx: Context) -> Plan:
-    return archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate())
 
 
 BUDGET_M = 0.3
@@ -134,13 +134,11 @@ what Frank-Wolfe would like to move, so that the budget actually binds."""
 
 
 def _performance_tiling_budget(plan: Plan, ctx: Context) -> Plan:
-    return archlux.legalize(
-        plan, ctx, objective=SubstitutAnalytique(), pavage=True, budget=BUDGET_M
-    )
+    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), pavage=True, budget=BUDGET_M)
 
 
 def _daylight(plan: Plan, ctx: Context) -> Plan:
-    objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
     return archlux.legalize(plan, ctx, objective=objective)
 
 
@@ -225,7 +223,7 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
     found = checkers.violations(result, scenario.context)
     if mode.budget is not None:
         found += checkers.budget_violations(result, given, mode.budget)
-    certified = bool(result.certificat and result.certificat.geometrie.valide)
+    certified = bool(result.certificate and result.certificate.geometry.valid)
     outcome: Outcome = (
         "ok" if not found else "false_certificate" if certified else "invalid_but_flagged"
     )
@@ -264,11 +262,11 @@ def _gallery(
         folder.mkdir(parents=True, exist_ok=True)
         given, result = plans
         name = f"{key}-{case.scenario}.svg"
-        svg = comparer(
+        svg = compare(
             given,
             result,
-            contour=context_of[case.scenario].contour,
-            walls=context_of[case.scenario].structure.murs_porteurs,
+            outline=context_of[case.scenario].outline,
+            walls=context_of[case.scenario].structure.load_bearing_walls,
             titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
         _write(folder / name, svg)

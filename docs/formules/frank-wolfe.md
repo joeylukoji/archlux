@@ -77,7 +77,7 @@ vectors \(c\).
 
 | Do | Do not |
 |---|---|
-| Plug in any `Substitut` | Import `light.analytique` from `solve` |
+| Plug in any `Surrogate` | Import `light.analytique` from `solve` |
 | Read `gap` with `status` as a stationarity diagnostic | Read `gap` as a bound on the optimum (no shipped surrogate is concave), or confuse it with a coverage \(1-\alpha\) |
 
 ## Source

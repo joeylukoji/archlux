@@ -1,0 +1,97 @@
+"""Export IFC / DXF et taux de survie — `MILESTONE-6.md` §4."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import pytest
+from hypothesis import given, settings
+
+from archlux.errors import InvariantViolation
+from archlux.export import diagnose, survival_rate, to_dxf, to_ifc
+from archlux.export.wilson import wilson_interval
+from archlux.types import Plan, Room, Wall
+from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
+
+
+def _plan_sain() -> Plan:
+    return Plan(
+        rooms=(
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
+        ),
+        walls=(Wall(id="m1", a=(0.0, 0.0), b=(12.0, 0.0), load_bearing=True),),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
+    )
+
+
+def _plan_pathologique() -> Plan:
+    return Plan(
+        rooms=(
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+            Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
+        ),
+        walls=(Wall(id="nul", a=(1.0, 1.0), b=(1.0, 1.0), load_bearing=False),),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
+    )
+
+
+@given(plan=plans_valides())
+@settings(max_examples=40, deadline=None)
+def test_export_valide(plan: Plan) -> None:
+    """`MILESTONE-6.md` §4 : to_ifc sur plans_valides reste valide."""
+    assert diagnose(plan).exportable
+    with TemporaryDirectory() as tmp:
+        path = Path(tmp) / "plan.ifc"
+        rapport = to_ifc(plan, path, validate=True)
+        assert rapport.valid
+        assert path.is_file()
+        texte = path.read_text(encoding="utf-8")
+        assert "ISO-10303-21" in texte
+        assert "IFCSPACE" in texte
+
+
+def test_taux_de_survie_avec_wilson() -> None:
+    """`MILESTONE-6.md` §4 : 0 ≤ lo ≤ taux ≤ hi ≤ 1."""
+    plans = [_plan_sain(), _plan_sain(), _plan_pathologique()]
+    taux, (lo, hi) = survival_rate(plans)
+    assert 0.0 <= lo <= taux <= hi <= 1.0
+    assert taux == pytest.approx(2.0 / 3.0)
+
+
+def test_wilson_aux_extremes() -> None:
+    """Wilson reste dans [0, 1] pour 0/n et n/n."""
+    lo, hi = wilson_interval(0, 10)
+    assert 0.0 <= lo <= hi <= 1.0
+    lo, hi = wilson_interval(10, 10)
+    assert 0.0 <= lo <= hi <= 1.0
+
+
+def test_to_ifc_refuse_pathologique(tmp_path: Path) -> None:
+    path = tmp_path / "mauvais.ifc"
+    rapport = to_ifc(_plan_pathologique(), path, validate=True)
+    assert not rapport.valid
+    assert not path.exists()
+    assert rapport.engine == "refuse"
+
+
+def test_to_dxf_ecrit_lwpolyline(tmp_path: Path) -> None:
+    path = tmp_path / "plan.dxf"
+    to_dxf(_plan_sain(), path)
+    texte = path.read_text(encoding="utf-8")
+    assert "LWPOLYLINE" in texte
+    assert "EOF" in texte
+
+
+def test_to_dxf_leve_sur_pathologie(tmp_path: Path) -> None:
+    with pytest.raises(InvariantViolation):
+        to_dxf(_plan_pathologique(), tmp_path / "x.dxf")
+
+
+def test_pathologie_arete_nulle() -> None:
+    diag = diagnose(_plan_pathologique())
+    assert any(p.startswith("arete_nulle:") for p in diag.pathologies)
+    assert any(p.startswith("chevauchement:") for p in diag.pathologies)

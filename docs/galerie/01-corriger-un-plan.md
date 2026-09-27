@@ -11,25 +11,25 @@ en couvrant l'enveloppe. Le plan n'est pas constructible.
 ```python
 import archlux as ax
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
-        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+    rooms=(
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
-    contour=contour,
-    referentiel=ax.Regulation(aires_min=(), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
 q = ax.legalize(plan, ctx)
-print(q.certificat.geometrie.valide)
-print(round(q.certificat.geometrie.deplacement_max, 2))
+print(q.certificate.geometry.valid)
+print(round(q.certificate.geometry.max_displacement, 2))
 ```
 
 **Résultat.**

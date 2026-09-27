@@ -1,56 +1,66 @@
-"""Protocole d'évaluation : découpages figés, graines explicites, résultats bruts.
+"""Evaluation protocol: frozen splits, explicit seeds, raw results.
 
-Personne n'importe ``bench`` : c'est la feuille de l'arbre de dépendances
-(`ARCHITECTURE.md` §5). Un import de ``bench`` depuis le noyau fait échouer la CI.
+Nothing imports ``bench``: it is the leaf of the dependency tree
+(`ARCHITECTURE.md` §5). An import of ``bench`` from the core fails CI.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from archlux.data.decoupage import Decoupage, charger_decoupage
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.data.decoupage import Split, load_split
 from archlux.errors import InvariantViolation
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from archlux.light.protocole import Substitut
+    from archlux.light.protocole import Surrogate
     from archlux.types import Plan
 
-__all__ = ["Decoupage", "charger_decoupage", "compare"]
+__all__ = ["Split", "compare", "load_split"]
 
 
 def compare(
     *,
     plans: Sequence[Plan],
-    methods: Sequence[Substitut],
-    evaluate_by: Callable[[Plan, Substitut], float],
+    methods: Sequence[Surrogate],
+    evaluate_by: Callable[[Plan, Surrogate], float],
 ) -> tuple[float, ...]:
-    """Comparer des substituts avec un évaluateur **externe** obligatoire.
+    """Compare surrogates with a mandatory **external** evaluator.
 
-    Évaluer un réseau par le réseau lui-même est une erreur circulaire
-    (`MILESTONE-4.md` §8). ``evaluate_by`` est typiquement l'oracle gelé.
-    **Sans défaut** : omettre l'argument lève ``TypeError``.
+    Evaluating a network by the network itself is a circular error
+    (`MILESTONE-4.md` §8). ``evaluate_by`` is typically the frozen oracle.
+    **No default**: omitting the argument raises ``TypeError``.
 
-    ``Substitut`` est vectoriel : le callback doit transformer le ``Plan`` en
-    vecteur ``(x, y, w, h)`` (voir :func:`archlux.light.jetons.plan_vers_vecteur`)
-    avant d'appeler ``evaluer``.
+    ``Surrogate`` is vectorial: the callback must turn the ``Plan`` into a vector
+    ``(x, y, w, h)`` (see :func:`archlux.light.jetons.plan_to_vector`) before
+    calling ``evaluate``.
 
-    **Limite connue** : la valeur rendue est une moyenne **nue**, sans intervalle, ce
-    que `ARCHITECTURE.md` §7 et §10 proscrivent pour une métrique publiée. Utiliser
-    :func:`archlux.bench.rapport.report` (stratifié, bootstrap) pour toute table
-    d'article ; ``compare`` ne sert qu'à ordonner grossièrement des substituts.
+    **Known limitation**: the returned value is a **bare** mean, without an
+    interval, which `ARCHITECTURE.md` §7 and §10 forbid for a published metric.
+    Use :func:`archlux.bench.rapport.report` (stratified, bootstrap) for any paper
+    table; ``compare`` only serves to roughly rank surrogates.
 
     Raises
     ------
     TypeError
-        ``evaluate_by`` manquant.
+        ``evaluate_by`` missing.
     InvariantViolation
-        ``plans`` vide. Un échantillon vide n'a pas de score moyen : rendre ``0.0``
-        fabriquait une mesure et faisait passer un substitut pour le pire de tous.
+        ``plans`` empty. An empty sample has no mean score: returning ``0.0`` would
+        fabricate a measurement and pass a surrogate off as the worst of all.
     """
     if not plans:
-        raise InvariantViolation(("plans vide : aucune moyenne à calculer",))
+        raise InvariantViolation(("empty plans: no mean to compute",))
     return tuple(
-        sum(float(evaluate_by(plan, methode)) for plan in plans) / len(plans) for methode in methods
+        sum(float(evaluate_by(plan, method)) for plan in plans) / len(plans) for method in methods
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "Decoupage": Alias(Split, "archlux.bench.protocole.Split"),
+        "charger_decoupage": Alias(load_split, "archlux.bench.protocole.load_split"),
+    },
+)

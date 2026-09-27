@@ -23,25 +23,25 @@ from pathlib import Path
 import numpy as np
 
 import archlux as ax
-from archlux.light.base import SubstitutDense
+from archlux.light.base import DenseSurrogate
 from archlux.light.simulateur import SplitFluxOracle
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
-        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=6.05, h=9.0),
-        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=5.0),
-        ax.Room(id="sdb", type="salle_de_bain", x=6.0, y=5.03, w=6.0, h=3.97),
+    rooms=(
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=6.05, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
+        ax.Room(id="bathroom", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
-    contour=contour,
-    referentiel=ax.Regulation(aires_min=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
 
 
@@ -54,9 +54,9 @@ def disposition(rng: np.random.Generator) -> np.ndarray:
 oracle = SplitFluxOracle()
 rng = np.random.default_rng(17)
 xs = tuple(disposition(rng) for _ in range(80))
-ys = np.array([oracle.evaluer(x, ctx.orientation) for x in xs])
-modele = SubstitutDense(largeur=8)
-modele.ajuster(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
+ys = np.array([oracle.evaluate(x, ctx.orientation) for x in xs])
+model = DenseSurrogate(largeur=8)
+model.fit(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
 
 for sous_dossier in ("train", "calibration", "test"):
     Path("splits/v1", sous_dossier).mkdir(parents=True, exist_ok=True)
@@ -65,10 +65,10 @@ for sous_dossier in ("train", "calibration", "test"):
 ## 1. Geler puis émettre le jeton
 
 ```python
-from archlux.uq.gestion import GestionDonnees, geler_et_emettre
+from archlux.uq.gestion import DataManagement, freeze_and_issue
 
-jeton = geler_et_emettre(modele, horodatage="2026-09-09T12:00:00Z")
-calibration = GestionDonnees("splits/v1").pour_calibration(jeton, modele)
+token = freeze_and_issue(model, timestamp="2026-09-09T12:00:00Z")
+calibration = DataManagement("splits/v1").for_calibration(token, model)
 ```
 
 Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
@@ -77,22 +77,22 @@ Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
 ## 2. Ajuster un calibrateur par indicateur
 
 ```python
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.uq.conforme import ConformalCalibrator
 
 plans_calibration = [disposition(rng) for _ in range(200)]  # jamais vus à l'entraînement
-predictions = np.array([modele.evaluer(x, ctx.orientation) for x in plans_calibration])
-verites = np.array([oracle.evaluer(x, ctx.orientation) for x in plans_calibration])
-incertitudes = np.array([modele.incertitude(x, ctx.orientation) for x in plans_calibration])
+predictions = np.array([model.evaluate(x, ctx.orientation) for x in plans_calibration])
+verites = np.array([oracle.evaluate(x, ctx.orientation) for x in plans_calibration])
+incertitudes = np.array([model.uncertainty(x, ctx.orientation) for x in plans_calibration])
 
-cal = CalibrateurConforme(indicateur="sDA")
-cal.ajuster(predictions, verites, incertitudes, alpha=0.10)
+cal = ConformalCalibrator(indicator="sDA")
+cal.fit(predictions, verites, incertitudes, alpha=0.10)
 
 x_nouveau = disposition(rng)  # tiré comme la calibration : échangeable avec elle
-prediction = modele.evaluer(x_nouveau, ctx.orientation)
-sigma = modele.incertitude(x_nouveau, ctx.orientation)
+prediction = model.evaluate(x_nouveau, ctx.orientation)
+sigma = model.uncertainty(x_nouveau, ctx.orientation)
 borne = cal.borne(prediction, sigma, ">=", regime="exchangeable")
-assert borne.borne_inf <= prediction <= borne.borne_sup
-# borne.borne_inf, borne.couverture, borne.n_calibration
+assert borne.lower <= prediction <= borne.upper
+# borne.lower, borne.coverage, borne.n_calibration
 ```
 
 Le rang est \(\lceil(n+1)(1-\alpha)\rceil\), pas `np.quantile(s, 0.90)`. ASE
@@ -105,13 +105,13 @@ optimiseur, dont la couverture n'est alors pas garantie.
 ```python
 from archlux.light.objectif import Daylight
 
-objectif = Daylight(modele, q_chapeau=cal.q)  # pessimiste=True par défaut
+objectif = Daylight(model, q_chapeau=cal.q)  # pessimiste=True par défaut
 q = ax.legalize(
     plan, ctx, objective=objectif, calibration=cal.snapshot(), budget=0.5, pavage=True
 )
-assert q.certificat is not None and q.certificat.performance is not None
-assert q.certificat.performance.regime == "selected"
-print(q.certificat.rapport())
+assert q.certificate is not None and q.certificate.performance is not None
+assert q.certificate.performance.regime == "selected"
+print(q.certificate.report())
 ```
 
 `q.certificat.performance` porte alors l'intervalle conforme du plan rendu, en
@@ -120,26 +120,26 @@ substitut surestime le plus (malédiction du vainqueur), donc la couverture
 nominale n'est **pas** garantie. Le rapport le dit. Pour publier une couverture,
 réévaluer le plan avec l'oracle.
 
-## 4. Dérive et `NON EVALUABLE`
+## 4. Dérive et `NOT EVALUABLE`
 
 Les scores de production sont ceux de plans rendus après calibration, une fois leur
 vraie valeur connue : \(|y - \hat{y}| / \hat{\sigma}\), comme à l'ajustement.
 
 ```python
-from archlux.certify.borne import construire_borne
-from archlux.uq.derive import controler_derive
+from archlux.certify.borne import build_bound
+from archlux.uq.derive import check_drift
 
 plans_production = [disposition(rng) for _ in range(50)]
 scores_production = np.array(
     [
-        abs(oracle.evaluer(x, ctx.orientation) - modele.evaluer(x, ctx.orientation))
-        / modele.incertitude(x, ctx.orientation)
+        abs(oracle.evaluate(x, ctx.orientation) - model.evaluate(x, ctx.orientation))
+        / model.uncertainty(x, ctx.orientation)
         for x in plans_production
     ]
 )
-derive = controler_derive(scores_production, cal.snapshot(), seed=17)
-certificat_borne = construire_borne(
-    prediction, cal.snapshot(), derive, incertitude=sigma, regime="exchangeable"
+derive = check_drift(scores_production, cal.snapshot(), seed=17)
+certificat_borne = build_bound(
+    prediction, cal.snapshot(), derive, uncertainty=sigma, regime="exchangeable"
 )
 ```
 
@@ -148,18 +148,18 @@ Ces plans sont tirés comme la calibration : le test ne détecte pas de dérive 
 détectées :
 
 ```python
-derive_forte = controler_derive(3.0 * scores_production, cal.snapshot(), seed=17)
+derive_forte = check_drift(3.0 * scores_production, cal.snapshot(), seed=17)
 assert not derive_forte.echangeable
 assert (
-    construire_borne(
-        prediction, cal.snapshot(), derive_forte, incertitude=sigma, regime="exchangeable"
+    build_bound(
+        prediction, cal.snapshot(), derive_forte, uncertainty=sigma, regime="exchangeable"
     )
     is None
 )
 ```
 
-Si `derive.echangeable` est faux, `construire_borne` rend `None` : le rapport
-écrit `NON EVALUABLE` plutôt qu'un intervalle. L'inverse ne vaut pas preuve :
+Si `derive.echangeable` est faux, `build_bound` rend `None` : le rapport
+écrit `NOT EVALUABLE` plutôt qu'un intervalle. L'inverse ne vaut pas preuve :
 `echangeable=True` signifie « dérive non détectée », et à faible effectif le test
 n'a presque aucune puissance.
 

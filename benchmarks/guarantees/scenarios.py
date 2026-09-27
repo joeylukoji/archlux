@@ -27,7 +27,7 @@ from archlux.types import Context, Orientation, Plan, Regulation, Room, Structur
 
 GRID_M = 0.10
 MIN_SIDE_M = 2.0
-ROOM_TYPES = ("chambre", "cuisine", "sdb", "wc", "couloir")
+ROOM_TYPES = ("bedroom", "kitchen", "bathroom", "toilet", "corridor")
 """Current (French) room type names; they follow the glossary rename in batch E5."""
 
 
@@ -87,7 +87,7 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
         )
     assert cuts, "outline too small to split"
 
-    kinds = ["sejour", *(str(rng.choice(ROOM_TYPES)) for _ in rects[1:])]
+    kinds = ["living_room", *(str(rng.choice(ROOM_TYPES)) for _ in rects[1:])]
     rooms = tuple(
         Room(id=f"r{i}", type=kind, x=round(x, 2), y=round(y, 2), w=round(w, 2), h=round(h, 2))
         for i, (kind, (x, y, w, h)) in enumerate(zip(kinds, rects, strict=True))
@@ -99,7 +99,7 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
 
     partial = [c for c in cuts if not spans_building(c)]
     ends = partial[-1] if wall == "partial" and partial else cuts[0]
-    bearing = Wall(id="refend", a=ends[0], b=ends[1], porteur=True)
+    bearing = Wall(id="refend", a=ends[0], b=ends[1], load_bearing=True)
 
     smallest: dict[str, float] = {}
     for room in rooms:
@@ -107,15 +107,15 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
     ratio = float(rng.uniform(0.7, 1.0))
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))
     context = Context(
-        structure=Structure(murs_porteurs=(bearing,)),
+        structure=Structure(load_bearing_walls=(bearing,)),
         orientation=Orientation(deg=float(rng.uniform(0.0, 360.0))),
-        contour=outline,
-        referentiel=Regulation(
-            aires_min=tuple(sorted((k, round(ratio * a, 4)) for k, a in smallest.items())),
-            largeur_min=1.0,
+        outline=outline,
+        regulation=Regulation(
+            min_areas=tuple(sorted((k, round(ratio * a, 4)) for k, a in smallest.items())),
+            min_width=1.0,
         ),
     )
-    plan = Plan(pieces=rooms, murs=(bearing,), ouvertures=(), contour=outline)
+    plan = Plan(rooms=rooms, walls=(bearing,), openings=(), outline=outline)
     suffix = "p" if wall == "partial" else ""
     return Scenario(name=f"s{seed}-{index:04d}{suffix}", plan=plan, context=context)
 
@@ -132,6 +132,6 @@ def perturb(plan: Plan, *, seed: int, amplitude_m: float = 0.03) -> Plan:
             w=r.w + float(rng.uniform(-amplitude_m, amplitude_m)),
             h=r.h + float(rng.uniform(-amplitude_m, amplitude_m)),
         )
-        for r in plan.pieces
+        for r in plan.rooms
     )
-    return Plan(pieces=noisy, murs=plan.murs, ouvertures=plan.ouvertures, contour=plan.contour)
+    return Plan(rooms=noisy, walls=plan.walls, openings=plan.openings, outline=plan.outline)

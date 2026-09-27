@@ -1,68 +1,64 @@
-"""Rendu SVG d'un plan — pour **regarder** ce que la correction a fait.
+"""SVG rendering of a plan — to **look at** what the correction did.
 
-Pourquoi ce module existe
--------------------------
-Un taux de réparation ne dit pas à quoi ressemble une réparation. « plan certifié
-valide » et « déplacement médian de 43 % du côté » sont deux énoncés justes qui,
-seuls, laissent croire à des choses opposées. Les regarder côte à côte tranche en
-une seconde ce qu'un tableau met une page à suggérer.
+Why this module exists
+-----------------------
+A repair rate does not say what a repair looks like. "certified valid plan" and
+"median displacement of 43% of the side" are two correct statements that, alone,
+suggest opposite things. Looking at them side by side settles in one second what
+a table takes a page to suggest.
 
-C'est ainsi qu'a été trouvé le défaut le plus grave du jalon 8 : des pièces réduites
-à une épaisseur nulle par la correction. Aucune table ne le montrait — le compte de
-pièces restait juste — et une seule figure a suffi.
+This is how the most serious defect of milestone 8 was found: rooms reduced to
+zero thickness by the correction. No table showed it — the room count stayed
+correct — and a single figure was enough.
 
-Le format est du SVG écrit à la main : aucune dépendance ajoutée — ``export`` ne
-peut importer que ``types`` et ``errors`` —, une sortie vectorielle lisible dans
-n'importe quel navigateur, et un texte que ``git diff`` sait comparer.
+The format is hand-written SVG: no dependency added — ``export`` may only import
+``types`` and ``errors`` —, a vector output readable in any browser, and text that
+``git diff`` can compare.
 
-Ce que le rendu montre, et pourquoi
+What the rendering shows, and why
 -----------------------------------
-- Les pièces sont **semi-transparentes** : un chevauchement se voit comme une zone
-  plus dense, sans qu'aucun calcul ne l'annote.
-- Un **jour** se lit comme du fond resté visible à l'intérieur du contour.
-- Le contour visé est tracé en tirets, même quand aucune pièce ne l'atteint.
-- :func:`comparer` impose **une seule échelle aux deux panneaux**. Deux plans
-  rendus chacun à sa propre échelle donneraient à un plan rétréci l'air d'un plan
-  intact : c'est l'erreur que cette contrainte interdit.
+- Rooms are **semi-transparent**: an overlap shows up as a denser zone, without any
+  calculation annotating it.
+- A **gap** reads as background still visible inside the outline.
+- The target outline is drawn dashed, even when no room reaches it.
+- :func:`compare` enforces **a single scale for both panels**. Two plans each
+  rendered at their own scale would make a shrunk plan look intact: this is the
+  error this constraint forbids.
 
-Ce module ne mesure rien et ne prouve rien : voir
-:mod:`archlux.geom.diagnostic` et :mod:`archlux.certify.proof`.
+This module measures nothing and proves nothing: see
+:mod:`archlux.geom.diagnostic` and :mod:`archlux.certify.proof`.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
     from archlux.types import Plan, Point, Wall
 
-__all__ = ["comparer", "planche", "rendre"]
+__all__ = ["compare", "render", "sheet"]
 
 _MARGE = 28.0
 _LARGEUR_PANNEAU = 380.0
 _ESPACE = 12.0
 
-# Teintes par type de pièce. Un type inconnu retombe sur le gris : inventer une
-# couleur par hachage rendrait deux corpus incomparables d'un rendu à l'autre.
+# Hues by room type. An unknown type falls back to grey: inventing a color by
+# hashing would make two corpora incomparable from one rendering to the next.
 _TEINTES = {
     "living": "#c8d9ec",
     "living_room": "#c8d9ec",
     "living_dining": "#c3d6ea",
     "salon": "#c8d9ec",
-    "sejour": "#c8d9ec",
     "kitchen": "#e8d9bd",
-    "cuisine": "#e8d9bd",
     "kitchen_dining": "#e5d5b8",
     "bedroom": "#d6e0cd",
-    "chambre": "#d6e0cd",
     "room": "#d9e2d1",
     "bathroom": "#d5dfe6",
-    "sdb": "#d5dfe6",
     "hallway": "#e4e0d8",
     "corridor": "#e4e0d8",
-    "couloir": "#e4e0d8",
     "dining": "#ded4e2",
     "office": "#dcdce6",
     "storage": "#e0dcd6",
@@ -72,7 +68,7 @@ _GRIS = "#dcdcdc"
 
 
 def _echapper(texte: str) -> str:
-    """Neutraliser les cinq caractères que XML ne tolère pas dans un nœud texte."""
+    """Neutralize the five characters XML does not tolerate in a text node."""
     for brut, entite in (
         ("&", "&amp;"),
         ("<", "&lt;"),
@@ -87,16 +83,16 @@ def _echapper(texte: str) -> str:
 def _etendue(
     plans: tuple[Plan, ...], contours: tuple[tuple[Point, ...], ...]
 ) -> tuple[float, float, float, float]:
-    """Boîte englobante commune, en mètres. Vide si rien n'est traçable."""
+    """Common bounding box, in meters. Empty if nothing is drawable."""
     xs: list[float] = []
     ys: list[float] = []
     for plan in plans:
-        for piece in plan.pieces:
-            xs.extend((piece.x, piece.x + piece.w))
-            ys.extend((piece.y, piece.y + piece.h))
-    for contour in contours:
-        xs.extend(point[0] for point in contour)
-        ys.extend(point[1] for point in contour)
+        for room in plan.rooms:
+            xs.extend((room.x, room.x + room.w))
+            ys.extend((room.y, room.y + room.h))
+    for outline in contours:
+        xs.extend(point[0] for point in outline)
+        ys.extend(point[1] for point in outline)
     if not xs:
         return (0.0, 0.0, 1.0, 1.0)
     return (min(xs), min(ys), max(xs), max(ys))
@@ -104,14 +100,14 @@ def _etendue(
 
 def _panneau(
     plan: Plan,
-    contour: tuple[Point, ...],
+    outline: tuple[Point, ...],
     titre: str,
     etendue: tuple[float, float, float, float],
     decalage_x: float,
     decalage_y: float = 0.0,
     walls: tuple[Wall, ...] = (),
 ) -> list[str]:
-    """Un panneau : cadre, contour en tirets, pièces, murs, titre. Coordonnées SVG.
+    """A panel: frame, dashed outline, rooms, walls, title. SVG coordinates.
 
     Load-bearing walls are drawn thick and dark (class ``wall-load-bearing``), other
     walls thin and grey (class ``wall``).
@@ -124,8 +120,8 @@ def _panneau(
     hauteur_px = hauteur_m * echelle + 2 * _MARGE
 
     def vers_svg(x: float, y: float) -> tuple[float, float]:
-        # L'axe y du SVG descend ; celui d'un plan monte. Sans ce retournement le
-        # rendu serait le miroir du plan certifié.
+        # The SVG y axis points down; a plan's points up. Without this flip the
+        # rendering would be the mirror of the certified plan.
         return (
             decalage_x + _MARGE + (x - x0) * echelle,
             decalage_y + _MARGE + (y1 - y) * echelle,
@@ -136,41 +132,41 @@ def _panneau(
         f'width="{_LARGEUR_PANNEAU - 2:.1f}" height="{hauteur_px - 2:.1f}" '
         'fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>',
         f'<text x="{decalage_x + _MARGE:.1f}" y="{decalage_y + 18:.1f}" '
-        'font-family="system-ui,sans-serif" '
+        'font-family="system-ui,sans-serif" '  # lang-ok: CSS value, not French
         f'font-size="13" font-weight="600" fill="#333">{_echapper(titre)}</text>',
     ]
 
-    if contour:
+    if outline:
         points = " ".join(
-            f"{x:.2f},{y:.2f}" for x, y in map(lambda p: vers_svg(p[0], p[1]), contour)
+            f"{x:.2f},{y:.2f}" for x, y in map(lambda p: vers_svg(p[0], p[1]), outline)
         )
         parties.append(
             f'<polygon points="{points}" fill="none" stroke="#b04a4a" '
             'stroke-width="1.4" stroke-dasharray="6 4"/>'
         )
 
-    for piece in plan.pieces:
-        coin_x, coin_y = vers_svg(piece.x, piece.y + piece.h)
-        teinte = _TEINTES.get(piece.type.lower(), _GRIS)
+    for room in plan.rooms:
+        coin_x, coin_y = vers_svg(room.x, room.y + room.h)
+        teinte = _TEINTES.get(room.type.lower(), _GRIS)
         parties.append(
             f'<rect x="{coin_x:.2f}" y="{coin_y:.2f}" '
-            f'width="{piece.w * echelle:.2f}" height="{piece.h * echelle:.2f}" '
+            f'width="{room.w * echelle:.2f}" height="{room.h * echelle:.2f}" '
             f'fill="{teinte}" fill-opacity="0.55" stroke="#4a4a4a" '
             'stroke-width="1"/>'
         )
-        centre_x, centre_y = vers_svg(piece.x + piece.w / 2, piece.y + piece.h / 2)
+        centre_x, centre_y = vers_svg(room.x + room.w / 2, room.y + room.h / 2)
         parties.append(
             f'<text x="{centre_x:.2f}" y="{centre_y:.2f}" text-anchor="middle" '
-            'font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">'
-            f"{_echapper(piece.type[:12])}</text>"
+            'font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">'  # lang-ok: CSS value
+            f"{_echapper(room.type[:12])}</text>"
         )
 
     # Walls last, on top of rooms: a load-bearing wall crossed by a room must be visible.
-    declared = {wall.id for wall in plan.murs}
-    for wall in plan.murs + tuple(w for w in walls if w.id not in declared):
+    declared = {wall.id for wall in plan.walls}
+    for wall in plan.walls + tuple(w for w in walls if w.id not in declared):
         (xa, ya), (xb, yb) = vers_svg(*wall.a), vers_svg(*wall.b)
         css_class, colour, width = (
-            ("wall-load-bearing", "#1f1f1f", 4.0) if wall.porteur else ("wall", "#6b6b6b", 1.5)
+            ("wall-load-bearing", "#1f1f1f", 4.0) if wall.load_bearing else ("wall", "#6b6b6b", 1.5)
         )
         parties.append(
             f'<line class="{css_class}" x1="{xa:.2f}" y1="{ya:.2f}" x2="{xb:.2f}" '
@@ -180,163 +176,163 @@ def _panneau(
     return parties
 
 
-def rendre(
+def render(
     plan: Plan,
     *,
-    contour: tuple[Point, ...] = (),
+    outline: tuple[Point, ...] = (),
     titre: str = "",
     walls: tuple[Wall, ...] = (),
 ) -> str:
-    """Rendre un plan en SVG autonome.
+    """Render a plan as a standalone SVG.
 
     Parameters
     ----------
     plan : Plan
-        Plan à tracer. Peut être invalide — c'est le cas d'usage.
-    contour : tuple of Point, optional
-        Contour visé, tracé en tirets. Défaut : celui du plan.
+        Plan to draw. May be invalid — that is the use case.
+    outline : tuple of Point, optional
+        Target outline, drawn dashed. Default: the plan's own.
     titre : str, optional
-        Libellé porté en haut du panneau.
+        Label shown at the top of the panel.
     walls : tuple of Mur, optional
-        Extra walls to draw, typically ``ctx.structure.murs_porteurs``: a plan does not
+        Extra walls to draw, typically ``ctx.structure.load_bearing_walls``: a plan does not
         have to repeat its load-bearing structure, but a drawing should show it.
 
     Returns
     -------
     str
-        Document SVG complet, encodable tel quel en UTF-8.
+        Complete SVG document, encodable as-is in UTF-8.
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
+    >>> from archlux.types import Plan, Room
     >>> plan = Plan(
-    ...     pieces=(Piece(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),),
-    ...     murs=(), ouvertures=(), contour=(),
+    ...     rooms=(Room(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),),
+    ...     walls=(), openings=(), outline=(),
     ... )
-    >>> rendre(plan, titre="essai").startswith("<svg")
+    >>> render(plan, titre="essai").startswith("<svg")
     True
     """
-    vise = contour or plan.contour
+    vise = outline or plan.outline
     etendue = _etendue((plan,), (vise,) if vise else ())
     parties = _panneau(plan, vise, titre, etendue, 0.0, walls=walls)
     hauteur = _hauteur(etendue)
     return _document(_LARGEUR_PANNEAU, hauteur, parties)
 
 
-def comparer(
+def compare(
     avant: Plan,
     apres: Plan,
     *,
-    contour: tuple[Point, ...] = (),
-    titres: tuple[str, str] = ("avant", "après"),
+    outline: tuple[Point, ...] = (),
+    titres: tuple[str, str] = ("before", "after"),
     walls: tuple[Wall, ...] = (),
 ) -> str:
-    """Rendre deux plans côte à côte, **à la même échelle**.
+    """Render two plans side by side, **at the same scale**.
 
     Parameters
     ----------
     avant, apres : Plan
-        Les deux états à comparer.
-    contour : tuple of Point, optional
-        Contour visé, commun aux deux panneaux. Défaut : celui d'``avant``.
+        The two states to compare.
+    outline : tuple of Point, optional
+        Target outline, common to both panels. Default: ``avant``'s own.
     titres : tuple of str, optional
-        Libellés des deux panneaux.
+        Labels of the two panels.
     walls : tuple of Mur, optional
-        Extra walls drawn in both panels (see :func:`rendre`).
+        Extra walls drawn in both panels (see :func:`render`).
 
     Returns
     -------
     str
-        Document SVG complet.
+        Complete SVG document.
 
     Notes
     -----
-    L'échelle est calculée sur l'union des deux étendues, jamais panneau par
-    panneau : un plan rétréci doit **paraître** rétréci.
+    The scale is computed on the union of both extents, never panel by panel: a
+    shrunk plan must **look** shrunk.
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
-    >>> a = Plan(pieces=(Piece(id="p", type="salon", x=0.0, y=0.0, w=4.0, h=3.0),),
-    ...          murs=(), ouvertures=(), contour=())
-    >>> b = Plan(pieces=(Piece(id="p", type="salon", x=0.0, y=0.0, w=2.0, h=3.0),),
-    ...          murs=(), ouvertures=(), contour=())
-    >>> svg = comparer(a, b)
-    >>> svg.count("<rect") >= 4        # deux cadres, deux pièces
+    >>> from archlux.types import Plan, Room
+    >>> a = Plan(rooms=(Room(id="p", type="salon", x=0.0, y=0.0, w=4.0, h=3.0),),
+    ...          walls=(), openings=(), outline=())
+    >>> b = Plan(rooms=(Room(id="p", type="salon", x=0.0, y=0.0, w=2.0, h=3.0),),
+    ...          walls=(), openings=(), outline=())
+    >>> svg = compare(a, b)
+    >>> svg.count("<rect") >= 4        # two frames, two rooms
     True
     """
-    return planche(((avant, titres[0]), (apres, titres[1])), contour=contour, walls=walls)
+    return sheet(((avant, titres[0]), (apres, titres[1])), outline=outline, walls=walls)
 
 
-def planche(
+def sheet(
     volets: tuple[tuple[Plan, str], ...],
     *,
-    contour: tuple[Point, ...] = (),
+    outline: tuple[Point, ...] = (),
     colonnes: int = 4,
     walls: tuple[Wall, ...] = (),
 ) -> str:
-    """Rendre une **série** de variantes en grille, toutes à la même échelle.
+    """Render a **series** of variants as a grid, all at the same scale.
 
     Parameters
     ----------
     volets : tuple of (Plan, str)
-        Les variantes et leur légende, dans l'ordre d'affichage.
-    contour : tuple of Point, optional
-        Contour visé, commun à tous les volets. Défaut : celui du premier plan.
+        The variants and their caption, in display order.
+    outline : tuple of Point, optional
+        Target outline, common to all panels. Default: the first plan's own.
     colonnes : int, optional
-        Volets par rangée.
+        Panels per row.
     walls : tuple of Mur, optional
-        Extra walls drawn in every panel (see :func:`rendre`).
+        Extra walls drawn in every panel (see :func:`render`).
 
     Returns
     -------
     str
-        Document SVG complet.
+        Complete SVG document.
 
     Raises
     ------
     ValueError
-        Série vide : il n'y a rien à tracer, et rendre un document vide
-        masquerait l'erreur en amont.
+        Empty series: there is nothing to draw, and rendering an empty document
+        would hide the upstream error.
 
     Notes
     -----
-    Conçu pour les balayages — une variante par azimut solaire, par exemple. Une
-    échelle unique pour toute la planche est ce qui rend la série lisible : sinon
-    chaque volet se recadre sur lui-même et les déplacements deviennent invisibles.
+    Designed for sweeps — one variant per solar azimuth, for example. A single
+    scale for the whole sheet is what makes the series legible: otherwise each
+    panel reframes itself and the displacements become invisible.
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
+    >>> from archlux.types import Plan, Room
     >>> plans = tuple(
-    ...     (Plan(pieces=(Piece(id="p", type="salon", x=float(k), y=0.0,
+    ...     (Plan(rooms=(Room(id="p", type="salon", x=float(k), y=0.0,
     ...                        w=3.0, h=2.0),),
-    ...           murs=(), ouvertures=(), contour=()), f"{k}°")
+    ...           walls=(), openings=(), outline=()), f"{k}°")
     ...     for k in range(3)
     ... )
-    >>> planche(plans, colonnes=2).startswith("<svg")
+    >>> sheet(plans, colonnes=2).startswith("<svg")
     True
     """
     if not volets:
         raise InvalidInput("volets", "empty sheet: nothing to draw")
-    vise = contour or volets[0][0].contour
+    vise = outline or volets[0][0].outline
     etendue = _etendue(tuple(p for p, _ in volets), (vise,) if vise else ())
-    pas_x = _LARGEUR_PANNEAU + _ESPACE
-    pas_y = _hauteur(etendue) + _ESPACE
+    step_x = _LARGEUR_PANNEAU + _ESPACE
+    step_y = _hauteur(etendue) + _ESPACE
 
     parties: list[str] = []
     for rang, (plan, titre) in enumerate(volets):
-        colonne, rangee = rang % colonnes, rang // colonnes
+        column, rangee = rang % colonnes, rang // colonnes
         parties += _panneau(
-            plan, vise, titre, etendue, colonne * pas_x, rangee * pas_y, walls=walls
+            plan, vise, titre, etendue, column * step_x, rangee * step_y, walls=walls
         )
     n_colonnes = min(len(volets), colonnes)
     n_rangees = (len(volets) + colonnes - 1) // colonnes
-    return _document(n_colonnes * pas_x - _ESPACE, n_rangees * pas_y - _ESPACE, parties)
+    return _document(n_colonnes * step_x - _ESPACE, n_rangees * step_y - _ESPACE, parties)
 
 
 def _hauteur(etendue: tuple[float, float, float, float]) -> float:
-    """Hauteur du document, en pixels, pour une étendue métrique donnée."""
+    """Document height, in pixels, for a given metric extent."""
     x0, y0, x1, y1 = etendue
     largeur_m = max(x1 - x0, 1e-9)
     hauteur_m = max(y1 - y0, 1e-9)
@@ -345,7 +341,7 @@ def _hauteur(etendue: tuple[float, float, float, float]) -> float:
 
 
 def _document(largeur: float, hauteur: float, parties: list[str]) -> str:
-    """Envelopper les fragments dans un document SVG autonome."""
+    """Wrap the fragments in a standalone SVG document."""
     corps = "\n  ".join(parties)
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{largeur:.0f}" '
@@ -353,3 +349,13 @@ def _document(largeur: float, hauteur: float, parties: list[str]) -> str:
         f'  <rect width="{largeur:.0f}" height="{hauteur:.0f}" fill="#f7f6f3"/>\n'
         f"  {corps}\n</svg>\n"
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "rendre": Alias(render, "archlux.export.svg.render"),
+        "comparer": Alias(compare, "archlux.export.svg.compare"),
+        "planche": Alias(sheet, "archlux.export.svg.sheet"),
+    },
+)

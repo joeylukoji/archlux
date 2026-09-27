@@ -11,7 +11,7 @@ from archlux.light.jetons import plan_vers_vecteur
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.types import Orientation
 
-out = Path("resultats/j4_simulations.csv")
+out = Path("results/j4_simulations.csv")
 out.parent.mkdir(exist_ok=True)
 sim, corpus = SplitFluxOracle(), generer_corpus(90, seed=17)
 champs = (
@@ -28,7 +28,7 @@ with out.open("w", newline="", encoding="utf-8") as handle:
     w.writeheader()
     for identifiant, plan in corpus.items():
         debut = time.perf_counter()
-        score = sim.evaluer(plan_vers_vecteur(plan), Orientation(deg=0.0))
+        score = sim.evaluate(plan_vers_vecteur(plan), Orientation(deg=0.0))
         w.writerow(
             {
                 "id": identifiant,

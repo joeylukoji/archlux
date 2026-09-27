@@ -1,7 +1,7 @@
-"""Émission du manifeste de reproductibilité.
+"""Emission of the reproducibility manifest.
 
-Toute exécution en produit un, sans exception. Un résultat sans manifeste n'est pas
-reproductible, et un résultat non reproductible n'est pas un résultat.
+Every run produces one, without exception. A result without a manifest is not
+reproducible, and a non-reproducible result is not a result.
 """
 
 from __future__ import annotations
@@ -10,88 +10,98 @@ import datetime as dt
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux._version import __version__
 from archlux.types import Manifest, ModelTrace
 
-__all__ = ["emettre"]
+__all__ = ["emit"]
 
 _PAQUETS_SUIVIS = ("numpy", "scipy", "networkx", "shapely", "ortools", "torch")
-"""Paquets dont la version change les résultats numériques, donc les conclusions.
+"""Packages whose version changes the numerical results, and thus the conclusions.
 
-``torch`` y figure sans être importé : seule sa version est relevée, et seulement s'il
-est déjà installé. Relever une version n'est pas charger une bibliothèque.
+``torch`` appears here without being imported: only its version is recorded, and only
+if it is already installed. Recording a version is not loading a library.
 """
 
 
-def _version_installee(nom: str) -> str | None:
-    """Version installee d'un paquet, ou ``None`` s'il est absent."""
+def _version_installee(name: str) -> str | None:
+    """Installed version of a package, or ``None`` if it is absent."""
     try:
-        return version(nom)
+        return version(name)
     except PackageNotFoundError:
         return None
 
 
 def _environnement() -> tuple[tuple[str, str], ...]:
-    """Versions de Python et des paquets présents, triées.
+    """Versions of Python and the present packages, sorted.
 
-    Un paquet optionnel absent est **omis**, jamais noté ``"absent"`` : le manifeste
-    décrit ce qui a servi, pas ce qui manquait.
+    An absent optional package is **omitted**, never noted as ``"absent"``: the
+    manifest describes what was used, not what was missing.
     """
     releve = {"python": sys.version.split()[0]}
-    for nom in _PAQUETS_SUIVIS:
-        version = _version_installee(nom)
+    for name in _PAQUETS_SUIVIS:
+        version = _version_installee(name)
         if version is not None:
-            releve[nom] = version
+            releve[name] = version
     return tuple(sorted(releve.items()))
 
 
-def emettre(
+def emit(
     *,
     seed: int,
-    empreinte_donnees: str | None = None,
-    decoupage: str | None = None,
-    parametres: dict[str, str] | None = None,
-    modele: ModelTrace | None = None,
+    data_fingerprint: str | None = None,
+    split: str | None = None,
+    parameters: dict[str, str] | None = None,
+    model: ModelTrace | None = None,
 ) -> Manifest:
-    """Construire le manifeste de l'exécution courante.
+    """Build the manifest for the current run.
 
     Parameters
     ----------
     seed : int
-        Graine racine. **Obligatoire, sans défaut** (`ARCHITECTURE.md` §7) : une graine
-        implicite est une graine perdue, et l'exécution cesse d'être rejouable.
-    empreinte_donnees : str or None, optional
-        ``sha256`` du corpus utilisé.
-    decoupage : str or None, optional
-        Identifiant du découpage figé, par exemple ``"splits/v2"``.
-    parametres : dict of str to str or None, optional
-        Paramètres de l'exécution. Ils sont figés en paires **triées** : sans tri,
-        l'empreinte du manifeste change d'une exécution à l'autre et n'identifie plus
-        rien.
-    modele : ModeleTrace or None, optional
-        Empreinte des poids et taille de calibration (obligatoire pour ``bench.run``).
+        Root seed. **Mandatory, no default** (`ARCHITECTURE.md` §7): an implicit
+        seed is a lost seed, and the run stops being replayable.
+    data_fingerprint : str or None, optional
+        ``sha256`` of the corpus used.
+    split : str or None, optional
+        Identifier of the frozen split, for example ``"splits/v2"``.
+    parameters : dict of str to str or None, optional
+        Run parameters. They are frozen into **sorted** pairs: without sorting, the
+        manifest fingerprint would change from one run to another and would no
+        longer identify anything.
+    model : ModelTrace or None, optional
+        Fingerprint of the weights and calibration size (mandatory for
+        ``bench.run``).
 
     Returns
     -------
-    Manifeste
-        Version, horodatage UTC, graine, empreintes et versions d'environnement.
+    Manifest
+        Version, UTC timestamp, seed, fingerprints and environment versions.
 
     Guarantees
     ----------
-    - Aucune garantie de calcul : ce type est une **trace**. Il ne dit pas qu'un
-      résultat est correct, seulement dans quelles conditions il a été produit.
+    - No computation guarantee: this type is a **trace**. It does not say that a
+      result is correct, only under what conditions it was produced.
 
     Complexity
     ----------
-    O(k) sur le nombre de paquets suivis.
+    O(k) over the number of tracked packages.
     """
     return Manifest(
         version=__version__,
-        horodatage=dt.datetime.now(dt.UTC).isoformat(),
-        graine=seed,
-        empreinte_donnees=empreinte_donnees,
-        decoupage=decoupage,
-        environnement=_environnement(),
-        parametres=tuple(sorted((parametres or {}).items())),
-        modele=modele,
+        timestamp=dt.datetime.now(dt.UTC).isoformat(),
+        seed=seed,
+        data_fingerprint=data_fingerprint,
+        split=split,
+        environment=_environnement(),
+        parameters=tuple(sorted((parameters or {}).items())),
+        model=model,
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "emettre": Alias(emit, "archlux.bench.manifeste.emit"),
+    },
+)

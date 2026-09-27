@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
+from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
 from archlux.types import Context, Plan, Room
 
 TOLERANCE = 1e-6
@@ -33,8 +33,8 @@ class Violation:
 
 def outline_area(ctx: Context) -> float:
     """Area of the axis-aligned rectangle spanned by the outline."""
-    xs = [x for x, _ in ctx.contour]
-    ys = [y for _, y in ctx.contour]
+    xs = [x for x, _ in ctx.outline]
+    ys = [y for _, y in ctx.outline]
     return (max(xs) - min(xs)) * (max(ys) - min(ys))
 
 
@@ -43,7 +43,7 @@ def _seam(a: Room, b: Room, kind: str) -> tuple[float, float, float, str]:
 
     For a seam on a vertical edge, the axis is ``"x"`` and ``[lo, hi]`` is a y range.
     """
-    if kind == FUSION_DROIT:
+    if kind == MERGE_RIGHT:
         return abs(a.x + a.w - b.x), max(a.y, b.y), min(a.y + a.h, b.y + b.h), "x"
     return abs(a.y + a.h - b.y), max(a.x, b.x), min(a.x + a.w, b.x + b.w), "y"
 
@@ -55,7 +55,7 @@ def _fusion_holds(a: Room, b: Room, kind: str, min_contact: float) -> bool:
 
 
 def _fused_area_violations(
-    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[PieceRectilineaire, ...]
+    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[RectilinearRoom, ...]
 ) -> tuple[set[str], list[Violation]]:
     """Fused rooms measured as a whole: every recorded edge holds, the sum meets the minimum.
 
@@ -69,15 +69,15 @@ def _fused_area_violations(
         if not parts:
             continue
         members.update(part.id for part in parts)
-        for i, j, kind in piece.fusions:
+        for i, j, kind in piece.merges:
             a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
             if (
                 a is not None
                 and b is not None
-                and not _fusion_holds(a, b, kind, ctx.referentiel.largeur_min)
+                and not _fusion_holds(a, b, kind, ctx.regulation.min_width)
             ):
                 found.append(Violation("area", f"{piece.id}: {a.id} and {b.id} are apart"))
-        minimum = max(ctx.referentiel.a_min(part.type) for part in parts)
+        minimum = max(ctx.regulation.min_area(part.type) for part in parts)
         area = sum(part.w * part.h for part in parts)
         if area < minimum - TOLERANCE:
             found.append(Violation("area", f"{piece.id}: area {area:.6f} < {minimum:.6f}"))
@@ -85,7 +85,7 @@ def _fused_area_violations(
 
 
 def violations(
-    plan: Plan, ctx: Context, *, fusions: tuple[PieceRectilineaire, ...] = ()
+    plan: Plan, ctx: Context, *, fusions: tuple[RectilinearRoom, ...] = ()
 ) -> list[Violation]:
     """Tiling, minimum areas and load-bearing walls, checked from coordinates only.
 
@@ -94,7 +94,7 @@ def violations(
     recorded shared edge, and their areas add up to the room's.
     """
     found: list[Violation] = []
-    rooms = plan.pieces
+    rooms = plan.rooms
 
     for i, a in enumerate(rooms):
         for b in rooms[i + 1 :]:
@@ -114,13 +114,13 @@ def violations(
     for room in rooms:
         if room.id in fused:
             continue
-        minimum = ctx.referentiel.a_min(room.type)
+        minimum = ctx.regulation.min_area(room.type)
         if room.w * room.h < minimum - TOLERANCE:
             found.append(
                 Violation("area", f"{room.id}: area {room.w * room.h:.6f} < {minimum:.6f}")
             )
 
-    for wall in ctx.structure.murs_porteurs:
+    for wall in ctx.structure.load_bearing_walls:
         (xa, ya), (xb, yb) = wall.a, wall.b
         vertical, horizontal = abs(xa - xb) < TOLERANCE, abs(ya - yb) < TOLERANCE
         if not (vertical or horizontal):
@@ -138,7 +138,7 @@ def violations(
         # A seam of a fused room is inside the room: a wall along it cuts the room in two.
         by_id = {room.id: room for room in rooms}
         for piece in fusions:
-            for i, j, kind in piece.fusions:
+            for i, j, kind in piece.merges:
                 first = by_id.get(piece.rectangles[i].id)
                 second = by_id.get(piece.rectangles[j].id)
                 if first is None or second is None:
@@ -158,9 +158,9 @@ def violations(
 
 def budget_violations(plan: Plan, proposed: Plan, budget: float) -> list[Violation]:
     """Rooms moved farther than ``budget`` (L-infinity over x, y, w, h) from ``proposed``."""
-    before = {room.id: room for room in proposed.pieces}
+    before = {room.id: room for room in proposed.rooms}
     found: list[Violation] = []
-    for room in plan.pieces:
+    for room in plan.rooms:
         origin = before.get(room.id)
         if origin is None:
             continue

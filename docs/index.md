@@ -13,27 +13,27 @@ import archlux as ax
 
 Path("sortie_generateur.json").write_text(
     """{
-      "schema": "1",
-      "contour": [[0, 0], [12, 0], [12, 9], [0, 9]],
-      "pieces": [
-        {"id": "sejour", "type": "sejour", "x": 0, "y": 0, "w": 6.05, "h": 9},
-        {"id": "chambre", "type": "chambre", "x": 6, "y": 0, "w": 6, "h": 5},
-        {"id": "sdb", "type": "salle_de_bain", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
+      "schema": "2",
+      "outline": [[0, 0], [12, 0], [12, 9], [0, 9]],
+      "rooms": [
+        {"id": "living_room", "type": "living_room", "x": 0, "y": 0, "w": 6.05, "h": 9},
+        {"id": "bedroom", "type": "bedroom", "x": 6, "y": 0, "w": 6, "h": 5},
+        {"id": "bathroom", "type": "bathroom", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
       ],
-      "murs": [], "ouvertures": [], "certificat": null
+      "walls": [], "openings": [], "certificate": null
     }""",
     encoding="utf-8",
 )
 
 plan = ax.Plan.from_json("sortie_generateur.json")
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
-    contour=plan.contour,
-    referentiel=ax.Regulation(aires_min=(("salle_de_bain", 5.0),), largeur_min=1.0),
+    outline=plan.outline,
+    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
 q = ax.legalize(plan, ctx, pavage=True)  # pavage : les pièces couvrent tout le contour
-print(q.certificat.rapport())
+print(q.certificate.report())
 ```
 
 Le plus rapide pour commencer : la [galerie d'exemples](galerie/01-corriger-un-plan.md).

@@ -39,7 +39,7 @@ densité de probabilité et ne doit pas être publiée comme telle.
     à \(d = 60\), \(m^{-1/64}\) est presque \(1\) quel que soit \(m\), et toutes
     les densités s'écrasent vers la même valeur. La sélection tend alors vers
     l'incertitude seule. Sur des plans à plus d'une dizaine de pièces, réduire la
-    dimension (ACP, ou distance sur les descripteurs de `light.base`) **avant**
+    dimension (ACP, ou distance sur les descriptors de `light.base`) **avant**
     d'estimer la densité.
 
 ### La boucle
@@ -59,7 +59,7 @@ facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
 ## Hypothèses
 
 - Candidats et référence vivent dans le même espace vectoriel, même échelle.
-- L'oracle est un `Substitut` déterministe (`SplitFluxOracle`), pas un lancer de
+- L'oracle est un `Surrogate` déterministe (`SplitFluxOracle`), pas un lancer de
   rayons — voir [vérité terrain](../donnees/verite-terrain.md).
 - Budget de simulations fini ; comparaison **à budget égal** avec `Aleatoire`,
   même graine racine.
@@ -70,9 +70,9 @@ facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
 |---|---|
 | produit \(\hat\sigma\times\hat f\) | `active.selection.UncertaintyTimesDensity` |
 | référence aléatoire | `active.selection.Aleatoire` |
-| \(\hat f\) | `active.densite.densite_noyau` |
-| \(h\) (Scott) | `densite_noyau(..., bande=None)` |
-| boucle | `active.boucle.Loop.run` → `RapportActif` |
+| \(\hat f\) | `active.densite.kernel_density` |
+| \(h\) (Scott) | `kernel_density(..., bande=None)` |
+| boucle | `active.boucle.Loop.run` → `ActiveReport` |
 
 ## Cas d'utilisation
 

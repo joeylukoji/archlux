@@ -1,35 +1,37 @@
-"""Modèle de données. Aucune dépendance : tout le monde dépend de ce module.
+"""Data model. No dependency: everyone depends on this module.
 
-Règles absolues (`ARCHITECTURE.md` §6), vérifiées par les tests de propriété :
+Absolute rules (`ARCHITECTURE.md` §6), checked by the property tests:
 
-- tous les types sont ``frozen=True, slots=True`` — jamais de mutation en place ;
-- la position **absolue** d'une ouverture n'est jamais stockée, toujours dérivée ;
-- un plan légalisé porte **toujours** son certificat ;
-- :class:`GeometricProof` n'a **aucun** champ de probabilité ;
-- :class:`PerformanceBound` porte **toujours** ``couverture`` et ``n_calibration``.
+- every type is ``frozen=True, slots=True``: never any in-place mutation;
+- the **absolute** position of an opening is never stored, always derived;
+- a legalized plan **always** carries its certificate;
+- :class:`GeometricProof` has **no** probability field;
+- :class:`PerformanceBound` **always** carries ``coverage`` and ``n_calibration``.
 
-Unités : mètres, mètres carrés, degrés d'azimut. Origine au coin bas-gauche du contour,
-axe ``y`` vers le nord géographique.
+Units: metres, square metres, azimuth in degrees. Origin at the bottom-left corner of the
+outline, ``y`` axis towards geographic north.
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from numbers import Real
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final, Literal
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
-    from archlux.export import RapportExport
+    from archlux.export import ExportReport
 
 __all__ = [
     "Certificate",
     "Context",
     "GeometricProof",
-    "Indicateur",
+    "Indicator",
     "Manifest",
     "ModelTrace",
     "Opening",
@@ -45,31 +47,31 @@ __all__ = [
 
 Point = tuple[float, float]
 
-Indicateur = Literal["sDA", "ASE", "UDI", "vue"]
+Indicator = Literal["sDA", "ASE", "UDI", "vue"]
 """Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
-``PerformanceBound``, the ``Substitut`` protocol, the surrogates and the calibration all
+``PerformanceBound``, the ``Surrogate`` protocol, the surrogates and the calibration all
 share it."""
 
 
 # ======================================================================================
-# Géométrie
+# Geometry
 # ======================================================================================
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Room:
-    """Pièce rectangulaire, en mètres, coin bas-gauche en ``(x, y)``.
+    """Rectangular room, in metres, bottom-left corner at ``(x, y)``.
 
     Attributes
     ----------
     id : str
-        Identifiant stable, unique dans un plan. Sert de clé de tri : l'ordre
-        d'itération est toujours explicite, jamais celui d'un ``set``.
+        Stable identifier, unique within a plan. It is a sort key: the iteration order
+        is always explicit, never that of a ``set``.
     type : str
-        Catégorie de programme (``"sejour"``, ``"sdb"``, …). Détermine les seuils
-        réglementaires via :class:`Regulation`.
+        Program category (``"living_room"``, ``"bathroom"``, ...). Determines the regulatory
+        thresholds through :class:`Regulation`.
     x, y, w, h : float
-        Position et dimensions, en mètres.
+        Position and dimensions, in metres.
     """
 
     id: str
@@ -80,19 +82,19 @@ class Room:
     h: float
 
     @property
-    def aire(self) -> float:
-        """Surface, en mètres carrés."""
+    def area(self) -> float:
+        """Area, in square metres."""
         return self.w * self.h
 
     @property
-    def centre(self) -> Point:
-        """Centre géométrique, utilisé par ``geom.graphe.deduire_ordre``."""
+    def center(self) -> Point:
+        """Geometric center, used by ``geom.graphe.deduire_ordre``."""
         return (self.x + self.w / 2.0, self.y + self.h / 2.0)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Wall:
-    """Segment de mur entre deux points, porteur ou non.
+    """Wall segment between two points, load-bearing or not.
 
     Attributes
     ----------
@@ -105,64 +107,71 @@ class Wall:
     id: str
     a: Point
     b: Point
-    porteur: bool = False
-    epaisseur: float = 0.10
+    load_bearing: bool = False
+    thickness: float = 0.10
 
     @property
-    def longueur(self) -> float:
-        """Longueur du segment, en mètres."""
+    def length(self) -> float:
+        """Length of the segment, in metres."""
         return math.dist(self.a, self.b)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Opening:
-    """Baie définie **relativement à son mur**, jamais en coordonnées absolues.
+    """Opening defined **relatively to its wall**, never in absolute coordinates.
 
-    Stocker une position absolue désynchronise murs et fenêtres dès que le solveur
-    déplace une cloison : `ARCHITECTURE.md` §10 en fait un anti-pattern fatal. La
-    position absolue se dérive à la demande par :meth:`segment_absolu`.
+    Storing an absolute position desynchronizes walls and windows as soon as the solver
+    moves a partition: `ARCHITECTURE.md` §10 makes it a fatal anti-pattern. The absolute
+    position is derived on demand by :meth:`absolute_segment`.
 
     Attributes
     ----------
     s : float
-        Abscisse du centre le long du mur, dans ``[0, 1]``.
+        Abscissa of the center along the wall, in ``[0, 1]``.
     largeur_rel : float
-        Largeur en fraction de la longueur du mur, dans ``]0, 1]``.
+        Width as a fraction of the wall length, in ``]0, 1]``.
     """
 
     id: str
-    mur_id: str
+    wall_id: str
     s: float
-    largeur_rel: float
-    hauteur_allege: float = 1.00
-    hauteur_linteau: float = 2.15
+    relative_width: float
+    sill_height: float = 1.00
+    head_height: float = 2.15
 
     def __post_init__(self) -> None:
-        """Refuse ``s`` outside ``[0, 1]`` and ``largeur_rel`` outside ``]0, 1]``."""
+        """Refuse ``s`` outside ``[0, 1]`` and ``relative_width`` outside ``]0, 1]``."""
+        for name in ("s", "relative_width"):  # a string compared with a float is a TypeError
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise InvalidInput(
+                    f"openings[{self.id}].{name}", f"must be a number, got {value!r}"
+                )
         if not 0.0 <= self.s <= 1.0:
-            raise InvalidInput(f"ouvertures[{self.id}].s", f"must be in [0, 1], got {self.s}")
-        if not 0.0 < self.largeur_rel <= 1.0:
+            raise InvalidInput(f"openings[{self.id}].s", f"must be in [0, 1], got {self.s}")
+        if not 0.0 < self.relative_width <= 1.0:
             raise InvalidInput(
-                f"ouvertures[{self.id}].largeur_rel", f"must be in ]0, 1], got {self.largeur_rel}"
+                f"openings[{self.id}].relative_width",
+                f"must be in ]0, 1], got {self.relative_width}",
             )
 
-    def segment_absolu(self, mur: Wall) -> tuple[Point, Point]:
-        """Dériver les deux extrémités de la baie sur ``mur``.
+    def absolute_segment(self, wall: Wall) -> tuple[Point, Point]:
+        """Derive the two ends of the opening on ``wall``.
 
         Parameters
         ----------
         mur : Mur
-            Le mur portant cette ouverture ; son ``id`` doit valoir ``self.mur_id``.
+            The wall carrying this opening; its ``id`` must equal ``self.wall_id``.
 
         Returns
         -------
         tuple of Point
-            Extrémités de la baie, en coordonnées absolues.
+            Ends of the opening, in absolute coordinates.
 
         Raises
         ------
         InvariantViolation
-            Si ``mur.id`` ne correspond pas à ``self.mur_id``.
+            If ``wall.id`` does not match ``self.wall_id``.
 
         Complexity
         ----------
@@ -170,90 +179,90 @@ class Opening:
 
         Examples
         --------
-        >>> from archlux.types import Mur, Ouverture
-        >>> mur = Mur(id="m", a=(0.0, 0.0), b=(10.0, 0.0))
-        >>> Ouverture(id="f", mur_id="m", s=0.5, largeur_rel=0.2).segment_absolu(mur)
+        >>> from archlux.types import Opening, Wall
+        >>> wall = Wall(id="m", a=(0.0, 0.0), b=(10.0, 0.0))
+        >>> Opening(id="f", wall_id="m", s=0.5, relative_width=0.2).absolute_segment(wall)
         ((4.0, 0.0), (6.0, 0.0))
         """
-        if mur.id != self.mur_id:
+        if wall.id != self.wall_id:
             raise InvariantViolation(
-                (f"ouverture {self.id} portée par {self.mur_id}, dérivée sur {mur.id}",)
+                (f"opening {self.id} carried by {self.wall_id}, derived on {wall.id}",)
             )
-        (ax, ay), (bx, by) = mur.a, mur.b
-        longueur = mur.longueur
-        # Direction unitaire du mur ; un mur dégénéré rendrait une division par zéro,
-        # ce que la garde ci-dessous transforme en invariant violé plutôt qu'en NaN.
-        if longueur == 0.0:
-            raise InvariantViolation((f"mur {mur.id} de longueur nulle",))
-        ux, uy = (bx - ax) / longueur, (by - ay) / longueur
+        (ax, ay), (bx, by) = wall.a, wall.b
+        length = wall.length
+        # Unit direction of the wall; a degenerate wall would divide by zero, which the
+        # guard below turns into a violated invariant rather than a NaN.
+        if length == 0.0:
+            raise InvariantViolation((f"wall {wall.id} has zero length",))
+        ux, uy = (bx - ax) / length, (by - ay) / length
         cx, cy = ax + (bx - ax) * self.s, ay + (by - ay) * self.s
-        demi = self.largeur_rel * longueur / 2.0
-        return ((cx - demi * ux, cy - demi * uy), (cx + demi * ux, cy + demi * uy))
+        half = self.relative_width * length / 2.0
+        return ((cx - half * ux, cy - half * uy), (cx + half * ux, cy + half * uy))
 
 
 @dataclass(frozen=True, slots=True)
 class Plan:
-    """Un plan d'appartement, proposé ou légalisé.
+    """An apartment plan, proposed or legalized.
 
-    Un plan **légalisé** porte toujours son ``certificat`` ; un plan proposé ne l'a
-    jamais. Le champ est donc le marqueur de l'état du plan, pas une décoration.
+    A **legalized** plan always carries its ``certificate``; a proposed plan never does.
+    The field is therefore the marker of the state of the plan, not a decoration.
 
-    ``trace`` n'est renseigné que si ``legalize(..., trace=True)`` : c'est la suite
-    Frank-Wolfe, **non sérialisée** (elle n'appartient pas au schéma JSON).
+    ``trace`` is only set if ``legalize(..., trace=True)``: it is the Frank-Wolfe
+    sequence, **not serialized** (it does not belong to the JSON schema).
     """
 
-    pieces: tuple[Room, ...]
-    murs: tuple[Wall, ...] = ()
-    ouvertures: tuple[Opening, ...] = ()
-    contour: tuple[Point, ...] = ()
-    certificat: Certificate | None = None
-    # Typé ``object`` à dessein : ``solve.Trace`` vivrait une arête ``types → solve``,
-    # interdite. La trace n'est pas sérialisée ; seuls les appelants ``trace=True``
-    # la consomment.
+    rooms: tuple[Room, ...]
+    walls: tuple[Wall, ...] = ()
+    openings: tuple[Opening, ...] = ()
+    outline: tuple[Point, ...] = ()
+    certificate: Certificate | None = None
+    # Typed ``object`` on purpose: ``solve.Trace`` would add a ``types → solve`` edge,
+    # which is forbidden. The trace is not serialized; only ``trace=True`` callers
+    # consume it.
     # ``compare=False``: the trace is a diagnostic, not part of the plan's identity. With
     # it in the comparison, ``hash(plan)`` failed on the trace's arrays.
     trace: object | None = field(default=None, compare=False, repr=False)
 
     @property
-    def ids_pieces(self) -> tuple[str, ...]:
-        """Identifiants de pièces, **triés** — garantit le déterminisme."""
-        return tuple(sorted(p.id for p in self.pieces))
+    def room_ids(self) -> tuple[str, ...]:
+        """Room identifiers, **sorted**: guarantees determinism."""
+        return tuple(sorted(p.id for p in self.rooms))
 
     @classmethod
-    def from_json(cls, chemin: Path | str) -> Plan:
-        """Lire un plan depuis un fichier JSON.
+    def from_json(cls, path: Path | str) -> Plan:
+        """Read a plan from a JSON file.
 
-        Façade sur :func:`archlux.io.json_io.charger`. L'import est **local**, à
-        l'appel : ``types`` ne dépend de rien à l'import, et aucun cycle n'existe.
-        Voir ADR-5 du blueprint et la dérogation nominative de
+        Facade over :func:`archlux.io.json_io.charger`. The import is **local**, at call
+        time: ``types`` depends on nothing at import, and no cycle exists. See ADR-5 of
+        the blueprint and the nominal exemption of
         ``tests/test_dependances.py``.
 
         Parameters
         ----------
-        chemin : Path or str
+        path : Path or str
             Fichier source.
 
         Returns
         -------
         Plan
-            Plan reconstruit, certificat compris s'il est présent.
+            The rebuilt plan, certificate included if present.
 
         Raises
         ------
         InvariantViolation
-            Le fichier ne respecte pas le schéma déclaré.
+            The file does not respect the declared schema.
         """
-        from archlux.io.json_io import charger
+        from archlux.io.json_io import load
 
-        return charger(chemin)
+        return load(path)
 
-    def to_json(self, chemin: Path | str) -> None:
-        """Écrire ce plan en JSON, clés triées, encodage UTF-8."""
-        from archlux.io.json_io import ecrire
+    def to_json(self, path: Path | str) -> None:
+        """Write this plan as JSON, sorted keys, UTF-8 encoding."""
+        from archlux.io.json_io import write
 
-        ecrire(self, chemin)
+        write(self, path)
 
-    def to_dxf(self, chemin: Path | str) -> None:
+    def to_dxf(self, path: Path | str) -> None:
         """Write the rooms as ``LWPOLYLINE`` and the walls as ``LINE`` in a DXF file.
 
         Facade over :func:`archlux.export.dxf.to_dxf`, by local import, like
@@ -266,9 +275,9 @@ class Plan:
         """
         from archlux.export import to_dxf
 
-        to_dxf(self, chemin)
+        to_dxf(self, path)
 
-    def to_ifc(self, chemin: Path | str, *, validate: bool = True) -> RapportExport:
+    def to_ifc(self, path: Path | str, *, validate: bool = True) -> ExportReport:
         """Write the plan as IFC4 and return the report of the export.
 
         Facade over :func:`archlux.export.ifc.to_ifc`. With ``validate`` (default), a
@@ -276,17 +285,17 @@ class Plan:
         """
         from archlux.export import to_ifc
 
-        return to_ifc(self, chemin, validate=validate)
+        return to_ifc(self, path, validate=validate)
 
-    def to_svg(self, chemin: Path | str, *, titre: str = "", walls: tuple[Wall, ...] = ()) -> None:
+    def to_svg(self, path: Path | str, *, title: str = "", walls: tuple[Wall, ...] = ()) -> None:
         """Draw the plan as a standalone SVG file, valid or not (the diagnostic use).
 
         Facade over :func:`archlux.export.svg.rendre` (exported as ``render_svg``).
-        ``walls`` adds walls to draw, typically ``ctx.structure.murs_porteurs``.
+        ``walls`` adds walls to draw, typically ``ctx.structure.load_bearing_walls``.
         """
         from archlux.export import render_svg
 
-        Path(chemin).write_text(render_svg(self, titre=titre, walls=walls), encoding="utf-8")
+        Path(path).write_text(render_svg(self, titre=title, walls=walls), encoding="utf-8")
 
 
 # ======================================================================================
@@ -296,10 +305,10 @@ class Plan:
 
 @dataclass(frozen=True, slots=True)
 class Orientation:
-    """Azimut du plan, en degrés. Variable **circulaire** : voir :mod:`archlux.orient`.
+    """Azimuth of the plan, in degrees. A **circular** variable: see :mod:`archlux.orient`.
 
-    Traiter 359° et 1° comme éloignés produit des conclusions fausses. Toute statistique
-    sur ce champ passe par :mod:`archlux.orient.circulaire`.
+    Treating 359° and 1° as far apart gives wrong conclusions. Every statistic on this
+    field goes through :mod:`archlux.orient.circulaire`.
     """
 
     deg: float
@@ -307,85 +316,85 @@ class Orientation:
 
 @dataclass(frozen=True, slots=True)
 class Regulation:
-    """Seuils réglementaires : surfaces et largeurs minimales par type de pièce.
+    """Regulatory thresholds: minimum areas and widths per room type.
 
-    Un référentiel est **une donnée**, pas du code : changer de réglementation ne doit
-    jamais demander de modifier ``geom`` ou ``lmo``.
+    A regulation is **data**, not code: changing the regulations must never require
+    changing ``geom`` or ``lmo``.
     """
 
-    aires_min: tuple[tuple[str, float], ...]
-    largeur_min: float = 1.80
+    min_areas: tuple[tuple[str, float], ...]
+    min_width: float = 1.80
 
-    def a_min(self, type_piece: str) -> float:
-        """Surface minimale exigée pour ``type_piece``, en mètres carrés.
+    def min_area(self, room_type: str) -> float:
+        """Minimum area required for ``room_type``, in square metres.
 
         Parameters
         ----------
-        type_piece : str
-            Catégorie de programme, telle que portée par :attr:`Room.type`.
+        room_type : str
+            Program category, as carried by :attr:`Room.type`.
 
         Returns
         -------
         float
-            Le seuil, ou ``0.0`` si le type n'est pas réglementé. Un type inconnu ne
-            lève pas : « pas de seuil » et « seuil nul » ont le même effet sur le
-            polytope, et distinguer les deux ferait porter la nuance à tout appelant.
+            The threshold, or ``0.0`` if the type is not regulated. An unknown type does
+            not raise: "no threshold" and "zero threshold" have the same effect on the
+            polytope, and telling them apart would push the nuance onto every caller.
 
         Complexity
         ----------
-        O(k), k = nombre de types réglementés — une poignée en pratique.
+        O(k), k = number of regulated types: a handful in practice.
         """
-        for type_connu, seuil in self.aires_min:
-            if type_connu == type_piece:
-                return seuil
+        for known_type, threshold in self.min_areas:
+            if known_type == room_type:
+                return threshold
         return 0.0
 
 
 @dataclass(frozen=True, slots=True)
 class Structure:
-    """Structure porteuse : ce que le solveur n'a pas le droit de déplacer."""
+    """Load-bearing structure: what the solver may not move."""
 
-    murs_porteurs: tuple[Wall, ...]
-    poteaux: tuple[Point, ...] = ()
+    load_bearing_walls: tuple[Wall, ...]
+    columns: tuple[Point, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
 class Context:
-    """Tout ce qui n'est pas le plan : structure, orientation, contour, référentiel.
+    """Everything that is not the plan: structure, orientation, outline, regulation.
 
-    Séparer ``Plan`` et ``Context`` est ce qui permet à ``legalize`` d'avoir deux
-    arguments et non douze, et rend le contexte réutilisable sur un lot de plans.
+    Separating ``Plan`` and ``Context`` is what lets ``legalize`` have two arguments and
+    not twelve, and makes the context reusable over a batch of plans.
     """
 
     structure: Structure
     orientation: Orientation
-    referentiel: Regulation
-    programme: tuple[str, ...] = ()
-    contour: tuple[Point, ...] = field(default=(), kw_only=True)
+    regulation: Regulation
+    program: tuple[str, ...] = ()
+    outline: tuple[Point, ...] = field(default=(), kw_only=True)
     """Outline of the site. Empty means "the outline of the plan": ``legalize`` takes
-    ``plan.contour`` then (an outline given here wins over the plan's)."""
+    ``plan.outline`` then (an outline given here wins over the plan's)."""
 
 
 # ======================================================================================
-# Certificat — les deux garanties, séparées par construction
+# Certificate: the two guarantees, separated by construction
 # ======================================================================================
 
 
 @dataclass(frozen=True, slots=True)
 class GeometricProof:
-    """Garantie **exacte**, vérifiée indépendamment du solveur.
+    """**Exact** guarantee, verified independently of the solver.
 
-    Ce type ne contient **aucun champ de probabilité** et ne doit jamais en contenir.
-    C'est la thèse du projet inscrite dans le système de types : une preuve et une
-    prédiction ne sont pas de même nature, et rien ne doit permettre de les mélanger.
+    This type holds **no probability field** and must never hold one. It is the thesis of
+    the project written into the type system: a proof and a prediction are not of the
+    same kind, and nothing must allow them to be mixed.
     """
 
-    valide: bool
-    chevauchement: bool
-    jours: bool
-    surfaces_ok: bool
-    structure_preservee: bool
-    deplacement_max: float
+    valid: bool
+    overlap: bool
+    gaps: bool
+    areas_ok: bool
+    structure_kept: bool
+    max_displacement: float
     violations: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -394,17 +403,17 @@ class GeometricProof:
         ``inf`` is allowed: an unbounded displacement is how an invalid proof reports a
         NaN reference.
         """
-        if not self.deplacement_max >= 0.0:
-            raise InvalidInput("deplacement_max", f"must be >= 0, got {self.deplacement_max}")
-        if self.valide and (
-            self.chevauchement
-            or self.jours
-            or not self.surfaces_ok
-            or not self.structure_preservee
+        if not self.max_displacement >= 0.0:
+            raise InvalidInput("max_displacement", f"must be >= 0, got {self.max_displacement}")
+        if self.valid and (
+            self.overlap
+            or self.gaps
+            or not self.areas_ok
+            or not self.structure_kept
             or self.violations
         ):
             raise InvalidInput(
-                "valide", "a valid proof cannot report an overlap, a gap or any violation"
+                "valid", "a valid proof cannot report an overlap, a gap or any violation"
             )
 
 
@@ -424,32 +433,32 @@ REGIMES: tuple[Regime, ...] = ("exchangeable", "selected")
 
 @dataclass(frozen=True, slots=True)
 class PerformanceBound:
-    """Garantie **probabiliste** : intervalle à couverture ``≥ 1 − α``.
+    """**Probabilistic** guarantee: an interval with coverage ``≥ 1 − α``.
 
-    ``couverture`` et ``n_calibration`` sont obligatoires : une borne conforme sans son
-    niveau de couverture ni sa taille de calibration est invérifiable, donc sans valeur.
+    ``coverage`` and ``n_calibration`` are mandatory: a conformal bound without its
+    coverage level or its calibration size cannot be verified, hence is worthless.
     ``regime`` is mandatory for the same reason: a coverage computed for an exchangeable
     plan does not hold for a plan the optimizer selected (:data:`Regime`).
     """
 
-    indicateur: Indicateur
-    valeur: float
-    borne_inf: float
-    borne_sup: float
-    couverture: float
+    indicator: Indicator
+    value: float
+    lower: float
+    upper: float
+    coverage: float
     n_calibration: int
     regime: Regime
 
     def __post_init__(self) -> None:
         """Refuse a bound without calibration, an out-of-range coverage or regime."""
         if self.n_calibration < 1:
-            raise InvariantViolation(("n_calibration doit être ≥ 1",))
-        if not 0.0 < self.couverture <= 1.0:
-            raise InvariantViolation((f"couverture hors ]0, 1] : {self.couverture}",))
+            raise InvariantViolation(("n_calibration must be >= 1",))
+        if not 0.0 < self.coverage <= 1.0:
+            raise InvariantViolation((f"couverture hors ]0, 1] : {self.coverage}",))
         if self.regime not in REGIMES:
             raise InvariantViolation((f"unknown regime {self.regime!r}, expected {REGIMES}",))
-        if not self.borne_inf <= self.borne_sup:
-            raise InvariantViolation((f"inverted interval: {self.borne_inf} > {self.borne_sup}",))
+        if not self.lower <= self.upper:
+            raise InvariantViolation((f"inverted interval: {self.lower} > {self.upper}",))
 
     @property
     def coverage_guaranteed(self) -> bool:
@@ -459,100 +468,102 @@ class PerformanceBound:
 
 @dataclass(frozen=True, slots=True)
 class ModelTrace:
-    """Empreinte du modèle et taille de calibration — champs du manifeste de banc.
+    """Model fingerprint and calibration size: fields of the benchmark manifest.
 
-    ``poids`` est une empreinte (SHA), jamais le tenseur lui-même.
+    ``weights_fingerprint`` is a fingerprint (SHA), never the tensor itself.
     """
 
-    poids: str
+    weights_fingerprint: str
     calibration_n: int
     alpha: float
 
     def __post_init__(self) -> None:
-        """Valider empreinte, taille de calibration et niveau α."""
-        if not self.poids:
-            raise InvariantViolation(("empreinte de poids obligatoire",))
+        """Validate fingerprint, calibration size and level α."""
+        if not self.weights_fingerprint:
+            raise InvariantViolation(("weights fingerprint is required",))
         if self.calibration_n < 1:
-            raise InvariantViolation(("calibration_n doit être ≥ 1",))
+            raise InvariantViolation(("calibration_n must be >= 1",))
         if not 0.0 < self.alpha < 1.0:
             raise InvariantViolation((f"alpha hors ]0, 1[ : {self.alpha}",))
 
-    def __getitem__(self, cle: str) -> str | int | float:
-        """Accès dictionnaire pour les assertions de manifeste (`MILESTONE-6`)."""
+    def __getitem__(self, key: str) -> str | int | float:
+        """Dictionary access for manifest assertions (`MILESTONE-6`)."""
         try:
-            return getattr(self, cle)  # type: ignore[no-any-return]
+            return getattr(self, key)  # type: ignore[no-any-return]
         except AttributeError as exc:
-            raise KeyError(cle) from exc
+            raise KeyError(key) from exc
 
 
 @dataclass(frozen=True, slots=True)
 class Manifest:
-    """Trace de reproductibilité émise à chaque exécution, sans exception.
+    """Reproducibility trace emitted at every run, without exception.
 
-    Les champs sont des tuples de paires et non des ``dict`` : le manifeste est gelé et
-    doit se sérialiser dans un ordre stable, sinon son empreinte n'est pas reproductible.
+    The fields are tuples of pairs, not ``dict``: the manifest is frozen and must
+    serialize in a stable order, otherwise its fingerprint is not reproducible.
     """
 
     version: str
-    horodatage: str
-    graine: int
-    empreinte_donnees: str | None = None
-    decoupage: str | None = None
-    environnement: tuple[tuple[str, str], ...] = ()
-    parametres: tuple[tuple[str, str], ...] = ()
-    modele: ModelTrace | None = None
+    timestamp: str
+    seed: int
+    data_fingerprint: str | None = None
+    split: str | None = None
+    environment: tuple[tuple[str, str], ...] = ()
+    parameters: tuple[tuple[str, str], ...] = ()
+    model: ModelTrace | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class Certificate:
     """Preuve exacte + borne probabiliste optionnelle + diagnostic dual.
 
-    ``performance`` vaut ``None`` en légalisation classique : il n'y a alors rien de
-    probabiliste à affirmer, et le certificat doit le dire plutôt que de le suggérer.
+    ``performance`` is ``None`` in classic legalization: there is then nothing
+    probabilistic to claim, and the certificate must say so rather than suggest it.
 
     Attributes
     ----------
     duaux : tuple of (str, float)
-        Prix duaux **déjà traduits** via ``Polytope.origines`` : ``("mur porteur axe 3",
-        4.1)``. Jamais un indice de ligne nu.
+        Dual prices **already translated** through ``Polytope.origins``:
+        ``("load-bearing wall p1 at x = 6 m: ...", 4.1)``. Never a bare row index.
     """
 
-    geometrie: GeometricProof
+    geometry: GeometricProof
     performance: PerformanceBound | None = None
-    duaux: tuple[tuple[str, float], ...] = ()
-    manifeste: Manifest | None = None
+    duals: tuple[tuple[str, float], ...] = ()
+    manifest: Manifest | None = None
 
-    def rapport(self) -> str:
-        """Rendre le certificat en texte, sections ``[EXACT]`` et ``[PREDICTION]``.
+    def report(self) -> str:
+        """Render the certificate as text, ``[EXACT]`` and ``[PREDICTION]`` sections.
 
-        Façade sur :func:`archlux.certify.rapport.rendre`, par import local — même
-        motif que :meth:`Plan.from_json`, même dérogation nominative (ADR-5). Le rendu
-        lui-même reste dans ``certify`` : ce type ne sait pas mettre en forme, il sait
-        seulement à qui le demander.
+        Facade over :func:`archlux.certify.rapport.render`, by local import: same pattern
+        as :meth:`Plan.from_json`, same nominal exemption (ADR-5). The rendering itself
+        stays in ``certify``: this type does not know how to format, only whom to ask.
 
         Returns
         -------
         str
-            Rapport lisible. Les deux natures de garantie sont toujours séparées
-            visuellement et jamais agrégées en un score unique.
+            A readable report. The two kinds of guarantee are always visually separated
+            and never aggregated into a single score.
         """
-        from archlux.certify.rapport import rendre
+        from archlux.certify.rapport import render
 
-        return rendre(self)
+        return render(self)
 
 
-DEPRECATED_NAMES = {
-    "Piece": "Room",
-    "Mur": "Wall",
-    "Ouverture": "Opening",
-    "Contexte": "Context",
-    "Referentiel": "Regulation",
-    "Certificat": "Certificate",
-    "PreuveGeometrique": "GeometricProof",
-    "BornePerformance": "PerformanceBound",
-    "Manifeste": "Manifest",
-    "ModeleTrace": "ModelTrace",
-}
+DEPRECATED_NAMES: Final = MappingProxyType(
+    {
+        "Piece": "Room",
+        "Mur": "Wall",
+        "Ouverture": "Opening",
+        "Contexte": "Context",
+        "Referentiel": "Regulation",
+        "Certificat": "Certificate",
+        "PreuveGeometrique": "GeometricProof",
+        "BornePerformance": "PerformanceBound",
+        "Manifeste": "Manifest",
+        "ModeleTrace": "ModelTrace",
+        "Indicateur": "Indicator",
+    }
+)
 """Former French names of the model classes, kept as deprecated aliases until 1.0.0 (ADR 0001,
 PLAN.md 3.9 wave 2). Not part of ``__all__``."""
 

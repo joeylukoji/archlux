@@ -12,44 +12,44 @@ fois pour le pas d'une itération Frank-Wolfe.
 ```python
 import archlux as ax
 from archlux.api import gradient_distance
-from archlux.geom.graphe import deduire_ordre
-from archlux.geom.polytope import construire_polytope, etendre_ecarts_l1, vectoriser
-from archlux.light import SubstitutAnalytique
+from archlux.geom.graphe import deduce_order
+from archlux.geom.polytope import build_polytope, extend_l1_slack, vectorize
+from archlux.light import AnalyticSurrogate
 from archlux.lmo import solveur as lmo
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
-        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+    rooms=(
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
 ctx = ax.Context(
-    structure=ax.Structure(murs_porteurs=()),
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=12.0),
-    contour=contour,
-    referentiel=ax.Regulation(aires_min=(), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
-poly = construire_polytope(deduire_ordre(plan, structure=ctx.structure), ctx)
-Q_propose = vectoriser(plan, poly.index)
+poly = build_polytope(deduce_order(plan, structure=ctx.structure), ctx)
+Q_propose = vectorize(plan, poly.index)
 n = len(poly.index)
 
 # légalisation classique — jalon 2 : minimiser la distance L1 à la proposition
-poly_l1 = etendre_ecarts_l1(poly, Q_propose)
-sol = lmo.resoudre(poly_l1, c=gradient_distance(Q_propose))
+poly_l1 = extend_l1_slack(poly, Q_propose)
+sol = lmo.solve(poly_l1, c=gradient_distance(Q_propose))
 Q = sol.x[:n]  # les n premières coordonnées ; les suivantes sont les écarts L1
-assert sol.statut == "optimal" and poly.contient(Q)
+assert sol.status == "optimal" and poly.contains(Q)
 
 # une itération Frank-Wolfe — jalon 3 : même appel, coûts = -gradient du substitut
-substitut = SubstitutAnalytique()
-sol = lmo.resoudre(poly, c=-substitut.gradient(Q, ctx.orientation), depart=Q)
+surrogate = AnalyticSurrogate()
+sol = lmo.solve(poly, c=-surrogate.gradient(Q, ctx.orientation), start=Q)
 S = sol.x  # un sommet du polytope
 gamma = 0.5  # pas de l'itération
 Q_suivant = Q + gamma * (S - Q)
-assert poly.contient(S) and poly.contient(Q_suivant)
+assert poly.contains(S) and poly.contains(Q_suivant)
 ```
 
 `lmo` ignore d'où vient \(c\). Cette ignorance est le cœur de
