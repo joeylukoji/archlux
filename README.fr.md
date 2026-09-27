@@ -12,10 +12,10 @@ exécutés par la suite de tests.
 archlux répare des plans **presque** justes. Sur 4 796 corruptions de 300 appartements
 réels (corpus MSD : jours, chevauchements, pièces sous-dimensionnées ou décalées), il rend
 un plan certifié valide dans **93,9 %** des cas (IC 95 % [93,2 ; 94,5], mode pavage avec
-repli ; `resultats/j7_reparation.md`). Sur des sorties brutes de modèle génératif
+repli ; `results/j7_reparation.md`). Sur des sorties brutes de modèle génératif
 (HouseDiffusion, 740 plans, aucun valide au départ), il ne rend un plan certifié
 **intact** que dans **environ 20 %** des cas (17,8 % à 23,0 % selon le jeu ;
-`resultats/j8_generation.md`) : quatre plans sur cinq sont trop loin d'un pavage exact
+`results/j8_generation.md`) : quatre plans sur cinq sont trop loin d'un pavage exact
 pour être réparés sans perdre une pièce. Ces deux chiffres précèdent les contraintes de
 murs porteurs du lot 1.1 et seront remesurés (PLAN.md, J7 et J8).
 

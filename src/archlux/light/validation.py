@@ -13,19 +13,20 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidSurrogate
 
 if TYPE_CHECKING:
     from archlux.light.protocole import Surrogate
     from archlux.types import Orientation
 
-__all__ = ["RapportGradient", "valider_gradient"]
+__all__ = ["GradientReport", "validate_gradient"]
 
 _NUIT = 1e-8
 
 
 @dataclass(frozen=True, slots=True)
-class RapportGradient:
+class GradientReport:
     """Comparaison du gradient déclaré aux différences finies d'une référence.
 
     Attributes
@@ -60,7 +61,7 @@ def _differences_finies(
     return g
 
 
-def valider_gradient(
+def validate_gradient(
     surrogate: Surrogate,
     points: np.ndarray,
     orientation: Orientation,
@@ -71,7 +72,7 @@ def valider_gradient(
     epsilon: float = 1e-5,
     tolerance: float = 1e-3,
     seuil_signe: float = 0.80,
-) -> RapportGradient:
+) -> GradientReport:
     """Comparer le gradient du substitut aux différences finies.
 
     Si ``reference`` est fournie (oracle gelé), on compare les **signes**
@@ -160,7 +161,7 @@ def valider_gradient(
                 signes.append(False)
             else:
                 signes.append((a >= 0.0) == (b >= 0.0))
-    rapport = RapportGradient(
+    rapport = GradientReport(
         erreur_relative_max=max(errors) if errors else 0.0,
         cosinus_moyen=float(np.mean(cosinus)) if cosinus else 1.0,
         accord_de_signe=float(np.mean(signes)) if signes else 1.0,
@@ -184,3 +185,12 @@ def valider_gradient(
                 report=rapport,
             )
     return replace(rapport, conforme=True)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "RapportGradient": Alias(GradientReport, "archlux.light.validation.GradientReport"),
+        "valider_gradient": Alias(validate_gradient, "archlux.light.validation.validate_gradient"),
+    },
+)

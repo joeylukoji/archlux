@@ -67,11 +67,11 @@ franchissent alors les frontières et contaminent le jeu de test.
 
 ```python
 class GestionDonnees:
-    def pour_entrainement(self) -> Dataset:
+    def for_training(self) -> Dataset:
         return load(self._train)            # seul chemin exposé ici
 
-    def pour_calibration(self, jeton: JetonCalibration) -> Dataset:
-        jeton.verifier()                       # émis après gel du modèle
+    def for_calibration(self, token: JetonCalibration) -> Dataset:
+        token.verifier()                       # émis après gel du modèle
         return load(self._calib)
 ```
 
@@ -107,7 +107,7 @@ def test_aucun_identifiant_partage():
     assert not (set(t) & set(c)) and not (set(t) & set(s)) and not (set(c) & set(s))
 
 def test_aucun_doublon_franchit_une_frontiere():
-    for a, b in paires_quasi_identiques(seuil=0.02):
+    for a, b in near_duplicate_pairs(threshold=0.02):
         assert split_de(a) == split_de(b)
 
 def test_distributions_comparables():
@@ -308,8 +308,8 @@ def test_meilleur_que_analytique():
 
 def test_erreur_stratifiee_par_orientation():
     """Une bonne moyenne peut cacher un mauvais comportement au nord."""
-    for secteur, jeu in stratifier(JEU_TEST, par_orientation=8).items():
-        assert mae(RESEAU, jeu) < SEUIL_MAX, f"échec sur {secteur}"
+    for sector, jeu in stratifier(JEU_TEST, par_orientation=8).items():
+        assert mae(RESEAU, jeu) < SEUIL_MAX, f"échec sur {sector}"
 
 def test_taille_raisonnable():
     assert sum(p.numel() for p in RESEAU.parameters()) < 2_000_000

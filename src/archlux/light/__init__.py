@@ -9,15 +9,15 @@ explicite ``archlux.light.appris``.
 from __future__ import annotations
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import Surrogate
 from archlux.light.simulateur import SplitFluxOracle
 
 __all__ = [
+    "AnalyticSurrogate",
     "Daylight",
     "SplitFluxOracle",
-    "SubstitutAnalytique",
     "Surrogate",
 ]
 
@@ -33,5 +33,6 @@ __getattr__ = lazy_aliases(
             for old in ("SimulateurExact", "ExactSimulator")
         },
         "Substitut": Alias(Surrogate, "archlux.light.Surrogate"),
+        "SubstitutAnalytique": Alias(AnalyticSurrogate, "archlux.light.AnalyticSurrogate"),
     },
 )
