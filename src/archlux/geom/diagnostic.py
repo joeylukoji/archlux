@@ -119,11 +119,11 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
 
     >>> from archlux.types import Piece, Plan
     >>> plan = Plan(
-    ...     pieces=(
+    ...     rooms=(
     ...         Piece(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),
     ...         Piece(id="b", type="cuisine", x=3.0, y=0.0, w=2.0, h=2.0),
     ...     ),
-    ...     murs=(), ouvertures=(), contour=(),
+    ...     walls=(), openings=(), outline=(),
     ... )
     >>> diag = diagnostiquer(plan)
     >>> diag.recouvrements, diag.part_jour, diag.morceaux, diag.cellules
@@ -132,9 +132,9 @@ def diagnostiquer(plan: Plan) -> Diagnostic:
     Écarter la seconde pièce ouvre un jour et coupe le plan en deux :
 
     >>> troue = Plan(
-    ...     pieces=(plan.pieces[0], Piece(
+    ...     rooms=(plan.rooms[0], Piece(
     ...         id="b", type="cuisine", x=4.0, y=0.0, w=2.0, h=2.0)),
-    ...     murs=(), ouvertures=(), contour=(),
+    ...     walls=(), openings=(), outline=(),
     ... )
     >>> diag = diagnostiquer(troue)
     >>> round(diag.part_jour, 3), diag.morceaux

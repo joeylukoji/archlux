@@ -17,7 +17,7 @@ Examples
 >>> import archlux as ax
 >>> plan = ax.Plan.from_json("propose.json")     # doctest: +SKIP
 >>> q = ax.legalize(plan, ctx)                   # doctest: +SKIP
->>> q.certificat.geometrie.valide                # doctest: +SKIP
+>>> q.certificate.geometry.valid                # doctest: +SKIP
 True
 """
 
