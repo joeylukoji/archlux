@@ -59,14 +59,14 @@ def test_the_free_function_accepts_a_str_too(tmp_path: Path) -> None:
 def test_to_ifc_accepts_str_and_path(tmp_path: Path, as_text: bool) -> None:
     target = tmp_path / "plan.ifc"
     report = sound_plan().to_ifc(str(target) if as_text else target)
-    assert report.valide
+    assert report.valid
     assert target.exists()
 
 
 def test_to_ifc_reports_a_pathological_plan_without_writing(tmp_path: Path) -> None:
     target = tmp_path / "bad.ifc"
     report = overlapping_plan().to_ifc(target)
-    assert not report.valide
+    assert not report.valid
     assert not target.exists()
 
 

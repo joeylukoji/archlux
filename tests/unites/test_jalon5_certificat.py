@@ -105,7 +105,7 @@ def test_construire_borne_refuse_la_derive() -> None:
     derive = DriftDiagnostic(
         echangeable=False,
         statistique=0.4,
-        seuil=0.05,
+        threshold=0.05,
         n_observations=20,
         message="dérive",
     )

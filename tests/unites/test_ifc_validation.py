@@ -49,7 +49,7 @@ def test_an_opening_on_an_unknown_wall_is_refused(tmp_path: Path) -> None:
     orphan = Opening(id="w9", wall_id="nowhere", s=0.5, relative_width=0.2)
     plan = Plan(_plan().rooms, _plan().walls, (orphan,), _plan().outline)
     assert "ouverture_orpheline:w9" in diagnose(plan).pathologies
-    assert not to_ifc(plan, tmp_path / "plan.ifc", validate=True).valide
+    assert not to_ifc(plan, tmp_path / "plan.ifc", validate=True).valid
 
 
 def _errors(path: Path, *, rules: bool = True) -> list[str]:
@@ -72,7 +72,7 @@ def test_ifcopenshell_accepts_every_exported_plan(
     plan: Plan, tmp_path_factory: pytest.TempPathFactory
 ) -> None:
     path = tmp_path_factory.mktemp("ifc") / "plan.ifc"
-    assert to_ifc(plan, path, validate=True).valide
+    assert to_ifc(plan, path, validate=True).valid
     assert _errors(path, rules=False) == []
 
 

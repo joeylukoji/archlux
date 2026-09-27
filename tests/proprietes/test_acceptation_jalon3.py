@@ -28,10 +28,10 @@ ANALYTIQUE = AnalyticSurrogate()
 @settings(max_examples=40, deadline=None)
 def test_sortie_performantielle_valide(plan: Plan) -> None:
     """Toute sortie de ``legalize(..., objective=)`` reste géométriquement valide."""
-    resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
-    assert resultat.certificate is not None
-    assert resultat.certificate.geometry.valid
-    assert resultat.certificate.performance is None
+    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
+    assert result.certificate is not None
+    assert result.certificate.geometry.valid
+    assert result.certificate.performance is None
 
 
 @given(plan=plans_valides())
@@ -43,20 +43,20 @@ def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
     Frank-Wolfe travaille sur ``figer_contacts``, pas sur le relaxé d'ordre du
     point final.
     """
-    resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
-    assert isinstance(resultat.trace, Trace)
-    assert resultat.trace.iterates
+    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
+    assert isinstance(result.trace, Trace)
+    assert result.trace.iterates
     poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
-    poly_fw = freeze_contacts(poly, resultat.trace.iterates[0])
-    assert all(poly_fw.contains(point, tol=1e-6) for point in resultat.trace.iterates)
+    poly_fw = freeze_contacts(poly, result.trace.iterates[0])
+    assert all(poly_fw.contains(point, tol=1e-6) for point in result.trace.iterates)
 
 
 @given(plan=plans_valides())
 @settings(max_examples=20, deadline=None)
 def test_objectif_monotone(plan: Plan) -> None:
-    resultat = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
-    assert isinstance(resultat.trace, Trace)
-    for avant, apres in pairwise(resultat.trace.values):
+    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
+    assert isinstance(result.trace, Trace)
+    for avant, apres in pairwise(result.trace.values):
         assert apres >= avant - 1e-9
 
 

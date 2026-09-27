@@ -37,9 +37,9 @@ def test_aller_retour_en_memoire(plan: Plan) -> None:
 
 def test_aller_retour_sur_disque(tmp_path: Path) -> None:
     """``Plan.to_json`` puis ``Plan.from_json`` rendent le plan d'origine."""
-    chemin = tmp_path / "plan.json"
-    PLAN_T2.to_json(chemin)
-    assert Plan.from_json(chemin) == PLAN_T2
+    path = tmp_path / "plan.json"
+    PLAN_T2.to_json(path)
+    assert Plan.from_json(path) == PLAN_T2
 
 
 def test_le_certificat_survit_a_l_aller_retour() -> None:

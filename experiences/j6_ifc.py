@@ -15,19 +15,19 @@ import ifcopenshell
 import ifcopenshell.validate
 
 import archlux as ax
-from archlux.data.corruption import corrompre
-from archlux.data.synthese import TAILLE_MAX, generer_corpus
+from archlux.data.corruption import corrupt
+from archlux.data.synthese import MAX_SIZE, generate_corpus
 from archlux.export import to_ifc
-from archlux.export.wilson import intervalle_wilson
+from archlux.export.wilson import wilson_interval
 from archlux.seeds import derive
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j6_ifc.csv"
-N = int(sys.argv[2]) if len(sys.argv) > 2 else TAILLE_MAX  # 2.8 s of validation per file
+N = int(sys.argv[2]) if len(sys.argv) > 2 else MAX_SIZE  # 2.8 s of validation per file
 with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(("plan_id", "exported", "validator_errors"))
     accepted = 0
-    for plan_id, plan in sorted(generer_corpus(N, seed=17).items()):
+    for plan_id, plan in sorted(generate_corpus(N, seed=17).items()):
         cut = next(r.x + r.w for r in plan.rooms if r.id == "sw")
         wall = ax.Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), load_bearing=True)
         ctx = ax.Context(
@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
             regulation=ax.Regulation((), 1.0),
         )
         repaired = ax.legalize(
-            corrompre(plan, seed=derive(17, f"ifc/{plan_id}"))[0], ctx, pavage=True
+            corrupt(plan, seed=derive(17, f"ifc/{plan_id}"))[0], ctx, pavage=True
         )
         path = Path(tmp) / f"{plan_id}.ifc"
         exported = to_ifc(
@@ -48,5 +48,5 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
             ifcopenshell.validate.validate(ifcopenshell.open(str(path)), logger, express_rules=True)
         accepted += exported and not logger.statements
         writer.writerow((plan_id, exported, len(logger.statements) if exported else ""))
-low, high = intervalle_wilson(accepted, N)
+low, high = wilson_interval(accepted, N)
 print(f"accepted by ifcopenshell: {accepted}/{N}, Wilson 95 % [{low:.3f}, {high:.3f}]")

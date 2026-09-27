@@ -61,8 +61,8 @@ def test_variance_nulle_si_identiques() -> None:
 
 
 def test_concentration_dans_zero_un() -> None:
-    valeur = concentration([0.0, 180.0])
-    assert 0.0 <= valeur <= 1.0
+    value = concentration([0.0, 180.0])
+    assert 0.0 <= value <= 1.0
 
 
 def test_difference_angulaire_signee() -> None:

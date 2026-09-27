@@ -61,9 +61,9 @@ def _depart_faisable() -> np.ndarray:
 
 def test_tous_les_iteres_sont_dans_le_polytope() -> None:
     objectif = ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 1.0]))
-    resultat = frank_wolfe(POLY, objectif, NORD, _depart_faisable(), max_iter=8)
-    assert resultat.trace.iterates
-    assert all(POLY.contains(point, tol=1e-7) for point in resultat.trace.iterates)
+    result = frank_wolfe(POLY, objectif, NORD, _depart_faisable(), max_iter=8)
+    assert result.trace.iterates
+    assert all(POLY.contains(point, tol=1e-7) for point in result.trace.iterates)
 
 
 def test_objectif_non_decroissant() -> None:
@@ -78,16 +78,16 @@ def test_gap_majore_l_ecart_a_l_optimum_lineaire() -> None:
     c = np.array([0.0, 0.0, 1.0, 0.0])
     objectif = ObjectifLineaire(c=c)
     x0 = _depart_faisable()
-    resultat = frank_wolfe(POLY, objectif, NORD, x0, max_iter=10, away_steps=False)
+    result = frank_wolfe(POLY, objectif, NORD, x0, max_iter=10, away_steps=False)
     optimum = solve(POLY, -c, start=x0)
     assert optimum.status == "optimal"
-    ecart = float(c @ optimum.x) - resultat.value
-    assert ecart <= resultat.gap + 1e-6
+    ecart = float(c @ optimum.x) - result.value
+    assert ecart <= result.gap + 1e-6
 
 
 def test_dualite_terminale_petite_sur_lineaire() -> None:
     """Sur un objectif linéaire, le LMO est exact : le gap tombe sous la tolérance."""
-    resultat = frank_wolfe(
+    result = frank_wolfe(
         POLY,
         ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 0.0])),
         NORD,
@@ -95,7 +95,7 @@ def test_dualite_terminale_petite_sur_lineaire() -> None:
         max_iter=12,
         away_steps=False,
     )
-    assert resultat.gap <= 1e-4 + 1e-9
+    assert result.gap <= 1e-4 + 1e-9
 
 
 def test_warm_start_passe_toujours_depart(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -17,10 +17,10 @@ import numpy as np
 from scipy import stats
 
 from archlux.data.chargeurs import (
-    COLONNE_SOLEIL_DEFAUT,
-    charger_etiquettes_sd,
-    charger_msd,
-    decouper_par_site,
+    DEFAULT_SUN_COLUMN,
+    load_msd,
+    load_sd_labels,
+    split_by_site,
 )
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
@@ -36,11 +36,11 @@ SD = Path(
 CIBLE = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
 GRAINE = 17
 
-etiquettes = charger_etiquettes_sd(SD, colonne=COLONNE_SOLEIL_DEFAUT)
+labels = load_sd_labels(SD, column=DEFAULT_SUN_COLUMN)
 ana = AnalyticSurrogate()
-retenus = [a for a in charger_msd(MSD, limite=CIBLE) if a.site_id and a.aires_sources]
-train, calib, test = decouper_par_site(retenus, seed=GRAINE)
-print(f"appartements : {len(retenus)}  sites : {len({a.site_id for a in retenus})}")
+kept = [a for a in load_msd(MSD, limit=CIBLE) if a.site_id and a.source_areas]
+train, calib, test = split_by_site(kept, seed=GRAINE)
+print(f"appartements : {len(kept)}  sites : {len({a.site_id for a in kept})}")
 
 
 def paires(lot: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -49,8 +49,8 @@ def paires(lot: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     aires: list[float] = []
     vrais: list[float] = []
     for appart in lot:
-        poly = build_polytope(deduce_order(appart.plan), appart.contexte)
-        parts = ana.evaluate_rooms(vectorize(appart.plan, poly.index), appart.contexte.orientation)
+        poly = build_polytope(deduce_order(appart.plan), appart.context)
+        parts = ana.evaluate_rooms(vectorize(appart.plan, poly.index), appart.context.orientation)
         # Les sous-rectangles d'une piece portent le prefixe `pNNN` : on les recompose
         # pour retrouver la granularite de la simulation.
         somme: dict[int, float] = defaultdict(float)
@@ -59,12 +59,12 @@ def paires(lot: list) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
             rang = int(piece.id.split("__")[0][1:])
             somme[rang] += float(value)
             surface[rang] += piece.aire
-        for rang, aire_id in enumerate(appart.aires_sources):
-            cle = (appart.identifiant, aire_id)
-            if cle in etiquettes and rang in somme:
+        for rang, aire_id in enumerate(appart.source_areas):
+            cle = (appart.id, aire_id)
+            if cle in labels and rang in somme:
                 pred.append(somme[rang])
                 aires.append(surface[rang])
-                vrais.append(etiquettes[cle][0])
+                vrais.append(labels[cle][0])
     return (
         np.asarray(pred, dtype=float),
         np.asarray(aires, dtype=float),
@@ -102,13 +102,13 @@ modeles = {
     "analytique par piece": fit(p_tr, p_te),
 }
 
-lignes = ["| modele | MAE | MAE relative | R2 | rho de Spearman |", "|---|--:|--:|--:|--:|"]
-for nom, pred in modeles.items():
+rows = ["| modele | MAE | MAE relative | R2 | rho de Spearman |", "|---|--:|--:|--:|--:|"]
+for name, pred in modeles.items():
     mae, r2, rho = score(pred)
-    lignes.append(
-        f"| {nom} | {mae:.3f} | {100 * mae / np.abs(y_te).mean():.1f} % | {r2:.3f} | {rho:+.3f} |"
+    rows.append(
+        f"| {name} | {mae:.3f} | {100 * mae / np.abs(y_te).mean():.1f} % | {r2:.3f} | {rho:+.3f} |"
     )
-    print(f"{nom:30s} MAE {mae:.3f}  R2 {r2:+.3f}  rho {rho:+.3f}")
+    print(f"{name:30s} MAE {mae:.3f}  R2 {r2:+.3f}  rho {rho:+.3f}")
 
 pred_ca = fit(p_tr, p_ca)
 sigma = float(np.abs(y_ca - pred_ca).std()) or 1.0
@@ -123,10 +123,10 @@ largeur = float(np.mean([b.upper - b.lower for b in bornes]))
 Path("resultats").mkdir(exist_ok=True)
 Path("resultats/j7_sd_par_piece.md").write_text(
     f"# Jalon 7 — prediction **par piece**\n\n"
-    f"cible `{COLONNE_SOLEIL_DEFAUT}`, decoupage par site (graine {GRAINE})\n"
+    f"cible `{DEFAULT_SUN_COLUMN}`, decoupage par site (graine {GRAINE})\n"
     f"pieces : train {p_tr.size} / calibration {p_ca.size} / test {p_te.size}\n\n"
     f"cible sur le test : moyenne {y_te.mean():.3f}, ecart-type {y_te.std():.3f}\n\n"
-    + "\n".join(lignes)
+    + "\n".join(rows)
     + f"\n\nconforme alpha=0,10 sur l'analytique : couverture **{100 * couv:.1f} %** "
     f"(visee 90 %), largeur {largeur:.3f}, n_calibration {cal.n}\n",
     encoding="utf-8",

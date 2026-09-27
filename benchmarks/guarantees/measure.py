@@ -46,9 +46,9 @@ from benchmarks.guarantees.scenarios import Scenario, WallKind, generate, pertur
 from tests import checkers
 
 import archlux
-from archlux.data.corruption import corrompre
+from archlux.data.corruption import corrupt
 from archlux.errors import ArchluxError, Infeasible, UnsupportedInput
-from archlux.export.svg import comparer
+from archlux.export.svg import compare
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
@@ -106,7 +106,7 @@ def _as_is(s: Scenario) -> Plan:
 
 def _one_fault(s: Scenario) -> Plan:
     """AUDIT.md J7 regime: one room off by up to 25 cm, the grid still exists."""
-    corrupted, _ = corrompre(s.plan, seed=zlib.crc32(s.name.encode()), amplitude=0.25)
+    corrupted, _ = corrupt(s.plan, seed=zlib.crc32(s.name.encode()), amplitude=0.25)
     return corrupted
 
 
@@ -262,7 +262,7 @@ def _gallery(
         folder.mkdir(parents=True, exist_ok=True)
         given, result = plans
         name = f"{key}-{case.scenario}.svg"
-        svg = comparer(
+        svg = compare(
             given,
             result,
             outline=context_of[case.scenario].outline,

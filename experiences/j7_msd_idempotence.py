@@ -12,28 +12,28 @@ import numpy as np
 
 import archlux as ax
 from archlux.certify import verify_exactly
-from archlux.data.chargeurs import StatistiquesChargement, charger_msd
+from archlux.data.chargeurs import LoadStatistics, load_msd
 
 MSD, N = Path(sys.argv[1]), int(sys.argv[2]) if len(sys.argv) > 2 else 400
 OUT = Path(sys.argv[3] if len(sys.argv) > 3 else "resultats") / "j7_msd_idempotence.md"
-stats = StatistiquesChargement()
+stats = LoadStatistics()
 valid_before = valid_after = refused = 0
 moved: list[float] = []
 sizes: list[int] = []
-for apartment in charger_msd(MSD, statistiques=stats, limite=N):
-    valid_before += verify_exactly(apartment.plan, apartment.contexte).valid
+for apartment in load_msd(MSD, stats=stats, limit=N):
+    valid_before += verify_exactly(apartment.plan, apartment.context).valid
     sizes.append(len(apartment.plan.rooms))
     try:
-        out = ax.legalize(apartment.plan, apartment.contexte, fusions=apartment.fusions)
+        out = ax.legalize(apartment.plan, apartment.context, fusions=apartment.merges)
     except ax.ArchluxError:
         refused += 1
         continue
     valid_after += out.certificate.geometry.valid  # type: ignore[union-attr]
     moved.append(out.certificate.geometry.max_displacement)  # type: ignore[union-attr]
-n = stats.retenus
+n = stats.kept
 OUT.write_text(
     "# Milestone 7: idempotence on MSD\n\n"
-    f"```\n{stats.resume()}\n```\n\n"
+    f"```\n{stats.summary()}\n```\n\n"
     f"apartments evaluated: {n}\n"
     f"sub-rectangles: median {int(np.median(sizes))}, max {max(sizes)}\n"
     f"valid before legalize: {valid_before}/{n}\n"

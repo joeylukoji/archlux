@@ -15,7 +15,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 import archlux
-from archlux.data.corruption import corrompre
+from archlux.data.corruption import corrupt
 from archlux.errors import ArchluxError
 from archlux.types import Context, Plan
 from tests import checkers
@@ -55,5 +55,5 @@ def test_every_returned_plan_is_valid_with_walls_and_one_fault(
 ) -> None:
     """PLAN.md phase 2: replayed with load-bearing walls, minimum areas and one fault."""
     plan, ctx = scenario
-    faulty, _ = corrompre(plan, seed=seed, amplitude=amplitude)
+    faulty, _ = corrupt(plan, seed=seed, amplitude=amplitude)
     _returned_plans_are_valid(faulty, ctx, pavage=pavage)

@@ -24,13 +24,13 @@ PLAN = Plan(
 )
 
 
-def _avec(chemin: list[str | int], valeur: object) -> dict:
+def _avec(path: list[str | int], value: object) -> dict:
     """Copier le plan de référence en remplaçant un champ par une valeur fautive."""
     donnees = to_dict(PLAN)
     cible = donnees
-    for cle in chemin[:-1]:
+    for cle in path[:-1]:
         cible = cible[cle]  # type: ignore[index]
-    cible[chemin[-1]] = valeur  # type: ignore[index]
+    cible[path[-1]] = value  # type: ignore[index]
     return donnees
 
 
@@ -64,11 +64,11 @@ class TestPlagesPiece:
     """Une pièce a des dimensions strictement positives."""
 
     @pytest.mark.parametrize("champ", ["w", "h"])
-    @pytest.mark.parametrize("valeur", [0.0, -2.0])
-    def test_dimension_non_positive(self, champ: str, valeur: float) -> None:
+    @pytest.mark.parametrize("value", [0.0, -2.0])
+    def test_dimension_non_positive(self, champ: str, value: float) -> None:
         """Une pièce de largeur nulle ou négative casserait le polytope en silence."""
         with pytest.raises(InvariantViolation, match=champ):
-            from_dict(_avec(["rooms", 0, champ], valeur))
+            from_dict(_avec(["rooms", 0, champ], value))
 
 
 class TestPlagesMur:
@@ -99,14 +99,14 @@ class TestValeursNonFinies:
 
     def test_nan_lu_depuis_un_fichier(self, tmp_path: Path) -> None:
         """Le cas réel : un fichier produit par un autre outil."""
-        chemin = tmp_path / "nan.json"
-        chemin.write_text(
+        path = tmp_path / "nan.json"
+        path.write_text(
             '{"schema": "1", "contour": [[NaN, 0.0]], "pieces": [], "murs": [],'
             ' "ouvertures": [], "certificat": null}',
             encoding="utf-8",
         )
         with pytest.raises(InvariantViolation, match="non-finite"):
-            load(chemin)
+            load(path)
 
 
 class TestDiagnostic:

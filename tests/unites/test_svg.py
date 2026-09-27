@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 
-from archlux.export.svg import comparer, render
+from archlux.export.svg import compare, render
 from archlux.types import Plan, Room, Wall
 
 _OUTLINE = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
@@ -50,13 +50,13 @@ def test_a_vertical_wall_is_drawn_vertically() -> None:
 
 
 def test_comparison_draws_walls_in_both_panels() -> None:
-    svg = comparer(_plan(_BEARING), _plan(_BEARING))
+    svg = compare(_plan(_BEARING), _plan(_BEARING))
     assert len(_lines(svg, "wall-load-bearing")) == 2
 
 
 def test_structure_walls_are_drawn_even_if_the_plan_omits_them() -> None:
     """A plan need not repeat its load-bearing structure; the drawing must still show it."""
-    svg = comparer(_plan(), _plan(), walls=(_BEARING,))
+    svg = compare(_plan(), _plan(), walls=(_BEARING,))
     assert len(_lines(svg, "wall-load-bearing")) == 2
 
 

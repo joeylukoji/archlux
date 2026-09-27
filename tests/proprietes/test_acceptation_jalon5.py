@@ -26,28 +26,28 @@ def _tirer(rng: np.random.Generator, n: int) -> tuple[list[np.ndarray], list[Ori
 
 
 def _evaluer(
-    modele: AnalyticSurrogate,
+    model: AnalyticSurrogate,
     oracle: SplitFluxOracle,
     xs: list[np.ndarray],
     os_: list[Orientation],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    pred = np.array([modele.evaluate(x, o) for x, o in zip(xs, os_, strict=True)])
+    pred = np.array([model.evaluate(x, o) for x, o in zip(xs, os_, strict=True)])
     verite = np.array([oracle.evaluate(x, o) for x, o in zip(xs, os_, strict=True)])
-    sigma = np.array([modele.uncertainty(x, o) for x, o in zip(xs, os_, strict=True)])
+    sigma = np.array([model.uncertainty(x, o) for x, o in zip(xs, os_, strict=True)])
     return pred, verite, sigma
 
 
 def test_couverture_empirique() -> None:
     """Sur le jeu de TEST, jamais sur celui de calibration. Visée 0,90 ± 4 pts."""
     rng = np.random.default_rng(17)
-    modele = AnalyticSurrogate()
+    model = AnalyticSurrogate()
     oracle = SplitFluxOracle()
     xs_cal, os_cal = _tirer(rng, 220)
     xs_test, os_test = _tirer(rng, 280)
-    p_cal, v_cal, s_cal = _evaluer(modele, oracle, xs_cal, os_cal)
+    p_cal, v_cal, s_cal = _evaluer(model, oracle, xs_cal, os_cal)
     calibrateur = ConformalCalibrator()
     calibrateur.fit(p_cal, v_cal, s_cal, alpha=0.10)
-    p_test, v_test, s_test = _evaluer(modele, oracle, xs_test, os_test)
+    p_test, v_test, s_test = _evaluer(model, oracle, xs_test, os_test)
     # Couverture d'intervalle (les deux côtés) : « la borne haute compte autant ».
     ok = []
     for pred, verite, sigma in zip(p_test, v_test, s_test, strict=True):
@@ -70,7 +70,7 @@ def test_calibration_tient_par_orientation() -> None:
     calibrateur = ConformalCalibrator()
     calibrateur.fit(mu[cal], y[cal], sigma[cal], alpha=0.10)
     bacs = stratify_by_orientation(degres[test])
-    for secteur, idx_rel in bacs.items():
+    for sector, idx_rel in bacs.items():
         if idx_rel.size < 40:
             continue
         idx = idx_rel + 800
@@ -79,7 +79,7 @@ def test_calibration_tient_par_orientation() -> None:
             borne = calibrateur.borne(float(mu[i]), float(sigma[i]), ">=", regime="exchangeable")
             ok.append(borne.lower <= y[i] <= borne.upper)
         couv = float(np.mean(ok))
-        assert 0.84 <= couv <= 0.96, f"secteur {secteur} : {couv:.3f}"
+        assert 0.84 <= couv <= 0.96, f"secteur {sector} : {couv:.3f}"
 
 
 def test_derive_bornee_sur_oracle_gelé() -> None:
@@ -87,10 +87,10 @@ def test_derive_bornee_sur_oracle_gelé() -> None:
     from archlux.uq.derive import measure_drift
 
     rng = np.random.default_rng(9)
-    modele = AnalyticSurrogate()
+    model = AnalyticSurrogate()
     oracle = SplitFluxOracle()
     xs, os_ = _tirer(rng, 40)
-    pred, verite, _sigma = _evaluer(modele, oracle, xs, os_)
+    pred, verite, _sigma = _evaluer(model, oracle, xs, os_)
     rapport = measure_drift(pred, verite, seed=9)
     amplitude = float(np.std(verite) + 1e-9)
     assert abs(rapport.derive_moyenne) < 3.0 * amplitude

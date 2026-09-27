@@ -13,7 +13,7 @@ import pytest
 
 from archlux import InvalidInput, Plan, Room
 from archlux.data.chargeurs import _convertir
-from archlux.export.svg import planche
+from archlux.export.svg import sheet
 from archlux.geom.diagnostic import diagnose
 from archlux.light.jetons import permute_rooms
 from archlux.orient.circulaire import (
@@ -45,7 +45,7 @@ def one_room_plan() -> Plan:
         (lambda: circular_linear_regression([1.0, 2.0], [1.0]), "theta"),
         (lambda: circular_linear_regression([1.0, 2.0], [1.0, 2.0]), "theta"),
         (lambda: stratify([1.0, 2.0], n_secteurs=0), "n_secteurs"),
-        (lambda: planche(()), "volets"),
+        (lambda: sheet(()), "volets"),
         (lambda: diagnose(Plan(rooms=(), walls=(), openings=(), outline=SQUARE)), "rooms"),
         (lambda: permute_rooms(one_room_plan(), (0, 1)), "ordre"),
     ],
@@ -63,12 +63,12 @@ def test_unreadable_wkt_is_a_rejection_not_a_swallowed_bug() -> None:
         "x",
         [("area", "Bedroom", "not a wkt", "1", "site")],
         reglement=Regulation(min_areas=()),
-        max_pieces=20,
+        max_rooms=20,
         max_rectangles=30,
         tolerance_calage=0.1,
         tolerance_recollage=0.1,
     )
-    assert rejected == "wkt illisible"
+    assert rejected == "unreadable wkt"
 
 
 def _nodes() -> list[tuple[str, ast.AST]]:

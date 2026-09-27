@@ -68,14 +68,14 @@ def _plan_15_pieces() -> Plan:
     """Grille 5 x 3 de pièces jointives, le cas de référence du §9."""
     rooms = tuple(
         Room(
-            id=f"p{colonne}_{ligne}",
+            id=f"p{column}_{ligne}",
             type="living_room",
-            x=colonne * 3.0,
+            x=column * 3.0,
             y=ligne * 4.0,
             w=3.0,
             h=4.0,
         )
-        for colonne in range(5)
+        for column in range(5)
         for ligne in range(3)
     )
     return Plan(rooms=rooms, walls=(), openings=(), outline=CTX_15.outline)

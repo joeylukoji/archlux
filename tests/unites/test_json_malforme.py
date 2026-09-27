@@ -79,14 +79,14 @@ class TestFichierInvalide:
 
     def test_du_texte_qui_n_est_pas_du_json(self, tmp_path: Path) -> None:
         """Un fichier tronqué ou corrompu."""
-        chemin = tmp_path / "casse.json"
-        chemin.write_text("{ceci n'est pas du json", encoding="utf-8")
+        path = tmp_path / "casse.json"
+        path.write_text("{ceci n'est pas du json", encoding="utf-8")
         with pytest.raises(InvariantViolation, match="not valid JSON"):
-            load(chemin)
+            load(path)
 
     def test_du_json_qui_n_est_pas_un_objet(self, tmp_path: Path) -> None:
         """Une liste de plans n'est pas un plan ; le dire plutôt que d'échouer plus loin."""
-        chemin = tmp_path / "liste.json"
-        chemin.write_text("[]", encoding="utf-8")
+        path = tmp_path / "liste.json"
+        path.write_text("[]", encoding="utf-8")
         with pytest.raises(InvariantViolation, match="JSON object"):
-            load(chemin)
+            load(path)

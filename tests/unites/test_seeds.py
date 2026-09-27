@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from archlux.bench.graines import deriver
+from archlux.bench.graines import derive as bench_derive
 from archlux.seeds import derive
 
 
 def test_bench_derivation_is_unchanged() -> None:
-    """``bench.graines.deriver`` delegates: published manifests keep their sub-seeds."""
-    assert all(deriver(s, n) == derive(s, n) for s in range(5) for n in ("a", "fit/0"))
+    """``bench.graines.derive`` delegates: published manifests keep their sub-seeds."""
+    assert all(bench_derive(s, n) == derive(s, n) for s in range(5) for n in ("a", "fit/0"))
 
 
 def test_consecutive_run_seeds_do_not_share_cycles() -> None:

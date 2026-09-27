@@ -11,11 +11,11 @@ from pathlib import Path
 import numpy as np
 
 from archlux.data.chargeurs import (
-    COLONNE_SOLEIL_DEFAUT,
-    charger_etiquettes_sd,
-    charger_msd,
-    decouper_par_site,
-    etiqueter,
+    DEFAULT_SUN_COLUMN,
+    label,
+    load_msd,
+    load_sd_labels,
+    split_by_site,
 )
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
@@ -33,29 +33,29 @@ SD = Path(
 CIBLE = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
 GRAINE = 17
 
-etiquettes = charger_etiquettes_sd(SD, colonne=COLONNE_SOLEIL_DEFAUT)
-print(f"simulations lues : {len(etiquettes)} pieces")
+labels = load_sd_labels(SD, column=DEFAULT_SUN_COLUMN)
+print(f"simulations lues : {len(labels)} pieces")
 
-retenus, ys = [], []
-for appart in charger_msd(MSD, limite=CIBLE):
-    cible = etiqueter(appart, etiquettes)
+kept, ys = [], []
+for appart in load_msd(MSD, limit=CIBLE):
+    cible = label(appart, labels)
     if cible is None or not appart.site_id:
         continue
-    retenus.append(appart)
+    kept.append(appart)
     ys.append(cible)
-print(f"appartements etiquetes : {len(retenus)}  sites : {len({a.site_id for a in retenus})}")
+print(f"appartements etiquetes : {len(kept)}  sites : {len({a.site_id for a in kept})}")
 
-train, calib, test = decouper_par_site(retenus, seed=GRAINE)
-index = {id(a): k for k, a in enumerate(retenus)}
+train, calib, test = split_by_site(kept, seed=GRAINE)
+index = {id(a): k for k, a in enumerate(kept)}
 
 
 def vecteurs(lot: list) -> tuple[tuple, np.ndarray, tuple, tuple]:
     xs, cibles, oris, fen = [], [], [], []
     for appart in lot:
-        poly = build_polytope(deduce_order(appart.plan), appart.contexte)
+        poly = build_polytope(deduce_order(appart.plan), appart.context)
         xs.append(vectorize(appart.plan, poly.index))
         cibles.append(ys[index[id(appart)]])
-        oris.append(appart.contexte.orientation)
+        oris.append(appart.context.orientation)
         fen.append(Glazing(walls=appart.plan.murs, openings=appart.plan.ouvertures))
     return tuple(xs), np.asarray(cibles, dtype=float), tuple(oris), tuple(fen)
 
@@ -107,7 +107,7 @@ largeur = float(np.mean([b.upper - b.lower for b in bornes]))
 
 rapport = (
     f"# Jalon 7 — substitut contre simulations Swiss Dwellings\n\n"
-    f"cible : `{COLONNE_SOLEIL_DEFAUT}`, moyenne ponderee par surface\n"
+    f"cible : `{DEFAULT_SUN_COLUMN}`, moyenne ponderee par surface\n"
     f"decoupage **par site** (graine {GRAINE}) : "
     f"train {len(x_tr)} / calibration {len(x_ca)} / test {len(x_te)}\n"
     f"sites : {len({a.site_id for a in train})} / {len({a.site_id for a in calib})} / "

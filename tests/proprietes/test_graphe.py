@@ -62,5 +62,5 @@ def test_la_reduction_ne_grossit_jamais(ordre: RelativeOrder) -> None:
     """Le nombre d'arêtes ne peut que décroître — c'est la raison d'être de l'étape."""
     complet = build_graph(ordre, list(ordre.rooms))
     reduit = transitive_reduction(complet)
-    for axe in ("horizontal", "vertical"):
-        assert getattr(reduit, axe).number_of_edges() <= getattr(complet, axe).number_of_edges()
+    for axis in ("horizontal", "vertical"):
+        assert getattr(reduit, axis).number_of_edges() <= getattr(complet, axis).number_of_edges()

@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 import archlux as ax
-from archlux.export.svg import planche
+from archlux.export.svg import sheet
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.orient.circulaire import circular_linear_regression as fit
 
@@ -29,7 +29,7 @@ with (OUT / "j3_orientation.csv").open("w", newline="", encoding="utf-8") as han
     writer.writeheader()
     for minimum in (0.0, 12.0):
         ref = ax.Regulation(tuple((t, minimum) for t in ("bedroom", "living_room") if minimum), 1.0)
-        sheet, moves = [], []
+        panels, moves = [], []
         for deg in range(0, 360, 45):
             ctx = ax.Context(
                 structure=ax.Structure(()),
@@ -45,9 +45,9 @@ with (OUT / "j3_orientation.csv").open("w", newline="", encoding="utf-8") as han
             smallest = min(r.w * r.h for r in out.rooms)
             row = (minimum, deg, f"{moved:.6f}", f"{rooms['sw'].h:.6f}", f"{rooms['nw'].h:.6f}")
             writer.writerow(dict(zip(FIELDS, (*row, f"{smallest:.6f}"), strict=True)))
-            sheet.append((out, f"{deg} deg"))
+            panels.append((out, f"{deg} deg"))
         name = f"j3_orientation_min{minimum:g}.svg"
-        (OUT / name).write_text(planche(tuple(sheet), colonnes=8), encoding="utf-8")
+        (OUT / name).write_text(sheet(tuple(panels), colonnes=8), encoding="utf-8")
         r = fit(list(range(0, 360, 45)), moves)  # moves ~ a cos + b sin + c, descriptive only
         r2 = 1 - sum(r.residus**2) / sum((m - sum(moves) / 8) ** 2 for m in moves)
         amp, peak = math.hypot(r.a, r.b), math.degrees(math.atan2(r.b, r.a)) % 360

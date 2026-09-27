@@ -241,17 +241,17 @@ def _decouper(
     ``force_split`` makes the first cut mandatory (when the rectangle allows one), so
     that the plan has at least two rooms.
     """
-    axes = [axe for axe, taille in (("v", w), ("h", h)) if taille >= 2 * minimum]
+    axes = [axis for axis, taille in (("v", w), ("h", h)) if taille >= 2 * minimum]
     if profondeur == 0 or not axes or (not force_split and not draw(st.booleans())):
         return [(x, y, w, h)]
-    axe = draw(st.sampled_from(axes))
-    if axe == "v":
+    axis = draw(st.sampled_from(axes))
+    if axis == "v":
         coupe = draw(st.integers(min_value=minimum, max_value=w - minimum))
         gauche = _decouper(draw, x, y, coupe, h, profondeur - 1, minimum)
         return gauche + _decouper(draw, x + coupe, y, w - coupe, h, profondeur - 1, minimum)
     coupe = draw(st.integers(min_value=minimum, max_value=h - minimum))
-    bas = _decouper(draw, x, y, w, coupe, profondeur - 1, minimum)
-    return bas + _decouper(draw, x, y + coupe, w, h - coupe, profondeur - 1, minimum)
+    low = _decouper(draw, x, y, w, coupe, profondeur - 1, minimum)
+    return low + _decouper(draw, x, y + coupe, w, h - coupe, profondeur - 1, minimum)
 
 
 @st.composite
@@ -297,7 +297,7 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
 
 
 @st.composite
-def ordres_valides(draw: st.DrawFn, max_pieces: int = 6) -> RelativeOrder:
+def ordres_valides(draw: st.DrawFn, max_rooms: int = 6) -> RelativeOrder:
     """Ordres relatifs acycliques dont toute paire est séparée.
 
     Construit **sans réutiliser ``deduire_ordre``** : deux rangs totaux tirés au hasard,
@@ -313,10 +313,10 @@ def ordres_valides(draw: st.DrawFn, max_pieces: int = 6) -> RelativeOrder:
     Dériver ces ordres du code de production rendrait les tests tautologiques : ils
     passeraient quelle que soit l'erreur commise des deux côtés.
     """
-    nombre = draw(st.integers(min_value=2, max_value=max_pieces))
+    nombre = draw(st.integers(min_value=2, max_value=max_rooms))
     identifiants = [f"p{i}" for i in range(nombre)]
-    rang_x = {nom: i for i, nom in enumerate(draw(st.permutations(identifiants)))}
-    rang_y = {nom: i for i, nom in enumerate(draw(st.permutations(identifiants)))}
+    rang_x = {name: i for i, name in enumerate(draw(st.permutations(identifiants)))}
+    rang_y = {name: i for i, name in enumerate(draw(st.permutations(identifiants)))}
 
     horizontal: list[tuple[str, str]] = []
     vertical: list[tuple[str, str]] = []

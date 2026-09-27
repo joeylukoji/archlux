@@ -10,7 +10,7 @@ from hypothesis import given, settings
 
 from archlux.errors import InvariantViolation
 from archlux.export import diagnose, survival_rate, to_dxf, to_ifc
-from archlux.export.wilson import intervalle_wilson
+from archlux.export.wilson import wilson_interval
 from archlux.types import Plan, Room, Wall
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 
@@ -45,11 +45,11 @@ def test_export_valide(plan: Plan) -> None:
     """`MILESTONE-6.md` §4 : to_ifc sur plans_valides reste valide."""
     assert diagnose(plan).exportable
     with TemporaryDirectory() as tmp:
-        chemin = Path(tmp) / "plan.ifc"
-        rapport = to_ifc(plan, chemin, validate=True)
-        assert rapport.valide
-        assert chemin.is_file()
-        texte = chemin.read_text(encoding="utf-8")
+        path = Path(tmp) / "plan.ifc"
+        rapport = to_ifc(plan, path, validate=True)
+        assert rapport.valid
+        assert path.is_file()
+        texte = path.read_text(encoding="utf-8")
         assert "ISO-10303-21" in texte
         assert "IFCSPACE" in texte
 
@@ -64,24 +64,24 @@ def test_taux_de_survie_avec_wilson() -> None:
 
 def test_wilson_aux_extremes() -> None:
     """Wilson reste dans [0, 1] pour 0/n et n/n."""
-    lo, hi = intervalle_wilson(0, 10)
+    lo, hi = wilson_interval(0, 10)
     assert 0.0 <= lo <= hi <= 1.0
-    lo, hi = intervalle_wilson(10, 10)
+    lo, hi = wilson_interval(10, 10)
     assert 0.0 <= lo <= hi <= 1.0
 
 
 def test_to_ifc_refuse_pathologique(tmp_path: Path) -> None:
-    chemin = tmp_path / "mauvais.ifc"
-    rapport = to_ifc(_plan_pathologique(), chemin, validate=True)
-    assert not rapport.valide
-    assert not chemin.exists()
-    assert rapport.moteur == "refuse"
+    path = tmp_path / "mauvais.ifc"
+    rapport = to_ifc(_plan_pathologique(), path, validate=True)
+    assert not rapport.valid
+    assert not path.exists()
+    assert rapport.engine == "refuse"
 
 
 def test_to_dxf_ecrit_lwpolyline(tmp_path: Path) -> None:
-    chemin = tmp_path / "plan.dxf"
-    to_dxf(_plan_sain(), chemin)
-    texte = chemin.read_text(encoding="utf-8")
+    path = tmp_path / "plan.dxf"
+    to_dxf(_plan_sain(), path)
+    texte = path.read_text(encoding="utf-8")
     assert "LWPOLYLINE" in texte
     assert "EOF" in texte
 

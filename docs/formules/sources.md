@@ -103,7 +103,7 @@ Uniquement des ouvrages et articles **consultables**, avec une localisation
 
 20. Efron, B. & Tibshirani, R. J. (1993). *An Introduction to the Bootstrap*.
     Chapman & Hall. ISBN 978-0-412-04231-7. Ch. 13 : intervalles par percentiles.
-    — `bench.stats.bootstrap_apparie`. Voir [banc d'essai](banc-essai.md).
+    — `bench.stats.paired_bootstrap`. Voir [banc d'essai](banc-essai.md).
 
 21. Schuirmann, D. J. (1987). A comparison of the two one-sided tests procedure and the
     power approach for assessing the equivalence of average bioavailability.
@@ -118,8 +118,8 @@ Uniquement des ouvrages et articles **consultables**, avec une localisation
     — contrôle du FWER sans hypothèse d'indépendance. `bench.stats.holm`.
 
 23. Cohen, J. (1988). *Statistical Power Analysis for the Behavioral Sciences*
-    (2e éd.). Lawrence Erlbaum. Ch. 2 : puissance du test \(t\), \(d\) de Cohen.
-    — `bench.stats.puissance`.
+    (2e éd.). Lawrence Erlbaum. Ch. 2 : power du test \(t\), \(d\) de Cohen.
+    — `bench.stats.power`.
 
 ## Estimation de densité et apprentissage actif (jalon 6)
 

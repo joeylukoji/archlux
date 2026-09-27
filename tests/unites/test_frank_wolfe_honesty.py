@@ -18,7 +18,7 @@ from hypothesis import given, settings
 
 import archlux
 from archlux.certify.proof import verify_exactly
-from archlux.data.corruption import corrompre
+from archlux.data.corruption import corrupt
 from archlux.errors import InvariantViolation
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.lmo import solveur
@@ -120,7 +120,7 @@ def test_performance_mode_never_moves_a_room_beyond_the_budget(
     from the proposal could reach twice the budget. The input is corrupted first, so
     that the classic pass does move and consumes part of the budget."""
     plan, ctx = scenario
-    proposed, _ = corrompre(plan, seed=len(plan.rooms), amplitude=0.25)
+    proposed, _ = corrupt(plan, seed=len(plan.rooms), amplitude=0.25)
     budget = 0.3
     try:
         result = archlux.legalize(
@@ -146,7 +146,7 @@ def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Conte
     meets the budget only up to its tolerance; the Frank-Wolfe box must still contain
     the classic result instead of raising InvariantViolation."""
     plan, ctx = scenario
-    proposed, _ = corrompre(plan, seed=len(plan.rooms), amplitude=0.25)
+    proposed, _ = corrupt(plan, seed=len(plan.rooms), amplitude=0.25)
     try:
         classic = archlux.legalize(proposed, ctx, pavage=True)
     except archlux.ArchluxError:

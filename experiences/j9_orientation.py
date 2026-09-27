@@ -35,7 +35,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import archlux as ax
-from archlux.export.svg import planche
+from archlux.export.svg import sheet
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytique import AnalyticSurrogate
@@ -49,10 +49,10 @@ AZIMUTS = tuple(range(0, 360, 45))
 RACINE = Path("resultats/orientation")
 
 
-def _score(plan, contexte, surrogate) -> float:
+def _score(plan, context, surrogate) -> float:
     """Valeur du substitut pour ce plan sous cette orientation."""
-    poly = build_polytope(deduce_order(plan), contexte)
-    return float(surrogate.evaluate(vectorize(plan, poly.index), contexte.orientation))
+    poly = build_polytope(deduce_order(plan), context)
+    return float(surrogate.evaluate(vectorize(plan, poly.index), context.orientation))
 
 
 def main() -> None:
@@ -60,10 +60,8 @@ def main() -> None:
     n_plans = int(sys.argv[2]) if len(sys.argv) > 2 else 6
     budget = float(sys.argv[3]) if len(sys.argv) > 3 else 3.0
 
-    lignes = [
-        json.loads(x) for x in plans_src.read_text(encoding="utf-8").splitlines() if x.strip()
-    ]
-    echelle = _echelle(lignes)
+    rows = [json.loads(x) for x in plans_src.read_text(encoding="utf-8").splitlines() if x.strip()]
+    echelle = _echelle(rows)
     surrogate = AnalyticSurrogate(indicateur_vise="sDA")
     RACINE.mkdir(parents=True, exist_ok=True)
 
@@ -78,26 +76,26 @@ def main() -> None:
         "|---|--:|--:|--:|--:|--:|--:|",
     ]
 
-    retenus = 0
-    for plan_json in lignes:
-        if retenus >= n_plans:
+    kept = 0
+    for plan_json in rows:
+        if kept >= n_plans:
             break
         bati = _construire(plan_json, echelle)
         if isinstance(bati, str):
             continue
-        propose, contexte, diag = bati
+        propose, context, diag = bati
         try:
-            valid = ax.legalize(propose, contexte, pavage=True, budget_reparation=BUDGETS[-1])
+            valid = ax.legalize(propose, context, pavage=True, budget_reparation=BUDGETS[-1])
         except ax.ArchluxError:
             continue
         if not valid.certificate.geometry.valid or len(valid.rooms) < 4:
             continue
-        retenus += 1
+        kept += 1
 
         volets: list[tuple[object, str]] = []
         scores: list[tuple[int, float, float, float]] = []
         for azimut in AZIMUTS:
-            ctx_az = replace(contexte, orientation=Orientation(deg=float(azimut)))
+            ctx_az = replace(context, orientation=Orientation(deg=float(azimut)))
             avant = _score(valid, ctx_az, surrogate)
             try:
                 variante = ax.legalize(valid, ctx_az, objective=surrogate, budget=budget)
@@ -115,13 +113,13 @@ def main() -> None:
             gain = 100 * (apres - avant) / max(abs(avant), 1e-9)
             volets.append((variante, f"{azimut}° — sDA {apres:.0f} ({gain:+.0f} %)"))
 
-        nom = plan_json["id"]
-        (RACINE / f"{nom}.svg").write_text(
-            planche(tuple(volets), contour=contexte.outline, colonnes=4),
+        name = plan_json["id"]
+        (RACINE / f"{name}.svg").write_text(
+            sheet(tuple(volets), contour=context.outline, colonnes=4),
             encoding="utf-8",
         )
         fiche = [
-            f"# {nom} — variantes par azimut\n",
+            f"# {name} — variantes par azimut\n",
             f"{len(valid.rooms)} pieces, cote caracteristique {diag.size:.2f} m, "
             f"budget {budget:.1f} m.\n",
             "| azimut | sDA legalise | sDA variante | gain | deplacement | "
@@ -147,19 +145,19 @@ def main() -> None:
             "indicateur **par piece**, comme l'est un vrai sDA, ne se comporterait "
             "pas ainsi.\n"
         )
-        (RACINE / f"{nom}.md").write_text("\n".join(fiche) + "\n", encoding="utf-8")
+        (RACINE / f"{name}.md").write_text("\n".join(fiche) + "\n", encoding="utf-8")
 
         if scores:
             meilleur = max(scores, key=lambda s: s[2])
             index.append(
-                f"| [`{nom}`]({nom}.md) | {len(valid.rooms)} | {meilleur[0]}° | "
+                f"| [`{name}`]({name}.md) | {len(valid.rooms)} | {meilleur[0]}° | "
                 f"{100 * (meilleur[2] - meilleur[1]) / max(abs(meilleur[1]), 1e-9):+.0f} % | "
                 f"{meilleur[3]:.2f} m | {min(s[4] for s in scores):.2f} m | "
                 f"{len(scores)} / {len(AZIMUTS)} |"
             )
 
     (RACINE / "index.md").write_text("\n".join(index) + "\n", encoding="utf-8")
-    print(f"{retenus} plans -> {RACINE}")
+    print(f"{kept} plans -> {RACINE}")
 
 
 if __name__ == "__main__":

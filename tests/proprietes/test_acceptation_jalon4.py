@@ -39,11 +39,11 @@ def test_reseau_predit_mieux_que_analytique() -> None:
         hold_o.append(ori)
         hold_y.append(_SIM.evaluate(x, ori))
 
-    def mae(modele) -> float:
+    def mae(model) -> float:
         return float(
             np.mean(
                 [
-                    abs(modele.evaluate(x, o) - y)
+                    abs(model.evaluate(x, o) - y)
                     for x, o, y in zip(hold_x, hold_o, hold_y, strict=True)
                 ]
             )

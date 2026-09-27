@@ -92,7 +92,7 @@ calibrer séparément sur le sous-jeu à baies observées et sur le jeu imputé,
 
 ## 3. Ce que le corpus synthétique peut et ne peut pas faire
 
-`data.synthese.generer_corpus` reste utile, et doit rester :
+`data.synthese.generate_corpus` reste utile, et doit rester :
 
 - il fait tourner la CI sans télécharger des gigaoctets ;
 - il est déterministe, donc les certificats sont reproductibles ;
@@ -129,8 +129,8 @@ Le verrou d'implémentation est `uq.gestion.issue_token` : le jeton n'est
 
 ## 5. Ce que la jointure a donné, une fois faite
 
-Le chargeur existe désormais (`data.chargeurs.charger_etiquettes_sd`,
-`etiqueter`, `decouper_par_site`) et la jointure fonctionne :
+Le chargeur existe désormais (`data.chargeurs.load_sd_labels`,
+`label`, `split_by_site`) et la jointure fonctionne :
 
 | | |
 |---|--:|

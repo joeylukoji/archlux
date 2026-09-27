@@ -59,7 +59,7 @@ from shapely.ops import unary_union
 import archlux as ax
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GridNotRecoverable
-from archlux.export.wilson import intervalle_wilson
+from archlux.export.wilson import wilson_interval
 from archlux.geom.diagnostic import Diagnostic, diagnose
 from archlux.types import (
     Context,
@@ -138,10 +138,10 @@ def _boites(plan_json: dict, echelle: float) -> list[tuple[str, tuple[float, ...
     return out
 
 
-def _echelle(lignes: list[dict]) -> float:
+def _echelle(rows: list[dict]) -> float:
     """Facteur unite -> metre calant l'aire mediane generee sur celle de MSD."""
     aires = []
-    for plan_json in lignes:
+    for plan_json in rows:
         formes = [box(x, y, x + w, y + h) for _, (x, y, w, h) in _boites(plan_json, 1.0)]
         union = unary_union(formes)
         if not union.is_empty:
@@ -172,7 +172,7 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnos
     contour = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
 
     plan = Plan(rooms=pieces, walls=(), openings=(), outline=contour)
-    contexte = Context(
+    context = Context(
         structure=Structure(load_bearing_walls=(), columns=()),
         orientation=Orientation(deg=0.0),
         outline=contour,
@@ -180,10 +180,10 @@ def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnos
         regulation=Regulation(min_areas=(), min_width=LARGEUR_DEFAUT),
         program=tuple(sorted(set(plan_json["programme"]))),
     )
-    return plan, contexte, diagnose(plan)
+    return plan, context, diagnose(plan)
 
 
-def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
+def _resumer(brut: Path, echelle: float, rejections: dict[str, int]) -> str:
     """Table de synthese, intervalles de Wilson compris."""
     with brut.open(encoding="utf-8") as flux:
         rangs = list(csvmod.DictReader(flux))
@@ -200,7 +200,7 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
     trou = np.asarray([float(r["part_trou_avant"]) for r in diag])
     fragments = np.asarray([float(r["morceaux_avant"]) for r in diag])
 
-    lignes = [
+    rows = [
         "| mode | budget | n | réparés | IC 95 % | t médian | déplacement médian |",
         "|---|--:|--:|--:|:--:|--:|--:|",
     ]
@@ -209,15 +209,15 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
         if not lot:
             continue
         ok = sum(r["valide_apres"] == "True" for r in lot)
-        bas, haut = intervalle_wilson(ok, len(lot))
+        low, high = wilson_interval(ok, len(lot))
         temps = np.median([float(r["temps_ms"]) for r in lot])
         depl = [float(r["deplacement_max_m"]) for r in lot if r["deplacement_max_m"]]
         rel = [float(r["deplacement_relatif"]) for r in lot if r["deplacement_relatif"]]
         med_depl = f"{np.median(depl):.2f} m ({np.median(rel):.0%} du côté)" if depl else "—"
         etiquette = "`legalize` seul" if mode == "base" else "`pavage=True`"
-        lignes.append(
+        rows.append(
             f"| {etiquette} | {budget or '—'} | {len(lot)} | "
-            f"**{100 * ok / len(lot):.1f} %** | [{100 * bas:.1f}, {100 * haut:.1f}] | "
+            f"**{100 * ok / len(lot):.1f} %** | [{100 * low:.1f}, {100 * high:.1f}] | "
             f"{temps:.1f} ms | {med_depl} |"
         )
 
@@ -246,8 +246,8 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
             continue
         ok = sum(r["valide_apres"] == "True" for r in lot)
         sains = sum(r["intact"] == "True" for r in lot)
-        b1, h1 = intervalle_wilson(ok, len(lot))
-        b2, h2 = intervalle_wilson(sains, len(lot))
+        b1, h1 = wilson_interval(ok, len(lot))
+        b2, h2 = wilson_interval(sains, len(lot))
         cotes = [float(r["cote_min_apres"]) for r in lot if r["cote_min_apres"]]
         rel = [float(r["deplacement_relatif"]) for r in lot if r["deplacement_relatif"]]
         marque = " *(nominal)*" if largeur == LARGEUR_DEFAUT else ""
@@ -318,14 +318,14 @@ def _resumer(brut: Path, echelle: float, rejets: dict[str, int]) -> str:
         f"| cellules de la trame implicite | {np.median(cellules):.0f} | "
         f"{cellules.mean():.0f} | {np.quantile(cellules, 0.95):.0f} |\n\n"
         "## Réparation\n\n"
-        f"Référentiel `largeur_min = {LARGEUR_DEFAUT:.2f} m`.\n\n" + "\n".join(lignes) + "\n\n"
+        f"Référentiel `largeur_min = {LARGEUR_DEFAUT:.2f} m`.\n\n" + "\n".join(rows) + "\n\n"
         "## Ce que coûte — et rapporte — un plancher sur la largeur\n\n"
         + "\n".join(largeurs)
         + "\n\n"
         "## Réparation par taille de programme\n\n" + "\n".join(coupe) + "\n\n"
         "## Réparation par topologie du graphe d'accès\n\n" + "\n".join(topo) + "\n\n"
         f"## Échecs\n\n{motifs}\n\n"
-        f"## Rejets à la construction\n\n{rejets or 'aucun'}\n"
+        f"## Rejets à la construction\n\n{rejections or 'aucun'}\n"
     )
 
 
@@ -338,29 +338,29 @@ def main() -> None:
     # Etiquette de sortie : deux conditionnements de graphe sont mesures, et
     # leurs resultats ne doivent pas s'ecraser l'un l'autre.
     etiquette = sys.argv[3] if len(sys.argv) > 3 else plans.stem
-    lignes = [
+    rows = [
         json.loads(ligne)
         for ligne in plans.read_text(encoding="utf-8").splitlines()[:n_max]
         if ligne.strip()
     ]
-    if not lignes:
+    if not rows:
         raise SystemExit(f"aucun plan dans {plans}")
-    echelle = _echelle(lignes)
-    print(f"{len(lignes)} plans generes, echelle {echelle:.4f} m/unite")
+    echelle = _echelle(rows)
+    print(f"{len(rows)} plans generes, echelle {echelle:.4f} m/unite")
 
     Path("resultats").mkdir(exist_ok=True)
     sortie = Path(f"resultats/j8_{etiquette}_brut.csv")
-    rejets: dict[str, int] = {}
+    rejections: dict[str, int] = {}
     with sortie.open("w", newline="", encoding="utf-8") as flux:
         ecrivain = csvmod.DictWriter(flux, fieldnames=FIELDS)
         ecrivain.writeheader()
-        for plan_json in lignes:
+        for plan_json in rows:
             bati = _construire(plan_json, echelle)
             if isinstance(bati, str):
-                rejets[bati] = rejets.get(bati, 0) + 1
+                rejections[bati] = rejections.get(bati, 0) + 1
                 continue
-            plan, contexte, diagnostic = bati
-            avant = verify_exactly(plan, contexte).valid
+            plan, context, diagnostic = bati
+            avant = verify_exactly(plan, context).valid
             # Deux balayages, pas leur produit : les budgets a largeur nominale,
             # puis les largeurs au meilleur budget. Le second existe parce que
             # `largeur_min = 0` laisse le LP annihiler une piece pour fermer un
@@ -377,7 +377,7 @@ def main() -> None:
                 statut, valid, deplacement, n_apres = "ok", False, "", ""
                 cote_min, intact = "", ""
                 contexte_essai = replace(
-                    contexte,
+                    context,
                     regulation=Regulation(min_areas=(), min_width=largeur),
                 )
                 try:
@@ -432,11 +432,11 @@ def main() -> None:
                     }
                 )
     print("bruts ecrits :", sortie)
-    resume = Path(f"resultats/j8_{etiquette}.md")
-    resume.write_text(_resumer(sortie, echelle, rejets), encoding="utf-8")
-    print("resume ecrit :", resume)
-    if rejets:
-        print("rejets :", rejets)
+    summary = Path(f"resultats/j8_{etiquette}.md")
+    summary.write_text(_resumer(sortie, echelle, rejections), encoding="utf-8")
+    print("resume ecrit :", summary)
+    if rejections:
+        print("rejets :", rejections)
 
 
 if __name__ == "__main__":

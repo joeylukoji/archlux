@@ -33,7 +33,7 @@ def test_la_coupe_n_exclut_aucun_point_valide(w0: float, h0: float, w: float, h:
     assert area_cut(w0, h0, a).satisfied(w, h)
 
 
-@given(ordre=ordres_valides(max_pieces=4))
+@given(ordre=ordres_valides(max_rooms=4))
 @settings(max_examples=40, deadline=None)
 def test_surfaces_minimales_respectees(ordre: object) -> None:
     """Après la boucle de coupes, aucune pièce n'est sous son a_min."""
@@ -45,13 +45,13 @@ def test_surfaces_minimales_respectees(ordre: object) -> None:
     )
     poly = build_polytope(ordre, ctx)  # type: ignore[arg-type]
     rooms = tuple(
-        Room(id=nom, type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
-        for nom in ordre.rooms  # type: ignore[attr-defined]
+        Room(id=name, type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
+        for name in ordre.rooms  # type: ignore[attr-defined]
     )
     c = np.zeros(len(poly.index))
-    for nom, colonne in poly.index.items():
-        if nom.endswith(".w") or nom.endswith(".h"):
-            c[colonne] = 1.0
+    for name, column in poly.index.items():
+        if name.endswith(".w") or name.endswith(".h"):
+            c[column] = 1.0
     sol = solve_with_areas(poly, c, ctx, rooms)
     if sol.status != "optimal":
         return

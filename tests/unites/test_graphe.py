@@ -23,8 +23,8 @@ def _plan(*pieces: Room) -> Plan:
     return Plan(rooms=pieces, walls=(), openings=(), outline=())
 
 
-def _carre(nom: str, x: float, y: float, cote: float = 1.0) -> Room:
-    return Room(id=nom, type="living_room", x=x, y=y, w=cote, h=cote)
+def _carre(name: str, x: float, y: float, cote: float = 1.0) -> Room:
+    return Room(id=name, type="living_room", x=x, y=y, w=cote, h=cote)
 
 
 class TestConstruireGraphe:

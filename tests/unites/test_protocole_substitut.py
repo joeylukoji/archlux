@@ -43,11 +43,11 @@ def test_implemente_le_protocole(classe: type) -> None:
 
 
 @pytest.mark.parametrize("classe", IMPLEMENTATIONS, ids=lambda c: c.__name__)
-@pytest.mark.parametrize("methode", sorted(SIGNATURES_ATTENDUES))
-def test_les_signatures_correspondent(classe: type, methode: str) -> None:
+@pytest.mark.parametrize("method", sorted(SIGNATURES_ATTENDUES))
+def test_les_signatures_correspondent(classe: type, method: str) -> None:
     """Les noms de paramètres sont identiques à ceux du protocole."""
-    obtenue = tuple(inspect.signature(getattr(classe, methode)).parameters)
-    assert obtenue == SIGNATURES_ATTENDUES[methode]
+    obtenue = tuple(inspect.signature(getattr(classe, method)).parameters)
+    assert obtenue == SIGNATURES_ATTENDUES[method]
 
 
 def _protocol_members(protocol: type) -> set[str]:

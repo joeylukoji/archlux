@@ -10,7 +10,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from archlux.export.wilson import intervalle_wilson
+from archlux.export.wilson import wilson_interval
 
 RAW = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats/j7_repair_raw.csv")
 OUT = Path(sys.argv[2] if len(sys.argv) > 2 else "resultats/j7_repair.md")
@@ -37,7 +37,7 @@ for (_, fault, amplitude), runs in sorted(cases.items()):
 for group, runs in sorted(groups.items()):
     n = len(runs)
     fallback = sum(ok(r["True"] if r["True"]["status"] == "ok" else r["False"]) for r in runs)
-    low, high = intervalle_wilson(fallback, n)
+    low, high = wilson_interval(fallback, n)
     rates = [100 * sum(ok(r[p]) for r in runs) / n for p in ("False", "True")]
     cells = f"{rates[0]:.1f} % | {rates[1]:.1f} % | **{100 * fallback / n:.1f} %**"
     lines.append(f"| {group} | {n} | {cells} | [{100 * low:.1f}, {100 * high:.1f}] |")

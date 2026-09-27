@@ -8,8 +8,8 @@ from pathlib import Path
 
 import archlux as ax
 from archlux.certify import verify_exactly
-from archlux.data.corruption import corrompre
-from archlux.data.synthese import TAILLE_MAX, generer_corpus
+from archlux.data.corruption import corrupt
+from archlux.data.synthese import MAX_SIZE, generate_corpus
 from archlux.seeds import derive
 
 SEED = 17
@@ -33,11 +33,11 @@ def context(plan: ax.Plan) -> ax.Context:
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.DictWriter(handle, (*FIELDS, "max_displacement_m"), lineterminator="\n")
     writer.writeheader()
-    for plan_id, plan in sorted(generer_corpus(TAILLE_MAX, seed=SEED).items()):
+    for plan_id, plan in sorted(generate_corpus(MAX_SIZE, seed=SEED).items()):
         ctx = context(plan)
         for amplitude in (0.1, 0.25, 0.5):
             seed = derive(SEED, f"j2/{plan_id}/{amplitude}")
-            faulty, _ = corrompre(plan, seed=seed, amplitude=amplitude)
+            faulty, _ = corrupt(plan, seed=seed, amplitude=amplitude)
             for pavage in (False, True):
                 row = {"plan_id": plan_id, "amplitude_m": amplitude, "pavage": pavage, "seed": seed}
                 row["valid_before"] = verify_exactly(faulty, ctx).valid

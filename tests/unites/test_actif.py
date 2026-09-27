@@ -137,13 +137,13 @@ def test_actif_bat_l_aleatoire() -> None:
     calib_o = [Orientation(0.0) for _ in calib]
 
     def _campagne(acquire: object) -> float:
-        modele = _ModeleLocal()
+        model = _ModeleLocal()
         # Amorçage : 4 points utiles.
         xs0 = tuple(utiles[:4])
         ys0 = np.array([_OracleRegion().evaluate(x, Orientation(0.0)) for x in xs0])
-        modele.fit(xs0, ys0, tuple(Orientation(0.0) for _ in xs0), seed=0)
+        model.fit(xs0, ys0, tuple(Orientation(0.0) for _ in xs0), seed=0)
         boucle = Loop(
-            surrogate=modele,
+            surrogate=model,
             simulateur=_OracleRegion(),
             acquire=acquire,  # type: ignore[arg-type]
             budget=20,

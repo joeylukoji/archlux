@@ -24,7 +24,7 @@ from pathlib import Path
 import archlux as ax
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GridNotRecoverable
-from archlux.export.svg import comparer, render
+from archlux.export.svg import compare, render
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from j8_generation import BUDGETS, _construire, _echelle
@@ -38,7 +38,7 @@ RACINE = Path("resultats/visuels") / ETIQUETTE
 
 def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: float) -> str:
     """Métriques d'un plan, avant et après, en Markdown."""
-    lignes = [
+    rows = [
         f"# {plan_id}",
         "",
         f"Conditionnement `{ETIQUETTE}`, budget de réparation {BUDGET}, "
@@ -63,10 +63,10 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
         f"valide : **{preuve.valid}**",
         "",
     ]
-    lignes += [f"- {v}" for v in preuve.violations] or ["*aucune violation*"]
-    lignes += ["", "## Après — correction", ""]
+    rows += [f"- {v}" for v in preuve.violations] or ["*aucune violation*"]
+    rows += ["", "## Après — correction", ""]
     if corrige is None:
-        lignes += [
+        rows += [
             f"Aucun plan produit : `{statut}`.",
             "",
             "Ce n'est pas un plantage. Un refus de trame signifie que la "
@@ -75,7 +75,7 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
         ]
     else:
         geo = corrige.certificat.geometry
-        lignes += [
+        rows += [
             "| grandeur | valeur |",
             "|---|--:|",
             f"| valide | **{geo.valid}** |",
@@ -83,24 +83,24 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
             f"| rapporté au côté | {geo.max_displacement / diag.size:.0%} |",
             f"| pièces | {len(corrige.rooms)} |",
         ]
-    return "\n".join(lignes) + "\n"
+    return "\n".join(rows) + "\n"
 
 
 def main() -> None:
-    lignes = [json.loads(x) for x in PLANS.read_text(encoding="utf-8").splitlines() if x.strip()]
-    echelle = _echelle(lignes)
+    rows = [json.loads(x) for x in PLANS.read_text(encoding="utf-8").splitlines() if x.strip()]
+    echelle = _echelle(rows)
     compte: dict[str, int] = {}
     index: list[tuple[str, str, str, str]] = []
 
-    for plan_json in lignes:
+    for plan_json in rows:
         bati = _construire(plan_json, echelle)
         if isinstance(bati, str):
             continue
-        plan, contexte, diag = bati
-        preuve = verify_exactly(plan, contexte)
+        plan, context, diag = bati
+        preuve = verify_exactly(plan, context)
         corrige, statut = None, "réparé"
         try:
-            corrige = ax.legalize(plan, contexte, pavage=True, budget_reparation=BUDGET)
+            corrige = ax.legalize(plan, context, pavage=True, budget_reparation=BUDGET)
             if not corrige.certificate.geometry.valid:
                 statut = "corrigé mais invalide"
         except ax.Infeasible:
@@ -123,27 +123,27 @@ def main() -> None:
             # « rien n'a change », alors qu'aucun plan n'a ete produit du tout.
             svg = render(
                 plan,
-                contour=contexte.outline,
+                contour=context.outline,
                 titre=f"{statut} — {avant}",
             )
         else:
-            svg = comparer(
+            svg = compare(
                 plan,
                 corrige,
-                contour=contexte.outline,
+                contour=context.outline,
                 titres=(
                     f"avant — {avant}",
                     f"après — {statut}, déplacement "
                     f"{corrige.certificate.geometry.max_displacement:.2f} m",
                 ),
             )
-        nom = plan_json["id"]
-        (dossier / f"{nom}.svg").write_text(svg, encoding="utf-8")
-        (dossier / f"{nom}.md").write_text(
-            _fiche(nom, plan, diag, preuve, corrige, statut, echelle),
+        name = plan_json["id"]
+        (dossier / f"{name}.svg").write_text(svg, encoding="utf-8")
+        (dossier / f"{name}.md").write_text(
+            _fiche(name, plan, diag, preuve, corrige, statut, echelle),
             encoding="utf-8",
         )
-        index.append((statut, nom, f"{diag.gap_share:.0%}", str(diag.fragments)))
+        index.append((statut, name, f"{diag.gap_share:.0%}", str(diag.fragments)))
 
     RACINE.mkdir(parents=True, exist_ok=True)
     table = [
@@ -154,11 +154,11 @@ def main() -> None:
         "| issue | plan | jour avant | morceaux avant | fiche |",
         "|---|---|--:|--:|---|",
     ]
-    for statut, nom, jour, fragments in sorted(index):
+    for statut, name, jour, fragments in sorted(index):
         rep = statut.replace(" ", "-").replace("(", "").replace(")", "")
         table.append(
-            f"| {statut} | `{nom}` | {jour} | {fragments} | "
-            f"[svg]({rep}/{nom}.svg) · [métriques]({rep}/{nom}.md) |"
+            f"| {statut} | `{name}` | {jour} | {fragments} | "
+            f"[svg]({rep}/{name}.svg) · [métriques]({rep}/{name}.md) |"
         )
     (RACINE / "index.md").write_text("\n".join(table) + "\n", encoding="utf-8")
     print(f"{len(index)} fiches -> {RACINE}")

@@ -168,9 +168,9 @@ class TestVectorisation:
         poly = build_polytope(ORDRE_AB, CTX)
         point = vectorize(PLAN_AB, poly.index)
         point[poly.index["A.w"]] = 3.0
-        resultat = devectorize(point, PLAN_AB, poly.index)
-        assert resultat.openings == PLAN_AB.openings
-        assert resultat.walls == PLAN_AB.walls
+        result = devectorize(point, PLAN_AB, poly.index)
+        assert result.openings == PLAN_AB.openings
+        assert result.walls == PLAN_AB.walls
 
     def test_une_piece_absente_est_signalee(self) -> None:
         """Vectoriser un plan qui n'a pas les pièces de l'ordre est un bogue interne."""

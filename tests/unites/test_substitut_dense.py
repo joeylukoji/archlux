@@ -42,9 +42,9 @@ def _entraine(tmp_path: Path) -> LearnedSurrogate:
     xs, ys, oris = _jeu(seed=17, n=48)
     dense = DenseSurrogate()
     dense.fit(xs, ys, oris, seed=17, epoques=40, lr=0.12)
-    chemin = tmp_path / "dense.npz"
-    empreinte = dense.save(chemin)
-    return LearnedSurrogate(chemin, empreinte, gele=True)
+    path = tmp_path / "dense.npz"
+    fingerprint = dense.save(path)
+    return LearnedSurrogate(path, fingerprint, gele=True)
 
 
 def test_dense_respecte_le_protocole() -> None:
@@ -55,9 +55,9 @@ def test_meilleur_que_analytique(tmp_path: Path) -> None:
     reseau = _entraine(tmp_path)
     xs, ys, oris = _jeu(seed=99, n=24)
 
-    def mae(modele) -> float:
+    def mae(model) -> float:
         return float(
-            np.mean([abs(modele.evaluate(x, o) - y) for x, o, y in zip(xs, oris, ys, strict=True)])
+            np.mean([abs(model.evaluate(x, o) - y) for x, o, y in zip(xs, oris, ys, strict=True)])
         )
 
     assert mae(reseau) < mae(_ANA)
@@ -72,14 +72,14 @@ def test_erreur_stratifiee_par_orientation(tmp_path: Path) -> None:
     reseau = _entraine(tmp_path)
     xs, ys, oris = _jeu(seed=5, n=32)
     noms = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
-    errors: dict[str, list[float]] = {nom: [] for nom in noms}
+    errors: dict[str, list[float]] = {name: [] for name in noms}
     for x, y, ori in zip(xs, ys, oris, strict=True):
-        secteur = noms[int(((ori.deg % 360.0) + 22.5) // 45.0) % 8]
-        errors[secteur].append(abs(reseau.evaluate(x, ori) - y))
-    for secteur, vals in errors.items():
+        sector = noms[int(((ori.deg % 360.0) + 22.5) // 45.0) % 8]
+        errors[sector].append(abs(reseau.evaluate(x, ori) - y))
+    for sector, vals in errors.items():
         if not vals:
             continue
-        assert float(np.mean(vals)) < 25.0, f"échec sur {secteur}"
+        assert float(np.mean(vals)) < 25.0, f"échec sur {sector}"
 
 
 def test_accord_de_signe_point_de_controle(tmp_path: Path) -> None:
@@ -105,8 +105,8 @@ def test_empreinte_divergente_leve(tmp_path: Path) -> None:
     xs, ys, oris = _jeu(seed=3, n=12)
     dense = DenseSurrogate()
     dense.fit(xs, ys, oris, seed=3, epoques=8, lr=0.12)
-    chemin = tmp_path / "dense.npz"
-    dense.save(chemin)
-    reseau = LearnedSurrogate(chemin, "0" * 64, gele=True)
+    path = tmp_path / "dense.npz"
+    dense.save(path)
+    reseau = LearnedSurrogate(path, "0" * 64, gele=True)
     with pytest.raises(InvariantViolation):
         reseau.n_parameters()

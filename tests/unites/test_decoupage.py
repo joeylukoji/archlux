@@ -6,18 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from archlux.bench.protocole import charger_decoupage
+from archlux.bench.protocole import load_split
 from archlux.errors import InvariantViolation
 
 SPLITS = Path(__file__).resolve().parents[2] / "splits" / "v1"
 
 
 def test_aucun_identifiant_partage() -> None:
-    decoupage = charger_decoupage(SPLITS)
+    split = load_split(SPLITS)
     train, calib, test = (
-        set(decoupage.entrainement),
-        set(decoupage.calibration),
-        set(decoupage.test),
+        set(split.train),
+        set(split.calibration),
+        set(split.test),
     )
     assert not (train & calib)
     assert not (train & test)
@@ -25,12 +25,12 @@ def test_aucun_identifiant_partage() -> None:
 
 
 def test_proportions_soixante_vingt_vingt() -> None:
-    decoupage = charger_decoupage(SPLITS)
-    total = len(decoupage.entrainement) + len(decoupage.calibration) + len(decoupage.test)
+    split = load_split(SPLITS)
+    total = len(split.train) + len(split.calibration) + len(split.test)
     assert total == 90
-    assert len(decoupage.entrainement) == 54
-    assert len(decoupage.calibration) == 18
-    assert len(decoupage.test) == 18
+    assert len(split.train) == 54
+    assert len(split.calibration) == 18
+    assert len(split.test) == 18
 
 
 def test_identifiant_duplique_leve(tmp_path: Path) -> None:
@@ -38,4 +38,4 @@ def test_identifiant_duplique_leve(tmp_path: Path) -> None:
     (tmp_path / "calibration.txt").write_text("b\nc\n", encoding="utf-8")
     (tmp_path / "test.txt").write_text("d\n", encoding="utf-8")
     with pytest.raises(InvariantViolation):
-        charger_decoupage(tmp_path)
+        load_split(tmp_path)

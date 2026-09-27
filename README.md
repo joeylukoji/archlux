@@ -594,7 +594,7 @@ The development plan is [`PLAN.md`](PLAN.md); the audit it answers is
 
 ## Reproducibility
 
-`archlux.bench.emettre(seed=...)` builds a **manifest**: version, UTC timestamp, seed,
+`archlux.bench.emit(seed=...)` builds a **manifest**: version, UTC timestamp, seed,
 data fingerprint, split, environment versions, parameters, model fingerprint and
 calibration size. `legalize` itself does not attach one. Format example (illustrative
 values):

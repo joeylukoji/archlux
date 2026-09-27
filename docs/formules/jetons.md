@@ -73,7 +73,7 @@ faux ; il ne devient utile qu'en lot de plans de tailles différentes.
 | Ajouter une composante en fin de vecteur | Réindexer `0:22` — les poids `npz` gelés deviendraient faux sans que rien ne le signale |
 
 !!! warning "Le corpus livré n'exerce pas les jetons de baie"
-    `data.synthese.generer_corpus` produit des plans avec `murs=()` et
+    `data.synthese.generate_corpus` produit des plans avec `murs=()` et
     `ouvertures=()`. Les colonnes `22:29` y sont donc **identiquement nulles**, et
     `SplitFluxOracle` utilise son WWR par défaut (0,30) quelle que soit la
     fenestration. Voir [vérité terrain](../donnees/verite-terrain.md).

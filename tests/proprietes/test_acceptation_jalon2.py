@@ -18,7 +18,7 @@ from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
 @settings(max_examples=500, deadline=None)
 def test_toute_sortie_est_valide(plan: Plan) -> None:
     """`MILESTONE-2.md` §0 : le critère d'acceptation unique du jalon."""
-    resultat = archlux.legalize(plan, CONTEXTE_DEFAUT)
-    assert resultat.certificate is not None
-    assert resultat.certificate.geometry.valid
-    assert resultat.certificate.performance is None
+    result = archlux.legalize(plan, CONTEXTE_DEFAUT)
+    assert result.certificate is not None
+    assert result.certificate.geometry.valid
+    assert result.certificate.performance is None

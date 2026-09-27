@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 5, seventh batch: export, data and bench
+
+- `archlux.export`, `archlux.data` and `archlux.bench` are English: `ExportReport`, `MSDApartment`, `LoadStatistics`, `Split`, `Corruption.corrupt`, `BenchReport`, `Result`, `Interval`... Old names stay importable with a `DeprecationWarning` until 1.0.0.
+- `Corruption`'s Mode values (`deplacer`/`elargir`/`retrecir`/`aplatir`) become `move`/`widen`/`narrow`/`flatten`; `Split`'s and `Corruption`'s fields are renamed without alias (fields, not classes — ADR 0001 rule 6).
+- Prose of all twenty modules is translated to English and enrolled in the language and identifier guards. `legalize`'s own `fusions`/`pavage`/`budget_reparation` parameters are untouched (still the open decision).
+
 ### Remediation — PLAN.md phase 3.9, wave 5, sixth batch: uncertainty, active learning and orientation
 
 - `archlux.uq`, `archlux.active` and `archlux.orient.circulaire` are English: `ConformalCalibrator`, `DriftReport`, `DataManagement`, `CalibrationToken`, `ActiveReport`, `RandomStrategy`, `RegressionResult`, `dominant_direction`... Old names stay importable with a `DeprecationWarning` until 1.0.0.

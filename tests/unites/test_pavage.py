@@ -198,10 +198,10 @@ def test_toute_trame_rendue_est_une_partition_valide(budget: int, degat: float) 
     except GridNotRecoverable:
         return  # refus explicite : c'est l'autre branche du contrat
     grille = np.zeros((len(grid.x_lines) - 1, len(grid.y_lines) - 1), dtype=int)
-    for nom, gauche, droite, bas, haut in grid.incidences:
-        assert gauche < droite, f"{nom} a ses bords inverses en x"
-        assert bas < haut, f"{nom} a ses bords inverses en y"
-        grille[gauche:droite, bas:haut] += 1
+    for name, gauche, droite, low, high in grid.incidences:
+        assert gauche < droite, f"{name} a ses bords inverses en x"
+        assert low < high, f"{name} a ses bords inverses en y"
+        grille[gauche:droite, low:high] += 1
     assert np.all(grille == 1), "la trame rendue n'est pas une partition"
 
 
@@ -308,7 +308,7 @@ def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:
     assert sans.certificate is not None
     assert avec.certificate is not None
     libelles = {libelle for libelle, _ in avec.certificate.duals}
-    assert not any(nom.startswith(("trame ", "contour ")) for nom in libelles)
+    assert not any(name.startswith(("trame ", "contour ")) for name in libelles)
 
 
 def test_plan_sans_piece_est_refuse() -> None:
