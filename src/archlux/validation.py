@@ -128,7 +128,7 @@ def _context(ctx: Context) -> None:
                 "regulation=..., outline=...)",
             )
     _finite("orientation.deg", ctx.orientation.deg)
-    _non_negative("regulation.largeur_min", ctx.regulation.min_width)
+    _non_negative("regulation.min_width", ctx.regulation.min_width)
     for room_type, threshold in ctx.regulation.min_areas:
         _non_negative(f"regulation.min_areas[{room_type}]", threshold)
     for wall in ctx.structure.load_bearing_walls:

@@ -74,7 +74,7 @@ def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: floa
             "une infaisabilité est **prouvée**, certificat de Farkas à l'appui.",
         ]
     else:
-        geo = corrige.certificat.geometry
+        geo = corrige.certificate.geometry
         rows += [
             "| grandeur | valeur |",
             "|---|--:|",

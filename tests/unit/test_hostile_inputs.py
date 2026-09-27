@@ -102,7 +102,7 @@ def test_non_finite_orientation_is_refused(degrees: float) -> None:
 def test_bad_minimum_width_is_refused(largeur_min: float) -> None:
     with pytest.raises(InvalidInput) as raised:
         legalize(make_plan(), make_context(largeur_min=largeur_min))
-    assert raised.value.field == "regulation.largeur_min"
+    assert raised.value.field == "regulation.min_width"
 
 
 def test_bad_outline_is_refused() -> None:

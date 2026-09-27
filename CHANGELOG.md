@@ -35,6 +35,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   a hint.
 - The non-strict `xfail` on `test_a_saturated_budget_is_not_an_internal_error` is
   removed: it passed everywhere (XPASS) and hid the test's result either way.
+- **IFC GlobalIds are stable across renames**: their per-plan salt hashed `repr` of the
+  dataclasses, so renaming a class or a field changed every GlobalId of the same plan;
+  it now hashes the values only, and a test pins one GlobalId.
+- `from archlux.bench import ModeleTrace` works again (deprecated alias).
+- `experiments/j7_sd_etiquettes.py` and `j8_visuels.py` read fields renamed in wave 3
+  (`plan.murs`, `certificat`, `Glazing.ouvertures`) and would have crashed on the
+  corpus.
+- The input door reports `regulation.min_width`, not the French field name.
 - `json_io.__all__` listed `SCHEMA_VERSION` twice; `.gitignore` follows `results/`.
 - **Behaviour change, documented**: the guarantee bench labels methods by class name,
   and derives its bootstrap seed from that label; the rename of the surrogate classes

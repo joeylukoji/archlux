@@ -112,3 +112,12 @@ def test_two_different_plans_share_no_global_id(tmp_path: Path) -> None:
         ids.append(set(re.findall(r"^#\d+=IFC\w+\('([^']*)'", text, re.M)))
     assert not ids[0] & ids[1]
     assert ids[0] == ids[2]  # deterministic for one plan
+
+
+def test_the_global_ids_do_not_depend_on_class_or_field_names(tmp_path: Path) -> None:
+    """Review of the stack (#6): the salt hashed ``repr`` of the dataclasses, so the English
+    rename changed every GlobalId of the same plan. Pinned: change it only on purpose."""
+    to_ifc(_plan(), tmp_path / "plan.ifc", validate=True)
+    project = re.search(r"IFCPROJECT\('([^']*)'", (tmp_path / "plan.ifc").read_text())
+    assert project is not None
+    assert project.group(1) == "0Iie9ISb$ViPPopaAp6Tto"

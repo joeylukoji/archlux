@@ -56,14 +56,14 @@ def vecteurs(lot: list) -> tuple[tuple, np.ndarray, tuple, tuple]:
         xs.append(vectorize(appart.plan, poly.index))
         cibles.append(ys[index[id(appart)]])
         oris.append(appart.context.orientation)
-        fen.append(Glazing(walls=appart.plan.murs, openings=appart.plan.ouvertures))
+        fen.append(Glazing(walls=appart.plan.walls, openings=appart.plan.openings))
     return tuple(xs), np.asarray(cibles, dtype=float), tuple(oris), tuple(fen)
 
 
 x_tr, y_tr, o_tr, b_tr = vecteurs(train)
 x_ca, y_ca, o_ca, b_ca = vecteurs(calib)
 x_te, y_te, o_te, b_te = vecteurs(test)
-print(f"baies par appartement : median {int(np.median([len(b.ouvertures) for b in b_tr]))}")
+print(f"baies par appartement : median {int(np.median([len(b.openings) for b in b_tr]))}")
 print(f"train {len(x_tr)} | calibration {len(x_ca)} | test {len(x_te)} (par site)")
 
 ana = AnalyticSurrogate()

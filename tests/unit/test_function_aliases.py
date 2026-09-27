@@ -150,6 +150,7 @@ ALIASES = [
     ("archlux.bench.stats", "puissance", "power"),
     # Found untested by the review of the stack (PRs #11, #14, #15).
     ("archlux.export", "diagnostiquer", "diagnose"),
+    ("archlux.bench", "ModeleTrace", "ModelTrace"),
     ("archlux.orient.circulaire", "difference_angulaire", "angular_difference"),
     ("archlux.orient.circulaire", "direction_dominante", "dominant_direction"),
     ("archlux.orient.circulaire", "regression_circulaire_lineaire", "circular_linear_regression"),
