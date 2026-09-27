@@ -5,7 +5,7 @@ marge s'ouvre, l'objectif chute, et l'optimiseur est dissuadé d'y aller. Le gar
 n'est pas ajouté : il découle de l'incertitude.
 
 ``q_chapeau`` est un **flottant** déjà calibré. Ce module n'importe pas ``uq``
-(`ARCHITECTURE.md` §5 : ``light`` ← ``types``, ``erreurs``, ``orient``).
+(`ARCHITECTURE.md` §5 : ``light`` ← ``types``, ``errors``, ``orient``).
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
-from archlux.light.protocole import Baies, Substitut
-from archlux.types import Orientation
+from archlux.errors import InvariantViolation
+from archlux.light.protocole import Glazing, Surrogate
+from archlux.types import Indicator, Orientation
 
 __all__ = ["Daylight"]
 
@@ -25,28 +25,28 @@ _EPS_SIGMA = 1e-5
 
 @dataclass(frozen=True, slots=True)
 class Daylight:
-    """Substitut dont :meth:`evaluer` rend la borne pessimiste ``μ − q σ``.
+    """Substitut dont :meth:`evaluate` rend la borne pessimiste ``μ − q σ``.
 
     Implémente :class:`~archlux.light.protocole.Substitut` : Frank-Wolfe n'a pas à
     savoir que l'objectif est une borne plutôt qu'une prédiction.
     """
 
-    substitut: Substitut
+    surrogate: Surrogate
     q_chapeau: float
     pessimiste: bool = True
 
     def __post_init__(self) -> None:
         """Refuser un quantile négatif : la marge conforme n'inverse pas le sens."""
         if self.q_chapeau < 0.0:
-            raise InvariantViole(("q_chapeau doit être ≥ 0",))
+            raise InvariantViolation(("q_chapeau doit être ≥ 0",))
 
     @property
-    def indicateur(self) -> str:
+    def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé, délégué au substitut enveloppé."""
-        return self.substitut.indicateur
+        return self.surrogate.indicator
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Rendre ``μ̂ − q̂ σ̂`` si ``pessimiste``, sinon ``μ̂`` seul.
 
@@ -71,35 +71,37 @@ class Daylight:
         ``μ − qσ`` reste le bon sens sous maximisation : l'incertitude
         détériore l'objectif. Ne pas envelopper un ASE positif brut.
         """
-        mu = float(self.substitut.evaluer(x, orientation, baies=baies))
+        mu = float(self.surrogate.evaluate(x, orientation, glazing=glazing))
         if not self.pessimiste:
             return mu
-        sigma = float(self.substitut.incertitude(x, orientation, baies=baies))
+        sigma = float(self.surrogate.uncertainty(x, orientation, glazing=glazing))
         return mu - self.q_chapeau * sigma
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """``∇μ − q̂ ∇σ``. ``∇σ`` par différences finies centrées (Nocedal §8.1)."""
-        grad_mu = np.asarray(self.substitut.gradient(x, orientation, baies=baies), dtype=float)
+        grad_mu = np.asarray(self.surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
         if not self.pessimiste:
             return grad_mu
-        return grad_mu - self.q_chapeau * self._gradient_incertitude(x, orientation, baies)
+        return grad_mu - self.q_chapeau * self._gradient_incertitude(x, orientation, glazing)
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Écart-type du substitut enveloppé, inchangé."""
-        return float(self.substitut.incertitude(x, orientation, baies=baies))
+        return float(self.surrogate.uncertainty(x, orientation, glazing=glazing))
 
     def __call__(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> tuple[float, np.ndarray]:
-        """Rendre ``(J, ∇J)`` d'un coup, même convention que :meth:`evaluer`."""
-        return self.evaluer(x, orientation, baies=baies), self.gradient(x, orientation, baies=baies)
+        """Rendre ``(J, ∇J)`` d'un coup, même convention que :meth:`evaluate`."""
+        return self.evaluate(x, orientation, glazing=glazing), self.gradient(
+            x, orientation, glazing=glazing
+        )
 
     def _gradient_incertitude(
-        self, x: np.ndarray, orientation: Orientation, baies: Baies | None
+        self, x: np.ndarray, orientation: Orientation, glazing: Glazing | None
     ) -> np.ndarray:
         x0 = np.asarray(x, dtype=float).ravel()
         grad = np.empty_like(x0)
@@ -108,7 +110,7 @@ class Daylight:
             moins = x0.copy()
             plus[i] += _EPS_SIGMA
             moins[i] -= _EPS_SIGMA
-            haut = float(self.substitut.incertitude(plus, orientation, baies=baies))
-            bas = float(self.substitut.incertitude(moins, orientation, baies=baies))
+            haut = float(self.surrogate.uncertainty(plus, orientation, glazing=glazing))
+            bas = float(self.surrogate.uncertainty(moins, orientation, glazing=glazing))
             grad[i] = (haut - bas) / (2.0 * _EPS_SIGMA)
         return grad

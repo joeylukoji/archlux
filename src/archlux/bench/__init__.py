@@ -1,30 +1,49 @@
-"""Protocole d'évaluation. Feuille de l'arbre : personne n'importe ce paquet."""
+"""Evaluation protocol. Leaf of the tree: nothing imports this package."""
 
-from archlux.bench.graines import deriver
-from archlux.bench.manifeste import emettre
-from archlux.bench.protocole import Decoupage, charger_decoupage, compare
-from archlux.bench.rapport import RapportBanc, StrateOrientation, report
-from archlux.bench.run import LigneBrute, Manifest, Resultat, run
-from archlux.bench.stats import Intervalle, bootstrap_apparie, holm, puissance, tost
-from archlux.types import ModeleTrace
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.bench.graines import derive
+from archlux.bench.manifeste import emit
+from archlux.bench.protocole import Split, compare, load_split
+from archlux.bench.rapport import BenchReport, OrientationStratum, report
+from archlux.bench.run import Manifest, RawRow, Result, run
+from archlux.bench.stats import Interval, holm, paired_bootstrap, power, tost
+from archlux.types import ModelTrace
 
 __all__ = [
-    "Decoupage",
-    "Intervalle",
-    "LigneBrute",
+    "BenchReport",
+    "Interval",
     "Manifest",
-    "ModeleTrace",
-    "RapportBanc",
-    "Resultat",
-    "StrateOrientation",
-    "bootstrap_apparie",
-    "charger_decoupage",
+    "ModelTrace",
+    "OrientationStratum",
+    "RawRow",
+    "Result",
+    "Split",
     "compare",
-    "deriver",
-    "emettre",
+    "derive",
+    "emit",
     "holm",
-    "puissance",
+    "load_split",
+    "paired_bootstrap",
+    "power",
     "report",
     "run",
     "tost",
 ]
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "Decoupage": Alias(Split, "archlux.bench.Split"),
+        "ModeleTrace": Alias(ModelTrace, "archlux.bench.ModelTrace"),
+        "Intervalle": Alias(Interval, "archlux.bench.Interval"),
+        "LigneBrute": Alias(RawRow, "archlux.bench.RawRow"),
+        "RapportBanc": Alias(BenchReport, "archlux.bench.BenchReport"),
+        "Resultat": Alias(Result, "archlux.bench.Result"),
+        "StrateOrientation": Alias(OrientationStratum, "archlux.bench.OrientationStratum"),
+        "bootstrap_apparie": Alias(paired_bootstrap, "archlux.bench.paired_bootstrap"),
+        "charger_decoupage": Alias(load_split, "archlux.bench.load_split"),
+        "deriver": Alias(derive, "archlux.bench.derive"),
+        "emettre": Alias(emit, "archlux.bench.emit"),
+        "puissance": Alias(power, "archlux.bench.power"),
+    },
+)

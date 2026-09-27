@@ -1,94 +1,126 @@
-"""Faisabilité géométrique d'un programme (preuve exacte, sans lumière)."""
+"""Geometric feasibility of a program (exact proof, no daylight)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.api import legalize
-from archlux.erreurs import Infaisable
-from archlux.types import Contexte, Plan, Structure
+from archlux.errors import GapNeedsTiling, Infeasible
+from archlux.types import Context, Plan, Structure
 
-__all__ = ["CertificatFaisabilite", "Verdict", "is_feasible"]
+__all__ = ["FeasibilityCertificate", "Verdict", "is_feasible"]
 
 
 @dataclass(frozen=True, slots=True)
-class CertificatFaisabilite:
-    """Preuve d'inexistence (Farkas), never probabilistic.
+class FeasibilityCertificate:
+    """Proof of non-existence (Farkas), never probabilistic.
 
     Exact when ``verified`` is True: the certificate was checked in rational arithmetic
     (:func:`archlux.certify.farkas.verify_infeasibility`). It is about the relative order
     read from the proposed plan: another order might admit a valid plan.
     """
 
-    origines: tuple[str, ...]
-    certificat_farkas: object
+    origins: tuple[str, ...]
+    farkas_certificate: object
     verified: bool | None = None
+    scope: tuple[str, ...] = ()
+    """Restrictions beyond the relative order the proof is about (``Infeasible.scope``)."""
 
-    def expliquer(self) -> str:
-        """Rendre le conflit en une phrase lisible."""
+    def explain(self) -> str:
+        """Render the conflict as one readable sentence."""
         status = {
             True: " Certificate verified exactly.",
             False: " Certificate NOT verified: treat as a solver diagnosis, not a proof.",
             None: "",
         }[self.verified]
-        if not self.origines:
-            return f"Infeasible for this relative order: no constraint identified.{status}"
-        causes = ", ".join(self.origines)
-        return f"Infeasible for this relative order: conflicting constraints [{causes}].{status}"
+        within = f" with {', '.join(self.scope)}" if self.scope else ""
+        if not self.origins:
+            return f"Infeasible for this relative order{within}: no constraint identified.{status}"
+        causes = ", ".join(self.origins)
+        return (
+            f"Infeasible for this relative order{within}: "
+            f"conflicting constraints [{causes}].{status}"
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class Verdict:
-    """Réponse de :func:`is_feasible`."""
+    """Answer of :func:`is_feasible`."""
 
-    faisable: bool
-    certificat: CertificatFaisabilite | None = None
+    feasible: bool
+    certificate: FeasibilityCertificate | None = None
 
     def __bool__(self) -> bool:
-        """``True`` ssi le programme admet au moins un plan valide."""
-        return self.faisable
+        """``True`` if and only if the program admits at least one valid plan."""
+        return self.feasible
 
 
-def is_feasible(programme: Plan, structure: Structure, ctx: Contexte) -> Verdict:
-    """Décider si un programme (ordre relatif fixé) admet un plan valide.
+def _legalize_any_dimensions(program: Plan, ctx: Context) -> None:
+    """Legalize, closing a gap of the proposal with the tiling grid if needed.
+
+    The program is not asked to keep its dimensions: a gap in the proposal is not a
+    reason to refuse. The retry adds the tiling grid to the scope of any refusal.
+    """
+    try:
+        legalize(program, ctx)
+    except GapNeedsTiling:
+        legalize(program, ctx, pavage=True)
+
+
+def is_feasible(program: Plan, structure: Structure, ctx: Context) -> Verdict:
+    """Decide whether a program (relative order fixed) admits a valid plan.
 
     Parameters
     ----------
-    programme : Plan
-        Identités, types et disposition proposée ; l'**ordre relatif** est déduit.
-        Les cotes ne sont pas un objectif à préserver (contrairement à ``legalize``).
+    program : Plan
+        Identities, types and proposed layout; the **relative order** is deduced. The
+        dimensions are not an objective to preserve (unlike in ``legalize``).
     structure : Structure
-        Remplace ``ctx.structure`` pour cette requête.
-    ctx : Contexte
-        Contour et référentiel. L'orientation n'entre pas dans la décision géométrique.
+        Replaces ``ctx.structure`` for this query.
+    ctx : Context
+        Outline and regulation. The orientation plays no part in the geometric decision.
 
     Returns
     -------
     Verdict
-        ``faisable`` exact ; si faux, ``certificat.expliquer()`` cite les origines Farkas.
+        ``feasible`` is exact; if false, ``certificate.explain()`` cites the Farkas origins.
 
     Raises
     ------
-    OrdreIncoherent, SeparationManquante
-        Entrée mal formée (propagées depuis la construction du graphe).
+    InvalidInput
+        Malformed argument (non-finite size, duplicate ids, ...), before any solving.
+    InconsistentOrder, MissingSeparation
+        Malformed input (propagated from the construction of the graph).
     UnsupportedInput
         An oblique load-bearing wall (propagated from :func:`archlux.legalize`).
 
     Guarantees
     ----------
-    - Géométrique : **exacte** (même oracle LP / Farkas que ``legalize``).
-    - Performance : **aucune** — ce module ne parle pas de lumière.
+    - Geometric: **exact** (same LP / Farkas oracle as ``legalize``).
+    - Performance: **none**; this module says nothing about daylight.
     """
-    contexte = replace(ctx, structure=structure)
+    context = replace(ctx, structure=structure)
     try:
-        legalize(programme, contexte)
-    except Infaisable as err:
+        _legalize_any_dimensions(program, context)
+    except Infeasible as err:
         return Verdict(
-            faisable=False,
-            certificat=CertificatFaisabilite(
-                origines=err.origines,
-                certificat_farkas=err.certificat_farkas,
+            feasible=False,
+            certificate=FeasibilityCertificate(
+                origins=err.origins,
+                farkas_certificate=err.farkas_certificate,
                 verified=err.verified,
+                scope=err.scope,
             ),
         )
-    return Verdict(faisable=True, certificat=None)
+    return Verdict(feasible=True, certificate=None)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "CertificatFaisabilite": Alias(
+            FeasibilityCertificate, "archlux.feasibility.FeasibilityCertificate"
+        ),
+    },
+)

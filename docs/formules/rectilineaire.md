@@ -42,7 +42,7 @@ reste linéaire.
 
 | Faire | Ne pas faire |
 |---|---|
-| Découper puis passer les sous-rectangles comme `Piece` | Stocker un polygone L brut dans `Plan.pieces` |
+| Découper puis passer les sous-rectangles comme `Room` | Stocker un polygone L brut dans `Plan.rooms` |
 | Fixer la convention verticale-gauche | Changer l'ordre de coupe selon l'entrée |
 | Budget < 40 ms pour 15 pièces dont 4 en L | Décomposition trop fine (grille cellulaire) |
 

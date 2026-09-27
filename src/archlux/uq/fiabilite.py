@@ -1,7 +1,7 @@
-"""Diagrammes de fiabilité et score CRPS — sans aucune figure matplotlib.
+"""Reliability diagrams and CRPS score — with no matplotlib figure whatsoever.
 
-Le diagnostic est un tableau ``(nominal, empirique)``. Le tracer est l'affaire du
-carnet d'expérience, pas du noyau.
+The diagnostic is an array ``(nominal, empirique)``. Plotting it is the job of the
+experiment notebook, not of the core.
 """
 
 from __future__ import annotations
@@ -10,19 +10,18 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.special import erf
-from scipy.stats import beta
 
-from archlux.erreurs import InvariantViole
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.errors import InvariantViolation
 from archlux.types import Regime
-from archlux.uq.conforme import CalibrateurConforme, quantile_conforme
+from archlux.uq.conforme import ConformalCalibrator, conformal_quantile
 
 __all__ = [
     "CoverageReport",
     "crps",
-    "diagramme_fiabilite",
     "measure_coverage",
-    "stratifier_par_orientation",
+    "reliability_diagram",
+    "stratify_by_orientation",
 ]
 
 _SIGMA_MIN = 1e-12
@@ -30,23 +29,25 @@ _N_SECTEURS = 8
 
 
 def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray) -> float:
-    """CRPS gaussien moyen (Gneiting & Raftery), en unité de l'indicateur.
+    """Mean Gaussian CRPS (Gneiting & Raftery), in the unit of the indicator.
 
     Parameters
     ----------
     predictions, verites, incertitudes : numpy.ndarray
-        ``μ``, ``y``, ``σ`` point par point.
+        ``mu``, ``y``, ``sigma`` point by point.
 
     Returns
     -------
     float
-        Plus petit est meilleur. ``σ`` trop large ou trop étroit dégrade le score.
+        Smaller is better. A ``sigma`` too wide or too narrow degrades the score.
     """
     mu = np.asarray(predictions, dtype=float).ravel()
     y = np.asarray(verites, dtype=float).ravel()
     sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
     if mu.size != y.size or mu.size != sigma.size or mu.size == 0:
-        raise InvariantViole(("tableaux CRPS de longueurs incompatibles",))
+        raise InvariantViolation(("CRPS arrays have incompatible lengths",))
+    from scipy.special import erf  # lazy: scipy.special costs 0.8 s at import
+
     z = (y - mu) / sigma
     pdf = np.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
     cdf = 0.5 * (1.0 + erf(z / math.sqrt(2.0)))
@@ -54,7 +55,7 @@ def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray)
     return float(np.mean(termes))
 
 
-def diagramme_fiabilite(
+def reliability_diagram(
     predictions: np.ndarray,
     verites: np.ndarray,
     incertitudes: np.ndarray,
@@ -62,41 +63,41 @@ def diagramme_fiabilite(
     *,
     scores_calibration: np.ndarray | None = None,
 ) -> np.ndarray:
-    """Couverture empirique en fonction de la couverture nominale.
+    """Empirical coverage as a function of the nominal coverage.
 
     Parameters
     ----------
     predictions, verites, incertitudes : numpy.ndarray
-        Même convention que :func:`crps`. Ce sont les points **évalués**.
+        Same convention as :func:`crps`. These are the **evaluated** points.
     niveaux : numpy.ndarray or None, optional
-        Niveaux nominaux dans ``(0, 1)``. Défaut : 20 points de 0,50 à 0,99.
+        Nominal levels in ``(0, 1)``. Default: 20 points from 0.50 to 0.99.
     scores_calibration : numpy.ndarray or None, optional
-        Scores de non-conformité d'un jeu de calibration **disjoint**. Fournis, les
-        quantiles conformes en sont tirés et la couverture est mesurée hors
-        échantillon : le diagramme devient informatif. Absents (défaut), le
-        comportement historique est conservé — voir les notes.
+        Non-conformity scores from a **disjoint** calibration set. If given, the
+        conformal quantiles are drawn from it and coverage is measured out of
+        sample: the diagram becomes informative. If absent (default), the historical
+        behavior is kept — see the notes.
 
     Returns
     -------
     numpy.ndarray
-        Shape ``(n_niveaux, 2)`` : colonne 0 = nominal, colonne 1 = empirique.
-        Les niveaux trop exigeants pour ``n`` reçoivent ``nan``.
+        Shape ``(n_niveaux, 2)``: column 0 = nominal, column 1 = empirical. Levels too
+        demanding for ``n`` receive ``nan``.
 
     Notes
     -----
-    **Sans ``scores_calibration``, la colonne empirique est une tautologie.** Le
-    quantile ``q̂`` est alors calculé sur les scores mêmes dont on mesure la couverture ;
-    par construction, ``mean(scores ≤ q̂) = ceil((n + 1)(1 − α)) / n``, indépendamment
-    de la qualité de ``σ̂``. Un ``σ̂`` constant, aberrant ou tiré au hasard donne
-    exactement la même courbe. Ce mode ne sert donc qu'à vérifier l'arithmétique du
-    quantile, jamais à valider la calibration : toute figure publiée doit passer un jeu
-    de calibration disjoint.
+    **Without ``scores_calibration``, the empirical column is a tautology.** The
+    quantile ``q_hat`` is then computed on the very scores whose coverage is being
+    measured; by construction, ``mean(scores <= q_hat) = ceil((n + 1)(1 - alpha)) / n``,
+    regardless of the quality of ``sigma_hat``. A constant, aberrant, or randomly
+    drawn ``sigma_hat`` gives exactly the same curve. This mode is therefore only
+    useful to check the quantile arithmetic, never to validate calibration: any
+    published figure must pass a disjoint calibration set.
     """
     pred = np.asarray(predictions, dtype=float).ravel()
     verite = np.asarray(verites, dtype=float).ravel()
     sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
     if pred.size != verite.size or pred.size != sigma.size or pred.size == 0:
-        raise InvariantViole(("tableaux du diagramme de longueurs incompatibles",))
+        raise InvariantViolation(("diagram arrays have incompatible lengths",))
     if niveaux is None:
         cibles = np.linspace(0.50, 0.99, 20)
     else:
@@ -111,8 +112,8 @@ def diagramme_fiabilite(
     for gamma in cibles:
         alpha = 1.0 - float(gamma)
         try:
-            q_chapeau = quantile_conforme(reference, alpha)
-        except InvariantViole:
+            q_chapeau = conformal_quantile(reference, alpha)
+        except InvariantViolation:
             lignes.append([float(gamma), float("nan")])
             continue
         empirique = float(np.mean(scores <= q_chapeau))
@@ -120,34 +121,34 @@ def diagramme_fiabilite(
     return np.asarray(lignes, dtype=float)
 
 
-def stratifier_par_orientation(
+def stratify_by_orientation(
     degres: np.ndarray, *, n_secteurs: int = _N_SECTEURS
 ) -> dict[int, np.ndarray]:
-    """Indices par secteur d'azimut, pour une couverture stratifiée.
+    """Indices per azimuth sector, for stratified coverage.
 
     Parameters
     ----------
     degres : numpy.ndarray
-        Azimuts en degrés.
+        Azimuths in degrees.
     n_secteurs : int, optional
-        Découpage (défaut 8).
+        Number of sectors (default 8).
 
     Returns
     -------
     dict of int to numpy.ndarray
-        Secteur → indices. Le secteur ``k`` couvre ``[k·360/n, (k+1)·360/n[``.
+        Sector -> indices. Sector ``k`` covers ``[k*360/n, (k+1)*360/n[``.
 
     Notes
     -----
-    Les secteurs sont **alignés sur les bords**, pas centrés : le secteur 0 est
-    ``[0°, 45°[`` et non la rose des vents « N » ``[-22,5°, 22,5°[``. Deux azimuts
-    voisins du nord (1° et 359°) tombent donc dans des secteurs différents.
-    :func:`archlux.orient.circulaire.stratifier`, elle, centre ses secteurs et nomme
-    ``N, NE, …`` : les deux découpages ne sont **pas** interchangeables. Ici seule la
-    partition importe (couverture par strate), pas le nom du secteur.
+    Sectors are **edge-aligned**, not centered: sector 0 is ``[0deg, 45deg[`` and not
+    the "N" compass rose ``[-22.5deg, 22.5deg[``. Two azimuths close to north (1deg
+    and 359deg) therefore fall in different sectors.
+    :func:`archlux.orient.circulaire.stratifier` centers its sectors instead and names
+    them ``N, NE, ...``: the two partitions are **not** interchangeable. Here only the
+    partition matters (coverage by stratum), not the sector's name.
     """
     if n_secteurs < 2:
-        raise InvariantViole(("n_secteurs doit être ≥ 2",))
+        raise InvariantViolation(("n_secteurs must be >= 2",))
     angles = np.asarray(degres, dtype=float).ravel() % 360.0
     largeur = 360.0 / float(n_secteurs)
     bacs = np.floor(angles / largeur).astype(int)
@@ -189,7 +190,7 @@ class CoverageReport:
 
 
 def measure_coverage(
-    calibrator: CalibrateurConforme,
+    calibrator: ConformalCalibrator,
     predictions: np.ndarray,
     truths: np.ndarray,
     uncertainties: np.ndarray,
@@ -200,11 +201,11 @@ def measure_coverage(
 
     Parameters
     ----------
-    calibrator : CalibrateurConforme
+    calibrator : ConformalCalibrator
         Fitted calibrator.
     predictions, truths, uncertainties : numpy.ndarray
         ``mu``, the oracle value and ``sigma``, point by point (the order of
-        :meth:`CalibrateurConforme.ajuster`), on a sample **never used for calibration**.
+        :meth:`ConformalCalibrator.fit`), on a sample **never used for calibration**.
     regime : {"exchangeable", "selected"}
         Regime of the sample: ``"selected"`` when an optimizer chose the plans.
 
@@ -214,7 +215,7 @@ def measure_coverage(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         Arrays of different lengths, fewer than two points, a non-finite value, or an
         uncertainty that is not strictly positive (``borne`` would refuse it midway).
     """
@@ -222,21 +223,38 @@ def measure_coverage(
         np.asarray(a, dtype=float).ravel() for a in (predictions, uncertainties, truths)
     )
     if not mu.size == sigma.size == y.size or mu.size < 2:
-        raise InvariantViole((f"need >= 2 aligned points, got {mu.size}, {sigma.size}, {y.size}",))
+        raise InvariantViolation(
+            (f"need >= 2 aligned points, got {mu.size}, {sigma.size}, {y.size}",)
+        )
     if not (np.isfinite(mu).all() and np.isfinite(y).all() and np.isfinite(sigma).all()):
-        raise InvariantViole(("predictions, truths and uncertainties must be finite",))
+        raise InvariantViolation(("predictions, truths and uncertainties must be finite",))
     if (sigma <= 0.0).any():
-        raise InvariantViole(("every uncertainty must be strictly positive",))
+        raise InvariantViolation(("every uncertainty must be strictly positive",))
     bounds = [
         calibrator.borne(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
     ]
-    inside = [b.borne_inf <= t <= b.borne_sup for b, t in zip(bounds, y, strict=True)]
+    inside = [b.lower <= t <= b.upper for b, t in zip(bounds, y, strict=True)]
+    from scipy.stats import beta  # lazy: scipy.stats costs 1.3 s at import
+
     k, n = int(np.sum(inside)), int(mu.size)
     return CoverageReport(
         n=n,
         coverage=k / n,
-        mean_width=float(np.mean([b.borne_sup - b.borne_inf for b in bounds])),
+        mean_width=float(np.mean([b.upper - b.lower for b in bounds])),
         target_std=float(np.std(y, ddof=1)),
         coverage_low=float(beta.ppf(0.025, k, n - k + 1)) if k > 0 else 0.0,
         coverage_high=float(beta.ppf(0.975, k + 1, n - k)) if k < n else 1.0,
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "diagramme_fiabilite": Alias(
+            reliability_diagram, "archlux.uq.fiabilite.reliability_diagram"
+        ),
+        "stratifier_par_orientation": Alias(
+            stratify_by_orientation, "archlux.uq.fiabilite.stratify_by_orientation"
+        ),
+    },
+)

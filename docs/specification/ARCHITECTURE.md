@@ -23,7 +23,7 @@ The output carries **two guarantees of different kinds**:
 | Guarantee | Kind | Verification |
 |---|---|---|
 | Geometric | **exact** on the model (axis-aligned rectangles) | `certify.proof.verify_exactly`: rational arithmetic on an axis-aligned rectangular outline (only tolerance: `SNAP_M` on lengths), GEOS with declared tolerances otherwise; infeasibility by a Farkas certificate verified exactly, **for the proposed relative order** |
-| Daylight performance | **probabilistic** | conformal prediction; coverage ≥ 1−α **only** in the `"exchangeable"` regime. A plan chosen by the optimizer is in the `"selected"` regime: coverage **not** guaranteed (`BornePerformance.regime`) |
+| Daylight performance | **probabilistic** | conformal prediction; coverage ≥ 1−α **only** in the `"exchangeable"` regime. A plan chosen by the optimizer is in the `"selected"` regime: coverage **not** guaranteed (`PerformanceBound.regime`) |
 
 **Never confuse them, not in the code, not in the types, not in the messages.**
 
@@ -47,7 +47,7 @@ x = lmo.resoudre(poly_l1, c=gradient_distance(x_propose))
 s = lmo.resoudre(poly_fw, c=-substitut.gradient(x_k, orientation), depart=x_k)
 ```
 
-**Daylight oracle.** The core only knows the `Substitut` protocol.
+**Daylight oracle.** The core only knows the `Surrogate` protocol.
 Shipped implementations: `SubstitutAnalytique` (closed forms), `SplitFluxOracle`
 (analytic + BRE split-flux: the **frozen oracle** of the CI, a closed form, neither a
 simulation nor a ground truth), `SubstitutDense` (`numpy` perceptron) and
@@ -94,11 +94,11 @@ measuring a cold LP.
 
 | Module | Single responsibility | Learned? |
 |---|---|---|
-| `types` | `Plan`, `Piece`, `Ouverture`, `Mur`, `Contexte`, `Certificat` | no |
+| `types` | `Plan`, `Room`, `Opening`, `Wall`, `Context`, `Certificate` | no |
 | `geom` | relative order → constraint graph → polytope | no |
 | `lmo` | solve `min <c,x>` over the polytope. **Ignores where `c` comes from** | no |
 | `solve` | Frank-Wolfe (+ away-steps, warm start, cuts) | no |
-| `light` | `Substitut` protocol: `evaluer`, `gradient`, `incertitude` | **yes** |
+| `light` | `Surrogate` protocol: `evaluate`, `gradient`, `incertitude` | **yes** |
 | `orient` | circular encoding and statistics | no |
 | `uq` | conformal calibration, drift control | no |
 | `active` | selection of plans to simulate (uncertainty × density) | no |
@@ -114,7 +114,8 @@ measuring a cold LP.
 
 ```
 types   ← everyone
-tolerances, seeds ← everyone   (leaves: they import nothing from archlux)
+tolerances, seeds, arrays ← everyone   (leaves: they import nothing from archlux)
+validation ← types, errors   (door checks of the public arguments; imported by api)
 geom    ← types
 lmo     ← types, geom
 solve   ← types, geom, lmo, light PROTOCOL (never the implementation)
@@ -122,8 +123,8 @@ light   ← types, orient
 uq      ← types
 data    ← types, uq, orient, geom   (corpus loaders: straightening + split)
 active  ← types, light.protocole, uq
-export  ← types, erreurs
-feasibility ← types, erreurs, api
+export  ← types, errors
+feasibility ← types, errors, api
 certify ← types, geom, uq
 bench   ← everything
 ```
@@ -155,27 +156,27 @@ def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/tes
 ## 6. Data model — invariants
 
 ```python
-@dataclass(frozen=True, slots=True)
-class Piece:
+@dataclass(frozen=True, slots=True, kw_only=True)   # Piece, Mur, Ouverture: keyword-only
+class Room:
     id: str; type: str
     x: float; y: float; w: float; h: float      # metres
 
-@dataclass(frozen=True, slots=True)
-class Ouverture:
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Opening:
     id: str
-    mur_id: str            # ← relative to a wall
+    wall_id: str            # ← relative to a wall
     s: float               # relative abscissa ∈ [0,1]
-    largeur_rel: float     # ∈ ]0,1]
-    hauteur_allege: float = 1.00
-    hauteur_linteau: float = 2.15
+    relative_width: float     # ∈ ]0,1]
+    sill_height: float = 1.00
+    head_height: float = 2.15
 
 @dataclass(frozen=True, slots=True)
 class Plan:
-    pieces: tuple[Piece, ...]
-    murs: tuple[Mur, ...]
-    ouvertures: tuple[Ouverture, ...]
-    contour: tuple[tuple[float, float], ...]
-    certificat: "Certificat | None" = None
+    rooms: tuple[Room, ...]
+    walls: tuple[Wall, ...] = ()
+    openings: tuple[Opening, ...] = ()
+    outline: tuple[tuple[float, float], ...] = ()   # empty: taken from Contexte.contour
+    certificate: "Certificat | None" = None
 ```
 
 **Absolute rules:**
@@ -183,8 +184,8 @@ class Plan:
 - [ ] All types are `frozen=True` — **never any in-place mutation**
 - [ ] The **absolute** position of an opening is **never stored**, always derived
 - [ ] A legalized plan **always** carries its certificate
-- [ ] `PreuveGeometrique` has **no** probability field
-- [ ] `BornePerformance` **always** carries `couverture` and `n_calibration`
+- [ ] `GeometricProof` has **no** probability field
+- [ ] `PerformanceBound` **always** carries `couverture` and `n_calibration`
 
 ---
 
@@ -196,7 +197,7 @@ class Plan:
 | Origin | bottom-left corner of the outline, y axis towards geographic north |
 | Seeds | `seed: int` argument **mandatory, with no default**, on every function that samples |
 | Metrics | return **value + interval**, never a bare scalar |
-| Errors | typed exceptions (`OrdreIncoherent`, `Infaisable`, `InvariantViole`) — never `Exception` |
+| Errors | typed exceptions (`InconsistentOrder`, `Infeasible`, `InvariantViolation`) — never `Exception` |
 | Logs | `structlog`, structured logging, never free text |
 | Style | `ruff check` + `ruff format` + `mypy --strict` on `src/` |
 | Language | **English** for code, API, docstrings, messages, tests and documentation. New code is English now; existing French is migrated batch by batch ([ADR 0001](../adr/0001-english-first.md), [glossary](../glossary.md)). This file was translated in batch E3 |
@@ -265,9 +266,11 @@ archlux/
 │   ├── __init__.py          # public interface ONLY
 │   ├── _version.py          # single source of the version
 │   ├── api.py               # legalize
-│   ├── erreurs.py           # typed exceptions
+│   ├── errors.py            # typed exceptions (`erreurs.py`: deprecated alias module)
 │   ├── tolerances.py        # registry of numerical tolerances
+│   ├── validation.py        # `validate_inputs`: InvalidInput at the door of legalize
 │   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer
+│   ├── arrays.py            # `VecteurF`, the float64 array alias of the numerical core
 │   ├── types.py
 │   ├── geom/{graphe,polytope,pavage,rectilineaire,diagnostic}.py
 │   ├── lmo/{solveur,coupes}.py
@@ -285,20 +288,20 @@ archlux/
 ├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependances.py,
 │                                                #   test_hygiene.py, test_language.py
 ├── benchmarks/{test_budgets.py,guarantees/}
-├── experiences/            # experiment scripts (milestones 2 to 9)
-├── resultats/              # raw results and published tables
+├── experiments/            # experiment scripts (milestones 2 to 9)
+├── results/              # raw results and published tables
 ├── scripts/                # data preparation, labelling by the frozen oracle
 └── splits/v1/              # frozen split
 ```
 
-**Rule:** a script in `experiences/` longer than 50 lines signals a function
+**Rule:** a script in `experiments/` longer than 50 lines signals a function
 missing from the library. Since phase 2, 11 of 16 scripts comply; the five corpus
 scripts that can only be checked against their data (`j7_sd_*`, `j8_*`, `j9_*`) do not
 yet: known debt (PLAN.md phase 2). A script imports only public names: those of
 `archlux.__all__` and the `__all__` of a documented module (`archlux.data.synthese`,
 `archlux.certify`, `archlux.uq.fiabilite`...), never a name starting with `_`, and
-never another script. `python scripts/resultats.py` (or `make resultats`) runs them;
-their outputs carry no timing, so `resultats/SHA256SUMS` fingerprints them.
+never another script. `python scripts/results.py` (or `make results`) runs them;
+their outputs carry no timing, so `results/SHA256SUMS` fingerprints them.
 
 ---
 

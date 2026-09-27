@@ -51,7 +51,7 @@ therefore reports:
   (measured: 0.55 m for \(\Delta = 0.3\) m). The box always contains \(x_0\), which
   meets the budget only up to the LP tolerance when the budget is saturated. The proof
   checks \(\max \lvert x - \hat x\rvert \le \Delta\); a budget too small for the plan
-  raises `Infaisable`.
+  raises `Infeasible`.
 - After L1, `figer_contacts` turns saturated separations into equalities and pins
   \(x, y\) to saturated outline edges: Frank-Wolfe keeps a tiling (no gap between rooms)
   while moving interior partitions. Saturated minimum widths stay free: a narrow room
@@ -77,7 +77,7 @@ vectors \(c\).
 
 | Do | Do not |
 |---|---|
-| Plug in any `Substitut` | Import `light.analytique` from `solve` |
+| Plug in any `Surrogate` | Import `light.analytique` from `solve` |
 | Read `gap` with `status` as a stationarity diagnostic | Read `gap` as a bound on the optimum (no shipped surrogate is concave), or confuse it with a coverage \(1-\alpha\) |
 
 ## Source

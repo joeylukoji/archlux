@@ -1,62 +1,63 @@
-"""Corpus synthétique déterministe.
+"""Deterministic synthetic corpus.
 
-Les corpus MSD / Swiss Dwellings / CubiCasa5K ne sont pas redistribués ;
-ce générateur tient le même contrat d'identifiants.
+The MSD / Swiss Dwellings / CubiCasa5K corpora are not redistributed; this
+generator honours the same identifier contract.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.errors import InvariantViolation
 from archlux.seeds import derive
-from archlux.types import Orientation, Piece, Plan
+from archlux.types import Orientation, Plan, Room
 
 __all__ = [
-    "TAILLE_MAX",
+    "MAX_SIZE",
     "TWO_ROOM_OUTLINE",
-    "generer_corpus",
+    "generate_corpus",
     "two_room_plan",
     "two_room_vectors",
 ]
 
 _CONTOUR = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
-_TYPES = ("sejour", "chambre", "cuisine", "sdb")
+_TYPES = ("living_room", "bedroom", "kitchen", "bathroom")
 _RANG_JUMEAU_DEDUPLICATION = 53
 _ID_SOURCE_JUMEAU = "syn-0000"
 _N_COUPES_X = 10
 _N_COUPES_Y = 9
 
-TAILLE_MAX = _N_COUPES_X * _N_COUPES_Y
-"""Nombre de coupes distinctes de la grille : au-delà, le corpus se répéterait."""
+MAX_SIZE = _N_COUPES_X * _N_COUPES_Y
+"""Number of distinct cuts of the grid: beyond this, the corpus would repeat."""
 
 
-def _rng(seed: int, nom: str) -> np.random.Generator:
+def _rng(seed: int, name: str) -> np.random.Generator:
     """Named sub-stream (:func:`archlux.seeds.derive`): ``data`` does not import ``bench``."""
-    return np.random.default_rng(derive(seed, nom))
+    return np.random.default_rng(derive(seed, name))
 
 
-def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:
-    """Produire ``n`` pavages 2×2 déterministes, identifiants ``syn-0000``.
+def generate_corpus(n: int, *, seed: int) -> dict[str, Plan]:
+    """Produce ``n`` deterministic 2x2 tilings, identifiers ``syn-0000``.
 
     Parameters
     ----------
     n : int
-        Taille du corpus, bornée par :data:`TAILLE_MAX` (10 × 9 coupes distinctes).
+        Corpus size, bounded by :data:`MAX_SIZE` (10 x 9 distinct cuts).
     seed : int
-        Graine obligatoire, sans défaut (`ARCHITECTURE.md` §7).
+        Mandatory seed, with no default (`ARCHITECTURE.md` §7).
 
     Raises
     ------
-    InvariantViole
-        ``n`` négatif, ou supérieur au nombre de coupes distinctes de la grille.
-        Sans cette garde, ``n > TAILLE_MAX`` levait un ``IndexError`` nu hors du
-        domaine d'erreurs du projet (`ARCHITECTURE.md` §7).
+    InvariantViolation
+        ``n`` negative, or greater than the number of distinct cuts of the
+        grid. Without this guard, ``n > MAX_SIZE`` would raise a bare
+        ``IndexError`` outside the project's error domain (`ARCHITECTURE.md` §7).
     """
     if n < 0:
-        raise InvariantViole((f"n doit être ≥ 0, reçu {n}",))
-    if n > TAILLE_MAX:
-        raise InvariantViole((f"n={n} > {TAILLE_MAX} coupes distinctes disponibles",))
+        raise InvariantViolation((f"n must be >= 0, got {n}",))
+    if n > MAX_SIZE:
+        raise InvariantViolation((f"n={n} > {MAX_SIZE} distinct cuts available",))
     rng = _rng(seed, "corpus")
     grilles_x = np.linspace(4.05, 7.95, _N_COUPES_X)
     grilles_y = np.linspace(3.05, 5.95, _N_COUPES_Y)
@@ -65,16 +66,27 @@ def generer_corpus(n: int, *, seed: int) -> dict[str, Plan]:
     corpus: dict[str, Plan] = {}
     for rang in range(n):
         coupe_x, coupe_y = paires[rang]
-        pieces: tuple[Piece, ...] = (
-            Piece("sw", _TYPES[rang % 4], 0.0, 0.0, coupe_x, coupe_y),
-            Piece("se", _TYPES[(rang + 1) % 4], coupe_x, 0.0, 12.0 - coupe_x, coupe_y),
-            Piece("nw", _TYPES[(rang + 2) % 4], 0.0, coupe_y, coupe_x, 9.0 - coupe_y),
-            Piece("ne", _TYPES[(rang + 3) % 4], coupe_x, coupe_y, 12.0 - coupe_x, 9.0 - coupe_y),
+        rooms: tuple[Room, ...] = (
+            Room(id="sw", type=_TYPES[rang % 4], x=0.0, y=0.0, w=coupe_x, h=coupe_y),
+            Room(
+                id="se", type=_TYPES[(rang + 1) % 4], x=coupe_x, y=0.0, w=12.0 - coupe_x, h=coupe_y
+            ),
+            Room(
+                id="nw", type=_TYPES[(rang + 2) % 4], x=0.0, y=coupe_y, w=coupe_x, h=9.0 - coupe_y
+            ),
+            Room(
+                id="ne",
+                type=_TYPES[(rang + 3) % 4],
+                x=coupe_x,
+                y=coupe_y,
+                w=12.0 - coupe_x,
+                h=9.0 - coupe_y,
+            ),
         )
-        identifiant = f"syn-{rang:04d}"
+        id = f"syn-{rang:04d}"
         if rang == _RANG_JUMEAU_DEDUPLICATION:
-            pieces = corpus[_ID_SOURCE_JUMEAU].pieces
-        corpus[identifiant] = Plan(pieces, (), (), _CONTOUR)
+            rooms = corpus[_ID_SOURCE_JUMEAU].rooms
+        corpus[id] = Plan(rooms, (), (), _CONTOUR)
     return corpus
 
 
@@ -103,11 +115,11 @@ def two_room_vectors(
 
     Raises
     ------
-    InvariantViole
+    InvariantViolation
         ``n`` is negative.
     """
     if n < 0:
-        raise InvariantViole((f"n must be >= 0, got {n}",))
+        raise InvariantViolation((f"n must be >= 0, got {n}",))
     rng = _rng(seed, "two_room_vectors")
     cuts, azimuths = rng.uniform(4.0, 8.0, n), rng.uniform(0.0, 360.0, n)
     vectors = tuple(np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in cuts)
@@ -131,6 +143,15 @@ def two_room_plan(x: np.ndarray) -> Plan:
     Plan
         Two rooms, no wall, outline :data:`TWO_ROOM_OUTLINE`.
     """
-    a = Piece("a", "sejour", float(x[0]), float(x[1]), float(x[2]), float(x[3]))
-    b = Piece("b", "chambre", float(x[4]), float(x[5]), float(x[6]), float(x[7]))
+    a = Room(id="a", type="living_room", x=float(x[0]), y=float(x[1]), w=float(x[2]), h=float(x[3]))
+    b = Room(id="b", type="bedroom", x=float(x[4]), y=float(x[5]), w=float(x[6]), h=float(x[7]))
     return Plan((a, b), (), (), TWO_ROOM_OUTLINE)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "generer_corpus": Alias(generate_corpus, "archlux.data.synthese.generate_corpus"),
+        "TAILLE_MAX": Alias(MAX_SIZE, "archlux.data.synthese.MAX_SIZE"),
+    },
+)

@@ -21,7 +21,7 @@ quatre mécanismes indépendants, chacun capable d'attraper la faute seul.
 | Mécanisme | Où | Ce qu'il attrape |
 |---|---|---|
 | Types disjoints | `PreuveGeometrique` / `BornePerformance` | Une probabilité glissée dans une preuve |
-| Test d'invariant | `tests/proprietes/test_invariants_types.py` | L'ajout d'un champ probabiliste à la preuve |
+| Test d'invariant | `tests/properties/test_invariants_types.py` | L'ajout d'un champ probabiliste à la preuve |
 | Section `Guarantees` | Toute docstring rendant un `Plan` ou `Certificat` | Une garantie affirmée sans sa nature |
 | Rendu séparé | `certify/rapport.py` | Un score composite agrégeant les deux |
 
@@ -105,8 +105,8 @@ archlux/
 │   └── references/              # certificats gelés, comparés octet à octet
 │
 ├── benchmarks/test_budgets.py   # les budgets §9 sont des contrats, pas des mesures
-├── experiences/                 # scripts jetables, < 50 lignes, API publique seulement
-├── resultats/                   # bruts, avant toute agrégation
+├── experiments/                 # scripts jetables, < 50 lignes, API publique seulement
+├── results/                   # bruts, avant toute agrégation
 └── docs/                        # galerie → tutoriels → concepts → référence
 ```
 
@@ -233,7 +233,7 @@ Chacune des règles contraignantes est donc doublée d'un mécanisme automatique
 | §5 — `lmo` ⇏ `light` | Test dédié | idem |
 | §5 — `solve` ⇒ `light.protocole` seul | Test dédié (l'implémentation est refusée) | idem |
 | §5 — personne n'importe `bench` | Test dédié | idem |
-| §6 — types gelés | `is_dataclass` + `__dataclass_params__.frozen` | `tests/proprietes/test_invariants_types.py` |
+| §6 — types gelés | `is_dataclass` + `__dataclass_params__.frozen` | `tests/properties/test_invariants_types.py` |
 | §6 — preuve sans probabilité | Liste noire de noms de champs | idem |
 | §6 — borne avec couverture | Liste blanche de champs obligatoires | idem |
 | §6 — ouverture sans position absolue | Liste noire de noms de champs | idem |
@@ -250,8 +250,8 @@ Deux précisions qui ont chacune coûté un défaut réel :
 
 - **les `__init__.py` sont scannés.** Les exclure laisse le trou le plus probable : un
   paquet qui viole une couche depuis son propre `__init__` ;
-- **les dérogations sont nominatives et plafonnées.** `EXEMPTIONS` liste deux imports
-  précis (ADR-5), et `test_les_exemptions_restent_rares_et_nommees` échoue au troisième.
+- **les dérogations sont nominatives et plafonnées.** `EXEMPTIONS` liste trois imports
+  précis (ADR-5, ADR-9), et `test_les_exemptions_restent_rares_et_nommees` échoue au quatrième.
   Une liste de dérogations sans plafond est la façon dont une règle de couches se vide,
   une entrée à la fois.
 
@@ -319,6 +319,15 @@ teste la **forme** du projet.
 
 ---
 
+### ADR-9 — `Plan.to_dxf`, `to_ifc` and `to_svg`: a third nominal exemption
+
+PLAN.md 3.11 makes the exports methods of the model, as `Plan.to_json` already is. `types`
+must then reach `archlux.export`. Same decision as ADR-5: a **local import** inside the
+three methods, which only delegate (the writing stays in `export`), so no cycle and no
+cost at import. One `EXEMPTIONS` entry, `archlux.export`, not one per submodule: the
+package facade is the only door `types` uses. The cap of
+`test_les_exemptions_restent_rares_et_nommees` goes from 2 to 3.
+
 ### ADR-8 — Un cache de modèles GLOP porte le démarrage à chaud
 
 `SetStartingLpBasis` **n'est pas exposé** dans le binding Python d'OR-Tools : le seul
@@ -380,6 +389,15 @@ rooms (see `docs/formules/polytope-separe.md`).
 
 ### ADR-6 — Les plages du §6 sont vérifiées à la frontière, pas dans les constructeurs
 
+> **Addendum (phase 3, 2026-09-25).** `legalize` valide ses arguments une seule fois à
+> l'entrée (`archlux.validation.validate_inputs`, `InvalidInput`) : un contrôle unique ne
+> coûte rien, l'objection ci-dessous ne s'y applique pas. Les types **hors de la boucle
+> chaude** valident aussi à la construction : `Ouverture` (plages de `s` et `largeur_rel`)
+> et `PreuveGeometrique` (une preuve valide ne rapporte aucune faute). `Piece`, `Mur` et
+> `Orientation` restent libres : Frank-Wolfe les construit par milliers, et la preuve doit
+> pouvoir *rapporter* une pièce mal formée. `depuis_dict` contrôle les plages sur les
+> données brutes, avant de construire, pour rapporter toutes les violations ensemble.
+
 `ARCHITECTURE.md` §6 documente `s ∈ [0,1]` et `largeur_rel ∈ ]0,1]`, et une pièce a des
 dimensions positives. Rien ne le faisait respecter : `Ouverture(s=42.0)` se construisait
 sans broncher.
@@ -436,7 +454,7 @@ dans `io`, la mise en forme dans `certify`. Le coût est réel et assumé : deux
 > **État au lot 1.8 (PLAN.md).** Ce tableau décrit le squelette du jalon 1 et n'est
 > plus à jour : les jalons 1 à 5 sont implémentés ; le jalon 6 l'est en partie
 > (pièces en L, apprentissage actif, export IFC ; **pas** le non-Manhattan) ; les
-> jalons 7 à 9 sont des expériences (`experiences/`, `resultats/`). La phrase
+> jalons 7 à 9 sont des expériences (`experiments/`, `results/`). La phrase
 > « hors jalon 1, aucun corps de fonction n'est implémenté » est retirée.
 
 Le jalon 1 livre au passage ce qui ne se voit pas dans le tableau : `plans_quelconques`,

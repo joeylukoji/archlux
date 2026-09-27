@@ -62,7 +62,7 @@ réglementaires doit dire explicitement ce qu'il ne vérifie pas.
 Style **NumPy**. Toute fonction publique doit avoir les sections marquées ✱.
 
 ```python
-def legalize(plan: Plan, ctx: Contexte, *, objective=None,
+def legalize(plan: Plan, ctx: Context, *, objective=None,
              budget: float | None = None) -> Plan:
     """Corrige un plan vers le plan valide le plus proche.          ✱ résumé 1 ligne
 
@@ -88,15 +88,15 @@ def legalize(plan: Plan, ctx: Contexte, *, objective=None,
 
     Raises                                                           ✱
     ------
-    Infaisable
+    Infeasible
         Le programme ne tient pas dans l'enveloppe. L'exception porte
         ``certificat`` : les contraintes en conflit.
-    InvariantViole
+    InvariantViolation
         Le solveur a produit une sortie invalide (bogue interne).
 
     Guarantees                                                       ✱ SPÉCIFIQUE PROJET
     ----------
-    - Géométrique : **exacte**. ``resultat.certificat.geometrie.valide``
+    - Géométrique : **exacte**. ``resultat.certificat.geometry.valide``
       est vérifié indépendamment du solveur avant retour.
     - Performance : **probabiliste** si ``objective`` est fourni.
       Couverture ≥ 1−α, sous hypothèse d'échangeabilité avec le jeu
@@ -117,7 +117,7 @@ def legalize(plan: Plan, ctx: Contexte, *, objective=None,
 
 ### Les deux sections propres à ce projet
 
-**`Guarantees`** — obligatoire sur toute fonction qui rend un `Plan` ou un `Certificat`.
+**`Guarantees`** — obligatoire sur toute fonction qui rend un `Plan` ou un `Certificate`.
 Elle dit **de quelle nature** est chaque garantie. C'est la thèse du projet inscrite
 dans la documentation, au même titre que dans les types.
 
@@ -204,7 +204,7 @@ Un exemple qui n'énonce pas d'abord un problème concret ne sert à rien.
 | 1 | `README.md`, `installation.md`, schéma JSON |
 | **2** | **Galerie 01 et 03, `concepts/polytope.md`, `formules/`, docstrings `geom`/`lmo`/`certify`** |
 | 3 | Galerie 02, `concepts/oracle-partage.md`, tutoriel légalisation performantielle |
-| 4 | Tutoriel substitut, doc du protocole `Substitut`, **doc de `valider_gradient`** |
+| 4 | Tutoriel substitut, doc du protocole `Surrogate`, **doc de `valider_gradient`** |
 | 5 | Galerie 04 et 05, `concepts/deux-garanties.md`, `concepts/prediction-conforme.md` |
 | 6 | `limites.md`, guide de contribution, notes de version 1.0 |
 

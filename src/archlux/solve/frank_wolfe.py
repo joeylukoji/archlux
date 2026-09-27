@@ -18,17 +18,18 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from archlux.erreurs import Infaisable, InvariantViole
+from archlux.arrays import VecteurF
+from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.polytope import Polytope
-from archlux.lmo.coupes import MAX_COUPES_PAR_PIECE, Coupe, coupe_surface, surfaces_violees
-from archlux.lmo.solveur import resoudre
+from archlux.lmo.cuts import MAX_CUTS_PER_ROOM, Cut, area_cut, violated_areas
+from archlux.lmo.solveur import solve
 from archlux.solve.trace import Iteration, StopStatus, Trace
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from archlux.light.protocole import Baies, Substitut
-    from archlux.types import Contexte, Orientation, Piece
+    from archlux.light.protocole import Glazing, Surrogate
+    from archlux.types import Context, Orientation, Room
 
 __all__ = ["FrankWolfeResult", "frank_wolfe", "restrict_to_budget"]
 
@@ -57,17 +58,17 @@ class FrankWolfeResult:
         diagnosis of a performance run is often empty.
     """
 
-    x: np.ndarray
+    x: VecteurF
     value: float
     gap: float
     status: StopStatus
     iterations: int
     trace: Trace
-    duals: np.ndarray | None = None
+    duals: VecteurF | None = None
 
 
 def restrict_to_budget(
-    poly: Polytope, centre: np.ndarray, radius: float, *, keep: np.ndarray | None = None
+    poly: Polytope, centre: VecteurF, radius: float, *, keep: VecteurF | None = None
 ) -> Polytope:
     """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``.
 
@@ -81,28 +82,28 @@ def restrict_to_budget(
 
     Raises
     ------
-    Infaisable
+    Infeasible
         The box does not intersect the bounds of some variable: the budget is too small
         for this plan. An input problem, not an internal error.
     """
     names = {column: name for name, column in poly.index.items()}
     bounds: list[tuple[float, float]] = []
-    for i, (lo, hi) in enumerate(poly.bornes):
+    for i, (lo, hi) in enumerate(poly.bounds):
         low = max(lo, float(centre[i]) - radius)
         high = min(hi, float(centre[i]) + radius)
         if keep is not None:
             low, high = min(low, float(keep[i])), max(high, float(keep[i]))
         if low > high + 1e-12:
             label = names.get(i, f"column {i}")
-            raise Infaisable(
-                certificat_farkas=None,
-                origines=(f"budget {radius} m cannot reach the bounds of {label}",),
+            raise Infeasible(
+                farkas_certificate=None,
+                origins=(f"budget {radius} m cannot reach the bounds of {label}",),
             )
         bounds.append((low, high))
-    return replace(poly, bornes=tuple(bounds))
+    return replace(poly, bounds=tuple(bounds))
 
 
-def _vertex_index(vertices: list[np.ndarray], candidate: np.ndarray) -> int | None:
+def _vertex_index(vertices: list[VecteurF], candidate: VecteurF) -> int | None:
     """Index of an already stored vertex, up to tolerance."""
     for rank, vertex in enumerate(vertices):
         if np.allclose(vertex, candidate, atol=1e-9, rtol=0.0):
@@ -111,23 +112,23 @@ def _vertex_index(vertices: list[np.ndarray], candidate: np.ndarray) -> int | No
 
 
 def _add_cuts(
-    cuts: list[Coupe],
-    x: np.ndarray,
+    cuts: list[Cut],
+    x: VecteurF,
     domain: Polytope,
-    ctx: Contexte | None,
-    rooms: tuple[Piece, ...] | None,
+    ctx: Context | None,
+    rooms: tuple[Room, ...] | None,
 ) -> None:
     """Add AM-GM tangents when a room goes below ``a_min`` (legacy path)."""
     if ctx is None or not rooms:
         return
-    if len(cuts) >= MAX_COUPES_PAR_PIECE * len(rooms):
+    if len(cuts) >= MAX_CUTS_PER_ROOM * len(rooms):
         return
-    for room_id in surfaces_violees(x, domain, ctx, pieces=rooms):
+    for room_id in violated_areas(x, domain, ctx, rooms=rooms):
         width = float(x[domain.index[f"{room_id}.w"]])
         height = float(x[domain.index[f"{room_id}.h"]])
-        a_min = ctx.referentiel.a_min(next(r.type for r in rooms if r.id == room_id))
-        if width > 0.0 and height > 0.0 and a_min > 0.0:
-            cuts.append(coupe_surface(width, height, a_min, piece=room_id))
+        min_area = ctx.regulation.min_area(next(r.type for r in rooms if r.id == room_id))
+        if width > 0.0 and height > 0.0 and min_area > 0.0:
+            cuts.append(area_cut(width, height, min_area, piece=room_id))
 
 
 def _normalize(weights: list[float]) -> None:
@@ -146,18 +147,18 @@ def _normalize(weights: list[float]) -> None:
 
 def frank_wolfe(
     poly: Polytope,
-    surrogate: Substitut,
+    surrogate: Surrogate,
     orientation: Orientation,
-    start: np.ndarray,
+    start: VecteurF,
     *,
     max_iter: int = 50,
     tol: float = 1e-4,
     budget: float | None = None,
     away_steps: bool = True,
-    cuts: Sequence[Coupe] | None = None,
-    rooms: tuple[Piece, ...] | None = None,
-    ctx: Contexte | None = None,
-    glazing: Baies | None = None,
+    cuts: Sequence[Cut] | None = None,
+    rooms: tuple[Room, ...] | None = None,
+    ctx: Context | None = None,
+    glazing: Glazing | None = None,
 ) -> FrankWolfeResult:
     """Maximize ``surrogate`` over the polytope, starting from ``start``.
 
@@ -227,15 +228,15 @@ def frank_wolfe(
     domain = poly if budget is None else restrict_to_budget(poly, start, budget)
     x = np.asarray(start, dtype=float).copy()
     if x.shape != (len(domain.index),):
-        raise InvariantViole((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
+        raise InvariantViolation((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
 
     vertices = [x.copy()]
     weights = [1.0]
-    active_cuts: list[Coupe] = list(cuts) if cuts else []
+    active_cuts: list[Cut] = list(cuts) if cuts else []
     n_cuts = len(active_cuts)
     gap = float("inf")  # no LP has succeeded yet: nothing is known
     status: StopStatus = "max_iter"
-    value = float(surrogate.evaluer(x, orientation, baies=glazing))
+    value = float(surrogate.evaluate(x, orientation, glazing=glazing))
     history: list[Iteration] = [
         Iteration(
             k=-1,
@@ -251,16 +252,16 @@ def frank_wolfe(
     last_oracle = None
 
     for k in range(max_iter):
-        gradient = np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float)
-        oracle = resoudre(
+        gradient = np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
+        oracle = solve(
             domain,
             -gradient,
-            depart=x,
-            coupes=active_cuts or None,
-            duaux=False,  # duals are computed once, at the returned point
+            start=x,
+            cuts=active_cuts or None,
+            duals=False,  # duals are computed once, at the returned point
         )
         last_oracle = oracle
-        if oracle.statut != "optimal":
+        if oracle.status != "optimal":
             status = "lp_not_optimal"
             if k > 0:
                 gap = float("inf")  # x moved since the last successful LP: unknown
@@ -276,7 +277,7 @@ def frank_wolfe(
                     gap=gap,
                     step=0.0,
                     away_step=False,
-                    lp_ms=oracle.temps_ms,
+                    lp_ms=oracle.time_ms,
                     n_cuts=n_cuts,
                     x=x.copy(),
                 )
@@ -303,7 +304,7 @@ def frank_wolfe(
         gamma = min(2.0 / (k + 2), gamma_max)
         for _ in range(12):
             candidate = x + gamma * direction
-            new_value = float(surrogate.evaluer(candidate, orientation, baies=glazing))
+            new_value = float(surrogate.evaluate(candidate, orientation, glazing=glazing))
             if new_value >= value - 1e-12:
                 value = new_value
                 x = candidate
@@ -318,7 +319,7 @@ def frank_wolfe(
                     gap=gap,
                     step=0.0,
                     away_step=away,
-                    lp_ms=oracle.temps_ms,
+                    lp_ms=oracle.time_ms,
                     n_cuts=n_cuts,
                     x=x.copy(),
                 )
@@ -339,7 +340,7 @@ def frank_wolfe(
             else:
                 weights[existing] += gamma
 
-        kept_vertices: list[np.ndarray] = []
+        kept_vertices: list[VecteurF] = []
         kept_weights: list[float] = []
         for vertex, mass in zip(vertices, weights, strict=True):
             if mass > _MIN_WEIGHT:
@@ -357,7 +358,7 @@ def frank_wolfe(
                 gap=gap,
                 step=gamma,
                 away_step=away,
-                lp_ms=oracle.temps_ms,
+                lp_ms=oracle.time_ms,
                 n_cuts=n_cuts,
                 x=x.copy(),
             )
@@ -367,23 +368,25 @@ def frank_wolfe(
     if status == "max_iter" and last_oracle is not None:
         # The last step moved x after its LP: the gap and duals of that LP describe the
         # previous point. Solve once more at the returned x.
-        final_gradient = np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float)
-        final = resoudre(domain, -final_gradient, depart=x, coupes=active_cuts or None, duaux=True)
-        if final.statut == "optimal":
+        final_gradient = np.asarray(
+            surrogate.gradient(x, orientation, glazing=glazing), dtype=float
+        )
+        final = solve(domain, -final_gradient, start=x, cuts=active_cuts or None, duals=True)
+        if final.status == "optimal":
             gap = float(final_gradient @ (final.x - x))
-            duals = final.duaux
+            duals = final.duals
         else:
             gap = float("inf")  # the previous gap describes the previous point
-    elif last_oracle is not None and last_oracle.statut == "optimal":
-        extra = resoudre(
+    elif last_oracle is not None and last_oracle.status == "optimal":
+        extra = solve(
             domain,
-            -np.asarray(surrogate.gradient(x, orientation, baies=glazing), dtype=float),
-            depart=x,
-            coupes=active_cuts or None,
-            duaux=True,
+            -np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float),
+            start=x,
+            cuts=active_cuts or None,
+            duals=True,
         )
-        if extra.statut == "optimal":
-            duals = extra.duaux
+        if extra.status == "optimal":
+            duals = extra.duals
 
     return FrankWolfeResult(
         x=x,

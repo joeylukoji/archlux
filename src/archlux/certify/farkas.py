@@ -28,8 +28,7 @@ from math import isfinite
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import numpy as np
-
+    from archlux.arrays import VecteurF
     from archlux.geom.polytope import Polytope
 
 __all__ = ["FarkasCheck", "verify_infeasibility"]
@@ -54,7 +53,7 @@ class FarkasCheck:
     reason: str = ""
 
 
-def verify_infeasibility(poly: Polytope, y: np.ndarray, z: np.ndarray | None) -> FarkasCheck:
+def verify_infeasibility(poly: Polytope, y: VecteurF, z: VecteurF | None) -> FarkasCheck:
     """Check exactly that ``(y, z)`` proves ``poly`` empty.
 
     Parameters
@@ -103,7 +102,7 @@ def verify_infeasibility(poly: Polytope, y: np.ndarray, z: np.ndarray | None) ->
     for j, coefficient in enumerate(r):
         if coefficient == 0:
             continue
-        low, high = poly.bornes[j]
+        low, high = poly.bounds[j]
         bound = low if coefficient > 0 else high
         if not isfinite(bound):
             return FarkasCheck(False, float("-inf"), f"unbounded variable {names[j]}")

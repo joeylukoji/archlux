@@ -1,97 +1,107 @@
-"""Oracle linéaire : résoudre ``min <c, x>`` sur le polytope.
+"""Linear oracle: solve ``min <c, x>`` over the polytope.
 
-**Ce module ne sait pas d'où vient ``c``.** Cette ignorance est délibérée et constitue
-le cœur de l'architecture : le même solveur sert à la légalisation classique (``c`` =
-gradient de distance) et à la légalisation performantielle (``c`` = −gradient
-d'éclairement), sans une ligne de différence. Faire connaître la lumière à ``lmo`` casse
-cette réutilisation (`ARCHITECTURE.md` §10).
+**This module does not know where ``c`` comes from.** This ignorance is deliberate and
+is the heart of the architecture: the same solver serves classical legalisation (``c`` =
+distance gradient) and performance-driven legalisation (``c`` = −illuminance gradient),
+without a single line of difference. Making ``lmo`` aware of light breaks this reuse
+(`ARCHITECTURE.md` §10).
 
-Dépendances autorisées : ``types``, ``erreurs``, ``geom``. **Jamais ``light``.**
+Allowed dependencies: ``types``, ``errors``, ``geom``. **Never ``light``.**
 
-Dualité, phase I et Farkas : ``docs/formules/farkas.md``.
+Duality, phase I and Farkas: ``docs/formules/farkas.md``.
 """
 
 from __future__ import annotations
 
 import math
 import time
+import warnings
 from collections import OrderedDict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
-from ortools.linear_solver import pywraplp
 
-from archlux.erreurs import InvariantViole
+from archlux._deprecation import Alias, lazy_aliases
+
+# OR-Tools' SWIG bindings emit DeprecationWarnings while they import; with
+# ``python -W error::DeprecationWarning`` the interpreter then crashes inside the C
+# extension. The warnings are the vendor's, not ours: shield the import.
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from ortools.linear_solver import pywraplp
+
+from archlux.arrays import VecteurF
+from archlux.errors import InvariantViolation
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
-    from archlux.lmo.coupes import Coupe
+    from archlux.lmo.cuts import Cut
 
-__all__ = ["SolutionLP", "resoudre", "vider_cache"]
+__all__ = ["LPSolution", "clear_cache", "solve"]
 
 _TAILLE_CACHE = 4
-"""Nombre de modèles conservés pour le démarrage à chaud.
+"""Number of models kept for the warm start.
 
-Une boucle de Frank-Wolfe travaille sur **un** polytope ; quatre suffit largement, et
-borne l'empreinte mémoire de ce cache.
+A Frank-Wolfe loop works on **one** polytope; four is plenty, and bounds the memory
+footprint of this cache.
 """
 
 _CACHE: OrderedDict[int, tuple[Polytope, Any, list[Any], list[Any]]] = OrderedDict()
-"""Modèles GLOP déjà construits, indexés par ``id`` du polytope.
+"""GLOP models already built, keyed by the polytope's ``id``.
 
-Le polytope est conservé **par référence forte** dans la valeur : tant qu'il est là, son
-``id`` ne peut pas être réattribué à un autre objet, et la clé reste correcte.
+The polytope is kept **by strong reference** in the value: as long as it is there, its
+``id`` cannot be reassigned to another object, and the key stays correct.
 
-Ce cache ne change aucun résultat, seulement le temps : mêmes entrées, même solution.
-La pureté que `ARCHITECTURE.md` §3 exige de ``lmo`` — déterminisme, rien d'appris — est
-préservée, et un test de propriété le vérifie à chaque exécution.
+This cache changes no result, only the time: same inputs, same solution. The purity
+that `ARCHITECTURE.md` §3 demands of ``lmo`` — determinism, nothing learned — is
+preserved, and a property test checks it on every run.
 """
 
 
 @dataclass(frozen=True, slots=True)
-class SolutionLP:
-    """Résultat d'un appel à l'oracle.
+class LPSolution:
+    """Result of a call to the oracle.
 
     Attributes
     ----------
-    statut : {"optimal", "infaisable", "non_borne", "limite"}
-        Jamais un booléen : « pas optimal » recouvre trois situations qui appellent
-        trois réactions différentes.
-    duaux : numpy.ndarray or None
-        Prix duaux, renseignés seulement si ``duaux=True``. Traduits en langage métier
-        par :mod:`archlux.certify.dual` via ``Polytope.origines``.
-    certificat_farkas : numpy.ndarray or None
-        Preuve d'infaisabilité, renseignée seulement si ``statut == "infaisable"``.
+    status : {"optimal", "infaisable", "non_borne", "limite"}
+        Never a boolean: "not optimal" covers three situations that call for three
+        different reactions.
+    duals : numpy.ndarray or None
+        Dual prices, set only if ``duaux=True``. Translated into domain language by
+        :mod:`archlux.certify.dual` via ``Polytope.origins``.
+    farkas_certificate : numpy.ndarray or None
+        Proof of infeasibility, set only if ``status == "infaisable"``.
     """
 
-    x: np.ndarray
-    valeur: float
-    statut: Literal["optimal", "infaisable", "non_borne", "limite"]
-    duaux: np.ndarray | None = None
-    certificat_farkas: np.ndarray | None = None
-    certificat_farkas_eq: np.ndarray | None = None
+    x: VecteurF
+    value: float
+    status: Literal["optimal", "infaisable", "non_borne", "limite"]
+    duals: VecteurF | None = None
+    farkas_certificate: VecteurF | None = None
+    farkas_certificate_eq: VecteurF | None = None
     """Farkas multipliers of the rows of ``A_eq`` (free sign, same convention as
-    ``certificat_farkas``), set only when ``statut == "infaisable"``."""
+    ``farkas_certificate``), set only when ``status == "infaisable"``."""
     iterations: int = 0
-    temps_ms: float = 0.0
+    time_ms: float = 0.0
 
 
-def vider_cache() -> None:
-    """Oublier les modèles conservés pour le démarrage à chaud.
+def clear_cache() -> None:
+    """Forget the models kept for the warm start.
 
-    Utile aux mesures de performance, qui doivent pouvoir garantir un départ à froid.
+    Useful for performance measurements, which must be able to guarantee a cold start.
     """
     _CACHE.clear()
 
 
 def _statut(code: int) -> Literal["optimal", "infaisable", "non_borne", "limite"]:
-    """Traduire le code de retour d'OR-Tools en statut du projet.
+    """Translate the OR-Tools return code into the project's status.
 
-    Attention : **GLOP rend ``INFEASIBLE`` pour un problème non borné**, confondant deux
-    situations opposées — « le programme ne tient pas dans l'enveloppe » et « l'objectif
-    n'a pas d'optimum fini ». Le statut rendu ici est donc provisoire : c'est
-    :func:`_est_faisable` qui tranche.
+    Warning: **GLOP returns ``INFEASIBLE`` for an unbounded problem**, conflating two
+    opposite situations — "the programme does not fit in the envelope" and "the
+    objective has no finite optimum". The status returned here is therefore provisional:
+    :func:`_is_feasible` settles it.
     """
     if code == pywraplp.Solver.OPTIMAL:
         return "optimal"
@@ -102,35 +112,32 @@ def _statut(code: int) -> Literal["optimal", "infaisable", "non_borne", "limite"
     return "limite"
 
 
-def _borne_glop(solveur: object, valeur: float, *, superieure: bool) -> float:
-    """Traduire une borne Python (éventuellement infinie) en borne GLOP."""
-    if math.isfinite(valeur):
-        return float(valeur)
+def _borne_glop(solveur: object, value: float, *, superieure: bool) -> float:
+    """Translate a Python bound (possibly infinite) into a GLOP bound."""
+    if math.isfinite(value):
+        return float(value)
     infini = float(solveur.infinity())  # type: ignore[attr-defined]
     return infini if superieure else -infini
 
 
-def _construire_modele(
-    poly: Polytope, coupes: list[Coupe] | None
-) -> tuple[Any, list[Any], list[Any]]:
-    """Traduire un polytope en modèle GLOP.
+def _construire_modele(poly: Polytope, cuts: list[Cut] | None) -> tuple[Any, list[Any], list[Any]]:
+    """Translate a polytope into a GLOP model.
 
     Returns
     -------
     tuple
-        Le solveur, ses variables dans l'ordre des colonnes, et ses contraintes dans
-        l'ordre des lignes de ``A`` — cet ordre est ce qui rend les duaux appariables
-        avec ``origines``.
+        The solver, its variables in column order, and its constraints in the row
+        order of ``A`` — this order is what makes the duals pairable with ``origins``.
     """
     solveur = pywraplp.Solver.CreateSolver("GLOP")
-    if solveur is None:  # pragma: no cover - dépend de l'installation d'OR-Tools
-        raise InvariantViole(("backend GLOP indisponible",))
+    if solveur is None:  # pragma: no cover - depends on the OR-Tools installation
+        raise InvariantViolation(("GLOP backend unavailable",))
 
     noms = sorted(poly.index, key=lambda nom: poly.index[nom])
     variables = [
         solveur.NumVar(
-            _borne_glop(solveur, poly.bornes[i][0], superieure=False),
-            _borne_glop(solveur, poly.bornes[i][1], superieure=True),
+            _borne_glop(solveur, poly.bounds[i][0], superieure=False),
+            _borne_glop(solveur, poly.bounds[i][1], superieure=True),
             nom,
         )
         for i, nom in enumerate(noms)
@@ -141,10 +148,8 @@ def _construire_modele(
     for ligne in range(matrice.shape[0]):
         debut, fin = matrice.indptr[ligne], matrice.indptr[ligne + 1]
         contrainte = solveur.RowConstraint(-solveur.infinity(), float(poly.b[ligne]))
-        for colonne, valeur in zip(
-            matrice.indices[debut:fin], matrice.data[debut:fin], strict=True
-        ):
-            contrainte.SetCoefficient(variables[colonne], float(valeur))
+        for colonne, value in zip(matrice.indices[debut:fin], matrice.data[debut:fin], strict=True):
+            contrainte.SetCoefficient(variables[colonne], float(value))
         contraintes.append(contrainte)
 
     egalites = poly.A_eq.tocsr()
@@ -152,50 +157,49 @@ def _construire_modele(
         debut, fin = egalites.indptr[ligne], egalites.indptr[ligne + 1]
         borne = float(poly.b_eq[ligne])
         contrainte = solveur.RowConstraint(borne, borne)
-        for colonne, valeur in zip(
+        for colonne, value in zip(
             egalites.indices[debut:fin], egalites.data[debut:fin], strict=True
         ):
-            contrainte.SetCoefficient(variables[colonne], float(valeur))
+            contrainte.SetCoefficient(variables[colonne], float(value))
 
-    for coupe in coupes or ():
-        # Une coupe s'écrit ``Σ coeffs·v ≥ borne_inf`` ; GLOP prend la borne telle quelle.
-        contrainte = solveur.RowConstraint(coupe.borne_inf, solveur.infinity())
-        for nom, coefficient in coupe.coeffs:
+    for coupe in cuts or ():
+        # A cut is written ``Σ coeffs·v ≥ lower_bound``; GLOP takes the bound as is.
+        contrainte = solveur.RowConstraint(coupe.lower_bound, solveur.infinity())
+        for nom, coefficient in coupe.coefficients:
             contrainte.SetCoefficient(variables[poly.index[nom]], float(coefficient))
 
     return solveur, variables, contraintes
 
 
-def _est_faisable(poly: Polytope, coupes: list[Coupe] | None) -> bool:
-    """Dire si les contraintes admettent au moins un point, objectif mis de côté.
+def _is_feasible(poly: Polytope, cuts: list[Cut] | None) -> bool:
+    """Say whether the constraints admit at least one point, objective set aside.
 
-    **Le discriminant entre « infaisable » et « non borné »**, que GLOP rend sous le même
-    code. Un LP à objectif nul ne peut pas être non borné : s'il trouve un point, l'échec
-    du problème d'origine venait de son objectif, pas de son programme.
+    **The discriminant between "infeasible" and "unbounded"**, which GLOP returns under
+    the same code. An LP with a zero objective cannot be unbounded: if it finds a point,
+    the failure of the original problem came from its objective, not its programme.
 
-    Le modèle est identique à celui du problème réel — coupes, égalités et bornes
-    comprises — de sorte que le verdict porte bien sur le même système.
+    The model is identical to that of the real problem — cuts, equalities and bounds
+    included — so that the verdict bears on the same system.
     """
-    solveur, _, _ = _construire_modele(poly, coupes)
+    solveur, _, _ = _construire_modele(poly, cuts)
     solveur.Objective().SetMinimization()
     return _statut(solveur.Solve()) == "optimal"
 
 
-def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.ndarray, np.ndarray]:
-    """Extraire une preuve d'infaisabilité par le **problème auxiliaire**.
+def _certificat_farkas(poly: Polytope, cuts: list[Cut] | None) -> tuple[VecteurF, VecteurF]:
+    """Extract a proof of infeasibility through the **auxiliary problem**.
 
-    On relâche chaque inégalité ``a_i x ≤ b_i`` par une variable d'écart ``s_i ≥ 0``,
-    puis on minimise ``Σ s_i``. Le problème auxiliaire est toujours faisable ; si son
-    optimum est strictement positif, l'original ne l'est pas, et les prix duaux de ses
-    contraintes forment un certificat de Farkas — des multiplicateurs positifs qui
-    rendent le système contradictoire.
+    Each inequality ``a_i x ≤ b_i`` is relaxed by a slack variable ``s_i ≥ 0``, then
+    ``Σ s_i`` is minimised. The auxiliary problem is always feasible; if its optimum is
+    strictly positive, the original is not, and the dual prices of its constraints form
+    a Farkas certificate — positive multipliers that make the system contradictory.
 
-    Les coupes sont relâchées elles aussi. Sans cela, une coupe impossible rend le
-    problème auxiliaire lui-même infaisable, et ses duaux ne veulent plus rien dire.
+    Cuts are relaxed too. Without that, an impossible cut makes the auxiliary problem
+    itself infeasible, and its duals no longer mean anything.
 
     Equalities of ``A_eq`` (tiling, fusions, frozen contacts) are relaxed too, by two
     slacks each; otherwise a conflict among them left the auxiliary problem without an
-    optimum and the certificate empty ("origines non renseignees": 68 of 200 noisy
+    optimum and the certificate empty ("origins not filled in": 68 of 200 noisy
     benchmark plans before batch 1.5c).
 
     Returns
@@ -204,10 +208,10 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.n
         ``(y, z)``: one **non-negative** multiplier per row of ``A``, and one free
         multiplier per row of ``A_eq``, in the same sign convention.
 
-        ``y``: un multiplicateur **positif** par ligne de ``A``. Croisé avec ``origines``, il
-        dit **quelles contraintes s'excluent**, ce qu'un simple « infaisable » ne dit
-        pas. Exemple réel : ``separation horizontale A|B`` et ``contour droit B`` valent
-        1, les autres 0 — deux pièces de 2 m au minimum ne tiennent pas dans 3 m.
+        ``y``: one **positive** multiplier per row of ``A``. Crossed with ``origins``, it
+        says **which constraints exclude each other**, which a bare "infeasible" does
+        not. Real example: ``horizontal separation A|B`` and ``right outline B`` equal 1,
+        the others 0 — two rooms of at least 2 m do not fit in 3 m.
 
         **Zero vector** if the auxiliary problem itself has no optimum. The rows of
         ``A`` and of ``A_eq`` are relaxed, not the variable bounds, so a conflict
@@ -218,20 +222,20 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.n
 
     Notes
     -----
-    OR-Tools rend les duaux d'une contrainte ``≤`` avec le signe opposé à la convention
-    de Farkas. Les multiplicateurs sont donc négués ici pour être rendus sous la forme
-    canonique ``y ≥ 0``, seule utilisable par :mod:`archlux.certify.dual` sans que chaque
-    lecteur ait à connaître la convention interne du backend.
+    OR-Tools returns the duals of a ``≤`` constraint with the sign opposite to the Farkas
+    convention. The multipliers are therefore negated here to be returned in the
+    canonical form ``y ≥ 0``, the only one :mod:`archlux.certify.dual` can use without
+    every reader having to know the backend's internal convention.
     """
-    solveur, variables, contraintes = _construire_modele(poly, coupes)
-    objectif = solveur.Objective()
+    solveur, variables, contraintes = _construire_modele(poly, cuts)
+    objective = solveur.Objective()
 
-    ecarts = [
+    slacks = [
         solveur.NumVar(0.0, solveur.infinity(), f"ecart_{i}") for i in range(len(contraintes))
     ]
-    for contrainte, ecart in zip(contraintes, ecarts, strict=True):
+    for contrainte, ecart in zip(contraintes, slacks, strict=True):
         contrainte.SetCoefficient(ecart, -1.0)
-        objectif.SetCoefficient(ecart, 1.0)
+        objective.SetCoefficient(ecart, 1.0)
 
     # Equality rows were created right after the rows of A (see _construire_modele).
     n_rows = len(contraintes)
@@ -241,19 +245,19 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.n
         below = solveur.NumVar(0.0, solveur.infinity(), f"eq_minus_{rank}")
         equality.SetCoefficient(above, 1.0)
         equality.SetCoefficient(below, -1.0)
-        objectif.SetCoefficient(above, 1.0)
-        objectif.SetCoefficient(below, 1.0)
+        objective.SetCoefficient(above, 1.0)
+        objective.SetCoefficient(below, 1.0)
 
-    # Les coupes sont relâchées dans l'autre sens : elles s'écrivent ``≥``.
-    for rang, coupe in enumerate(coupes or ()):
+    # Cuts are relaxed the other way round: they are written ``≥``.
+    for rang, coupe in enumerate(cuts or ()):
         relache = solveur.NumVar(0.0, solveur.infinity(), f"ecart_coupe_{rang}")
-        contrainte = solveur.RowConstraint(coupe.borne_inf, solveur.infinity())
-        for nom, coefficient in coupe.coeffs:
+        contrainte = solveur.RowConstraint(coupe.lower_bound, solveur.infinity())
+        for nom, coefficient in coupe.coefficients:
             contrainte.SetCoefficient(variables[poly.index[nom]], float(coefficient))
         contrainte.SetCoefficient(relache, 1.0)
-        objectif.SetCoefficient(relache, 1.0)
+        objective.SetCoefficient(relache, 1.0)
 
-    objectif.SetMinimization()
+    objective.SetMinimization()
     if _statut(solveur.Solve()) != "optimal":
         return np.zeros(len(contraintes), dtype=float), np.zeros(len(equalities), dtype=float)
     return (
@@ -262,140 +266,148 @@ def _certificat_farkas(poly: Polytope, coupes: list[Coupe] | None) -> tuple[np.n
     )
 
 
-def resoudre(
+def solve(
     poly: Polytope,
-    c: np.ndarray,
+    c: VecteurF,
     *,
-    depart: np.ndarray | None = None,
-    coupes: list[Coupe] | None = None,
-    duaux: bool = False,
-) -> SolutionLP:
-    """Minimiser ``<c, x>`` sur le polytope, avec les coupes fournies.
+    start: VecteurF | None = None,
+    cuts: list[Cut] | None = None,
+    duals: bool = False,
+) -> LPSolution:
+    """Minimise ``<c, x>`` over the polytope, with the supplied cuts.
 
-    Backend OR-Tools GLOP.
+    OR-Tools GLOP backend.
 
     Parameters
     ----------
     poly : Polytope
-        Domaine admissible.
+        Feasible domain.
     c : numpy.ndarray
-        Vecteur de coûts. **Son origine est sans importance ici** : distance
-        géométrique ou gradient d'éclairement, le solveur ne fait pas la différence.
-    depart : numpy.ndarray or None, optional
-        Point de démarrage à chaud. **Seule sa présence est utilisée** : les valeurs ne
-        sont pas transmises à GLOP, qui repart de sa propre base courante. Ce qu'elle
-        autorise, c'est la réutilisation du modèle déjà construit pour ce polytope —
-        seuls les coefficients de l'objectif changent. Dans une boucle de Frank-Wolfe,
-        l'omettre coûte un facteur 3 à 5 (`ARCHITECTURE.md` §10). Sa dimension est
-        néanmoins validée : un ``depart`` mal formé signale un appelant qui s'est trompé
-        de polytope, et le laisser passer rendrait un résultat juste pour une mauvaise
-        raison.
-    coupes : list of Coupe or None, optional
-        Coupes accumulées, réinjectées entre deux appels. Elles invalident le modèle en
-        cache : leur nombre change le système, pas seulement l'objectif.
+        Cost vector. **Its origin does not matter here**: geometric distance or
+        illuminance gradient, the solver makes no difference.
+    start : numpy.ndarray or None, optional
+        Warm-start point. **Only its presence is used**: the values are not passed to
+        GLOP, which restarts from its own current basis. What it allows is reuse of the
+        model already built for this polytope — only the objective coefficients change.
+        In a Frank-Wolfe loop, omitting it costs a factor of 3 to 5 (`ARCHITECTURE.md`
+        §10). Its dimension is nevertheless validated: a malformed ``start`` signals a
+        caller that picked the wrong polytope, and letting it through would return a
+        correct result for the wrong reason.
+    cuts : list of Cut or None, optional
+        Accumulated cuts, fed back between two calls. They invalidate the cached model:
+        their number changes the system, not just the objective.
     duaux : bool, optional
-        Extraire les prix duaux, dans l'ordre des lignes de ``poly.A`` — c'est cet ordre
-        qui les rend appariables avec ``poly.origines``. **Les lignes de ``poly.A_eq``
-        et les coupes n'y figurent pas** : elles n'ont pas de libellé dans ``origines``.
-        Conséquence à connaître : après :func:`archlux.geom.polytope.figer_contacts`,
-        les contraintes saturées — les plus informatives — sont passées dans ``A_eq`` et
-        leur prix disparaît donc du diagnostic.
+        Extract the dual prices, in the row order of ``poly.A`` — this order is what
+        makes them pairable with ``poly.origins``. **The rows of ``poly.A_eq`` and the
+        cuts do not appear in it**: they have no label in ``origins``. A consequence to
+        know: after :func:`archlux.geom.polytope.figer_contacts`, the saturated
+        constraints — the most informative ones — are moved into ``A_eq`` and their
+        price therefore disappears from the diagnosis.
 
     Returns
     -------
-    SolutionLP
-        Solution, statut et diagnostics.
+    LPSolution
+        Solution, status and diagnostics.
 
     Raises
     ------
-    InvariantViole
-        Dimension de ``c`` ou de ``depart`` incompatible avec le polytope.
+    InvariantViolation
+        Dimension of ``c`` or of ``start`` incompatible with the polytope.
 
     Guarantees
     ----------
-    - Géométrique : **exacte** si ``statut == "optimal"`` — la solution appartient au
-      polytope à la tolérance du solveur près. Cette appartenance est **revérifiée
-      indépendamment** par :mod:`archlux.certify.proof` avant tout retour à
-      l'utilisateur : le solveur n'est jamais cru sur parole.
-    - **Le démarrage à chaud ne change pas la solution**, seulement le temps. Sans cela,
-      un certificat dépendrait de l'ordre des appels.
-    - Aucune garantie de performance lumineuse n'est produite ici.
+    - Geometric: **exact** if ``status == "optimal"`` — the solution belongs to the
+      polytope within the solver's tolerance. This membership is **independently
+      rechecked** by :mod:`archlux.certify.proof` before anything is returned to the
+      user: the solver is never taken at its word.
+    - **The warm start does not change the solution**, only the time. Without that, a
+      certificate would depend on the order of calls.
+    - No light-performance guarantee is produced here.
 
     Complexity
     ----------
-    Simplexe. Budget : < 10 ms à froid, < 3 ms à chaud, 15 pièces
-    (`ARCHITECTURE.md` §9).
+    Simplex. Budget: < 10 ms cold, < 3 ms warm, 15 rooms (`ARCHITECTURE.md` §9).
 
     Notes
     -----
-    **Ne pas simplifier cette signature.** ``depart`` et ``duaux`` paraissent inutiles
-    au jalon 2 ; ils sont indispensables aux jalons 3 et 5. Les ajouter après oblige à
-    restructurer l'interface pour faire circuler l'état (`MILESTONE-2.md` §4).
+    **Do not simplify this signature.** ``start`` and ``duaux`` look useless at
+    milestone 2; they are indispensable at milestones 3 and 5. Adding them afterwards
+    forces the interface to be restructured to carry the state (`MILESTONE-2.md` §4).
     """
     debut = time.perf_counter()
     n_var = len(poly.index)
     if c.shape != (n_var,):
-        raise InvariantViole((f"objectif de dimension {c.shape}, attendu ({n_var},)",))
-    if depart is not None and depart.shape != (n_var,):
-        raise InvariantViole((f"départ de dimension {depart.shape}, attendu ({n_var},)",))
+        raise InvariantViolation((f"objective has shape {c.shape}, expected ({n_var},)",))
+    if start is not None and start.shape != (n_var,):
+        raise InvariantViolation((f"start has shape {start.shape}, expected ({n_var},)",))
 
     cle = id(poly)
     en_cache = _CACHE.get(cle)
-    reutilisable = depart is not None and en_cache is not None and not coupes
+    reutilisable = start is not None and en_cache is not None and not cuts
     if reutilisable and en_cache is not None:
         _, solveur, variables, contraintes = en_cache
         _CACHE.move_to_end(cle)
     else:
-        solveur, variables, contraintes = _construire_modele(poly, coupes)
-        if not coupes:
+        solveur, variables, contraintes = _construire_modele(poly, cuts)
+        if not cuts:
             _CACHE[cle] = (poly, solveur, variables, contraintes)
             _CACHE.move_to_end(cle)
             while len(_CACHE) > _TAILLE_CACHE:
                 _CACHE.popitem(last=False)
 
-    objectif = solveur.Objective()
+    objective = solveur.Objective()
     for variable, coefficient in zip(variables, c, strict=True):
-        objectif.SetCoefficient(variable, float(coefficient))
-    objectif.SetMinimization()
+        objective.SetCoefficient(variable, float(coefficient))
+    objective.SetMinimization()
 
     code = solveur.Solve()
     statut = _statut(code)
     temps_ms = (time.perf_counter() - debut) * 1000.0
 
     if statut == "infaisable":
-        # GLOP confond « infaisable » et « non borné ». Le problème auxiliaire tranche :
-        # un optimum nul veut dire que les contraintes sont satisfiables, donc que
-        # l'échec venait de l'objectif. Sans cette distinction, ``api.legalize`` lèverait
-        # « le programme ne tient pas dans l'enveloppe » sur un domaine ouvert.
-        if _est_faisable(poly, coupes):
-            return SolutionLP(
+        # GLOP conflates "infeasible" and "unbounded". The auxiliary problem settles it:
+        # a zero optimum means the constraints are satisfiable, hence the failure came
+        # from the objective. Without this distinction, ``api.legalize`` would raise
+        # "the programme does not fit in the envelope" on an open domain.
+        if _is_feasible(poly, cuts):
+            return LPSolution(
                 x=np.zeros(n_var),
-                valeur=float("-inf"),
-                statut="non_borne",
+                value=float("-inf"),
+                status="non_borne",
                 iterations=solveur.iterations(),
-                temps_ms=(time.perf_counter() - debut) * 1000.0,
+                time_ms=(time.perf_counter() - debut) * 1000.0,
             )
-        farkas, farkas_eq = _certificat_farkas(poly, coupes)
-        return SolutionLP(
+        farkas, farkas_eq = _certificat_farkas(poly, cuts)
+        return LPSolution(
             x=np.zeros(n_var),
-            valeur=float("inf"),
-            statut=statut,
-            certificat_farkas=farkas,
-            certificat_farkas_eq=farkas_eq,
+            value=float("inf"),
+            status=statut,
+            farkas_certificate=farkas,
+            farkas_certificate_eq=farkas_eq,
             iterations=solveur.iterations(),
-            temps_ms=(time.perf_counter() - debut) * 1000.0,
+            time_ms=(time.perf_counter() - debut) * 1000.0,
         )
 
     x = np.array([v.solution_value() for v in variables], dtype=float)
-    return SolutionLP(
+    return LPSolution(
         x=x,
-        valeur=float(objectif.Value()),
-        statut=statut,
-        duaux=(
+        value=float(objective.Value()),
+        status=statut,
+        duals=(
             np.array([contrainte.dual_value() for contrainte in contraintes], dtype=float)
-            if duaux
+            if duals
             else None
         ),
         iterations=solveur.iterations(),
-        temps_ms=temps_ms,
+        time_ms=temps_ms,
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "SolutionLP": Alias(LPSolution, "archlux.lmo.solveur.LPSolution"),
+        "resoudre": Alias(solve, "archlux.lmo.solveur.solve"),
+        "vider_cache": Alias(clear_cache, "archlux.lmo.solveur.clear_cache"),
+    },
+)

@@ -1,25 +1,25 @@
-"""Corruption contrôlée d'un plan valide — fabrique des entrées à réparer.
+"""Controlled corruption of a valid plan — manufactures inputs to repair.
 
-Pourquoi ce module existe
--------------------------
-Un corpus réel est **déjà valide** : 398 appartements MSD sur 400 passent
-``verify_exactly``. Mesurer « taux de validité avant / après ``legalize`` »
-sur ces plans ne dit donc rien. Il faut des entrées invalides dont on **connaît
-la faute**, ce qu'aucun corpus ne fournit.
+Why this module exists
+-----------------------
+A real corpus is **already valid**: 398 of 400 MSD apartments pass
+``verify_exactly``. Measuring the "validity rate before / after ``legalize``"
+on these plans therefore says nothing. Invalid inputs are needed whose **fault
+is known**, which no corpus provides.
 
-Deux façons d'en obtenir : les sorties d'un modèle génératif, ou la corruption
-contrôlée d'un plan réel. La seconde est reproductible à la graine près, donne un
-grand effectif, et surtout **on sait ce qu'on a cassé** — ce qui permet de
-mesurer si la correction répare la bonne chose, pas seulement si elle rend un
-plan valide.
+There are two ways to get them: the outputs of a generative model, or the
+controlled corruption of a real plan. The second is reproducible down to the
+seed, gives a large sample size, and above all **we know what was broken** —
+which lets us measure whether the correction repairs the right thing, not
+just whether it makes a plan valid.
 
-Ce que ce module **ne prétend pas**
------------------------------------
-Ces perturbations ne sont **pas** un modèle des erreurs d'un générateur
-particulier. Elles reproduisent les *familles* de fautes que la littérature
-rapporte — chevauchements, jours, pièces sous-dimensionnées, cloisons décalées —
-sans en calibrer les fréquences sur un modèle réel. Toute publication doit le dire
-et compléter par au moins un générateur public.
+What this module does **not** claim
+------------------------------------
+These perturbations are **not** a model of the errors of any particular
+generator. They reproduce the *families* of faults reported in the
+literature — overlaps, gaps, undersized rooms, offset partitions — without
+calibrating their frequencies on a real model. Any publication must say so
+and complement it with at least one public generator.
 """
 
 from __future__ import annotations
@@ -29,88 +29,89 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
-from archlux.types import Piece, Plan
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.errors import InvariantViolation
+from archlux.types import Plan, Room
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-__all__ = ["MODES", "Corruption", "Mode", "corrompre"]
+__all__ = ["MODES", "Corruption", "Mode", "corrupt"]
 
 Mode = Literal["deplacer", "elargir", "retrecir", "aplatir"]
 
 MODES: tuple[Mode, ...] = ("deplacer", "elargir", "retrecir", "aplatir")
-"""Les quatre familles de fautes, et ce que chacune produit.
+"""The four fault families, and what each one produces.
 
 ===========  =========================================  ===========================
-Mode         Perturbation                               Faute produite
+Mode         Perturbation                               Fault produced
 ===========  =========================================  ===========================
-``deplacer``  translation de la pièce                    chevauchement **et** jour
-``elargir``   ``w`` ou ``h`` augmenté                    chevauchement
-``retrecir``  ``w`` ou ``h`` diminué                     jour
-``aplatir``   ``h`` fortement diminué                    surface sous le seuil
+``deplacer``  translation of the room                    overlap **and** gap
+``elargir``   ``w`` or ``h`` increased                    overlap
+``retrecir``  ``w`` or ``h`` decreased                     gap
+``aplatir``   ``h`` sharply decreased                      area below threshold
 ===========  =========================================  ===========================
 
-``deplacer`` est la plus proche de ce que produit un générateur : il place une
-pièce à peu près au bon endroit, ce qui ouvre un jour d'un côté et un
-chevauchement de l'autre.
+``deplacer`` is closest to what a generator produces: it places a room
+roughly in the right spot, which opens a gap on one side and an overlap on
+the other.
 """
 
 _TAILLE_MIN = 0.30
-"""Plancher, en mètres, sous lequel une pièce corrompue serait dégénérée.
+"""Floor, in metres, below which a corrupted room would be degenerate.
 
-Une pièce d'épaisseur nulle n'est pas un plan invalide : c'est un plan sans
-géométrie, que ``geom`` refuse avant même d'avoir pu tenter une correction.
+A room with zero thickness is not an invalid plan: it is a plan with no
+geometry, which ``geom`` rejects before a correction can even be attempted.
 """
 
 
 @dataclass(frozen=True, slots=True)
 class Corruption:
-    """Une perturbation appliquée, telle qu'on pourra la comparer à la correction.
+    """A perturbation applied, as it can later be compared to the correction.
 
     Attributes
     ----------
-    piece_id : str
-        Identifiant de la pièce touchée, tel qu'il figure dans ``Plan.pieces``.
+    room_id : str
+        Identifier of the affected room, as it appears in ``Plan.rooms``.
     amplitude : float
-        Déplacement effectivement appliqué, en mètres. Peut être **inférieur** à
-        l'amplitude demandée si le plancher :data:`_TAILLE_MIN` a mordu ; c'est
-        cette valeur-ci qui est la vérité terrain, pas la consigne.
+        Displacement actually applied, in metres. May be **smaller** than the
+        requested amplitude if the :data:`_TAILLE_MIN` floor was hit; this
+        value is the ground truth, not the request.
     """
 
     mode: Mode
-    piece_id: str
+    room_id: str
     amplitude: float
-    axe: Literal["x", "y"]
+    axis: Literal["x", "y"]
 
 
 def _perturber(
-    piece: Piece, mode: Mode, amplitude: float, axe: Literal["x", "y"]
-) -> tuple[Piece, float]:
-    """Appliquer une perturbation, et rendre l'amplitude réellement appliquée."""
+    room: Room, mode: Mode, amplitude: float, axis: Literal["x", "y"]
+) -> tuple[Room, float]:
+    """Apply a perturbation, and return the amplitude actually applied."""
     if mode == "deplacer":
-        if axe == "x":
-            return replace(piece, x=piece.x + amplitude), amplitude
-        return replace(piece, y=piece.y + amplitude), amplitude
+        if axis == "x":
+            return replace(room, x=room.x + amplitude), amplitude
+        return replace(room, y=room.y + amplitude), amplitude
     if mode == "elargir":
-        if axe == "x":
-            return replace(piece, w=piece.w + amplitude), amplitude
-        return replace(piece, h=piece.h + amplitude), amplitude
+        if axis == "x":
+            return replace(room, w=room.w + amplitude), amplitude
+        return replace(room, h=room.h + amplitude), amplitude
     if mode == "retrecir":
-        if axe == "x":
-            applique = min(amplitude, max(0.0, piece.w - _TAILLE_MIN))
-            return replace(piece, w=piece.w - applique), applique
-        applique = min(amplitude, max(0.0, piece.h - _TAILLE_MIN))
-        return replace(piece, h=piece.h - applique), applique
-    # aplatir : on écrase la plus grande dimension, pour viser la surface.
-    if piece.w >= piece.h:
-        applique = min(amplitude, max(0.0, piece.w - _TAILLE_MIN))
-        return replace(piece, w=piece.w - applique), applique
-    applique = min(amplitude, max(0.0, piece.h - _TAILLE_MIN))
-    return replace(piece, h=piece.h - applique), applique
+        if axis == "x":
+            applique = min(amplitude, max(0.0, room.w - _TAILLE_MIN))
+            return replace(room, w=room.w - applique), applique
+        applique = min(amplitude, max(0.0, room.h - _TAILLE_MIN))
+        return replace(room, h=room.h - applique), applique
+    # aplatir: crush the larger dimension, to target the area.
+    if room.w >= room.h:
+        applique = min(amplitude, max(0.0, room.w - _TAILLE_MIN))
+        return replace(room, w=room.w - applique), applique
+    applique = min(amplitude, max(0.0, room.h - _TAILLE_MIN))
+    return replace(room, h=room.h - applique), applique
 
 
-def corrompre(
+def corrupt(
     plan: Plan,
     *,
     seed: int,
@@ -118,76 +119,87 @@ def corrompre(
     n_pieces: int = 1,
     modes: Sequence[Mode] = MODES,
 ) -> tuple[Plan, tuple[Corruption, ...]]:
-    """Perturber ``n_pieces`` pièces d'un plan valide, de façon reproductible.
+    """Perturb ``n_pieces`` rooms of a valid plan, reproducibly.
 
     Parameters
     ----------
     plan : Plan
-        Plan de départ, **supposé valide**. Rien ne l'exige : corrompre un plan
-        déjà invalide reste défini, mais la mesure « avant / après » perd son sens.
+        Starting plan, **assumed valid**. Nothing enforces it: corrupting an
+        already invalid plan remains well defined, but the "before / after"
+        measurement loses its meaning.
     seed : int
-        Graine, **obligatoire et sans défaut** (`ARCHITECTURE.md` §7). Deux appels
-        de même graine sur le même plan rendent exactement le même résultat.
+        Seed, **mandatory and with no default** (`ARCHITECTURE.md` §7). Two
+        calls with the same seed on the same plan return exactly the same
+        result.
     amplitude : float, optional
-        Ampleur visée de la perturbation, en mètres. L'amplitude *appliquée* est
-        rapportée par chaque :class:`Corruption` et peut être plus faible.
+        Targeted magnitude of the perturbation, in metres. The *applied*
+        amplitude is reported by each :class:`Corruption` and may be smaller.
     n_pieces : int, optional
-        Nombre de pièces distinctes à toucher. Plafonné au nombre de pièces.
+        Number of distinct rooms to affect. Capped at the number of rooms.
     modes : sequence of Mode, optional
-        Familles de fautes autorisées, tirées uniformément. Restreindre à un seul
-        mode permet de mesurer la correction faute par faute.
+        Allowed fault families, drawn uniformly. Restricting to a single mode
+        lets the correction be measured fault by fault.
 
     Returns
     -------
     tuple
-        ``(plan_corrompu, corruptions)``. ``plan_corrompu`` ne porte **jamais** de
-        certificat : c'est une entrée à corriger, pas une sortie.
+        ``(corrupted_plan, corruptions)``. ``corrupted_plan`` **never** carries
+        a certificate: it is an input to correct, not an output.
 
     Raises
     ------
-    InvariantViole
-        Plan sans pièce, ``n_pieces < 1``, ``amplitude <= 0``, ou ``modes`` vide.
+    InvariantViolation
+        Plan with no room, ``n_pieces < 1``, ``amplitude <= 0``, or empty
+        ``modes``.
 
     Examples
     --------
     >>> from archlux.data.corruption import corrompre
-    >>> from archlux.types import Piece, Plan
+    >>> from archlux.types import Plan, Room
     >>> plan = Plan(
-    ...     pieces=(Piece("a", "sejour", 0.0, 0.0, 6.0, 9.0),),
-    ...     murs=(), ouvertures=(),
-    ...     contour=((0.0, 0.0), (6.0, 0.0), (6.0, 9.0), (0.0, 9.0)),
+    ...     rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),),
+    ...     walls=(), openings=(),
+    ...     outline=((0.0, 0.0), (6.0, 0.0), (6.0, 9.0), (0.0, 9.0)),
     ... )
     >>> abime, fautes = corrompre(plan, seed=17, modes=("elargir",))
-    >>> len(fautes), fautes[0].mode, fautes[0].piece_id
+    >>> len(fautes), fautes[0].mode, fautes[0].room_id
     (1, 'elargir', 'a')
-    >>> abime.certificat is None
+    >>> abime.certificate is None
     True
     """
-    if not plan.pieces:
-        raise InvariantViole(("plan sans piece : rien a corrompre",))
+    if not plan.rooms:
+        raise InvariantViolation(("plan with no room: nothing to corrupt",))
     if n_pieces < 1:
-        raise InvariantViole((f"n_pieces doit etre >= 1 : {n_pieces}",))
+        raise InvariantViolation((f"n_pieces must be >= 1: {n_pieces}",))
     if amplitude <= 0.0:
-        raise InvariantViole((f"amplitude doit etre > 0 : {amplitude}",))
+        raise InvariantViolation((f"amplitude must be > 0: {amplitude}",))
     if not modes:
-        raise InvariantViole(("aucun mode de corruption",))
+        raise InvariantViolation(("no corruption mode",))
 
     rng = np.random.default_rng(seed)
-    # Tri par identifiant avant tirage : l'ordre de ``plan.pieces`` ne doit pas
-    # influer sur le resultat, sinon la graine ne suffit pas a rejouer.
-    rangs = sorted(range(len(plan.pieces)), key=lambda i: plan.pieces[i].id)
+    # Sort by identifier before drawing: the order of ``plan.rooms`` must not
+    # influence the result, otherwise the seed alone would not suffice to replay it.
+    rangs = sorted(range(len(plan.rooms)), key=lambda i: plan.rooms[i].id)
     combien = min(n_pieces, len(rangs))
     choisis = [rangs[int(i)] for i in rng.choice(len(rangs), size=combien, replace=False)]
 
-    pieces = list(plan.pieces)
+    rooms = list(plan.rooms)
     fautes: list[Corruption] = []
     for rang in sorted(choisis):
         mode = modes[int(rng.integers(len(modes)))]
-        axe: Literal["x", "y"] = "x" if bool(rng.integers(2)) else "y"
+        axis: Literal["x", "y"] = "x" if bool(rng.integers(2)) else "y"
         signe = 1.0 if mode != "deplacer" else float(rng.choice([-1.0, 1.0]))
-        piece, applique = _perturber(pieces[rang], mode, amplitude * signe, axe)
+        room, applique = _perturber(rooms[rang], mode, amplitude * signe, axis)
         if applique == 0.0:
             continue
-        pieces[rang] = piece
-        fautes.append(Corruption(mode=mode, piece_id=piece.id, amplitude=float(applique), axe=axe))
-    return replace(plan, pieces=tuple(pieces), certificat=None), tuple(fautes)
+        rooms[rang] = room
+        fautes.append(Corruption(mode=mode, room_id=room.id, amplitude=float(applique), axis=axis))
+    return replace(plan, rooms=tuple(rooms), certificate=None), tuple(fautes)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "corrompre": Alias(corrupt, "archlux.data.corruption.corrupt"),
+    },
+)

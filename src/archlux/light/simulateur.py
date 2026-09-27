@@ -1,30 +1,29 @@
-"""Oracle d'éclairement — split-flux BRE, même protocole ``Substitut``.
+"""Oracle d'éclairement — split-flux BRE, même protocole ``Surrogate``.
 
 La CI utilise cette forme fermée, **plus riche** que l'analytique (CIBSE profondeur),
 pour que le réseau puisse la battre et que le point de contrôle du gradient soit
 exécutable. Un moteur de lancer de rayons (Radiance) est hors chemin critique.
 
 Le DF moyen d'une pièce suit Littlefair / BRE : baie = WWR × façade éclairée
-(déjà dans le vecteur ``(w, h)``), sans élargir le protocole ``Substitut``.
+(déjà dans le vecteur ``(w, h)``), sans élargir le protocole ``Surrogate``.
 """
 
 from __future__ import annotations
 
-import sys
-import warnings
 from dataclasses import dataclass
-from typing import Any, ClassVar, Literal
+from typing import ClassVar
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
-from archlux.light.analytique import SubstitutAnalytique, facteur_secteur
-from archlux.light.jetons import CHAMPS_PAR_PIECE
-from archlux.light.protocole import Baies
-from archlux.orient.circulaire import encoder
-from archlux.types import Orientation
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.errors import InvariantViolation
+from archlux.light.analytique import AnalyticSurrogate, sector_factor
+from archlux.light.jetons import FIELDS_PER_ROOM
+from archlux.light.protocole import Glazing
+from archlux.orient.circulaire import encode_orientation
+from archlux.types import Indicator, Orientation
 
-__all__ = ["SplitFluxOracle", "facteur_lumiere_jour"]
+__all__ = ["SplitFluxOracle", "daylight_factor"]
 
 _EPS = 1e-12
 _TRANSMITTANCE = 0.70
@@ -38,7 +37,7 @@ _DENOM_REFLET = 1.0 - _REFLECTANCE * _REFLECTANCE
 
 def _facade_sud(w: float, h: float, orientation: Orientation) -> float:
     """Longueur de façade au sud géographique, même convention que l'analytique."""
-    features = encoder(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmoniques=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
     return w * cos2 + h * sin2
@@ -46,13 +45,13 @@ def _facade_sud(w: float, h: float, orientation: Orientation) -> float:
 
 def _derivees_facade(orientation: Orientation) -> tuple[float, float]:
     """∂L/∂w et ∂L/∂h pour la façade sud."""
-    features = encoder(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmoniques=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
     return cos2, sin2
 
 
-def facteur_lumiere_jour(
+def daylight_factor(
     w: float,
     h: float,
     orientation: Orientation,
@@ -109,10 +108,10 @@ def _split_flux(
 ) -> tuple[float, float, float]:
     """DF fractionnaire et, si demandé, ∂DF/∂w et ∂DF/∂h."""
     if wwr <= 0.0 or wwr > 1.0:
-        raise InvariantViole((f"wwr hors ]0, 1] : {wwr}",))
+        raise InvariantViolation((f"wwr hors ]0, 1] : {wwr}",))
     w = max(float(w), _EPS)
     h = max(float(h), _EPS)
-    theta = _THETA_CIEL_DEG * facteur_secteur(orientation)
+    theta = _THETA_CIEL_DEG * sector_factor(orientation)
     facade = max(_facade_sud(w, h, orientation), _EPS)
     aire_baie = wwr * _HAUTEUR_VITRAGE * facade
     aire_surf = 2.0 * w * h + 2.0 * (w + h) * _HAUTEUR_PLAFOND
@@ -149,7 +148,7 @@ class SplitFluxOracle:
     l'analytique rend déjà l'opposé ; le split-flux est nié une seule fois.
     """
 
-    indicateur_vise: Literal["sDA", "ASE", "UDI", "vue"] = "sDA"
+    indicateur_vise: Indicator = "sDA"
     sigma_nominal: float = 0.04
     wwr: float = _WWR_DEFAUT
     ECHELLE_DF: ClassVar[float] = 100.0
@@ -164,51 +163,51 @@ class SplitFluxOracle:
     """
 
     @property
-    def indicateur(self) -> str:
+    def indicator(self) -> Indicator:
         """Nom de l'étiquette visée. Le scalaire rendu n'est pas un sDA LM-83."""
         return self.indicateur_vise
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Score déterministe. Deux appels identiques rendent le même flottant.
 
         ``baies`` est ignoré : le WWR est une constante du modèle, pas une
         lecture de la fenestration réelle.
         """
-        del baies
+        del glazing
         return float(self._score_et_gradient(x, orientation, avec_gradient=False)[0])
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Gradient analytique du même score (CIBSE + split-flux)."""
-        del baies
+        del glazing
         return self._score_et_gradient(x, orientation, avec_gradient=True)[1]
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Écart-type nominal constant : pas d'erreur apprise."""
-        del x, orientation, baies
+        del x, orientation, glazing
         return float(self.sigma_nominal)
 
-    def evaluer_pieces(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate_rooms(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Contribution de chaque piece : analytique + split-flux, avant sommation.
 
-        ``evaluer`` en est la somme. Voir
+        ``evaluate`` en est la somme. Voir
         :class:`~archlux.light.protocole.SubstitutParPiece`.
         """
-        del baies
-        base = SubstitutAnalytique(indicateur_vise=self.indicateur_vise)
-        parts = np.asarray(base.evaluer_pieces(x, orientation), dtype=float).copy()
+        del glazing
+        base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
+        parts = np.asarray(base.evaluate_rooms(x, orientation), dtype=float).copy()
         vecteur = np.asarray(x, dtype=float).ravel()
         signe = -1.0 if self.indicateur_vise == "ASE" else 1.0
-        for i in range(vecteur.size // CHAMPS_PAR_PIECE):
-            largeur = float(vecteur[i * CHAMPS_PAR_PIECE + 2])
-            hauteur = float(vecteur[i * CHAMPS_PAR_PIECE + 3])
+        for i in range(vecteur.size // FIELDS_PER_ROOM):
+            largeur = float(vecteur[i * FIELDS_PER_ROOM + 2])
+            hauteur = float(vecteur[i * FIELDS_PER_ROOM + 3])
             df, _, _ = _split_flux(largeur, hauteur, orientation, self.wwr, avec_gradient=False)
             aire = max(largeur, _EPS) * max(hauteur, _EPS)
             parts[i] += signe * self.ECHELLE_DF * df * aire
@@ -217,20 +216,20 @@ class SplitFluxOracle:
     def _score_et_gradient(
         self, x: np.ndarray, orientation: Orientation, *, avec_gradient: bool
     ) -> tuple[float, np.ndarray]:
-        base = SubstitutAnalytique(indicateur_vise=self.indicateur_vise)
-        valeur = float(base.evaluer(x, orientation))
+        base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
+        valeur = float(base.evaluate(x, orientation))
         gradient = (
             np.asarray(base.gradient(x, orientation), dtype=float).copy()
             if avec_gradient
             else np.zeros_like(np.asarray(x, dtype=float).ravel())
         )
         vecteur = np.asarray(x, dtype=float).ravel()
-        n_pieces = vecteur.size // CHAMPS_PAR_PIECE
+        n_pieces = vecteur.size // FIELDS_PER_ROOM
         signe_extra = -1.0 if self.indicateur_vise == "ASE" else 1.0
         extra = 0.0
         for i in range(n_pieces):
-            largeur = float(vecteur[i * CHAMPS_PAR_PIECE + 2])
-            hauteur = float(vecteur[i * CHAMPS_PAR_PIECE + 3])
+            largeur = float(vecteur[i * FIELDS_PER_ROOM + 2])
+            hauteur = float(vecteur[i * FIELDS_PER_ROOM + 3])
             df, d_df_dw, d_df_dh = _split_flux(
                 largeur, hauteur, orientation, self.wwr, avec_gradient=avec_gradient
             )
@@ -239,27 +238,24 @@ class SplitFluxOracle:
             if avec_gradient:
                 d_aire_dw = max(hauteur, _EPS)
                 d_aire_dh = max(largeur, _EPS)
-                gradient[i * CHAMPS_PAR_PIECE + 2] += (
+                gradient[i * FIELDS_PER_ROOM + 2] += (
                     signe_extra * self.ECHELLE_DF * (d_df_dw * aire + df * d_aire_dw)
                 )
-                gradient[i * CHAMPS_PAR_PIECE + 3] += (
+                gradient[i * FIELDS_PER_ROOM + 3] += (
                     signe_extra * self.ECHELLE_DF * (d_df_dh * aire + df * d_aire_dh)
                 )
         valeur += signe_extra * self.ECHELLE_DF * extra
         return valeur, gradient
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401 — forwards a renamed attribute
-    """Keep ``SimulateurExact`` until 1.0.0, deprecated (ADR 0001, PLAN.md batch 1.8)."""
-    if name == "SimulateurExact":
-        if sys._getframe(1).f_code.co_filename.startswith("<frozen importlib"):
-            # `from module import name` probes with hasattr first: warn only once.
-            return SplitFluxOracle
-        warnings.warn(
-            "archlux.light.simulateur.SimulateurExact is deprecated, use SplitFluxOracle: "
-            "a frozen split-flux oracle, neither a simulation nor ground truth (ADR 0001)",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return SplitFluxOracle
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "facteur_lumiere_jour": Alias(daylight_factor, "archlux.light.simulateur.daylight_factor"),
+        "SimulateurExact": Alias(
+            SplitFluxOracle,
+            "SplitFluxOracle",
+            note="a frozen split-flux oracle, neither a simulation nor ground truth",
+        ),
+    },
+)

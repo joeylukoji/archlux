@@ -19,41 +19,50 @@ RACINE = Path(__file__).resolve().parents[1] / "src" / "archlux"
 # Ce que chaque paquet a le droit d'importer, à l'intérieur d'archlux.
 # `solve` dépend de `light.protocole` SEULEMENT, jamais d'une implémentation.
 AUTORISE: dict[str, frozenset[str]] = {
-    "__init__": frozenset({"types", "erreurs", "api", "io"}),
-    # `types` peut joindre `erreurs` : les deux sont des racines du graphe, `erreurs` ne
+    # `feasibility`, `light`: imported under TYPE_CHECKING only, so that type checkers see
+    # the lazy packages (PLAN.md 3.8). `test_import_cost` proves that `import archlux`
+    # loads none of them. `bench` cannot be listed: nobody imports it.
+    "__init__": frozenset({"types", "errors", "api", "io", "feasibility", "light"}),
+    # `types` peut joindre `errors` : les deux sont des racines du graphe, `errors` ne
     # dépend de rien et n'importe surtout pas `types`. L'arête ne crée aucun cycle et
     # évite que chaque type doive lever `Exception` nue faute d'exception typée sous la
     # main (`ARCHITECTURE.md` §7).
-    "types": frozenset({"erreurs"}),
-    "erreurs": frozenset(),
+    "types": frozenset({"errors"}),
+    "errors": frozenset(),
+    # Deprecated module name (PLAN.md 3.9): a shim that forwards to `errors`.
+    "erreurs": frozenset({"errors"}),
     # Leaves importable by every layer; they import nothing (see LEAVES below).
     "_version": frozenset(),
     "tolerances": frozenset(),
     "seeds": frozenset(),
-    "geom": frozenset({"types", "erreurs"}),
-    "lmo": frozenset({"types", "erreurs", "geom"}),
-    "solve": frozenset({"types", "erreurs", "geom", "lmo", "light.protocole"}),
-    "light": frozenset({"types", "erreurs", "orient"}),
-    "orient": frozenset({"types", "erreurs"}),
-    "uq": frozenset({"types", "erreurs"}),
+    "arrays": frozenset(),
+    "_deprecation": frozenset(),
+    # Door validation of the public arguments (PLAN.md 3.1): a leaf over `types`.
+    "validation": frozenset({"types", "errors"}),
+    "geom": frozenset({"types", "errors"}),
+    "lmo": frozenset({"types", "errors", "geom"}),
+    "solve": frozenset({"types", "errors", "geom", "lmo", "light.protocole"}),
+    "light": frozenset({"types", "errors", "orient"}),
+    "orient": frozenset({"types", "errors"}),
+    "uq": frozenset({"types", "errors"}),
     # `data.chargeurs` convertit un corpus reel (WKT) en `Plan` : il redresse via
     # `orient.circulaire.direction_dominante` et decoupe via `geom.rectilineaire`.
     # Aretes ajoutees a `ARCHITECTURE.md` §5 : `geom` et `orient` sont purs et
     # n'importent pas `data`, donc aucun cycle. `data` ne touche ni `lmo`, ni
     # `solve`, ni `light` : il produit des entrees, il ne resout rien.
-    "data": frozenset({"types", "erreurs", "uq", "orient", "geom"}),
-    "certify": frozenset({"types", "erreurs", "geom", "uq"}),
-    "io": frozenset({"types", "erreurs"}),
+    "data": frozenset({"types", "errors", "uq", "orient", "geom"}),
+    "certify": frozenset({"types", "errors", "geom", "uq"}),
+    "io": frozenset({"types", "errors"}),
     # Apprentissage actif : orchestrateur feuille — protocole light + uq, pas torch.
-    "active": frozenset({"types", "erreurs", "light.protocole", "uq"}),
+    "active": frozenset({"types", "errors", "light.protocole", "uq"}),
     # Export BIM : feuille — types + erreurs ; ifcopenshell optionnel (hors archlux).
-    "export": frozenset({"types", "erreurs"}),
+    "export": frozenset({"types", "errors"}),
     # Faisabilité : façade sur legalize / Farkas — exacte, sans lumière.
-    "feasibility": frozenset({"types", "erreurs", "api"}),
+    "feasibility": frozenset({"types", "errors", "api"}),
     "bench": frozenset(
         {
             "types",
-            "erreurs",
+            "errors",
             "geom",
             "lmo",
             "solve",
@@ -68,7 +77,17 @@ AUTORISE: dict[str, frozenset[str]] = {
         }
     ),
     "api": frozenset(
-        {"types", "erreurs", "geom", "lmo", "solve", "light.protocole", "certify", "io"}
+        {
+            "types",
+            "errors",
+            "validation",
+            "geom",
+            "lmo",
+            "solve",
+            "light.protocole",
+            "certify",
+            "io",
+        }
     ),
 }
 
@@ -76,6 +95,10 @@ LEAVES: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset({"__future__", "typing"}),
     "seeds": frozenset({"__future__", "hashlib"}),
+    "arrays": frozenset({"__future__", "typing", "numpy"}),
+    "_deprecation": frozenset(
+        {"__future__", "sys", "warnings", "dataclasses", "typing", "collections"}
+    ),
 }
 """Modules importable by every layer, with the only imports they may make themselves."""
 
@@ -83,13 +106,14 @@ LEAVES: dict[str, frozenset[str]] = {
 TORCH_TOLERE = frozenset({"light.appris"})
 
 # Dérogations nominatives, chacune adossée à une décision écrite (ADR-5 du blueprint).
-# `Plan.from_json` et `Certificat.rapport()` sont l'API publique fixée par
+# `Plan.from_json` et `Certificate.report()` sont l'API publique fixée par
 # `DOCUMENTATION.md` §3 et §5. Les honorer demande à `types` de déléguer vers `io` et
 # `certify` — par import **local**, à l'appel, donc sans cycle à l'import.
 # La dérogation est nominative et non un assouplissement de la règle : tout autre import
 # depuis `types` échoue toujours.
 EXEMPTIONS: dict[str, frozenset[str]] = {
-    "types": frozenset({"archlux.io.json_io", "archlux.certify.rapport"}),
+    # ADR-9: the export facades `Plan.to_dxf`, `to_ifc`, `to_svg` (PLAN.md 3.11).
+    "types": frozenset({"archlux.io.json_io", "archlux.certify.rapport", "archlux.export"}),
 }
 
 
@@ -210,7 +234,7 @@ def test_les_exemptions_restent_rares_et_nommees() -> None:
     lequel la règle de couches se vide, une entrée à la fois.
     """
     total = sum(len(v) for v in EXEMPTIONS.values())
-    assert total <= 2, "toute nouvelle dérogation exige une ADR dans le blueprint"
+    assert total <= 3, "toute nouvelle dérogation exige une ADR dans le blueprint"
 
 
 @pytest.mark.parametrize("leaf", sorted(LEAVES))
