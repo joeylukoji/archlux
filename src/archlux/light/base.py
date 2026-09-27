@@ -139,7 +139,7 @@ class SubstitutDense:
     decalage_base: float = 0.0
 
     @property
-    def indicateur(self) -> str:
+    def indicateur(self) -> Indicateur:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 

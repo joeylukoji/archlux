@@ -43,8 +43,9 @@ def test_the_bound_and_the_protocol_share_the_alias() -> None:
 def test_the_float_vector_alias_is_a_float64_array() -> None:
     from archlux.arrays import VecteurF
 
-    dtype = typing.get_args(VecteurF)[1]
-    assert typing.get_args(dtype) == (np.float64,)
+    # numpy < 2.5: NDArray[X] is ndarray[shape, dtype[X]]; numpy >= 2.5 exposes only (X,).
+    last = typing.get_args(VecteurF)[-1]
+    assert last is np.float64 or typing.get_args(last) == (np.float64,)
 
 
 SNIPPET = """import archlux as ax

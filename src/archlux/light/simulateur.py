@@ -163,7 +163,7 @@ class SplitFluxOracle:
     """
 
     @property
-    def indicateur(self) -> str:
+    def indicateur(self) -> Indicateur:
         """Nom de l'étiquette visée. Le scalaire rendu n'est pas un sDA LM-83."""
         return self.indicateur_vise
 
