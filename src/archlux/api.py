@@ -17,6 +17,7 @@ Full chain, assumptions and contra-indications: ``docs/formules/pipeline.md``.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -55,6 +56,8 @@ from archlux.types import Certificate, Context, GeometricProof, Plan
 from archlux.validation import resolve_outline, validate_inputs
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from archlux.certify.borne import Calibration
 
 __all__ = ["gradient_distance", "legalize"]
@@ -188,7 +191,7 @@ class _Problem:
     order: RelativeOrder
     base: Polytope
     x_ref: VecteurF
-    minima: dict[str, float]
+    minima: Mapping[str, float]  # read-only: the frozen problem shares it
 
     def domain(self, *, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
         """The solver's domain, optionally without the tiling grid or the budget."""
@@ -282,7 +285,7 @@ def _build_problem(
         order=order,
         base=base,
         x_ref=vectorize(plan, base.index),
-        minima=minimum_area_shares(plan.rooms, merges, ctx.regulation),
+        minima=MappingProxyType(minimum_area_shares(plan.rooms, merges, ctx.regulation)),
     )
 
 

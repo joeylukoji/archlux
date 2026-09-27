@@ -261,3 +261,43 @@ def test_members_on_opposite_sides_share_the_side_of_their_bounding_box() -> Non
     ordre = deduce_order(plan, ctx.structure, groups=(members,))
     assert ordre.shared_sides == (("w", members),)
     assert len({ws.side for ws in ordre.wall_sides if ws.room in members}) == 1
+
+
+def _grid_too_tight() -> tuple[Plan, Context]:
+    """A 2 x 2 tiling whose shared column line cannot give both big rooms 2.2 m².
+
+    With the grid, ``a`` (top left) and ``d`` (bottom right) share the line ``x1`` and the
+    row line ``y1``: ``x1 * h1 * (4 - x1) * (2 - h1) <= 4 < 2.2²``. Without it, the two
+    rows may split the width differently, and the order admits a plan.
+    """
+    outline = ((0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0))
+    ctx = Context(
+        structure=Structure(()),
+        orientation=archlux.Orientation(0.0),
+        regulation=Regulation((("big", 2.2), ("small", 0.5)), 0.5),
+        outline=outline,
+    )
+    rooms = (
+        Room(id="a", type="big", x=0.0, y=1.0, w=2.0, h=1.0),
+        Room(id="b", type="small", x=2.0, y=1.0, w=2.0, h=1.0),
+        Room(id="c", type="small", x=0.0, y=0.0, w=2.0, h=1.0),
+        Room(id="d", type="big", x=2.0, y=0.0, w=2.0, h=1.0),
+    )
+    return Plan(rooms=rooms, outline=outline), ctx
+
+
+def test_a_grid_too_tight_is_named_as_the_relaxable_cause() -> None:
+    """The ``tiling grid`` branch of ``Infeasible.relaxable`` (review of PR #11)."""
+    plan, ctx = _grid_too_tight()
+    with pytest.raises(Infeasible) as capture:
+        archlux.legalize(plan, ctx, tiling=True)
+    assert capture.value.scope == ("tiling grid",)
+    assert capture.value.relaxable == ("tiling grid",)
+    assert "Without tiling grid, this order admits a plan" in str(capture.value)
+
+
+def test_the_same_plan_without_the_grid_is_repaired() -> None:
+    """The counterpart of the test above: ``relaxable`` did not lie."""
+    plan, ctx = _grid_too_tight()
+    repaired = archlux.legalize(plan, ctx)
+    assert repaired.certificate is not None and repaired.certificate.geometry.valid
