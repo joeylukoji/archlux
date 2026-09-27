@@ -29,6 +29,7 @@ from dataclasses import dataclass, replace
 import numpy as np
 from scipy import sparse
 from shapely.geometry import LineString, Point, Polygon, box
+from shapely.geometry.base import BaseGeometry
 from shapely.ops import split, unary_union
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
@@ -153,6 +154,45 @@ def _sommets_reflexe(poly: Polygon) -> list[tuple[float, float]]:
     return reflex
 
 
+def _line_pieces(inter: BaseGeometry) -> list[LineString]:
+    """Flatten a shapely intersection into its ``LineString`` pieces.
+
+    Extracted from :func:`_coupe_verticale`/:func:`_coupe_horizontale` (PLAN.md phase
+    4, block 3): GEOS returns a ``LineString``, a ``MultiLineString``, or (mixed with
+    points, at a tangency) a ``GeometryCollection``, depending on the case.
+    """
+    if inter.geom_type == "LineString":
+        return [inter]
+    if inter.geom_type == "MultiLineString":
+        return list(inter.geoms)
+    if inter.geom_type == "GeometryCollection":
+        return [g for g in inter.geoms if g.geom_type == "LineString"]
+    return []
+
+
+def _chord_through_pivot(
+    candidats: list[LineString], pivot: Point, *, axis: int
+) -> tuple[float, float] | None:
+    """Extent, on ``axis`` (0 for x, 1 for y), of the pieces joined through ``pivot``.
+
+    ``None`` if the union collapses to a point. Extracted from
+    :func:`_coupe_verticale`/:func:`_coupe_horizontale` (PLAN.md phase 4, block 3).
+    GEOS returns the intersection in pieces: the boundary edge running along the cut
+    and the interior chord arrive separately, although collinear and joined at the
+    reflex vertex. Keeping the first piece amounted to proposing an edge of the
+    polygon as the cut — it separates nothing. So all the pieces touching the pivot
+    are joined: sharing that point on one line, their union is a single segment.
+    """
+    valeurs: list[float] = []
+    for seg in candidats:
+        if seg.length <= _EPS or pivot.distance(seg) > 1e-6:
+            continue
+        valeurs.extend(c[axis] for c in seg.coords)
+    if not valeurs or max(valeurs) - min(valeurs) <= _EPS:
+        return None
+    return min(valeurs), max(valeurs)
+
+
 def _coupe_verticale(poly: Polygon, x_coupe: float, y_sommet: float) -> LineString | None:
     """Interior vertical chord through ``(x_coupe, y_sommet)``."""
     minx, miny, maxx, maxy = poly.bounds
@@ -162,27 +202,10 @@ def _coupe_verticale(poly: Polygon, x_coupe: float, y_sommet: float) -> LineStri
     inter = ligne.intersection(poly)
     if inter.is_empty:
         return None
-    candidats: list[LineString] = []
-    if inter.geom_type == "LineString":
-        candidats = [inter]
-    elif inter.geom_type == "MultiLineString":
-        candidats = list(inter.geoms)
-    elif inter.geom_type == "GeometryCollection":
-        candidats = [g for g in inter.geoms if g.geom_type == "LineString"]
-    pivot = Point(x_coupe, y_sommet)
-    # GEOS returns the intersection in pieces: the boundary edge running along the cut
-    # and the interior chord arrive separately, although collinear and joined at the
-    # reflex vertex. Keeping the first piece amounted to proposing an edge of the
-    # polygon as the cut — it separates nothing. So all the pieces touching the pivot
-    # are joined: sharing that point on one vertical, their union is a single segment.
-    ys: list[float] = []
-    for seg in candidats:
-        if seg.length <= _EPS or pivot.distance(seg) > 1e-6:
-            continue
-        ys.extend(c[1] for c in seg.coords)
-    if not ys or max(ys) - min(ys) <= _EPS:
+    extent = _chord_through_pivot(_line_pieces(inter), Point(x_coupe, y_sommet), axis=1)
+    if extent is None:
         return None
-    return LineString([(x_coupe, min(ys)), (x_coupe, max(ys))])
+    return LineString([(x_coupe, extent[0]), (x_coupe, extent[1])])
 
 
 def _coupe_horizontale(poly: Polygon, y_coupe: float, x_sommet: float) -> LineString | None:
@@ -197,23 +220,10 @@ def _coupe_horizontale(poly: Polygon, y_coupe: float, x_sommet: float) -> LineSt
     inter = ligne.intersection(poly)
     if inter.is_empty:
         return None
-    candidats: list[LineString] = []
-    if inter.geom_type == "LineString":
-        candidats = [inter]
-    elif inter.geom_type == "MultiLineString":
-        candidats = list(inter.geoms)
-    elif inter.geom_type == "GeometryCollection":
-        candidats = [g for g in inter.geoms if g.geom_type == "LineString"]
-    pivot = Point(x_sommet, y_coupe)
-    # Same joining of collinear pieces as in :func:`_coupe_verticale`.
-    xs: list[float] = []
-    for seg in candidats:
-        if seg.length <= _EPS or pivot.distance(seg) > 1e-6:
-            continue
-        xs.extend(c[0] for c in seg.coords)
-    if not xs or max(xs) - min(xs) <= _EPS:
+    extent = _chord_through_pivot(_line_pieces(inter), Point(x_sommet, y_coupe), axis=0)
+    if extent is None:
         return None
-    return LineString([(min(xs), y_coupe), (max(xs), y_coupe)])
+    return LineString([(extent[0], y_coupe), (extent[1], y_coupe)])
 
 
 def _meilleure_coupe_verticale(poly: Polygon) -> LineString | None:

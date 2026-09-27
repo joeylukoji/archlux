@@ -426,49 +426,13 @@ def deduce_grid(
     if not ctx.outline:
         raise UnsupportedInput("tiling grid: the outline is empty, the grid has no anchor")
 
-    xs = [p.x for p in plan.rooms] + [p.x + p.w for p in plan.rooms]
-    ys = [p.y for p in plan.rooms] + [p.y + p.h for p in plan.rooms]
-    xs_contour = [point[0] for point in ctx.outline]
-    ys_contour = [point[1] for point in ctx.outline]
-    # All the outline coordinates enter the grid, not only the
-    # extremes: on a rectilinear outline, each cell must be entirely
-    # inside or entirely outside, otherwise the mask below is meaningless.
-    lignes_x, rang_x = _regrouper([*xs, *xs_contour], tolerance)
-    lignes_y, rang_y = _regrouper([*ys, *ys_contour], tolerance)
-    # A line that carries an outline vertex *is* the outline: the group mean would
-    # drift with the room edges grouped with it, and the anchoring equalities would
-    # then pin the rooms off the outline, leaving an uncovered strip.
-    for axe, lignes, rang, valeurs in (
-        ("x", lignes_x, rang_x, xs_contour),
-        ("y", lignes_y, rang_y, ys_contour),
-    ):
-        portees: dict[int, float] = {}
-        for value in valeurs:
-            ligne = rang[value]
-            if portees.setdefault(ligne, value) != value:
-                raise UnsupportedInput(
-                    f"tiling grid: outline edges {portees[ligne]} and {value} in {axe} "
-                    f"fall in one grid line, joined through room edges within the grouping "
-                    f"tolerance {tolerance} m"
-                )
-            lignes[ligne] = value
-    if len(lignes_x) < 2 or len(lignes_y) < 2:
-        raise UnsupportedInput("tiling grid: fewer than two grid lines on an axis")
-
-    bords_x = [(rang_x[p.x], rang_x[p.x + p.w]) for p in plan.rooms]
-    bords_y = [(rang_y[p.y], rang_y[p.y + p.h]) for p in plan.rooms]
-    for axe, bords in (("x", bords_x), ("y", bords_y)):
-        for (debut, fin), piece in zip(bords, plan.rooms, strict=True):
-            if debut >= fin:
-                raise UnsupportedInput(
-                    f"tiling grid: room {piece.id} is flat in {axe} (thinner than the "
-                    f"grouping tolerance {tolerance} m, or of negative size)"
-                )
+    lignes_x, rang_x, lignes_y, rang_y = _deduce_lines(plan, ctx, tolerance)
+    bords_x, bords_y = _room_bounds(plan, rang_x, rang_y, tolerance)
 
     # Lines that carry an outline vertex are frozen: the envelope is an
     # input, it does not move. They therefore escape consolidation.
-    ancrees_x = {rang_x[v] for v in xs_contour}
-    ancrees_y = {rang_y[v] for v in ys_contour}
+    ancrees_x = {rang_x[point[0]] for point in ctx.outline}
+    ancrees_y = {rang_y[point[1]] for point in ctx.outline}
 
     if min_support > 1:
         lignes_x, bords_x, ancrees_x = _consolider(lignes_x, bords_x, ancrees_x, min_support)
@@ -478,30 +442,7 @@ def deduce_grid(
         (piece.id, gauche, droite, bas, haut)
         for piece, (gauche, droite), (bas, haut) in zip(plan.rooms, bords_x, bords_y, strict=True)
     ]
-
-    # Partition: each cell **inside the outline** covered exactly once, and no
-    # outside cell covered. The real outline is rectilinear, not
-    # rectangular: requiring the bounding box to be tiled would be wrong.
-    enveloppe = Polygon(ctx.outline)
-    if not enveloppe.is_valid:
-        raise UnsupportedInput("tiling grid: the outline is not a valid polygon")
-    centres_x = 0.5 * (np.asarray(lignes_x[:-1]) + np.asarray(lignes_x[1:]))
-    centres_y = 0.5 * (np.asarray(lignes_y[:-1]) + np.asarray(lignes_y[1:]))
-    maille_x, maille_y = np.meshgrid(centres_x, centres_y, indexing="ij")
-    dedans = np.asarray(contains_xy(enveloppe, maille_x, maille_y))
-    forme = (len(lignes_x) - 1, len(lignes_y) - 1)
-    grille = _couverture(incidences, forme)
-    trop = int(np.sum(grille[dedans] > 1) + np.sum(grille[~dedans] > 0))
-    manque = int(np.sum(grille[dedans] < 1))
-    if trop or manque:
-        # Local defect of a few cells: try a bounded index adjustment
-        # before refusing. Beyond the budget, it is no longer a wrong dimension.
-        repare = (
-            _reparer_partition(incidences, dedans, repair_budget) if repair_budget > 0 else None
-        )
-        if repare is None:
-            raise GridNotRecoverable(excess=trop, missing=manque)
-        incidences = repare
+    incidences = _verify_partition(ctx, lignes_x, lignes_y, incidences, repair_budget)
 
     # Last safety net: repair and consolidation only handle indices, and a
     # room with reversed edges would silently pass into the LP.
@@ -516,6 +457,131 @@ def deduce_grid(
         anchored_x=frozenset(ancrees_x),
         anchored_y=frozenset(ancrees_y),
     )
+
+
+def _deduce_lines(
+    plan: Plan, ctx: Context, tolerance: float
+) -> tuple[list[float], dict[float, int], list[float], dict[float, int]]:
+    """Group room and outline edges into grid lines, anchored to the outline.
+
+    Extracted from :func:`deduce_grid` (PLAN.md phase 4, block 3): the grouping and
+    outline-anchoring pass, on its own so the caller's own complexity does not include
+    it.
+
+    Raises
+    ------
+    UnsupportedInput
+        Two outline edges fall in the same grid line through room edges within the
+        grouping tolerance, or fewer than two grid lines result on an axis.
+    """
+    xs = [p.x for p in plan.rooms] + [p.x + p.w for p in plan.rooms]
+    ys = [p.y for p in plan.rooms] + [p.y + p.h for p in plan.rooms]
+    xs_contour = [point[0] for point in ctx.outline]
+    ys_contour = [point[1] for point in ctx.outline]
+    # All the outline coordinates enter the grid, not only the
+    # extremes: on a rectilinear outline, each cell must be entirely
+    # inside or entirely outside, otherwise the mask below is meaningless.
+    lignes_x, rang_x = _regrouper([*xs, *xs_contour], tolerance)
+    lignes_y, rang_y = _regrouper([*ys, *ys_contour], tolerance)
+    _anchor_outline_vertices("x", lignes_x, rang_x, xs_contour, tolerance)
+    _anchor_outline_vertices("y", lignes_y, rang_y, ys_contour, tolerance)
+    if len(lignes_x) < 2 or len(lignes_y) < 2:
+        raise UnsupportedInput("tiling grid: fewer than two grid lines on an axis")
+    return lignes_x, rang_x, lignes_y, rang_y
+
+
+def _anchor_outline_vertices(
+    axe: str, lignes: list[float], rang: dict[float, int], valeurs: list[float], tolerance: float
+) -> None:
+    """Pin the grid lines that carry an outline vertex to that exact coordinate.
+
+    Extracted from :func:`_deduce_lines` (PLAN.md phase 4, block 3). A line that
+    carries an outline vertex *is* the outline: the group mean would drift with the
+    room edges grouped with it, and the anchoring equalities would then pin the rooms
+    off the outline, leaving an uncovered strip. Mutates ``lignes`` in place.
+
+    Raises
+    ------
+    UnsupportedInput
+        Two outline edges fall in the same grid line through room edges within the
+        grouping tolerance.
+    """
+    portees: dict[int, float] = {}
+    for value in valeurs:
+        ligne = rang[value]
+        if portees.setdefault(ligne, value) != value:
+            raise UnsupportedInput(
+                f"tiling grid: outline edges {portees[ligne]} and {value} in {axe} "
+                f"fall in one grid line, joined through room edges within the grouping "
+                f"tolerance {tolerance} m"
+            )
+        lignes[ligne] = value
+
+
+def _room_bounds(
+    plan: Plan, rang_x: dict[float, int], rang_y: dict[float, int], tolerance: float
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """Room bounds as grid-line indices, checked non-degenerate.
+
+    Extracted from :func:`deduce_grid` (PLAN.md phase 4, block 3).
+
+    Raises
+    ------
+    UnsupportedInput
+        A room is flat in one axis after grouping (thinner than ``tolerance``, or of
+        negative size).
+    """
+    bords_x = [(rang_x[p.x], rang_x[p.x + p.w]) for p in plan.rooms]
+    bords_y = [(rang_y[p.y], rang_y[p.y + p.h]) for p in plan.rooms]
+    for axe, bords in (("x", bords_x), ("y", bords_y)):
+        for (debut, fin), piece in zip(bords, plan.rooms, strict=True):
+            if debut >= fin:
+                raise UnsupportedInput(
+                    f"tiling grid: room {piece.id} is flat in {axe} (thinner than the "
+                    f"grouping tolerance {tolerance} m, or of negative size)"
+                )
+    return bords_x, bords_y
+
+
+def _verify_partition(
+    ctx: Context,
+    lignes_x: list[float],
+    lignes_y: list[float],
+    incidences: list[tuple[str, int, int, int, int]],
+    repair_budget: int,
+) -> list[tuple[str, int, int, int, int]]:
+    """Check the cells inside the outline form a partition; repair or refuse.
+
+    Extracted from :func:`deduce_grid` (PLAN.md phase 4, block 3): each cell **inside
+    the outline** covered exactly once, none outside. The real outline is rectilinear,
+    not rectangular: requiring the bounding box to be tiled would be wrong.
+
+    Raises
+    ------
+    UnsupportedInput
+        The outline is not a valid polygon.
+    GridNotRecoverable
+        The cells do not form a partition and no bounded repair recovers one.
+    """
+    enveloppe = Polygon(ctx.outline)
+    if not enveloppe.is_valid:
+        raise UnsupportedInput("tiling grid: the outline is not a valid polygon")
+    centres_x = 0.5 * (np.asarray(lignes_x[:-1]) + np.asarray(lignes_x[1:]))
+    centres_y = 0.5 * (np.asarray(lignes_y[:-1]) + np.asarray(lignes_y[1:]))
+    maille_x, maille_y = np.meshgrid(centres_x, centres_y, indexing="ij")
+    dedans = np.asarray(contains_xy(enveloppe, maille_x, maille_y))
+    forme = (len(lignes_x) - 1, len(lignes_y) - 1)
+    grille = _couverture(incidences, forme)
+    trop = int(np.sum(grille[dedans] > 1) + np.sum(grille[~dedans] > 0))
+    manque = int(np.sum(grille[dedans] < 1))
+    if not (trop or manque):
+        return incidences
+    # Local defect of a few cells: try a bounded index adjustment
+    # before refusing. Beyond the budget, it is no longer a wrong dimension.
+    repare = _reparer_partition(incidences, dedans, repair_budget) if repair_budget > 0 else None
+    if repare is None:
+        raise GridNotRecoverable(excess=trop, missing=manque)
+    return repare
 
 
 @renamed_parameters({"trame": "grid"})

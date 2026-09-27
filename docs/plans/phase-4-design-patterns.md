@@ -186,18 +186,42 @@ day count.
     `light.jetons.plan_to_vector` now delegates to it instead of duplicating the same
     four-line computation (its own comment explaining the duplication is gone with it).
 
-### 3. `geom`
+### 3. `geom` — **CC reduction done (12, 13, 15); 11 and 14 not done, see below**
 
-11. Split `pavage.py` into `trame.py` (grid inference and repair: `deduce_grid`,
-    `_consolider`, `_reparer_partition`) and a slimmer `pavage.py` (the tiling
-    constraints only: `tiling_constraints`, `extend_tiling`).
-12. Break `deduce_grid` (CC 31) under CC 10: extract its per-axis passes into named
-    helpers with their own docstrings and tests, one commit per extraction.
-13. Break `deduce_order` (`graphe.py`, CC 33) the same way.
-14. Move `diagnostic.py` to `data/` (it inspects a plan's pathologies from measured
-    data, not from the geometry-construction pipeline that owns the rest of `geom`).
-15. Break `freeze_contacts` (`polytope.py`, CC 16) and `_coupe_verticale`/
-    `_coupe_horizontale` (`rectilineaire.py`, CC 14 each) under CC 10.
+11. **Not done.** Splitting `pavage.py` into `trame.py` + a slimmer `pavage.py` was
+    superseded: item 12 already brings every function in the file under CC 10 without
+    a file split, which was the concrete, exit-gate-relevant half of this item. The
+    SRP/file-organization half remains open — a real future task, not attempted here
+    to keep this batch's risk bounded (a file split needs its own deprecated-shim
+    machinery, on top of the extractions already done).
+12. `deduce_grid` (`pavage.py`, was CC 31) split into `_deduce_lines` (grouping and
+    outline anchoring, itself split further into `_anchor_outline_vertices`),
+    `_room_bounds` (bounds + flatness check), `_verify_partition` (coverage/repair).
+    `deduce_grid` itself is now an orchestrator, under CC 10.
+13. `deduce_order` (`graphe.py`, was CC 33) split into `_pairwise_order` (the
+    center-comparison loop), `_outline_envelope`, and `_wall_sides_and_groups` — the
+    last one, still over CC 10 on its own, split again into `_assign_group_sides`,
+    then `_group_members`/`_bounding_hull`/`_assign_wall_side_for_group`.
+    `deduce_order` itself is now under CC 10.
+14. **Skipped, found infeasible as written, same class of problem as block 2's item
+    9**: a deprecated shim at the old `geom/diagnostic.py` path would need to import
+    `archlux.data.diagnostic`, but `geom` may not import `data` (the layering is the
+    other way round: `data` depends on `geom`, never the reverse). The nominal
+    exemption this needs is one more than the project's cap of 3, already fully spent.
+    Confirmed at the commit (tried the move, hit the same wall, reverted cleanly): stays
+    in `geom/`, unmoved, until the exemption cap or `data`/`geom`'s relative layering is
+    revisited — a bigger decision than block 3.
+15. `freeze_contacts` (`polytope.py`, was CC 16) split off its bounds-freezing pass
+    into `_frozen_bounds`; now under CC 10. `_coupe_verticale`/`_coupe_horizontale`
+    (`rectilineaire.py`, were CC 14 each) were near-exact mirrors of each other (axes
+    swapped) with the same three-way GEOS-geometry-type branch and the same
+    collinear-piece-joining loop duplicated; factored into two shared helpers
+    (`_line_pieces`, `_chord_through_pivot`, parametrized by axis) instead of just
+    splitting each in place — removes the duplication PLAN.md's own pattern column
+    names for this block (SRP) rather than only chasing the complexity number.
+
+**Ratchet**: `MAX_VIOLATIONS` (block 0's `tests/test_complexity.py`) moved from 33 to
+28 across items 12, 13, 15 — five named functions fixed, zero new violations.
 
 ### 4. `lmo`
 

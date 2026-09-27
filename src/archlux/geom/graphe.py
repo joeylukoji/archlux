@@ -235,9 +235,35 @@ def deduce_order(
     """
     par_id = {piece.id: piece for piece in plan.rooms}
     identifiants = sorted(par_id)
+    horizontal, vertical = _pairwise_order(par_id, identifiants)
+
+    envelope = _outline_envelope(plan)
+    wall_sides: tuple[WallSide, ...] = ()
+    shared_sides: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    if structure is not None:
+        wall_sides, shared_sides = _wall_sides_and_groups(
+            structure, groups, par_id, identifiants, envelope
+        )
+    return RelativeOrder(
+        horizontal=tuple(horizontal),
+        vertical=tuple(vertical),
+        rooms=tuple(identifiants),
+        wall_sides=wall_sides,
+        shared_sides=shared_sides,
+    )
+
+
+def _pairwise_order(
+    par_id: dict[str, Room], identifiants: list[str]
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Horizontal and vertical edges for every pair, by comparing centers.
+
+    Extracted from :func:`deduce_order` (PLAN.md phase 4, block 3): see that
+    function's docstring for the axis-choice rule (real disjointness first, the
+    larger center distance only if the rooms overlap on both axes).
+    """
     horizontal: list[tuple[str, str]] = []
     vertical: list[tuple[str, str]] = []
-
     for id_a, id_b in itertools.combinations(identifiants, 2):
         a, b = par_id[id_a], par_id[id_b]
         (xa, ya), (xb, yb) = a.center, b.center
@@ -253,52 +279,129 @@ def deduce_order(
             horizontal.append((id_a, id_b) if (xa, id_a) < (xb, id_b) else (id_b, id_a))
         else:
             vertical.append((id_a, id_b) if (ya, id_a) < (yb, id_b) else (id_b, id_a))
+    return horizontal, vertical
 
-    envelope: Envelope | None = None
-    if plan.outline:
-        xs = [x for x, _ in plan.outline]
-        ys = [y for _, y in plan.outline]
-        envelope = (min(xs), min(ys), max(xs), max(ys))
-    wall_sides: tuple[WallSide, ...] = ()
+
+def _outline_envelope(plan: Plan) -> Envelope | None:
+    """Axis-aligned bounding box of the plan's outline, or ``None`` if it has none.
+
+    Extracted from :func:`deduce_order` (PLAN.md phase 4, block 3).
+    """
+    if not plan.outline:
+        return None
+    xs = [x for x, _ in plan.outline]
+    ys = [y for _, y in plan.outline]
+    return (min(xs), min(ys), max(xs), max(ys))
+
+
+def _wall_sides_and_groups(
+    structure: Structure,
+    groups: tuple[tuple[str, ...], ...],
+    par_id: dict[str, Room],
+    identifiants: list[str],
+    envelope: Envelope | None,
+) -> tuple[tuple[WallSide, ...], tuple[tuple[str, tuple[str, ...]], ...]]:
+    """The wall side of every room, and the groups that had to share one.
+
+    Extracted from :func:`deduce_order` (PLAN.md phase 4, block 3): see that
+    function's ``groups`` parameter for why a fused room's sub-rectangles usually take
+    their own side of a wall, and only share one when their choices straddle it.
+    """
+    walls = [
+        m for m in sorted(structure.load_bearing_walls, key=lambda m: m.id) if m.length > SNAP_M
+    ]
+    for wall in walls:
+        _check_axis_aligned(wall)
+    sides = {
+        (wall.id, room_id): _wall_side(par_id[room_id], wall, envelope)
+        for wall in walls  # a point has no side; the proof ignores it too
+        for room_id in identifiants
+    }
     shared_sides: list[tuple[str, tuple[str, ...]]] = []
-    if structure is not None:
-        walls = [
-            m for m in sorted(structure.load_bearing_walls, key=lambda m: m.id) if m.length > SNAP_M
-        ]
-        for wall in walls:
-            _check_axis_aligned(wall)
-        sides = {
-            (wall.id, room_id): _wall_side(par_id[room_id], wall, envelope)
-            for wall in walls  # a point has no side; the proof ignores it too
-            for room_id in identifiants
-        }
-        for group in groups:
-            members = [par_id[room_id] for room_id in group if room_id in par_id]
-            if len(members) < 2:
-                continue
-            x0, y0 = min(m.x for m in members), min(m.y for m in members)
-            x1, y1 = max(m.x + m.w for m in members), max(m.y + m.h for m in members)
-            hull = replace(members[0], x=x0, y=y0, w=x1 - x0, h=y1 - y0)
-            for wall in walls:
-                # Among equally cheap sides, prefer an assignment without opposite sides.
-                choices = [_wall_sides_by_penetration(m, wall, envelope) for m in members]
-                compatible = _compatible_sides(choices)
-                if compatible is not None:
-                    for ws in compatible:
-                        sides[wall.id, ws.room] = ws
-                else:
-                    shared = _wall_side(hull, wall, envelope)
-                    for m in members:
-                        sides[wall.id, m.id] = replace(shared, room=m.id)
-                    shared_sides.append((wall.id, tuple(m.id for m in members)))
-        wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiants)
-    return RelativeOrder(
-        horizontal=tuple(horizontal),
-        vertical=tuple(vertical),
-        rooms=tuple(identifiants),
-        wall_sides=wall_sides,
-        shared_sides=tuple(shared_sides),
-    )
+    for group in groups:
+        shared_sides.extend(_assign_group_sides(group, walls, par_id, envelope, sides))
+    wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiants)
+    return wall_sides, tuple(shared_sides)
+
+
+def _group_members(group: tuple[str, ...], par_id: dict[str, Room]) -> list[Room] | None:
+    """The rooms of ``group`` that exist in this plan, or ``None`` if fewer than two do.
+
+    Extracted from :func:`_assign_group_sides` (PLAN.md phase 4, block 3).
+    """
+    members = [par_id[room_id] for room_id in group if room_id in par_id]
+    return members if len(members) >= 2 else None
+
+
+def _bounding_hull(members: list[Room]) -> Room:
+    """Bounding box of ``members``, as a room of its own (PLAN.md phase 4, block 3)."""
+    x0, y0 = min(m.x for m in members), min(m.y for m in members)
+    x1, y1 = max(m.x + m.w for m in members), max(m.y + m.h for m in members)
+    return replace(members[0], x=x0, y=y0, w=x1 - x0, h=y1 - y0)
+
+
+def _assign_group_sides(
+    group: tuple[str, ...],
+    walls: list[Wall],
+    par_id: dict[str, Room],
+    envelope: Envelope | None,
+    sides: dict[tuple[str, str], WallSide],
+) -> list[tuple[str, tuple[str, ...]]]:
+    """One fused room's sub-rectangles: each its own wall side, unless they straddle it.
+
+    Extracted from :func:`_wall_sides_and_groups` (PLAN.md phase 4, block 3). Members
+    take their own side of a wall, read from their bounding box, unless two of them
+    take **opposite** sides on that axis; only then do they share one, read from their
+    hull. Mutates ``sides`` in place.
+
+    Returns
+    -------
+    list of (str, tuple of str)
+        One ``shared_sides`` entry per wall this group could not split compatibly;
+        empty if the group has fewer than two members, or every wall left it
+        compatible.
+    """
+    members = _group_members(group, par_id)
+    if members is None:
+        return []
+    hull = _bounding_hull(members)
+    member_ids = tuple(m.id for m in members)
+    shared_sides: list[tuple[str, tuple[str, ...]]] = []
+    for wall in walls:
+        if not _assign_wall_side_for_group(wall, members, hull, envelope, sides):
+            shared_sides.append((wall.id, member_ids))
+    return shared_sides
+
+
+def _assign_wall_side_for_group(
+    wall: Wall,
+    members: list[Room],
+    hull: Room,
+    envelope: Envelope | None,
+    sides: dict[tuple[str, str], WallSide],
+) -> bool:
+    """One wall, one group: split it if the members' choices agree, else share the hull.
+
+    Extracted from :func:`_assign_group_sides` (PLAN.md phase 4, block 3). Mutates
+    ``sides`` in place.
+
+    Returns
+    -------
+    bool
+        ``True`` if the members split compatibly (each its own side); ``False`` if
+        they had to share the hull's side instead.
+    """
+    # Among equally cheap sides, prefer an assignment without opposite sides.
+    choices = [_wall_sides_by_penetration(m, wall, envelope) for m in members]
+    compatible = _compatible_sides(choices)
+    if compatible is not None:
+        for ws in compatible:
+            sides[wall.id, ws.room] = ws
+        return True
+    shared = _wall_side(hull, wall, envelope)
+    for m in members:
+        sides[wall.id, m.id] = replace(shared, room=m.id)
+    return False
 
 
 Envelope = tuple[float, float, float, float]
