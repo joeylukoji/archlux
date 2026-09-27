@@ -5,8 +5,8 @@ function, parameter, attribute or variable named after a French term of the glos
 banned terms are read from ``docs/glossary.md`` (the French column, in backticks), so the
 list cannot drift from the decisions written there.
 
-``MIGRATED`` starts with the modules that never had a French name and grows wave by wave:
-a module joins it in the commit that finishes its rename.
+``MIGRATED`` is a ratchet: it lists every module already free of French identifiers, and a
+module joins it in the commit that finishes its rename. It never shrinks.
 """
 
 from __future__ import annotations
@@ -21,11 +21,67 @@ ROOT = Path(__file__).resolve().parents[1]
 GLOSSARY = ROOT / "docs" / "glossary.md"
 
 MIGRATED: tuple[str, ...] = (
+    "src/archlux/__init__.py",
     "src/archlux/_deprecation.py",
     "src/archlux/_version.py",
+    "src/archlux/active/__init__.py",
+    "src/archlux/active/densite.py",
+    "src/archlux/active/selection.py",
     "src/archlux/arrays.py",
+    "src/archlux/bench/__init__.py",
+    "src/archlux/bench/graines.py",
+    "src/archlux/certify/__init__.py",
+    "src/archlux/certify/borne.py",
+    "src/archlux/certify/dual.py",
+    "src/archlux/certify/farkas.py",
+    "src/archlux/certify/preuve.py",
+    "src/archlux/certify/proof.py",
+    "src/archlux/certify/rapport.py",
+    "src/archlux/data/__init__.py",
+    "src/archlux/data/decoupage.py",
+    "src/archlux/erreurs.py",
+    "src/archlux/errors.py",
+    "src/archlux/export/__init__.py",
+    "src/archlux/export/dxf.py",
+    "src/archlux/export/survie.py",
+    "src/archlux/export/wilson.py",
+    "src/archlux/feasibility/__init__.py",
+    "src/archlux/geom/__init__.py",
+    "src/archlux/geom/diagnostic.py",
+    "src/archlux/io/__init__.py",
+    "src/archlux/lmo/__init__.py",
+    "src/archlux/orient/__init__.py",
     "src/archlux/seeds.py",
+    "src/archlux/solve/__init__.py",
     "src/archlux/tolerances.py",
+    "src/archlux/types.py",
+    "src/archlux/uq/__init__.py",
+    "src/archlux/uq/fiabilite.py",
+    "src/archlux/validation.py",
+    "src/archlux/geom/graphe.py",
+    "src/archlux/geom/polytope.py",
+    "src/archlux/geom/pavage.py",
+    "src/archlux/geom/rectilineaire.py",
+    "src/archlux/lmo/solveur.py",
+    "src/archlux/lmo/cuts.py",
+    "src/archlux/uq/conforme.py",
+    "src/archlux/uq/derive.py",
+    "src/archlux/uq/gestion.py",
+    "src/archlux/export/ifc.py",
+    "src/archlux/export/pathologie.py",
+    "src/archlux/export/svg.py",
+    "src/archlux/data/chargeurs.py",
+    "src/archlux/data/corruption.py",
+    "src/archlux/data/dedup.py",
+    "src/archlux/data/imputation.py",
+    "src/archlux/data/synthese.py",
+    "src/archlux/bench/manifeste.py",
+    "src/archlux/bench/protocole.py",
+    "src/archlux/bench/rapport.py",
+    "src/archlux/bench/run.py",
+    "src/archlux/bench/stats.py",
+    "src/archlux/active/boucle.py",
+    "src/archlux/orient/circulaire.py",
 )
 
 _TICKED = re.compile(r"`([A-Za-z_][A-Za-z0-9_]*)`")

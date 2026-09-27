@@ -1,12 +1,12 @@
-"""Graphe de contraintes → polytope ``A x ≤ b``, ``A_eq x = b_eq``, bornes.
+"""Constraint graph -> polytope ``A x <= b``, ``A_eq x = b_eq``, bounds.
 
-Quatre variables par pièce : ``<piece>.x``, ``<piece>.y``, ``<piece>.w``, ``<piece>.h``.
+Four variables per room: ``<room>.x``, ``<room>.y``, ``<room>.w``, ``<room>.h``.
 
-Les surfaces minimales ne sont **pas** produites ici : ``w · h ≥ a`` est non linéaire et
-se traite par coupes tangentes dans :mod:`archlux.lmo.coupes`.
+Minimum areas are **not** produced here: ``w · h >= a`` is nonlinear and
+is handled by tangent cuts in :mod:`archlux.lmo.coupes`.
 
-Assemblage A x <= b et sources : ``docs/formules/polytope-separe.md``.
-Épigraphe L1 : ``docs/formules/epigraphe-l1.md``.
+Assembly of A x <= b and sources: ``docs/formules/polytope-separe.md``.
+L1 epigraph: ``docs/formules/epigraphe-l1.md``.
 """
 
 from __future__ import annotations
@@ -17,148 +17,149 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy import sparse
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.arrays import VecteurF
-from archlux.erreurs import Infaisable, InvariantViole
-from archlux.geom.graphe import construire_graphe, reduction_transitive
+from archlux.errors import Infeasible, InvariantViolation
+from archlux.geom.graphe import build_graph, transitive_reduction
 
 if TYPE_CHECKING:
-    from archlux.geom.graphe import OrdreRelatif
-    from archlux.types import Contexte, Plan
+    from archlux.geom.graphe import RelativeOrder
+    from archlux.types import Context, Plan
 
 __all__ = [
-    "CHAMPS",
+    "FIELDS",
     "Polytope",
-    "construire_polytope",
+    "build_polytope",
     "decision_vector",
-    "devectoriser",
-    "etendre_ecarts_l1",
-    "figer_contacts",
-    "vectoriser",
+    "devectorize",
+    "extend_l1_slack",
+    "freeze_contacts",
+    "vectorize",
 ]
 
-CHAMPS = ("x", "y", "w", "h")
-"""Les quatre variables d'une pièce, **dans cet ordre**.
+FIELDS = ("x", "y", "w", "h")
+"""The four variables of a room, **in this order**.
 
-L'ordre est un contrat : ``lmo`` et ``solve`` supposent des colonnes contiguës par pièce,
-et une trace de duaux archivée n'est relisible que si les colonnes n'ont pas bougé.
+The order is a contract: ``lmo`` and ``solve`` assume contiguous columns per room,
+and an archived dual trace can only be re-read if the columns have not moved.
 """
 
 
 @dataclass(frozen=True, slots=True)
 class Polytope:
-    """Le domaine admissible, sous forme matricielle creuse.
+    """The feasible domain, in sparse matrix form.
 
     Attributes
     ----------
     index : dict of str to int
-        ``"sejour.x"`` → ``12``. Le seul pont entre noms métier et colonnes.
-        **Invariant :** les valeurs sont exactement ``0..len(index)-1``, sans trou.
-        ``lmo`` et ``geom`` s'appuient dessus pour identifier « rang dans la liste des
-        noms triés par colonne » et « indice de colonne » ; un index troué produirait
-        silencieusement des coefficients rangés sur la mauvaise variable.
-    origines : tuple of str
-        Ligne ``i`` de ``A`` → libellé lisible, ex. ``"separation horizontale a|b"``.
-        ``len(origines) == A.shape[0]`` : c'est ce qui rend les duaux appariables.
-        The rows of ``A_eq`` are labelled separately, by ``origines_eq``.
+        ``"living_room.x"`` -> ``12``. The only bridge between business names and columns.
+        **Invariant:** the values are exactly ``0..len(index)-1``, with no gap.
+        ``lmo`` and ``geom`` rely on it to identify "rank in the list of names sorted by
+        column" and "column index"; an index with holes would silently produce
+        coefficients placed on the wrong variable.
+    origins : tuple of str
+        Row ``i`` of ``A`` -> readable label, e.g. ``"separation horizontale a|b"``.
+        ``len(origins) == A.shape[0]``: this is what makes the duals pairable.
+        The rows of ``A_eq`` are labelled separately, by ``origins_eq``.
 
     Notes
     -----
-    **``origines`` est obligatoire, dès la première version.** Sans ce champ, un prix
-    dual est « le nombre de la ligne 47 » : inutilisable. Avec lui, c'est « le mur
-    porteur de l'axe 3 vous coûte 4,1 points ». Ce champ est impossible à rattraper
-    après coup sans reconstruire le module (`ARCHITECTURE.md` §10, `MILESTONE-2.md` §3).
+    **``origins`` is mandatory, from the very first version.** Without this field, a dual
+    price is "the number on row 47": unusable. With it, it is "the load-bearing wall
+    on axis 3 costs you 4.1 points". This field cannot be retrofitted
+    without rebuilding the module (`ARCHITECTURE.md` §10, `MILESTONE-2.md` §3).
 
-    ``index`` est un ``dict`` mutable dans un type gelé : c'est la signature imposée par
-    `MILESTONE-2.md` §3. Le traiter comme immuable ; rien dans le projet ne le modifie
-    après construction.
+    ``index`` is a mutable ``dict`` in a frozen type: this is the signature imposed by
+    `MILESTONE-2.md` §3. Treat it as immutable; nothing in the project modifies it
+    after construction.
     """
 
     A: sparse.csr_matrix
     b: VecteurF
     A_eq: sparse.csr_matrix
     b_eq: VecteurF
-    bornes: tuple[tuple[float, float], ...]
+    bounds: tuple[tuple[float, float], ...]
     index: dict[str, int]
-    origines: tuple[str, ...]
-    origines_eq: tuple[str, ...] = ()
+    origins: tuple[str, ...]
+    origins_eq: tuple[str, ...] = ()
     """Label of each row of ``A_eq`` (tiling, fusion, frozen contact). Needed to name
     the constraints of an infeasibility certificate; see :meth:`labels_eq`."""
 
-    def labels_eq(self) -> tuple[str, ...]:
+    def eq_labels(self) -> tuple[str, ...]:
         """One label per row of ``A_eq``; rows added without a label get a generic one."""
         n_rows = self.A_eq.shape[0]
-        labels = self.origines_eq[:n_rows]
+        labels = self.origins_eq[:n_rows]
         return labels + tuple(f"equality {k}" for k in range(len(labels), n_rows))
 
-    def contient(self, x: VecteurF, tol: float = 1e-9) -> bool:
-        """Dire si le point ``x`` satisfait toutes les contraintes, à ``tol`` près.
+    def contains(self, x: VecteurF, tol: float = 1e-9) -> bool:
+        """Tell whether the point ``x`` satisfies every constraint, within ``tol``.
 
-        Vérification **naïve et directe**, indépendante de tout solveur : c'est elle qui
-        attrape une erreur du solveur, elle ne doit donc rien lui emprunter.
+        **Naive and direct** check, independent of any solver: it is what
+        catches a solver error, so it must borrow nothing from it.
 
         Parameters
         ----------
         x : numpy.ndarray
-            Vecteur de dimension ``len(self.index)``.
+            Vector of dimension ``len(self.index)``.
         tol : float, optional
-            Tolérance absolue sur chaque contrainte.
+            Absolute tolerance on each constraint.
 
         Returns
         -------
         bool
-            ``True`` si le point est admissible : inégalités, égalités et bornes.
+            ``True`` if the point is feasible: inequalities, equalities and bounds.
 
         Raises
         ------
-        InvariantViole
-            La dimension de ``x`` ne correspond pas au polytope.
+        InvariantViolation
+            The dimension of ``x`` does not match the polytope.
 
         Complexity
         ----------
         O(nnz(A)).
         """
         if x.shape != (len(self.index),):
-            raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(self.index)},)",))
+            raise InvariantViolation((f"vector of shape {x.shape}, expected ({len(self.index)},)",))
         if self.A.shape[0] and np.any(self.A @ x > self.b + tol):
             return False
         if self.A_eq.shape[0] and np.any(np.abs(self.A_eq @ x - self.b_eq) > tol):
             return False
-        bas = np.array([b[0] for b in self.bornes])
-        haut = np.array([b[1] for b in self.bornes])
+        bas = np.array([b[0] for b in self.bounds])
+        haut = np.array([b[1] for b in self.bounds])
         return bool(np.all(x >= bas - tol) and np.all(x <= haut + tol))
 
 
-def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytope:
-    """Transformer les contacts saturés en égalités, y compris les bords du contour.
+def freeze_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytope:
+    """Turn saturated contacts into equalities, including the outline edges.
 
-    Le polytope d'ordre est un **relaxé** : ``x_a + w_a ≤ x_b`` autorise un jour,
-    et les bords gauche / bas ne sont que des ``bornes``. Après une légalisation L1
-    d'un pavage, les contacts et le collage au contour sont saturés. Les figer
-    empêche Frank-Wolfe d'ouvrir un trou, tout en laissant les cloisons internes
-    bouger. Les largeurs minimales saturées ne sont **pas** figées : une pièce
-    étroite doit pouvoir s'agrandir.
+    The order polytope is a **relaxation**: ``x_a + w_a <= x_b`` allows a gap,
+    and the left / bottom edges are only ``bounds``. After an L1 legalization
+    of a tiling, the contacts and the attachment to the outline are saturated. Freezing
+    them keeps Frank-Wolfe from opening a hole, while letting the internal partitions
+    move. Saturated minimum widths are **not** frozen: a narrow
+    room must be able to grow.
 
     Parameters
     ----------
     poly : Polytope
-        Système d'inégalités issu de :func:`construire_polytope`.
+        System of inequalities from :func:`build_polytope`.
     x : numpy.ndarray
-        Point de référence, typiquement la sortie L1.
+        Reference point, typically the L1 output.
     tol : float, optional
-        Un contact est saturé si ``b - Ax ≤ tol`` ; une borne l'est si l'écart
-        à ``x`` est ``≤ tol``.
+        A contact is saturated if ``b - Ax <= tol``; a bound is if its distance
+        to ``x`` is ``<= tol``.
 
     Returns
     -------
     Polytope
-        Même ``index`` ; lignes saturées dans ``A_eq`` ; ``x``/``y`` collés au
-        contour figés dans ``bornes``.
+        Same ``index``; saturated rows in ``A_eq``; ``x``/``y`` attached to the
+        outline frozen in ``bounds``.
     """
     if x.shape != (len(poly.index),):
-        raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(poly.index)},)",))
+        raise InvariantViolation((f"vector of shape {x.shape}, expected ({len(poly.index)},)",))
     noms = {colonne: nom for nom, colonne in poly.index.items()}
     bornes: list[tuple[float, float]] = []
-    for colonne, (lo, hi) in enumerate(poly.bornes):
+    for colonne, (lo, hi) in enumerate(poly.bounds):
         val = float(x[colonne])
         champ = noms[colonne].rsplit(".", 1)[1]
         bas, haut = lo, hi
@@ -170,11 +171,11 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
         bornes.append((bas, haut))
 
     if poly.A.shape[0] == 0:
-        return replace(poly, bornes=tuple(bornes))
+        return replace(poly, bounds=tuple(bornes))
     marge = poly.b - np.ravel(poly.A @ x)
     saturees = marge <= tol
     if not np.any(saturees):
-        return replace(poly, bornes=tuple(bornes))
+        return replace(poly, bounds=tuple(bornes))
     libres = ~saturees
     n_var = len(poly.index)
     a_libres = poly.A[libres]
@@ -189,11 +190,9 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
     else:
         a_eq = a_saturees.tocsr()
         b_eq = b_saturees
-    origines = tuple(
-        libelle for libelle, garder in zip(poly.origines, libres, strict=True) if garder
-    )
+    origins = tuple(libelle for libelle, garder in zip(poly.origins, libres, strict=True) if garder)
     frozen = tuple(
-        f"contact {libelle}" for libelle, fige in zip(poly.origines, saturees, strict=True) if fige
+        f"contact {libelle}" for libelle, fige in zip(poly.origins, saturees, strict=True) if fige
     )
     return replace(
         poly,
@@ -201,125 +200,125 @@ def figer_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytop
         b=np.asarray(b_libres, dtype=float),
         A_eq=a_eq,
         b_eq=np.asarray(b_eq, dtype=float),
-        bornes=tuple(bornes),
-        origines=origines,
-        origines_eq=poly.labels_eq() + frozen,
+        bounds=tuple(bornes),
+        origins=origins,
+        origins_eq=poly.eq_labels() + frozen,
     )
 
 
-def _enveloppe(ctx: Contexte) -> tuple[float, float, float, float]:
-    """Boîte englobante du contour : ``(xmin, ymin, xmax, ymax)``."""
-    if not ctx.contour:
-        raise InvariantViole(("contour vide : aucune enveloppe n'est définissable",))
-    xs = [point[0] for point in ctx.contour]
-    ys = [point[1] for point in ctx.contour]
+def _enveloppe(ctx: Context) -> tuple[float, float, float, float]:
+    """Bounding box of the outline: ``(xmin, ymin, xmax, ymax)``."""
+    if not ctx.outline:
+        raise InvariantViolation(("empty outline: no envelope can be defined",))
+    xs = [point[0] for point in ctx.outline]
+    ys = [point[1] for point in ctx.outline]
     xmin, xmax, ymin, ymax = min(xs), max(xs), min(ys), max(ys)
     if xmax <= xmin or ymax <= ymin:
-        raise InvariantViole((f"contour dégénéré : {xmax - xmin} x {ymax - ymin}",))
+        raise InvariantViolation((f"degenerate outline: {xmax - xmin} x {ymax - ymin}",))
     return xmin, ymin, xmax, ymax
 
 
 def _verifier_enveloppe_admissible(
-    largeur_min: float, largeur: float, hauteur: float, pieces: tuple[str, ...]
+    min_width: float, largeur: float, hauteur: float, rooms: tuple[str, ...]
 ) -> None:
-    """Refuser une enveloppe trop petite pour la largeur minimale réglementaire.
+    """Refuse an envelope too small for the regulatory minimum width.
 
-    Sans ce contrôle, ``bornes`` porte un intervalle **inversé** (``lo > hi``) : GLOP
-    répond ``ABNORMAL``, que :func:`archlux.lmo.solveur._statut` traduit en
-    ``"limite"``, et ``api.legalize`` lève ``InvariantViole`` — « bogue interne » — sur
-    ce qui est en réalité un programme infaisable. Le certificat de Farkas est de plus
-    inexploitable dans ce cas : l'infaisabilité ne vient d'aucune ligne de ``A``, donc
-    le problème auxiliaire n'a lui-même pas de solution.
+    Without this check, ``bounds`` carries an **inverted** interval (``lo > hi``): GLOP
+    answers ``ABNORMAL``, which :func:`archlux.lmo.solveur._statut` translates to
+    ``"limite"``, and ``api.legalize`` raises ``InvariantViolation`` ("internal bug") on
+    what is actually an infeasible program. The Farkas certificate is also
+    unusable in this case: the infeasibility comes from no row of ``A``, so
+    the auxiliary problem has no solution either.
 
     Raises
     ------
-    Infaisable
-        ``largeur_min`` dépasse une des deux dimensions de l'enveloppe. Sans pièce, il
-        n'y a aucune variable ``w``/``h`` et donc rien à refuser.
+    Infeasible
+        ``largeur_min`` exceeds one of the two dimensions of the envelope. Without rooms,
+        there is no ``w``/``h`` variable and so nothing to refuse.
     """
-    if not pieces:
+    if not rooms:
         return
     conflits = tuple(
-        f"largeur minimale {largeur_min} m > {libelle} de l'enveloppe ({etendue} m)"
-        for libelle, etendue in (("largeur", largeur), ("hauteur", hauteur))
-        if largeur_min > etendue
+        f"minimum width {min_width} m > {libelle} of the envelope ({etendue} m)"
+        for libelle, etendue in (("width", largeur), ("height", hauteur))
+        if min_width > etendue
     )
     if conflits:
-        raise Infaisable(certificat_farkas=None, origines=conflits)
+        raise Infeasible(farkas_certificate=None, origins=conflits)
 
 
-def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
-    """Assembler le système linéaire décrivant tous les plans valides de cet ordre.
+def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
+    """Assemble the linear system describing every valid plan of this order.
 
-    Contraintes produites :
+    Constraints produced:
 
-    - séparation horizontale ``x_a + w_a − x_b ≤ 0`` par arête de ``g.horizontal`` ;
-    - séparation verticale ``y_a + h_a − y_b ≤ 0`` ;
+    - horizontal separation ``x_a + w_a - x_b <= 0`` per edge of ``g.horizontal``;
+    - vertical separation ``y_a + h_a - y_b <= 0``;
     - load-bearing walls: one row per room and wall, keeping the room on its side
       (``ordre.wall_sides``, see :class:`archlux.geom.graphe.WallSide`);
-    - contour ``x_i + w_i ≤ x_max``, ``y_i + h_i ≤ y_max`` ;
-    - bords bas et gauche, et largeurs minimales ``w_i ≥ ℓ_min``, **via ``bornes``**.
+    - outline ``x_i + w_i <= x_max``, ``y_i + h_i <= y_max``;
+    - bottom and left edges, and minimum widths ``w_i >= l_min``, **via ``bounds``**.
 
-    Le graphe est **réduit transitivement** avant l'assemblage. Les arêtes retirées
-    restent impliquées : de ``x_a + w_a ≤ x_b`` et ``x_b + w_b ≤ x_c``, avec ``w_b ≥ 0``,
-    découle ``x_a + w_a ≤ x_c``.
+    The graph is **transitively reduced** before assembly. The removed edges
+    remain implied: from ``x_a + w_a <= x_b`` and ``x_b + w_b <= x_c``, with ``w_b >= 0``,
+    follows ``x_a + w_a <= x_c``.
 
     Parameters
     ----------
-    ordre : OrdreRelatif
-        Ordre partiel, typiquement issu de :func:`archlux.geom.graphe.deduire_ordre`.
-    ctx : Contexte
-        Contour, structure porteuse et référentiel.
+    ordre : RelativeOrder
+        Partial order, typically from :func:`archlux.geom.graphe.deduce_order`.
+    ctx : Context
+        Outline, load-bearing structure and regulation.
 
     Returns
     -------
     Polytope
-        Système complet, ``index`` et ``origines`` renseignés.
+        Complete system, ``index`` and ``origins`` filled in.
 
     Raises
     ------
-    OrdreIncoherent, SeparationManquante
-        Propagées depuis :func:`archlux.geom.graphe.construire_graphe`.
-    InvariantViole
-        Contour vide ou dégénéré.
-    Infaisable
-        ``referentiel.largeur_min`` dépasse une dimension de l'enveloppe : aucune pièce
-        n'y tient. Détecté ici plutôt que par le LP, qui ne saurait pas le distinguer
-        d'une erreur numérique (voir :func:`_verifier_enveloppe_admissible`).
+    InconsistentOrder, MissingSeparation
+        Propagated from :func:`archlux.geom.graphe.build_graph`.
+    InvariantViolation
+        Empty or degenerate outline.
+    Infeasible
+        ``regulation.min_width`` exceeds a dimension of the envelope: no room
+        fits in it. Detected here rather than by the LP, which could not tell it apart
+        from a numerical error (see :func:`_verifier_enveloppe_admissible`).
 
     Guarantees
     ----------
-    - Géométrique : **exacte**. Tout point du polytope est un plan sans chevauchement,
-      à ordre relatif fixé. La réciproque — tout plan valide de cet ordre est dans le
-      polytope — est vérifiée par test de propriété sur des pavages exacts.
-    - Aucune garantie de performance : ce module ignore la lumière.
+    - Geometric: **exact**. Every point of the polytope is a plan free of overlap,
+      for a fixed relative order. The converse (every valid plan of this order is in the
+      polytope) is checked by a property test on exact tilings.
+    - No performance guarantee: this module ignores light.
 
     Complexity
     ----------
-    O(n²) contraintes au pire, O(n) après réduction transitive en pratique.
-    Budget : < 5 ms pour 15 pièces (`ARCHITECTURE.md` §9).
+    O(n²) constraints at worst, O(n) after transitive reduction in practice.
+    Budget: < 5 ms for 15 rooms (`ARCHITECTURE.md` §9).
     """
     xmin, ymin, xmax, ymax = _enveloppe(ctx)
-    graphe = reduction_transitive(construire_graphe(ordre, ordre.pieces))
+    graphe = transitive_reduction(build_graph(ordre, ordre.rooms))
 
-    index = _decision_index(ordre.pieces)
+    index = _decision_index(ordre.rooms)
     n_var = len(index)
 
     lignes: list[int] = []
     colonnes: list[int] = []
     valeurs: list[float] = []
     second_membre: list[float] = []
-    origines: list[str] = []
+    origins: list[str] = []
 
-    def _ajouter(termes: dict[str, float], borne: float, origine: str) -> None:
-        """Ajouter une ligne ``A x <= b`` et son libelle d'origine."""
-        ligne = len(origines)
+    def _ajouter(termes: dict[str, float], borne: float, origin: str) -> None:
+        """Add a row ``A x <= b`` and its origin label."""
+        ligne = len(origins)
         for nom, coefficient in termes.items():
             lignes.append(ligne)
             colonnes.append(index[nom])
             valeurs.append(coefficient)
         second_membre.append(borne)
-        origines.append(origine)
+        origins.append(origin)
 
     axes = (("horizontal", "horizontale", "x", "w"), ("vertical", "verticale", "y", "h"))
     for axe, libelle, position, taille in axes:
@@ -330,7 +329,7 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
                 f"separation {libelle} {a}|{b}",
             )
 
-    for piece in ordre.pieces:
+    for piece in ordre.rooms:
         _ajouter({f"{piece}.x": 1.0, f"{piece}.w": 1.0}, xmax, f"contour droit {piece}")
         _ajouter({f"{piece}.y": 1.0, f"{piece}.h": 1.0}, ymax, f"contour haut {piece}")
 
@@ -349,17 +348,17 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
             f"load-bearing {side.wall}: {side.room} {side.side} of {side.bound:g}",
         )
 
-    matrice = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(origines), n_var)).tocsr()
+    matrice = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(origins), n_var)).tocsr()
 
-    largeur_min = ctx.referentiel.largeur_min
-    _verifier_enveloppe_admissible(largeur_min, xmax - xmin, ymax - ymin, ordre.pieces)
+    min_width = ctx.regulation.min_width
+    _verifier_enveloppe_admissible(min_width, xmax - xmin, ymax - ymin, ordre.rooms)
     bornes_par_champ = {
         "x": (xmin, xmax),
         "y": (ymin, ymax),
-        "w": (largeur_min, xmax - xmin),
-        "h": (largeur_min, ymax - ymin),
+        "w": (min_width, xmax - xmin),
+        "h": (min_width, ymax - ymin),
     }
-    bornes = tuple(bornes_par_champ[champ] for _ in ordre.pieces for champ in CHAMPS)
+    bornes = tuple(bornes_par_champ[champ] for _ in ordre.rooms for champ in FIELDS)
 
     return Polytope(
         A=matrice,
@@ -368,18 +367,18 @@ def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope:
         # not equalities: a room only has to stay on its side of a wall.
         A_eq=sparse.csr_matrix((0, n_var)),
         b_eq=np.zeros(0, dtype=float),
-        bornes=bornes,
+        bounds=bornes,
         index=index,
-        origines=tuple(origines),
+        origins=tuple(origins),
     )
 
 
 def _decision_index(room_ids: tuple[str, ...]) -> dict[str, int]:
-    """Columns ``<room>.<field>``: rooms in the given order, fields in :data:`CHAMPS` order."""
+    """Columns ``<room>.<field>``: rooms in the given order, fields in :data:`FIELDS` order."""
     return {
         f"{room}.{field}": 4 * rank + offset
         for rank, room in enumerate(room_ids)
-        for offset, field in enumerate(CHAMPS)
+        for offset, field in enumerate(FIELDS)
     }
 
 
@@ -387,7 +386,7 @@ def decision_vector(plan: Plan) -> VecteurF:
     """Decision vector of ``plan``, without building a polytope (AUDIT.md M12).
 
     Rooms sorted by identifier, then ``x, y, w, h``: the column order of
-    :func:`construire_polytope` (whose relative order lists rooms sorted), hence the
+    :func:`build_polytope` (whose relative order lists rooms sorted), hence the
     vector a surrogate receives from ``solve``. Use it to evaluate a surrogate or an
     oracle on a plan.
 
@@ -399,94 +398,98 @@ def decision_vector(plan: Plan) -> VecteurF:
     Returns
     -------
     numpy.ndarray
-        Vector of dimension ``4 * len(plan.pieces)``.
+        Vector of dimension ``4 * len(plan.rooms)``.
 
     Examples
     --------
-    >>> from archlux.types import Piece, Plan
-    >>> rooms = tuple(Piece(id=i, type="x", x=x, y=0, w=6, h=9) for i, x in (("b", 6), ("a", 0)))
-    >>> plan = Plan(pieces=rooms, murs=(), ouvertures=(), contour=())
+    >>> from archlux.types import Plan, Room
+    >>> plan = Plan(
+    ...     rooms=(
+    ...         Room(id="b", type="x", x=6, y=0, w=6, h=9),
+    ...         Room(id="a", type="x", x=0, y=0, w=6, h=9),
+    ...     )
+    ... )
     >>> decision_vector(plan).tolist()
     [0.0, 0.0, 6.0, 9.0, 6.0, 0.0, 6.0, 9.0]
     """
-    return vectoriser(plan, _decision_index(tuple(sorted(room.id for room in plan.pieces))))
+    return vectorize(plan, _decision_index(tuple(sorted(room.id for room in plan.rooms))))
 
 
-def vectoriser(plan: Plan, index: dict[str, int]) -> VecteurF:
-    """Projeter un plan sur le vecteur de décision ordonné par ``index``.
+def vectorize(plan: Plan, index: dict[str, int]) -> VecteurF:
+    """Project a plan onto the decision vector ordered by ``index``.
 
     Parameters
     ----------
     plan : Plan
-        Plan à encoder.
+        Plan to encode.
     index : dict of str to int
-        Table de correspondance issue d'un :class:`Polytope`.
+        Lookup table from a :class:`Polytope`.
 
     Returns
     -------
     numpy.ndarray
-        Vecteur de dimension ``len(index)``.
+        Vector of dimension ``len(index)``.
 
     Raises
     ------
-    InvariantViole
-        Une pièce attendue par ``index`` est absente du plan. C'est un bogue interne :
-        le polytope et le plan doivent venir du même ordre.
+    InvariantViolation
+        A room expected by ``index`` is missing from the plan. This is an internal bug:
+        the polytope and the plan must come from the same order.
 
     Complexity
     ----------
     O(n).
     """
     point = np.zeros(len(index), dtype=float)
-    par_id = {piece.id: piece for piece in plan.pieces}
+    par_id = {piece.id: piece for piece in plan.rooms}
     for nom, colonne in index.items():
         piece_id, champ = nom.rsplit(".", 1)
         piece = par_id.get(piece_id)
         if piece is None:
-            raise InvariantViole((f"pièce {piece_id} absente du plan à vectoriser",))
+            raise InvariantViolation((f"room {piece_id} missing from the plan to vectorize",))
         point[colonne] = getattr(piece, champ)
     return point
 
 
-def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
-    """Reconstruire un plan depuis un vecteur solution.
+def devectorize(x: VecteurF, template: Plan, index: dict[str, int]) -> Plan:
+    """Rebuild a plan from a solution vector.
 
-    ``gabarit`` fournit tout ce que le vecteur ne porte pas : murs, ouvertures, contour.
-    Les ouvertures étant relatives à leur mur, elles suivent le déplacement sans
-    retouche — c'est exactement la raison de l'invariant de `ARCHITECTURE.md` §6.
+    ``template`` provides everything the vector does not carry: walls, openings, outline.
+    Since openings are relative to their wall, they follow the move without
+    adjustment; this is exactly the reason for the invariant of `ARCHITECTURE.md` §6.
 
     Parameters
     ----------
     x : numpy.ndarray
-        Solution du LP.
-    gabarit : Plan
-        Plan d'origine, **non muté** : un nouveau plan est rendu.
+        LP solution.
+    template : Plan
+        Original plan, **not mutated**: a new plan is returned.
     index : dict of str to int
-        Table de correspondance du polytope.
+        Lookup table of the polytope.
 
     Returns
     -------
     Plan
-        Nouveau plan, **sans certificat** — c'est ``api.legalize`` qui l'y attache, et
-        seulement après vérification exacte indépendante.
+        New plan, **without certificate**: ``api.legalize`` attaches it, and
+        only after an independent exact verification.
 
     Raises
     ------
-    InvariantViole
-        Dimension inattendue, ou pièce du gabarit absente du polytope. Laisser une pièce
-        non mise à jour produirait un plan faux que ``certify`` rejetterait plus loin,
-        avec un diagnostic sans rapport avec la cause.
+    InvariantViolation
+        Unexpected dimension, or a room of the template missing from the polytope. Leaving
+        a room not updated would produce a wrong plan that ``certify`` would reject later,
+        with a diagnostic unrelated to the cause.
 
     Complexity
     ----------
     O(n).
     """
     if x.shape != (len(index),):
-        raise InvariantViole((f"vecteur de dimension {x.shape}, attendu ({len(index)},)",))
-    manquantes = sorted(piece.id for piece in gabarit.pieces if f"{piece.id}.x" not in index)
+        raise InvariantViolation((f"vector of shape {x.shape}, expected ({len(index)},)",))
+    manquantes = sorted(piece.id for piece in template.rooms if f"{piece.id}.x" not in index)
     if manquantes:
-        raise InvariantViole((f"pièces absentes du polytope : {', '.join(manquantes)}",))
-    pieces = tuple(
+        raise InvariantViolation((f"rooms missing from the polytope: {', '.join(manquantes)}",))
+    rooms = tuple(
         replace(
             piece,
             x=float(x[index[f"{piece.id}.x"]]),
@@ -494,61 +497,61 @@ def devectoriser(x: VecteurF, gabarit: Plan, index: dict[str, int]) -> Plan:
             w=float(x[index[f"{piece.id}.w"]]),
             h=float(x[index[f"{piece.id}.h"]]),
         )
-        for piece in gabarit.pieces
+        for piece in template.rooms
     )
-    return replace(gabarit, pieces=pieces, certificat=None)
+    return replace(template, rooms=rooms, certificate=None)
 
 
-def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:
-    r"""Épigraphe de :math:`\\|x - \\hat{x}\\|_1` : variables d'écart et deux inégalités.
+def extend_l1_slack(poly: Polytope, x_ref: VecteurF) -> Polytope:
+    r"""Epigraph of :math:`\\|x - \\hat{x}\\|_1`: slack variables and two inequalities.
 
-    Formule
+    Formula
     -------
-    :math:`\\min_x \\sum_i |x_i - \\hat{x}_i|` n'est pas linéaire. L'épigraphe
+    :math:`\\min_x \\sum_i |x_i - \\hat{x}_i|` is not linear. The epigraph
     (Bertsimas & Tsitsiklis, *Introduction to Linear Optimization*, Athena
-    Scientific, 1997, §1.3) introduit :math:`e_i \\ge 0` tel que
+    Scientific, 1997, §1.3) introduces :math:`e_i \\ge 0` such that
 
     .. math::
 
         e_i \\ge x_i - \\hat{x}_i, \\qquad e_i \\ge \\hat{x}_i - x_i,
 
-    soit, sous la forme :math:`A x \\le b` du polytope :
+    that is, in the :math:`A x \\le b` form of the polytope:
 
     .. math::
 
         x_i - e_i \\le \\hat{x}_i, \\qquad -x_i - e_i \\le -\\hat{x}_i.
 
-    L'objectif devient :math:`\\min \\sum_i e_i`, linéaire. Omettre une des deux
-    familles rend :math:`e_i` libre d'un côté et produit un déplacement apparent
-    énorme (`MILESTONE-2.md` §10).
+    The objective becomes :math:`\\min \\sum_i e_i`, linear. Omitting one of the two
+    families leaves :math:`e_i` free on one side and produces a huge apparent
+    displacement (`MILESTONE-2.md` §10).
 
-    Les colonnes d'origine gardent leurs indices ``0..n-1`` ; les écarts occupent
-    ``n..2n-1`` sous le nom ``e.<variable>``.
+    The original columns keep their indices ``0..n-1``; the slacks occupy
+    ``n..2n-1`` under the name ``e.<variable>``.
 
     Parameters
     ----------
     poly : Polytope
-        Domaine géométrique, n variables.
+        Geometric domain, n variables.
     x_ref : numpy.ndarray
-        Plan proposé vectorisé, dimension n.
+        Vectorized proposed plan, dimension n.
 
     Returns
     -------
     Polytope
-        Domaine de dimension ``2n``.
+        Domain of dimension ``2n``.
 
     Raises
     ------
-    InvariantViole
-        Dimension de ``x_ref`` incompatible.
+    InvariantViolation
+        Incompatible dimension of ``x_ref``.
 
     Notes
     -----
-    Dérivation et cas d'usage : ``docs/formules/epigraphe-l1.md``.
+    Derivation and use cases: ``docs/formules/epigraphe-l1.md``.
     """
     n_var = len(poly.index)
     if x_ref.shape != (n_var,):
-        raise InvariantViole((f"référence de dimension {x_ref.shape}, attendu ({n_var},)",))
+        raise InvariantViolation((f"reference of shape {x_ref.shape}, expected ({n_var},)",))
     noms = sorted(poly.index, key=lambda nom: poly.index[nom])
     index = dict(poly.index)
     for rang, nom in enumerate(noms):
@@ -593,8 +596,21 @@ def etendre_ecarts_l1(poly: Polytope, x_ref: VecteurF) -> Polytope:
         b=np.concatenate([poly.b, np.asarray(second, dtype=float)]),
         A_eq=a_eq_pad,
         b_eq=poly.b_eq,
-        bornes=tuple(poly.bornes) + tuple((0.0, inf) for _ in range(n_var)),
+        bounds=tuple(poly.bounds) + tuple((0.0, inf) for _ in range(n_var)),
         index=index,
-        origines=tuple(poly.origines) + tuple(origines_extra),
-        origines_eq=poly.labels_eq(),
+        origins=tuple(poly.origins) + tuple(origines_extra),
+        origins_eq=poly.eq_labels(),
     )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "construire_polytope": Alias(build_polytope, "archlux.geom.polytope.build_polytope"),
+        "figer_contacts": Alias(freeze_contacts, "archlux.geom.polytope.freeze_contacts"),
+        "vectoriser": Alias(vectorize, "archlux.geom.polytope.vectorize"),
+        "devectoriser": Alias(devectorize, "archlux.geom.polytope.devectorize"),
+        "etendre_ecarts_l1": Alias(extend_l1_slack, "archlux.geom.polytope.extend_l1_slack"),
+        "CHAMPS": Alias(FIELDS, "archlux.geom.polytope.FIELDS"),
+    },
+)

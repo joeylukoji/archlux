@@ -1,23 +1,23 @@
-"""archlux — corriger un plan généré vers la validité géométrique.
+"""archlux: correct a generated plan towards geometric validity.
 
-Interface publique **uniquement**. Ce fichier est délibérément court : tout ce qui n'y
-figure pas est interne et peut changer sans préavis.
+Public interface **only**. This file is deliberately short: anything that is not listed
+here is internal and may change without notice.
 
-Deux garanties, de natures différentes, jamais confondues :
+Two guarantees of different kinds, never confused:
 
 ===============  =============  ==============================
-Garantie         Nature         Vérification
+Guarantee        Kind           Verification
 ===============  =============  ==============================
-Géométrique      **exacte**     inspection finie, ``O(n²)``
-Performance      probabiliste   prédiction conforme, ≥ 1 − α
+Geometric        **exact**      finite inspection, ``O(n²)``
+Performance      probabilistic  conformal prediction, ≥ 1 − α
 ===============  =============  ==============================
 
 Examples
 --------
 >>> import archlux as ax
->>> plan = ax.Plan.from_json("propose.json")     # doctest: +SKIP
+>>> plan = ax.Plan.from_json("proposed.json")    # doctest: +SKIP
 >>> q = ax.legalize(plan, ctx)                   # doctest: +SKIP
->>> q.certificat.geometrie.valide                # doctest: +SKIP
+>>> q.certificate.geometry.valid                 # doctest: +SKIP
 True
 """
 
@@ -25,69 +25,74 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux._version import __version__
-from archlux.erreurs import (
+from archlux.errors import (
+    DEPRECATED_NAMES as _DEPRECATED_EXCEPTIONS,
+)
+from archlux.errors import (
     ArchluxError,
-    CalibrationVerrouillee,
+    CalibrationLocked,
     GapNeedsTiling,
     GridNotRecoverable,
-    Infaisable,
+    InconsistentOrder,
+    Infeasible,
     InvalidInput,
-    InvariantViole,
-    ModeleModifie,
-    OrdreIncoherent,
-    SeparationManquante,
-    SubstitutInvalide,
+    InvalidSurrogate,
+    InvariantViolation,
+    MissingSeparation,
+    ModelModified,
     UnsupportedInput,
 )
+from archlux.types import DEPRECATED_NAMES as _DEPRECATED_MODEL
 from archlux.types import (
-    BornePerformance,
-    Certificat,
-    Contexte,
-    Mur,
+    Certificate,
+    Context,
+    GeometricProof,
+    Opening,
     Orientation,
-    Ouverture,
-    Piece,
+    PerformanceBound,
     Plan,
-    PreuveGeometrique,
-    Referentiel,
+    Regulation,
+    Room,
     Structure,
+    Wall,
 )
 
-# Groupé par rôle et non trié alphabétiquement : la structure de cette liste *est* la
-# carte de l'API publique. Un tri alphabétique mêlerait exceptions et modèle de données.
-# ``light`` / ``bench`` / ``feasibility`` : chargés en paresseux via ``__getattr__`` pour
-# que ``import archlux`` ne tire ni ``torch`` ni le banc.
+# Grouped by role, not sorted alphabetically: the structure of this list *is* the map of
+# the public API. An alphabetical sort would mix exceptions and the data model.
+# ``light`` / ``bench`` / ``feasibility``: loaded lazily through ``__getattr__`` so that
+# ``import archlux`` pulls neither ``torch`` nor the benchmark.
 __all__ = [  # noqa: RUF022
-    # fonction publique — une seule, c'est la thèse du projet dans l'API
+    # the public function: only one, that is the thesis of the project in the API
     "legalize",
-    # modèle de données ; les entrées/sorties passent par Plan.from_json / Plan.to_json
-    # et non par des fonctions libres : une seule façon de charger un plan.
+    # data model; input and output go through Plan.from_json / Plan.to_json and not
+    # through free functions: one single way to load a plan.
     "Plan",
-    "Piece",
-    "Mur",
-    "Ouverture",
-    "Contexte",
+    "Room",
+    "Wall",
+    "Opening",
+    "Context",
     "Structure",
     "Orientation",
-    "Referentiel",
-    "Certificat",
-    "PreuveGeometrique",
-    "BornePerformance",
+    "Regulation",
+    "Certificate",
+    "GeometricProof",
+    "PerformanceBound",
     # exceptions
     "ArchluxError",
-    "OrdreIncoherent",
-    "SeparationManquante",
-    "Infaisable",
+    "InconsistentOrder",
+    "MissingSeparation",
+    "Infeasible",
     "InvalidInput",
     "UnsupportedInput",
     "GridNotRecoverable",
     "GapNeedsTiling",
-    "InvariantViole",
-    "CalibrationVerrouillee",
-    "ModeleModifie",
-    "SubstitutInvalide",
-    # paquets publics (lazy)
+    "InvariantViolation",
+    "CalibrationLocked",
+    "ModelModified",
+    "InvalidSurrogate",
+    # public packages (lazy)
     "light",
     "bench",
     "feasibility",
@@ -110,9 +115,9 @@ if TYPE_CHECKING:
 _LAZY_FUNCTIONS = {"legalize": "archlux.api"}
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
-    """Charger ``light``, ``bench``, ``feasibility`` et ``legalize`` à la première utilisation."""
-    # Import local : ne pas polluer ``dir(archlux)`` avec ``importlib``.
+def _lazy_attribute(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
+    """Load ``light``, ``bench``, ``feasibility`` and ``legalize`` on first use."""
+    # Local import: do not pollute ``dir(archlux)`` with ``importlib``.
     import importlib
 
     if name in _LAZY:
@@ -124,11 +129,24 @@ def __getattr__(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
+# The former French exception names (ADR 0001): deprecated aliases until 1.0.0, then the
+# lazy attributes above for everything else, so a from-import warns only once.
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        old: Alias(globals()[new], f"archlux.{new}")
+        for old, new in {**_DEPRECATED_EXCEPTIONS, **_DEPRECATED_MODEL}.items()
+        if new in globals()  # only what the root exports (not Manifest, ModelTrace)
+    },
+    fallback=_lazy_attribute,
+)
+
+
 def __dir__() -> list[str]:
-    """Exposer uniquement l'API publique gelée (y compris les paquets lazy)."""
+    """Expose only the frozen public API (lazy packages included)."""
     return list(__all__)
 
 
-# Note : ``light.appris``, ``solve`` et ``uq`` ne sont PAS importés ici.
-# ``import archlux`` ne doit charger ni ``torch`` ni un modèle : c'est vérifié par
-# ``tests/test_dependances.py`` et bloquant en CI.
+# Note: ``light.appris``, ``solve`` and ``uq`` are NOT imported here.
+# ``import archlux`` must load neither ``torch`` nor a model: this is checked by
+# ``tests/test_dependances.py`` and blocks the CI.

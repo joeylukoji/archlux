@@ -12,8 +12,9 @@ Tant que les poids sont un ``npz`` du perceptron (:class:`~archlux.light.base.Su
 État réel du transformeur
 -------------------------
 **Il n'existe pas.** Aucune architecture, aucun poids, aucun entraînement dans ce dépôt.
-:meth:`SubstitutAppris._charger_torch` lève **toujours** :class:`~archlux.erreurs.InvariantViole`,
-quel que soit le contenu du ``.pt`` : son type de retour est ``NoReturn``, et le contrôle
+:meth:`SubstitutAppris._charger_torch` lève **toujours**
+:class:`~archlux.errors.InvariantViolation`, quel que soit le contenu du ``.pt`` : son
+type de retour est ``NoReturn``, et le contrôle
 de taille contre :data:`MAX_PARAMETRES` qu'elle exécute d'abord ne peut donc que changer
 le message d'erreur, jamais laisser passer un modèle. Le seul substitut appris réellement
 servi par :class:`SubstitutAppris` est le perceptron numpy de
@@ -32,33 +33,34 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
-from archlux.erreurs import InvariantViole
-from archlux.light.base import SubstitutDense
-from archlux.light.protocole import Baies
-from archlux.types import Indicateur
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.errors import InvariantViolation
+from archlux.light.base import DenseSurrogate
+from archlux.light.protocole import Glazing
+from archlux.types import Indicator
 
 if TYPE_CHECKING:
     import numpy as np
 
-    from archlux.types import Indicateur, Orientation
+    from archlux.types import Indicator, Orientation
 
-__all__ = ["MAX_PARAMETRES", "SubstitutAppris"]
+__all__ = ["MAX_PARAMETRES", "LearnedSurrogate"]
 
 MAX_PARAMETRES = 2_000_000
 """Plafond `MILESTONE-4.md` : au-delà, le modèle mémorise hors distribution."""
 
 
 @lru_cache(maxsize=8)
-def _dense_depuis_disque(chemin: str, empreinte: str) -> SubstitutDense:
+def _dense_depuis_disque(chemin: str, empreinte: str) -> DenseSurrogate:
     """Charger un ``npz`` une fois par ``(chemin, empreinte)``, après contrôle SHA-256."""
     actuel = hashlib.sha256(Path(chemin).read_bytes()).hexdigest()
     if actuel != empreinte:
-        raise InvariantViole((f"empreinte des poids divergente pour {chemin}",))
-    return SubstitutDense.charger(Path(chemin))
+        raise InvariantViolation((f"empreinte des poids divergente pour {chemin}",))
+    return DenseSurrogate.load(Path(chemin))
 
 
 @dataclass(frozen=True, slots=True)
-class SubstitutAppris:
+class LearnedSurrogate:
     """Tête publique du substitut entraîné.
 
     Attributes
@@ -74,14 +76,14 @@ class SubstitutAppris:
     chemin_poids: Path
     empreinte_poids: str
     gele: bool = False
-    indicateur_vise: Indicateur = "sDA"
+    indicateur_vise: Indicator = "sDA"
 
     @property
-    def indicateur(self) -> Indicateur:
+    def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
-    def _backend(self) -> SubstitutDense:
+    def _backend(self) -> DenseSurrogate:
         chemin = Path(self.chemin_poids)
         if chemin.suffix.lower() == ".pt":
             self._charger_torch()
@@ -100,29 +102,37 @@ class SubstitutAppris:
         etat = torch.load(self.chemin_poids, map_location="cpu", weights_only=True)
         n_params = int(sum(p.numel() for p in etat.values())) if isinstance(etat, dict) else 0
         if n_params >= MAX_PARAMETRES:
-            raise InvariantViole((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETRES}",))
-        raise InvariantViole(
+            raise InvariantViolation((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETRES}",))
+        raise InvariantViolation(
             ("poids .pt : le transformeur n'est servi que hors CI ; utiliser un npz dense",)
         )
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Estimer l'indicateur. Charge ``torch`` seulement pour un fichier ``.pt``."""
-        return self._backend().evaluer(x, orientation, baies=baies)
+        return self._backend().evaluate(x, orientation, glazing=glazing)
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Gradient par différences finies du backend, ramené en ``numpy``."""
-        return self._backend().gradient(x, orientation, baies=baies)
+        return self._backend().gradient(x, orientation, glazing=glazing)
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Écart-type prédictif appris."""
-        return self._backend().incertitude(x, orientation, baies=baies)
+        return self._backend().uncertainty(x, orientation, glazing=glazing)
 
-    def n_parametres(self) -> int:
+    def n_parameters(self) -> int:
         """Taille du modèle chargé."""
-        return self._backend().n_parametres()
+        return self._backend().n_parameters()
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "SubstitutAppris": Alias(LearnedSurrogate, "archlux.light.appris.LearnedSurrogate"),
+    },
+)

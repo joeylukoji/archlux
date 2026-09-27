@@ -46,7 +46,12 @@ class Alias:
     note: str = ""
 
 
-def lazy_aliases(module_name: str, aliases: Mapping[str, Alias]) -> Callable[[str], object]:
+def lazy_aliases(
+    module_name: str,
+    aliases: Mapping[str, Alias],
+    *,
+    fallback: Callable[[str], object] | None = None,
+) -> Callable[[str], object]:
     """Build the module ``__getattr__`` that serves ``aliases`` with a warning.
 
     Parameters
@@ -55,6 +60,9 @@ def lazy_aliases(module_name: str, aliases: Mapping[str, Alias]) -> Callable[[st
         ``__name__`` of the module, used in the message and in ``AttributeError``.
     aliases : mapping of str to Alias
         Old name to its :class:`Alias`.
+    fallback : callable, optional
+        Serves every other name (the module's own lazy attributes). It must raise
+        ``AttributeError`` for a name it does not know. Without it, other names raise.
 
     Returns
     -------
@@ -65,6 +73,8 @@ def lazy_aliases(module_name: str, aliases: Mapping[str, Alias]) -> Callable[[st
     def __getattr__(name: str) -> object:
         alias = aliases.get(name)
         if alias is None:
+            if fallback is not None:
+                return fallback(name)
             raise AttributeError(f"module {module_name!r} has no attribute {name!r}")
         if sys._getframe(1).f_code.co_filename.startswith("<frozen importlib"):
             # `from module import name` probes with hasattr first: warn only once.

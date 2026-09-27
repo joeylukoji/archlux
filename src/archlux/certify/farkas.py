@@ -102,7 +102,7 @@ def verify_infeasibility(poly: Polytope, y: VecteurF, z: VecteurF | None) -> Far
     for j, coefficient in enumerate(r):
         if coefficient == 0:
             continue
-        low, high = poly.bornes[j]
+        low, high = poly.bounds[j]
         bound = low if coefficient > 0 else high
         if not isfinite(bound):
             return FarkasCheck(False, float("-inf"), f"unbounded variable {names[j]}")

@@ -1,14 +1,14 @@
-"""Ordre relatif des pièces → graphe de contraintes de séparation.
+"""Relative order of rooms -> graph of separation constraints.
 
-Traduit « la pièce A est à gauche de la pièce B » en l'inégalité ``x_A + w_A ≤ x_B``.
+Translates "room A is left of room B" into the inequality ``x_A + w_A <= x_B``.
 
-**Règle fondatrice.** Pour chaque paire de pièces, **au moins une** séparation (gauche,
-droite, dessus, dessous) doit exister. Sans elle, le chevauchement reste possible et
-aucun ajout de contrainte ultérieur ne le rattrape.
+**Founding rule.** For every pair of rooms, **at least one** separation (left,
+right, above, below) must exist. Without it, overlap remains possible and
+no later added constraint can catch it.
 
-Dépendances autorisées : ``types``, ``erreurs``. Rien d'autre (`ARCHITECTURE.md` §5).
+Allowed dependencies: ``types``, ``errors``. Nothing else (`ARCHITECTURE.md` §5).
 
-Dérivation du jeu entre rectangles, acyclicité et réduction transitive :
+Derivation of the gap between rectangles, acyclicity and transitive reduction:
 ``docs/formules/ordre-relatif.md``.
 """
 
@@ -19,7 +19,8 @@ import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
-from archlux.erreurs import OrdreIncoherent, SeparationManquante, UnsupportedInput
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.errors import InconsistentOrder, MissingSeparation, UnsupportedInput
 from archlux.tolerances import CONTACT_M, SNAP_M
 
 if TYPE_CHECKING:
@@ -27,15 +28,15 @@ if TYPE_CHECKING:
 
     import networkx as nx
 
-    from archlux.types import Mur, Piece, Plan, Structure
+    from archlux.types import Plan, Room, Structure, Wall
 
 __all__ = [
-    "GrapheContraintes",
-    "OrdreRelatif",
+    "ConstraintGraph",
+    "RelativeOrder",
     "WallSide",
-    "construire_graphe",
-    "deduire_ordre",
-    "reduction_transitive",
+    "build_graph",
+    "deduce_order",
+    "transitive_reduction",
 ]
 
 Axe = Literal["horizontal", "vertical"]
@@ -43,11 +44,11 @@ Side = Literal["left", "right", "below", "above"]
 _AXES: tuple[Axe, ...] = ("horizontal", "vertical")
 
 TOLERANCE_CONTACT = CONTACT_M
-"""Jeu en deçà duquel deux pièces sont réputées jointives, en mètres (1 nanomètre).
+"""Gap below which two rooms are considered touching, in meters (1 nanometer).
 
-Sans cette tolérance, deux pièces qui se touchent exactement passent pour recouvrantes :
-``1.0 + 3.47`` vaut ``4.470000000000001`` en binaire, pas ``4.47``. Le cas est loin d'être
-rare — il survient dès qu'un mur sépare deux pièces adjacentes, c'est-à-dire partout.
+Without this tolerance, two rooms that touch exactly pass for overlapping:
+``1.0 + 3.47`` is ``4.470000000000001`` in binary, not ``4.47``. The case is far from
+rare: it occurs whenever a wall separates two adjacent rooms, that is, everywhere.
 """
 
 
@@ -75,17 +76,17 @@ class WallSide:
 
 
 @dataclass(frozen=True, slots=True)
-class OrdreRelatif:
-    """Ordre partiel des pièces sur les deux axes.
+class RelativeOrder:
+    """Partial order of the rooms on both axes.
 
     Attributes
     ----------
     horizontal : tuple of (str, str)
-        ``(a, b)`` signifie « ``a`` est à gauche de ``b`` ».
+        ``(a, b)`` means "``a`` is left of ``b``".
     vertical : tuple of (str, str)
-        ``(a, b)`` signifie « ``a`` est en dessous de ``b`` ».
-    pieces : tuple of str
-        Identifiants concernés, **triés**, pour un parcours déterministe.
+        ``(a, b)`` means "``a`` is below ``b``".
+    rooms : tuple of str
+        Identifiers involved, **sorted**, for a deterministic traversal.
     wall_sides : tuple of WallSide
         Side of every load-bearing wall each room stays on. Empty without structure.
     shared_sides : tuple of (str, tuple of str)
@@ -95,66 +96,66 @@ class OrdreRelatif:
 
     horizontal: tuple[tuple[str, str], ...]
     vertical: tuple[tuple[str, str], ...]
-    pieces: tuple[str, ...]
+    rooms: tuple[str, ...]
     wall_sides: tuple[WallSide, ...] = ()
     shared_sides: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
-class GrapheContraintes:
-    """Deux graphes orientés acycliques, un par axe.
+class ConstraintGraph:
+    """Two directed acyclic graphs, one per axis.
 
-    Le `dataclass` est gelé, mais un ``DiGraph`` reste mutable : **traiter les deux
-    graphes comme immuables**. :func:`reduction_transitive` rend un nouvel objet plutôt
-    que de modifier celui-ci, et rien dans le projet ne doit ajouter d'arête après coup —
-    la validation d'acyclicité et de séparation a lieu à la construction, une fois.
+    The `dataclass` is frozen, but a ``DiGraph`` remains mutable: **treat both
+    graphs as immutable**. :func:`transitive_reduction` returns a new object rather
+    than modifying this one, and nothing in the project may add an edge afterwards:
+    acyclicity and separation are validated at construction, once.
     """
 
     horizontal: nx.DiGraph
     vertical: nx.DiGraph
 
-    def a_separation(self, a: str, b: str) -> bool:
-        """Dire si la paire ``(a, b)`` est séparée sur au moins un axe.
+    def has_separation(self, a: str, b: str) -> bool:
+        """Tell whether the pair ``(a, b)`` is separated on at least one axis.
 
         Parameters
         ----------
         a, b : str
-            Identifiants de pièces.
+            Room identifiers.
 
         Returns
         -------
         bool
-            ``True`` si une arête relie ``a`` et ``b`` dans l'un des deux graphes, dans
-            l'un ou l'autre sens.
+            ``True`` if an edge links ``a`` and ``b`` in either graph, in either
+            direction.
 
         Notes
         -----
-        À interroger sur le graphe **complet**, avant réduction transitive : après
-        réduction, une paire séparée par transitivité n'a plus d'arête directe. C'est
-        licite géométriquement — la contrainte reste impliquée — mais cette méthode
-        répondrait ``False``.
+        Query the **full** graph, before transitive reduction: after reduction, a pair
+        separated by transitivity has no direct edge left. That is geometrically
+        valid (the constraint remains implied), but this method would answer
+        ``False``.
 
         Complexity
         ----------
-        O(1) amorti.
+        O(1) amortized.
         """
         return any(
             graphe.has_edge(a, b) or graphe.has_edge(b, a)
             for graphe in (self.horizontal, self.vertical)
         )
 
-    def fermeture(self) -> frozenset[tuple[str, str, str]]:
-        """Fermeture transitive des deux graphes, en triplets ``(axe, a, b)``.
+    def closure(self) -> frozenset[tuple[str, str, str]]:
+        """Transitive closure of both graphs, as ``(axis, a, b)`` triplets.
 
         Returns
         -------
         frozenset of (str, str, str)
-            Tous les couples atteignables, par axe. C'est l'information d'ordre réelle,
-            indépendante du fait qu'une arête soit explicite ou impliquée.
+            All reachable pairs, per axis. This is the real order information,
+            independent of whether an edge is explicit or implied.
 
         Complexity
         ----------
-        O(n·m) par axe.
+        O(n·m) per axis.
         """
         import networkx as nx  # lazy: 0.6 s at import, needed only by a first legalize
 
@@ -165,33 +166,33 @@ class GrapheContraintes:
         return frozenset(triplets)
 
 
-def deduire_ordre(
+def deduce_order(
     plan: Plan,
     structure: Structure | None = None,
     groups: tuple[tuple[str, ...], ...] = (),
-) -> OrdreRelatif:
-    """Extraire l'ordre relatif d'un plan proposé, en comparant les centres.
+) -> RelativeOrder:
+    """Extract the relative order of a proposed plan, by comparing centers.
 
-    C'est ici qu'est appliqué le principe fondateur : **le générateur décide l'ordre**.
-    Cette fonction lit cette décision et ne la remet jamais en cause ; le solveur ne
-    changera ensuite que les dimensions.
+    This is where the founding principle is applied: **the generator decides the order**.
+    This function reads that decision and never questions it; the solver will then
+    only change the dimensions.
 
-    Pour chaque paire, l'axe retenu est celui sur lequel les pièces sont **réellement
-    disjointes**, celui du plus grand jeu si les deux le sont. Ce n'est qu'à défaut —
-    les pièces se chevauchent sur les deux axes, c'est-à-dire le défaut que ``legalize``
-    existe pour corriger — que l'axe du plus grand écart entre centres tranche.
+    For each pair, the chosen axis is the one on which the rooms are **really
+    disjoint**, the one with the larger gap if both are. Only failing that (the
+    rooms overlap on both axes, the very defect ``legalize`` exists to fix) does the
+    axis of the larger distance between centers decide.
 
-    L'ordre du choix n'est pas une préférence de style. Retenir l'axe du plus grand écart
-    de centres alors que les pièces se recouvrent sur cet axe produit une contrainte que
-    le plan d'origine viole : ``legalize`` déplacerait des murs sur un plan sans défaut.
+    The order of the choice is not a style preference. Choosing the axis of the larger
+    center distance while the rooms overlap on that axis produces a constraint that
+    the original plan violates: ``legalize`` would move walls on a plan with no defect.
 
-    Le **sens** de l'arête suit toujours l'ordre des centres, jamais celui des bords :
-    c'est ce qui garantit l'acyclicité, quel que soit l'axe retenu pour chaque paire.
+    The **direction** of the edge always follows the order of the centers, never that of
+    the edges: this guarantees acyclicity, whichever axis is chosen for each pair.
 
     Parameters
     ----------
     plan : Plan
-        Plan proposé, éventuellement invalide.
+        Proposed plan, possibly invalid.
     structure : Structure, optional
         Load-bearing structure. Each wall is treated as a fixed obstacle: every room gets
         the side it stays on (:class:`WallSide`), read from the plan like the order
@@ -209,38 +210,38 @@ def deduire_ordre(
 
     Returns
     -------
-    OrdreRelatif
-        Ordre partiel déduit, ``pieces`` trié, arêtes en ordre déterministe.
+    RelativeOrder
+        Deduced partial order, ``rooms`` sorted, edges in deterministic order.
 
     Guarantees
     ----------
-    - **Acyclique par construction.** Sur chaque axe, l'arête suit l'ordre total de la
-      clé ``(coordonnée du centre, identifiant)`` ; un sous-ensemble d'un ordre total ne
-      peut pas contenir de cycle.
-    - **Toute paire séparée**, puisque chaque paire reçoit exactement une arête.
+    - **Acyclic by construction.** On each axis, the edge follows the total order of the
+      key ``(center coordinate, identifier)``; a subset of a total order
+      cannot contain a cycle.
+    - **Every pair separated**, since each pair receives exactly one edge.
 
     Complexity
     ----------
-    O(n²) comparaisons de centres, n = nombre de pièces.
+    O(n²) center comparisons, n = number of rooms.
 
     Examples
     --------
-    >>> from archlux.geom.graphe import deduire_ordre
-    >>> from archlux.types import Piece, Plan
-    >>> gauche = Piece(id="A", type="sejour", x=0.0, y=0.0, w=1.0, h=1.0)
-    >>> droite = Piece(id="B", type="sejour", x=5.0, y=0.0, w=1.0, h=1.0)
-    >>> deduire_ordre(Plan((gauche, droite), (), (), ())).horizontal
+    >>> from archlux.geom.graphe import deduce_order
+    >>> from archlux.types import Room, Plan
+    >>> left = Room(id="A", type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
+    >>> right = Room(id="B", type="living_room", x=5.0, y=0.0, w=1.0, h=1.0)
+    >>> deduce_order(Plan((left, right), (), (), ())).horizontal
     (('A', 'B'),)
     """
-    par_id = {piece.id: piece for piece in plan.pieces}
+    par_id = {piece.id: piece for piece in plan.rooms}
     identifiants = sorted(par_id)
     horizontal: list[tuple[str, str]] = []
     vertical: list[tuple[str, str]] = []
 
     for id_a, id_b in itertools.combinations(identifiants, 2):
         a, b = par_id[id_a], par_id[id_b]
-        (xa, ya), (xb, yb) = a.centre, b.centre
-        # Jeu entre les deux pièces sur chaque axe : positif si elles sont disjointes.
+        (xa, ya), (xb, yb) = a.center, b.center
+        # Gap between the two rooms on each axis: positive if they are disjoint.
         jeu_x = max(b.x - (a.x + a.w), a.x - (b.x + b.w))
         jeu_y = max(b.y - (a.y + a.h), a.y - (b.y + b.h))
         if jeu_x >= -TOLERANCE_CONTACT or jeu_y >= -TOLERANCE_CONTACT:
@@ -248,21 +249,21 @@ def deduire_ordre(
         else:
             horizontale = abs(xb - xa) >= abs(yb - ya)
         if horizontale:
-            # Clé (centre, id) : un ordre total, donc aucun cycle possible sur cet axe.
+            # Key (center, id): a total order, so no cycle is possible on this axis.
             horizontal.append((id_a, id_b) if (xa, id_a) < (xb, id_b) else (id_b, id_a))
         else:
             vertical.append((id_a, id_b) if (ya, id_a) < (yb, id_b) else (id_b, id_a))
 
     envelope: Envelope | None = None
-    if plan.contour:
-        xs = [x for x, _ in plan.contour]
-        ys = [y for _, y in plan.contour]
+    if plan.outline:
+        xs = [x for x, _ in plan.outline]
+        ys = [y for _, y in plan.outline]
         envelope = (min(xs), min(ys), max(xs), max(ys))
     wall_sides: tuple[WallSide, ...] = ()
     shared_sides: list[tuple[str, tuple[str, ...]]] = []
     if structure is not None:
         walls = [
-            m for m in sorted(structure.murs_porteurs, key=lambda m: m.id) if m.longueur > SNAP_M
+            m for m in sorted(structure.load_bearing_walls, key=lambda m: m.id) if m.length > SNAP_M
         ]
         for wall in walls:
             _check_axis_aligned(wall)
@@ -291,10 +292,10 @@ def deduire_ordre(
                         sides[wall.id, m.id] = replace(shared, room=m.id)
                     shared_sides.append((wall.id, tuple(m.id for m in members)))
         wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiants)
-    return OrdreRelatif(
+    return RelativeOrder(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
-        pieces=tuple(identifiants),
+        rooms=tuple(identifiants),
         wall_sides=wall_sides,
         shared_sides=tuple(shared_sides),
     )
@@ -336,7 +337,7 @@ def _opposite(taken: set[str]) -> bool:
     return {"left", "right"} <= taken or {"below", "above"} <= taken
 
 
-def _check_axis_aligned(wall: Mur) -> None:
+def _check_axis_aligned(wall: Wall) -> None:
     """Refuse an oblique wall: no linear side constraint describes it exactly.
 
     Raises
@@ -352,7 +353,7 @@ def _check_axis_aligned(wall: Mur) -> None:
         )
 
 
-def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
+def _wall_side(room: Room, wall: Wall, envelope: Envelope | None) -> WallSide:
     """Side of ``wall`` that ``room`` stays on: the half-plane it penetrates least.
 
     The wall is a fixed obstacle; each of its four half-planes (left of, right of,
@@ -376,7 +377,7 @@ def _wall_side(room: Piece, wall: Mur, envelope: Envelope | None) -> WallSide:
     return _wall_sides_by_penetration(room, wall, envelope)[0]
 
 
-def _wall_sides_by_penetration(room: Piece, wall: Mur, envelope: Envelope | None) -> list[WallSide]:
+def _wall_sides_by_penetration(room: Room, wall: Wall, envelope: Envelope | None) -> list[WallSide]:
     """The sides of :func:`_wall_side` that tie for the least penetration, best first.
 
     Raises
@@ -405,101 +406,116 @@ def _wall_sides_by_penetration(room: Piece, wall: Mur, envelope: Envelope | None
 
 
 def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe) -> nx.DiGraph:
-    """Assembler un graphe orienté acyclique pour un axe, ou lever."""
+    """Assemble a directed acyclic graph for one axis, or raise."""
     import networkx as nx
 
     graphe = nx.DiGraph()
     graphe.add_nodes_from(sorted(noeuds))
     for a, b in aretes:
         if a not in graphe or b not in graphe:
-            raise OrdreIncoherent(cycle=(a, b), axe=axe)
+            raise InconsistentOrder(cycle=(a, b), axis=axe)
         graphe.add_edge(a, b)
     if not nx.is_directed_acyclic_graph(graphe):
         cycle = nx.find_cycle(graphe)
-        raise OrdreIncoherent(cycle=tuple(a for a, _ in cycle), axe=axe)
+        raise InconsistentOrder(cycle=tuple(a for a, _ in cycle), axis=axe)
     return graphe
 
 
-def construire_graphe(ordre: OrdreRelatif, pieces: Sequence[str]) -> GrapheContraintes:
-    """Assembler les deux graphes orientés et valider l'ordre.
+def build_graph(ordre: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
+    """Assemble the two directed graphs and validate the order.
 
     Parameters
     ----------
-    ordre : OrdreRelatif
-        Ordre partiel, typiquement issu de :func:`deduire_ordre`.
+    ordre : RelativeOrder
+        Partial order, typically from :func:`deduce_order`.
     pieces : sequence of str
-        Ensemble **faisant autorité** des pièces attendues. Une arête portant un
-        identifiant absent de cet ensemble est refusée : mieux vaut échouer que
-        contraindre une pièce fantôme.
+        **Authoritative** set of the expected rooms. An edge carrying an
+        identifier absent from this set is refused: better to fail than to
+        constrain a phantom room.
 
     Returns
     -------
-    GrapheContraintes
-        Graphes horizontal et vertical, acycliques, toutes paires séparées.
+    ConstraintGraph
+        Horizontal and vertical graphs, acyclic, every pair separated.
 
     Raises
     ------
-    OrdreIncoherent
-        Un cycle existe sur l'un des axes (« A à gauche de B à gauche de A »), ou une
-        arête désigne une pièce inconnue.
-    SeparationManquante
-        Une paire de pièces n'est séparée sur aucun axe. C'est la seule erreur de ce
-        module qui laisse passer un chevauchement si on l'ignore.
+    InconsistentOrder
+        A cycle exists on one of the axes ("A left of B left of A"), or an
+        edge names an unknown room.
+    MissingSeparation
+        A pair of rooms is separated on no axis. This is the only error of this
+        module that lets an overlap through if ignored.
 
     Guarantees
     ----------
-    - Géométrique : **exacte**. Si cette fonction rend un graphe, alors tout point
-      satisfaisant ses inégalités est sans chevauchement — à ordre relatif fixé.
+    - Geometric: **exact**. If this function returns a graph, then every point
+      satisfying its inequalities is free of overlap, for a fixed relative order.
 
     Complexity
     ----------
-    O(n² + m), m = nombre d'arêtes. Le terme quadratique vient du contrôle de
-    séparation, qui doit examiner toutes les paires.
+    O(n² + m), m = number of edges. The quadratic term comes from the separation
+    check, which must examine all pairs.
     """
-    graphe = GrapheContraintes(
-        horizontal=_graphe_axe(ordre.horizontal, pieces, "horizontal"),
-        vertical=_graphe_axe(ordre.vertical, pieces, "vertical"),
+    graphe = ConstraintGraph(
+        horizontal=_graphe_axe(ordre.horizontal, rooms, "horizontal"),
+        vertical=_graphe_axe(ordre.vertical, rooms, "vertical"),
     )
-    for a, b in itertools.combinations(sorted(pieces), 2):
-        if not graphe.a_separation(a, b):
-            raise SeparationManquante(paire=(a, b))
+    for a, b in itertools.combinations(sorted(rooms), 2):
+        if not graphe.has_separation(a, b):
+            raise MissingSeparation(pair=(a, b))
     return graphe
 
 
-def reduction_transitive(g: GrapheContraintes) -> GrapheContraintes:
-    """Retirer les arêtes impliquées par transitivité, sans changer la fermeture.
+def transitive_reduction(g: ConstraintGraph) -> ConstraintGraph:
+    """Remove the edges implied by transitivity, without changing the closure.
 
-    **Cette étape n'est pas optionnelle.** 15 pièces donnent ~210 contraintes brutes et
-    ~30 après réduction. Le solveur est appelé 50 fois par légalisation performantielle
-    au jalon 3 : le gain se multiplie par 50.
+    **This step is not optional.** 15 rooms give ~210 raw constraints and
+    ~30 after reduction. The solver is called 50 times per performance-driven
+    legalization at milestone 3: the gain is multiplied by 50.
 
     Parameters
     ----------
-    g : GrapheContraintes
-        Graphes acycliques, tels que rendus par :func:`construire_graphe`.
+    g : ConstraintGraph
+        Acyclic graphs, as returned by :func:`build_graph`.
 
     Returns
     -------
-    GrapheContraintes
-        Nouveaux graphes, de fermeture transitive identique, mêmes nœuds.
+    ConstraintGraph
+        New graphs, with identical transitive closure, same nodes.
 
     Guarantees
     ----------
-    - **Aucune information d'ordre n'est perdue** : ``fermeture()`` est inchangée. Les
-      contraintes retirées restent impliquées par celles qui demeurent.
+    - **No order information is lost**: ``closure()`` is unchanged. The removed
+      constraints remain implied by those that stay.
 
     Complexity
     ----------
-    O(n·m) par axe (``networkx.transitive_reduction``).
+    O(n·m) per axis (``networkx.transitive_reduction``).
     """
     import networkx as nx
 
     reduits: dict[str, nx.DiGraph] = {}
     for axe in _AXES:
-        origine: nx.DiGraph = getattr(g, axe)
-        reduit = nx.transitive_reduction(origine)
-        # `transitive_reduction` ne reporte pas les nœuds isolés : une pièce séparée sur
-        # le seul autre axe disparaîtrait du graphe, et le polytope perdrait ses bornes.
-        reduit.add_nodes_from(origine.nodes)
+        origin: nx.DiGraph = getattr(g, axe)
+        reduit = nx.transitive_reduction(origin)
+        # `transitive_reduction` does not carry over isolated nodes: a room separated on
+        # the other axis only would vanish from the graph, and the polytope would lose
+        # its bounds.
+        reduit.add_nodes_from(origin.nodes)
         reduits[axe] = reduit
-    return GrapheContraintes(horizontal=reduits["horizontal"], vertical=reduits["vertical"])
+    return ConstraintGraph(horizontal=reduits["horizontal"], vertical=reduits["vertical"])
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "OrdreRelatif": Alias(RelativeOrder, "archlux.geom.graphe.RelativeOrder"),
+        "GrapheContraintes": Alias(ConstraintGraph, "archlux.geom.graphe.ConstraintGraph"),
+        "deduire_ordre": Alias(deduce_order, "archlux.geom.graphe.deduce_order"),
+        "construire_graphe": Alias(build_graph, "archlux.geom.graphe.build_graph"),
+        "reduction_transitive": Alias(
+            transitive_reduction, "archlux.geom.graphe.transitive_reduction"
+        ),
+    },
+)

@@ -22,14 +22,14 @@ Backend : OR-Tools **GLOP** (simplexe).
 ## Duaux
 
 Si `duaux=True`, les prix sont extraits **dans l'ordre des lignes de \(A\)** — le
-seul ordre appariable avec `Polytope.origines`. Les coupes et les égalités ne sont
+seul ordre appariable avec `Polytope.origins`. Les coupes et les égalités ne sont
 pas dans ce vecteur au jalon 2 : un dual de coupe de surface n'est pas encore
 libellé. Les composantes \(\lvert y_i\rvert \le 10^{-9}\) sont omises à l'API.
 
 Un prix dual se lit : « relâcher cette contrainte d'un mètre change l'objectif de
 \(y_i\) ». C'est la dualité LP standard (Bertsimas & Tsitsiklis, ch. 4).
 
-## Infaisable vs non borné
+## Infeasible vs non borné
 
 GLOP rend le code `INFEASIBLE` aussi pour un problème **non borné**. Discriminant :
 le LP à objectif nul sur le même système. Un LP à objectif nul ne peut pas être
@@ -72,7 +72,7 @@ libellé métier : `separation horizontale a|b`, `contour droit b`.
 (tiling, fusions, frozen contacts) with two slacks. Before, a conflict among those
 equalities left it without an optimum and the certificate empty: 68 of 200 noisy
 benchmark plans were refused with "origines non renseignees". Each equality now carries
-a label (`Polytope.origines_eq`), and the refusal names every row with a non-zero weight.
+a label (`Polytope.origins_eq`), and the refusal names every row with a non-zero weight.
 
 **The certificate is checked, not believed.** Let \(y \ge 0\) be the multipliers of
 \(Ax \le b\) and \(z\) those of \(A_{eq}x = b_{eq}\). Every admissible \(x\) satisfies
@@ -90,7 +90,7 @@ certificate is a proof even if the solver rounded; a noisy one can fail to verif
 verify a feasible system. On the noisy benchmark, 88 of 89 certificates verify.
 
 **Scope.** The certificate proves that the polytope of **this relative order** is empty.
-Another order might admit a valid plan: `Infaisable` and `is_feasible` say so.
+Another order might admit a valid plan: `Infeasible` and `is_feasible` say so.
 
 **Tightened domains.** The area cutting loop tightens variable bounds, which is not an
 outer approximation; an infeasible verdict on a tightened domain said nothing about the
@@ -102,7 +102,7 @@ before concluding.
 | Faire | Ne pas faire |
 |---|---|
 | `depart=` pour réutiliser le modèle (même polytope, nouvel objectif) | Réutiliser le cache si des *coupes* ont été ajoutées — le système a changé |
-| Lire `Infaisable.origines`, pas seulement le message | Traduire un dual par « ligne 47 » |
+| Lire `Infeasible.origins`, pas seulement le message | Traduire un dual par « ligne 47 » |
 | Distinguer `infaisable` / `non_borne` / `limite` | Fusionner en un booléen « pas optimal » |
 
 ## Source

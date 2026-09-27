@@ -14,32 +14,32 @@ L'enveloppe et les pièces ci-dessous sont celles du corpus de tests publié
 ```python
 import archlux as ax
 
-contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
-        ax.Piece(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Piece(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+    rooms=(
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=contour,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
-ctx = ax.Contexte(
-    structure=ax.Structure(murs_porteurs=()),
+ctx = ax.Context(
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
-    contour=contour,
-    referentiel=ax.Referentiel(aires_min=(), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
 
 q = ax.legalize(plan, ctx)
-assert q.certificat is not None
-assert q.certificat.geometrie.valide
-assert q.certificat.performance is None  # légalisation classique : pas de borne
-print(q.certificat.rapport())
+assert q.certificate is not None
+assert q.certificate.geometry.valid
+assert q.certificate.performance is None  # légalisation classique : pas de borne
+print(q.certificate.report())
 ```
 
 `legalize` renvoie un plan **prouvé** valide (pavage, surfaces, porteurs).
-La section `[PREDICTION]` du rapport reste `NON EVALUABLE` tant qu'aucune
+La section `[PREDICTION]` du rapport reste `NOT EVALUABLE` tant qu'aucune
 calibration conforme n'a été attachée.
 
 ## Charger depuis un fichier
@@ -54,30 +54,30 @@ from pathlib import Path
 
 Path("sortie_generateur.json").write_text(
     """{
-      "schema": "1",
-      "contour": [[0, 0], [12, 0], [12, 9], [0, 9]],
-      "pieces": [
-        {"id": "sejour", "type": "sejour", "x": 0, "y": 0, "w": 6.05, "h": 9},
-        {"id": "chambre", "type": "chambre", "x": 6, "y": 0, "w": 6, "h": 5},
-        {"id": "sdb", "type": "salle_de_bain", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
+      "schema": "2",
+      "outline": [[0, 0], [12, 0], [12, 9], [0, 9]],
+      "rooms": [
+        {"id": "living_room", "type": "living_room", "x": 0, "y": 0, "w": 6.05, "h": 9},
+        {"id": "bedroom", "type": "bedroom", "x": 6, "y": 0, "w": 6, "h": 5},
+        {"id": "bathroom", "type": "bathroom", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
       ],
-      "murs": [], "ouvertures": [], "certificat": null
+      "walls": [], "openings": [], "certificate": null
     }""",
     encoding="utf-8",
 )
 
 plan = ax.Plan.from_json("sortie_generateur.json")
 q = ax.legalize(plan, ctx, pavage=True)
-assert q.certificat is not None and q.certificat.geometrie.valide
+assert q.certificate is not None and q.certificate.geometry.valid
 q.to_json("plan_legalise.json")
 ```
 
 `pavage=True` impose que les pièces couvrent exactement le contour. Il est nécessaire
 dès que l'entrée peut contenir un vide, ce qui est le cas des sorties de générateur :
 sans lui, les séparations sont des inégalités, le plan troué est déjà son propre point
-le plus proche, et la vérification exacte le rejette (`InvariantViole`).
+le plus proche, et la vérification exacte le rejette (`InvariantViolation`).
 
-Le schéma JSON est versionné, et `certificat` vaut `null` sur un plan proposé ; voir
+Le schéma JSON est versionné, et `certificate` vaut `null` sur un plan proposé ; voir
 [référence](../reference/schema-json.md).
 
 ## Suite

@@ -15,14 +15,15 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.erreurs import InvariantViole
-from archlux.light.analytique import SubstitutAnalytique
-from archlux.light.jetons import vecteur_vers_jetons
-from archlux.light.protocole import Baies
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.errors import InvariantViolation
+from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.jetons import vector_to_tokens
+from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode
-from archlux.types import Indicateur, Orientation
+from archlux.types import Indicator, Orientation
 
-__all__ = ["SubstitutDense", "descripteurs"]
+__all__ = ["DenseSurrogate", "descriptors"]
 
 _EPS = 1e-8
 
@@ -45,24 +46,26 @@ SIGMA_PLANCHER = 0.02
 
 
 @lru_cache(maxsize=len(("sDA", "ASE", "UDI", "vue")))
-def _analytique(indicateur: Indicateur) -> SubstitutAnalytique:
+def _analytique(indicator: Indicator) -> AnalyticSurrogate:
     """Instance analytique partagée : gelée, sans état, réutilisable sans copie.
 
     :meth:`SubstitutDense.gradient` évalue ``2 n`` fois par gradient ; reconstruire le
     substitut à chaque évaluation était du travail pur perte sur le chemin critique du
     §9 d'``ARCHITECTURE.md``.
     """
-    return SubstitutAnalytique(indicateur_vise=indicateur)
+    return AnalyticSurrogate(indicateur_vise=indicator)
 
 
-def descripteurs(x: np.ndarray, orientation: Orientation, baies: Baies | None = None) -> np.ndarray:
+def descriptors(
+    x: np.ndarray, orientation: Orientation, glazing: Glazing | None = None
+) -> np.ndarray:
     """Descripteurs continus : statistiques de pièces × harmoniques d'orientation.
 
     Inclut explicitement ``aire × sin 2θ``, terme présent dans le simulateur
     synthétique et absent de l'analytique — sans lui le perceptron ne peut pas
     gagner.
     """
-    jetons, masque = vecteur_vers_jetons(x, orientation, baies)
+    jetons, masque = vector_to_tokens(x, orientation, glazing)
     valides = jetons[~masque]
     # Les jetons de baie portent leur drapeau en colonne 27 ; les separer evite de
     # moyenner des pieces et des fenetres dans un meme vecteur, ce qui n'a pas de
@@ -73,7 +76,7 @@ def descripteurs(x: np.ndarray, orientation: Orientation, baies: Baies | None = 
     if pieces_seules.size:
         valides = pieces_seules
     if valides.size == 0:
-        raise InvariantViole(("vecteur de plan vide : aucun jeton",))
+        raise InvariantViolation(("vecteur de plan vide : aucun jeton",))
     moyen = valides.mean(axis=0)
     aires = valides[:, 4]
     enc = encode(orientation.deg, harmoniques=3)
@@ -120,10 +123,10 @@ def _huber_derivee(residu: float, delta: float = 1.0) -> float:
 
 
 @dataclass
-class SubstitutDense:
+class DenseSurrogate:
     """Réseau dense 3 couches, poids numpy. Entrée vectorielle uniquement."""
 
-    indicateur_vise: Indicateur = "sDA"
+    indicateur_vise: Indicator = "sDA"
     largeur: int = 32
     W1: np.ndarray | None = None
     b1: np.ndarray | None = None
@@ -139,11 +142,11 @@ class SubstitutDense:
     decalage_base: float = 0.0
 
     @property
-    def indicateur(self) -> Indicateur:
+    def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
-    def n_parametres(self) -> int:
+    def n_parameters(self) -> int:
         """Nombre de scalaires entraînés."""
         if (
             self.W1 is None
@@ -169,7 +172,7 @@ class SubstitutDense:
             or self.b2 is None
             or self.W3 is None
         ):
-            raise InvariantViole(("passe avant sur un modèle non entraîné",))
+            raise InvariantViolation(("passe avant sur un modèle non entraîné",))
         z1 = feat @ self.W1 + self.b1
         h1 = np.tanh(z1)
         z2 = h1 @ self.W2 + self.b2
@@ -177,26 +180,26 @@ class SubstitutDense:
         y_hat = float(h2 @ self.W3 + self.b3)
         return y_hat, h1, h2
 
-    def evaluer(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Analytique recalée + résidu appris. Sans poids : l'analytique seule."""
         base = (
-            self.echelle_base * float(_analytique(self.indicateur_vise).evaluer(x, orientation))
+            self.echelle_base * float(_analytique(self.indicateur_vise).evaluate(x, orientation))
             + self.decalage_base
         )
         if self.W1 is None:
             return base
-        feat = self._normaliser(descripteurs(x, orientation, baies))
+        feat = self._normaliser(descriptors(x, orientation, glazing))
         y_hat, _, _ = self._forward(feat)
         return base + y_hat * self.sigma_y + self.mu_y
 
     def gradient(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Différences finies centrées sur le vecteur de plan.
 
-        Coût : ``2 n`` appels à :meth:`evaluer` (``n = 4 × pièces``), soit 120 passes
+        Coût : ``2 n`` appels à :meth:`evaluate` (``n = 4 × pièces``), soit 120 passes
         complètes pour 15 pièces. Sur 50 itérations Frank-Wolfe, c'est l'essentiel du
         budget « légalisation performantielle < 500 ms » (``ARCHITECTURE.md`` §9), et
         cela ne tiendra pas pour un modèle plus lourd. La rétropropagation exacte est
@@ -213,13 +216,13 @@ class SubstitutDense:
             plus[i] += pas
             moins[i] -= pas
             g[i] = (
-                self.evaluer(plus, orientation, baies=baies)
-                - self.evaluer(moins, orientation, baies=baies)
+                self.evaluate(plus, orientation, glazing=glazing)
+                - self.evaluate(moins, orientation, glazing=glazing)
             ) / (2.0 * pas)
         return g
 
-    def incertitude(
-        self, x: np.ndarray, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """``σ̂`` **constant**, dérivé de ``sigma_y`` par une fraction d'atelier.
 
@@ -228,10 +231,10 @@ class SubstitutDense:
         :data:`FRACTION_SIGMA_RESIDUEL`), mais l'intervalle a partout la même largeur :
         aucun gain d'adaptativité, et le chiffre ``0,15`` n'est adossé à aucune mesure.
         """
-        del x, orientation, baies
+        del x, orientation, glazing
         return float(max(self.sigma_y * FRACTION_SIGMA_RESIDUEL, SIGMA_PLANCHER))
 
-    def ajuster(
+    def fit(
         self,
         xs: tuple[np.ndarray, ...],
         ys: np.ndarray,
@@ -240,7 +243,7 @@ class SubstitutDense:
         seed: int,
         epoques: int = 120,
         lr: float = 0.08,
-        baies: tuple[Baies | None, ...] | None = None,
+        glazing: tuple[Glazing | None, ...] | None = None,
     ) -> None:
         """Recaler l'analytique, puis descente de gradient Huber sur le **résidu**.
 
@@ -257,10 +260,10 @@ class SubstitutDense:
         ``a = 1``, ``b = 0`` restaure exactement le comportement antérieur.
         """
         if len(xs) != len(ys) or len(xs) != len(orientations):
-            raise InvariantViole(("xs, ys et orientations doivent avoir la même longueur",))
+            raise InvariantViolation(("xs, ys et orientations doivent avoir la même longueur",))
         analytique = _analytique(self.indicateur_vise)
         brut = np.array(
-            [float(analytique.evaluer(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
+            [float(analytique.evaluate(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
         )
         cible_brute = np.asarray(ys, dtype=float).ravel()
         variance = float(np.var(brut))
@@ -272,9 +275,9 @@ class SubstitutDense:
             self.echelle_base = 0.0
             self.decalage_base = float(np.mean(cible_brute))
         residus = cible_brute - (self.echelle_base * brut + self.decalage_base)
-        fenestration = baies if baies is not None else (None,) * len(xs)
+        fenestration = glazing if glazing is not None else (None,) * len(xs)
         feats = np.stack(
-            [descripteurs(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
+            [descriptors(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
         )
         self.mu = feats.mean(axis=0)
         self.sigma = feats.std(axis=0)
@@ -309,7 +312,7 @@ class SubstitutDense:
                 self.W1 -= lr * np.outer(feat, d_h1)
                 self.b1 -= lr * d_h1
 
-    def sauver(self, chemin: Path) -> str:
+    def save(self, chemin: Path) -> str:
         """Écrire les poids en ``npz``. Rend l'empreinte SHA-256 du fichier **écrit**.
 
         ``numpy.savez`` ajoute lui-même ``.npz`` quand le chemin n'en porte pas ; le
@@ -326,7 +329,7 @@ class SubstitutDense:
             or self.mu is None
             or self.sigma is None
         ):
-            raise InvariantViole(("sauver un modèle non entraîné",))
+            raise InvariantViolation(("sauver un modèle non entraîné",))
         chemin = Path(chemin)
         if chemin.suffix != ".npz":
             chemin = chemin.with_name(chemin.name + ".npz")
@@ -344,25 +347,28 @@ class SubstitutDense:
             sigma_y=np.array(self.sigma_y),
             echelle_base=np.array(self.echelle_base),
             decalage_base=np.array(self.decalage_base),
-            indicateur=np.array(self.indicateur_vise),
+            # The key of the saved archive is part of the file format: it stays
+            # ``indicateur`` so that models saved before the English API still load.
+            # mypy matches the ``**`` mapping against ``allow_pickle: bool``
+            **{"indicateur": np.array(self.indicateur_vise)},  # type: ignore[arg-type]
         )
         return hashlib.sha256(chemin.read_bytes()).hexdigest()
 
     @classmethod
-    def charger(cls, chemin: Path) -> SubstitutDense:
+    def load(cls, chemin: Path) -> DenseSurrogate:
         """Relire un ``npz`` produit par :meth:`sauver`."""
-        indicateurs: tuple[Indicateur, ...] = (
+        indicateurs: tuple[Indicator, ...] = (
             "sDA",
             "ASE",
             "UDI",
             "vue",
         )
         with np.load(Path(chemin), allow_pickle=False) as archive:
-            indicateur = str(archive["indicateur"])
+            indicator = str(archive["indicateur"])
             # Matching by equality types the result on every mypy version, without a cast.
-            vise = next((known for known in indicateurs if known == indicateur), None)
+            vise = next((known for known in indicateurs if known == indicator), None)
             if vise is None:
-                raise InvariantViole((f"indicateur inconnu dans les poids : {indicateur}",))
+                raise InvariantViolation((f"indicateur inconnu dans les poids : {indicator}",))
             modele = cls(indicateur_vise=vise)
             modele.W1 = np.array(archive["W1"], dtype=float, copy=True)
             modele.b1 = np.array(archive["b1"], dtype=float, copy=True)
@@ -379,3 +385,12 @@ class SubstitutDense:
                 modele.echelle_base = float(archive["echelle_base"])
                 modele.decalage_base = float(archive["decalage_base"])
         return modele
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "SubstitutDense": Alias(DenseSurrogate, "archlux.light.base.DenseSurrogate"),
+        "descripteurs": Alias(descriptors, "archlux.light.base.descriptors"),
+    },
+)

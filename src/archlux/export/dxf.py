@@ -1,37 +1,37 @@
-"""Écriture DXF minimale (ASCII), sans dépendance externe."""
+"""Minimal DXF writing (ASCII), without external dependency."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from archlux.erreurs import InvariantViole
-from archlux.export.pathologie import diagnostiquer
+from archlux.errors import InvariantViolation
+from archlux.export.pathologie import diagnose
 from archlux.types import Plan
 
 __all__ = ["to_dxf"]
 
 
-def to_dxf(plan: Plan, chemin: Path | str) -> None:
-    """Exporter les pièces comme ``LWPOLYLINE`` (plan 2D).
+def to_dxf(plan: Plan, path: Path | str) -> None:
+    """Export the rooms as ``LWPOLYLINE`` (2D plan).
 
     Parameters
     ----------
     plan : Plan
-        Plan à exporter.
-    chemin : Path or str
-        Fichier ``.dxf`` (écrasé).
+        Plan to export.
+    path : Path or str
+        ``.dxf`` file (overwritten).
 
     Raises
     ------
-    InvariantViole
-        Pathologie géométrique bloquante.
+    InvariantViolation
+        Blocking geometric pathology.
     """
-    chemin = Path(chemin)
-    diag = diagnostiquer(plan)
+    path = Path(path)
+    diag = diagnose(plan)
     if not diag.exportable:
-        raise InvariantViole(diag.pathologies)
+        raise InvariantViolation(diag.pathologies)
 
-    lignes: list[str] = [
+    rows: list[str] = [
         "0",
         "SECTION",
         "2",
@@ -43,10 +43,10 @@ def to_dxf(plan: Plan, chemin: Path | str) -> None:
         "2",
         "ENTITIES",
     ]
-    for piece in plan.pieces:
+    for piece in plan.rooms:
         x0, y0, x1, y1 = piece.x, piece.y, piece.x + piece.w, piece.y + piece.h
         coins = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
-        lignes.extend(
+        rows.extend(
             [
                 "0",
                 "LWPOLYLINE",
@@ -59,9 +59,9 @@ def to_dxf(plan: Plan, chemin: Path | str) -> None:
             ]
         )
         for x, y in coins:
-            lignes.extend(["10", f"{x:.6f}", "20", f"{y:.6f}"])
-    for mur in plan.murs:
-        lignes.extend(
+            rows.extend(["10", f"{x:.6f}", "20", f"{y:.6f}"])
+    for mur in plan.walls:
+        rows.extend(
             [
                 "0",
                 "LINE",
@@ -77,5 +77,5 @@ def to_dxf(plan: Plan, chemin: Path | str) -> None:
                 f"{mur.b[1]:.6f}",
             ]
         )
-    lignes.extend(["0", "ENDSEC", "0", "EOF"])
-    chemin.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+    rows.extend(["0", "ENDSEC", "0", "EOF"])
+    path.write_text("\n".join(rows) + "\n", encoding="utf-8")

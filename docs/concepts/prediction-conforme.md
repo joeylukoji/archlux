@@ -5,7 +5,7 @@ Source : Vovk, Gammerman & Shafer (2005), [bibliographie](../formules/sources.md
 
 ## Les quatre étapes
 
-1. **Geler** le substitut, émettre le jeton (`geler_et_emettre`). Le jeu de
+1. **Geler** le substitut, émettre le jeton (`freeze_and_issue`). Le jeu de
    calibration n'a jamais été lu à l'entraînement.
 2. **Scorer** chaque plan de calibration : \(s_i = \lvert y_i - \hat y_i\rvert / \hat\sigma_i\).
 3. **Prendre le rang** \(k = \lceil (n+1)(1-\alpha)\rceil\) dans les scores triés.
@@ -19,8 +19,8 @@ bas (entre les rangs 90 et 91, interpolation). L'intervalle conforme est
 **strictement plus large**. Avec 1 000 points l'écart est minime ; avec 100, la
 garantie tombe si on omet la correction.
 
-Si \(k > n\) (jeu trop petit pour \(\alpha\)), `quantile_conforme` lève
-`InvariantViole`. Pas de borne infinie silencieuse.
+Si \(k > n\) (jeu trop petit pour \(\alpha\)), `conformal_quantile` lève
+`InvariantViolation`. Pas de borne infinie silencieuse.
 
 ## L'hypothèse d'échangeabilité
 
@@ -34,7 +34,7 @@ couverture n'est pas garantie et le rapport ne l'annonce pas). `legalize` rend
 toujours `"selected"`. Une procédure valide sous sélection (sélection conforme,
 Jin & Candès 2023 ; conforme pondéré, Fannjiang et al. 2022) est prévue en phase
 6.4 du plan. Pour un plan échangeable, si un test d'échangeabilité rejette,
-`construire_borne` rend `None` et le certificat porte `NON EVALUABLE`.
+`build_bound` rend `None` et le certificat porte `NOT EVALUABLE`.
 
 ## Sens des indicateurs
 
