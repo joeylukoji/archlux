@@ -142,7 +142,7 @@ class DenseSurrogate:
     decalage_base: float = 0.0
 
     @property
-    def indicator(self) -> Indicateur:
+    def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
