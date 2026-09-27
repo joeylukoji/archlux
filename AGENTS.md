@@ -90,3 +90,4 @@ Atomic commits, branch/PR hygiene, semver bumps, changelog writing.
 |---|---|---|
 | Claude Code | `.claude/skills/` | `.claude/agents/` |
 | Cursor | `.cursor/skills/` and `.agents/skills/` | rule `.cursor/rules/agent-dispatch.mdc` |
+| `agent-skills:*` rows | plugin installed by the user, not in this repository | same |
