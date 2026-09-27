@@ -26,6 +26,8 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   old names deprecated. `merges`, not the glossary's former `merged_rooms`: it is the name
   `verify_exactly` and `minimum_area_shares` already give the same tuple. The `pavage`
   column of the published raw CSVs is unchanged; `results/` is byte-identical.
+  `InvalidInput.field` for a negative budget now reads `repair_budget`, whichever name the
+  caller used.
 - The `tiling grid` branch of `Infeasible.relaxable` is tested; `_Problem.minima` is
   read-only; about 200 references to French names in docstrings (Sphinx roles that no
   longer resolved, numpydoc parameter names) and in the current docs name the English
