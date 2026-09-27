@@ -1,6 +1,6 @@
 # Pavage exact
 
-**Code :** `geom.pavage.deduire_trame`, `etendre_pavage` ; `api.legalize(..., pavage=True)`.
+**Code :** `geom.pavage.deduire_trame`, `etendre_pavage` ; `api.legalize(..., tiling=True)`.
 
 ## Le problème
 
@@ -98,7 +98,7 @@ sature vite — 8 ne gagne rien sur 4 :
     Fermer un jour, c'est agrandir quelqu'un : la réparation peut **absorber une
     pièce manquante dans sa voisine**, et le plan sort avec une pièce de moins que
     le générateur n'en avait prévu. Un appelant qui doit préserver le programme
-    pièce par pièce passe ``budget_reparation=0`` — la partition est alors vérifiée,
+    pièce par pièce passe ``repair_budget=0`` — la partition est alors vérifiée,
     jamais retouchée.
 
 ## Deux propriétés
@@ -115,7 +115,7 @@ sature vite — 8 ne gagne rien sur 4 :
 4 796 corruptions de 300 appartements MSD réels ; bruts et table dans
 `results/j7_reparation_brut.csv` et `results/j7_reparation.md` :
 
-| Faute | `legalize` | `pavage=True` | repli |
+| Faute | `legalize` | `tiling=True` | repli |
 |---|--:|--:|--:|
 | jour | 10,0 % | 97,6 % | **98,0 %** |
 | sous-dimension | 4,8 % | 96,0 % | **96,3 %** |

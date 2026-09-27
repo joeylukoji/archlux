@@ -192,7 +192,7 @@ qu'il lui est **interdit** de savoir.
 | `types` | Structures gelées | Immuabilité, position d'ouverture dérivée | Tout le reste |
 | `erreurs` | Exceptions typées | Aucune `Exception` nue dans le projet | Tout le reste |
 | `geom.graphe` | `GrapheContraintes` | Acyclique ; toute paire séparée | Dimensions, coûts |
-| `geom.polytope` | `Polytope` | Tout point ⇒ plan sans chevauchement ; sans jour **seulement** avec `pavage=True` | Objectifs |
+| `geom.polytope` | `Polytope` | Tout point ⇒ plan sans chevauchement ; sans jour **seulement** avec `tiling=True` | Objectifs |
 | `lmo.solveur` | `SolutionLP` | Optimalité LP, ou Farkas si infaisable | **L'origine de `c`** |
 | `lmo.coupes` | `Coupe` | Tangentes : approximation **extérieure**, aucun point admissible exclu, la preuve revérifie les surfaces ; cordes (`inner_area_constraints`) : approximation **intérieure**, aucun point sous une surface minimale | La lumière |
 | `light.protocole` | *(interface)* | Trois méthodes, entrée vectorielle | `geom`, `lmo`, `solve` |

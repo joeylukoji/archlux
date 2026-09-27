@@ -121,7 +121,7 @@ def _classic(plan: Plan, ctx: Context) -> Plan:
 
 
 def _classic_tiling(plan: Plan, ctx: Context) -> Plan:
-    return archlux.legalize(plan, ctx, pavage=True)
+    return archlux.legalize(plan, ctx, tiling=True)
 
 
 def _performance(plan: Plan, ctx: Context) -> Plan:
@@ -134,7 +134,7 @@ what Frank-Wolfe would like to move, so that the budget actually binds."""
 
 
 def _performance_tiling_budget(plan: Plan, ctx: Context) -> Plan:
-    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), pavage=True, budget=BUDGET_M)
+    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), tiling=True, budget=BUDGET_M)
 
 
 def _daylight(plan: Plan, ctx: Context) -> Plan:

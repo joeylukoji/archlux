@@ -141,9 +141,9 @@ def _trois_pieces_sur_quatre() -> Plan:
 
 
 def test_jour_structurel_est_detecte_sans_budget() -> None:
-    """`budget_reparation=0` : la partition est verifiee, jamais retouchee."""
+    """`repair_budget=0` : la partition est verifiee, jamais retouchee."""
     with pytest.raises(GridNotRecoverable, match="uncovered"):
-        deduce_grid(_trois_pieces_sur_quatre(), _ctx(), budget_reparation=0)
+        deduce_grid(_trois_pieces_sur_quatre(), _ctx(), repair_budget=0)
 
 
 def test_une_piece_manquante_est_absorbee_par_sa_voisine() -> None:
@@ -153,7 +153,7 @@ def test_une_piece_manquante_est_absorbee_par_sa_voisine() -> None:
     plutot que refusee. C'est le comportement attendu d'un legaliseur — fermer un
     jour, c'est agrandir quelqu'un — mais le plan sort avec **une piece de moins**
     que ce que le generateur avait prevu. Un appelant qui doit preserver le
-    programme piece par piece passe `budget_reparation=0`.
+    programme piece par piece passe `repair_budget=0`.
     """
     plan = _trois_pieces_sur_quatre()
     grid = deduce_grid(plan, _ctx())
@@ -161,7 +161,7 @@ def test_une_piece_manquante_est_absorbee_par_sa_voisine() -> None:
     assert sum(aires.values()) == grid.n_cells  # la grille est entierement couverte
     assert len(grid.incidences) == 3
 
-    corrige = ax.legalize(plan, _ctx(), pavage=True)
+    corrige = ax.legalize(plan, _ctx(), tiling=True)
     assert corrige.certificate is not None
     assert corrige.certificate.geometry.valid
     assert len(corrige.rooms) == 3
@@ -179,7 +179,7 @@ def test_le_budget_borne_la_reparation() -> None:
         outline=_RECT,
     )
     with pytest.raises(GridNotRecoverable):
-        deduce_grid(plan, _ctx(), budget_reparation=1)
+        deduce_grid(plan, _ctx(), repair_budget=1)
 
 
 @pytest.mark.parametrize("budget", [0, 1, 2, 4, 8])
@@ -194,7 +194,7 @@ def test_toute_trame_rendue_est_une_partition_valide(budget: int, degat: float) 
     """
     plan = _pavage_2x2(largeur_sw=max(0.5, 5.0 - degat))
     try:
-        grid = deduce_grid(plan, _ctx(), budget_reparation=budget)
+        grid = deduce_grid(plan, _ctx(), repair_budget=budget)
     except GridNotRecoverable:
         return  # refus explicite : c'est l'autre branche du contrat
     grille = np.zeros((len(grid.x_lines) - 1, len(grid.y_lines) - 1), dtype=int)
@@ -207,8 +207,8 @@ def test_toute_trame_rendue_est_une_partition_valide(budget: int, degat: float) 
 
 def test_la_reparation_ne_change_pas_un_plan_sain() -> None:
     """Sur une partition deja exacte, aucune retouche n'est appliquee."""
-    sain = deduce_grid(_pavage_2x2(), _ctx(), budget_reparation=0)
-    avec = deduce_grid(_pavage_2x2(), _ctx(), budget_reparation=8)
+    sain = deduce_grid(_pavage_2x2(), _ctx(), repair_budget=0)
+    avec = deduce_grid(_pavage_2x2(), _ctx(), repair_budget=8)
     assert sain == avec
 
 
@@ -251,26 +251,26 @@ def test_chevauchement_structurel_est_refuse() -> None:
 def test_legalize_avec_pavage_ferme_un_jour() -> None:
     """Le cas que `legalize` seul ne sait pas corriger.
 
-    Sans `pavage=True`, le plan troue est deja le plus proche de lui-meme :
+    Sans `tiling=True`, le plan troue est deja le plus proche de lui-meme :
     l'optimum L1 le laisse tel quel et la verification exacte le rejette.
     """
     abime = _pavage_2x2(largeur_sw=4.5)
     ctx = _ctx()
     assert not verify_exactly(abime, ctx).valid
 
-    with pytest.raises(ax.GapNeedsTiling, match="pavage=True"):
+    with pytest.raises(ax.GapNeedsTiling, match="tiling=True"):
         ax.legalize(abime, ctx)
 
-    corrige = ax.legalize(abime, ctx, pavage=True)
+    corrige = ax.legalize(abime, ctx, tiling=True)
     assert corrige.certificate is not None
     assert corrige.certificate.geometry.valid
     assert not corrige.certificate.geometry.gaps
 
 
 def test_pavage_preserve_l_idempotence() -> None:
-    """Sur un plan deja valide, `pavage=True` ne deplace rien."""
+    """Sur un plan deja valide, `tiling=True` ne deplace rien."""
     ctx = _ctx()
-    corrige = ax.legalize(_pavage_2x2(), ctx, pavage=True)
+    corrige = ax.legalize(_pavage_2x2(), ctx, tiling=True)
     assert corrige.certificate is not None
     assert corrige.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-9)
 
@@ -304,7 +304,7 @@ def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:
     """Les contraintes de pavage sont des egalites : elles ne sont pas dualisees."""
     ctx = _ctx()
     sans = ax.legalize(_pavage_2x2(), ctx)
-    avec = ax.legalize(_pavage_2x2(), ctx, pavage=True)
+    avec = ax.legalize(_pavage_2x2(), ctx, tiling=True)
     assert sans.certificate is not None
     assert avec.certificate is not None
     libelles = {libelle for libelle, _ in avec.certificate.duals}

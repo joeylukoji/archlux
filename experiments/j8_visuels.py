@@ -100,7 +100,7 @@ def main() -> None:
         preuve = verify_exactly(plan, context)
         corrige, statut = None, "réparé"
         try:
-            corrige = ax.legalize(plan, context, pavage=True, budget_reparation=BUDGET)
+            corrige = ax.legalize(plan, context, tiling=True, repair_budget=BUDGET)
             if not corrige.certificate.geometry.valid:
                 statut = "corrigé mais invalide"
         except ax.Infeasible:

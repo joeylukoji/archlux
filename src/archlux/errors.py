@@ -261,7 +261,7 @@ class GapNeedsTiling(UnsupportedInput):
         super().__init__(
             "the plan leaves a gap that legalize cannot close on its own ("
             + " ; ".join(violations)
-            + "). Rerun with pavage=True, which forces the rooms to tile the outline"
+            + "). Rerun with tiling=True, which forces the rooms to tile the outline"
         )
 
 
@@ -286,7 +286,7 @@ class GridNotRecoverable(UnsupportedInput):
         self.missing = missing
         super().__init__(
             f"tiling grid not recoverable: {excess} cells covered twice, {missing} "
-            "uncovered; raise budget_reparation or fix the plan"
+            "uncovered; raise repair_budget or fix the plan"
         )
 
 

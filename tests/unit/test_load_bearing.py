@@ -93,7 +93,7 @@ def test_legalize_repairs_a_room_overflowing_a_partial_wall_end() -> None:
     plan = _plan(
         _room("low", 0, 0, 6, 2.99), _room("high", 0, 2.99, 10, 3.01), _room("r", 6, 0, 4, 2.99)
     )
-    result = archlux.legalize(plan, ctx, pavage=True)
+    result = archlux.legalize(plan, ctx, tiling=True)
     assert checkers.violations(result, ctx) == []
     assert np.isclose({r.id: r for r in result.rooms}["high"].y, 3.0)
 
@@ -182,7 +182,7 @@ def test_legalize_never_crosses_a_load_bearing_wall(objective: Surrogate | None)
 def test_legalize_moves_a_crossing_room_back_behind_the_wall() -> None:
     ctx = _ctx(_FULL)
     plan = _plan(_room("a", 0, 0, 6.4, 6), _room("b", 6.4, 0, 3.6, 6))
-    result = archlux.legalize(plan, ctx, pavage=True)  # tiling closes the gap left at 6.4
+    result = archlux.legalize(plan, ctx, tiling=True)  # tiling closes the gap left at 6.4
     rooms = {r.id: r for r in result.rooms}
     assert np.isclose(rooms["a"].x + rooms["a"].w, 6.0)
     assert np.isclose(rooms["b"].x, 6.0)

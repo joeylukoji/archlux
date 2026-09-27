@@ -18,7 +18,7 @@ The conversion holds in four steps, in this order:
 3. **Decompose.** Few real rooms are rectangles (0.1% of apartments); almost
    all are rectilinear. Each room becomes a
    :class:`~archlux.geom.rectilineaire.PieceRectilineaire`, and its bonding
-   equalities are passed to ``legalize(..., fusions=)``.
+   equalities are passed to ``legalize(..., merges=)``.
 4. **Attach openings.** A window is projected onto the nearest wall and stored
    as ``(wall_id, s, relative_width)`` — **never** in absolute coordinates
    (`ARCHITECTURE.md` §10).
@@ -115,7 +115,7 @@ class MSDApartment:
     Attributes
     ----------
     merges : tuple of PieceRectilineaire
-        To be passed as is to ``legalize(..., fusions=...)``. Empty if all
+        To be passed as is to ``legalize(..., merges=...)``. Empty if all
         rooms were already rectangles.
     straightening_angle : float
         Rotation applied, in degrees. The returned geometry is **already**

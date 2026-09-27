@@ -107,7 +107,7 @@ from archlux.light.objectif import Daylight
 
 objectif = Daylight(model, q_chapeau=cal.q)  # pessimiste=True par défaut
 q = ax.legalize(
-    plan, ctx, objective=objectif, calibration=cal.snapshot(), budget=0.5, pavage=True
+    plan, ctx, objective=objectif, calibration=cal.snapshot(), budget=0.5, tiling=True
 )
 assert q.certificate is not None and q.certificate.performance is not None
 assert q.certificate.performance.regime == "selected"

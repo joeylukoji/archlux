@@ -67,7 +67,7 @@ def scenarios_with_a_fused_room(
         and not checkers.violations(
             replace(plan, rooms=tuple(fuse(a, b, kind)[1])),
             ctx,
-            fusions=(fuse(a, b, kind)[0],),
+            merges=(fuse(a, b, kind)[0],),
         )
     ]
     assume(pairs)
@@ -96,7 +96,7 @@ def test_the_fused_input_is_valid_under_its_own_context(
 ) -> None:
     """Sanity check of the strategy: any later violation comes from legalize."""
     plan, ctx, room = scenario
-    assert checkers.violations(plan, ctx, fusions=(room,)) == []
+    assert checkers.violations(plan, ctx, merges=(room,)) == []
 
 
 @_SETTINGS
@@ -109,10 +109,10 @@ def test_legalize_never_certifies_a_broken_fused_room(
     plan, ctx, room = scenario
     for objective in (None, AnalyticSurrogate()):
         try:
-            result = archlux.legalize(plan, ctx, objective=objective, fusions=(room,))
+            result = archlux.legalize(plan, ctx, objective=objective, merges=(room,))
         except ArchluxError:
             continue  # refusing is allowed; lying is not
-        assert checkers.violations(result, ctx, fusions=(room,)) == []
+        assert checkers.violations(result, ctx, merges=(room,)) == []
         for before, after in zip(_end_order(plan, room), _end_order(result, room), strict=True):
             assert after in (before, 0), "an end of the L changed order"
 

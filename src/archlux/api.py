@@ -143,7 +143,7 @@ def _only_a_gap(preuve: GeometricProof, budget: float | None) -> bool:
 
 
 GRID_LABEL = "tiling grid"
-"""Scope entry of the tiling equalities (``pavage=True``)."""
+"""Scope entry of the tiling equalities (``tiling=True``)."""
 
 
 def budget_label(budget: float) -> str:
@@ -153,7 +153,7 @@ def budget_label(budget: float) -> str:
 
 def _scope(
     ordre: RelativeOrder,
-    fusions: tuple[RectilinearRoom, ...],
+    merges: tuple[RectilinearRoom, ...],
     grid: bool,
     budget: float | None,
 ) -> tuple[str, ...]:
@@ -161,7 +161,7 @@ def _scope(
     scope: list[str] = []
     if ordre.wall_sides:
         scope.append("load-bearing sides")
-    if fusions:
+    if merges:
         scope.append("fused-room seams and area shares")
     if ordre.shared_sides:
         scope.append("one shared side per fused room straddling a wall")
@@ -182,7 +182,7 @@ class _Problem:
 
     plan: Plan
     ctx: Context
-    fusions: tuple[RectilinearRoom, ...]
+    merges: tuple[RectilinearRoom, ...]
     budget: float | None
     grid: Grid | None
     order: RelativeOrder
@@ -225,7 +225,7 @@ class _Problem:
             self.ctx,
             reference=self.plan,
             budget=self.budget if bounded else None,
-            merges=self.fusions,
+            merges=self.merges,
         )
 
 
@@ -252,15 +252,15 @@ def _build_problem(
     plan: Plan,
     ctx: Context,
     *,
-    fusions: tuple[RectilinearRoom, ...],
+    merges: tuple[RectilinearRoom, ...],
     budget: float | None,
-    pavage: bool,
-    budget_reparation: int,
+    tiling: bool,
+    repair_budget: int,
 ) -> _Problem:
     """Derive the relative order, the polytope and the reference vector of a plan."""
     # Makes a gap unrepresentable: see ``geom.pavage``. Raises if the grid of the
     # proposed plan cannot be recovered: an explicit failure, not a silent one.
-    grid = deduce_grid(plan, ctx, budget_reparation=budget_reparation) if pavage else None
+    grid = deduce_grid(plan, ctx, repair_budget=repair_budget) if tiling else None
     # With a grid, the order is read from the plan snapped onto it: the order read from
     # the faulty plan could contradict the tiling equalities (a room moved onto its
     # neighbour overlaps it on both axes).
@@ -268,21 +268,21 @@ def _build_problem(
         plan if grid is None else snap_to_grid(plan, grid),
         structure=ctx.structure,
         # A fused room keeps one side of every wall: never a wall on its seam.
-        groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in fusions),
+        groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in merges),
     )
     base = build_polytope(order, ctx)
-    for piece_l in fusions:
+    for piece_l in merges:
         base = extend_merges(base, piece_l, min_contact=ctx.regulation.min_width)
     return _Problem(
         plan=plan,
         ctx=ctx,
-        fusions=fusions,
+        merges=merges,
         budget=budget,
         grid=grid,
         order=order,
         base=base,
         x_ref=vectorize(plan, base.index),
-        minima=minimum_area_shares(plan.rooms, fusions, ctx.regulation),
+        minima=minimum_area_shares(plan.rooms, merges, ctx.regulation),
     )
 
 
@@ -307,7 +307,7 @@ def _refusal(problem: _Problem, poly_l1: Polytope, sol: LPSolution) -> Infeasibl
     )
     # The certificate is about this domain, not about the order alone (final review of
     # phase 1, C1): name every restriction, and test the ones legalize added.
-    scope = _scope(problem.order, problem.fusions, problem.grid is not None, problem.budget)
+    scope = _scope(problem.order, problem.merges, problem.grid is not None, problem.budget)
     relaxable: list[str] = []
     if problem.grid is not None and _admits(problem, problem.domain(grid=False)[1], bounded=True):
         relaxable.append(GRID_LABEL)
@@ -349,7 +349,7 @@ def _optimize_light(
     trace: bool,
 ) -> Plan:
     """Frank-Wolfe from the classic plan, inside the polytope, then the exact proof."""
-    ctx, fusions, budget = problem.ctx, problem.fusions, problem.budget
+    ctx, merges, budget = problem.ctx, problem.merges, problem.budget
     x0 = vectorize(corrected, poly.index)
     # Inner approximation of the minimum areas, added *after* freezing contacts so that
     # a tight room is not frozen into an equality: every point of this domain, hence
@@ -359,7 +359,7 @@ def _optimize_light(
         x0,
         ctx,
         corrected.rooms,
-        minima=minimum_area_shares(corrected.rooms, fusions, ctx.regulation),
+        minima=minimum_area_shares(corrected.rooms, merges, ctx.regulation),
     )
     if budget is not None:
         # Centred on the *proposed* plan, not on x0: the budget is spent once over the
@@ -417,6 +417,7 @@ def _not_a_surrogate(objective: object) -> str:
     return f"{message}; it has the pre-0.10 French members, rename them: {renames}"
 
 
+@renamed_parameters({"fusions": "merges", "pavage": "tiling", "budget_reparation": "repair_budget"})
 def legalize(
     plan: Plan,
     ctx: Context,
@@ -425,9 +426,9 @@ def legalize(
     calibration: Calibration | None = None,
     budget: float | None = None,
     trace: bool = False,
-    fusions: tuple[RectilinearRoom, ...] = (),
-    pavage: bool = False,
-    budget_reparation: int = 4,
+    merges: tuple[RectilinearRoom, ...] = (),
+    tiling: bool = False,
+    repair_budget: int = 4,
 ) -> Plan:
     """Correct a plan towards the closest valid plan, or the best performing one.
 
@@ -455,13 +456,13 @@ def legalize(
         A budget too small for the plan raises ``Infeasible``.
     trace : bool, optional
         If true, attaches the Frank-Wolfe trace to ``result.trace`` (not serialized).
-    fusions : tuple of PieceRectilineaire, optional
+    merges : tuple of PieceRectilineaire, optional
         Fused rooms (L, T, U, Z) decomposed into sub-rectangles. Their shared edges
         become equalities of ``A_eq``; on the orthogonal axis, the order of the
         sub-rectangle ends is kept and every shared edge keeps at least
         ``referentiel.largeur_min`` of length, so an L cannot turn into a Z or split
         (:func:`~archlux.geom.rectilineaire.overlap_constraints`).
-    pavage : bool, optional
+    tiling : bool, optional
         Require that the union of the rooms **tiles the outline exactly**. Without it,
         the separations of the polytope being inequalities, a plan with a gap remains the
         closest point to itself: the L1 optimum leaves it as is and the exact
@@ -470,8 +471,8 @@ def legalize(
         Turn it on as soon as the input may carry a **gap**: this is the case of the
         outputs of generative models. Measured on 4,796 corruptions of 300 real MSD
         plans (`results/j7_reparation.md`): repair goes from 35.9 % to 93.0 %, and on
-        gaps alone from 10.0 % to 97.6 % (column ``pavage=True``; the 93.9 % of the
-        README is the "fallback" column: ``pavage=True``, otherwise ``legalize`` alone).
+        gaps alone from 10.0 % to 97.6 % (column ``tiling=True``; the 93.9 % of the
+        README is the "fallback" column: ``tiling=True``, otherwise ``legalize`` alone).
         Figures measured before batch 1.1.
 
         Requires the grid of the proposed plan to be recoverable
@@ -480,9 +481,9 @@ def legalize(
         With a grid, the relative order and the load-bearing sides are read from
         the plan snapped onto it (:func:`~archlux.geom.pavage.snap_to_grid`), so
         that they never contradict the tiling equalities.
-    budget_reparation : int, optional
+    repair_budget : int, optional
         Number of repair steps granted to the grid recovery, passed as is to
-        :func:`~archlux.geom.pavage.deduire_trame`. No effect if ``pavage`` is false.
+        :func:`~archlux.geom.pavage.deduire_trame`. No effect if ``tiling`` is false.
 
         The default ``4`` is tuned on **corrupted** plans, where the fault is a wrong
         dimension and is absorbed in one or two steps. The output of a generative model
@@ -502,10 +503,10 @@ def legalize(
         Propagated from the construction of the graph.
     UnsupportedInput
         An oblique load-bearing wall: it cannot be kept by a linear side constraint.
-        With ``pavage``, also an input the grid cannot describe (no room, empty or
+        With ``tiling``, also an input the grid cannot describe (no room, empty or
         invalid outline, flat room, outline edges closer than the grouping tolerance).
     GridNotRecoverable
-        With ``pavage``: the rooms do not fall into the cells of the recovered grid
+        With ``tiling``: the rooms do not fall into the cells of the recovered grid
         (an input limit, subclass of ``UnsupportedInput``).
     Infeasible
         The program does not fit the envelope for this relative order. The exception
@@ -513,7 +514,7 @@ def legalize(
         ``A_eq``, ``certificat_farkas`` with its exact verification (``verified``).
         Raised before the LP if ``largeur_min`` already exceeds the envelope.
     GapNeedsTiling
-        The plan leaves a gap and ``pavage`` is off: rerun with ``pavage=True``
+        The plan leaves a gap and ``tiling`` is off: rerun with ``tiling=True``
         (an input limit, subclass of ``UnsupportedInput``).
     InvariantViolation
         Solver output rejected by the exact verification, or an unexpected LP status.
@@ -524,7 +525,7 @@ def legalize(
     InvalidInput
         Malformed argument, refused before any solving: a non-finite or non-numeric
         value, a non-positive room size, duplicate room ids, no room, an outline with
-        fewer than 3 points, a negative ``budget`` or ``budget_reparation``, a
+        fewer than 3 points, a negative ``budget`` or ``repair_budget``, a
         ``calibration`` without ``objective`` or for another indicator. Its ``field``
         names the argument (a ``ValueError`` subclass).
     TypeError
@@ -577,17 +578,17 @@ def legalize(
     """
     if objective is not None and not isinstance(objective, Surrogate):
         raise TypeError(_not_a_surrogate(objective))
-    validate_inputs(plan, ctx, budget=budget, budget_reparation=budget_reparation)
+    validate_inputs(plan, ctx, budget=budget, repair_budget=repair_budget)
     ctx = resolve_outline(plan, ctx)
     _check_calibration(objective, calibration)
 
     problem = _build_problem(
         plan,
         ctx,
-        fusions=fusions,
+        merges=merges,
         budget=budget,
-        pavage=pavage,
-        budget_reparation=budget_reparation,
+        tiling=tiling,
+        repair_budget=repair_budget,
     )
     poly, poly_l1 = problem.domain()
     sol = problem.solve(poly_l1)

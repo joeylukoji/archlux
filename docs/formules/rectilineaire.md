@@ -36,7 +36,7 @@ reste linéaire.
 |---|---|
 | partition | `decomposer` |
 | union | `recomposer` |
-| \(A_{\mathrm{eq}}\) | `etendre_fusions` → `legalize(..., fusions=)` |
+| \(A_{\mathrm{eq}}\) | `etendre_fusions` → `legalize(..., merges=)` |
 
 ## Cas d'utilisation
 

@@ -12,7 +12,7 @@ vertical cut separates, the horizontal cut with the smallest ordinate (bottom fi
 is tried before declaring failure. On the MSD corpus, this fallback raises the
 decomposition rate from 45 % to nearly all aligned rooms.
 
-Outside a dedicated branch: pass ``fusions=`` to :func:`archlux.api.legalize` to
+Outside a dedicated branch: pass ``merges=`` to :func:`archlux.api.legalize` to
 impose the solidarity equalities.
 
 Shape and area of a fused room (PLAN.md batch 1.7): :func:`overlap_constraints` keeps

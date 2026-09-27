@@ -52,7 +52,7 @@ w_p h_p \ge a_{\min}(\mathrm{type}(p))
 pour chaque pièce, à \(10^{-9}\,\mathrm{m}^2\) près. \(a_{\min}=0\) si le type
 est inconnu (`Regulation.min_area`).
 
-**Fused rooms** (an L decomposed into sub-rectangles, `verify_exactly(..., fusions=)`).
+**Fused rooms** (an L decomposed into sub-rectangles, `verify_exactly(..., merges=)`).
 The minimum applies to the union \(U = \bigcup_k R_k\) of the parts, never to each
 part: \(\lambda(U) \ge a_{\min}\). Before the area, every seam recorded by the
 decomposition must still hold: the two parts touch along it (offset at most

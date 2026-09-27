@@ -42,7 +42,7 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                 row = {"plan_id": plan_id, "amplitude_m": amplitude, "pavage": pavage, "seed": seed}
                 row["valid_before"] = verify_exactly(faulty, ctx).valid
                 try:
-                    out = ax.legalize(faulty, ctx, pavage=pavage)
+                    out = ax.legalize(faulty, ctx, tiling=pavage)
                     geometry = out.certificate.geometry  # type: ignore[union-attr]
                     row |= {"status": "ok", "valid_after": geometry.valid}
                     row["max_displacement_m"] = f"{geometry.max_displacement:.6f}"

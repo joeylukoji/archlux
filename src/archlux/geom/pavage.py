@@ -363,14 +363,14 @@ def _reparer_partition(
     return None if reste else incidences
 
 
-@renamed_parameters({"support_min": "min_support"})
+@renamed_parameters({"support_min": "min_support", "budget_reparation": "repair_budget"})
 def deduce_grid(
     plan: Plan,
     ctx: Context,
     *,
     tolerance: float = 0.01,
     min_support: int = 2,
-    budget_reparation: int = 4,
+    repair_budget: int = 4,
 ) -> Grid:
     """Recover the grid of the proposed plan and **prove** that it tiles the outline.
 
@@ -392,7 +392,7 @@ def deduce_grid(
         without guessing a metric tolerance. Default 2: an interior wall separates
         two rooms, so it carries at least two edges. ``min_support=1`` disables
         consolidation.
-    budget_reparation : int, optional
+    repair_budget : int, optional
         Maximum number of one-step adjustments of the partition repair. Default 4.
         ``0`` disables the repair.
 
@@ -497,9 +497,7 @@ def deduce_grid(
         # Local defect of a few cells: try a bounded index adjustment
         # before refusing. Beyond the budget, it is no longer a wrong dimension.
         repare = (
-            _reparer_partition(incidences, dedans, budget_reparation)
-            if budget_reparation > 0
-            else None
+            _reparer_partition(incidences, dedans, repair_budget) if repair_budget > 0 else None
         )
         if repare is None:
             raise GridNotRecoverable(excess=trop, missing=manque)

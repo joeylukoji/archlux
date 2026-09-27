@@ -24,7 +24,7 @@ for apartment in load_msd(MSD, stats=stats, limit=N):
     valid_before += verify_exactly(apartment.plan, apartment.context).valid
     sizes.append(len(apartment.plan.rooms))
     try:
-        out = ax.legalize(apartment.plan, apartment.context, fusions=apartment.merges)
+        out = ax.legalize(apartment.plan, apartment.context, merges=apartment.merges)
     except ax.ArchluxError:
         refused += 1
         continue

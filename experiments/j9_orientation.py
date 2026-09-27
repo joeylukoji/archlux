@@ -85,7 +85,7 @@ def main() -> None:
             continue
         propose, context, diag = bati
         try:
-            valid = ax.legalize(propose, context, pavage=True, budget_reparation=BUDGETS[-1])
+            valid = ax.legalize(propose, context, tiling=True, repair_budget=BUDGETS[-1])
         except ax.ArchluxError:
             continue
         if not valid.certificate.geometry.valid or len(valid.rooms) < 4:

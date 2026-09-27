@@ -65,7 +65,7 @@ def _legalize_any_dimensions(program: Plan, ctx: Context) -> None:
     try:
         legalize(program, ctx)
     except GapNeedsTiling:
-        legalize(program, ctx, pavage=True)
+        legalize(program, ctx, tiling=True)
 
 
 @renamed_parameters({"programme": "program"})

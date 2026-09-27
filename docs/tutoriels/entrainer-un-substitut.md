@@ -84,7 +84,7 @@ points = np.stack([disposition(rng) for _ in range(8)])
 rapport = validate_gradient(reseau, points, ctx.orientation, seed=17, reference=sim)
 assert rapport.accord_de_signe > 0.80
 
-q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, pavage=True)
+q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, tiling=True)
 assert q.certificate is not None and q.certificate.geometry.valid
 ```
 

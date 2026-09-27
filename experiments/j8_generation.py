@@ -384,8 +384,8 @@ def main() -> None:
                     corrige = ax.legalize(
                         plan,
                         contexte_essai,
-                        pavage=(mode == "pavage"),
-                        budget_reparation=budget,
+                        tiling=(mode == "pavage"),
+                        repair_budget=budget,
                     )
                     valid = corrige.certificate.geometry.valid
                     deplacement = f"{corrige.certificate.geometry.max_displacement:.6f}"

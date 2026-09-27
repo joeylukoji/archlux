@@ -31,7 +31,7 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                 for pavage in (False, True):
                     try:
                         out = ax.legalize(
-                            plan, apartment.context, fusions=apartment.merges, pavage=pavage
+                            plan, apartment.context, merges=apartment.merges, tiling=pavage
                         )
                         proof = out.certificate.geometry  # type: ignore[union-attr]
                         result = ("ok", proof.valid, f"{proof.max_displacement:.6f}")

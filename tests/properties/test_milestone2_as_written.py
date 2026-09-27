@@ -4,7 +4,7 @@
 context. The test that closed the milestone (``test_acceptation_jalon2.py``) drew
 ``plans_valides()`` under one fixed context, inputs that are already valid, so it could
 not see a wrong output. Replayed as written, ``legalize`` refuses most arbitrary plans
-(a gap cannot be filled without ``pavage``): the criterion "every output is valid"
+(a gap cannot be filled without ``tiling``): the criterion "every output is valid"
 holds for every plan it **returns**, and every refusal is typed. That reading is what
 is asserted here; the review (``docs/revues/j2.md``) records the refusal rates.
 """
@@ -27,9 +27,9 @@ from tests.properties.strategies import (
 )
 
 
-def _returned_plans_are_valid(plan: Plan, ctx: Context, *, pavage: bool) -> None:
+def _returned_plans_are_valid(plan: Plan, ctx: Context, *, tiling: bool) -> None:
     try:
-        result = archlux.legalize(plan, ctx, pavage=pavage)
+        result = archlux.legalize(plan, ctx, tiling=tiling)
     except ArchluxError:
         return  # a typed refusal is allowed; any other exception fails the test
     assert result.certificate is not None and result.certificate.geometry.valid
@@ -40,20 +40,20 @@ def _returned_plans_are_valid(plan: Plan, ctx: Context, *, pavage: bool) -> None
 @settings(max_examples=500, deadline=None, derandomize=True)
 def test_every_returned_plan_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     """The criterion as written: arbitrary plans and contexts, 500 examples."""
-    _returned_plans_are_valid(plan, ctx, pavage=False)
+    _returned_plans_are_valid(plan, ctx, tiling=False)
 
 
 @given(
     scenario=realistic_scenarios(),
     seed=st.integers(min_value=0, max_value=2**31 - 1),
     amplitude=st.sampled_from((0.1, 0.25, 0.5)),
-    pavage=st.booleans(),
+    tiling=st.booleans(),
 )
 @settings(max_examples=GATE_EXAMPLES, deadline=None, derandomize=True)
 def test_every_returned_plan_is_valid_with_walls_and_one_fault(
-    scenario: tuple[Plan, Context], seed: int, amplitude: float, pavage: bool
+    scenario: tuple[Plan, Context], seed: int, amplitude: float, tiling: bool
 ) -> None:
     """PLAN.md phase 2: replayed with load-bearing walls, minimum areas and one fault."""
     plan, ctx = scenario
     faulty, _ = corrupt(plan, seed=seed, amplitude=amplitude)
-    _returned_plans_are_valid(faulty, ctx, pavage=pavage)
+    _returned_plans_are_valid(faulty, ctx, tiling=tiling)

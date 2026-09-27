@@ -232,7 +232,7 @@ class Plan:
 favourable case**: a 5 × 3 grid of rooms that is already valid, with no load-bearing wall, no tiling,
 analytic surrogate. Since batch 1.2, it also covers the performance mode with tight
 minimum areas (15 rooms) and a scaling test at 15, 50 and 100 rooms. No
-budget covers a noisy input, `pavage=True` or load-bearing walls: for these cases,
+budget covers a noisy input, `tiling=True` or load-bearing walls: for these cases,
 the `benchmarks/guarantees/` bench records median times (about 5 ms in classical mode,
 15 to 20 ms in performance mode over 200 scenarios) without making them a contract. Under
 `--benchmark-disable`, an unmeasured budget is **skipped**, not validated.

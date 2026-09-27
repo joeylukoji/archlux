@@ -75,7 +75,7 @@ def _attempt(mode: str, scenario: Scenario, index: int, surrogate: SubstitutAnal
     """One legalization of the corpus: exact input, noisy input with tiling, or with light."""
     if mode == "noisy":
         noisy = perturb(scenario.plan, seed=index)
-        return legalize(noisy, scenario.context, pavage=True)
+        return legalize(noisy, scenario.context, tiling=True)
     if mode == "light":
         return legalize(scenario.plan, scenario.context, objective=surrogate)
     return legalize(scenario.plan, scenario.context)

@@ -59,7 +59,7 @@ def _by_id(plan: Plan) -> dict[str, Room]:
 def test_legalize_keeps_the_aligned_edge_of_an_l() -> None:
     plan, ctx, room = _pushed_l_plan()
 
-    legal = archlux.legalize(plan, ctx, fusions=(room,))
+    legal = archlux.legalize(plan, ctx, merges=(room,))
 
     assert legal.certificate is not None and legal.certificate.geometry.valid
     rooms = _by_id(legal)
@@ -131,7 +131,7 @@ def test_legalize_keeps_an_l_whose_union_meets_the_minimum_area() -> None:
     """Each sub-rectangle (3 and 1 m²) is below 3.5 m², the room (4 m²) is not."""
     plan, room = _tiling_with_small_l()
 
-    legal = archlux.legalize(plan, _kitchen_minimum(3.5), fusions=(room,))
+    legal = archlux.legalize(plan, _kitchen_minimum(3.5), merges=(room,))
 
     assert legal.certificate is not None and legal.certificate.geometry.valid
     assert legal.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-6)
@@ -141,10 +141,10 @@ def test_legalize_grows_an_l_whose_union_misses_the_minimum_area() -> None:
     plan, room = _tiling_with_small_l()
     ctx = _kitchen_minimum(4.5)
 
-    legal = archlux.legalize(plan, ctx, fusions=(room,), pavage=True)
+    legal = archlux.legalize(plan, ctx, merges=(room,), tiling=True)
 
     assert legal.certificate is not None and legal.certificate.geometry.valid
-    assert checkers.violations(legal, ctx, fusions=(room,)) == []
+    assert checkers.violations(legal, ctx, merges=(room,)) == []
     parts = [r for r in legal.rooms if r.id.startswith("l__")]
     assert sum(r.w * r.h for r in parts) >= 4.5 - 1e-6
 
@@ -153,7 +153,7 @@ def test_legalize_grows_an_l_whose_union_misses_the_minimum_area() -> None:
 def test_checker_measures_a_fused_room_as_a_whole(minimum: float, short: bool) -> None:
     plan, room = _tiling_with_small_l()
 
-    found = checkers.violations(plan, _kitchen_minimum(minimum), fusions=(room,))
+    found = checkers.violations(plan, _kitchen_minimum(minimum), merges=(room,))
 
     assert [v.detail.split(":")[0] for v in found if v.kind == "area"] == (["l"] if short else [])
 
@@ -163,7 +163,7 @@ def test_checker_refuses_a_detached_fused_room() -> None:
     bar, foot = plan.rooms
     detached = replace(plan, rooms=(bar, replace(foot, y=4.0)))
 
-    found = checkers.violations(detached, _kitchen_minimum(0.0), fusions=(room,))
+    found = checkers.violations(detached, _kitchen_minimum(0.0), merges=(room,))
 
     assert any(v.kind == "area" and v.detail.startswith("l:") for v in found), found
 
@@ -197,7 +197,7 @@ def test_a_wall_on_the_seam_of_an_l_is_a_crossing() -> None:
     plan, ctx, room = _l_in_tiling(wall_x=1.0)
     proof = verify_exactly(plan, ctx, merges=(room,))
     assert not proof.valid and not proof.structure_kept
-    assert any(v.kind == "wall" for v in checkers.violations(plan, ctx, fusions=(room,)))
+    assert any(v.kind == "wall" for v in checkers.violations(plan, ctx, merges=(room,)))
 
 
 @pytest.mark.parametrize("pavage", [False, True])
@@ -205,11 +205,11 @@ def test_legalize_never_puts_a_seam_on_a_wall(pavage: bool) -> None:
     """Review C1: the solver used to widen the bar until the seam sat on the wall."""
     plan, ctx, room = _l_in_tiling(wall_x=1.4)
     try:
-        result = archlux.legalize(plan, ctx, fusions=(room,), pavage=pavage)
+        result = archlux.legalize(plan, ctx, merges=(room,), tiling=pavage)
     except archlux.Infeasible:
         return  # an L straddling a wall has no valid plan in this order: honest refusal
     assert result.certificate is not None and result.certificate.geometry.valid
-    assert not checkers.violations(result, ctx, fusions=(room,))
+    assert not checkers.violations(result, ctx, merges=(room,))
 
 
 def test_the_proof_checks_every_recorded_seam_with_the_minimum_width() -> None:
@@ -222,7 +222,7 @@ def test_the_proof_checks_every_recorded_seam_with_the_minimum_width() -> None:
         proof = verify_exactly(moved, ctx, merges=(room,))
         assert not proof.areas_ok
         assert any("seam" in v for v in proof.violations)
-        assert checkers.violations(moved, ctx, fusions=(room,))
+        assert checkers.violations(moved, ctx, merges=(room,))
 
 
 def test_a_fused_room_without_area_is_an_input_limit() -> None:

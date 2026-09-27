@@ -146,12 +146,12 @@ ctx = ax.Context(
     regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
 
-repaired = ax.legalize(plan, ctx, pavage=True)
+repaired = ax.legalize(plan, ctx, tiling=True)
 assert repaired.certificate is not None and repaired.certificate.geometry.valid
 print(repaired.certificate.report())
 ```
 
-`pavage=True` requires the rooms to tile the outline exactly. Use it whenever the input
+`tiling=True` requires the rooms to tile the outline exactly. Use it whenever the input
 may contain a gap, which is the case of generator outputs: without it, the separations
 are inequalities, a plan with a gap is already the closest point to itself, and the
 exact check then rejects it (`InvariantViolation`). If the tiling grid cannot be recovered
@@ -201,7 +201,7 @@ better = ax.legalize(
     objective=Daylight(surrogate, q_chapeau=calibrator.q),
     calibration=calibrator.snapshot(),
     budget=0.5,  # maximum displacement from the proposal, in metres, checked by the proof
-    pavage=True,
+    tiling=True,
 )
 bound = better.certificate.performance
 assert bound is not None and bound.regime == "selected"
@@ -571,7 +571,7 @@ Founding references:
 Done, with the limits stated above: JSON round trip; classic legalization with exact
 proof; performance legalization with the analytic surrogate; numpy perceptron checked
 against the frozen oracle; conformal bound with its regime; Farkas certificates; L-shaped
-rooms fused from rectangles (`legalize(..., fusions=...)`); active learning loop; IFC
+rooms fused from rectangles (`legalize(..., merges=...)`); active learning loop; IFC
 export; MSD loader.
 
 Not implemented yet:

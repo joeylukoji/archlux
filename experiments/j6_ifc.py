@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
             regulation=ax.Regulation((), 1.0),
         )
         repaired = ax.legalize(
-            corrupt(plan, seed=derive(17, f"ifc/{plan_id}"))[0], ctx, pavage=True
+            corrupt(plan, seed=derive(17, f"ifc/{plan_id}"))[0], ctx, tiling=True
         )
         path = Path(tmp) / f"{plan_id}.ifc"
         exported = to_ifc(

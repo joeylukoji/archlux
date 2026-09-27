@@ -177,7 +177,7 @@ def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
             f"(known: {sorted(known)}): no minimum is enforced for them. "
             "Check for a typo, or add the type to the regulation",
             UserWarning,
-            stacklevel=4,  # warn <- this <- validate_inputs <- legalize <- the caller
+            stacklevel=5,  # this <- validate_inputs <- legalize <- its alias wrapper <- caller
         )
 
 
@@ -186,7 +186,7 @@ def validate_inputs(
     ctx: Context,
     *,
     budget: float | None = None,
-    budget_reparation: int = 0,
+    repair_budget: int = 0,
 ) -> None:
     """Refuse a malformed plan, context or option before any solving.
 
@@ -198,7 +198,7 @@ def validate_inputs(
         Structure, orientation, outline, regulation.
     budget : float or None, optional
         Displacement budget in metres; ``None`` means no budget.
-    budget_reparation : int, optional
+    repair_budget : int, optional
         Repair steps granted to the tiling grid recovery.
 
     Raises
@@ -219,7 +219,7 @@ def validate_inputs(
     _context(ctx)
     if budget is not None:
         _non_negative("budget", budget)
-    _integer("budget_reparation", budget_reparation)
-    if budget_reparation < 0:
-        raise InvalidInput("budget_reparation", f"must be >= 0, got {budget_reparation}")
+    _integer("repair_budget", repair_budget)
+    if repair_budget < 0:
+        raise InvalidInput("repair_budget", f"must be >= 0, got {repair_budget}")
     _warn_unregulated_types(plan, ctx)

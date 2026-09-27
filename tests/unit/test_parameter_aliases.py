@@ -18,6 +18,11 @@ from archlux._deprecation import renamed_parameters
 
 RENAMED = [
     ("archlux.api", "gradient_distance", {"x_propose": "x_proposed"}),
+    (
+        "archlux.api",
+        "legalize",
+        {"fusions": "merges", "pavage": "tiling", "budget_reparation": "repair_budget"},
+    ),
     ("archlux.bench.graines", "derive", {"nom": "name"}),
     (
         "archlux.bench.manifeste",
@@ -80,7 +85,11 @@ RENAMED = [
     ("archlux.export.wilson", "wilson_interval", {"succes": "successes"}),
     ("archlux.feasibility", "is_feasible", {"programme": "program"}),
     ("archlux.geom.graphe", "build_graph", {"pieces": "rooms"}),
-    ("archlux.geom.pavage", "deduce_grid", {"support_min": "min_support"}),
+    (
+        "archlux.geom.pavage",
+        "deduce_grid",
+        {"support_min": "min_support", "budget_reparation": "repair_budget"},
+    ),
     ("archlux.geom.pavage", "snap_to_grid", {"trame": "grid"}),
     ("archlux.geom.pavage", "tiling_constraints", {"trame": "grid"}),
     ("archlux.geom.pavage", "extend_tiling", {"trame": "grid"}),
@@ -142,6 +151,22 @@ def test_the_old_keyword_warns_and_gives_the_same_result() -> None:
     expected = holm(p_values=[0.01, 0.04, 0.2])
     with pytest.warns(DeprecationWarning, match=r"holm\(p_valeurs=\.\.\.\) is deprecated"):
         assert holm(p_valeurs=[0.01, 0.04, 0.2]) == expected  # type: ignore[call-arg]
+
+
+def test_legalize_still_accepts_its_french_keywords() -> None:
+    import archlux as ax
+
+    ctx = ax.Context(
+        structure=ax.Structure(()),
+        orientation=ax.Orientation(0.0),
+        regulation=ax.Regulation((), 0.5),
+        outline=((0.0, 0.0), (4.0, 0.0), (4.0, 3.0), (0.0, 3.0)),
+    )
+    plan = ax.Plan(rooms=(ax.Room(id="a", type="living", x=0.0, y=0.0, w=4.0, h=3.0),))
+    expected = ax.legalize(plan, ctx, tiling=True, repair_budget=2)
+    with pytest.warns(DeprecationWarning, match="use tiling="):
+        old = ax.legalize(plan, ctx, pavage=True, budget_reparation=2)  # type: ignore[call-arg]
+    assert old.rooms == expected.rooms
 
 
 def test_the_warning_points_at_the_caller() -> None:
