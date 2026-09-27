@@ -19,3 +19,8 @@ The descriptions in `.claude/agents/` are the routing signal. Delegate **proacti
 | `agent-browser` | `agent-browser` |
 
 After non-trivial Python code, chain `review-and-refactor`.
+
+## Available on demand (not auto-dispatched)
+
+- `agent-skills:security-auditor`, `agent-skills:deprecation-and-migration`, `agent-skills:git-workflow-and-versioning` — routed automatically, see `AGENTS.md`.
+- `ponytail` (`/ponytail`, `/ponytail-review`, `/ponytail-audit`) — pushes toward the most minimal, densest code. **Not** dispatched automatically here: it conflicts with this repo's own conventions (numpy docstrings, `ARCHITECTURE.md`'s explicitness, `review-and-refactor`). Invoke it by name only if explicitly asked for a concision pass.
