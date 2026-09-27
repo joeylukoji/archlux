@@ -79,7 +79,7 @@ def encode(deg: float, harmoniques: int = 3) -> np.ndarray:
 def moyenne_circulaire(degres: Sequence[float]) -> float: ...
 def variance_circulaire(degres: Sequence[float]) -> float: ...
 def test_rayleigh(degres: Sequence[float]) -> tuple[float, float]:  # (R, p)
-def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Resultat: ...
+def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Result: ...
 def stratifier(donnees, par_orientation: int = 8) -> dict[str, np.ndarray]: ...
 ```
 
@@ -111,20 +111,20 @@ def test_rayleigh_detecte_concentration():
 
 ---
 
-## 3. Étape 2 — Le protocole `Substitut`
+## 3. Étape 2 — Le protocole `Surrogate`
 
 **Fichier :** `src/archlux/light/protocole.py`
 
 ### Le contrat — ne jamais l'élargir
 
 ```python
-class Substitut(Protocol):
+class Surrogate(Protocol):
     """Contrat minimal. Toute implémentation le respectant est acceptée
     par le noyau — y compris un modèle analytique sans apprentissage."""
 
-    def evaluer(self, plan: Plan, ctx: Contexte) -> Indicateurs: ...
-    def gradient(self, plan: Plan, ctx: Contexte) -> np.ndarray: ...
-    def incertitude(self, plan: Plan, ctx: Contexte) -> np.ndarray: ...
+    def evaluate(self, plan: Plan, ctx: Context) -> Indicateurs: ...
+    def gradient(self, plan: Plan, ctx: Context) -> np.ndarray: ...
+    def uncertainty(self, plan: Plan, ctx: Context) -> np.ndarray: ...
 
 
 @dataclass(frozen=True)
@@ -170,11 +170,11 @@ class SubstitutAnalytique:
 
     FACTEUR_PROFONDEUR = 2.5      # règle usuelle : profondeur utile ≈ 2,5 × linteau
 
-    def evaluer(self, plan, ctx):
+    def evaluate(self, plan, ctx):
         total = 0.0
-        for piece in plan.pieces:
+        for piece in plan.rooms:
             for ouv in ouvertures_de(piece, plan):
-                profondeur_utile = self.FACTEUR_PROFONDEUR * ouv.hauteur_linteau
+                profondeur_utile = self.FACTEUR_PROFONDEUR * ouv.head_height
                 penetration = min(profondeur(piece, ouv), profondeur_utile)
                 f_orient = self._facteur_orientation(ouv, ctx.orientation)
                 total += penetration * largeur_absolue(ouv, plan) * f_orient
@@ -183,7 +183,7 @@ class SubstitutAnalytique:
     def gradient(self, plan, ctx):
         """Dérivées analytiques, ou différences finies sur le vecteur de plan."""
 
-    def incertitude(self, plan, ctx):
+    def uncertainty(self, plan, ctx):
         """Constante. Le modèle analytique n'a pas d'incertitude apprise."""
         return np.full(4, self.SIGMA_FIXE)
 ```
@@ -199,7 +199,7 @@ et donc l'expérience Q3 possible dès ce jalon.
 
 ### Tâches
 
-- [ ] `evaluer` — sDA proxy, ASE proxy, UDI proxy, vue proxy
+- [ ] `evaluate` — sDA proxy, ASE proxy, UDI proxy, vue proxy
 - [ ] `gradient` — dérivées analytiques si possible, sinon différences finies
 - [ ] `incertitude` — constante, documentée comme telle
 - [ ] Toutes les constantes en attributs de classe, jamais en dur dans le corps
@@ -208,24 +208,24 @@ et donc l'expérience Q3 possible dès ce jalon.
 
 ```python
 def test_plus_de_baie_donne_plus_de_lumiere():
-    p1 = plan_avec_baie(largeur_rel=0.20)
-    p2 = plan_avec_baie(largeur_rel=0.60)
-    assert SUB.evaluer(p2, CTX).sda > SUB.evaluer(p1, CTX).sda
+    p1 = plan_avec_baie(relative_width=0.20)
+    p2 = plan_avec_baie(relative_width=0.60)
+    assert SUB.evaluate(p2, CTX).sda > SUB.evaluate(p1, CTX).sda
 
 def test_piece_profonde_sature():
     """Au-delà de 2,5 × linteau, agrandir la pièce n'ajoute pas de lumière."""
     p1 = plan_profondeur(5.0)
     p2 = plan_profondeur(9.0)
-    assert SUB.evaluer(p2, CTX).sda <= SUB.evaluer(p1, CTX).sda + 1e-9
+    assert SUB.evaluate(p2, CTX).sda <= SUB.evaluate(p1, CTX).sda + 1e-9
 
 def test_orientation_change_le_resultat():
-    nord = SUB.evaluer(PLAN, ctx_avec(0)).sda
-    sud  = SUB.evaluer(PLAN, ctx_avec(180)).sda
+    nord = SUB.evaluate(PLAN, ctx_avec(0)).sda
+    sud  = SUB.evaluate(PLAN, ctx_avec(180)).sda
     assert abs(nord - sud) > 0.05
 
 def test_gradient_coherent_avec_differences_finies():
     g = SUB.gradient(PLAN, CTX)
-    df = differences_finies(SUB.evaluer, PLAN, CTX, pas=1e-4)
+    df = differences_finies(SUB.evaluate, PLAN, CTX, pas=1e-4)
     assert np.corrcoef(g, df)[0, 1] > 0.99
 ```
 
@@ -276,7 +276,7 @@ def frank_wolfe(
 @dataclass(frozen=True)
 class ResultatFW:
     x: np.ndarray
-    valeur: float
+    value: float
     ecart_dualite: float        # MAJORE l'écart à l'optimum — garantie
     iterations: int
     valide_partout: bool
@@ -318,7 +318,7 @@ def test_dualite_majore_l_ecart_reel():
     """Sur un petit cas résoluble exactement."""
     r = frank_wolfe(POLY_PETIT, OBJ, X0, max_iter=10)
     opt = resoudre_exactement(POLY_PETIT, OBJ)
-    assert opt - r.valeur <= r.ecart_dualite + 1e-6
+    assert opt - r.value <= r.ecart_dualite + 1e-6
 
 def test_ecartement_converge_plus_vite():
     a = frank_wolfe(POLY, OBJ, X0, pas="standard",   tol_dualite=1e-5)
@@ -344,12 +344,12 @@ def test_warm_start_utilise(monkeypatch):
 
 ```python
 def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
-    ordre = deduire_ordre(plan)
-    poly  = construire_polytope(ordre, ctx)
+    ordre = deduce_order(plan)
+    poly  = build_polytope(ordre, ctx)
     if budget is not None:
-        poly = poly.avec_boite(vectoriser(plan), budget)     # région de confiance
+        poly = poly.avec_boite(vectorize(plan), budget)     # région de confiance
 
-    x0 = lmo.resoudre(poly, gradient_distance(vectoriser(plan))).x
+    x0 = lmo.solve(poly, gradient_distance(vectorize(plan))).x
 
     if objective is None:
         x, res = x0, None
@@ -358,11 +358,11 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
         res = frank_wolfe(poly, f, x0, trace=trace)
         x = res.x
 
-    q = devectoriser(x, plan)
+    q = devectorize(x, plan)
     preuve = verifier_exactement(q, ctx)
-    if not preuve.valide:
+    if not preuve.valid:
         raise InvariantViole(preuve.violations)
-    return replace(q, certificat=Certificat(geometrie=preuve, ...))
+    return replace(q, certificate=Certificate(geometry=preuve, ...))
 ```
 
 - [ ] `budget` implémenté comme boîte `‖x − x₀‖∞ ≤ Δ` ajoutée au polytope
@@ -372,7 +372,7 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
 ```python
 def test_non_regression_jalon2():
     """objective=None doit donner le MÊME résultat qu'au jalon 2."""
-    assert ax.legalize(PLAN, CTX).pieces == RESULTAT_JALON2.pieces
+    assert ax.legalize(PLAN, CTX).rooms == RESULTAT_JALON2.rooms
 ```
 
 ---
@@ -450,7 +450,7 @@ def test_non_regression_jalon2():
 
 - [ ] ❌ Commencer le réseau de neurones → jalon 4
 - [ ] ❌ Lancer des simulations → jalon 4
-- [ ] ❌ Ajouter une 4ᵉ méthode au protocole `Substitut`
+- [ ] ❌ Ajouter une 4ᵉ méthode au protocole `Surrogate`
 - [ ] ❌ Coder l'orientation en degrés bruts
 - [ ] ❌ Sauter le pas d'écartement « pour simplifier » → convergence dégradée
 

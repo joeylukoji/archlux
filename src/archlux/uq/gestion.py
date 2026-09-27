@@ -1,32 +1,35 @@
-"""Jeu de calibration : trois répertoires, un jeton après gel des poids.
+"""Calibration set: three directories, one token after the weights are frozen.
 
-`ARCHITECTURE.md` §10 : lire la calibration à l'entraînement rend la couverture
-conforme fausse, et **rien ne le signale**. Le jeton est la barrière structurelle.
+`ARCHITECTURE.md` §10: reading the calibration set at training time makes the
+conformal coverage false, and **nothing signals it**. The token is the structural
+barrier.
 
-Portée réelle de la barrière
-----------------------------
-Le jeton est une **discipline vérifiable, pas un verrou inviolable**. Il faut le dire
-tel quel dans toute publication ; le présenter comme une preuve serait une garantie de
-plus que le code ne tient pas. Les contournements connus, tous à une ligne :
+Real scope of the barrier
+--------------------------
+The token is a **verifiable discipline, not an inviolable lock**. Say so plainly in
+any publication; presenting it as a proof would be one guarantee more than the code
+actually holds. The known bypasses, all one line each:
 
-1. :func:`emettre_jeton` est publique et accepte n'importe quelle empreinte et n'importe
-   quel horodatage. Rien n'atteste que le gel a eu lieu, ni qu'il précède l'ouverture.
-2. :meth:`JetonCalibration.verifier` recalcule ``blake2b(empreinte|horodatage)`` : c'est
-   une **somme de contrôle non clefée**, pas une signature. Elle détecte une corruption,
-   jamais une falsification — le matériau est entièrement dans le jeton.
-3. :attr:`GestionDonnees.racine` est un champ public : ``gestion.racine / "calibration"``
-   ouvre le répertoire sans passer par :meth:`GestionDonnees.pour_calibration`.
-4. ``modele`` est **facultatif** dans :meth:`GestionDonnees.pour_calibration` ; omis,
-   aucune empreinte n'est comparée et le jeton n'est plus lié à quoi que ce soit.
-5. :class:`archlux.uq.conforme.CalibrateurConforme` calibre à partir de tableaux nus :
-   le chemin qui produit réellement la garantie n'exige aucun jeton, et ni
-   :class:`~archlux.uq.conforme.Calibration` ni
-   :class:`archlux.types.BornePerformance` ne transportent celui-ci jusqu'au certificat.
+1. :func:`issue_token` is public and accepts any fingerprint and any timestamp.
+   Nothing attests that the freeze actually happened, nor that it precedes the
+   opening.
+2. :meth:`CalibrationToken.verify` recomputes ``blake2b(fingerprint|timestamp)``:
+   this is an **unkeyed checksum**, not a signature. It detects corruption, never
+   forgery — the material is entirely inside the token.
+3. :attr:`DataManagement.racine` is a public field: ``gestion.racine / "calibration"``
+   opens the directory without going through :meth:`DataManagement.for_calibration`.
+4. ``model`` is **optional** in :meth:`DataManagement.for_calibration`; omitted, no
+   fingerprint is compared and the token is no longer bound to anything.
+5. :class:`archlux.uq.conforme.ConformalCalibrator` calibrates from raw arrays: the
+   path that actually produces the guarantee requires no token at all, and neither
+   :class:`~archlux.uq.conforme.Calibration` nor
+   :class:`archlux.types.PerformanceBound` carries it through to the certificate.
 
-Ce que le dispositif apporte malgré tout : un accès accidentel devient bruyant, et
-l'empreinte des poids devient publiable avec le résultat. Rendre la barrière réelle
-demanderait une clef détenue hors du dépôt (HMAC ou signature) et un horodatage attesté
-par un tiers, plus la propagation du jeton jusqu'à ``BornePerformance``.
+What the mechanism does bring anyway: accidental access becomes noisy, and the
+weights' fingerprint becomes publishable with the result. Making the barrier real
+would need a key held outside the repository (HMAC or signature) and a timestamp
+attested by a third party, plus propagating the token all the way to
+``PerformanceBound``.
 """
 
 from __future__ import annotations
@@ -38,147 +41,167 @@ from pathlib import Path
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import CalibrationLocked, InvariantViolation, ModelModified
 
 __all__ = [
-    "GestionDonnees",
-    "JetonCalibration",
-    "emettre_jeton",
-    "geler_et_emettre",
-    "ouvrir_calibration",
+    "CalibrationToken",
+    "DataManagement",
+    "freeze_and_issue",
+    "issue_token",
+    "open_calibration",
 ]
 
 
 @dataclass(frozen=True, slots=True)
-class JetonCalibration:
-    """Preuve que les poids étaient gelés avant tout accès à la calibration."""
+class CalibrationToken:
+    """Proof that the weights were frozen before any access to the calibration set."""
 
-    empreinte_poids: str
-    horodatage_gel: str
+    weights_fingerprint: str
+    freeze_timestamp: str
     signature: str
 
-    def verifier(self) -> None:
-        """Rejeter un jeton dont la signature ne correspond pas au gel annoncé.
+    def verify(self) -> None:
+        """Reject a token whose signature does not match the announced freeze.
 
-        Contrôle d'**intégrité**, pas d'authenticité : la signature est un ``blake2b``
-        non clefé des deux champs publics du jeton, donc reproductible par quiconque
-        via :func:`emettre_jeton`. Voir la portée réelle en tête de module.
+        **Integrity** check, not authenticity: the signature is an unkeyed
+        ``blake2b`` of the token's two public fields, hence reproducible by anyone
+        via :func:`issue_token`. See the real scope at the top of the module.
         """
-        attendu = emettre_jeton(self.empreinte_poids, self.horodatage_gel)
-        if self.signature != attendu.signature:
-            raise CalibrationLocked("signature du jeton de calibration invalide")
+        expected = issue_token(self.weights_fingerprint, self.freeze_timestamp)
+        if self.signature != expected.signature:
+            raise CalibrationLocked("invalid calibration token signature")
 
 
-def _empreinte_modele(modele: object) -> str:
-    """Empreinte sha256 des poids, sans importer ``torch`` ni ``light``."""
-    explicite = getattr(modele, "empreinte_poids", None)
-    if isinstance(explicite, str) and explicite:
-        return explicite
-    tampons: list[bytes] = []
-    poids = getattr(modele, "poids", None)
-    if isinstance(poids, np.ndarray):
-        tampons.append(np.ascontiguousarray(poids, dtype=float).tobytes())
-    for nom in ("W1", "b1", "W2", "b2", "W3"):
-        val = getattr(modele, nom, None)
+def _model_fingerprint(model: object) -> str:
+    """SHA-256 fingerprint of the weights, without importing ``torch`` or ``light``."""
+    # English name first, then the French one: LearnedSurrogate still exposes
+    # ``empreinte_poids``, and a user model written before the rename keeps ``poids``.
+    for name in ("weights_fingerprint", "empreinte_poids"):
+        explicit = getattr(model, name, None)
+        if isinstance(explicit, str) and explicit:
+            return explicit
+    buffers: list[bytes] = []
+    weights = getattr(model, "weights", None)
+    if weights is None:
+        weights = getattr(model, "poids", None)
+    if isinstance(weights, np.ndarray):
+        buffers.append(np.ascontiguousarray(weights, dtype=float).tobytes())
+    for name in ("W1", "b1", "W2", "b2", "W3"):
+        val = getattr(model, name, None)
         if isinstance(val, np.ndarray):
-            tampons.append(np.ascontiguousarray(val, dtype=float).tobytes())
-    b3 = getattr(modele, "b3", None)
+            buffers.append(np.ascontiguousarray(val, dtype=float).tobytes())
+    b3 = getattr(model, "b3", None)
     if isinstance(b3, (int, float)):
-        tampons.append(np.asarray(float(b3), dtype=float).tobytes())
-    if not tampons:
-        raise InvariantViolation(("modèle sans poids hashables : impossible de geler",))
-    return hashlib.sha256(b"".join(tampons)).hexdigest()
+        buffers.append(np.asarray(float(b3), dtype=float).tobytes())
+    if not buffers:
+        raise InvariantViolation(("model has no hashable weights: cannot freeze",))
+    return hashlib.sha256(b"".join(buffers)).hexdigest()
 
 
-def geler_et_emettre(modele: object, *, horodatage: str | None = None) -> JetonCalibration:
-    """Émettre le jeton **après** gel des poids, jamais avant.
+def freeze_and_issue(model: object, *, timestamp: str | None = None) -> CalibrationToken:
+    """Issue the token **after** the weights are frozen, never before.
 
     Parameters
     ----------
-    modele : object
-        Substitut dont les poids (tableaux numpy ``poids`` / ``W*``) sont gelés.
-        Un attribut ``empreinte_poids`` déjà calculé est utilisé tel quel.
-    horodatage : str or None, optional
-        Instant ISO 8601 UTC. Défaut : maintenant, fuseau UTC.
+    model : object
+        Surrogate whose weights (numpy arrays ``weights`` / ``W*``) are frozen. An
+        already computed ``weights_fingerprint`` attribute is used as is.
+    timestamp : str or None, optional
+        ISO 8601 UTC instant. Default: now, UTC timezone.
 
     Returns
     -------
-    JetonCalibration
-        Jeton dont l'empreinte devra encore correspondre à l'ouverture du jeu.
+    CalibrationToken
+        Token whose fingerprint will still have to match at the opening of the set.
     """
     instant = (
-        horodatage if horodatage is not None else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        timestamp if timestamp is not None else datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
-    return emettre_jeton(_empreinte_modele(modele), instant)
+    return issue_token(_model_fingerprint(model), instant)
 
 
-def emettre_jeton(empreinte_poids: str, horodatage_gel: str) -> JetonCalibration:
-    """Émettre un jeton pour un modèle gelé.
+def issue_token(weights_fingerprint: str, freeze_timestamp: str) -> CalibrationToken:
+    """Issue a token for a frozen model.
 
     Parameters
     ----------
-    empreinte_poids : str
-        ``sha256`` des poids gelés.
-    horodatage_gel : str
-        Instant du gel, ISO 8601 UTC.
+    weights_fingerprint : str
+        ``sha256`` of the frozen weights.
+    freeze_timestamp : str
+        Instant of the freeze, ISO 8601 UTC.
 
     Returns
     -------
-    JetonCalibration
-        Jeton déterministe : mêmes arguments, même signature.
+    CalibrationToken
+        Deterministic token: same arguments, same signature.
     """
-    if not empreinte_poids or not horodatage_gel:
-        raise InvariantViolation(("empreinte et horodatage de gel sont obligatoires",))
-    materiau = f"{empreinte_poids}|{horodatage_gel}".encode()
-    signature = hashlib.blake2b(materiau, digest_size=16).hexdigest()
-    return JetonCalibration(empreinte_poids, horodatage_gel, signature)
+    if not weights_fingerprint or not freeze_timestamp:
+        raise InvariantViolation(("freeze fingerprint and timestamp are both mandatory",))
+    material = f"{weights_fingerprint}|{freeze_timestamp}".encode()
+    signature = hashlib.blake2b(material, digest_size=16).hexdigest()
+    return CalibrationToken(weights_fingerprint, freeze_timestamp, signature)
 
 
-def ouvrir_calibration(racine: Path, jeton: JetonCalibration) -> Path:
-    """Ouvrir le répertoire de calibration, jeton valide exigé.
+def open_calibration(racine: Path, token: CalibrationToken) -> Path:
+    """Open the calibration directory; a valid token is required.
 
     Raises
     ------
     CalibrationLocked
-        Jeton absent, invalide, ou répertoire manquant.
+        Missing or invalid token, or missing directory.
     """
-    jeton.verifier()
+    token.verify()
     dossier = Path(racine) / "calibration"
     if not dossier.is_dir():
-        raise CalibrationLocked(f"répertoire de calibration absent : {dossier}")
+        raise CalibrationLocked(f"missing calibration directory: {dossier}")
     return dossier
 
 
 @dataclass(frozen=True, slots=True)
-class GestionDonnees:
-    """Trois répertoires séparés. Seul ``pour_calibration`` exige un jeton."""
+class DataManagement:
+    """Three separate directories. Only ``for_calibration`` requires a token."""
 
     racine: Path
 
-    def pour_entrainement(self) -> Path:
-        """Répertoire ``train/`` — seul chemin exposé pour ajuster les poids."""
+    def for_training(self) -> Path:
+        """``train/`` directory — the only exposed path to fit the weights."""
         dossier = Path(self.racine) / "train"
         if not dossier.is_dir():
-            raise InvariantViolation((f"répertoire d'entraînement absent : {dossier}",))
+            raise InvariantViolation((f"missing training directory: {dossier}",))
         return dossier
 
-    def pour_test(self) -> Path:
-        """Répertoire ``test/``, ouvert une seule fois pour la mesure finale."""
+    def for_test(self) -> Path:
+        """``test/`` directory, opened only once for the final measurement."""
         dossier = Path(self.racine) / "test"
         if not dossier.is_dir():
-            raise InvariantViolation((f"répertoire de test absent : {dossier}",))
+            raise InvariantViolation((f"missing test directory: {dossier}",))
         return dossier
 
-    def pour_calibration(self, jeton: JetonCalibration, modele: object | None = None) -> Path:
-        """Répertoire ``calibration/``, uniquement après gel du modèle.
+    def for_calibration(self, token: CalibrationToken, model: object | None = None) -> Path:
+        """``calibration/`` directory, only after the model is frozen.
 
         Parameters
         ----------
-        jeton : JetonCalibration
-            Preuve du gel.
-        modele : object or None, optional
-            Si fourni, son empreinte actuelle doit coincider avec celle du jeton.
+        token : CalibrationToken
+            Proof of the freeze.
+        model : object or None, optional
+            If given, its current fingerprint must match the token's.
         """
-        if modele is not None and _empreinte_modele(modele) != jeton.empreinte_poids:
-            raise ModelModified("poids du modèle modifiés après le gel")
-        return ouvrir_calibration(self.racine, jeton)
+        if model is not None and _model_fingerprint(model) != token.weights_fingerprint:
+            raise ModelModified("model weights changed after the freeze")
+        return open_calibration(self.racine, token)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "GestionDonnees": Alias(DataManagement, "archlux.uq.gestion.DataManagement"),
+        "JetonCalibration": Alias(CalibrationToken, "archlux.uq.gestion.CalibrationToken"),
+        "emettre_jeton": Alias(issue_token, "archlux.uq.gestion.issue_token"),
+        "geler_et_emettre": Alias(  # lang-ok: French alias name
+            freeze_and_issue, "archlux.uq.gestion.freeze_and_issue"
+        ),
+        "ouvrir_calibration": Alias(open_calibration, "archlux.uq.gestion.open_calibration"),
+    },
+)

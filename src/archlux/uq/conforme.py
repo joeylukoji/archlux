@@ -1,9 +1,9 @@
-"""Prédiction conforme : transformer une estimation en intervalle à couverture garantie.
+"""Conformal prediction: turn a point estimate into an interval with guaranteed coverage.
 
-**Le quantile n'est pas ``numpy.quantile``.** La couverture à échantillon fini exige
-l'indice ``ceil((n + 1)(1 − α))`` sur les scores triés. Utiliser le quantile empirique
-ordinaire donne des intervalles trop étroits, donc une couverture inférieure à celle qui
-est annoncée — et rien ne le signale (`ARCHITECTURE.md` §10).
+**The quantile is not ``numpy.quantile``.** Finite-sample coverage requires the index
+``ceil((n + 1)(1 - alpha))`` on the sorted scores. Using the ordinary empirical
+quantile gives intervals that are too narrow, hence coverage lower than announced —
+and nothing signals it (`ARCHITECTURE.md` §10).
 """
 
 from __future__ import annotations
@@ -14,16 +14,17 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
-from archlux.types import REGIMES, BornePerformance, Indicateur, Regime
+from archlux.types import REGIMES, Indicator, PerformanceBound, Regime
 
 __all__ = [
-    "CalibrateurConforme",
     "Calibration",
-    "borner",
+    "ConformalCalibrator",
+    "bound",
+    "conformal_quantile",
     "dataset_fingerprint",
-    "n_minimal_conforme",
-    "quantile_conforme",
+    "minimal_n_conformal",
 ]
 
 _SIGMA_MIN = 1e-12
@@ -31,7 +32,7 @@ _SIGMA_MIN = 1e-12
 
 @dataclass(frozen=True, slots=True)
 class Calibration:
-    """Scores de non-conformité issus du jeu de calibration, et rien d'autre.
+    """Non-conformity scores from the calibration set, and nothing else.
 
     Attributes
     ----------
@@ -45,112 +46,114 @@ class Calibration:
 
     scores: np.ndarray
     alpha: float
-    indicateur: str
+    indicator: str
     empreinte_jeu: str
 
     @property
     def n(self) -> int:
-        """Taille du jeu de calibration."""
+        """Size of the calibration set."""
         return int(self.scores.size)
 
 
-def n_minimal_conforme(alpha: float) -> int:
-    r"""Plus petite taille de calibration permettant une borne finie au niveau ``alpha``.
+def minimal_n_conformal(alpha: float) -> int:
+    r"""Smallest calibration size that allows a finite bound at level ``alpha``.
 
-    Le quantile conforme prend le rang ``k = ceil((n + 1)(1 - alpha))``. Il faut
-    ``k <= n``, sinon le score demande sort de l'echantillon et la borne serait
-    infinie. Comme ``n`` est entier, ``ceil(x) <= n`` equivaut a ``x <= n``, d'ou
+    The conformal quantile takes rank ``k = ceil((n + 1)(1 - alpha))``. We need
+    ``k <= n``, otherwise the requested rank falls outside the sample and the bound
+    would be infinite. Since ``n`` is an integer, ``ceil(x) <= n`` is equivalent to
+    ``x <= n``, hence
 
     .. math::
 
         (n + 1)(1 - \alpha) \le n
         \iff n \ge \frac{1}{\alpha} - 1 .
 
-    A 90 % de couverture il faut donc ``n >= 9``, et a 95 % ``n >= 19``. Un jeu de
-    calibration plus petit ne rend pas la garantie fausse : il la rend **impossible**,
-    et :func:`quantile_conforme` leve plutot que de publier une borne infinie.
+    At 90 % coverage we thus need ``n >= 9``, and at 95 % ``n >= 19``. A smaller
+    calibration set does not make the guarantee false: it makes it **impossible**,
+    and :func:`conformal_quantile` raises rather than publish an infinite bound.
 
     Parameters
     ----------
     alpha : float
-        Niveau vise, dans ``]0, 1[``. La couverture garantie est ``>= 1 - alpha``.
+        Target level, in ``]0, 1[``. Guaranteed coverage is ``>= 1 - alpha``.
 
     Returns
     -------
     int
-        Le plus petit ``n`` admissible.
+        The smallest admissible ``n``.
 
     Raises
     ------
     InvariantViolation
-        Si ``alpha`` sort de ``]0, 1[``.
+        If ``alpha`` falls outside ``]0, 1[``.
 
     Examples
     --------
-    >>> from archlux.uq.conforme import n_minimal_conforme
-    >>> n_minimal_conforme(0.10), n_minimal_conforme(0.05)
+    >>> from archlux.uq.conforme import minimal_n_conformal
+    >>> minimal_n_conformal(0.10), minimal_n_conformal(0.05)
     (9, 19)
     """
     if not 0.0 < alpha < 1.0:
-        raise InvariantViolation((f"alpha hors ]0, 1[ : {alpha}",))
-    # Recherche entiere plutot que ceil(1/alpha - 1) : en flottant, 1/0.1 vaut
-    # 10.000000000000002 et l'arrondi rendrait 10 au lieu de 9.
+        raise InvariantViolation((f"alpha outside ]0, 1[: {alpha}",))
+    # Integer search rather than ceil(1/alpha - 1): in floating point, 1/0.1 is
+    # 10.000000000000002 and rounding would give 10 instead of 9.
     n = max(1, int(1.0 / alpha) - 2)
     while math.ceil((n + 1) * (1.0 - alpha)) > n:
         n += 1
     return n
 
 
-def quantile_conforme(scores: np.ndarray, alpha: float) -> float:
-    """Quantile conforme corrigé pour l'échantillon fini.
+def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
+    """Conformal quantile, corrected for the finite sample.
 
     Parameters
     ----------
     scores : numpy.ndarray
-        Scores de non-conformité, un par point de calibration.
+        Non-conformity scores, one per calibration point.
     alpha : float
-        Niveau visé ; la couverture garantie est ``≥ 1 − alpha``.
+        Target level; guaranteed coverage is ``>= 1 - alpha``.
 
     Returns
     -------
     float
-        Le score de rang ``ceil((n + 1)(1 − alpha))`` dans l'ordre croissant.
+        The score of rank ``ceil((n + 1)(1 - alpha))`` in increasing order.
 
     Raises
     ------
     InvariantViolation
-        Si ``ceil((n + 1)(1 − alpha)) > n`` : le jeu de calibration est trop petit pour
-        le niveau demandé. Échec explicite plutôt que borne infinie silencieuse.
+        If ``ceil((n + 1)(1 - alpha)) > n``: the calibration set is too small for the
+        requested level. Explicit failure rather than a silent infinite bound.
 
     Notes
     -----
-    La garantie est **bilatérale** sous échangeabilité et scores continus :
-    ``1 − alpha ≤ P(score ≤ q̂) ≤ 1 − alpha + 1/(n + 1)``. Elle est donc *marginale*
-    (moyennée sur le tirage du jeu de calibration), jamais conditionnelle au plan.
+    The guarantee is **two-sided** under exchangeability and continuous scores:
+    ``1 - alpha <= P(score <= q_hat) <= 1 - alpha + 1/(n + 1)``. It is therefore
+    *marginal* (averaged over the draw of the calibration set), never conditional on
+    the plan.
 
-    Les **ex-aequo** ne cassent rien : le rang est pris sur l'ordre croissant, si bien
-    qu'un paquet de scores égaux ne peut que faire monter ``q̂``. La couverture reste
-    ``≥ 1 − alpha`` ; seule la borne supérieure ``+ 1/(n + 1)`` cesse de tenir, et
-    l'intervalle devient conservateur. Aucune départie aléatoire n'est appliquée.
+    **Ties** break nothing: the rank is taken on the increasing order, so a block of
+    equal scores can only push ``q_hat`` up. Coverage stays ``>= 1 - alpha``; only the
+    upper bound ``+ 1/(n + 1)`` stops holding, and the interval becomes conservative.
+    No random tie-breaking is applied.
     """
     vecteur = np.asarray(scores, dtype=float).ravel()
     n = int(vecteur.size)
     if n == 0:
-        raise InvariantViolation(("jeu de calibration vide",))
+        raise InvariantViolation(("empty calibration set",))
     if not bool(np.all(np.isfinite(vecteur))):
-        raise InvariantViolation(("scores de calibration non finis",))
+        raise InvariantViolation(("non-finite calibration scores",))
     if not 0.0 < alpha < 1.0:
-        raise InvariantViolation((f"alpha hors ]0, 1[ : {alpha}",))
+        raise InvariantViolation((f"alpha outside ]0, 1[: {alpha}",))
     rang = math.ceil((n + 1) * (1.0 - alpha))
     if rang > n:
-        raise InvariantViolation((f"n={n} trop petit pour alpha={alpha} (rang {rang} > n)",))
+        raise InvariantViolation((f"n={n} too small for alpha={alpha} (rank {rang} > n)",))
     ordre = np.sort(vecteur)
     return float(ordre[rang - 1])
 
 
-def _indicateur(nom: str) -> Indicateur:
+def _indicateur(nom: str) -> Indicator:
     if nom not in ("sDA", "ASE", "UDI", "vue"):
-        raise InvariantViolation((f"indicateur inconnu : {nom!r}",))
+        raise InvariantViolation((f"unknown indicator: {nom!r}",))
     return nom  # type: ignore[return-value]
 
 
@@ -182,26 +185,26 @@ def _regime(regime: str) -> Regime:
     raise InvariantViolation((f"unknown regime {regime!r}, expected {REGIMES}",))
 
 
-def _echelle(incertitude: float) -> float:
-    """Valider ``σ̂`` avant d'en faire une marge conforme.
+def _echelle(uncertainty: float) -> float:
+    """Validate ``sigma_hat`` before turning it into a conformal margin.
 
-    Les scores sont normalisés (``|y − ŷ| / σ``) : la marge publiée n'a de sens que
-    si ``σ̂`` est fini et **strictement positif**. Sans ce contrôle, ``σ̂ = 0`` publie
-    un intervalle de largeur nulle en annonçant une couverture de ``1 − α``, et
-    ``σ̂ < 0`` publie un intervalle inversé (``borne_inf > borne_sup``) — deux
-    garanties fausses que rien ne signalerait.
+    Scores are normalized (``|y - y_hat| / sigma``): the published margin only makes
+    sense if ``sigma_hat`` is finite and **strictly positive**. Without this check,
+    ``sigma_hat = 0`` publishes a zero-width interval while announcing coverage of
+    ``1 - alpha``, and ``sigma_hat < 0`` publishes an inverted interval
+    (``lower > upper``) — two false guarantees that nothing would flag.
 
     Raises
     ------
     InvariantViolation
-        Si ``incertitude`` n'est pas finie ou n'est pas ``> 0``.
+        If ``uncertainty`` is not finite or is not ``> 0``.
     """
-    echelle = float(incertitude)
+    echelle = float(uncertainty)
     if not math.isfinite(echelle):
-        raise InvariantViolation((f"incertitude non finie : {incertitude}",))
+        raise InvariantViolation((f"non-finite uncertainty: {uncertainty}",))
     if echelle <= 0.0:
         raise InvariantViolation(
-            (f"incertitude doit être > 0 pour publier une marge conforme : {echelle}",)
+            (f"uncertainty must be > 0 to publish a conformal margin: {echelle}",)
         )
     return max(echelle, _SIGMA_MIN)
 
@@ -210,39 +213,39 @@ def _intervalle(
     prediction: float,
     marge: float,
     *,
-    indicateur: Indicateur,
-    couverture: float,
+    indicator: Indicator,
+    coverage: float,
     n_calibration: int,
     regime: str,
-) -> BornePerformance:
-    """Intervalle bilatéral ``prédiction ± marge`` ; le sens métier est le côté publié."""
-    return BornePerformance(
-        indicateur=indicateur,
-        valeur=float(prediction),
-        borne_inf=float(prediction) - marge,
-        borne_sup=float(prediction) + marge,
-        couverture=couverture,
+) -> PerformanceBound:
+    """Two-sided interval ``prediction +/- margin``; business sense picks the side published."""
+    return PerformanceBound(
+        indicator=indicator,
+        value=float(prediction),
+        lower=float(prediction) - marge,
+        upper=float(prediction) + marge,
+        coverage=coverage,
         n_calibration=n_calibration,
         regime=_regime(regime),
     )
 
 
-def borner(
-    valeur: float, calibration: Calibration, *, incertitude: float, regime: Regime
-) -> BornePerformance:
-    """Assortir une estimation ponctuelle de son intervalle conforme.
+def bound(
+    value: float, calibration: Calibration, *, uncertainty: float, regime: Regime
+) -> PerformanceBound:
+    """Attach a conformal interval to a point estimate.
 
     Parameters
     ----------
     valeur : float
-        Estimation ponctuelle (même unité que l'indicateur).
+        Point estimate (same unit as the indicator).
     calibration : Calibration
-        Scores de non-conformité. S'ils sont déjà normalisés par ``σ``, passer
-        ``incertitude`` égale à ``σ`` du point à borner.
+        Non-conformity scores. If already normalized by ``sigma``, pass ``uncertainty``
+        equal to ``sigma`` of the point to bound.
     incertitude : float
         Local scale, **strictly positive**, and mandatory: the former default of 1 was
         only right for scores that are not normalized, while
-        :meth:`CalibrateurConforme.ajuster` divides them by ``σ``; the default then
+        :meth:`ConformalCalibrator.fit` divides them by ``σ``; the default then
         published a margin at the wrong scale without warning. Pass ``σ̂`` of the point
         for normalized scores, ``1.0`` for raw ones.
     regime : {"exchangeable", "selected"}
@@ -252,45 +255,45 @@ def borner(
     Raises
     ------
     InvariantViolation
-        Si ``incertitude`` n'est pas finie ou n'est pas ``> 0``.
+        If ``uncertainty`` is not finite or is not ``> 0``.
 
     Guarantees
     ----------
-    - Performance : **probabiliste**, couverture ``≥ 1 − alpha`` sous hypothèse
-      d'échangeabilité avec le jeu de calibration. ``BornePerformance.couverture``
-      porte le niveau **nominal** ``1 − alpha``, jamais une couverture mesurée.
-      Cette hypothèse est **affaiblie** lorsque le plan a été sélectionné par
-      l'optimiseur pour maximiser la prédiction ; le projet mesure et publie la
-      couverture réelle sous sélection.
+    - Performance: **probabilistic**, coverage ``>= 1 - alpha`` under the
+      exchangeability assumption with the calibration set. ``PerformanceBound.coverage``
+      carries the **nominal** level ``1 - alpha``, never a measured coverage. This
+      assumption is **weakened** when the plan was selected by the optimizer to
+      maximize the prediction; the project measures and publishes the actual
+      coverage under selection.
     """
-    q_chapeau = quantile_conforme(calibration.scores, calibration.alpha)
-    marge = q_chapeau * _echelle(incertitude)
+    q_chapeau = conformal_quantile(calibration.scores, calibration.alpha)
+    marge = q_chapeau * _echelle(uncertainty)
     return _intervalle(
-        valeur,
+        value,
         marge,
-        indicateur=_indicateur(calibration.indicateur),
-        couverture=1.0 - calibration.alpha,
+        indicator=_indicateur(calibration.indicator),
+        coverage=1.0 - calibration.alpha,
         n_calibration=calibration.n,
         regime=regime,
     )
 
 
 @dataclass(slots=True)
-class CalibrateurConforme:
-    """Un calibrateur par indicateur : les erreurs de sDA et d'ASE n'ont pas la même échelle.
+class ConformalCalibrator:
+    """One calibrator per indicator: sDA and ASE errors are not on the same scale.
 
-    ``ajuster`` lit le jeu de calibration **après** gel du modèle. ``q``, ``n`` et
-    ``alpha`` se sérialisent avec les poids.
+    ``fit`` reads the calibration set **after** the model is frozen. ``q``, ``n`` and
+    ``alpha`` are serialized with the weights.
     """
 
-    indicateur: Indicateur = "sDA"
+    indicator: Indicator = "sDA"
     q: float = 0.0
     n: int = 0
     alpha: float = 0.10
     empreinte_jeu: str = ""
     scores: np.ndarray | None = field(default=None, repr=False, compare=False)
 
-    def ajuster(
+    def fit(
         self,
         predictions: np.ndarray,
         verites: np.ndarray,
@@ -298,29 +301,29 @@ class CalibrateurConforme:
         *,
         alpha: float = 0.10,
     ) -> None:
-        """Ajuster le quantile sur des scores normalisés ``|y − ŷ| / σ``.
+        """Fit the quantile on normalized scores ``|y - y_hat| / sigma``.
 
         Parameters
         ----------
         predictions, verites, incertitudes : numpy.ndarray
-            Un scalaire par plan, même longueur.
+            One scalar per plan, same length.
         alpha : float, optional
-            Niveau visé (défaut 0,10 → couverture 90 %).
+            Target level (default 0.10 -> 90 % coverage).
         """
         pred = np.asarray(predictions, dtype=float).ravel()
         verite = np.asarray(verites, dtype=float).ravel()
         brut = np.asarray(incertitudes, dtype=float).ravel()
         if pred.size != verite.size or pred.size != brut.size:
             raise InvariantViolation(
-                ("predictions, verites et incertitudes de longueurs distinctes",)
+                ("predictions, truths and uncertainties have different lengths",)
             )
         if pred.size == 0:
-            raise InvariantViolation(("jeu de calibration vide",))
+            raise InvariantViolation(("empty calibration set",))
         if not bool(np.all(np.isfinite(brut))) or bool(np.any(brut < 0.0)):
             raise InvariantViolation(("uncertainties must be finite and non-negative",))
         sigma = np.maximum(brut, _SIGMA_MIN)
         scores = np.abs(verite - pred) / sigma
-        self.q = quantile_conforme(scores, alpha)
+        self.q = conformal_quantile(scores, alpha)
         self.n = int(scores.size)
         self.alpha = float(alpha)
         # The data set as given, before the floor on sigma: anyone can recompute it.
@@ -330,61 +333,75 @@ class CalibrateurConforme:
     def borne(
         self,
         prediction: float,
-        incertitude: float,
+        uncertainty: float,
         sens: str | None = None,
         *,
         regime: Regime,
-    ) -> BornePerformance:
-        """Publier l'intervalle conforme autour de ``prediction``.
+    ) -> PerformanceBound:
+        """Publish the conformal interval around ``prediction``.
 
         Parameters
         ----------
         prediction : float
-            Estimation ponctuelle.
+            Point estimate.
         incertitude : float
-            ``σ̂`` au même point, **strictement positif** : les scores ajustés sont
-            normalisés, donc ``σ̂ = 0`` publierait un intervalle de largeur nulle
-            annoncé à ``1 − α``, et ``σ̂ < 0`` un intervalle inversé.
+            ``sigma_hat`` at the same point, **strictly positive**: the fitted scores
+            are normalized, so ``sigma_hat = 0`` would publish a zero-width interval
+            announced at ``1 - alpha``, and ``sigma_hat < 0`` an inverted interval.
         sens : {">=", "<=", None}
-            Doit coller à l'indicateur (``"<="`` pour ASE, ``">="`` sinon).
-            Défaut : déduit de ``indicateur``. L'intervalle publié reste bilatéral
-            ``prédiction ± marge`` ; le rapport choisit le côté via ``indicateur``.
-            ``sens`` ne change pas les bornes — il refuse seulement l'incohérence.
+            Must match the indicator (``"<="`` for ASE, ``">="`` otherwise).
+            Default: inferred from ``indicator``. The published interval stays
+            two-sided ``prediction +/- margin``; the report picks the side via
+            ``indicator``. ``sens`` does not change the bounds — it only refuses
+            inconsistency.
         regime : {"exchangeable", "selected"}
             See :func:`borner`.
         """
         if self.n < 1:
-            raise InvariantViolation(("calibrateur non ajusté",))
-        attendu = "<=" if self.indicateur == "ASE" else ">="
+            raise InvariantViolation(("calibrator not fitted",))
+        attendu = "<=" if self.indicator == "ASE" else ">="
         if sens is None:
             sens = attendu
         if sens not in (">=", "<="):
-            raise InvariantViolation((f"sens inconnu : {sens!r}",))
+            raise InvariantViolation((f"unknown sens: {sens!r}",))
         if sens != attendu:
             raise InvariantViolation(
-                (f"sens {sens!r} incompatible avec indicateur {self.indicateur}",)
+                (f"sens {sens!r} incompatible with indicator {self.indicator}",)
             )
-        marge = self.q * _echelle(incertitude)
+        marge = self.q * _echelle(uncertainty)
         return _intervalle(
             prediction,
             marge,
-            indicateur=self.indicateur,
-            couverture=1.0 - self.alpha,
+            indicator=self.indicator,
+            coverage=1.0 - self.alpha,
             n_calibration=self.n,
             regime=regime,
         )
 
     def snapshot(self) -> Calibration:
-        """Geler les scores et ``alpha`` pour ``borner`` / le certificat.
+        """Freeze the scores and ``alpha`` for ``borner`` / the certificate.
 
-        ``borner`` recalcule le quantile conforme à partir des scores ; l'empreinte
-        du jeu reste journalisée avec la calibration.
+        ``borner`` recomputes the conformal quantile from the scores; the data set
+        fingerprint stays logged with the calibration.
         """
         if self.n < 1 or self.scores is None:
-            raise InvariantViolation(("calibrateur non ajusté",))
+            raise InvariantViolation(("calibrator not fitted",))
         return Calibration(
             scores=np.array(self.scores, dtype=float, copy=True),
             alpha=self.alpha,
-            indicateur=self.indicateur,
+            indicator=self.indicator,
             empreinte_jeu=self.empreinte_jeu,
         )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "CalibrateurConforme": Alias(
+            ConformalCalibrator, "archlux.uq.conforme.ConformalCalibrator"
+        ),
+        "borner": Alias(bound, "archlux.uq.conforme.bound"),
+        "n_minimal_conforme": Alias(minimal_n_conformal, "archlux.uq.conforme.minimal_n_conformal"),
+        "quantile_conforme": Alias(conformal_quantile, "archlux.uq.conforme.conformal_quantile"),
+    },
+)

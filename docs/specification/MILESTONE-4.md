@@ -67,12 +67,12 @@ franchissent alors les frontières et contaminent le jeu de test.
 
 ```python
 class GestionDonnees:
-    def pour_entrainement(self) -> Dataset:
-        return charger(self._train)            # seul chemin exposé ici
+    def for_training(self) -> Dataset:
+        return load(self._train)            # seul chemin exposé ici
 
-    def pour_calibration(self, jeton: JetonCalibration) -> Dataset:
-        jeton.verifier()                       # émis après gel du modèle
-        return charger(self._calib)
+    def for_calibration(self, token: JetonCalibration) -> Dataset:
+        token.verifier()                       # émis après gel du modèle
+        return load(self._calib)
 ```
 
 > **Le jeton n'est pas de la paranoïa.** Une fuite du jeu de calibration produit une
@@ -107,7 +107,7 @@ def test_aucun_identifiant_partage():
     assert not (set(t) & set(c)) and not (set(t) & set(s)) and not (set(c) & set(s))
 
 def test_aucun_doublon_franchit_une_frontiere():
-    for a, b in paires_quasi_identiques(seuil=0.02):
+    for a, b in near_duplicate_pairs(threshold=0.02):
         assert split_de(a) == split_de(b)
 
 def test_distributions_comparables():
@@ -125,7 +125,7 @@ def test_distributions_comparables():
 **Fichier :** `src/archlux/light/simulateur.py` + `scripts/simuler.py`
 
 L'oracle **obligatoire** est `SplitFluxOracle` (forme fermée, CI). Un lot
-(Radiance) est **hors chemin critique** : même protocole `Substitut`, jamais
+(Radiance) est **hors chemin critique** : même protocole `Surrogate`, jamais
 importé par le noyau, jamais exigé pour passer au jalon 5.
 
 ### Lancer TÔT (Radiance seulement)
@@ -145,7 +145,7 @@ S'il est lancé, le faire pendant qu'on écrit le reste.
 
 ### Tâches
 
-- [ ] `SplitFluxOracle` respecte le protocole `Substitut` (`gradient` par différences finies)
+- [ ] `SplitFluxOracle` respecte le protocole `Surrogate` (`gradient` par différences finies)
 - [ ] (Radiance) Convertisseur `Plan` → modèle de simulation
 - [ ] (Radiance) **Figer** le fichier climatique et le modèle de ciel, et les journaliser
 - [ ] (Radiance) Lancement par lots, parallélisé entre plans
@@ -157,12 +157,12 @@ S'il est lancé, le faire pendant qu'on écrit le reste.
 def test_simulation_deterministe():
     """Non négociable : sans déterminisme, la calibration conforme est invalide."""
     oracle = SplitFluxOracle()
-    a = oracle.evaluer(x, orientation)
-    b = oracle.evaluer(x, orientation)
+    a = oracle.evaluate(x, orientation)
+    b = oracle.evaluate(x, orientation)
     assert a == b
 
 def test_simulateur_respecte_le_protocole():
-    assert isinstance(SplitFluxOracle(), Substitut)
+    assert isinstance(SplitFluxOracle(), Surrogate)
 ```
 
 - [ ] Les 2 tests passent
@@ -186,11 +186,11 @@ aveugle, **projet impossible**. C'est le piège le plus séduisant du jalon.
 | Jeton | Attributs |
 |---|---|
 | Pièce | `x, y, w, h`, type (encodage à chaud), périmètre extérieur, compacité |
-| Ouverture | mur, `s`, `largeur_rel`, allège, linteau, **azimut du mur** |
+| Ouverture | mur, `s`, `relative_width`, allège, linteau, **azimut du mur** |
 | Global | orientation (cos/sin + harmoniques), surface totale, nombre de pièces |
 
 ```python
-def plan_vers_jetons(plan: Plan, ctx: Contexte) -> tuple[np.ndarray, np.ndarray]:
+def plan_vers_jetons(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     """Retourne (jetons [N, d], masque [N])."""
 ```
 
@@ -308,8 +308,8 @@ def test_meilleur_que_analytique():
 
 def test_erreur_stratifiee_par_orientation():
     """Une bonne moyenne peut cacher un mauvais comportement au nord."""
-    for secteur, jeu in stratifier(JEU_TEST, par_orientation=8).items():
-        assert mae(RESEAU, jeu) < SEUIL_MAX, f"échec sur {secteur}"
+    for sector, jeu in stratifier(JEU_TEST, par_orientation=8).items():
+        assert mae(RESEAU, jeu) < SEUIL_MAX, f"échec sur {sector}"
 
 def test_taille_raisonnable():
     assert sum(p.numel() for p in RESEAU.parameters()) < 2_000_000
@@ -333,8 +333,8 @@ Le système tournerait, convergerait, et optimiserait dans la mauvaise direction
 
 ```python
 def valider_gradient(
-    substitut: Substitut, simulateur: SplitFluxOracle,
-    plans: list[Plan], ctx: Contexte,
+    surrogate: Surrogate, simulateur: SplitFluxOracle,
+    plans: list[Plan], ctx: Context,
     *, pas: float = 0.10, variables: list[str] | None = None,
 ) -> RapportGradient:
     """Compare le gradient du substitut aux différences finies de l'oracle gelé.

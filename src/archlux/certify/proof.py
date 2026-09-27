@@ -37,7 +37,7 @@ Structure
 No room interior contains a stretch of a load-bearing wall of :math:`\\mathrm{ctx}`
 (rooms shrunk by a metric tolerance, so that a room bounded by the wall is accepted;
 oblique walls included). A wall the plan declares with the same ``id`` must match the
-structure. Columns (``Structure.poteaux``) are fixed data and are not checked.
+structure. Columns (``Structure.columns``) are fixed data and are not checked.
 
 Displacement
 ------------
@@ -55,9 +55,9 @@ from math import inf, isfinite, isnan
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
-from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
+from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
-from archlux.types import Contexte, Mur, Piece, Plan, PreuveGeometrique
+from archlux.types import Context, GeometricProof, Plan, Room, Wall
 
 __all__ = ["GAP_TOLERANCE_M2", "max_displacement", "rational_tiling", "verify_exactly"]
 
@@ -74,7 +74,7 @@ def _format_m2(value: float) -> str:
     return f"{value:.4f} m²"
 
 
-def _rectangle(room: Piece) -> Polygon:
+def _rectangle(room: Room) -> Polygon:
     """Closed rectangle of the room: lower-left corner plus (w, h)."""
     return box(room.x, room.y, room.x + room.w, room.y + room.h)
 
@@ -89,7 +89,7 @@ def _outline_polygon(outline: tuple[tuple[float, float], ...]) -> Polygon | None
     return polygon
 
 
-def _disjoint(a: Piece, b: Piece) -> bool:
+def _disjoint(a: Room, b: Room) -> bool:
     """Exact rejection of two axis-aligned rectangles, without GEOS.
 
     Rooms are boxes: if their intervals separate on ``x`` or on ``y``, the intersection
@@ -100,7 +100,7 @@ def _disjoint(a: Piece, b: Piece) -> bool:
     return a.x + a.w <= b.x or b.x + b.w <= a.x or a.y + a.h <= b.y or b.y + b.h <= a.y
 
 
-def _overlaps(rooms: tuple[Piece, ...]) -> tuple[bool, tuple[str, ...]]:
+def _overlaps(rooms: tuple[Room, ...]) -> tuple[bool, tuple[str, ...]]:
     """Every pair, intersection area.
 
     The tolerance is ``OVERLAP_M2 = 1e-9 m²``: two rooms touching along an edge
@@ -122,7 +122,7 @@ def _overlaps(rooms: tuple[Piece, ...]) -> tuple[bool, tuple[str, ...]]:
 
 
 def _gaps(
-    rooms: tuple[Piece, ...], outline: tuple[tuple[float, float], ...]
+    rooms: tuple[Room, ...], outline: tuple[tuple[float, float], ...]
 ) -> tuple[bool, tuple[str, ...]]:
     """Set differences between union and outline: uncovered gap **and** overhang.
 
@@ -145,7 +145,7 @@ def _gaps(
     return (bool(violations), tuple(violations))
 
 
-def _share_an_edge(a: Piece, b: Piece) -> bool:
+def _share_an_edge(a: Room, b: Room) -> bool:
     """Edges within ``SNAP_M`` of each other, sharing more than ``SNAP_M`` of length."""
 
     def touch(a0: float, a1: float, b0: float, b1: float) -> bool:
@@ -158,7 +158,7 @@ def _share_an_edge(a: Piece, b: Piece) -> bool:
     return (touch(*ax, *bx) and overlap(*ay, *by)) or (touch(*ay, *by) and overlap(*ax, *bx))
 
 
-def _edge_connected(members: list[Piece]) -> bool:
+def _edge_connected(members: list[Room]) -> bool:
     """Whether the sub-rectangles form one piece through shared edges (not corners)."""
     reached = {0}
     frontier = [0]
@@ -172,7 +172,7 @@ def _edge_connected(members: list[Piece]) -> bool:
 
 
 def _recorded_seams(
-    piece: PieceRectilineaire, by_id: dict[str, Piece], min_contact: float
+    piece: RectilinearRoom, by_id: dict[str, Room], min_contact: float
 ) -> tuple[str, ...]:
     """Every seam recorded in the decomposition still holds, at least ``min_contact`` long.
 
@@ -181,11 +181,11 @@ def _recorded_seams(
     another edge, or a neck of 1e-7 m.
     """
     violations: list[str] = []
-    for i, j, kind in piece.fusions:
+    for i, j, kind in piece.merges:
         a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
         if a is None or b is None:
             continue
-        if kind == FUSION_DROIT:
+        if kind == MERGE_RIGHT:
             gap, span = abs(a.x + a.w - b.x), min(a.y + a.h, b.y + b.h) - max(a.y, b.y)
         else:
             gap, span = abs(a.y + a.h - b.y), min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
@@ -197,9 +197,7 @@ def _recorded_seams(
     return tuple(violations)
 
 
-def _fused_area(
-    piece: PieceRectilineaire, by_id: dict[str, Piece], ctx: Contexte
-) -> tuple[str, ...]:
+def _fused_area(piece: RectilinearRoom, by_id: dict[str, Room], ctx: Context) -> tuple[str, ...]:
     """Area of the recomposed polygon of a fused room against its minimum.
 
     The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
@@ -208,8 +206,8 @@ def _fused_area(
     """
     room_id = piece.id
     members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
-    minimum = max(ctx.referentiel.a_min(member.type) for member in members)
-    seams = _recorded_seams(piece, by_id, max(ctx.referentiel.largeur_min, SNAP_M))
+    minimum = max(ctx.regulation.min_area(member.type) for member in members)
+    seams = _recorded_seams(piece, by_id, max(ctx.regulation.min_width, SNAP_M))
     if seams:
         return seams
     if not _edge_connected(members):
@@ -221,13 +219,13 @@ def _fused_area(
 
 
 def _areas(
-    rooms: tuple[Piece, ...], ctx: Contexte, fusions: tuple[PieceRectilineaire, ...] = ()
+    rooms: tuple[Room, ...], ctx: Context, merges: tuple[RectilinearRoom, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
     """Area ``w h`` against ``a_min`` of the room type; fused rooms as a whole."""
     by_id = {room.id: room for room in rooms}
     fused: set[str] = set()
     violations: list[str] = []
-    for piece in fusions:
+    for piece in merges:
         members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
         fused.update(member.id for member in members)
         if members:
@@ -235,15 +233,15 @@ def _areas(
     for room in rooms:
         if room.id in fused:
             continue
-        minimum = ctx.referentiel.a_min(room.type)
+        minimum = ctx.regulation.min_area(room.type)
         if minimum <= 0.0:
             continue
-        if room.aire + _AREA_TOLERANCE_M2 < minimum:
-            violations.append(f"area {room.id}: {_format_m2(room.aire)} < {_format_m2(minimum)}")
+        if room.area + _AREA_TOLERANCE_M2 < minimum:
+            violations.append(f"area {room.id}: {_format_m2(room.area)} < {_format_m2(minimum)}")
     return (not violations, tuple(violations))
 
 
-def _same_wall(a: Mur, b: Mur) -> bool:
+def _same_wall(a: Wall, b: Wall) -> bool:
     """Same geometry up to tolerance, end points possibly swapped."""
 
     def close(p: tuple[float, float], q: tuple[float, float]) -> bool:
@@ -253,24 +251,24 @@ def _same_wall(a: Mur, b: Mur) -> bool:
 
 
 def _interiors(
-    plan: Plan, fusions: tuple[PieceRectilineaire, ...], tol: float
+    plan: Plan, merges: tuple[RectilinearRoom, ...], tol: float
 ) -> list[tuple[str, Polygon]]:
     """Interior of every room shrunk by ``tol``; a fused room as the union of its parts.
 
     Shrinking each sub-rectangle alone would leave out the seam between them, where a
     wall would cut the room in two (review of batches 1.7 and 1.8, C1).
     """
-    by_id = {room.id: room for room in plan.pieces}
+    by_id = {room.id: room for room in plan.rooms}
     interiors: list[tuple[str, Polygon]] = []
     fused: set[str] = set()
-    for piece in fusions:
+    for piece in merges:
         members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
         if not members:
             continue
         fused.update(member.id for member in members)
         union = unary_union([_rectangle(member) for member in members])
         interiors.append((piece.id, union.buffer(-tol, join_style="mitre")))
-    for room in plan.pieces:
+    for room in plan.rooms:
         if room.id in fused or room.w <= 2 * tol or room.h <= 2 * tol:
             continue  # a degenerate room has no interior to cross
         interiors.append(
@@ -280,7 +278,7 @@ def _interiors(
 
 
 def _structure(
-    plan: Plan, ctx: Contexte, fusions: tuple[PieceRectilineaire, ...] = ()
+    plan: Plan, ctx: Context, merges: tuple[RectilinearRoom, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
     """No room crosses a load-bearing wall, and no load-bearing wall was moved.
 
@@ -289,15 +287,15 @@ def _structure(
     fused room is one interior, seams included. The test is geometric (shapely), so it
     holds for oblique walls too.
 
-    A plan does not have to repeat the structure in ``plan.murs``: load-bearing walls
+    A plan does not have to repeat the structure in ``plan.walls``: load-bearing walls
     belong to the context. If it does declare a wall of the same id, that wall must
     match the structure, otherwise it was moved.
     """
-    declared = {wall.id: wall for wall in plan.murs}
+    declared = {wall.id: wall for wall in plan.walls}
     violations: list[str] = []
     tol = _WALL_TOLERANCE_M
-    interiors = _interiors(plan, fusions, tol)
-    for wall in ctx.structure.murs_porteurs:
+    interiors = _interiors(plan, merges, tol)
+    for wall in ctx.structure.load_bearing_walls:
         stated = declared.get(wall.id)
         if stated is not None and not _same_wall(wall, stated):
             violations.append(f"structure: load-bearing wall {wall.id} moved")
@@ -342,7 +340,7 @@ def _identify(values: list[Fraction], tolerance: Fraction) -> dict[Fraction, Fra
     return mapping
 
 
-def rational_tiling(plan: Plan, ctx: Contexte) -> tuple[str, ...] | None:
+def rational_tiling(plan: Plan, ctx: Context) -> tuple[str, ...] | None:
     """Prove, in exact rational arithmetic, that the rooms tile a rectangular outline.
 
     Edges closer than ``SNAP_M`` (1e-7 m) are identified: that is the only tolerance,
@@ -378,7 +376,7 @@ def rational_tiling(plan: Plan, ctx: Contexte) -> tuple[str, ...] | None:
         axis-aligned rectangle, in which case :func:`verify_exactly` falls back on the
         GEOS area checks and their tolerances.
     """
-    bounds = _rectangular_outline(ctx.contour)
+    bounds = _rectangular_outline(ctx.outline)
     if bounds is None:
         return None
     ox0, oy0, ox1, oy1 = bounds
@@ -390,7 +388,7 @@ def rational_tiling(plan: Plan, ctx: Contexte) -> tuple[str, ...] | None:
             Fraction(room.y),
             Fraction(room.y) + Fraction(room.h),
         )
-        for room in plan.pieces
+        for room in plan.rooms
     ]
     tolerance = Fraction(SNAP_M)
     same_x = _identify([ox0, ox1, *(v for r in raw for v in (r[1], r[2]))], tolerance)
@@ -488,9 +486,9 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
     """
     if reference is None:
         return 0.0
-    by_id = {room.id: room for room in reference.pieces}
+    by_id = {room.id: room for room in reference.rooms}
     delta = 0.0
-    for room in plan.pieces:
+    for room in plan.rooms:
         origin = by_id.get(room.id)
         if origin is None:
             continue
@@ -509,12 +507,12 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
 
 def verify_exactly(
     plan: Plan,
-    ctx: Contexte,
+    ctx: Context,
     *,
     reference: Plan | None = None,
     budget: float | None = None,
-    fusions: tuple[PieceRectilineaire, ...] = (),
-) -> PreuveGeometrique:
+    merges: tuple[RectilinearRoom, ...] = (),
+) -> GeometricProof:
     """Check that a plan is valid, borrowing nothing from the solver.
 
     Parameters
@@ -524,12 +522,12 @@ def verify_exactly(
     ctx : Contexte
         Outline, load-bearing structure and regulation.
     reference : Plan or None, optional
-        Proposed plan, for ``deplacement_max``. ``None`` gives ``0.0``.
+        Proposed plan, for ``max_displacement``. ``None`` gives ``0.0``.
     budget : float or None, optional
         Maximum displacement allowed from ``reference``, in metres. When given, a
-        larger ``deplacement_max`` (beyond ``SNAP_M``) makes the plan invalid. Without
+        larger ``max_displacement`` (beyond ``SNAP_M``) makes the plan invalid. Without
         ``reference`` the displacement is 0 and the budget cannot be violated.
-    fusions : tuple of PieceRectilineaire, optional
+    merges : tuple of PieceRectilineaire, optional
         Rooms decomposed into sub-rectangles (L, T, U, Z), as passed to
         :func:`archlux.api.legalize`. The minimum area of such a room applies to the
         union of its sub-rectangles found in ``plan`` (by id), which must form a single
@@ -555,7 +553,7 @@ def verify_exactly(
     malformed = tuple(
         f"room {room.id}: dimensions must be finite and positive "
         f"(x={room.x}, y={room.y}, w={room.w}, h={room.h})"
-        for room in plan.pieces
+        for room in plan.rooms
         if not all(isfinite(v) for v in (room.x, room.y, room.w, room.h))
         or room.w <= 0.0
         or room.h <= 0.0
@@ -563,19 +561,19 @@ def verify_exactly(
     if malformed:
         # Nothing is proved about a malformed plan: every predicate is reported as not
         # established, never as holding (final review of phase 1, M1).
-        return PreuveGeometrique(
-            valide=False,
-            chevauchement=True,
-            jours=True,
-            surfaces_ok=False,
-            structure_preservee=False,
-            deplacement_max=max_displacement(plan, reference),
+        return GeometricProof(
+            valid=False,
+            overlap=True,
+            gaps=True,
+            areas_ok=False,
+            structure_kept=False,
+            max_displacement=max_displacement(plan, reference),
             violations=malformed,
         )
     rational = rational_tiling(plan, ctx)
     if rational is None:  # not a rectangular outline: GEOS areas and their tolerances
-        overlap, v_overlap = _overlaps(plan.pieces)
-        gaps, v_gaps = _gaps(plan.pieces, ctx.contour)
+        overlap, v_overlap = _overlaps(plan.rooms)
+        gaps, v_gaps = _gaps(plan.rooms, ctx.outline)
     else:
         v_overlap = tuple(v for v in rational if v.startswith("overlap"))
         v_gaps = tuple(v for v in rational if v.startswith("gap"))
@@ -584,22 +582,22 @@ def verify_exactly(
             # With overlapping rooms the sum of areas no longer measures coverage, so the
             # rational check cannot see a gap: take the gap diagnosis from GEOS. The plan
             # is invalid either way; this keeps the report complete.
-            geos_flag, geos_gaps = _gaps(plan.pieces, ctx.contour)
+            geos_flag, geos_gaps = _gaps(plan.rooms, ctx.outline)
             gaps = gaps or geos_flag
             v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
-    areas_ok, v_areas = _areas(plan.pieces, ctx, fusions)
-    structure_ok, v_structure = _structure(plan, ctx, fusions)
+    areas_ok, v_areas = _areas(plan.rooms, ctx, merges)
+    structure_ok, v_structure = _structure(plan, ctx, merges)
     moved = max_displacement(plan, reference)
     budget_ok = budget is None or moved <= budget + SNAP_M
     v_budget = () if budget_ok else (f"budget: max displacement {moved:.6f} m > {budget} m",)
     violations = v_overlap + v_gaps + v_areas + v_structure + v_budget
     valid = (not overlap) and (not gaps) and areas_ok and structure_ok and budget_ok
-    return PreuveGeometrique(
-        valide=valid,
-        chevauchement=overlap,
-        jours=gaps,
-        surfaces_ok=areas_ok,
-        structure_preservee=structure_ok,
-        deplacement_max=moved,
+    return GeometricProof(
+        valid=valid,
+        overlap=overlap,
+        gaps=gaps,
+        areas_ok=areas_ok,
+        structure_kept=structure_ok,
+        max_displacement=moved,
         violations=violations,
     )

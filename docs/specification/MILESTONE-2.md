@@ -21,7 +21,7 @@
 @given(plan=plans_quelconques(), ctx=contextes())
 @settings(max_examples=500, deadline=None)
 def test_toute_sortie_est_valide(plan, ctx):
-    assert archlux.legalize(plan, ctx).certificat.geometrie.valide
+    assert archlux.legalize(plan, ctx).certificate.geometry.valid
 ```
 
 **Mesure à produire pour l'article :** taux de plans valides avant / après correction, sur les sorties de 3 modèles publics.
@@ -56,13 +56,13 @@ Traduire « la pièce A est à gauche de la pièce B » en inégalité `x_A + w_
 
 ```python
 @dataclass(frozen=True)
-class OrdreRelatif:
+class RelativeOrder:
     horizontal: tuple[tuple[str, str], ...]   # (a, b) : a est à gauche de b
     vertical:   tuple[tuple[str, str], ...]   # (a, b) : a est en dessous de b
 
-def construire_graphe(ordre: OrdreRelatif, pieces: list[str]) -> GrapheContraintes: ...
-def reduction_transitive(g: GrapheContraintes) -> GrapheContraintes: ...
-def deduire_ordre(plan: Plan) -> OrdreRelatif: ...   # depuis un plan proposé
+def build_graph(ordre: RelativeOrder, rooms: list[str]) -> ConstraintGraph: ...
+def transitive_reduction(g: ConstraintGraph) -> ConstraintGraph: ...
+def deduce_order(plan: Plan) -> RelativeOrder: ...   # depuis un plan proposé
 ```
 
 ### Tâches
@@ -82,25 +82,25 @@ Le solveur est appelé 50 fois au jalon 3 : le gain se multiplie par 50.
 
 ```python
 def test_separation_simple():
-    o = OrdreRelatif(horizontal=(("A","B"),), vertical=())
-    g = construire_graphe(o, ["A","B"])
+    o = RelativeOrder(horizontal=(("A","B"),), vertical=())
+    g = build_graph(o, ["A","B"])
     assert ("A","B") in g.horizontal.edges
 
 def test_cycle_detecte():
-    o = OrdreRelatif(horizontal=(("A","B"),("B","A")), vertical=())
+    o = RelativeOrder(horizontal=(("A","B"),("B","A")), vertical=())
     with pytest.raises(InconsistentOrder):
-        construire_graphe(o, ["A","B"])
+        build_graph(o, ["A","B"])
 
 @given(ordre=ordres_valides())
 def test_toute_paire_est_separee(ordre):
-    g = construire_graphe(ordre, ordre.pieces)
-    for a, b in itertools.combinations(ordre.pieces, 2):
+    g = build_graph(ordre, ordre.rooms)
+    for a, b in itertools.combinations(ordre.rooms, 2):
         assert g.a_separation(a, b)
 
 @given(ordre=ordres_valides())
 def test_reduction_preserve_la_fermeture(ordre):
-    complet = construire_graphe(ordre, ordre.pieces)
-    reduit  = reduction_transitive(complet)
+    complet = build_graph(ordre, ordre.rooms)
+    reduit  = transitive_reduction(complet)
     assert complet.fermeture() == reduit.fermeture()
 ```
 
@@ -130,7 +130,7 @@ class Polytope:
     index: dict[str, int]          # "sejour.x" -> 12
     origines: list[str]            # ligne i -> "separation sejour|cuisine"
 
-def construire_polytope(ordre: OrdreRelatif, ctx: Contexte) -> Polytope: ...
+def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope: ...
 ```
 
 ### `origines` est OBLIGATOIRE
@@ -160,17 +160,17 @@ index["<piece>.x"], ["<piece>.y"], ["<piece>.w"], ["<piece>.h"]
 ```python
 @given(ordre=ordres_valides(), ctx=contextes())
 def test_dimensions_coherentes(ordre, ctx):
-    p = construire_polytope(ordre, ctx)
+    p = build_polytope(ordre, ctx)
     assert p.A.shape[0] == len(p.origines)
     assert p.A.shape[1] == len(p.index)
 
 @given(plan=plans_valides())
 def test_un_plan_valide_est_dans_le_polytope(plan):
-    p = construire_polytope(deduire_ordre(plan), CTX)
-    assert p.contient(vectoriser(plan), tol=1e-9)
+    p = build_polytope(deduce_order(plan), CTX)
+    assert p.contient(vectorize(plan), tol=1e-9)
 
 def test_origines_sont_lisibles():
-    p = construire_polytope(ORDRE_T3, CTX)
+    p = build_polytope(ORDRE_T3, CTX)
     assert all(isinstance(o, str) and len(o) > 3 for o in p.origines)
 ```
 
@@ -191,19 +191,19 @@ C'est cette ignorance qui permettra de réutiliser le même solveur au jalon 3.
 ### Signature — la respecter exactement
 
 ```python
-def resoudre(
+def solve(
     poly: Polytope,
     c: np.ndarray,
     *,
-    depart: np.ndarray | None = None,     # warm start — prévoir dès maintenant
-    coupes: list[Coupe] | None = None,
+    start: np.ndarray | None = None,     # warm start — prévoir dès maintenant
+    cuts: list[Cut] | None = None,
     duaux: bool = False,
 ) -> SolutionLP: ...
 
 @dataclass(frozen=True)
 class SolutionLP:
     x: np.ndarray
-    valeur: float
+    value: float
     statut: Literal["optimal", "infaisable", "non_borne", "limite"]
     duaux: np.ndarray | None = None
     certificat_farkas: np.ndarray | None = None
@@ -227,26 +227,26 @@ class SolutionLP:
 ```python
 def test_lp_trivial():
     # une seule pièce, minimiser x → x = 0
-    sol = resoudre(POLY_1_PIECE, c=np.array([1.,0.,0.,0.]))
+    sol = solve(POLY_1_PIECE, c=np.array([1.,0.,0.,0.]))
     assert sol.statut == "optimal" and sol.x[0] == pytest.approx(0.0)
 
 @given(ordre=ordres_valides(), c=vecteurs_objectifs())
 def test_solution_est_admissible(ordre, c):
-    p = construire_polytope(ordre, CTX)
-    sol = resoudre(p, c)
+    p = build_polytope(ordre, CTX)
+    sol = solve(p, c)
     if sol.statut == "optimal":
         assert p.contient(sol.x, tol=1e-7)
 
 def test_infaisable_produit_un_certificat():
     p = polytope_surcontraint()          # programme > enveloppe
-    sol = resoudre(p, c=ZERO)
+    sol = solve(p, c=ZERO)
     assert sol.statut == "infaisable"
     assert sol.certificat_farkas is not None
 
 def test_warm_start_est_plus_rapide(benchmark):
-    p = construire_polytope(ORDRE_T3, CTX)
-    froid = resoudre(p, C1)
-    chaud = resoudre(p, C2, depart=froid.x)
+    p = build_polytope(ORDRE_T3, CTX)
+    froid = solve(p, C1)
+    chaud = solve(p, C2, start=froid.x)
     assert chaud.temps_ms < froid.temps_ms
 ```
 
@@ -269,9 +269,9 @@ L'ensemble `{(w,h) : w,h > 0, wh ≥ a}` est **convexe**. On le remplace par ses
 au point `(w₀, h₀)` avec `w₀h₀ = a`, la tangente est `h₀·w + w₀·h ≥ 2a`.
 
 ```python
-def coupe_surface(w0: float, h0: float, a_min: float) -> Coupe:
+def area_cut(w0: float, h0: float, a_min: float) -> Cut:
     """Tangente à l'hyperbole wh = a_min. Valide car l'ensemble est convexe."""
-    return Coupe(coeffs={"w": h0, "h": w0}, borne_inf=2 * a_min)
+    return Cut(coeffs={"w": h0, "h": w0}, borne_inf=2 * a_min)
 ```
 
 ### Boucle d'ajout
@@ -297,15 +297,15 @@ tant que une surface est violée et coupes < MAX_COUPES :
 def test_la_coupe_n_exclut_aucun_point_valide(w0, h0):
     """Une tangente ne doit jamais rejeter un (w,h) dont le produit suffit."""
     a = w0 * h0
-    c = coupe_surface(w0, h0, a)
+    c = area_cut(w0, h0, a)
     for w, h in points_avec_produit_superieur(a, n=100):
         assert c.satisfait(w, h)
 
 @given(ordre=ordres_valides())
 def test_surfaces_minimales_respectees(ordre):
-    sol = resoudre(construire_polytope(ordre, CTX), C_PROXIMITE)
-    for piece in ordre.pieces:
-        assert aire(sol, piece) >= CTX.referentiel.a_min(piece) - 1e-6
+    sol = solve(build_polytope(ordre, CTX), C_PROXIMITE)
+    for piece in ordre.rooms:
+        assert aire(sol, piece) >= CTX.regulation.a_min(piece) - 1e-6
 ```
 
 - [ ] Les 2 tests passent
@@ -327,16 +327,16 @@ Vérifier, **indépendamment du solveur**, que le plan de sortie est valide.
 ### Signature
 
 ```python
-def verifier_exactement(plan: Plan, ctx: Contexte) -> PreuveGeometrique: ...
+def verifier_exactement(plan: Plan, ctx: Context) -> GeometricProof: ...
 
 @dataclass(frozen=True)
-class PreuveGeometrique:
-    valide: bool
-    chevauchement: bool
-    jours: bool
-    surfaces_ok: bool
-    structure_preservee: bool
-    deplacement_max: float
+class GeometricProof:
+    valid: bool
+    overlap: bool
+    gaps: bool
+    areas_ok: bool
+    structure_kept: bool
+    max_displacement: float
     violations: tuple[str, ...] = ()
 ```
 
@@ -354,14 +354,14 @@ class PreuveGeometrique:
 ```python
 def test_detecte_un_chevauchement():
     p = plan_avec_chevauchement(0.03)
-    assert verifier_exactement(p, CTX).chevauchement is True
+    assert verifier_exactement(p, CTX).overlap is True
 
 def test_detecte_un_jour():
-    assert verifier_exactement(plan_avec_jour(0.5), CTX).jours is True
+    assert verifier_exactement(plan_avec_jour(0.5), CTX).gaps is True
 
 @given(plan=plans_valides())
 def test_un_plan_valide_passe(plan):
-    assert verifier_exactement(plan, CTX).valide
+    assert verifier_exactement(plan, CTX).valid
 ```
 
 - [ ] Les 3 tests passent
@@ -377,7 +377,7 @@ def test_un_plan_valide_passe(plan):
 ```python
 def legalize(
     plan: Plan,
-    ctx: Contexte,
+    ctx: Context,
     *,
     objective=None,            # None = proximité. Utilisé au jalon 3.
     budget: float | None = None,
@@ -392,17 +392,17 @@ def legalize(
 
 ```python
 def legalize(plan, ctx, *, objective=None, budget=None):
-    ordre = deduire_ordre(plan)
-    poly  = construire_polytope(ordre, ctx)
-    c     = gradient_distance(vectoriser(plan)) if objective is None else ...
-    sol   = resoudre(poly, c, duaux=True)
+    ordre = deduce_order(plan)
+    poly  = build_polytope(ordre, ctx)
+    c     = gradient_distance(vectorize(plan)) if objective is None else ...
+    sol   = solve(poly, c, duaux=True)
     if sol.statut == "infaisable":
-        raise Infaisable(certificat=sol.certificat_farkas, poly=poly)
-    q     = devectoriser(sol.x, plan)
+        raise Infaisable(certificate=sol.certificat_farkas, poly=poly)
+    q     = devectorize(sol.x, plan)
     preuve = verifier_exactement(q, ctx)
-    if not preuve.valide:
+    if not preuve.valid:
         raise InvariantViole(preuve.violations)   # jamais silencieux
-    return replace(q, certificat=Certificat(geometrie=preuve, ...))
+    return replace(q, certificate=Certificate(geometry=preuve, ...))
 ```
 
 ### Le piège de la valeur absolue
@@ -417,7 +417,7 @@ minimiser Σ e
 
 - [ ] Variables d'écart implémentées
 - [ ] `gradient_distance` produit le bon vecteur `c`
-- [ ] `__init__.py` n'exporte que `legalize`, `Plan`, `Contexte`, les exceptions
+- [ ] `__init__.py` n'exporte que `legalize`, `Plan`, `Context`, les exceptions
 
 ---
 
@@ -485,7 +485,7 @@ housediffusion,000123,False,True,0.18,12.4,17
 | Solveur lent (> 50 ms) | Réduction transitive oubliée | Appliquer `reduction_transitive` |
 | Surfaces non respectées | Contrainte `w·h` passée telle quelle à GLOP | Utiliser les coupes tangentes |
 | Résultat non déterministe | Ordre d'itération sur un `set` | Trier explicitement les identifiants |
-| `deplacement_max` énorme | Valeur absolue mal linéarisée | Vérifier les deux contraintes d'écart |
+| `max_displacement` énorme | Valeur absolue mal linéarisée | Vérifier les deux contraintes d'écart |
 | Chevauchements résiduels | Une paire sans séparation | `test_toute_paire_est_separee` |
 | Duaux tous nuls | `duaux=True` oublié | Passer le flag |
 

@@ -34,7 +34,7 @@ utilise \(p\approx\exp(-n\bar R^2)\).
 
 \(359^\circ\) et \(1^\circ\) sont proches : \(\cos 359^\circ\approx\cos 1^\circ\).
 La moyenne arithmétique \((359+1)/2=180\) est l'antipodale — le piège que
-`moyenne_circulaire([350, 10])` doit éviter (résultat \(0^\circ\)).
+`circular_mean([350, 10])` doit éviter (résultat \(0^\circ\)).
 
 La régression circulaire-linéaire est le moindre carré
 
@@ -44,8 +44,8 @@ y\approx a\cos\theta+b\sin\theta+c.
 
 ## Code
 
-`encode`, `encoder`, `moyenne_circulaire`, `concentration`, `variance_circulaire`,
-`rayleigh`, `regression_circulaire_lineaire`, `stratifier`.
+`encode`, `encoder`, `circular_mean`, `concentration`, `circular_variance`,
+`rayleigh`, `circular_linear_regression`, `stratifier`.
 
 ## Cas d'utilisation
 

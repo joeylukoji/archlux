@@ -1,6 +1,6 @@
 """Translation of dual prices into the language of an architect.
 
-A raw dual price is "the number of row 47". Crossed with ``Polytope.origines`` it becomes
+A raw dual price is "the number of row 47". Crossed with ``Polytope.origins`` it becomes
 "load-bearing wall p1 at x = 6 m: relaxing it by 10 cm would change the total displacement
 by -0.20 m". That translation is the main usable output of the certificate: it says
 **which constraint to relax**.
@@ -24,10 +24,11 @@ import re
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.arrays import VecteurF
 from archlux.geom.polytope import Polytope
 
-__all__ = ["describe_origin", "traduire_duaux"]
+__all__ = ["describe_origin", "translate_duals"]
 
 _VALIDITY = "valid for small changes only, a few tens of cm"
 
@@ -53,7 +54,7 @@ def describe_origin(label: str) -> str | None:
     Parameters
     ----------
     label : str
-        An entry of ``Polytope.origines``.
+        An entry of ``Polytope.origins``.
 
     Returns
     -------
@@ -95,11 +96,11 @@ def _sentence(description: str, price: float, *, objective: str, step_m: float) 
     return f"{description}: relaxing it by {step} {effect} ({_VALIDITY})"
 
 
-def traduire_duaux(
-    duaux: VecteurF,
+def translate_duals(
+    duals: VecteurF,
     poly: Polytope,
     *,
-    seuil: float = 1e-6,
+    threshold: float = 1e-6,
     n_max: int = 10,
     objective: str = "displacement",
     step_m: float = 0.10,
@@ -131,13 +132,21 @@ def traduire_duaux(
         gives the change for ``step_m`` and states its local validity. Rows of the L1
         epigraph are never reported.
     """
-    vecteur = np.asarray(duaux, dtype=float).ravel()
-    paires: list[tuple[str, float]] = []
-    for libelle, brut in zip(poly.origines, vecteur, strict=True):
-        prix = float(brut)
-        description = describe_origin(libelle)
-        if abs(prix) <= seuil or description is None:
+    vector = np.asarray(duals, dtype=float).ravel()
+    pairs: list[tuple[str, float]] = []
+    for label, raw in zip(poly.origins, vector, strict=True):
+        price = float(raw)
+        description = describe_origin(label)
+        if abs(price) <= threshold or description is None:
             continue
-        paires.append((_sentence(description, prix, objective=objective, step_m=step_m), prix))
-    paires.sort(key=lambda paire: -abs(paire[1]))
-    return tuple(paires[:n_max])
+        pairs.append((_sentence(description, price, objective=objective, step_m=step_m), price))
+    pairs.sort(key=lambda pair: -abs(pair[1]))
+    return tuple(pairs[:n_max])
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "traduire_duaux": Alias(translate_duals, "archlux.certify.dual.translate_duals"),
+    },
+)

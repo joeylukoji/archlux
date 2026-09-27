@@ -10,10 +10,10 @@
 **Where it works, and where it does not.** archlux repairs plans that are *almost*
 right. On 4,796 corruptions of 300 real apartments (MSD corpus: gaps, overlaps,
 undersized and shifted rooms), it returns a certified valid plan in **93.9 %** of cases
-(95 % CI [93.2, 94.5], tiling mode with fallback; `resultats/j7_reparation.md`). On raw
+(95 % CI [93.2, 94.5], tiling mode with fallback; `results/j7_reparation.md`). On raw
 outputs of a generative model (HouseDiffusion, 740 plans, none valid at the start), it
 returns an intact certified plan in only **about 20 %** of cases (17.8 % to 23.0 %
-across three sets; `resultats/j8_generation.md`): four plans out of five are too far
+across three sets; `results/j8_generation.md`): four plans out of five are too far
 from any exact tiling to be repaired without losing a room. Post hoc legalization does
 not replace a generator that respects the tiling condition. Both figures predate the
 load-bearing wall constraints of batch 1.1 and will be measured again (PLAN.md, J7 and
@@ -120,7 +120,7 @@ Every Python block of this page is executed by the test suite
 
 Three rooms in a 12 m × 9 m outline, with a load-bearing wall at x = 6 m. The living
 room crosses the wall by 5 cm and a 3 cm gap separates the bedroom from the bathroom.
-Room types are free strings; `Referentiel` gives the minimum area per type and the
+Room types are free strings; `Regulation` gives the minimum area per type and the
 minimum width.
 
 ```python
@@ -128,27 +128,27 @@ import archlux as ax
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
-    pieces=(
-        ax.Piece(id="living", type="living", x=0.0, y=0.0, w=6.05, h=9.0),
-        ax.Piece(id="bed", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
-        ax.Piece(id="bath", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
+    rooms=(
+        ax.Room(id="living", type="living", x=0.0, y=0.0, w=6.05, h=9.0),
+        ax.Room(id="bed", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
+        ax.Room(id="bath", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
     ),
-    murs=(),
-    ouvertures=(),
-    contour=outline,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
-ctx = ax.Contexte(
+ctx = ax.Context(
     structure=ax.Structure(
-        murs_porteurs=(ax.Mur(id="axis-3", a=(6.0, 0.0), b=(6.0, 9.0), porteur=True),)
+        load_bearing_walls=(ax.Wall(id="axis-3", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True),)
     ),
     orientation=ax.Orientation(deg=12.0),  # north at 12 degrees east
-    contour=outline,
-    referentiel=ax.Referentiel(aires_min=(("bathroom", 5.0),), largeur_min=1.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
 
 repaired = ax.legalize(plan, ctx, pavage=True)
-assert repaired.certificat is not None and repaired.certificat.geometrie.valide
-print(repaired.certificat.rapport())
+assert repaired.certificate is not None and repaired.certificate.geometry.valid
+print(repaired.certificate.report())
 ```
 
 `pavage=True` requires the rooms to tile the outline exactly. Use it whenever the input
@@ -162,7 +162,7 @@ Plans round-trip through JSON with their certificate:
 ```python
 repaired.to_json("repaired.json")
 again = ax.Plan.from_json("repaired.json")
-assert again.certificat is not None and again.certificat.geometrie.valide
+assert again.certificate is not None and again.certificate.geometry.valid
 ```
 
 ### Repair while keeping the daylight
@@ -176,10 +176,10 @@ factor, not a simulation).
 ```python
 import numpy as np
 
-from archlux.light import Daylight, SplitFluxOracle, SubstitutAnalytique
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.light import Daylight, SplitFluxOracle, AnalyticSurrogate
+from archlux.uq.conforme import ConformalCalibrator
 
-surrogate, oracle = SubstitutAnalytique(), SplitFluxOracle()
+surrogate, oracle = AnalyticSurrogate(), SplitFluxOracle()
 rng = np.random.default_rng(17)
 held_out = []  # layouts of the same three rooms, never used to fit the surrogate
 for _ in range(200):
@@ -187,11 +187,11 @@ for _ in range(200):
     held_out.append(np.array([0, 0, w, 9, w, 0, 12 - w, h, w, h, 12 - w, 9 - h], float))
 
 azimuth = ctx.orientation
-calibrator = CalibrateurConforme(indicateur="sDA")
-calibrator.ajuster(
-    np.array([surrogate.evaluer(x, azimuth) for x in held_out]),
-    np.array([oracle.evaluer(x, azimuth) for x in held_out]),
-    np.array([surrogate.incertitude(x, azimuth) for x in held_out]),
+calibrator = ConformalCalibrator(indicator="sDA")
+calibrator.fit(
+    np.array([surrogate.evaluate(x, azimuth) for x in held_out]),
+    np.array([oracle.evaluate(x, azimuth) for x in held_out]),
+    np.array([surrogate.uncertainty(x, azimuth) for x in held_out]),
     alpha=0.10,
 )
 
@@ -203,7 +203,7 @@ better = ax.legalize(
     budget=0.5,  # maximum displacement from the proposal, in metres, checked by the proof
     pavage=True,
 )
-bound = better.certificat.performance
+bound = better.certificate.performance
 assert bound is not None and bound.regime == "selected"
 assert not bound.coverage_guaranteed  # the optimizer chose this plan
 ```
@@ -214,7 +214,7 @@ is most optimistic, and the nominal 90 % coverage no longer holds (winner's curs
 report says so:
 
 ```text
-PERFORMANCE                        [PREDICTION — plan selectionne, couverture NON garantie]
+PERFORMANCE                        [PREDICTION: selected plan, coverage NOT guaranteed]
 ```
 
 A guaranteed coverage needs a plan exchangeable with the calibration set, for instance
@@ -228,23 +228,23 @@ Three rooms side by side, each at least 4.5 m wide, in a 12 m wide outline:
 
 ```python
 narrow = ax.Plan(
-    pieces=tuple(
-        ax.Piece(id=name, type="bedroom", x=4.0 * k, y=0.0, w=4.0, h=9.0)
+    rooms=tuple(
+        ax.Room(id=name, type="bedroom", x=4.0 * k, y=0.0, w=4.0, h=9.0)
         for k, name in enumerate("abc")
     ),
-    murs=(),
-    ouvertures=(),
-    contour=outline,
+    walls=(),
+    openings=(),
+    outline=outline,
 )
-wide_rooms = ax.Contexte(
-    structure=ax.Structure(murs_porteurs=()),
+wide_rooms = ax.Context(
+    structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
-    contour=outline,
-    referentiel=ax.Referentiel(aires_min=(), largeur_min=4.5),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(), min_width=4.5),
 )
 verdict = ax.feasibility.is_feasible(narrow, wide_rooms.structure, wide_rooms)
-assert not verdict and verdict.certificat is not None
-print(verdict.certificat.expliquer())
+assert not verdict and verdict.certificate is not None
+print(verdict.certificate.explain())
 ```
 
 ```text
@@ -315,21 +315,21 @@ Consequences, stated with their limits:
 
 ### Step 3: the surrogate
 
-A surrogate implements the `Substitut` protocol: `evaluer` (value), `gradient`,
+A surrogate implements the `Surrogate` protocol: `evaluate` (value), `gradient`,
 `incertitude` (sigma), each taking the decision vector `(x, y, w, h)` per room, an
 azimuth, and the glazing (`baies`). Shipped implementations:
 
 | Class | What it is |
 |---|---|
-| `SubstitutAnalytique` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
+| `AnalyticSurrogate` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
 | `SplitFluxOracle` | Analytic part + BRE split-flux daylight factor: the **frozen oracle** of the CI, used to test the chain end to end. A closed form, not a simulation and not ground truth |
-| `light.base.SubstitutDense` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
-| `light.appris.SubstitutAppris` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
+| `light.base.DenseSurrogate` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
+| `light.appris.LearnedSurrogate` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
 | `Daylight` | Wraps a surrogate and returns the pessimistic value `mu - q sigma` |
 
 The input is a set of numbers per room, not an image: moving a wall by 2 cm changes no
 pixel of a coarse image, so an image-based gradient is zero almost everywhere.
-Openings are stored relative to their wall (`Ouverture.mur_id`, relative abscissa
+Openings are stored relative to their wall (`Opening.wall_id`, relative abscissa
 `s`); their absolute position is never stored. The solver moves rooms, never walls, and
 the glazing is passed unchanged to the surrogate during the optimization.
 
@@ -382,7 +382,7 @@ This is the core of the project, and the two must never be confused.
   with the tolerances of `archlux/tolerances.py`. Infeasibility is proved by a Farkas
   certificate verified in exact arithmetic, and only for the relative order read from
   the proposal.
-- **Daylight, probabilistic.** `BornePerformance.regime` is mandatory.
+- **Daylight, probabilistic.** `PerformanceBound.regime` is mandatory.
   `"exchangeable"`: the plan is exchangeable with the calibration set, and the coverage
   is guaranteed. `"selected"`: the optimizer chose the plan, the coverage is **not**
   guaranteed, and the report says "couverture NON garantie". `legalize(...,
@@ -391,8 +391,8 @@ This is the core of the project, and the two must never be confused.
   computed against (here the frozen split-flux oracle), never about a measured LM-83
   sDA.
 
-The two are **distinct types**: `PreuveGeometrique` has no probability field,
-`BornePerformance` always carries its coverage, calibration size and regime. See
+The two are **distinct types**: `GeometricProof` has no probability field,
+`PerformanceBound` always carries its coverage, calibration size and regime. See
 [`docs/concepts/deux-garanties.md`](docs/concepts/deux-garanties.md).
 
 ---
@@ -405,20 +405,20 @@ start plan reads (the report text is still in French):
 ```text
 CERTIFICAT                              archlux 0.10.0.dev0
 
-GEOMETRIE                                       [EXACT]
-  Chevauchement          aucun         verifie
+GEOMETRY                                        [EXACT]
+  Overlap                none          verified
   Jours                  aucun         verifie
   Surfaces minimales     ok            verifie
   Structure preservee    oui           verifie
   Deplacement maximal    0,05 m
 ```
 
-It then prints the daylight section (`[PREDICTION — couverture 90 %]` for an
-exchangeable plan, `couverture NON garantie` for a selected one, `NON EVALUABLE`
+It then prints the daylight section (`[PREDICTION: coverage 90 %]` for an
+exchangeable plan, `couverture NON garantie` for a selected one, `NOT EVALUABLE`
 without calibration), the dual diagnosis, and an out-of-scope section (summer comfort,
 building services, materials). "Structure preservee" is checked since batch 1.1: no
 room interior contains a stretch of a load-bearing wall. The maximum displacement is a
-checked predicate when a `budget` is given. `Certificat.manifeste` is `None` unless the
+checked predicate when a `budget` is given. `Certificate.manifest` is `None` unless the
 caller attaches one.
 
 ---
@@ -454,11 +454,11 @@ solver serve both modes.
 
 | Module | Responsibility |
 |---|---|
-| `types` | `Plan`, `Piece`, `Mur`, `Ouverture`, `Contexte`, `Certificat` |
+| `types` | `Plan`, `Room`, `Wall`, `Opening`, `Context`, `Certificate` |
 | `geom` | relative order, load-bearing sides, tiling grid, polytope, L-shaped fusions |
 | `lmo` | solve `min <c, x>` over the polytope, area cuts; ignores where `c` comes from |
 | `solve` | Frank-Wolfe, warm start, trace |
-| `light` | `Substitut` protocol and its implementations |
+| `light` | `Surrogate` protocol and its implementations |
 | `orient` | circular encoding of the azimuth |
 | `uq` | conformal calibration, drift control, calibration-set access token |
 | `certify` | exact proof, Farkas check, conformal bound, dual translation, report |
@@ -491,7 +491,7 @@ and test (20 %, opened once). If the calibration set leaks into training, the co
 guarantee is silently wrong, and no test or review would notice. `uq.gestion` keeps
 three distinct directories and hands out the calibration set against a token issued
 after the model is frozen. This is a checkable discipline, not a lock: the token is an
-unkeyed checksum, and `CalibrateurConforme` calibrates from plain arrays without asking
+unkeyed checksum, and `ConformalCalibrator` calibrates from plain arrays without asking
 for it (the module docstring lists the known bypasses).
 
 ---
@@ -580,7 +580,7 @@ Not implemented yet:
 |---|---|
 | **Non-Manhattan geometry** (oblique walls, non-rectilinear rooms) | Not supported. An oblique load-bearing wall raises `UnsupportedInput`; oblique MSD plans are rejected by the loader |
 | **sDA / ASE trade-off curve** (Pareto front with warm restarts) | No code |
-| Learned token transformer (PyTorch) | Not implemented: `SubstitutAppris` refuses `.pt` weights |
+| Learned token transformer (PyTorch) | Not implemented: `LearnedSurrogate` refuses `.pt` weights |
 | Daylight labels from a physical simulation (Swiss Dwellings `sun_*`, Radiance) | Not wired; the CI oracle is a closed form |
 | Coverage measured on real data, and on plans selected by the optimizer | Open research question (PLAN.md, J5) |
 | Dual prices translated into daylight points | Prices are listed in LP units |
@@ -594,7 +594,7 @@ The development plan is [`PLAN.md`](PLAN.md); the audit it answers is
 
 ## Reproducibility
 
-`archlux.bench.emettre(seed=...)` builds a **manifest**: version, UTC timestamp, seed,
+`archlux.bench.emit(seed=...)` builds a **manifest**: version, UTC timestamp, seed,
 data fingerprint, split, environment versions, parameters, model fingerprint and
 calibration size. `legalize` itself does not attach one. Format example (illustrative
 values):
@@ -614,7 +614,7 @@ values):
 
 - Every sampling function takes a **seed, with no default**.
 - Splits are **frozen and published** as lists of identifiers.
-- Raw results are published **before** any aggregation (`resultats/*_brut.csv`).
+- Raw results are published **before** any aggregation (`results/*_brut.csv`).
 - **The calibration set is published with the model**: without it, a conformal bound
   cannot be checked.
 - Any change in the behaviour of the oracle or of the certificate is a **major

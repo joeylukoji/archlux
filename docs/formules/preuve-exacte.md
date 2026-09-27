@@ -50,7 +50,7 @@ w_p h_p \ge a_{\min}(\mathrm{type}(p))
 \]
 
 pour chaque pièce, à \(10^{-9}\,\mathrm{m}^2\) près. \(a_{\min}=0\) si le type
-est inconnu (`Referentiel.a_min`).
+est inconnu (`Regulation.min_area`).
 
 **Fused rooms** (an L decomposed into sub-rectangles, `verify_exactly(..., fusions=)`).
 The minimum applies to the union \(U = \bigcup_k R_k\) of the parts, never to each
@@ -141,7 +141,7 @@ verdicts. The certification of 15 rooms takes about 0.8 ms (1.5 ms with GEOS).
 |---|---|
 | Appeler *après* le solveur, sur le plan dévectorisé | Réutiliser les duaux ou `poly.contient` comme preuve utilisateur |
 | Rapporter **toutes** les violations | S'arrêter à la première |
-| Mettre un champ de probabilité dans `PreuveGeometrique` | — interdit : la thèse du projet est dans ce type |
+| Mettre un champ de probabilité dans `GeometricProof` | — interdit : la thèse du projet est dans ce type |
 
 ## Source
 
