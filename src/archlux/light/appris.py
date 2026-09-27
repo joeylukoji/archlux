@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING, NoReturn
 from archlux.errors import InvariantViolation
 from archlux.light.base import SubstitutDense
 from archlux.light.protocole import Baies
+from archlux.types import Indicateur
 
 if TYPE_CHECKING:
     import numpy as np
@@ -77,7 +78,7 @@ class SubstitutAppris:
     indicateur_vise: Indicateur = "sDA"
 
     @property
-    def indicateur(self) -> str:
+    def indicateur(self) -> Indicateur:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
