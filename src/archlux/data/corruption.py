@@ -153,7 +153,7 @@ def corrompre(
     >>> from archlux.data.corruption import corrompre
     >>> from archlux.types import Piece, Plan
     >>> plan = Plan(
-    ...     pieces=(Piece("a", "sejour", 0.0, 0.0, 6.0, 9.0),),
+    ...     pieces=(Piece(id="a", type="sejour", x=0.0, y=0.0, w=6.0, h=9.0),),
     ...     murs=(), ouvertures=(),
     ...     contour=((0.0, 0.0), (6.0, 0.0), (6.0, 9.0), (0.0, 9.0)),
     ... )
