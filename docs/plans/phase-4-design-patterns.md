@@ -136,7 +136,7 @@ day count.
 
 ### 1. Imports and layers
 
-4. Make `light/__init__` and `certify/__init__` lazy façades (same lazy-attribute
+4. Make `light/__init__` and `certify/__init__` lazy facades (same lazy-attribute
    pattern as the package root, PLAN.md 3.13), so importing `archlux.certify` for one
    report function does not pull in the whole certification stack.
 5. Move `__version__` out of the package root's hot import path (already read from
@@ -306,7 +306,7 @@ day count.
   solve → light → orient → uq → certify → feasibility → api → active → export → data →
   bench → experiments → cross-cutting). A block starts only once every block above it in
   this list is merged, so no block's tests chase a moving foundation.
-- **Patterns**: exactly the ones PLAN.md's phase-4 table names per block (façade,
+- **Patterns**: exactly the ones PLAN.md's phase-4 table names per block (facade,
   entities, SRP, explicit cache, parameter object, strategy, registry/protocol,
   composite, pipeline, value object). No new pattern introduced without a specific CC or
   coupling problem it solves.

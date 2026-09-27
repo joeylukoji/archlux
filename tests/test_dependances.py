@@ -57,7 +57,7 @@ AUTORISE: dict[str, frozenset[str]] = {
     "active": frozenset({"types", "errors", "light.protocole", "uq"}),
     # Export BIM : feuille — types + erreurs ; ifcopenshell optionnel (hors archlux).
     "export": frozenset({"types", "errors"}),
-    # Faisabilité : façade sur legalize / Farkas — exacte, sans lumière.
+    # Faisabilité : facade sur legalize / Farkas — exacte, sans lumière.
     "feasibility": frozenset({"types", "errors", "api"}),
     "bench": frozenset(
         {
@@ -97,7 +97,16 @@ LEAVES: dict[str, frozenset[str]] = {
     "seeds": frozenset({"__future__", "hashlib"}),
     "arrays": frozenset({"__future__", "typing", "numpy"}),
     "_deprecation": frozenset(
-        {"__future__", "functools", "sys", "warnings", "dataclasses", "typing", "collections"}
+        {
+            "__future__",
+            "functools",
+            "importlib",
+            "sys",
+            "warnings",
+            "dataclasses",
+            "typing",
+            "collections",
+        }
     ),
 }
 """Modules importable by every layer, with the only imports they may make themselves."""

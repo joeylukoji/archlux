@@ -8,6 +8,11 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 1 (imports and layers): lazy certify and light facades
+
+- `archlux.light` and `archlux.certify` are now lazy facades: asking for one name (e.g. `light.Daylight` or `certify.render`) imports only the module that defines it, not every sibling submodule. Verified empirically (`tests/unit/test_lazy_facades.py`, fresh-interpreter subprocess checks) — `light.Daylight` no longer loads `analytique`/`simulateur`; `certify.render` no longer loads `proof`/`borne`.
+- `tests/test_dependances.py`'s leaf allow-list gets `importlib` for `_deprecation` (needed by the new lazy resolution, added below).
+
 ### Added — PLAN.md phase 4, block 0: complexity and coverage tooling
 
 - `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of functions above cyclomatic complexity 10 (33 today), lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
