@@ -14,7 +14,7 @@ import numpy as np
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput
 from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode, encoder
+from archlux.orient.circulaire import encode, encode_orientation
 from archlux.types import Context, Opening, Orientation, Plan, Wall
 
 __all__ = [
@@ -70,15 +70,15 @@ def _jeton_piece(
         type_oh[_TYPES.index(room_type)] = 1.0
     else:
         type_oh[-1] = 1.0
-    azimut = encoder(orientation, harmoniques=3)
-    jeton = np.zeros(TOKEN_DIM, dtype=float)
-    jeton[0:4] = (x, y, w, h)
-    jeton[4:7] = (aire, peri, compact)
-    jeton[7:14] = type_oh
-    jeton[14:20] = azimut
-    jeton[20] = n_pieces
-    jeton[21] = aire_totale
-    return jeton
+    azimut = encode_orientation(orientation, harmoniques=3)
+    token = np.zeros(TOKEN_DIM, dtype=float)
+    token[0:4] = (x, y, w, h)
+    token[4:7] = (aire, peri, compact)
+    token[7:14] = type_oh
+    token[14:20] = azimut
+    token[20] = n_pieces
+    token[21] = aire_totale
+    return token
 
 
 def _jeton_ouverture(
@@ -90,18 +90,18 @@ def _jeton_ouverture(
 ) -> np.ndarray:
     """Un jeton de baie : azimut du mur porteur, jamais recopié sur chaque pièce."""
     azimut_mur = math.degrees(math.atan2(mur.b[1] - mur.a[1], mur.b[0] - mur.a[0]))
-    jeton = np.zeros(TOKEN_DIM, dtype=float)
-    jeton[14:20] = encoder(orientation, harmoniques=3)
-    jeton[20] = n_pieces
-    jeton[21] = aire_totale
-    jeton[22:28] = np.concatenate(
+    token = np.zeros(TOKEN_DIM, dtype=float)
+    token[14:20] = encode_orientation(orientation, harmoniques=3)
+    token[20] = n_pieces
+    token[21] = aire_totale
+    token[22:28] = np.concatenate(
         [
             encode(azimut_mur, harmoniques=1),
             np.array([ouv.s, ouv.relative_width, ouv.head_height, 1.0], dtype=float),
         ]
     )
-    jeton[28] = ouv.sill_height
-    return jeton
+    token[28] = ouv.sill_height
+    return token
 
 
 def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:

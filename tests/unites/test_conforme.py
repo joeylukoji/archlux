@@ -11,7 +11,7 @@ from hypothesis import strategies as st
 
 from archlux.errors import InvariantViolation
 from archlux.types import PerformanceBound
-from archlux.uq.conforme import CalibrateurConforme, Calibration, borner, quantile_conforme
+from archlux.uq.conforme import Calibration, ConformalCalibrator, bound, conformal_quantile
 
 
 def _scores(n: int, seed: int = 0) -> np.ndarray:
@@ -27,7 +27,7 @@ def test_correction_echantillon_fini() -> None:
     verites = predictions + rng.normal(0.0, 1.0, n)
     incertitudes = np.ones(n)
     scores = np.abs(verites - predictions) / incertitudes
-    calibrateur = CalibrateurConforme()
+    calibrateur = ConformalCalibrator()
     calibrateur.fit(predictions, verites, incertitudes, alpha=0.10)
     assert calibrateur.q > float(np.quantile(scores, 0.90))
     rang = math.ceil((n + 1) * 0.90)
@@ -36,8 +36,8 @@ def test_correction_echantillon_fini() -> None:
 
 def test_quantile_refuse_un_jeu_trop_petit() -> None:
     """n trop petit pour 1−α : échec explicite, pas une borne infinie."""
-    with pytest.raises(InvariantViolation, match="trop petit"):
-        quantile_conforme(_scores(8), alpha=0.10)
+    with pytest.raises(InvariantViolation, match="too small"):
+        conformal_quantile(_scores(8), alpha=0.10)
 
 
 def test_pas_de_borne_sans_calibration() -> None:
@@ -61,7 +61,7 @@ def test_sens_ase_inverse() -> None:
     predictions = rng.normal(6.0, 0.4, n)
     verites = predictions + rng.normal(0.0, 0.5, n)
     incertitudes = np.ones(n)
-    calibrateur = CalibrateurConforme(indicator="ASE")
+    calibrateur = ConformalCalibrator(indicator="ASE")
     calibrateur.fit(predictions, verites, incertitudes, alpha=0.10)
     borne = calibrateur.borne(6.1, 1.0, "<=", regime="exchangeable")
     assert borne.upper > borne.value
@@ -77,8 +77,8 @@ def test_borner_reproduit_le_quantile() -> None:
         indicator="sDA",
         empreinte_jeu="test",
     )
-    borne = borner(50.0, calibration, uncertainty=1.0, regime="exchangeable")
-    q = quantile_conforme(scores, 0.10)
+    borne = bound(50.0, calibration, uncertainty=1.0, regime="exchangeable")
+    q = conformal_quantile(scores, 0.10)
     assert borne.lower == pytest.approx(50.0 - q)
     assert borne.n_calibration == 60
     assert borne.coverage == pytest.approx(0.90)
@@ -93,7 +93,7 @@ def test_couverture_sur_donnees_synthetiques(alpha: float) -> None:
     pred_cal = rng.normal(40.0, 2.0, n_cal)
     sig_cal = np.full(n_cal, 1.5)
     ver_cal = pred_cal + sig_cal * rng.normal(0.0, 1.0, n_cal)
-    calibrateur = CalibrateurConforme()
+    calibrateur = ConformalCalibrator()
     calibrateur.fit(pred_cal, ver_cal, sig_cal, alpha=alpha)
     pred = rng.normal(40.0, 2.0, n_test)
     sig = np.full(n_test, 1.5)

@@ -50,7 +50,7 @@ from shapely.ops import unary_union
 
 from archlux.errors import InvariantViolation
 from archlux.geom.rectilineaire import RectilinearRoom, decompose
-from archlux.orient.circulaire import direction_dominante
+from archlux.orient.circulaire import dominant_direction
 from archlux.types import (
     Context,
     Opening,
@@ -543,7 +543,7 @@ def _convertir(
     if not angles:
         return "aucune arete exploitable"
     try:
-        theta = direction_dominante(angles, longueurs, periode=90.0)
+        theta = dominant_direction(angles, longueurs, periode=90.0)
     except InvariantViolation:
         return "aucune direction dominante"
 

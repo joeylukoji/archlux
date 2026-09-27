@@ -25,7 +25,7 @@ from archlux.data.chargeurs import (
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytique import AnalyticSurrogate
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.uq.conforme import ConformalCalibrator
 
 MSD = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
 SD = Path(
@@ -112,7 +112,7 @@ for nom, pred in modeles.items():
 
 pred_ca = fit(p_tr, p_ca)
 sigma = float(np.abs(y_ca - pred_ca).std()) or 1.0
-cal = CalibrateurConforme(indicator="sDA")
+cal = ConformalCalibrator(indicator="sDA")
 cal.fit(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
 bornes = [
     cal.borne(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]

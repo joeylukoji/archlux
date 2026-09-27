@@ -67,11 +67,11 @@ franchissent alors les frontières et contaminent le jeu de test.
 
 ```python
 class GestionDonnees:
-    def pour_entrainement(self) -> Dataset:
+    def for_training(self) -> Dataset:
         return load(self._train)            # seul chemin exposé ici
 
-    def pour_calibration(self, jeton: JetonCalibration) -> Dataset:
-        jeton.verifier()                       # émis après gel du modèle
+    def for_calibration(self, token: JetonCalibration) -> Dataset:
+        token.verifier()                       # émis après gel du modèle
         return load(self._calib)
 ```
 

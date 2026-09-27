@@ -12,7 +12,7 @@ from archlux.bench.graines import deriver
 from archlux.bench.run import Resultat
 from archlux.bench.stats import Intervalle, bootstrap_apparie
 from archlux.errors import InvariantViolation
-from archlux.orient.circulaire import stratifier
+from archlux.orient.circulaire import stratify
 
 __all__ = ["N_REPLICATIONS", "RapportBanc", "StrateOrientation", "report"]
 
@@ -50,7 +50,7 @@ def _secteur_par_degre(degres: Iterable[float], *, n_secteurs: int) -> dict[floa
     """
     correspondance: dict[float, str] = {}
     for deg in degres:
-        groupes = stratifier([deg], n_secteurs=n_secteurs)
+        groupes = stratify([deg], n_secteurs=n_secteurs)
         correspondance[deg] = next(nom for nom, valeurs in groupes.items() if valeurs.size)
     return correspondance
 
@@ -75,7 +75,7 @@ def report(
 
     # Le binning vient de ``stratifier`` seul : le réimplémenter ici laissait deux
     # conventions de secteur diverger en silence à la moindre retouche d'``orient``.
-    noms = tuple(stratifier([0.0], n_secteurs=n_secteurs).keys())
+    noms = tuple(stratify([0.0], n_secteurs=n_secteurs).keys())
     secteur_de = _secteur_par_degre(
         {ligne.orientation_deg for ligne in resultat.lignes}, n_secteurs=n_secteurs
     )

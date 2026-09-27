@@ -22,7 +22,7 @@ from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.base import DenseSurrogate
 from archlux.light.protocole import Glazing
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.uq.conforme import ConformalCalibrator
 
 MSD = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
 SD = Path(
@@ -94,7 +94,7 @@ def score(pred: np.ndarray, vrai: np.ndarray) -> str:
     )
 
 
-cal = CalibrateurConforme(indicator="sDA")
+cal = ConformalCalibrator(indicator="sDA")
 p_ca = np.array([net.evaluate(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 s_ca = np.array([net.uncertainty(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 cal.fit(p_ca, y_ca, s_ca, alpha=0.10)

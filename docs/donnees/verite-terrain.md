@@ -122,7 +122,7 @@ calibration rend la couverture annoncée fausse — trop optimiste — et **rien
 signale** : ni les tests, ni la revue. C'est la seule erreur silencieuse du
 système capable d'invalider un chiffre publié (`ARCHITECTURE.md` §10).
 
-Le verrou d'implémentation est `uq.gestion.emettre_jeton` : le jeton n'est
+Le verrou d'implémentation est `uq.gestion.issue_token` : le jeton n'est
 émissible qu'après l'empreinte des poids gelés.
 
 ---

@@ -1,15 +1,14 @@
-"""Boucle actif : sélectionner → simuler → réentraîner → recalibrer.
+"""Active loop: select -> simulate -> retrain -> recalibrate.
 
-Le point délicat est la **séparation entraînement / calibration**. Un point simulé
-par la boucle ne peut pas servir aux deux : `ARCHITECTURE.md` §10 en fait la seule
-erreur silencieuse capable d'invalider une publication. Deux modes en découlent :
+The delicate point is the **training / calibration separation**. A point simulated
+by the loop cannot serve both purposes: `ARCHITECTURE.md` §10 makes it the only
+silent error capable of invalidating a publication. Two modes follow from this:
 
-- ``run(..., calibration=...)`` — jeu **indépendant**, tiré hors de la boucle. Seul
-  mode dont la couverture soit publiable ;
-- à défaut, une fraction ``part_calibration`` des points acquis est réservée et
-  n'entre jamais dans ``ajuster``. La séparation est tenue, mais les points restent
-  *sélectionnés* par l'acquisition : ``RapportActif.calibration_independante`` vaut
-  alors ``False``.
+- ``run(..., calibration=...)`` -- an **independent** set, drawn outside the loop.
+  The only mode whose coverage is publishable;
+- otherwise, a fraction ``part_calibration`` of the acquired points is set aside and
+  never enters ``fit``. The separation holds, but the points remain *selected*
+  by the acquisition: ``ActiveReport.calibration_independante`` is then ``False``.
 """
 
 from __future__ import annotations
@@ -20,32 +19,33 @@ from typing import TYPE_CHECKING
 import numpy as np
 import structlog
 
-from archlux.active.densite import densite_noyau
-from archlux.active.selection import StrategieAcquisition
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.active.densite import kernel_density
+from archlux.active.selection import AcquisitionStrategy
 from archlux.errors import InvariantViolation
 from archlux.seeds import derive
-from archlux.uq.conforme import CalibrateurConforme, n_minimal_conforme
+from archlux.uq.conforme import ConformalCalibrator, minimal_n_conformal
 
 if TYPE_CHECKING:
     from archlux.light.protocole import Surrogate
     from archlux.types import Orientation
 
-__all__ = ["Loop", "RapportActif"]
+__all__ = ["ActiveReport", "Loop"]
 
 _LOG = structlog.get_logger("archlux.active.boucle")
 
 
 @dataclass(frozen=True, slots=True)
-class RapportActif:
-    """Résultat d'une campagne à budget de simulations fixé.
+class ActiveReport:
+    """Result of a campaign with a fixed simulation budget.
 
     Attributes
     ----------
     calibration_independante : bool
-        Vrai si la calibration vient d'un jeu tiré **hors** de la boucle. Faux si
-        elle a été prélevée sur les points acquis : les points sont alors choisis
-        par la stratégie d'acquisition, donc non échangeables avec un plan de test
-        tiré au hasard, et la couverture associée **ne se publie pas**.
+        True if the calibration comes from a set drawn **outside** the loop. False
+        if it was drawn from the acquired points: the points are then chosen by
+        the acquisition strategy, hence not exchangeable with a randomly drawn
+        test set, and the associated coverage **is not publishable**.
     """
 
     n_simulations: int
@@ -57,7 +57,7 @@ class RapportActif:
 
 
 def _empiler(xs: list[np.ndarray]) -> np.ndarray:
-    """Empiler des vecteurs de plan en une matrice ``(n, d)``."""
+    """Stack plan vectors into a ``(n, d)`` matrix."""
     return np.stack([np.asarray(x, dtype=float).ravel() for x in xs])
 
 
@@ -67,10 +67,10 @@ def _incertitudes_acquisition(
     orientations: list[Orientation],
     xs_labeled: list[np.ndarray],
 ) -> np.ndarray:
-    """σ̂ du substitut × (1 + distance au plus proche déjà simulé).
+    """Surrogate σ̂ x (1 + distance to the nearest already-simulated point).
 
-    Un ``incertitude`` constant (ex. ``SubstitutDense``) ne discrimine pas : la
-    distance aux points déjà labellisés force l'exploration.
+    A constant ``incertitude`` (e.g. ``SubstitutDense``) does not discriminate:
+    the distance to the already-labeled points forces exploration.
     """
     base = np.array(
         [float(surrogate.uncertainty(x, o)) for x, o in zip(xs, orientations, strict=True)],
@@ -87,12 +87,12 @@ def _incertitudes_acquisition(
 
 
 def _largeur_moyenne(
-    calibrateur: CalibrateurConforme,
+    calibrateur: ConformalCalibrator,
     surrogate: Surrogate,
     xs: list[np.ndarray],
     orientations: list[Orientation],
 ) -> float:
-    """Largeur moyenne des intervalles conformes sur le jeu de retenue."""
+    """Mean width of the conformal intervals on the held-out set."""
     largeurs: list[float] = []
     for x, o in zip(xs, orientations, strict=True):
         pred = float(surrogate.evaluate(x, o))
@@ -105,47 +105,47 @@ def _largeur_moyenne(
 
 @dataclass(slots=True)
 class Loop:
-    """Campagne d'acquisition à budget de simulations.
+    """Acquisition campaign with a fixed simulation budget.
 
     Parameters
     ----------
     substitut : Substitut
-        Modèle à améliorer. S'il expose ``ajuster``, il est réentraîné chaque cycle.
+        Model to improve. If it exposes ``fit``, it is retrained every cycle.
     simulateur : Substitut
-        Oracle gelé (ex. ``SplitFluxOracle``).
-    acquire : StrategieAcquisition
-        ``UncertaintyTimesDensity`` ou ``Aleatoire``.
+        Frozen oracle (e.g. ``SplitFluxOracle``).
+    acquire : AcquisitionStrategy
+        ``UncertaintyTimesDensity`` or ``RandomStrategy``.
     budget : int
-        Nombre total d'évaluations oracle **consommées par l'acquisition**. La
-        simulation d'un jeu ``calibration=`` indépendant est comptée à part.
+        Total number of oracle evaluations **consumed by the acquisition**. The
+        simulation of an independent ``calibration=`` set is counted separately.
     batch : int, optional
-        Taille de lot par cycle d'acquisition.
+        Batch size per acquisition cycle.
     seed : int
-        Graine racine de la campagne. **Obligatoire, sans défaut** et nommée
-        (`ARCHITECTURE.md` §7) : ``Loop`` échantillonne (``Aleatoire``, ``ajuster``,
-        répartition entraînement / calibration), et un défaut ``17`` laissait passer
-        des campagnes silencieusement non rejouables.
+        Root seed of the campaign. **Required, no default**, and keyword-only
+        (`ARCHITECTURE.md` §7): ``Loop`` samples (``RandomStrategy``, ``fit``, the
+        training / calibration split), and a default of ``17`` let campaigns pass
+        silently that could not be replayed.
     alpha : float, optional
-        Niveau conforme visé (défaut 0,10 → couverture 90 %). Fixe aussi la taille
-        minimale de calibration, via :func:`~archlux.uq.conforme.n_minimal_conforme`.
+        Target conformal level (default 0.10 -> 90% coverage). Also sets the
+        minimum calibration size, via :func:`~archlux.uq.conforme.n_minimal_conforme`.
     part_calibration : float, optional
-        Fraction des points acquis réservée à la calibration quand aucun jeu
-        indépendant n'est fourni. ``0.0`` désactive le prélèvement — il faut alors
-        passer ``calibration=``, sinon ``run`` lève.
+        Fraction of the acquired points set aside for calibration when no
+        independent set is supplied. ``0.0`` disables the set-aside -- ``calibration=``
+        must then be passed, otherwise ``run`` raises.
 
     Warnings
     --------
-    Sans ``calibration=``, les points de calibration sont **choisis par la stratégie
-    d'acquisition**. Ils sont bien disjoints de ceux vus par ``ajuster`` — la faute
-    du §10 est écartée — mais ils ne sont pas échangeables avec un plan de test tiré
-    au hasard. Dans ce mode, ``run`` mesure une **largeur d'intervalle**, grandeur
-    légitime pour comparer deux stratégies à budget égal, et **pas** une couverture.
-    ``RapportActif.calibration_independante`` porte la distinction.
+    Without ``calibration=``, the calibration points are **chosen by the acquisition
+    strategy**. They are indeed disjoint from those seen by ``fit`` -- the §10
+    fault is avoided -- but they are not exchangeable with a randomly drawn test
+    set. In this mode, ``run`` measures an **interval width**, a legitimate quantity
+    for comparing two strategies at equal budget, and **not** a coverage.
+    ``ActiveReport.calibration_independante`` carries the distinction.
     """
 
     surrogate: Surrogate
     simulateur: Surrogate
-    acquire: StrategieAcquisition
+    acquire: AcquisitionStrategy
     budget: int
     batch: int = 5
     seed: int = field(kw_only=True)
@@ -153,24 +153,24 @@ class Loop:
     part_calibration: float = field(default=0.30, kw_only=True)
 
     def __post_init__(self) -> None:
-        """Valider budget, taille de lot, niveau et part de calibration."""
+        """Validate budget, batch size, level, and calibration fraction."""
         if self.budget < 1:
-            raise InvariantViolation(("budget doit être ≥ 1",))
+            raise InvariantViolation(("budget must be >= 1",))
         if self.batch < 1:
-            raise InvariantViolation(("batch doit être ≥ 1",))
+            raise InvariantViolation(("batch must be >= 1",))
         if not 0.0 < self.alpha < 1.0:
-            raise InvariantViolation((f"alpha hors ]0, 1[ : {self.alpha}",))
+            raise InvariantViolation((f"alpha out of ]0, 1[: {self.alpha}",))
         if not 0.0 <= self.part_calibration < 1.0:
-            raise InvariantViolation((f"part_calibration hors [0, 1[ : {self.part_calibration}",))
+            raise InvariantViolation((f"part_calibration out of [0, 1[: {self.part_calibration}",))
 
     def _calibrer(
         self,
-        calibrateur: CalibrateurConforme,
+        calibrateur: ConformalCalibrator,
         xs: list[np.ndarray],
         ys: list[float],
         orientations: list[Orientation],
     ) -> None:
-        """Ajuster le quantile conforme sur le jeu de calibration, et lui seul."""
+        """Fit the conformal quantile on the calibration set, and only that set."""
         preds = np.array(
             [float(self.surrogate.evaluate(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
@@ -180,10 +180,10 @@ class Loop:
         calibrateur.fit(preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha)
 
     def _repartir(self, n_acquis: int, rng: np.random.Generator, *, independante: bool) -> set[int]:
-        """Rangs du lot courant à verser en calibration plutôt qu'en entraînement.
+        """Ranks of the current batch to divert to calibration rather than training.
 
-        Le tirage est **interne au lot** : il ne dépend donc pas de l'ordre
-        d'acquisition, qui va du plus exploratoire au plus exploitant.
+        The draw is **internal to the batch**: it therefore does not depend on the
+        acquisition order, which goes from most exploratory to most exploitative.
         """
         if independante or self.part_calibration <= 0.0 or n_acquis < 1:
             return set()
@@ -200,49 +200,50 @@ class Loop:
         holdout_orientations: list[Orientation] | None = None,
         calibration: list[np.ndarray] | None = None,
         calibration_orientations: list[Orientation] | None = None,
-    ) -> RapportActif:
-        """Exécuter la boucle jusqu'à épuisement du budget.
+    ) -> ActiveReport:
+        """Run the loop until the budget is exhausted.
 
         Parameters
         ----------
         propositions :
-            Pool de candidats (vectorisés).
+            Pool of candidates (vectorized).
         orientations :
-            Une orientation par candidat.
+            One orientation per candidate.
         reference_optimiseur :
-            Plans typiques produits par l'optimiseur — base de la densité.
+            Typical plans produced by the optimizer -- basis of the density.
         holdout, holdout_orientations :
-            Jeu pour mesurer la largeur d'intervalle finale. Défaut : les candidats.
+            Set used to measure the final interval width. Default: the candidates.
         calibration, calibration_orientations :
-            Jeu de calibration **indépendant**, simulé une fois au démarrage et
-            jamais soumis à ``ajuster``. Seul mode dont la couverture soit publiable.
+            **Independent** calibration set, simulated once at start-up and never
+            passed to ``fit``. The only mode whose coverage is publishable.
 
         Returns
         -------
-        RapportActif
-            ``calibration_independante`` dit si la couverture associée est publiable.
+        ActiveReport
+            ``calibration_independante`` says whether the associated coverage is
+            publishable.
 
         Raises
         ------
         InvariantViolation
-            Entrées incohérentes, ou calibration trop petite pour ``alpha`` : il faut
-            ``n ≥ n_minimal_conforme(alpha)``, soit 9 points à 90 % de couverture.
+            Inconsistent inputs, or calibration too small for ``alpha``: it needs
+            ``n >= n_minimal_conforme(alpha)``, i.e. 9 points at 90% coverage.
         """
         if len(propositions) != len(orientations):
-            raise InvariantViolation(("propositions et orientations de longueurs distinctes",))
+            raise InvariantViolation(("propositions and orientations have distinct lengths",))
         if len(propositions) < self.batch:
-            raise InvariantViolation(("pool plus petit que le batch",))
+            raise InvariantViolation(("pool smaller than the batch",))
         if not reference_optimiseur:
-            raise InvariantViolation(("reference_optimiseur vide",))
+            raise InvariantViolation(("reference_optimiseur is empty",))
 
         hold_x = holdout if holdout is not None else propositions
         hold_o = holdout_orientations if holdout_orientations is not None else orientations
         if len(hold_x) != len(hold_o):
-            raise InvariantViolation(("holdout et orientations de longueurs distinctes",))
+            raise InvariantViolation(("holdout and orientations have distinct lengths",))
         if not hold_x:
-            raise InvariantViolation(("holdout vide",))
+            raise InvariantViolation(("holdout is empty",))
 
-        n_min = n_minimal_conforme(self.alpha)
+        n_min = minimal_n_conformal(self.alpha)
         independante = calibration is not None
         xs_cal: list[np.ndarray] = []
         os_cal: list[Orientation] = []
@@ -251,20 +252,20 @@ class Loop:
                 calibration_orientations
             ):
                 raise InvariantViolation(
-                    ("calibration et calibration_orientations de longueurs distinctes",)
+                    ("calibration and calibration_orientations have distinct lengths",)
                 )
             if len(calibration) < n_min:
                 raise InvariantViolation(
-                    (f"calibration n={len(calibration)} < {n_min} requis pour alpha={self.alpha}",)
+                    (f"calibration n={len(calibration)} < {n_min} required for alpha={self.alpha}",)
                 )
             xs_cal = [np.asarray(x, dtype=float).copy() for x in calibration]
             os_cal = list(calibration_orientations)
-        # Vérités du jeu indépendant : simulées une fois, hors budget d'acquisition.
+        # Ground truth of the independent set: simulated once, outside the acquisition budget.
         ys_cal: list[float] = [
             float(self.simulateur.evaluate(x, o)) for x, o in zip(xs_cal, os_cal, strict=True)
         ]
 
-        dens = densite_noyau(_empiler(propositions), _empiler(reference_optimiseur))
+        dens = kernel_density(_empiler(propositions), _empiler(reference_optimiseur))
         xs_lab: list[np.ndarray] = []
         ys_lab: list[float] = []
         os_lab: list[Orientation] = []
@@ -272,7 +273,7 @@ class Loop:
         historique: list[float] = []
         restantes = self.budget
         cycle = 0
-        calibrateur = CalibrateurConforme(indicator="sDA")
+        calibrateur = ConformalCalibrator(indicator="sDA")
         # Named sub-streams (AUDIT.md Q-M5): with ``seed + cycle`` the campaign of seed 17
         # at cycle 1 replayed the selection of the campaign of seed 18 at cycle 0.
         rng = np.random.default_rng(derive(self.seed, "split"))
@@ -290,8 +291,8 @@ class Loop:
                 exclus=np.asarray(exclus, dtype=int) if exclus else None,
             )
             acquis = [int(i) for i in idxs]
-            # Répartir AVANT tout ajustement : c'est ce qui empêche matériellement
-            # ``ajuster`` de voir un point de calibration.
+            # Split BEFORE any fitting: this is what physically prevents ``fit``
+            # from ever seeing a calibration point.
             vers_calibration = self._repartir(len(acquis), rng, independante=independante)
             for rang, i in enumerate(acquis):
                 x = np.asarray(propositions[i], dtype=float).copy()
@@ -319,18 +320,18 @@ class Loop:
                     lr=0.12,
                 )
 
-            # Recalibrer après chaque cycle : le modèle a changé, l'ancien q̂ ne borne
-            # plus rien. Les scores viennent de ``xs_cal``, jamais de ``xs_lab``.
+            # Recalibrate after every cycle: the model has changed, the old q̂
+            # no longer bounds anything. Scores come from ``xs_cal``, never from ``xs_lab``.
             if len(xs_cal) >= n_min:
                 try:
                     self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
                     historique.append(_largeur_moyenne(calibrateur, self.surrogate, hold_x, hold_o))
                 except InvariantViolation as echec:
-                    # Scores dégénérés en début de campagne : conserver le calibrateur
-                    # courant et retenter au cycle suivant. Le rattrapage est tracé —
-                    # ``errors.InvariantViolation`` interdit de l'avaler en silence — et
-                    # reste borné : si aucun cycle n'aboutit, ``calibrateur.n < 1`` et
-                    # le repli ci-dessous relaie l'échec.
+                    # Degenerate scores early in the campaign: keep the current
+                    # calibrator and retry next cycle. The fallback is logged --
+                    # ``errors.InvariantViolation`` forbids swallowing it silently --
+                    # and stays bounded: if no cycle ever succeeds, ``calibrateur.n < 1``
+                    # and the fallback below relays the failure.
                     _LOG.warning(
                         "calibration_cycle_ignoree",
                         cycle=cycle,
@@ -343,16 +344,16 @@ class Loop:
             if len(xs_cal) < n_min:
                 raise InvariantViolation(
                     (
-                        f"calibration insuffisante : n={len(xs_cal)} < {n_min} pour "
-                        f"alpha={self.alpha} ; augmenter budget ou part_calibration, "
-                        f"ou passer un jeu calibration= indépendant",
+                        f"insufficient calibration: n={len(xs_cal)} < {n_min} for "
+                        f"alpha={self.alpha}; increase budget or part_calibration, "
+                        f"or pass an independent calibration= set",
                     )
                 )
             self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
             historique.append(_largeur_moyenne(calibrateur, self.surrogate, hold_x, hold_o))
 
         largeur = historique[-1] if historique else float("nan")
-        return RapportActif(
+        return ActiveReport(
             n_simulations=len(xs_lab) + len(xs_cal),
             largeur_intervalle_finale=largeur,
             q_final=float(calibrateur.q),
@@ -360,3 +361,11 @@ class Loop:
             historique_largeur=tuple(historique),
             calibration_independante=independante,
         )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "RapportActif": Alias(ActiveReport, "archlux.active.boucle.ActiveReport"),
+    },
+)

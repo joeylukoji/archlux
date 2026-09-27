@@ -14,7 +14,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.seeds import derive
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.uq.conforme import ConformalCalibrator
 from archlux.uq.fiabilite import measure_coverage
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats") / "j5_coverage.csv"
@@ -43,7 +43,7 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(("run", "regime", "n", "coverage", "low", "high", "mean_width", "target_std"))
     for run in range(20):  # named sub-seeds: no stream shared between runs or samples
-        cal = CalibrateurConforme()
+        cal = ConformalCalibrator()
         cal.fit(*columns(*two_room_vectors(220, seed=derive(17, f"cal/{run}"))), alpha=0.10)
         starts, orientations = two_room_vectors(80, seed=derive(17, f"starts/{run}"))
         selected = (chosen(starts, orientations, cal.q), orientations)

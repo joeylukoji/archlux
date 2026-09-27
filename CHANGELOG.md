@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 5, sixth batch: uncertainty, active learning and orientation
+
+- `archlux.uq`, `archlux.active` and `archlux.orient.circulaire` are English: `ConformalCalibrator`, `DriftReport`, `DataManagement`, `CalibrationToken`, `ActiveReport`, `RandomStrategy`, `RegressionResult`, `dominant_direction`... Old names stay importable with a `DeprecationWarning` until 1.0.0.
+- `CalibrationToken` fields (`empreinte_poids`, `horodatage_gel`) and its `verifier` method, and `DataManagement`'s `pour_entrainement`/`pour_test`/`pour_calibration` methods, are renamed without alias (fields and methods, not classes/functions — ADR 0001 rule 6).
+- Prose (docstrings, comments, messages) of all eight modules is translated to English and enrolled in the language and identifier guards.
+
 ### Remediation — PLAN.md phase 3.9, wave 5, fifth batch: light modules (rename only)
 
 - `SubstitutAnalytique`, `SubstitutAppris`, `SubstitutDense`, the token helpers, `facteur_lumiere_jour`, `valider_gradient`, `Indicateur`... are English (`AnalyticSurrogate`, `plan_to_tokens`, `daylight_factor`, `validate_gradient`, `Indicator`). Old names stay importable with a `DeprecationWarning` until 1.0.0. Methods `ajuster`, `sauver`, `n_parametres` become `fit`, `save`, `n_parameters` without alias.

@@ -11,8 +11,8 @@ import numpy as np
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.types import Orientation
-from archlux.uq.conforme import CalibrateurConforme
-from archlux.uq.fiabilite import stratifier_par_orientation
+from archlux.uq.conforme import ConformalCalibrator
+from archlux.uq.fiabilite import stratify_by_orientation
 
 
 def _tirer(rng: np.random.Generator, n: int) -> tuple[list[np.ndarray], list[Orientation]]:
@@ -45,7 +45,7 @@ def test_couverture_empirique() -> None:
     xs_cal, os_cal = _tirer(rng, 220)
     xs_test, os_test = _tirer(rng, 280)
     p_cal, v_cal, s_cal = _evaluer(modele, oracle, xs_cal, os_cal)
-    calibrateur = CalibrateurConforme()
+    calibrateur = ConformalCalibrator()
     calibrateur.fit(p_cal, v_cal, s_cal, alpha=0.10)
     p_test, v_test, s_test = _evaluer(modele, oracle, xs_test, os_test)
     # Couverture d'intervalle (les deux côtés) : « la borne haute compte autant ».
@@ -67,9 +67,9 @@ def test_calibration_tient_par_orientation() -> None:
     degres = rng.uniform(0.0, 360.0, n)
     cal = slice(0, 800)
     test = slice(800, 1600)
-    calibrateur = CalibrateurConforme()
+    calibrateur = ConformalCalibrator()
     calibrateur.fit(mu[cal], y[cal], sigma[cal], alpha=0.10)
-    bacs = stratifier_par_orientation(degres[test])
+    bacs = stratify_by_orientation(degres[test])
     for secteur, idx_rel in bacs.items():
         if idx_rel.size < 40:
             continue
@@ -84,14 +84,14 @@ def test_calibration_tient_par_orientation() -> None:
 
 def test_derive_bornee_sur_oracle_gelé() -> None:
     """L'analytique ne dérive pas de façon explosive contre le split-flux i.i.d."""
-    from archlux.uq.derive import mesurer_derive
+    from archlux.uq.derive import measure_drift
 
     rng = np.random.default_rng(9)
     modele = AnalyticSurrogate()
     oracle = SplitFluxOracle()
     xs, os_ = _tirer(rng, 40)
     pred, verite, _sigma = _evaluer(modele, oracle, xs, os_)
-    rapport = mesurer_derive(pred, verite, seed=9)
+    rapport = measure_drift(pred, verite, seed=9)
     amplitude = float(np.std(verite) + 1e-9)
     assert abs(rapport.derive_moyenne) < 3.0 * amplitude
     assert rapport.tendance_pvalue > 0.05 or rapport.tendance_pente <= 0.0

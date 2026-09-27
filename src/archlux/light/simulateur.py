@@ -20,7 +20,7 @@ from archlux.errors import InvariantViolation
 from archlux.light.analytique import AnalyticSurrogate, sector_factor
 from archlux.light.jetons import FIELDS_PER_ROOM
 from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encoder
+from archlux.orient.circulaire import encode_orientation
 from archlux.types import Indicator, Orientation
 
 __all__ = ["SplitFluxOracle", "daylight_factor"]
@@ -37,7 +37,7 @@ _DENOM_REFLET = 1.0 - _REFLECTANCE * _REFLECTANCE
 
 def _facade_sud(w: float, h: float, orientation: Orientation) -> float:
     """Longueur de façade au sud géographique, même convention que l'analytique."""
-    features = encoder(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmoniques=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
     return w * cos2 + h * sin2
@@ -45,7 +45,7 @@ def _facade_sud(w: float, h: float, orientation: Orientation) -> float:
 
 def _derivees_facade(orientation: Orientation) -> tuple[float, float]:
     """∂L/∂w et ∂L/∂h pour la façade sud."""
-    features = encoder(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmoniques=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
     return cos2, sin2

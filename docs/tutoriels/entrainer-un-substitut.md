@@ -52,7 +52,7 @@ def disposition(rng: np.random.Generator) -> np.ndarray:
 ```python
 from archlux.light.base import DenseSurrogate
 from archlux.light.simulateur import SplitFluxOracle
-from archlux.uq.gestion import emettre_jeton
+from archlux.uq.gestion import issue_token
 
 sim = SplitFluxOracle()
 rng = np.random.default_rng(17)
@@ -66,7 +66,7 @@ dense.fit(xs, ys, orientations, seed=17, epoques=30)
 Path("poids").mkdir(exist_ok=True)
 chemin = Path("poids/dense.npz")
 empreinte = dense.save(chemin)
-jeton = emettre_jeton(empreinte, "2026-09-09T10:00:00Z")  # après gel
+token = issue_token(empreinte, "2026-09-09T10:00:00Z")  # après gel
 ```
 
 `sauver` rend l'empreinte SHA-256 du fichier écrit ; le jeton la lie à l'instant du

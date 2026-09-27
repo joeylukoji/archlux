@@ -21,8 +21,8 @@ from archlux.types import (
     PerformanceBound,
 )
 from archlux.uq.conforme import Calibration
-from archlux.uq.derive import DiagnosticDerive, controler_derive, mesurer_derive
-from archlux.uq.fiabilite import crps, diagramme_fiabilite, stratifier_par_orientation
+from archlux.uq.derive import DriftDiagnostic, check_drift, measure_drift
+from archlux.uq.fiabilite import crps, reliability_diagram, stratify_by_orientation
 
 
 def _poly() -> Polytope:
@@ -102,7 +102,7 @@ def test_non_evaluable_toujours_present() -> None:
 def test_construire_borne_refuse_la_derive() -> None:
     scores = np.abs(np.random.default_rng(0).normal(0.0, 1.0, 40))
     calibration = Calibration(scores, 0.10, "sDA", "abc")
-    derive = DiagnosticDerive(
+    derive = DriftDiagnostic(
         echangeable=False,
         statistique=0.4,
         seuil=0.05,
@@ -110,7 +110,7 @@ def test_construire_borne_refuse_la_derive() -> None:
         message="dérive",
     )
     assert build_bound(50.0, calibration, derive, uncertainty=1.0, regime="exchangeable") is None
-    ok = DiagnosticDerive(True, 0.05, 0.05, 20, "ok")
+    ok = DriftDiagnostic(True, 0.05, 0.05, 20, "ok")
     borne = build_bound(50.0, calibration, ok, uncertainty=1.0, regime="exchangeable")
     assert borne is not None
     assert borne.n_calibration == 40
@@ -120,15 +120,15 @@ def test_controler_derive_detecte_un_decalage() -> None:
     rng = np.random.default_rng(4)
     cal = Calibration(np.abs(rng.normal(0.0, 1.0, 80)), 0.10, "sDA", "c")
     memes = np.abs(rng.normal(0.0, 1.0, 80))
-    assert controler_derive(memes, cal, seed=17).echangeable
+    assert check_drift(memes, cal, seed=17).echangeable
     decales = np.abs(rng.normal(3.0, 1.0, 80))
-    assert not controler_derive(decales, cal, seed=17).echangeable
+    assert not check_drift(decales, cal, seed=17).echangeable
 
 
 def test_mesurer_derive_positive_si_surestimation() -> None:
     pred = np.array([10.0, 11.0, 12.0, 13.0])
     verite = np.array([9.0, 10.0, 11.0, 12.0])
-    rapport = mesurer_derive(pred, verite, seed=1)
+    rapport = measure_drift(pred, verite, seed=1)
     assert rapport.derive_moyenne == pytest.approx(1.0)
     assert rapport.n_echantillons == 4
 
@@ -145,14 +145,14 @@ def test_diagramme_fiabilite_est_un_tableau() -> None:
     mu = rng.normal(0.0, 1.0, 80)
     y = mu + rng.normal(0.0, 1.0, 80)
     sigma = np.ones(80)
-    grille = diagramme_fiabilite(mu, y, sigma, niveaux=np.array([0.80, 0.90]))
+    grille = reliability_diagram(mu, y, sigma, niveaux=np.array([0.80, 0.90]))
     assert grille.shape == (2, 2)
     assert grille[0, 0] == pytest.approx(0.80)
 
 
 def test_stratifier_huit_secteurs() -> None:
     degres = np.array([0.0, 45.0, 90.0, 180.0, 359.0])
-    bacs = stratifier_par_orientation(degres)
+    bacs = stratify_by_orientation(degres)
     assert set(bacs) == set(range(8))
     assert 0 in bacs[0]
     assert 4 in bacs[7]

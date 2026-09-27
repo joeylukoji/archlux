@@ -26,7 +26,7 @@ from archlux.io.json_io import SCHEMA_VERSION, from_dict, to_dict
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
-from archlux.uq.conforme import CalibrateurConforme, Calibration
+from archlux.uq.conforme import Calibration, ConformalCalibrator
 from tests.proprietes.strategies import plans_quelconques, realistic_scenarios
 
 
@@ -61,7 +61,7 @@ def test_every_written_plan_matches_the_schema(plan: Plan) -> None:
 def _calibration() -> Calibration:
     rng = np.random.default_rng(5)
     predictions = rng.normal(50.0, 5.0, 60)
-    calibrator = CalibrateurConforme(indicator="sDA")
+    calibrator = ConformalCalibrator(indicator="sDA")
     calibrator.fit(predictions, predictions + rng.normal(0.0, 1.0, 60), np.ones(60))
     return calibrator.snapshot()
 

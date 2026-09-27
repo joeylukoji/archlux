@@ -13,7 +13,7 @@ from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, decision_vector, vectorize
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.uq.conforme import ConformalCalibrator
 from archlux.uq.fiabilite import measure_coverage
 from tests.proprietes.strategies import CONTEXTE_DEFAUT, realistic_scenarios
 
@@ -54,7 +54,7 @@ def test_measure_coverage_on_gaussian_noise() -> None:
     rng = np.random.default_rng(3)
     mu = rng.normal(50.0, 10.0, 4000)
     y = mu + rng.normal(0.0, 1.0, 4000)
-    calibrator = CalibrateurConforme()
+    calibrator = ConformalCalibrator()
     calibrator.fit(mu[:2000], y[:2000], np.ones(2000), alpha=0.10)
     report = measure_coverage(calibrator, mu[2000:], y[2000:], np.ones(2000), regime="exchangeable")
     assert report.n == 2000
@@ -67,7 +67,7 @@ def test_measure_coverage_on_gaussian_noise() -> None:
 
 
 def test_measure_coverage_refuses_a_zero_uncertainty() -> None:
-    calibrator = CalibrateurConforme()
+    calibrator = ConformalCalibrator()
     calibrator.fit(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
     sigma = np.array([1.0, 0.0, 1.0])
     with pytest.raises(InvariantViolation, match="strictly positive"):
@@ -75,7 +75,7 @@ def test_measure_coverage_refuses_a_zero_uncertainty() -> None:
 
 
 def test_measure_coverage_refuses_misaligned_arrays() -> None:
-    calibrator = CalibrateurConforme()
+    calibrator = ConformalCalibrator()
     calibrator.fit(np.zeros(30), np.ones(30), np.ones(30), alpha=0.10)
     with pytest.raises(InvariantViolation):
         measure_coverage(calibrator, np.zeros(3), np.ones(3), np.ones(2), regime="selected")

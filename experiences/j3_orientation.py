@@ -14,7 +14,7 @@ from pathlib import Path
 import archlux as ax
 from archlux.export.svg import planche
 from archlux.light.analytique import AnalyticSurrogate
-from archlux.orient.circulaire import regression_circulaire_lineaire as fit
+from archlux.orient.circulaire import circular_linear_regression as fit
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "resultats")
 C = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))

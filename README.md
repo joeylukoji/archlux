@@ -177,7 +177,7 @@ factor, not a simulation).
 import numpy as np
 
 from archlux.light import Daylight, SplitFluxOracle, AnalyticSurrogate
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.uq.conforme import ConformalCalibrator
 
 surrogate, oracle = AnalyticSurrogate(), SplitFluxOracle()
 rng = np.random.default_rng(17)
@@ -187,7 +187,7 @@ for _ in range(200):
     held_out.append(np.array([0, 0, w, 9, w, 0, 12 - w, h, w, h, 12 - w, 9 - h], float))
 
 azimuth = ctx.orientation
-calibrator = CalibrateurConforme(indicator="sDA")
+calibrator = ConformalCalibrator(indicator="sDA")
 calibrator.fit(
     np.array([surrogate.evaluate(x, azimuth) for x in held_out]),
     np.array([oracle.evaluate(x, azimuth) for x in held_out]),
@@ -491,7 +491,7 @@ and test (20 %, opened once). If the calibration set leaks into training, the co
 guarantee is silently wrong, and no test or review would notice. `uq.gestion` keeps
 three distinct directories and hands out the calibration set against a token issued
 after the model is frozen. This is a checkable discipline, not a lock: the token is an
-unkeyed checksum, and `CalibrateurConforme` calibrates from plain arrays without asking
+unkeyed checksum, and `ConformalCalibrator` calibrates from plain arrays without asking
 for it (the module docstring lists the known bypasses).
 
 ---

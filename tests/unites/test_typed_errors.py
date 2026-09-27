@@ -17,10 +17,10 @@ from archlux.export.svg import planche
 from archlux.geom.diagnostic import diagnose
 from archlux.light.jetons import permute_rooms
 from archlux.orient.circulaire import (
+    circular_linear_regression,
+    circular_variance,
     encode,
-    regression_circulaire_lineaire,
-    stratifier,
-    variance_circulaire,
+    stratify,
 )
 from archlux.types import Regulation
 
@@ -41,10 +41,10 @@ def one_room_plan() -> Plan:
     ("call", "field"),
     [
         (lambda: encode(10.0, harmoniques=0), "harmoniques"),
-        (lambda: variance_circulaire([]), "degres"),
-        (lambda: regression_circulaire_lineaire([1.0, 2.0], [1.0]), "theta"),
-        (lambda: regression_circulaire_lineaire([1.0, 2.0], [1.0, 2.0]), "theta"),
-        (lambda: stratifier([1.0, 2.0], n_secteurs=0), "n_secteurs"),
+        (lambda: circular_variance([]), "degres"),
+        (lambda: circular_linear_regression([1.0, 2.0], [1.0]), "theta"),
+        (lambda: circular_linear_regression([1.0, 2.0], [1.0, 2.0]), "theta"),
+        (lambda: stratify([1.0, 2.0], n_secteurs=0), "n_secteurs"),
         (lambda: planche(()), "volets"),
         (lambda: diagnose(Plan(rooms=(), walls=(), openings=(), outline=SQUARE)), "rooms"),
         (lambda: permute_rooms(one_room_plan(), (0, 1)), "ordre"),

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import wilcoxon
 
-from archlux.active import Aleatoire, Loop, UncertaintyTimesDensity
+from archlux.active import Loop, RandomStrategy, UncertaintyTimesDensity
 from archlux.data.synthese import two_room_vectors
 from archlux.light.base import DenseSurrogate
 from archlux.light.simulateur import SplitFluxOracle
@@ -41,7 +41,9 @@ seeds = [derive(17, f"campaign/{k}") for k in range(30)]
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(("seed", "width_random", "width_active"))
-    rows = [(s, campaign(Aleatoire(), s), campaign(UncertaintyTimesDensity(), s)) for s in seeds]
+    rows = [
+        (s, campaign(RandomStrategy(), s), campaign(UncertaintyTimesDensity(), s)) for s in seeds
+    ]
     writer.writerows((s, f"{a:.6f}", f"{b:.6f}") for s, a, b in rows)
 gain = np.array([a - b for _, a, b in rows])  # > 0: active is narrower
 p_value, wins = wilcoxon(gain).pvalue, int((gain > 0).sum())

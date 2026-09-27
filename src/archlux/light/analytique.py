@@ -23,7 +23,7 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encoder
+from archlux.orient.circulaire import encode_orientation
 from archlux.types import Indicator, Orientation
 
 __all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
@@ -71,7 +71,7 @@ def sector_factor(orientation: Orientation) -> float:
     float
         Un element de :data:`FACTEURS_SECTEUR`, dans ``[0.45, 1.00]``.
     """
-    features = encoder(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmoniques=1)
     azimut = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
     secteur = int((azimut + 22.5) // 45.0) % 8
     return FACTEURS_SECTEUR[secteur]
@@ -170,7 +170,7 @@ class AnalyticSurrogate:
         """Score positif de chaque pièce, sans le signe de l'indicateur."""
         vecteur = np.asarray(x, dtype=float).ravel()
         n_pieces = vecteur.size // _N_CHAMPS
-        features = encoder(orientation, harmoniques=1)
+        features = encode_orientation(orientation, harmoniques=1)
         cos_t, sin_t = float(features[0]), float(features[1])
         cos2, sin2 = cos_t * cos_t, sin_t * sin_t
         profondeur_utile = (
@@ -201,7 +201,7 @@ class AnalyticSurrogate:
         n_pieces = vecteur.size // _N_CHAMPS
         gradient = np.zeros_like(vecteur, dtype=float)
 
-        features = encoder(orientation, harmoniques=1)
+        features = encode_orientation(orientation, harmoniques=1)
         cos_t = float(features[0])
         sin_t = float(features[1])
         cos2 = cos_t * cos_t

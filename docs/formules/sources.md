@@ -126,7 +126,7 @@ Uniquement des ouvrages et articles **consultables**, avec une localisation
 24. Scott, D. W. (1992). *Multivariate Density Estimation: Theory, Practice, and
     Visualization*. Wiley. [doi:10.1002/9780470316849](https://doi.org/10.1002/9780470316849)
     §6.3 : règle de la largeur de bande \(h \propto n^{-1/(d+4)}\).
-    — `active.densite.densite_noyau`.
+    — `active.densite.kernel_density`.
 
 25. Silverman, B. W. (1986). *Density Estimation for Statistics and Data Analysis*.
     Chapman & Hall. §4.3 : noyau gaussien isotrope, fléau de la dimension.

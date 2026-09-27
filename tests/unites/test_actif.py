@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from archlux.active.boucle import Loop
-from archlux.active.densite import densite_noyau
-from archlux.active.selection import Aleatoire, UncertaintyTimesDensity
+from archlux.active.densite import kernel_density
+from archlux.active.selection import RandomStrategy, UncertaintyTimesDensity
 from archlux.types import Orientation
 
 
@@ -24,15 +24,15 @@ def test_produit_nul_ecarte_le_candidat() -> None:
 def test_aleatoire_est_deterministe_avec_seed() -> None:
     inc = np.ones(20)
     dens = np.ones(20)
-    a = Aleatoire().selectionner(inc, dens, n=5, seed=42)
-    b = Aleatoire().selectionner(inc, dens, n=5, seed=42)
+    a = RandomStrategy().selectionner(inc, dens, n=5, seed=42)
+    b = RandomStrategy().selectionner(inc, dens, n=5, seed=42)
     assert np.array_equal(a, b)
 
 
 def test_densite_plus_haute_pres_de_la_reference() -> None:
     ref = np.array([[0.0, 0.0], [0.1, 0.0], [-0.1, 0.05]])
     cand = np.array([[0.0, 0.0], [5.0, 5.0]])
-    d = densite_noyau(cand, ref)
+    d = kernel_density(cand, ref)
     assert d[0] > d[1]
 
 
@@ -163,7 +163,7 @@ def test_actif_bat_l_aleatoire() -> None:
         assert rapport.n_calibration == len(calib)
         return rapport.largeur_intervalle_finale
 
-    largeur_aleatoire = _campagne(Aleatoire())
+    largeur_aleatoire = _campagne(RandomStrategy())
     largeur_actif = _campagne(UncertaintyTimesDensity())
     assert largeur_actif < largeur_aleatoire, (
         f"actif={largeur_actif:.4f} aleatoire={largeur_aleatoire:.4f}"

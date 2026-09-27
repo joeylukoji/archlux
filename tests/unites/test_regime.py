@@ -20,7 +20,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import point_prediction
 from archlux.types import Certificate, GeometricProof, PerformanceBound, Regulation
-from archlux.uq.conforme import CalibrateurConforme, Calibration, borner, dataset_fingerprint
+from archlux.uq.conforme import Calibration, ConformalCalibrator, bound, dataset_fingerprint
 from tests.proprietes.strategies import CONTEXTE_DEFAUT
 
 
@@ -53,7 +53,7 @@ def _calibration(indicator: str = "sDA", n: int = 60) -> Calibration:
     rng = np.random.default_rng(5)
     predictions = rng.normal(50.0, 5.0, n)
     truths = predictions + rng.normal(0.0, 1.0, n)
-    calibrator = CalibrateurConforme(indicator=indicator)  # type: ignore[arg-type]
+    calibrator = ConformalCalibrator(indicator=indicator)  # type: ignore[arg-type]
     calibrator.fit(predictions, truths, np.ones(n), alpha=0.10)
     return calibrator.snapshot()
 
@@ -109,12 +109,12 @@ def test_the_report_never_claims_the_coverage_of_a_selected_plan() -> None:
 def test_the_uncertainty_scale_is_mandatory() -> None:
     """The former default ``incertitude=1.0`` was wrong for normalized scores."""
     with pytest.raises(TypeError):
-        borner(50.0, _calibration(), regime="exchangeable")  # type: ignore[call-arg]
+        bound(50.0, _calibration(), regime="exchangeable")  # type: ignore[call-arg]
 
 
 def test_the_regime_is_mandatory() -> None:
     with pytest.raises(TypeError):
-        borner(50.0, _calibration(), uncertainty=1.0)  # type: ignore[call-arg]
+        bound(50.0, _calibration(), uncertainty=1.0)  # type: ignore[call-arg]
 
 
 # --- The fingerprint ----------------------------------------------------------------------
@@ -126,7 +126,7 @@ def test_the_fingerprint_identifies_the_data_set_not_the_scores() -> None:
     predictions = rng.normal(50.0, 5.0, 30)
     truths = predictions + rng.normal(0.0, 1.0, 30)
     sigma = np.ones(30)
-    first, second = CalibrateurConforme(), CalibrateurConforme()
+    first, second = ConformalCalibrator(), ConformalCalibrator()
     first.fit(predictions, truths, sigma)
     second.fit(predictions + 10.0, truths + 10.0, sigma)
     assert first.scores is not None and second.scores is not None
@@ -262,7 +262,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=AnalyticSurrogate())
     too_small = Calibration(scores=np.ones(5), alpha=0.10, indicator="sDA", empreinte_jeu="x")
-    with pytest.raises(InvariantViolation, match="trop petit"):
+    with pytest.raises(InvariantViolation, match="too small"):
         archlux.legalize(
             _plan(),
             tiny_ctx,
@@ -296,7 +296,7 @@ def test_no_uncertainty_at_the_plan_gives_no_bound_not_a_lost_plan() -> None:
 def test_the_fingerprint_is_computed_on_the_raw_uncertainties() -> None:
     """Review m3: a third party recomputes it on the published data, before any floor."""
     predictions, truths = np.array([1.0, 2.0]), np.array([1.5, 2.5])
-    zero, tiny = CalibrateurConforme(), CalibrateurConforme()
+    zero, tiny = ConformalCalibrator(), ConformalCalibrator()
     zero.fit(predictions, truths, np.array([0.0, 1.0]), alpha=0.5)
     tiny.fit(predictions, truths, np.array([1e-13, 1.0]), alpha=0.5)
     assert zero.empreinte_jeu != tiny.empreinte_jeu
@@ -306,4 +306,4 @@ def test_the_fingerprint_is_computed_on_the_raw_uncertainties() -> None:
 @pytest.mark.parametrize("bad", [-1.0, np.nan, np.inf])
 def test_a_negative_or_non_finite_uncertainty_is_refused(bad: float) -> None:
     with pytest.raises(InvariantViolation, match="uncertainties"):
-        CalibrateurConforme().fit(np.ones(3), np.ones(3), np.array([1.0, bad, 1.0]))
+        ConformalCalibrator().fit(np.ones(3), np.ones(3), np.array([1.0, bad, 1.0]))
