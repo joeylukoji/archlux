@@ -15,7 +15,7 @@ from hypothesis import given, settings
 from archlux.errors import InvariantViolation
 from archlux.io.json_io import VERSION_SCHEMA, from_dict, to_dict
 from archlux.types import Certificate, GeometricProof, Opening, Plan, Room, Wall
-from tests.proprietes.strategies import plans_quelconques
+from tests.properties.strategies import plans_quelconques
 
 PLAN_T2 = Plan(
     rooms=(

@@ -19,7 +19,7 @@ from archlux.data.corruption import corrupt
 from archlux.errors import ArchluxError
 from archlux.types import Context, Plan
 from tests import checkers
-from tests.proprietes.strategies import (
+from tests.properties.strategies import (
     GATE_EXAMPLES,
     contextes,
     plans_quelconques,

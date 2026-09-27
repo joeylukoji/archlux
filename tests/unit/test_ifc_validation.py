@@ -17,7 +17,7 @@ from hypothesis import given, settings
 
 from archlux.export import diagnose, to_ifc
 from archlux.types import Opening, Plan, Room, Wall
-from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
 
 _GUID = re.compile(r"^[0-3][0-9A-Za-z_$]{21}$")
 

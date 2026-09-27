@@ -10,7 +10,7 @@ import pytest
 
 from archlux import GeometricProof, InvalidInput, Opening, Orientation, Plan
 from archlux.types import Context, Regulation, Structure
-from tests.unites.test_hostile_inputs import SQUARE, make_plan
+from tests.unit.test_hostile_inputs import SQUARE, make_plan
 
 
 def proof(**changes: object) -> GeometricProof:
@@ -100,7 +100,7 @@ def test_unknown_room_type_warns_when_the_regulation_has_thresholds() -> None:
 
 def test_no_warning_when_the_regulation_has_no_threshold() -> None:
     from archlux import legalize
-    from tests.unites.test_hostile_inputs import make_context
+    from tests.unit.test_hostile_inputs import make_context
 
     with warnings.catch_warnings():
         warnings.simplefilter("error")

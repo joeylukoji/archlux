@@ -13,7 +13,7 @@ from hypothesis import given, settings
 
 from archlux.certify.proof import rational_tiling, verify_exactly
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
-from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
 
 _OUTLINE = ((0.0, 0.0), (0.6, 0.0), (0.6, 1.0), (0.0, 1.0))
 

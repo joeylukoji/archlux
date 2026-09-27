@@ -25,7 +25,7 @@ from archlux.geom.graphe import deduce_order
 from archlux.geom.rectilineaire import decompose
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
-from tests.proprietes.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import CONTEXTE_DEFAUT
 
 # --- C1: the scope of an infeasibility certificate ---------------------------------------
 
@@ -254,7 +254,7 @@ def test_the_scope_names_only_what_the_domain_contains() -> None:
 
 def test_members_on_opposite_sides_share_the_side_of_their_bounding_box() -> None:
     """The fallback of an L straddling a wall is recorded, hence named in the scope."""
-    from tests.unites.test_l_rooms import _l_in_tiling
+    from tests.unit.test_l_rooms import _l_in_tiling
 
     plan, ctx, room = _l_in_tiling(wall_x=1.4)
     members = tuple(r.id for r in room.rectangles)

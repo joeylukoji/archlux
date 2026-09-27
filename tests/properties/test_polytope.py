@@ -12,7 +12,7 @@ from hypothesis import given, settings
 from archlux.geom.graphe import RelativeOrder, deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
 from archlux.types import Context, Plan
-from tests.proprietes.strategies import (
+from tests.properties.strategies import (
     CONTEXTE_DEFAUT,
     contextes,
     ordres_valides,

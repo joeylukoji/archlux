@@ -20,7 +20,7 @@ from archlux.geom.polytope import build_polytope, vectorize
 from archlux.geom.rectilineaire import RectilinearRoom, decompose, extend_merges
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
-from tests.proprietes.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import CONTEXTE_DEFAUT
 
 
 def _pushed_l_plan() -> tuple[Plan, Context, RectilinearRoom]:

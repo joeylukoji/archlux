@@ -21,7 +21,7 @@ from archlux.light.objectif import Daylight
 from archlux.light.protocole import point_prediction
 from archlux.types import Certificate, GeometricProof, PerformanceBound, Regulation
 from archlux.uq.conforme import Calibration, ConformalCalibrator, bound, dataset_fingerprint
-from tests.proprietes.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import CONTEXTE_DEFAUT
 
 
 def _bound(**changes: object) -> PerformanceBound:

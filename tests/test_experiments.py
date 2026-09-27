@@ -1,7 +1,7 @@
 """Every experiment script runs (PLAN.md phase 2: `experiences/` was outside the tests).
 
 Synthetic scripts run in full into a temporary directory. Corpus scripts (MSD) run on a
-small MSD-format CSV built here, as ``tests/unites/test_chargeurs.py`` does: the real
+small MSD-format CSV built here, as ``tests/unit/test_chargeurs.py`` does: the real
 corpus is not redistributed, but a script that no longer runs is caught before anyone
 spends an afternoon on the corpus. Byte-for-byte reproduction of ``resultats/`` is
 checked by ``make check-resultats``, not here: floating-point output may differ in the
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from shapely.geometry import box
 
-from tests.unites.test_chargeurs import _ecrire_csv
+from tests.unit.test_chargeurs import _ecrire_csv
 
 ROOT = Path(__file__).resolve().parents[1]
 SYNTHETIC = {

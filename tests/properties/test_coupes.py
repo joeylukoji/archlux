@@ -12,7 +12,7 @@ from hypothesis import strategies as st
 from archlux.geom.polytope import build_polytope
 from archlux.lmo.cuts import area_cut, solve_with_areas
 from archlux.types import Context, Orientation, Regulation, Room, Structure
-from tests.proprietes.strategies import ordres_valides
+from tests.properties.strategies import ordres_valides
 
 
 @given(

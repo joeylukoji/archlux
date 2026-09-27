@@ -27,7 +27,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
 from archlux.uq.conforme import Calibration, ConformalCalibrator
-from tests.proprietes.strategies import plans_quelconques, realistic_scenarios
+from tests.properties.strategies import plans_quelconques, realistic_scenarios
 
 
 def _schema() -> dict[str, Any]:
@@ -117,7 +117,7 @@ def _a_scenario() -> tuple[Plan, Context]:
     from dataclasses import replace
 
     from archlux.types import Regulation, Room, Structure, Wall
-    from tests.proprietes.strategies import CONTEXTE_DEFAUT
+    from tests.properties.strategies import CONTEXTE_DEFAUT
 
     wall = Wall(id="lb", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True)
     ctx = replace(

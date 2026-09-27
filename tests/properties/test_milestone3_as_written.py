@@ -24,7 +24,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
 from tests import checkers
-from tests.proprietes.strategies import (
+from tests.properties.strategies import (
     GATE_EXAMPLES,
     contextes,
     plans_quelconques,

@@ -12,7 +12,7 @@ from archlux.errors import InvariantViolation
 from archlux.export import diagnose, survival_rate, to_dxf, to_ifc
 from archlux.export.wilson import wilson_interval
 from archlux.types import Plan, Room, Wall
-from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
 
 
 def _plan_sain() -> Plan:

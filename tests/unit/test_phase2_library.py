@@ -15,7 +15,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from archlux.uq.conforme import ConformalCalibrator
 from archlux.uq.fiabilite import measure_coverage
-from tests.proprietes.strategies import CONTEXTE_DEFAUT, realistic_scenarios
+from tests.properties.strategies import CONTEXTE_DEFAUT, realistic_scenarios
 
 
 def test_the_decision_vector_matches_the_polytope_columns() -> None:

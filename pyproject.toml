@@ -56,7 +56,7 @@ packages = ["src/archlux"]
 # benchmarks/ est inclus : sans lui, `pytest -m budget` de la CI ne collecte rien et le
 # job « budgets » passe au vert sans avoir rien mesuré.
 testpaths = ["tests", "benchmarks"]
-# Rend `tests.proprietes.strategies` importable : les stratégies Hypothesis sont
+# Rend `tests.properties.strategies` importable : les stratégies Hypothesis sont
 # partagées entre jalons, elles ne peuvent pas vivre dans un seul fichier de test.
 pythonpath = ["."]
 addopts = "-q --strict-markers"

@@ -11,7 +11,7 @@ from archlux.errors import Infeasible
 from archlux.geom.graphe import deduce_order
 from archlux.geom.polytope import build_polytope, extend_l1_slack, vectorize
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
-from tests.proprietes.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import CONTEXTE_DEFAUT
 
 
 def test_gradient_distance_a_la_dimension_double() -> None:

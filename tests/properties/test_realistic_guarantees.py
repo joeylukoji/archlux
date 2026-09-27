@@ -22,7 +22,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
 from archlux.types import Context, Plan
 from tests import checkers
-from tests.proprietes.strategies import GATE_EXAMPLES, realistic_scenarios
+from tests.properties.strategies import GATE_EXAMPLES, realistic_scenarios
 
 # One failure per test, so that ``xfail(raises=...)`` sees a plain exception rather than
 # an ExceptionGroup of several distinct bugs.

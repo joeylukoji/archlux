@@ -19,7 +19,7 @@ from archlux.geom.rectilineaire import MERGE_RIGHT, MERGE_TOP, RectilinearRoom
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.types import Context, Plan, Room
 from tests import checkers
-from tests.proprietes.strategies import GATE_EXAMPLES, realistic_scenarios
+from tests.properties.strategies import GATE_EXAMPLES, realistic_scenarios
 
 _SETTINGS = settings(
     max_examples=GATE_EXAMPLES, deadline=None, derandomize=True, report_multiple_bugs=False

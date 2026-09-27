@@ -19,7 +19,7 @@ from archlux.geom.polytope import build_polytope, freeze_contacts
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
-from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
 
 ANALYTIQUE = AnalyticSurrogate()
 

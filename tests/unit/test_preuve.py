@@ -15,7 +15,7 @@ from archlux.types import (
     Structure,
     Wall,
 )
-from tests.proprietes.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import CONTEXTE_DEFAUT
 
 CTX = CONTEXTE_DEFAUT
 

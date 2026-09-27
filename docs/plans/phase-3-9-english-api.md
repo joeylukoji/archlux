@@ -16,7 +16,7 @@ PLAN.md sized this at "about 25 symbols". Measured on 2026-09-25 it is much larg
   keyword parameters), and **10 model types** carry about 45 French field names;
 - the main types are used everywhere: `Piece` about 370 times, `Contexte` about 240,
   `Referentiel` about 130, `InvariantViole` about 350, of which 247 in the library itself;
-- about 35 module files and 5 directory names (`tests/unites`, `tests/proprietes`,
+- about 35 module files and 5 directory names (`tests/unit`, `tests/properties`,
   `experiences`, `resultats`, `tests/references`) are French;
 - the room types are French *data* (`sejour`, `chambre`, `sdb`...) stored in JSON files,
   regulations and surrogate encoders.
@@ -126,7 +126,7 @@ For each module:
 
 ### Wave 6: directory names
 
-25. `tests/unites`, `tests/proprietes`, `tests/references`, then `experiences` and
+25. `tests/unit`, `tests/properties`, `tests/references`, then `experiences` and
     `resultats` (these two touch the Makefile, the results script, the fingerprint file,
     the CI workflow and the documentation), one commit each.
 

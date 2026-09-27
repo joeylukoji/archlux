@@ -17,7 +17,7 @@ from archlux.geom.graphe import (
     transitive_reduction,
 )
 from archlux.types import Plan
-from tests.proprietes.strategies import ordres_valides, plans_quelconques
+from tests.properties.strategies import ordres_valides, plans_quelconques
 
 
 @given(plan=plans_quelconques())

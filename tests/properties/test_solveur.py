@@ -10,7 +10,7 @@ from archlux.geom.graphe import RelativeOrder
 from archlux.geom.polytope import build_polytope
 from archlux.lmo.solveur import solve
 from archlux.types import Context
-from tests.proprietes.strategies import contextes, ordres_valides, vecteurs_objectifs
+from tests.properties.strategies import contextes, ordres_valides, vecteurs_objectifs
 
 
 @given(ordre=ordres_valides(), ctx=contextes(), tirage=st.data())

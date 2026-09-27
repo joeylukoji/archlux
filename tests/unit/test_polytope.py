@@ -186,7 +186,7 @@ class TestVectorisation:
 
 
 class TestStructurePorteuse:
-    """`A_eq` shape — see ADR-7 and tests/unites/test_load_bearing.py."""
+    """`A_eq` shape — see ADR-7 and tests/unit/test_load_bearing.py."""
 
     def test_a_eq_est_vide_mais_bien_dimensionnee(self) -> None:
         """Load-bearing walls are inequality rows (``OrdreRelatif.wall_sides``), not

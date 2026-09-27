@@ -11,7 +11,7 @@ from hypothesis import given, settings
 
 import archlux
 from archlux.types import Plan
-from tests.proprietes.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
 
 
 @given(plan=plans_valides())

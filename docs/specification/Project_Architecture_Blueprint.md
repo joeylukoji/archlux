@@ -21,7 +21,7 @@ quatre mécanismes indépendants, chacun capable d'attraper la faute seul.
 | Mécanisme | Où | Ce qu'il attrape |
 |---|---|---|
 | Types disjoints | `PreuveGeometrique` / `BornePerformance` | Une probabilité glissée dans une preuve |
-| Test d'invariant | `tests/proprietes/test_invariants_types.py` | L'ajout d'un champ probabiliste à la preuve |
+| Test d'invariant | `tests/properties/test_invariants_types.py` | L'ajout d'un champ probabiliste à la preuve |
 | Section `Guarantees` | Toute docstring rendant un `Plan` ou `Certificat` | Une garantie affirmée sans sa nature |
 | Rendu séparé | `certify/rapport.py` | Un score composite agrégeant les deux |
 
@@ -233,7 +233,7 @@ Chacune des règles contraignantes est donc doublée d'un mécanisme automatique
 | §5 — `lmo` ⇏ `light` | Test dédié | idem |
 | §5 — `solve` ⇒ `light.protocole` seul | Test dédié (l'implémentation est refusée) | idem |
 | §5 — personne n'importe `bench` | Test dédié | idem |
-| §6 — types gelés | `is_dataclass` + `__dataclass_params__.frozen` | `tests/proprietes/test_invariants_types.py` |
+| §6 — types gelés | `is_dataclass` + `__dataclass_params__.frozen` | `tests/properties/test_invariants_types.py` |
 | §6 — preuve sans probabilité | Liste noire de noms de champs | idem |
 | §6 — borne avec couverture | Liste blanche de champs obligatoires | idem |
 | §6 — ouverture sans position absolue | Liste noire de noms de champs | idem |

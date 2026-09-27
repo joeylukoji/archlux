@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Remediation — PLAN.md phase 3.9, wave 6: rename tests/unites and tests/proprietes
+
+- `tests/unites` becomes `tests/unit` (the glossary's own documented target, not `tests/units`); `tests/proprietes` becomes `tests/properties`. Every Python import, doc reference and the `pyproject.toml` comment are updated. `tests/references` needs no rename: the name already reads correctly in English.
+- Historical, dated documents (`AUDIT.md`, `PLAN.md`, `docs/revues/*.md`, `docs/specification/MILESTONE-2.md`) are left untouched, as agreed for those tracks.
+- Found and fixed along the way: a stale `RapportExport` reference in `src/archlux/types.py` (predates this wave — batch 7 renamed the class but missed this cross-module forward reference), and two glossary table rows whose parenthetical asides put `Plan`/`Manifest`/`Corruption` in backticks in the French column, which made `test_identifiers.py` treat them as banned; reworded without backticks.
+
 ### Remediation — PLAN.md phase 3.9, wave 5, seventh batch: export, data and bench
 
 - `archlux.export`, `archlux.data` and `archlux.bench` are English: `ExportReport`, `MSDApartment`, `LoadStatistics`, `Split`, `Corruption.corrupt`, `BenchReport`, `Result`, `Interval`... Old names stay importable with a `DeprecationWarning` until 1.0.0.
@@ -266,7 +272,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `data.chargeurs` no longer swallows every exception when reading a WKT: an unreadable
   WKT (`shapely.errors.ShapelyError`, `TypeError`) rejects the apartment, anything else
   is a bug and propagates.
-- `tests/unites/test_typed_errors.py` fails on any new `raise ValueError`, `raise Exception`
+- `tests/unit/test_typed_errors.py` fails on any new `raise ValueError`, `raise Exception`
   or `except Exception` in `src/archlux`.
 
 ### Remediation — PLAN.md phase 3, slice E: lazy `legalize` (3.13)
@@ -277,7 +283,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   of `numpy`, `scipy.sparse`, `shapely` and `ortools` moves to the first `legalize` call or
   attribute access. `from archlux import legalize` and `archlux.legalize` are unchanged.
   The cost of *using* the library is the same; only merely importing it got cheaper.
-  Covered by `tests/unites/test_import_cost.py` (no solver dependency loaded, under 0.5 s).
+  Covered by `tests/unit/test_import_cost.py` (no solver dependency loaded, under 0.5 s).
 
 ### Remediation — PLAN.md phase 3, slice D: exports on the model (3.11)
 
@@ -354,7 +360,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   so a room and a wall of the same id no longer share one), `IfcRelVoidsElement` links
   each opening to its wall, and an opening on a wall absent from the plan is a new
   pathology, `ouverture_orpheline`. 90 of 90 repaired plans pass ifcopenshell (0 of 90
-  before). `ifcopenshell` joins the `dev` extra; `tests/unites/test_ifc_validation.py`.
+  before). `ifcopenshell` joins the `dev` extra; `tests/unit/test_ifc_validation.py`.
 - After review: GlobalIds are salted with the plan geometry, so two different plans
   never share one (labels alone gave two flats with the same room ids the same
   `IfcSpace` ids); one plan still always gets the same ids.
@@ -1226,7 +1232,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
 - `bench.graines.deriver` : sous-graines nommees, stables d'une machine a l'autre
   (BLAKE2b, jamais `hash()` qui est randomise par processus). Valeurs epinglees par test.
 - `bench.manifeste.emettre` : manifeste de reproductibilite, graine obligatoire.
-- `tests/proprietes/strategies.py` : `plans_quelconques` operationnelle, partagee par
+- `tests/properties/strategies.py` : `plans_quelconques` operationnelle, partagee par
   les jalons suivants.
 - `docs/reference/schema-json.md` : le format d'echange documente.
 
@@ -1234,7 +1240,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
 - Squelette du projet : arborescence, configuration qualite, CI, contrats de modules.
 - `tests/test_dependances.py` : les regles de dependance de `ARCHITECTURE.md` §5 sont
   verifiees automatiquement des le premier commit, `__init__.py` compris.
-- `tests/unites/test_protocole_substitut.py` : verifie que chaque implementation de
+- `tests/unit/test_protocole_substitut.py` : verifie que chaque implementation de
   `Substitut` respecte le protocole, signatures comprises.
 
 ### Modifie
@@ -1300,7 +1306,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
   isoles que `networkx.transitive_reduction` laisse tomber.
 - `GrapheContraintes.fermeture()` : information d'ordre reelle, qui permet de prouver que
   la reduction ne perd rien.
-- `tests/proprietes/strategies.ordres_valides` : ordres construits **sans reutiliser**
+- `tests/properties/strategies.ordres_valides` : ordres construits **sans reutiliser**
   `deduire_ordre`, pour que les tests de propriete ne soient pas tautologiques.
 
 ### Ajoute — validation a la frontiere (ADR-6)
@@ -1318,7 +1324,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
 - `io.json_io.ecrire` laissait remonter un `ValueError` de la bibliotheque standard sur
   une valeur non finie ; il leve desormais `InvariantViole`, conformement a
   `ARCHITECTURE.md` §7. `NaN` est precisement ce que produit un solveur bogue.
-- `tests/proprietes/strategies.py` ne generait jamais de `violations` non vides ni de
+- `tests/properties/strategies.py` ne generait jamais de `violations` non vides ni de
   `performance` non nulle : la moitie probabiliste de la serialisation du certificat
   n'etait **jamais executee**, malgre 200 exemples Hypothesis. Generateur elargi.
 - Couverture des modules du jalon 1 portee a 100 % (`types`, `erreurs`, `io`, `bench`).

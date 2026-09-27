@@ -57,7 +57,7 @@ faux ; il ne devient utile qu'en lot de plans de tailles différentes.
   (`ARCHITECTURE.md` §10, premier anti-pattern).
 - Toute statistique d'ensemble (moyenne, somme) est **invariante par permutation**
   des pièces : `permute_rooms` ne doit pas changer le score. C'est ce que teste
-  `tests/unites/test_jetons.py`.
+  `tests/unit/test_jetons.py`.
 - Une ouverture dont le `wall_id` ne correspond à aucun mur du plan est
   **silencieusement ignorée** (`plan_to_tokens`). C'est un choix : un corpus
   lacunaire ne doit pas faire tomber l'encodage. La contrepartie est qu'une erreur

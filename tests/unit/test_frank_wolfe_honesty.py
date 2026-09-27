@@ -26,8 +26,8 @@ from archlux.lmo.solveur import solve
 from archlux.solve import frank_wolfe as fw_module
 from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.types import Context, Orientation, Plan
-from tests.proprietes.strategies import realistic_scenarios
-from tests.unites.test_frank_wolfe import NORD, POLY, ObjectifLineaire, _depart_faisable
+from tests.properties.strategies import realistic_scenarios
+from tests.unit.test_frank_wolfe import NORD, POLY, ObjectifLineaire, _depart_faisable
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,7 +201,7 @@ def test_the_trace_exposes_the_gap_at_the_returned_point() -> None:
 
 
 def test_the_proof_rejects_a_plan_moved_beyond_the_budget() -> None:
-    from tests.unites.test_load_bearing import _ctx, _plan, _room
+    from tests.unit.test_load_bearing import _ctx, _plan, _room
 
     proposed = _plan(_room("a", 0, 0, 6, 6), _room("b", 6, 0, 4, 6))
     moved = _plan(_room("a", 0, 0, 7, 6), _room("b", 7, 0, 3, 6))

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import archlux
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
-from tests.proprietes.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import CONTEXTE_DEFAUT
 
 
 def test_api_publique_stable() -> None:

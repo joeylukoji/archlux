@@ -15,7 +15,7 @@ from archlux.geom.rectilineaire import (
     recompose,
 )
 from archlux.types import Plan, Room
-from tests.proprietes.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import CONTEXTE_DEFAUT
 
 
 def _L() -> Polygon:
