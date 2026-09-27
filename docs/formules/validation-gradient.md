@@ -1,6 +1,6 @@
 # Validation du gradient
 
-**Code :** `light.validation.valider_gradient`.
+**Code :** `light.validation.validate_gradient`.
 
 ## Énoncé
 

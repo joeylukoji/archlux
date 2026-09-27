@@ -27,7 +27,7 @@ site/
 /donnees/
 
 # Temporary experiment outputs
-resultats/_tmp_*/
+results/_tmp_*/
 
 # Local agent session state
 session_memory.json

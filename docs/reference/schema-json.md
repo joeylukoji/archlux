@@ -1,32 +1,36 @@
-# Schéma JSON des plans — version `1`
+# JSON schema of plans, version `2`
 
-Format d'échange lu et écrit par `Plan.from_json` et `Plan.to_json`. Unités : **mètres**,
-mètres carrés, degrés d'azimut. Origine au coin bas-gauche du contour, axe `y` vers le
-nord géographique.
+Exchange format read and written by `Plan.from_json` and `Plan.to_json`. Units: **metres**,
+square metres, azimuth in degrees. Origin at the bottom-left corner of the outline, `y` axis
+towards geographic north.
 
-## Règles du format
+Schema **v2** has English keys and English room types. Files of schema **v1** (French keys
+and room types) are still read: see [Reading schema v1](#reading-schema-v1).
 
-- **La version est obligatoire.** Un fichier dont `schema` n'est pas `"1"` est refusé par
-  `InvariantViolation` : mieux vaut refuser bruyamment que deviner le format, car un plan mal
-  relu produit un certificat faux.
-- **L'écriture est déterministe.** Clés triées, UTF-8, indentation 2, fin de ligne `\n`.
-  Deux écritures du même plan donnent les mêmes octets — sans quoi l'empreinte inscrite
-  dans un manifeste n'identifie plus rien.
-- **Aucune position absolue d'ouverture.** Une baie est décrite par `mur_id`, `s` et
-  `largeur_rel` ; sa position se dérive du mur. C'est l'invariant qui empêche fenêtres et
-  cloisons de se désynchroniser quand le solveur déplace un mur.
-- **`null` explicite plutôt que clé absente.** `"performance": null` signifie « aucune
-  garantie de performance affirmée » — une information, pas un oubli.
-- **Les plages sont vérifiées à la lecture.** `s ∈ [0, 1]`, `largeur_rel ∈ ]0, 1]`,
-  dimensions et épaisseurs strictement positives, et **aucune valeur non finie** —
-  `json.loads` accepte pourtant les littéraux `NaN` et `Infinity`. Un fichier fautif est
-  refusé avec **la liste complète** de ses violations, pas seulement la première.
+## Rules of the format
 
-## Schéma publié
+- **The version is mandatory.** A file whose `schema` is neither `"2"` nor `"1"` is refused
+  with `InvariantViolation`: better to refuse loudly than to guess the format, because a
+  misread plan produces a false certificate.
+- **Writing is deterministic.** Sorted keys, UTF-8, indentation 2, line ending `
+`. Two
+  writes of the same plan give the same bytes; without that, the fingerprint recorded in a
+  manifest identifies nothing.
+- **No absolute position of an opening.** An opening is described by `wall_id`, `s` and
+  `relative_width`; its position is derived from the wall. That is the invariant that keeps
+  windows and partitions from desynchronizing when the solver moves a wall.
+- **An explicit `null` rather than an absent key.** `"performance": null` means "no
+  performance guarantee claimed": information, not an oversight.
+- **The ranges are checked at reading.** `s` in `[0, 1]`, `relative_width` in `]0, 1]`,
+  strictly positive sizes and thicknesses, and **no non-finite value**, although
+  `json.loads` accepts the literals `NaN` and `Infinity`. A faulty file is refused with the
+  **complete list** of its violations, not only the first one.
 
-Le format est décrit par un **JSON Schema** (draft 2020-12) livré avec le paquet :
-`archlux/io/plan-v1.schema.json`. Un tiers peut valider un fichier sans exécuter
-archlux :
+## Published schema
+
+The format is described by a **JSON Schema** (draft 2020-12) shipped with the package:
+`archlux/io/plan-v2.schema.json` (and `plan-v1.schema.json` for the old format). A third
+party can validate a file without running archlux:
 
 ```python
 import json
@@ -34,97 +38,155 @@ from importlib import resources
 
 import jsonschema
 
-schema = json.loads(resources.files("archlux.io").joinpath("plan-v1.schema.json").read_text())
-plan = {"schema": "1", "contour": [[0, 0], [4, 0], [4, 3], [0, 3]],
-        "pieces": [{"id": "a", "type": "sejour", "x": 0, "y": 0, "w": 4, "h": 3}],
-        "murs": [], "ouvertures": [], "certificat": None}
+schema = json.loads(resources.files("archlux.io").joinpath("plan-v2.schema.json").read_text())
+plan = {"schema": "2", "outline": [[0, 0], [4, 0], [4, 3], [0, 3]],
+        "rooms": [{"id": "a", "type": "living_room", "x": 0, "y": 0, "w": 4, "h": 3}],
+        "walls": [], "openings": [], "certificate": None}
 jsonschema.validate(plan, schema)
 ```
 
-Le schéma et le lecteur refusent les mêmes plages (test `test_json_schema.py`), à une
-exception près : JSON Schema ne sait pas exprimer « nombre fini », si bien que seul le
-lecteur refuse `NaN` et `Infinity`. Toute sortie de `Plan.to_json` est valide pour le
-schéma, certificat et `regime` compris (revue du jalon 1, [`revues/j1.md`](../revues/j1.md)).
+The schema and the reader refuse the same ranges (test `test_json_schema.py`), with one
+exception: JSON Schema cannot express "finite number", so only the reader refuses `NaN` and
+`Infinity`. Every output of `Plan.to_json` is valid for the schema, certificate and `regime`
+included.
 
-## Champs
+## Fields
 
-| Champ | Type | Sens |
+| Field | Type | Meaning |
 |---|---|---|
-| `schema` | `"1"` | Version du format. Refusée si différente |
-| `contour` | liste de `[x, y]` | Enveloppe du logement |
-| `pieces[]` | `id`, `type`, `x`, `y`, `w`, `h` | Rectangle, coin bas-gauche en `(x, y)` |
-| `murs[]` | `id`, `a`, `b`, `porteur`, `epaisseur` | Segment ; `porteur: true` = figé par le solveur |
-| `ouvertures[]` | `id`, `mur_id`, `s`, `largeur_rel`, `hauteur_allege`, `hauteur_linteau` | `s` = abscisse **du centre** le long du mur, dans `[0, 1]` ; `largeur_rel` en fraction de la longueur du mur |
-| `certificat` | objet ou `null` | `null` pour un plan proposé ; toujours présent sur un plan légalisé |
+| `schema` | `"2"` | Version of the format |
+| `outline` | list of `[x, y]` | Envelope of the dwelling |
+| `rooms[]` | `id`, `type`, `x`, `y`, `w`, `h` | Rectangle, bottom-left corner at `(x, y)` |
+| `walls[]` | `id`, `a`, `b`, `load_bearing`, `thickness` | Segment; `load_bearing: true` means fixed by the solver |
+| `openings[]` | `id`, `wall_id`, `s`, `relative_width`, `sill_height`, `head_height` | `s` = abscissa **of the center** along the wall, in `[0, 1]`; `relative_width` as a fraction of the wall length |
+| `certificate` | object or `null` | `null` for a proposed plan; always present on a legalized plan |
 
-### Le certificat
+The room `type` is free text. The values the library knows are `living_room`, `bedroom`,
+`kitchen`, `bathroom`, `toilet` and `corridor`; any other type is kept as is and gets no
+minimum area from a `Regulation` that does not list it.
 
-Deux garanties de natures différentes, séparées par construction — voir
-[Les deux garanties](../concepts/deux-garanties.md).
+### The certificate
 
-| Champ | Nature | Sens |
+Two guarantees of different kinds, separated by construction; see
+[The two guarantees](../concepts/deux-garanties.md).
+
+| Field | Kind | Meaning |
 |---|---|---|
-| `geometrie` | **exacte** | Les quatre prédicats vérifiés indépendamment du solveur, et `deplacement_max` |
-| `performance` | **probabiliste** | Intervalle conforme, avec `couverture`, `n_calibration` et `regime` (`"exchangeable"` ou `"selected"`, obligatoire depuis 0.10 : un fichier sans `regime` est refusé). `couverture` est **nominale** : elle n'est garantie que si `regime` vaut `"exchangeable"`. `null` en légalisation classique |
-| `duaux` | diagnostic | Paires `[libellé, coût]` : quelle contrainte relâcher, et ce qu'elle coûte |
-| `manifeste` | trace | Version, graine, empreintes — ce qui rend l'exécution rejouable |
+| `geometry` | **exact** | The four predicates verified independently of the solver (`overlap`, `gaps`, `areas_ok`, `structure_kept`), `valid` and `max_displacement` |
+| `performance` | **probabilistic** | Conformal interval, with `coverage`, `n_calibration` and `regime` (`"exchangeable"` or `"selected"`, mandatory: a file without `regime` is refused). `coverage` is **nominal**: it is only guaranteed if `regime` is `"exchangeable"`. `null` in classic legalization |
+| `duals` | diagnostic | Pairs `[label, cost]`: which constraint to relax, and what it costs |
+| `manifest` | trace | Version, seed, fingerprints: what makes the run replayable |
 
-`geometrie` ne contient **aucun** champ de probabilité, et ne doit jamais en contenir.
+`geometry` holds **no** probability field, and must never hold one.
 
-## Exemple complet
+## Complete example
 
-Un T2 légalisé, produit par `Plan.to_json` — ce n'est pas un exemple recopié à la main :
+A legalized flat, produced by `Plan.to_json` (not an example copied by hand):
 
 ```json
 {
-  "certificat": {
-    "duaux": [],
-    "geometrie": {
-      "chevauchement": false,
-      "deplacement_max": 0.21,
-      "jours": false,
-      "structure_preservee": true,
-      "surfaces_ok": true,
-      "valide": true,
+  "certificate": {
+    "duals": [],
+    "geometry": {
+      "areas_ok": true,
+      "gaps": false,
+      "max_displacement": 0.21,
+      "overlap": false,
+      "structure_kept": true,
+      "valid": true,
       "violations": []
     },
-    "manifeste": null,
+    "manifest": null,
     "performance": null
   },
-  "contour": [[0.0, 0.0], [6.0, 0.0], [6.0, 3.5], [0.0, 3.5]],
-  "murs": [
+  "openings": [
     {
-      "a": [0.0, 0.0],
-      "b": [6.0, 0.0],
-      "epaisseur": 0.1,
-      "id": "m_sud",
-      "porteur": true
+      "head_height": 2.15,
+      "id": "w1",
+      "relative_width": 0.25,
+      "s": 0.3,
+      "sill_height": 1.0,
+      "wall_id": "south"
     }
   ],
-  "ouvertures": [
+  "outline": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      6.0,
+      0.0
+    ],
+    [
+      6.0,
+      3.5
+    ],
+    [
+      0.0,
+      3.5
+    ]
+  ],
+  "rooms": [
     {
-      "hauteur_allege": 1.0,
-      "hauteur_linteau": 2.15,
-      "id": "f1",
-      "largeur_rel": 0.25,
-      "mur_id": "m_sud",
-      "s": 0.3
+      "h": 3.5,
+      "id": "living",
+      "type": "living_room",
+      "w": 4.0,
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "h": 2.5,
+      "id": "bath",
+      "type": "bathroom",
+      "w": 2.0,
+      "x": 4.0,
+      "y": 0.0
     }
   ],
-  "pieces": [
-    { "h": 3.5, "id": "sejour", "type": "sejour", "w": 4.0, "x": 0.0, "y": 0.0 },
-    { "h": 2.5, "id": "sdb", "type": "sdb", "w": 2.0, "x": 4.0, "y": 0.0 }
-  ],
-  "schema": "1"
+  "schema": "2",
+  "walls": [
+    {
+      "a": [
+        0.0,
+        0.0
+      ],
+      "b": [
+        6.0,
+        0.0
+      ],
+      "id": "south",
+      "load_bearing": true,
+      "thickness": 0.1
+    }
+  ]
 }
 ```
 
-> Le contour et les points sont écrits en listes imbriquées ; l'exemple ci-dessus est
-> reformaté sur une ligne par point pour la lisibilité. Le fichier réellement produit
-> place un nombre par ligne, ce qui rend les différences Git lisibles point par point.
+> The outline and the points are written as nested lists; the real file puts one number per
+> line, which makes Git differences readable point by point.
 
-## Compatibilité
+## Reading schema v1
 
-Un plan écrit par `0.1.x` doit rester lisible par `0.2.x`. Tout changement incompatible
-incrémente `VERSION_SCHEMA` et fait l'objet d'une entrée au
-[CHANGELOG](https://keepachangelog.com/fr/1.1.0/).
+A schema v1 file is read through an explicit upgrade (`archlux.io.json_io.upgrade_v1`), and
+the writer only ever emits v2, so loading and saving a v1 file converts it.
+
+| v1 (French) | v2 |
+|---|---|
+| `contour`, `pieces`, `murs`, `ouvertures`, `certificat` | `outline`, `rooms`, `walls`, `openings`, `certificate` |
+| `porteur`, `epaisseur` | `load_bearing`, `thickness` |
+| `mur_id`, `largeur_rel`, `hauteur_allege`, `hauteur_linteau` | `wall_id`, `relative_width`, `sill_height`, `head_height` |
+| `geometrie`, `duaux`, `manifeste` | `geometry`, `duals`, `manifest` |
+| `valide`, `chevauchement`, `jours`, `surfaces_ok`, `structure_preservee`, `deplacement_max` | `valid`, `overlap`, `gaps`, `areas_ok`, `structure_kept`, `max_displacement` |
+| `indicateur`, `valeur`, `borne_inf`, `borne_sup`, `couverture` | `indicator`, `value`, `lower`, `upper`, `coverage` |
+| `horodatage`, `graine`, `empreinte_donnees`, `decoupage`, `environnement`, `parametres`, `modele`, `poids` | `timestamp`, `seed`, `data_fingerprint`, `split`, `environment`, `parameters`, `model`, `weights_fingerprint` |
+| room types `sejour`, `chambre`, `cuisine`, `sdb`, `wc`, `couloir` | `living_room`, `bedroom`, `kitchen`, `bathroom`, `toilet`, `corridor` |
+
+The English room types apply to v1 files too: an unknown type passes through unchanged.
+
+## Compatibility
+
+A file written by an older release must stay readable by a newer one. Any incompatible
+change increments `SCHEMA_VERSION` and gets an entry in the CHANGELOG; the previous format
+is read through an upgrade function until a release announces its removal.

@@ -61,13 +61,13 @@ contrainte a sa place *dans* le générateur — ce que ce dépôt permet de chi
 qu'il fournit.
 
 Détail, protocole et comparaisons avant / après plan par plan :
-`resultats/j8_generation.md` et `resultats/visuels/`.
+`results/j8_generation.md` et `results/visuels/`.
 
 ## Le substitut prédit à la mauvaise granularité
 
 **C'est la limite la plus profonde du projet, et elle est mesurée.**
 
-Le protocole `Substitut` rend **un scalaire par plan**. L'éclairement est une grandeur
+Le protocole `Surrogate` rend **un scalaire par plan**. L'éclairement est une grandeur
 **par pièce**. Décomposition de la variance sur 367 466 pièces de Swiss Dwellings,
 cible `sun_201803211200_mean` :
 
@@ -106,14 +106,14 @@ Aucune géométrie d'environnement bâti n'est d'ailleurs publiée dans le corpu
 masque n'existe que dans les sorties de simulation. S'en servir comme entrée exigerait
 de simuler pour prédire, ce qui vide le substitut de sa raison d'être.
 
-Détail et protocole : `resultats/j7_variance.md`.
+Détail et protocole : `results/j7_variance.md`.
 
 ## Le substitut appris n'a jamais vu de mesure
 
 Les étiquettes **livrées dans ce dépôt** viennent de
 `light.simulateur.SplitFluxOracle`, une **forme fermée** (analytique CIBSE +
-split-flux BRE). Le perceptron `light.base.SubstitutDense` y apprend le *résidu* entre
-cette forme fermée et `SubstitutAnalytique` : deux formules connues, sur 90 pavages
+split-flux BRE). Le perceptron `light.base.DenseSurrogate` y apprend le *résidu* entre
+cette forme fermée et `AnalyticSurrogate` : deux formules connues, sur 90 pavages
 2×2 à deux degrés de liberté, sans murs ni ouvertures.
 
 Des étiquettes réelles sont désormais atteignables — `data.chargeurs` joint MSD aux
@@ -123,7 +123,7 @@ ci-dessus.
 
 Autrement dit : la chaîne tokenisation → entraînement → gel → calibration conforme →
 Frank-Wolfe est **exercée de bout en bout**, et aucune grandeur physique n'a été
-mesurée. Le transformeur annoncé au jalon 4 n'existe pas — `SubstitutAppris` refuse
+mesurée. Le transformeur annoncé au jalon 4 n'existe pas — `LearnedSurrogate` refuse
 les poids `.pt`.
 
 Toute couverture rapportée par ce dépôt est donc une couverture **sur l'oracle gelé**,
@@ -137,9 +137,9 @@ Les plans produits par un optimiseur sont *sélectionnés* pour maximiser la
 prédiction : la couverture réelle sous cette sélection est une question de
 recherche ouverte, mesurée et publiée par le projet (dérive, banc d'essai).
 Le certificat le dit : la borne d'un plan rendu par `legalize` porte
-`regime="selected"`, et le rapport écrit « couverture NON garantie » au lieu d'un
+`regime="selected"`, et le rapport écrit « coverage NOT guaranteed » au lieu d'un
 pourcentage. Pour un plan échangeable, si la dérive est détectée, le certificat
-affiche `NON EVALUABLE` plutôt qu'un intervalle trompeur.
+affiche `NOT EVALUABLE` plutôt qu'un intervalle trompeur.
 
 ## Load-bearing structure: what is and is not certified
 
@@ -155,9 +155,9 @@ and the solver keeps every room on its side of each wall. It does not certify mo
 - Each room keeps **one** side of each wall, read from the proposed plan: a valid
   arrangement on another side of a partial wall is not explored.
 
-## `NON EVALUABLE`
+## `NOT EVALUABLE`
 
-Le champ **`NON EVALUABLE`** couvre les articles dont la vérification exige une
+Le champ **`NOT EVALUABLE`** couvre les articles dont la vérification exige une
 information absente du plan — matériaux, systèmes techniques, confort d'été —
 ou une interprétation réglementaire. Ce n'est pas un oubli de calcul : c'est un
 refus explicite d'inventer une couverture.

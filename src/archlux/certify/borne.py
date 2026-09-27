@@ -1,41 +1,42 @@
-"""Assemblage de la garantie probabiliste dans le certificat.
+"""Assembly of the probabilistic guarantee in the certificate.
 
-Ce module est la **seule** voie par laquelle une valeur d'éclairement entre dans un
-:class:`archlux.types.Certificat`. Elle y entre toujours accompagnée de sa couverture et
-de la taille du jeu de calibration : aucune valeur sans son incertitude.
+This module is the **only** way a daylight value enters an
+:class:`archlux.types.Certificate`. It always enters with its coverage and the size of the
+calibration set: no value without its uncertainty.
 """
 
 from __future__ import annotations
 
 from math import isfinite
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.types import PerformanceBound, Regime
-from archlux.uq.conforme import Calibration, borner, quantile_conforme
-from archlux.uq.derive import DiagnosticDerive
+from archlux.uq.conforme import Calibration, bound, conformal_quantile
+from archlux.uq.derive import DriftDiagnostic
 
-__all__ = ["Calibration", "bound_selected_plan", "check_calibration", "construire_borne"]
+__all__ = ["Calibration", "bound_selected_plan", "build_bound", "check_calibration"]
 
 
-def construire_borne(
-    valeur: float,
+def build_bound(
+    value: float,
     calibration: Calibration,
-    derive: DiagnosticDerive,
+    drift: DriftDiagnostic,
     *,
-    incertitude: float,
+    uncertainty: float,
     regime: Regime,
 ) -> PerformanceBound | None:
-    """Construire la borne, ou ``None`` si la dérive invalide l'échangeabilité.
+    """Build the bound, or ``None`` if drift invalidates exchangeability.
 
     Parameters
     ----------
-    valeur : float
-        Estimation ponctuelle.
+    value : float
+        Point estimate.
     calibration : Calibration
-        Jeu de scores conforme.
-    derive : DiagnosticDerive
-        Verdict d'échangeabilité. ``echangeable=False`` → ``None``.
-    incertitude : float
+        Conformal score set.
+    drift : DiagnosticDerive
+        Verdict on exchangeability. A rejected exchangeability gives ``None``.
+    uncertainty : float
         ``σ̂`` of the point, **strictly positive**, for normalized calibration scores;
         ``1.0`` for raw ones. Mandatory (PLAN.md batch 1.6).
     regime : {"exchangeable", "selected"}
@@ -43,25 +44,25 @@ def construire_borne(
 
     Returns
     -------
-    BornePerformance or None
-        ``None`` signifie ``NON EVALUABLE`` : le système préfère ne rien affirmer
-        plutôt qu'affirmer une couverture qu'il ne peut pas tenir.
+    PerformanceBound or None
+        ``None`` means ``NOT EVALUABLE``: the system prefers to claim nothing rather than
+        claim a coverage it cannot hold.
 
     Notes
     -----
-    Deux pièges que la signature ne rattrape pas :
+    Two traps that the signature does not catch:
 
-    - **``incertitude`` must match the calibration.** The only calibration builder of
-      the repository, :meth:`archlux.uq.conforme.CalibrateurConforme.ajuster`, divides
-      the scores by ``σ``; ``Calibration`` does not record it, the caller does.
-    - **``derive.echangeable`` est un non-rejet, pas une preuve d'échangeabilité.**
-      Il est ici traité comme une autorisation de publier ; à faible effectif, le test
-      de :func:`archlux.uq.derive.controler_derive` n'a pratiquement aucune puissance.
-      Le certificat n'affiche donc pas « pas de dérive » mais « dérive non détectée ».
+    - **``uncertainty`` must match the calibration.** The only calibration builder of the
+      repository, :meth:`archlux.uq.conforme.CalibrateurConforme.ajuster`, divides the
+      scores by ``σ``; ``Calibration`` does not record it, the caller does.
+    - **A drift verdict that does not reject is not a proof of exchangeability.** It is
+      treated here as a permission to publish; with few observations, the test of
+      :func:`archlux.uq.derive.controler_derive` has almost no power. The certificate
+      therefore says "drift not detected", never "no drift".
     """
-    if not derive.echangeable:
+    if not drift.echangeable:
         return None
-    return borner(valeur, calibration, incertitude=incertitude, regime=regime)
+    return bound(value, calibration, uncertainty=uncertainty, regime=regime)
 
 
 def check_calibration(calibration: object) -> None:
@@ -77,7 +78,7 @@ def check_calibration(calibration: object) -> None:
         raise InvariantViolation(
             (f"calibration must be a Calibration, got {type(calibration).__name__}",)
         )
-    quantile_conforme(calibration.scores, calibration.alpha)
+    conformal_quantile(calibration.scores, calibration.alpha)
 
 
 def bound_selected_plan(
@@ -103,11 +104,19 @@ def bound_selected_plan(
 
     Returns
     -------
-    BornePerformance or None
+    PerformanceBound or None
         With ``regime="selected"`` and ``coverage_guaranteed`` false; ``None`` (the
-        report says ``NON EVALUABLE``) when the surrogate gives no positive finite
+        report says ``NOT EVALUABLE``) when the surrogate gives no positive finite
         ``σ̂`` at the plan, rather than discarding a plan whose geometry is proved.
     """
     if not (isfinite(uncertainty) and uncertainty > 0.0):
         return None
-    return borner(value, calibration, incertitude=uncertainty, regime="selected")
+    return bound(value, calibration, uncertainty=uncertainty, regime="selected")
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "construire_borne": Alias(build_bound, "archlux.certify.borne.build_bound"),
+    },
+)

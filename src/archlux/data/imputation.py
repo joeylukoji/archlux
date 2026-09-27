@@ -1,41 +1,53 @@
-"""Imputer des baies manquantes : centrées sur chaque mur, ratio documenté."""
+"""Impute missing openings: centered on each wall, ratio documented."""
 
 from __future__ import annotations
 
 from dataclasses import replace
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.types import Opening, Plan, Wall
 
-__all__ = ["RATIO_BAIE_DEFAUT", "imputer_ouvertures"]
+__all__ = ["DEFAULT_OPENING_RATIO", "impute_openings"]
 
-RATIO_BAIE_DEFAUT = 0.30
-"""Largeur relative tirée de la distribution observée (jalon 4, jeu propre vs imputé)."""
+DEFAULT_OPENING_RATIO = 0.30
+"""Relative width drawn from the observed distribution (milestone 4, clean vs imputed set)."""
 
 
-def imputer_ouvertures(plan: Plan, *, ratio: float = RATIO_BAIE_DEFAUT) -> Plan:
-    """Ajouter une baie centrée sur chaque mur sans ouverture.
+def impute_openings(plan: Plan, *, ratio: float = DEFAULT_OPENING_RATIO) -> Plan:
+    """Add an opening centered on each wall that has none.
 
-    Ne touche pas aux baies déjà présentes. L'effet de cette imputation sur la
-    calibration doit être mesuré à part (`docs/donnees/imputation.md`).
+    Does not touch openings already present. The effect of this imputation on
+    calibration must be measured separately (`docs/donnees/imputation.md`).
     """
     murs_occupes = {o.wall_id for o in plan.openings}
     nouvelles: list[Opening] = list(plan.openings)
-    murs: tuple[Wall, ...] = plan.walls
-    if not murs and len(plan.outline) >= 2:
-        contour = (*plan.outline, plan.outline[0])
-        murs = tuple(
-            Wall(id=f"contour-{i}", a=contour[i], b=contour[i + 1])
+    walls: tuple[Wall, ...] = plan.walls
+    if not walls and len(plan.outline) >= 2:
+        outline = (*plan.outline, plan.outline[0])
+        walls = tuple(
+            Wall(id=f"outline-{i}", a=outline[i], b=outline[i + 1])
             for i in range(len(plan.outline))
         )
-    for mur in murs:
-        if mur.id in murs_occupes:
+    for wall in walls:
+        if wall.id in murs_occupes:
             continue
         nouvelles.append(
             Opening(
-                id=f"impute-{mur.id}",
-                wall_id=mur.id,
+                id=f"impute-{wall.id}",
+                wall_id=wall.id,
                 s=0.5,
                 relative_width=ratio,
             )
         )
-    return replace(plan, walls=murs, openings=tuple(nouvelles))
+    return replace(plan, walls=walls, openings=tuple(nouvelles))
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "imputer_ouvertures": Alias(impute_openings, "archlux.data.imputation.impute_openings"),
+        "RATIO_BAIE_DEFAUT": Alias(
+            DEFAULT_OPENING_RATIO, "archlux.data.imputation.DEFAULT_OPENING_RATIO"
+        ),
+    },
+)

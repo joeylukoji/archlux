@@ -23,8 +23,8 @@ diagnostic dual.
 ```python
 def test_couverture_empirique():
     """Sur le jeu de TEST, jamais sur celui de calibration."""
-    bornes  = [modele.borne(p) for p in JEU_TEST]
-    verites = [ORACLE.evaluer(p, CTX) for p in JEU_TEST]  # SplitFluxOracle (forme fermée)
+    bornes  = [model.borne(p) for p in JEU_TEST]
+    verites = [ORACLE.evaluate(p, CTX) for p in JEU_TEST]  # SplitFluxOracle (forme fermée)
     couv = np.mean([v >= b.borne for v, b in zip(verites, bornes)])
     assert 0.86 <= couv <= 0.94          # visée 0,90
 ```
@@ -62,7 +62,7 @@ class JetonCalibration:
     horodatage: str
     def verifier(self) -> None: ...
 
-def geler_et_emettre(modele) -> JetonCalibration:
+def geler_et_emettre(model) -> JetonCalibration:
     """Émet le jeton donnant accès au jeu de calibration.
     Le modèle ne doit plus être modifié après cet appel."""
 ```
@@ -73,10 +73,10 @@ def geler_et_emettre(modele) -> JetonCalibration:
 
 ```python
 def test_calibration_refuse_un_modele_modifie():
-    j = geler_et_emettre(modele)
-    modele.tete_valeur.weight.data += 0.01
+    j = geler_et_emettre(model)
+    model.tete_valeur.weight.data += 0.01
     with pytest.raises(ModelModified):
-        donnees.pour_calibration(j)
+        donnees.for_calibration(j)
 ```
 
 - [ ] Le test passe
@@ -98,8 +98,8 @@ class CalibrateurConforme:
         self.q = float(np.quantile(scores, min(niveau, 1.0)))
         self.n, self.alpha = n, alpha
 
-    def borne(self, prediction, incertitude, sens) -> PerformanceBound:
-        marge = self.q * incertitude
+    def borne(self, prediction, uncertainty, sens) -> PerformanceBound:
+        marge = self.q * uncertainty
         val = prediction - marge if sens == ">=" else prediction + marge
         return PerformanceBound(borne=val, prediction=prediction, marge=marge,
                                 couverture=1 - self.alpha, sens=sens,
@@ -137,7 +137,7 @@ def test_couverture_sur_donnees_synthetiques(alpha):
     assert couv >= 1 - alpha - 0.03
 
 def test_sens_ase_inverse():
-    b = CAL.borne(prediction=6.1, incertitude=1.0, sens="<=")
+    b = CAL.borne(prediction=6.1, uncertainty=1.0, sens="<=")
     assert b.borne > b.prediction       # ASE : borne SUPÉRIEURE
 ```
 
@@ -161,9 +161,9 @@ def crps(predictions, verites, incertitudes) -> float: ...
 
 ```python
 def test_calibration_tient_par_orientation():
-    for secteur, jeu in stratifier(JEU_TEST, par_orientation=8).items():
+    for sector, jeu in stratifier(JEU_TEST, par_orientation=8).items():
         couv = couverture(CAL, jeu)
-        assert 0.84 <= couv <= 0.96, f"calibration cassée sur {secteur}"
+        assert 0.84 <= couv <= 0.96, f"calibration cassée sur {sector}"
 ```
 
 - [ ] Le test passe
@@ -226,7 +226,7 @@ réseau**. Personne n'a quantifié ce phénomène sur un substitut environnement
 un résultat scientifique en soi.
 
 ```python
-def mesurer_derive(optimiseur, substitut, simulateur, plans, ctx,
+def mesurer_derive(optimiseur, surrogate, simulateur, plans, ctx,
                    *, n_echantillons=50) -> RapportDerive: ...
 ```
 
@@ -262,12 +262,12 @@ Les prix duaux du programme linéaire répondent à : *de combien l'objectif s'a
 si je relâchais cette contrainte d'une unité ?*
 
 ```python
-def traduire_duaux(duaux, origines, *, seuil=1e-6) -> tuple[PrixDual, ...]:
+def translate_duals(duaux, origines, *, threshold=1e-6) -> tuple[PrixDual, ...]:
     return tuple(sorted(
         (PrixDual(contrainte=origines[i], prix=float(d),
                   interpretation=phrase(origines[i], d),
                   validite=intervalle_validite(i))
-         for i, d in enumerate(duaux) if abs(d) > seuil),
+         for i, d in enumerate(duaux) if abs(d) > threshold),
         key=lambda p: -abs(p.prix)))
 ```
 
@@ -295,11 +295,11 @@ non. Un diagnostic sans intervalle serait trompeur.
 
 ```python
 def test_le_diagnostic_est_lisible():
-    d = traduire_duaux(DUAUX, ORIGINES)
+    d = translate_duals(DUAUX, ORIGINES)
     assert all(len(p.interpretation) > 20 for p in d)     # pas "ligne 47"
 
 def test_prix_nul_pour_contrainte_non_active():
-    d = traduire_duaux(DUAUX, ORIGINES)
+    d = translate_duals(DUAUX, ORIGINES)
     assert all(p.prix != 0 for p in d)
 ```
 

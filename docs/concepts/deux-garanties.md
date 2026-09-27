@@ -13,7 +13,7 @@ que le système est conçu pour rendre difficile.
 | **Vérification** | Inspection finie, \(O(n^2)\) | Couverture \(\ge 1-\alpha\) sur un jeu de calibration |
 | **Peut être fausse ?** | Non (à la tolérance d'arrondi près) | Oui, dans au plus \(\alpha\) des cas |
 | **Type** | `GeometricProof` — aucun champ de probabilité | `PerformanceBound` — `couverture`, `n_calibration` et `regime` obligatoires |
-| **Bandeau** | `[EXACT]` | `[PREDICTION — couverture 90 %]` (plan échangeable) ou `[PREDICTION — plan selectionne, couverture NON garantie]` |
+| **Bandeau** | `[EXACT]` | `[PREDICTION: coverage 90 %]` (plan échangeable) ou `[PREDICTION: selected plan, coverage NOT guaranteed]` |
 
 La géométrie est un prédicat sur des rectangles : on peut le recompter. La lumière
 est un oracle **gelé** (`SplitFluxOracle`, split-flux BRE) : la borne dit « au moins
@@ -23,24 +23,24 @@ Ce n'est pas un sDA LM-83, ce n'est pas Radiance.
 ## Comment les lire l'une à côté de l'autre
 
 ```
-GEOMETRIE                                       [EXACT]
-  Chevauchement          aucun         verifie
+GEOMETRY                                        [EXACT]
+  Overlap                none          verified
 
-PERFORMANCE                        [PREDICTION — couverture 90 %]
-  sDA   >= 51,40   (predit 56,20, marge 4,80)
-  calibration : 1284 évaluations de l'oracle gelé
+PERFORMANCE                        [PREDICTION: coverage 90 %]
+  sDA   >= 51.40   (predicted 56.20, margin 4.80)
+  calibration: 1284 evaluations of the frozen oracle
 
-NON EVALUABLE
-  Confort d'été, systèmes techniques, matériaux — hors périmètre
+NOT EVALUABLE
+  Summer comfort, technical systems, materials: out of scope
 ```
 
-- Si `performance is None`, la section prédiction affiche `NON EVALUABLE` : le
+- Si `performance is None`, la section prédiction affiche `NOT EVALUABLE` : le
   système refuse d'inventer une couverture.
 - `n_calibration` est affiché : une borne sur 50 points n'en vaut pas une sur 1 284.
 - Le **régime** est affiché. La couverture n'est annoncée que pour un plan
   échangeable avec la calibration (`regime="exchangeable"`). Pour un plan choisi par
   l'optimiseur (`regime="selected"`, ce que rend `legalize(..., calibration=...)`),
-  le bandeau dit « couverture NON garantie » et le rapport demande de réévaluer le
+  le bandeau dit « coverage NOT guaranteed » et le rapport demande de réévaluer le
   plan avec l'oracle.
 - Rien n'agrège les deux natures en un score unique.
 
