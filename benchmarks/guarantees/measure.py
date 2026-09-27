@@ -47,7 +47,7 @@ from tests import checkers
 
 import archlux
 from archlux.data.corruption import corrompre
-from archlux.erreurs import ArchluxError, Infeasible, UnsupportedInput
+from archlux.errors import ArchluxError, Infeasible, UnsupportedInput
 from archlux.export.svg import comparer
 from archlux.light.analytique import SubstitutAnalytique
 from archlux.light.objectif import Daylight
