@@ -40,3 +40,6 @@ session_memory.json
 
 # Git worktrees of parallel agents
 /.claude/worktrees/
+
+# graphify's generated knowledge graph (regenerate locally: graphify update src/archlux)
+/graphify-out/

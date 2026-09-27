@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 0: complexity and coverage tooling
+
+- `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of functions above cyclomatic complexity 10 (33 today), lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
+- Branch coverage enabled (`--cov-branch`); the coverage ratchet floor moves from 87.9% to 88.8% (measured with branches counted).
+- `docs/plans/phase-4-design-patterns.md`: the phase-4 refactor plan, block by block, with `graphify` (call-graph mapping before an extraction) and `ponytail` (`lite` intensity, a design-time check against over-applying a pattern) verified compatible and scoped for this phase; every block now also sweeps its own files for remaining French-named private helpers (19 found so far) ahead of its structural commits.
+
 ### Changed — old keyword names of public functions accepted again, deprecated
 
 - **Renamed keyword parameters of public functions stay accepted** with a

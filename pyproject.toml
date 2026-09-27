@@ -43,6 +43,9 @@ dev = [
     "ifcopenshell>=0.8",
     "interrogate>=1.7",
     "pre-commit>=3.7",
+    # Cyclomatic complexity, PLAN.md phase 4's exit gate: `radon cc src -n C` must be
+    # silent (no function above CC 10).
+    "radon>=6.0",
 ]
 docs = ["mkdocs>=1.6", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25"]
 
@@ -121,9 +124,14 @@ ignore-nested-functions = true
 
 [tool.coverage.run]
 source = ["src/archlux"]
+# Enabled at the start of PLAN.md phase 4 (2026-09-27): the combined line+branch figure
+# below is what `fail_under` now measures, not lines alone. The phase-4 exit gate is
+# line coverage >= 95 % and branch coverage >= 90 %; track those two separately with
+# `coverage report --skip-covered` when the ratchet needs to move, not from this total.
+branch = true
 
 [tool.coverage.report]
 # Ratchet, single source of the threshold (CI reads it): never regress below the measured level. Raised at each PLAN.md phase
 # gate until 95 % (phase 4).
 precision = 1
-fail_under = 87.9
+fail_under = 88.8

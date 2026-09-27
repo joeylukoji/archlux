@@ -42,7 +42,7 @@ jobs:
       - name: Regles de dependance (ARCHITECTURE.md §5) -- bloquant
         run: pytest tests/test_dependances.py -q
       - name: Tests
-        run: pytest --cov=archlux --cov-report=term-missing
+        run: pytest --cov=archlux --cov-branch --cov-report=term-missing
 
   budgets:
     runs-on: ubuntu-latest
