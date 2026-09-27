@@ -13,12 +13,14 @@ valid is the job of ``certify``, never of this module.
 from __future__ import annotations
 
 import math
+import operator
 import warnings
 from dataclasses import replace
 from numbers import Real
 from typing import TYPE_CHECKING
 
 from archlux.errors import InvalidInput
+from archlux.tolerances import SNAP_M
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -60,12 +62,26 @@ def _point(field: str, point: object) -> None:
     _finite(f"{field}.y", point[1])
 
 
+def _integer(field: str, value: object) -> None:
+    """Any integer, numpy's included (``operator.index``), but not a bool."""
+    try:
+        if isinstance(value, bool):
+            raise TypeError
+        operator.index(value)  # type: ignore[arg-type]
+    except TypeError:
+        raise InvalidInput(field, f"must be an int, got {value!r}") from None
+
+
 def _outline(field: str, outline: Iterable[Point]) -> None:
     points = tuple(outline)
     if len(points) < 3:
         raise InvalidInput(field, f"needs at least 3 points, got {len(points)}")
     for index, point in enumerate(points):
         _point(f"{field}[{index}]", point)
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+    if max(xs) - min(xs) <= SNAP_M or max(ys) - min(ys) <= SNAP_M:
+        # Caught later as an internal error ("degenerate outline") before this check.
+        raise InvalidInput(field, "zero-width or zero-height outline", "give a real polygon")
 
 
 def _rooms(plan: Plan) -> None:
@@ -97,6 +113,20 @@ def _walls(plan: Plan) -> None:
 
 
 def _context(ctx: Context) -> None:
+    from archlux.types import Orientation, Regulation, Structure
+
+    for name, kind in (
+        ("structure", Structure),
+        ("orientation", Orientation),
+        ("regulation", Regulation),
+    ):
+        if not isinstance(getattr(ctx, name), kind):
+            raise InvalidInput(
+                f"context.{name}",
+                f"must be a {kind.__name__}, got {type(getattr(ctx, name)).__name__}",
+                "build Context with keywords: Context(structure=..., orientation=..., "
+                "regulation=..., outline=...)",
+            )
     _finite("orientation.deg", ctx.orientation.deg)
     _non_negative("regulation.largeur_min", ctx.regulation.min_width)
     for room_type, threshold in ctx.regulation.min_areas:
@@ -189,8 +219,7 @@ def validate_inputs(
     _context(ctx)
     if budget is not None:
         _non_negative("budget", budget)
-    if isinstance(budget_reparation, bool) or not isinstance(budget_reparation, int):
-        raise InvalidInput("budget_reparation", f"must be an int, got {budget_reparation!r}")
+    _integer("budget_reparation", budget_reparation)
     if budget_reparation < 0:
         raise InvalidInput("budget_reparation", f"must be >= 0, got {budget_reparation}")
     _warn_unregulated_types(plan, ctx)

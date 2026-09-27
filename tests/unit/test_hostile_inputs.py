@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 from dataclasses import replace
 
+import numpy as np
 import pytest
 
 from archlux import (
@@ -22,6 +23,7 @@ from archlux import (
     Structure,
     legalize,
 )
+from archlux.types import Opening
 
 SQUARE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
@@ -236,3 +238,44 @@ def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     assert verdict.certificate is not None
     assert "load-bearing sides" in verdict.certificate.scope
     assert "load-bearing sides" in verdict.certificate.explain()
+
+
+# --- Review of the stack (#3): inputs that still escaped the door ------------------------
+
+
+def _review_plan_and_context() -> tuple[Plan, Context]:
+    plan = Plan(
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=4.0, h=3.0),),
+        outline=((0.0, 0.0), (4.0, 0.0), (4.0, 3.0), (0.0, 3.0)),
+    )
+    ctx = Context(
+        structure=Structure(load_bearing_walls=()),
+        orientation=Orientation(deg=0.0),
+        regulation=Regulation(min_areas=(), min_width=1.0),
+    )
+    return plan, ctx
+
+
+def test_a_flat_outline_is_an_invalid_input() -> None:
+    plan, ctx = _review_plan_and_context()
+    flat = replace(plan, outline=((0.0, 0.0), (6.0, 0.0), (12.0, 0.0)))
+    with pytest.raises(InvalidInput, match="zero-width or zero-height"):
+        legalize(flat, ctx)
+
+
+def test_a_numpy_integer_repair_budget_is_accepted() -> None:
+    plan, ctx = _review_plan_and_context()
+    legalize(plan, ctx, budget_reparation=np.int64(0))  # type: ignore[arg-type]
+
+
+def test_a_non_numeric_opening_position_is_an_invalid_input() -> None:
+    with pytest.raises(InvalidInput, match="must be a number"):
+        Opening(id="o", wall_id="m", s="0.5", relative_width=0.2)  # type: ignore[arg-type]
+
+
+def test_a_positional_context_is_refused_with_a_hint() -> None:
+    plan, ctx = _review_plan_and_context()
+    outline = ((0.0, 0.0), (4.0, 0.0), (4.0, 3.0), (0.0, 3.0))
+    shifted = Context(ctx.structure, ctx.orientation, outline, ctx.regulation)  # type: ignore[arg-type]
+    with pytest.raises(InvalidInput, match="build Context with keywords"):
+        legalize(plan, shifted)

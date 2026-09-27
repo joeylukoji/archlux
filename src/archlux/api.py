@@ -392,6 +392,29 @@ def _optimize_light(
     )
 
 
+_RENAMED_MEMBERS = {
+    "evaluer": "evaluate",
+    "incertitude": "uncertainty",
+    "indicateur": "indicator",
+    "evaluer_pieces": "evaluate_rooms",
+}
+"""Surrogate protocol members renamed in wave 5 without an alias (users implement them)."""
+
+
+def _not_a_surrogate(objective: object) -> str:
+    """Build the TypeError message for ``objective``.
+
+    It names the members to rename when the object has the pre-rename French ones
+    (review of the stack, #9).
+    """
+    message = "objective must implement archlux.light.protocole.Surrogate"
+    legacy = [old for old in _RENAMED_MEMBERS if hasattr(objective, old)]
+    if not legacy:
+        return message
+    renames = ", ".join(f"{old} -> {_RENAMED_MEMBERS[old]}" for old in legacy)
+    return f"{message}; it has the pre-0.10 French members, rename them: {renames}"
+
+
 def legalize(
     plan: Plan,
     ctx: Context,
@@ -551,7 +574,7 @@ def legalize(
     True
     """
     if objective is not None and not isinstance(objective, Surrogate):
-        raise TypeError("objective must implement archlux.light.protocole.Surrogate")
+        raise TypeError(_not_a_surrogate(objective))
     validate_inputs(plan, ctx, budget=budget, budget_reparation=budget_reparation)
     ctx = resolve_outline(plan, ctx)
     _check_calibration(objective, calibration)

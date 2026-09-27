@@ -168,3 +168,40 @@ def test_actif_bat_l_aleatoire() -> None:
     assert largeur_actif < largeur_aleatoire, (
         f"actif={largeur_actif:.4f} aleatoire={largeur_aleatoire:.4f}"
     )
+
+
+def test_a_surrogate_that_still_has_ajuster_is_retrained_with_a_warning() -> None:
+    """Review of the stack (#12): the loop looked up ``fit`` only, and silently stopped
+    retraining a surrogate written before the rename."""
+    import pytest
+
+    calls: list[int] = []
+
+    class Legacy(_ModeleLocal):
+        fit = None  # type: ignore[assignment]
+
+        def ajuster(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            calls.append(1)
+            return _ModeleLocal.fit(self, *args, **kwargs)
+
+    rng = np.random.default_rng(0)
+    pool = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=16)]
+    oris = [Orientation(0.0) for _ in pool]
+    calib = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=12)]
+    loop = Loop(
+        surrogate=Legacy(),
+        simulateur=_OracleRegion(),
+        acquire=RandomStrategy(),
+        budget=8,
+        batch=4,
+        seed=3,
+    )
+    with pytest.warns(DeprecationWarning, match="ajuster is deprecated"):
+        loop.run(
+            pool,
+            oris,
+            reference_optimiseur=pool[:4],
+            calibration=calib,
+            calibration_orientations=[Orientation(0.0) for _ in calib],
+        )
+    assert calls, "the legacy surrogate was never retrained"

@@ -8,6 +8,41 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Fixed — review of the English-API stack (PRs #3 to #16)
+
+- **CI was red on every PR of the stack**, and its `qualite` job stopped at mypy, hiding
+  the later steps: the surrogates declared `indicator -> str` against the protocol's
+  literal; numpy 2.5 changed the arguments of `NDArray[float64]`; the rename tool needs
+  Python 3.12 (its tests now run on 3.12+ and check the refusal on 3.11); doctests and
+  the guarantee benchmark still used renamed names; `scripts/neutrality.py` was not
+  formatted; the identifier guard failed on the export batch. Fixed where each defect
+  was introduced, and merged up the stack.
+- **Calibration lock**: freezing a `LearnedSurrogate` raised "no hashable weights": the
+  fingerprint looked up `weights_fingerprint` only; it also reads `empreinte_poids`.
+- **Active learning**: the loop looked up `fit` only, so a surrogate that still defines
+  `ajuster` was silently never retrained; it is now retrained, with a
+  `DeprecationWarning`.
+- `from archlux.export import diagnostiquer` works again (deprecated alias); 16 aliases
+  that no test covered are now in `test_function_aliases.py`, and the old
+  `archlux.lmo.coupes` module has its own test.
+- A malformed schema v1 file raised a bare `TypeError` from the v1 upgrade; it raises
+  `InvariantViolation` again, as before schema v2.
+- `legalize` names the members to rename when given a surrogate with the pre-0.10 French
+  ones (`evaluer -> evaluate`, ...): the protocol methods have no alias.
+- Input door: a flat outline is an `InvalidInput`, no longer an internal error; a numpy
+  integer is a valid `budget_reparation`; a non-numeric opening position is an
+  `InvalidInput`; a `Context` built positionally (whose fields shifted) is refused with
+  a hint.
+- The non-strict `xfail` on `test_a_saturated_budget_is_not_an_internal_error` is
+  removed: it passed everywhere (XPASS) and hid the test's result either way.
+- `json_io.__all__` listed `SCHEMA_VERSION` twice; `.gitignore` follows `results/`.
+- **Behaviour change, documented**: the guarantee bench labels methods by class name,
+  and derives its bootstrap seed from that label; the rename of the surrogate classes
+  therefore changes the `method` column of `raw_results.csv` and the bootstrap
+  intervals of `archlux.bench` (no published figure depends on them).
+- `results/` regenerated after the renames (statuses `GapNeedsTiling`, English room
+  types in the figures) and `SHA256SUMS` updated.
+
 ### Remediation — PLAN.md phase 3.9, wave 6 (final step): rename experiences/ and resultats/
 
 - `experiences/` becomes `experiments/`, `resultats/` becomes `results/`; `scripts/resultats.py` becomes `scripts/results.py`, and the Makefile targets follow (`results`, `check-results`, `results-corpus`).
@@ -25,7 +60,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 ### Remediation — PLAN.md phase 3.9, wave 5, seventh batch: export, data and bench
 
 - `archlux.export`, `archlux.data` and `archlux.bench` are English: `ExportReport`, `MSDApartment`, `LoadStatistics`, `Split`, `Corruption.corrupt`, `BenchReport`, `Result`, `Interval`... Old names stay importable with a `DeprecationWarning` until 1.0.0.
-- `Corruption`'s Mode values (`deplacer`/`elargir`/`retrecir`/`aplatir`) become `move`/`widen`/`narrow`/`flatten`; `Split`'s and `Corruption`'s fields are renamed without alias (fields, not classes — ADR 0001 rule 6).
+- `Corruption`'s Mode values keep their French names (`deplacer`/`elargir`/`retrecir`/`aplatir`): they are recorded in raw results and seeds, so renaming them would change published figures. `Split`'s and `Corruption`'s fields are renamed without alias (fields, not classes — ADR 0001 rule 6).
 - Prose of all twenty modules is translated to English and enrolled in the language and identifier guards. `legalize`'s own `fusions`/`pavage`/`budget_reparation` parameters are untouched (still the open decision).
 
 ### Remediation — PLAN.md phase 3.9, wave 5, sixth batch: uncertainty, active learning and orientation

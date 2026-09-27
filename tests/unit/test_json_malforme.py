@@ -90,3 +90,22 @@ class TestFichierInvalide:
         path.write_text("[]", encoding="utf-8")
         with pytest.raises(InvariantViolation, match="JSON object"):
             load(path)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [("pieces", [1]), ("pieces", None), ("pieces", {"a": 1}), ("ouvertures", None)],
+)
+def test_a_malformed_v1_file_is_refused_with_a_typed_error(key: str, value: object) -> None:
+    """Review of the stack (#10): the v1 upgrade raised a bare TypeError before reading."""
+    document = {
+        "schema": "1",
+        "contour": [[0, 0], [4, 0], [4, 3], [0, 3]],
+        "pieces": [{"id": "a", "type": "sejour", "x": 0, "y": 0, "w": 4, "h": 3}],
+        "murs": [],
+        "ouvertures": [],
+        "certificat": None,
+    }
+    document[key] = value
+    with pytest.raises(InvariantViolation):
+        from_dict(document)

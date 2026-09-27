@@ -148,6 +148,22 @@ ALIASES = [
     ("archlux.bench.stats", "Intervalle", "Interval"),
     ("archlux.bench.stats", "bootstrap_apparie", "paired_bootstrap"),
     ("archlux.bench.stats", "puissance", "power"),
+    # Found untested by the review of the stack (PRs #11, #14, #15).
+    ("archlux.export", "diagnostiquer", "diagnose"),
+    ("archlux.orient.circulaire", "difference_angulaire", "angular_difference"),
+    ("archlux.orient.circulaire", "direction_dominante", "dominant_direction"),
+    ("archlux.orient.circulaire", "regression_circulaire_lineaire", "circular_linear_regression"),
+    ("archlux.orient.circulaire", "variance_circulaire", "circular_variance"),
+    ("archlux.active.selection", "StrategieAcquisition", "AcquisitionStrategy"),
+    ("archlux.uq", "stratifier_par_orientation", "stratify_by_orientation"),
+    ("archlux.uq.fiabilite", "stratifier_par_orientation", "stratify_by_orientation"),
+    ("archlux.data.chargeurs", "COLONNE_SOLEIL_DEFAUT", "DEFAULT_SUN_COLUMN"),
+    ("archlux.data.dedup", "SEUIL_HAUSDORFF_M", "HAUSDORFF_THRESHOLD_M"),
+    ("archlux.data.dedup", "empreinte_geometrique", "geometric_fingerprint"),
+    ("archlux.data.dedup", "paires_quasi_identiques", "near_duplicate_pairs"),
+    ("archlux.data.imputation", "RATIO_BAIE_DEFAUT", "DEFAULT_OPENING_RATIO"),
+    ("archlux.geom.graphe", "reduction_transitive", "transitive_reduction"),
+    ("archlux.geom.rectilineaire", "contraintes_fusion", "merge_constraints"),
 ]
 
 
@@ -173,3 +189,13 @@ def test_old_names_are_not_advertised(module: str, old: str, new: str) -> None:
     target = importlib.import_module(module)
     assert old not in getattr(target, "__all__", [])
     assert new in target.__all__
+
+
+def test_the_old_lmo_coupes_module_still_serves_every_name() -> None:
+    """``archlux.lmo.coupes`` became ``archlux.lmo.cuts``: each old name warns and resolves."""
+    import archlux.lmo.coupes as legacy_module
+    import archlux.lmo.cuts as cuts
+
+    for old, new in legacy_module._NAMES.items():
+        with pytest.warns(DeprecationWarning, match=f"archlux.lmo.cuts.{new}"):
+            assert getattr(legacy_module, old) is getattr(cuts, new)

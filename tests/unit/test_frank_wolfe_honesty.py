@@ -131,14 +131,6 @@ def test_performance_mode_never_moves_a_room_beyond_the_budget(
     assert _max_move(result, proposed) <= budget + 1e-6
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "latent defect found when a rename re-seeded this derandomized test: a saturated "
-        "budget can leave a 4e-9 m2 overlap that the exact proof rejects once an earlier "
-        "test has warmed the LP cache. Not a rename effect; to fix in phase 4"
-    ),
-)
 @settings(max_examples=40, deadline=None, derandomize=True)
 @given(scenario=realistic_scenarios())
 def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Context]) -> None:

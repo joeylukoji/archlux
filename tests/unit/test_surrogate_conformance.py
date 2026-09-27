@@ -94,3 +94,31 @@ def test_legalize_accepts_a_daylight_objective() -> None:
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     result = archlux.legalize(plan, ctx, objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0))
     assert checkers.violations(result, ctx) == []
+
+
+def test_a_surrogate_with_the_french_members_gets_a_migration_hint() -> None:
+    """Review of the stack (#9): the protocol methods were renamed without an alias."""
+
+    class OldStyle:
+        indicateur = "sDA"
+
+        def evaluer(self, x, orientation, *, baies=None):  # type: ignore[no-untyped-def]
+            return 0.0
+
+        def gradient(self, x, orientation, *, baies=None):  # type: ignore[no-untyped-def]
+            return np.zeros_like(x)
+
+        def incertitude(self, x, orientation, *, baies=None):  # type: ignore[no-untyped-def]
+            return 1.0
+
+    plan = Plan(
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=4.0, h=3.0),),
+        outline=((0.0, 0.0), (4.0, 0.0), (4.0, 3.0), (0.0, 3.0)),
+    )
+    ctx = Context(
+        structure=Structure(load_bearing_walls=()),
+        orientation=Orientation(deg=0.0),
+        regulation=Regulation(min_areas=(), min_width=1.0),
+    )
+    with pytest.raises(TypeError, match=r"evaluer -> evaluate.*incertitude -> uncertainty"):
+        archlux.legalize(plan, ctx, objective=OldStyle())  # type: ignore[arg-type]
