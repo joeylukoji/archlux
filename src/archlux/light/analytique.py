@@ -111,7 +111,7 @@ class AnalyticSurrogate:
     """Alias de classe vers :data:`FACTEURS_SECTEUR` (contrat public conservé)."""
 
     @property
-    def indicator(self) -> str:
+    def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
