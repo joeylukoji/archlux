@@ -24,7 +24,7 @@ from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
-    from archlux.export import RapportExport
+    from archlux.export import ExportReport
 
 __all__ = [
     "Certificate",
@@ -270,7 +270,7 @@ class Plan:
 
         to_dxf(self, path)
 
-    def to_ifc(self, path: Path | str, *, validate: bool = True) -> RapportExport:
+    def to_ifc(self, path: Path | str, *, validate: bool = True) -> ExportReport:
         """Write the plan as IFC4 and return the report of the export.
 
         Facade over :func:`archlux.export.ifc.to_ifc`. With ``validate`` (default), a

@@ -239,11 +239,11 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `RapportExport`, `DiagnosticPathologie`, `intervalle_wilson` | `ExportReport`, `PathologyDiagnostic`, `wilson_interval` | `archlux.export` |
 | `comparer`, `planche` | `compare`, `sheet` | `archlux.export.svg` |
 | `AppartementMSD`, `StatistiquesChargement`, `charger_msd`, `charger_etiquettes_sd`, `etiqueter`, `decouper_par_site` | `MSDApartment`, `LoadStatistics`, `load_msd`, `load_sd_labels`, `label`, `split_by_site` | `archlux.data.chargeurs`; constants `COLONNE_SOLEIL_DEFAUT`, `TYPES_EXCLUS` become `DEFAULT_SUN_COLUMN`, `EXCLUDED_TYPES` |
-| `corrompre` (`Corruption`) | `corrupt` | `archlux.data.corruption`; field `piece_id`/`axe` become `room_id`/`axis`; Mode values `deplacer`/`elargir`/`retrecir`/`aplatir` become `move`/`widen`/`narrow`/`flatten` |
+| `corrompre` | `corrupt` | `archlux.data.corruption`; field `piece_id`/`axe` become `room_id`/`axis`; Mode values `deplacer`/`elargir`/`retrecir`/`aplatir` become `move`/`widen`/`narrow`/`flatten` |
 | `Decoupage`, `charger_decoupage` | `Split`, `load_split` | `archlux.data.decoupage`; fields `nom`/`entrainement`/`empreinte` become `name`/`train`/`fingerprint` |
 | `empreinte_geometrique`, `distance_cotes`, `paires_quasi_identiques`, `SEUIL_HAUSDORFF_M` | `geometric_fingerprint`, `side_distance`, `near_duplicate_pairs`, `HAUSDORFF_THRESHOLD_M` | `archlux.data.dedup` |
 | `imputer_ouvertures`, `RATIO_BAIE_DEFAUT` | `impute_openings`, `DEFAULT_OPENING_RATIO` | `archlux.data.imputation` |
 | `generer_corpus`, `TAILLE_MAX` | `generate_corpus`, `MAX_SIZE` | `archlux.data.synthese` |
 | `deriver`, `emettre` | `derive`, `emit` | `archlux.bench.graines`, `archlux.bench.manifeste` |
 | `RapportBanc`, `StrateOrientation`, `LigneBrute`, `Resultat`, `Intervalle`, `bootstrap_apparie`, `puissance` | `BenchReport`, `OrientationStratum`, `RawRow`, `Result`, `Interval`, `paired_bootstrap`, `power` | `archlux.bench.{rapport,run,stats}` |
-| identifiers `contour`, `murs`, `ouvertures`, `pieces`, `poids`, `couverture`, `manifeste` (local names, not `Plan`/`Manifest` fields) | `outline`, `walls`, `openings`, `rooms`, `weights`, `coverage`, `manifest` | across `export` and `data`, no alias (locals, not public fields) |
+| identifiers `contour`, `murs`, `ouvertures`, `pieces`, `poids`, `couverture`, `manifeste` (local names, not Plan or Manifest fields) | `outline`, `walls`, `openings`, `rooms`, `weights`, `coverage`, `manifest` | across `export` and `data`, no alias (locals, not public fields) |

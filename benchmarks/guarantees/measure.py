@@ -265,7 +265,7 @@ def _gallery(
         svg = compare(
             given,
             result,
-            contour=context_of[case.scenario].outline,
+            outline=context_of[case.scenario].outline,
             walls=context_of[case.scenario].structure.load_bearing_walls,
             titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
