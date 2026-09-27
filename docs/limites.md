@@ -50,13 +50,13 @@ Conséquences chiffrées, à budget de réparation 16 et `largeur_min = 0,50 m` 
   \\((2n-1)^2\\) quand aucun bord ne coïncide, alors que la réparation bornée ne
   corrige qu'un nombre borné de cellules ;
 - des plans sont **prouvés infaisables** : la trame réparée contredit alors les
-  séparations issues de `deduire_ordre`, et le certificat de Farkas nomme le conflit
+  séparations issues de `deduce_order`, et le certificat de Farkas nomme le conflit
   minimal (2 à 3 lignes sur 45).
 
 Ce que cela veut dire pour un utilisateur : **la légalisation a posteriori ne remplace
 pas un générateur qui respecte la condition de pavage.** Elle garantit la validité et
 la prouve ; elle ne garantit ni la ressemblance ni la survie du programme, et il faut
-lui demander cette dernière explicitement, par un `largeur_min` strictement positif. La
+lui demander cette dernière explicitement, par un `min_width` strictement positif. La
 contrainte a sa place *dans* le générateur — ce que ce dépôt permet de chiffrer, pas ce
 qu'il fournit.
 

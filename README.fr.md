@@ -39,7 +39,7 @@ simulation ni une vérité terrain — jamais sur un sDA LM-83 mesuré.
 - **Géométrie non-Manhattan** : non supportée (un mur porteur oblique lève
   `UnsupportedInput`). Les pièces en L passent par une fusion de rectangles.
 - **Front de Pareto** sDA / ASE : aucun code.
-- **Transformeur appris** : `SubstitutAppris` refuse les poids `.pt`.
+- **Transformeur appris** : `LearnedSurrogate` refuse les poids `.pt`.
 - **Étiquettes d'éclairement physiques** : la CI utilise une forme fermée
   ([`docs/donnees/verite-terrain.md`](docs/donnees/verite-terrain.md)).
 

@@ -207,7 +207,7 @@ class DenseSurrogate:
         possible — le réseau est différentiable et l'analytique a un gradient fermé —
         mais elle change les valeurs rendues près du coude
         ``profondeur == profondeur_utile`` : la substituer exige de repasser
-        :func:`archlux.light.validation.valider_gradient`.
+        :func:`archlux.light.validation.validate_gradient`.
         """
         x0 = np.asarray(x, dtype=float).ravel().copy()
         g = np.empty_like(x0)
@@ -248,7 +248,7 @@ class DenseSurrogate:
     ) -> None:
         """Recaler l'analytique, puis descente de gradient Huber sur le **résidu**.
 
-        Le recalage affine n'est pas cosmétique. ``SubstitutAnalytique`` rend un
+        Le recalage affine n'est pas cosmétique. ``AnalyticSurrogate`` rend un
         score en **unités arbitraires** — une somme de façades pondérées, de l'ordre
         de la centaine — sans aucune échelle physique. Contre ``SplitFluxOracle``,
         construit sur la même base, les deux coïncident et le résidu est petit.
@@ -349,7 +349,7 @@ class DenseSurrogate:
             echelle_base=np.array(self.echelle_base),
             decalage_base=np.array(self.decalage_base),
             # The key of the saved archive is part of the file format: it stays
-            # ``indicateur`` so that models saved before the English API still load.
+            # ``indicator`` so that models saved before the English API still load.
             # mypy matches the ``**`` mapping against ``allow_pickle: bool``
             **{"indicateur": np.array(self.indicateur_vise)},  # type: ignore[arg-type]
         )
@@ -357,7 +357,7 @@ class DenseSurrogate:
 
     @classmethod
     def load(cls, chemin: Path) -> DenseSurrogate:
-        """Relire un ``npz`` produit par :meth:`sauver`."""
+        """Relire un ``npz`` produit par :meth:`save`."""
         indicateurs: tuple[Indicator, ...] = (
             "sDA",
             "ASE",

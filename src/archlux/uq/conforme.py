@@ -238,12 +238,12 @@ def bound(
 
     Parameters
     ----------
-    valeur : float
+    value : float
         Point estimate (same unit as the indicator).
     calibration : Calibration
         Non-conformity scores. If already normalized by ``sigma``, pass ``uncertainty``
         equal to ``sigma`` of the point to bound.
-    incertitude : float
+    uncertainty : float
         Local scale, **strictly positive**, and mandatory: the former default of 1 was
         only right for scores that are not normalized, while
         :meth:`ConformalCalibrator.fit` divides them by ``σ``; the default then
@@ -345,7 +345,7 @@ class ConformalCalibrator:
         ----------
         prediction : float
             Point estimate.
-        incertitude : float
+        uncertainty : float
             ``sigma_hat`` at the same point, **strictly positive**: the fitted scores
             are normalized, so ``sigma_hat = 0`` would publish a zero-width interval
             announced at ``1 - alpha``, and ``sigma_hat < 0`` an inverted interval.
@@ -356,7 +356,7 @@ class ConformalCalibrator:
             ``indicator``. ``sens`` does not change the bounds — it only refuses
             inconsistency.
         regime : {"exchangeable", "selected"}
-            See :func:`borner`.
+            See :func:`bound`.
         """
         if self.n < 1:
             raise InvariantViolation(("calibrator not fitted",))
@@ -380,9 +380,9 @@ class ConformalCalibrator:
         )
 
     def snapshot(self) -> Calibration:
-        """Freeze the scores and ``alpha`` for ``borner`` / the certificate.
+        """Freeze the scores and ``alpha`` for ``bound`` / the certificate.
 
-        ``borner`` recomputes the conformal quantile from the scores; the data set
+        ``bound`` recomputes the conformal quantile from the scores; the data set
         fingerprint stays logged with the calibration.
         """
         if self.n < 1 or self.scores is None:

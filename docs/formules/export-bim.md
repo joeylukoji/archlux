@@ -34,7 +34,7 @@ Les bornes restent dans \([0,1]\) même pour de petits \(n\) ou \(\hat p\) extr�
 
 | Symbole | Fonction |
 |---|---|
-| diagnostic | `diagnostiquer` |
+| diagnostic | `diagnose` |
 | IFC | `to_ifc` → `ExportReport` |
 | DXF | `to_dxf` |
 | Wilson | `wilson_interval` |

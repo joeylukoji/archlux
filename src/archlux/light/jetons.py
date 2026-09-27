@@ -152,7 +152,7 @@ def vector_to_tokens(
         Vecteur de décision ``(x, y, w, h)`` par pièce.
     orientation : Orientation
         Azimut du bâtiment.
-    baies : Baies or None, optional
+    glazing : Baies or None, optional
         Fenestration. ``None`` rend les seuls jetons de pièce — c'est le
         comportement d'avant l'extension du protocole, et il est **exactement**
         conservé.

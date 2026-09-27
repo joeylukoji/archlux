@@ -1,6 +1,6 @@
 # Pavage exact
 
-**Code :** `geom.pavage.deduire_trame`, `etendre_pavage` ; `api.legalize(..., tiling=True)`.
+**Code :** `geom.pavage.deduce_grid`, `extend_tiling` ; `api.legalize(..., tiling=True)`.
 
 ## Le problème
 
@@ -105,7 +105,7 @@ sature vite — 8 ne gagne rien sur 4 :
 
 1. **Le système reste faisable.** Les positions de trame du plan de référence sont
    toujours un point admissible. Geler des contacts *approximativement* saturés
-   (`figer_contacts`) n'offre aucune garantie de ce genre : 8 % de LP infaisables
+   (`freeze_contacts`) n'offre aucune garantie de ce genre : 8 % de LP infaisables
    mesurés, pour 41,5 % de réparation seulement.
 2. **La garantie est structurelle.** Elle ne dépend d'aucune tolérance à
    l'exécution : la vérification de partition a déjà eu lieu.
@@ -129,7 +129,7 @@ IC 95 % sur le repli global : [93,2 – 94,5]. Temps médian 6,5 ms, sous le bud
 
 Le repli n'ajoute qu'un point : la contrainte de pavage domine presque partout à
 elle seule. Il reste utile là où la corruption détruit la structure combinatoire —
-`deduire_trame` refuse alors plutôt que de deviner, et le L1 seul reprend la main.
+`deduce_grid` refuse alors plutôt que de deviner, et le L1 seul reprend la main.
 
 ## Cas d'utilisation
 

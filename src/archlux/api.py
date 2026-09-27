@@ -75,7 +75,7 @@ def gradient_distance(x_proposed: VecteurF) -> VecteurF:
         \\qquad \\min\\, c^\\top (x,e) = \\min \\sum_i e_i.
 
     ``x_proposed`` only fixes the dimension :math:`n`; the :math:`\\hat{x}_i` enter the
-    constraints of :func:`etendre_ecarts_l1`, not ``c``.
+    constraints of :func:`extend_l1_slack`, not ``c``.
 
     Parameters
     ----------
@@ -125,7 +125,7 @@ def _translated_duals(
     """Pair the duals of the rows of ``A`` with ``poly.origins``.
 
     ``duals`` must come from an LP solved on **this** polytope: the pairing is
-    positional, and ``origines`` only covers ``A``, never ``A_eq`` nor the cuts.
+    positional, and ``origins`` only covers ``A``, never ``A_eq`` nor the cuts.
     ``objective`` names the unit of the prices: ``"displacement"`` (L1 pass) or the
     indicator of the surrogate (Frank-Wolfe pass, a prediction).
     """
@@ -442,7 +442,7 @@ def legalize(
     ----------
     plan : Plan
         Proposed plan, possibly invalid. An L-shaped room must already be decomposed into
-        sub-rectangles (:func:`~archlux.geom.rectilineaire.decomposer`).
+        sub-rectangles (:func:`~archlux.geom.rectilineaire.decompose`).
     ctx : Contexte
         Load-bearing structure, orientation, outline, regulation.
     objective : Substitut or None, optional
@@ -463,7 +463,7 @@ def legalize(
         Fused rooms (L, T, U, Z) decomposed into sub-rectangles. Their shared edges
         become equalities of ``A_eq``; on the orthogonal axis, the order of the
         sub-rectangle ends is kept and every shared edge keeps at least
-        ``referentiel.largeur_min`` of length, so an L cannot turn into a Z or split
+        ``regulation.min_width`` of length, so an L cannot turn into a Z or split
         (:func:`~archlux.geom.rectilineaire.overlap_constraints`).
     tiling : bool, optional
         Require that the union of the rooms **tiles the outline exactly**. Without it,
@@ -479,14 +479,14 @@ def legalize(
         Figures measured before batch 1.1.
 
         Requires the grid of the proposed plan to be recoverable
-        (:func:`~archlux.geom.pavage.deduire_trame`); otherwise ``GridNotRecoverable``
+        (:func:`~archlux.geom.pavage.deduce_grid`); otherwise ``GridNotRecoverable``
         names the faulty cells. Default ``False``: the 1.x contract is unchanged.
         With a grid, the relative order and the load-bearing sides are read from
         the plan snapped onto it (:func:`~archlux.geom.pavage.snap_to_grid`), so
         that they never contradict the tiling equalities.
     repair_budget : int, optional
         Number of repair steps granted to the grid recovery, passed as is to
-        :func:`~archlux.geom.pavage.deduire_trame`. No effect if ``tiling`` is false.
+        :func:`~archlux.geom.pavage.deduce_grid`. No effect if ``tiling`` is false.
 
         The default ``4`` is tuned on **corrupted** plans, where the fault is a wrong
         dimension and is absorbed in one or two steps. The output of a generative model
@@ -513,9 +513,9 @@ def legalize(
         (an input limit, subclass of ``UnsupportedInput``).
     Infeasible
         The program does not fit the envelope for this relative order. The exception
-        carries ``origines`` and, when the conflict is attributable to rows of ``A`` or
+        carries ``origins`` and, when the conflict is attributable to rows of ``A`` or
         ``A_eq``, ``certificat_farkas`` with its exact verification (``verified``).
-        Raised before the LP if ``largeur_min`` already exceeds the envelope.
+        Raised before the LP if ``min_width`` already exceeds the envelope.
     GapNeedsTiling
         The plan leaves a gap and ``tiling`` is off: rerun with ``tiling=True``
         (an input limit, subclass of ``UnsupportedInput``).
@@ -532,7 +532,7 @@ def legalize(
         ``calibration`` without ``objective`` or for another indicator. Its ``field``
         names the argument (a ``ValueError`` subclass).
     TypeError
-        ``objective`` does not implement :class:`~archlux.light.protocole.Substitut`.
+        ``objective`` does not implement :class:`~archlux.light.protocole.Surrogate`.
 
     Guarantees
     ----------
@@ -546,7 +546,7 @@ def legalize(
 
     Complexity
     ----------
-    Classic mode: one LP per Kelley iteration, at most ``MAX_COUPES_PAR_PIECE`` per
+    Classic mode: one LP per Kelley iteration, at most ``MAX_CUTS_PER_ROOM`` per
     room, < 20 ms for 15 rooms.
     Performance mode: up to 50 warm LPs, < 500 ms
     (`ARCHITECTURE.md` §9).

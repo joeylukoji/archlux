@@ -143,7 +143,7 @@ def stratify_by_orientation(
     Sectors are **edge-aligned**, not centered: sector 0 is ``[0deg, 45deg[`` and not
     the "N" compass rose ``[-22.5deg, 22.5deg[``. Two azimuths close to north (1deg
     and 359deg) therefore fall in different sectors.
-    :func:`archlux.orient.circulaire.stratifier` centers its sectors instead and names
+    :func:`archlux.orient.circulaire.stratify` centers its sectors instead and names
     them ``N, NE, ...``: the two partitions are **not** interchangeable. Here only the
     partition matters (coverage by stratum), not the sector's name.
     """

@@ -1,6 +1,6 @@
 # Ordre relatif et graphe de contraintes
 
-**Code :** `geom.graphe.deduire_ordre`, `construire_graphe`, `reduction_transitive`.
+**Code :** `geom.graphe.deduce_order`, `build_graph`, `transitive_reduction`.
 
 ## Énoncé
 
@@ -37,7 +37,7 @@ x_A+w_A\le x_B.
 Sur un axe fixé, l'arête va toujours du plus petit centre vers le plus grand (à
 \(\mathrm{id}\) près). L'ensemble des arêtes d'un axe est donc un sous-graphe d'un
 **ordre total**, donc un DAG. Un cycle « \(A\) à gauche de \(B\) à gauche de \(A\) »
-est impossible *par construction* de `deduire_ordre`. `construire_graphe` le revérifie
+est impossible *par construction* de `deduce_order`. `build_graph` le revérifie
 (`networkx.is_directed_acyclic_graph`) au cas où l'ordre viendrait d'ailleurs.
 
 ## Dérivation — réduction transitive
@@ -56,7 +56,7 @@ ses bornes.
 | Faire | Ne pas faire |
 |---|---|
 | Lire l'ordre d'un plan *proposé* (le générateur décide) | Choisir l'axe du plus grand écart de centres alors que les pièces se recouvrent sur cet axe — la contrainte produite est déjà violée par un plan correct |
-| Réduire avant d'assembler \(A x\le b\) | Tester `a_separation` *après* réduction : une paire séparée par transitivité n'a plus d'arête directe |
+| Réduire avant d'assembler \(A x\le b\) | Tester `has_separation` *après* réduction : une paire séparée par transitivité n'a plus d'arête directe |
 | Tolérer le contact à \(10^{-9}\,\mathrm{m}\) | Traiter un `set` d'arêtes : l'ordre d'itération changerait les lignes de \(A\) |
 
 ## Source

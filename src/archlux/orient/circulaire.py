@@ -155,7 +155,7 @@ def dominant_direction(
     ----------
     degres : array_like
         Angles of the axes, in degrees.
-    poids : array_like or None, optional
+    weights : array_like or None, optional
         Positive weights, same length. ``None`` = unit weights.
     periode : float, optional
         Period of the symmetry, in degrees. ``90`` for an orthogonal grid

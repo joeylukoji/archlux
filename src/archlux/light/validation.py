@@ -82,7 +82,7 @@ def validate_gradient(
 
     Parameters
     ----------
-    substitut : Substitut
+    surrogate : Substitut
         Modèle à valider, analytique ou appris.
     points : numpy.ndarray
         Points d'évaluation, un par ligne.

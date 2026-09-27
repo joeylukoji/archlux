@@ -207,7 +207,7 @@ class ModelModified(CalibrationLocked):
 class InvalidSurrogate(ArchluxError):
     """The gradient of a surrogate does not match its finite differences.
 
-    Raised by :func:`archlux.light.validation.valider_gradient`. A surrogate with a wrong
+    Raised by :func:`archlux.light.validation.validate_gradient`. A surrogate with a wrong
     gradient makes the optimizer converge to noise, with no visible error.
     """
 
@@ -219,7 +219,7 @@ class InvalidSurrogate(ArchluxError):
     ) -> None:
         """Compose the message of an unusable surrogate gradient.
 
-        ``report`` is the full :class:`~archlux.light.validation.RapportGradient` of a
+        ``report`` is the full :class:`~archlux.light.validation.GradientReport` of a
         failed check, so that a caller can record the failing value without parsing
         the message (PLAN.md phase 2, J4). Typed ``object``: this module is imported by
         every layer and may not import ``light``, not even for a type.
@@ -268,7 +268,7 @@ class GapNeedsTiling(UnsupportedInput):
 class GridNotRecoverable(UnsupportedInput):
     """The tiling grid of the plan cannot be recovered within the repair budget.
 
-    Raised by :func:`archlux.geom.pavage.deduire_trame` when the proposed plan is too
+    Raised by :func:`archlux.geom.pavage.deduce_grid` when the proposed plan is too
     far from a tiling: some grid cells stay covered twice (``excess``) or not at all
     (``missing``) after the bounded repair. An input limit, not an internal error:
     until batch 1.5c it was raised as ``InvariantViolation`` and callers sorted it by

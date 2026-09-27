@@ -570,7 +570,7 @@ def tiling_constraints(
     -------
     tuple
         Triplets ``(label, terms, right_hand_side)``, same conventions as
-        :func:`~archlux.geom.rectilineaire.contraintes_fusion`.
+        :func:`~archlux.geom.rectilineaire.merge_constraints`.
 
     Raises
     ------

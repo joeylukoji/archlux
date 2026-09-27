@@ -1,6 +1,6 @@
 # Coupes de surface
 
-**Code :** `lmo.coupes.coupe_surface`, `surfaces_violees`, `resoudre_avec_surfaces`.
+**Code :** `lmo.coupes.area_cut`, `violated_areas`, `solve_with_areas`.
 
 ## Énoncé
 
@@ -60,7 +60,7 @@ On projette d'abord sur l'hyperbole en conservant le rapport :
  =\sqrt{\frac{a_{\min}}{wh}}\,(w,h).
 \]
 
-C'est le code de `coupe_surface`.
+C'est le code de `area_cut`.
 
 ## Pourquoi Kelley seul oscille
 
@@ -85,7 +85,7 @@ Tangentes initiales : le carré et les intersections de l'hyperbole avec
 
 | Faire | Ne pas faire |
 |---|---|
-| Appeler `resoudre_avec_surfaces` depuis `legalize` (le référentiel connaît \(a_{\min}\)) | Mettre la boucle dans `lmo.solveur.resoudre` — `lmo` ignore l'origine de \(c\) **et** le programme |
+| Appeler `solve_with_areas` depuis `legalize` (le référentiel connaît \(a_{\min}\)) | Mettre la boucle dans `lmo.solveur.solve` — `lmo` ignore l'origine de \(c\) **et** le programme |
 | Projeter avant d'écrire la coupe | Passer \(wh\ge a\) à GLOP comme produit |
 | Laisser `a_min=0` sans coupe | Croire qu'après 10 coupes le sommet LP est *sur* l'hyperbole : d'où le resserrement de bornes |
 

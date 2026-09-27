@@ -84,19 +84,19 @@ def legalize(plan: Plan, ctx: Context, *, objective=None,
     Returns                                                          ✱
     -------
     Plan
-        Plan valide portant son ``certificat``.
+        Plan valide portant son ``certificate``.
 
     Raises                                                           ✱
     ------
     Infeasible
         Le programme ne tient pas dans l'enveloppe. L'exception porte
-        ``certificat`` : les contraintes en conflit.
+        ``certificate`` : les contraintes en conflit.
     InvariantViolation
         Le solveur a produit une sortie invalide (bogue interne).
 
     Guarantees                                                       ✱ SPÉCIFIQUE PROJET
     ----------
-    - Géométrique : **exacte**. ``resultat.certificat.geometry.valide``
+    - Géométrique : **exacte**. ``result.certificate.geometry.valid``
       est vérifié indépendamment du solveur avant retour.
     - Performance : **probabiliste** si ``objective`` est fourni.
       Couverture ≥ 1−α, sous hypothèse d'échangeabilité avec le jeu
@@ -204,7 +204,7 @@ Un exemple qui n'énonce pas d'abord un problème concret ne sert à rien.
 | 1 | `README.md`, `installation.md`, schéma JSON |
 | **2** | **Galerie 01 et 03, `concepts/polytope.md`, `formules/`, docstrings `geom`/`lmo`/`certify`** |
 | 3 | Galerie 02, `concepts/oracle-partage.md`, tutoriel légalisation performantielle |
-| 4 | Tutoriel substitut, doc du protocole `Surrogate`, **doc de `valider_gradient`** |
+| 4 | Tutoriel substitut, doc du protocole `Surrogate`, **doc de `validate_gradient`** |
 | 5 | Galerie 04 et 05, `concepts/deux-garanties.md`, `concepts/prediction-conforme.md` |
 | 6 | `limites.md`, guide de contribution, notes de version 1.0 |
 
@@ -221,11 +221,11 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 ## [0.2.0] — 2026-11-14
 
 ### Ajouté
-- `light.SubstitutAnalytique` : modèle de lumière en formes fermées, sans apprentissage.
+- `light.AnalyticSurrogate` : modèle de lumière en formes fermées, sans apprentissage.
 - `solve.frank_wolfe` avec pas d'écartement.
 
 ### Modifié
-- `lmo.resoudre` accepte `depart=` pour le démarrage à chaud (×3 sur le temps).
+- `lmo.solveur.solve` accepte `depart=` pour le démarrage à chaud (×3 sur le temps).
 
 ### Corrigé
 - Les coupes de surface pouvaient s'accumuler sans borne (#42).

@@ -2,7 +2,7 @@ r"""Exact verification, **independent of the solver**.
 
 Formula
 =======
-Boolean predicates, whose conjunction is ``valide``. None of them is probabilistic.
+Boolean predicates, whose conjunction is ``valid``. None of them is probabilistic.
 
 Overlap
 -------
@@ -222,7 +222,7 @@ def _fused_area(piece: RectilinearRoom, by_id: dict[str, Room], ctx: Context) ->
 def _areas(
     rooms: tuple[Room, ...], ctx: Context, merges: tuple[RectilinearRoom, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
-    """Area ``w h`` against ``a_min`` of the room type; fused rooms as a whole."""
+    """Area ``w h`` against ``min_area`` of the room type; fused rooms as a whole."""
     by_id = {room.id: room for room in rooms}
     fused: set[str] = set()
     violations: list[str] = []
@@ -545,7 +545,7 @@ def verify_exactly(
     - Geometric, rectangular outline: tiling proved in **exact rational arithmetic**
       (:func:`rational_tiling`), the only tolerance being the identification of edges
       closer than ``SNAP_M`` (1e-7 m). Other outlines: GEOS areas, tolerances
-      ``_AREA_TOLERANCE_M2`` and ``GAP_TOLERANCE_M2``. ``valide`` is the conjunction.
+      ``_AREA_TOLERANCE_M2`` and ``GAP_TOLERANCE_M2``. ``valid`` is the conjunction.
     - Performance: **none**.
 
     Notes

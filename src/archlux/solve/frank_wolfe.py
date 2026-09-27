@@ -54,7 +54,7 @@ class FrankWolfeResult:
         is not counted).
     duals : numpy.ndarray or None
         Dual prices of the last LP, aligned with the rows of ``poly.A``. Equalities made
-        by :func:`archlux.geom.polytope.figer_contacts` are not included, so the dual
+        by :func:`archlux.geom.polytope.freeze_contacts` are not included, so the dual
         diagnosis of a performance run is often empty.
     """
 
@@ -118,7 +118,7 @@ def _add_cuts(
     ctx: Context | None,
     rooms: tuple[Room, ...] | None,
 ) -> None:
-    """Add AM-GM tangents when a room goes below ``a_min`` (legacy path)."""
+    """Add AM-GM tangents when a room goes below ``min_area`` (legacy path)."""
     if ctx is None or not rooms:
         return
     if len(cuts) >= MAX_CUTS_PER_ROOM * len(rooms):
@@ -216,7 +216,7 @@ def frank_wolfe(
     what :func:`archlux.api.legalize` passes: every point of such a domain keeps every
     minimum area, hence every iterate does. The legacy ``cuts``/``rooms``/``ctx`` path
     adds *outer* tangent cuts on the way; a cut added mid-run is violated by the current
-    iterate, ``gap`` may turn negative and ``x`` may stay below ``a_min``. That path is
+    iterate, ``gap`` may turn negative and ``x`` may stay below ``min_area``. That path is
     kept for compatibility and is no longer used by ``legalize``.
 
     Complexity

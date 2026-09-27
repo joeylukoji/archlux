@@ -12,7 +12,7 @@ que le système est conçu pour rendre difficile.
 | **Nature** | Preuve | Prédiction assortie d'une marge |
 | **Vérification** | Inspection finie, \(O(n^2)\) | Couverture \(\ge 1-\alpha\) sur un jeu de calibration |
 | **Peut être fausse ?** | Non (à la tolérance d'arrondi près) | Oui, dans au plus \(\alpha\) des cas |
-| **Type** | `GeometricProof` — aucun champ de probabilité | `PerformanceBound` — `couverture`, `n_calibration` et `regime` obligatoires |
+| **Type** | `GeometricProof` — aucun champ de probabilité | `PerformanceBound` — `coverage`, `n_calibration` et `regime` obligatoires |
 | **Bandeau** | `[EXACT]` | `[PREDICTION: coverage 90 %]` (plan échangeable) ou `[PREDICTION: selected plan, coverage NOT guaranteed]` |
 
 La géométrie est un prédicat sur des rectangles : on peut le recompter. La lumière

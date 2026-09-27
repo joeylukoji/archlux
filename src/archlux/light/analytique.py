@@ -6,7 +6,7 @@ ici, avant toute dépense de simulation ou d'entraînement.
 
 Implémente :class:`archlux.light.protocole.Surrogate`. Entrée vectorielle uniquement.
 
-Le facteur d'orientation passe par :func:`archlux.orient.circulaire.encoder` : jamais
+Le facteur d'orientation passe par :func:`archlux.orient.circulaire.encode_orientation` : jamais
 le degré brut. Formules : ``docs/formules/substitut-analytique.md``.
 
 Ce module n'importe ni ``geom`` ni ``lmo`` ni ``solve`` : uniquement un vecteur et un
@@ -30,7 +30,7 @@ __all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
 
 _EPS = 1e-12
 _N_CHAMPS = 4
-"""Même contrat que ``geom.polytope.CHAMPS`` : ``(x, y, w, h)`` par pièce. Dupliqué
+"""Même contrat que ``geom.polytope.FIELDS`` : ``(x, y, w, h)`` par pièce. Dupliqué
 ici pour que ``light`` n'importe pas ``geom``.
 """
 
@@ -58,7 +58,7 @@ ou remplace par une simulation annuelle, jamais comme la regle citee.
 def sector_factor(orientation: Orientation) -> float:
     """Poids d'exposition du secteur de 45 degres contenant ``orientation``.
 
-    Passe par :func:`archlux.orient.circulaire.encoder`, jamais par le degre brut :
+    Passe par :func:`archlux.orient.circulaire.encode_orientation`, jamais par le degre brut :
     l'azimut est reconstruit depuis ``(cos, sin)``, donc continu en 0 / 360.
 
     Parameters
@@ -190,7 +190,7 @@ class AnalyticSurrogate:
         return parts
 
     def _facteur_orientation(self, orientation: Orientation) -> float:
-        """Table à 8 secteurs. Délègue à :func:`facteur_secteur`, sans état."""
+        """Table à 8 secteurs. Délègue à :func:`sector_factor`, sans état."""
         return sector_factor(orientation)
 
     def _score_et_gradient(

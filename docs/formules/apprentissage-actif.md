@@ -45,7 +45,7 @@ densité de probabilité et ne doit pas être publiée comme telle.
 ### La boucle
 
 Après chaque lot de \(k\) candidats : simuler avec l'oracle gelé → réentraîner si
-`ajuster` existe → **recalibrer le conforme**. La recalibration n'est pas
+`fit` existe → **recalibrer le conforme**. La recalibration n'est pas
 facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
 
 !!! danger "L'échangeabilité est cassée par construction"
@@ -54,14 +54,14 @@ facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
     par la boucle active **invalide le théorème conforme**. Le jeu de calibration
     doit rester tiré indépendamment. Ce que la boucle améliore légitimement, c'est
     la **largeur** d'intervalle (via \(\hat\sigma\)), mesurée à budget de
-    simulations égal contre `Aleatoire`.
+    simulations égal contre `RandomStrategy`.
 
 ## Hypothèses
 
 - Candidats et référence vivent dans le même espace vectoriel, même échelle.
 - L'oracle est un `Surrogate` déterministe (`SplitFluxOracle`), pas un lancer de
   rayons — voir [vérité terrain](../donnees/verite-terrain.md).
-- Budget de simulations fini ; comparaison **à budget égal** avec `Aleatoire`,
+- Budget de simulations fini ; comparaison **à budget égal** avec `RandomStrategy`,
   même graine racine.
 
 ## Code
@@ -69,7 +69,7 @@ facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
 | Symbole | Fonction |
 |---|---|
 | produit \(\hat\sigma\times\hat f\) | `active.selection.UncertaintyTimesDensity` |
-| référence aléatoire | `active.selection.Aleatoire` |
+| référence aléatoire | `active.selection.RandomStrategy` |
 | \(\hat f\) | `active.densite.kernel_density` |
 | \(h\) (Scott) | `kernel_density(..., bande=None)` |
 | boucle | `active.boucle.Loop.run` → `ActiveReport` |

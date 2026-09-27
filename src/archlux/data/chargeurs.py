@@ -7,7 +7,7 @@ the axes. Yet ``geom`` works on axis-aligned rectangles.
 The conversion holds in four steps, in this order:
 
 1. **Straighten.** The dominant direction of the walls, of period 90 degrees and
-   weighted by length (:func:`~archlux.orient.circulaire.direction_dominante`),
+   weighted by length (:func:`~archlux.orient.circulaire.dominant_direction`),
    gives the angle of the local frame. This angle **is** the ``Orientation`` of
    the plan: it is not discarded, it becomes the input of the daylight
    surrogate.
@@ -17,7 +17,7 @@ The conversion holds in four steps, in this order:
    edge".
 3. **Decompose.** Few real rooms are rectangles (0.1% of apartments); almost
    all are rectilinear. Each room becomes a
-   :class:`~archlux.geom.rectilineaire.PieceRectilineaire`, and its bonding
+   :class:`~archlux.geom.rectilineaire.RectilinearRoom`, and its bonding
    equalities are passed to ``legalize(..., merges=)``.
 4. **Attach openings.** A window is projected onto the nearest wall and stored
    as ``(wall_id, s, relative_width)`` — **never** in absolute coordinates
@@ -98,7 +98,7 @@ nothing canonical about it and must be **cited as such** in any publication.
 !!! danger "This is not an sDA"
     These columns are irradiance aggregates at fixed instants, not the share of
     floor above 300 lux during 50% of occupied hours. Calibrating on them
-    bounds **these columns**, never an LM-83 sDA. The ``indicateur`` label of
+    bounds **these columns**, never an LM-83 sDA. The ``indicator`` label of
     ``archlux`` must then be read as the name of the learned target, not as the
     IES metric.
 """
@@ -459,7 +459,7 @@ def load_msd(
         15, the reference of the `ARCHITECTURE.md` §9 budgets.
     max_rectangles : int, optional
         Cap per room, passed to
-        :func:`~archlux.geom.rectilineaire.decomposer`.
+        :func:`~archlux.geom.rectilineaire.decompose`.
     tolerance_calage : float, optional
         Maximum gap, in metres, under which an edge is snapped onto an axis.
     tolerance_recollage : float, optional

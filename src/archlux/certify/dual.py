@@ -110,11 +110,11 @@ def translate_duals(
 
     Parameters
     ----------
-    duaux : numpy.ndarray
+    duals : numpy.ndarray
         Dual prices, in the order of the rows of ``poly.A``.
     poly : Polytope
-        Provides ``origines``, indispensable and not reconstructible afterwards.
-    seuil : float, optional
+        Provides ``origins``, indispensable and not reconstructible afterwards.
+    threshold : float, optional
         Below it the constraint is inactive and is not reported.
     n_max : int, optional
         Number of constraints reported, the costliest first.

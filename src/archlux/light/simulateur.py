@@ -85,7 +85,7 @@ def daylight_factor(
     1. **θ dépend de l'azimut ici.** Dans BRE / Littlefair, θ est l'angle de ciel
        visible, une grandeur purement géométrique (obstructions), et le ciel CIE
        couvert est isotrope : le DF moyen y est **indépendant de l'orientation**.
-       Le facteur ``facteur_secteur`` est un a priori de modélisation ajouté par
+       Le facteur ``sector_factor`` est un a priori de modélisation ajouté par
        archlux pour que l'optimiseur distingue les azimuts ; il fait sortir la formule
        du cadre où elle est validée. ``θ = 65°`` (au lieu de 90° sans obstruction) est
        de même une hypothèse d'obstruction urbaine non mesurée.
@@ -154,11 +154,11 @@ class SplitFluxOracle:
     ECHELLE_DF: ClassVar[float] = 100.0
     """Poids m²·% : ``100 * DF * aire`` pour rester à l'échelle de l'analytique.
 
-    Ce ``100`` **annule exactement** la division par 100 de ``facteur_lumiere_jour``,
+    Ce ``100`` **annule exactement** la division par 100 de ``daylight_factor``,
     qui convertit le DF de pourcent en fraction. Le terme ajoute au score vaut donc
     ``DF[%] * aire[m2]`` : une unite composite (m2 pour cent), pas un indicateur
     normalise. L'aller-retour fraction / pourcent n'existe que pour garder l'API
-    publique de ``facteur_lumiere_jour`` en fraction. La constante n'est donc pas un
+    publique de ``daylight_factor`` en fraction. La constante n'est donc pas un
     reglage libre : la changer desaccorderait les deux echelles.
     """
 

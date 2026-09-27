@@ -20,9 +20,9 @@ quatre mécanismes indépendants, chacun capable d'attraper la faute seul.
 
 | Mécanisme | Où | Ce qu'il attrape |
 |---|---|---|
-| Types disjoints | `PreuveGeometrique` / `BornePerformance` | Une probabilité glissée dans une preuve |
+| Types disjoints | `GeometricProof` / `PerformanceBound` | Une probabilité glissée dans une preuve |
 | Test d'invariant | `tests/properties/test_invariants_types.py` | L'ajout d'un champ probabiliste à la preuve |
-| Section `Guarantees` | Toute docstring rendant un `Plan` ou `Certificat` | Une garantie affirmée sans sa nature |
+| Section `Guarantees` | Toute docstring rendant un `Plan` ou `Certificate` | Une garantie affirmée sans sa nature |
 | Rendu séparé | `certify/rapport.py` | Un score composite agrégeant les deux |
 
 Un seul mécanisme suffirait à documenter la règle. Quatre sont nécessaires pour qu'elle
@@ -191,17 +191,17 @@ qu'il lui est **interdit** de savoir.
 |---|---|---|---|
 | `types` | Structures gelées | Immuabilité, position d'ouverture dérivée | Tout le reste |
 | `erreurs` | Exceptions typées | Aucune `Exception` nue dans le projet | Tout le reste |
-| `geom.graphe` | `GrapheContraintes` | Acyclique ; toute paire séparée | Dimensions, coûts |
+| `geom.graphe` | `ConstraintGraph` | Acyclique ; toute paire séparée | Dimensions, coûts |
 | `geom.polytope` | `Polytope` | Tout point ⇒ plan sans chevauchement ; sans jour **seulement** avec `tiling=True` | Objectifs |
-| `lmo.solveur` | `SolutionLP` | Optimalité LP, ou Farkas si infaisable | **L'origine de `c`** |
-| `lmo.coupes` | `Coupe` | Tangentes : approximation **extérieure**, aucun point admissible exclu, la preuve revérifie les surfaces ; cordes (`inner_area_constraints`) : approximation **intérieure**, aucun point sous une surface minimale | La lumière |
+| `lmo.solveur` | `LPSolution` | Optimalité LP, ou Farkas si infaisable | **L'origine de `c`** |
+| `lmo.coupes` | `Cut` | Tangentes : approximation **extérieure**, aucun point admissible exclu, la preuve revérifie les surfaces ; cordes (`inner_area_constraints`) : approximation **intérieure**, aucun point sous une surface minimale | La lumière |
 | `light.protocole` | *(interface)* | Trois méthodes, entrée vectorielle | `geom`, `lmo`, `solve` |
 | `light.appris` | valeur, ∇, σ | Rien en soi — la garantie vient de `uq` | La géométrie |
 | `solve` | `FrankWolfeResult` | Validité à chaque itéré ; `status` ; le gap est une mesure de stationnarité, pas une distance à l'optimum (aucun substitut livré n'est concave) | L'implémentation du substitut |
 | `orient` | Encodages, statistiques | Continuité en 0°/360° | Le reste du plan |
-| `uq.conforme` | `BornePerformance` | Couverture ≥ 1−α **sous échangeabilité** | La géométrie |
-| `certify.proof` | `PreuveGeometrique` | Arithmétique rationnelle sur contour rectangulaire axé (seule tolérance `SNAP_M`), GEOS et tolérances déclarées sinon | Toute probabilité |
-| `certify.dual` | `(libellé, coût)` | Traduction fidèle via `origines` | — |
+| `uq.conforme` | `PerformanceBound` | Couverture ≥ 1−α **sous échangeabilité** | La géométrie |
+| `certify.proof` | `GeometricProof` | Arithmétique rationnelle sur contour rectangulaire axé (seule tolérance `SNAP_M`), GEOS et tolérances déclarées sinon | Toute probabilité |
+| `certify.dual` | `(libellé, coût)` | Traduction fidèle via `origins` | — |
 | `bench` | Découpages, manifestes | Reproductibilité | — |
 
 ### Les trois « ignorances délibérées »
@@ -212,7 +212,7 @@ qui portent le projet**, et chacune est gardée par un test dédié.
 1. **`lmo` ignore l'origine de `c`.** Un seul solveur sert aux deux modes. Lui apprendre
    la lumière détruit cette réutilisation et fait du mode performantiel un second système
    à maintenir en parallèle.
-2. **`solve` ignore quelle implémentation de `Substitut` il manipule.** C'est ce qui
+2. **`solve` ignore quelle implémentation de `Surrogate` il manipule.** C'est ce qui
    permet de faire tourner la chaîne complète au jalon 3, avec des formules fermées,
    **avant d'avoir dépensé un euro de simulation**. Si l'architecture est fausse, elle est
    fausse à ce moment-là.
@@ -266,14 +266,14 @@ Où étendre le système sans rien casser, et où **ne pas** l'étendre.
 
 | Besoin | Point d'extension | Pourquoi c'est le bon |
 |---|---|---|
-| Nouvel indicateur (UDI, vue) | Nouvelle implémentation de `Substitut` | `solve` et `lmo` inchangés |
+| Nouvel indicateur (UDI, vue) | Nouvelle implémentation de `Surrogate` | `solve` et `lmo` inchangés |
 | Oracle gelé split-flux (`SplitFluxOracle`) | Idem — troisième implémentation du protocole | Permet de mesurer l'erreur du substitut sur la même interface |
-| Nouvelle réglementation | Nouveau `Referentiel` (une **donnée**) | Aucun code de `geom` ni `lmo` à toucher |
-| Nouveau type de contrainte géométrique | Lignes supplémentaires dans `construire_polytope` + entrées dans `origines` | Le diagnostic dual reste lisible |
-| Nouveau corpus | Chargeur dans `bench`, `Decoupage` figé | La règle des trois jeux reste tenue |
+| Nouvelle réglementation | Nouveau `Regulation` (une **donnée**) | Aucun code de `geom` ni `lmo` à toucher |
+| Nouveau type de contrainte géométrique | Lignes supplémentaires dans `build_polytope` + entrées dans `origins` | Le diagnostic dual reste lisible |
+| Nouveau corpus | Chargeur dans `bench`, `Split` figé | La règle des trois jeux reste tenue |
 | Pièces non rectangulaires | `geom` uniquement : pièces en L par fusion de rectangles (`geom.rectilineaire`) ; le non-Manhattan n'est pas livré | Le reste de la chaîne ne voit qu'un polytope |
 
-**À ne pas faire :** ajouter un argument à `resoudre` pour « passer un peu de contexte
+**À ne pas faire :** ajouter un argument à `solve` pour « passer un peu de contexte
 lumière ». C'est la manière dont l'ignorance de `lmo` se perd — non pas d'un coup, mais
 par un paramètre à la fois.
 
@@ -287,7 +287,7 @@ pourquoi ils existent.
 ### ADR-1 — `erreurs.py` séparé de `types.py`
 
 `ARCHITECTURE.md` §7 exige des exceptions typées sans leur assigner de fichier. Les
-placer dans `types.py` poserait un problème : `Infaisable` transporte un certificat de
+placer dans `types.py` poserait un problème : `Infeasible` transporte un certificat de
 Farkas et les libellés d'un `Polytope`, objets des couches `lmo` et `geom`. Un module
 `erreurs` sans aucune dépendance, en amont comme `types`, évite le cycle. Les champs y
 sont typés `object`, et la traduction lisible est faite par l'appelant.
@@ -301,7 +301,7 @@ importer depuis quatre endroits pour écrire un `except`.
 erreur **silencieuse** capable d'invalider une publication. Une règle d'équipe ne suffit
 pas contre une erreur silencieuse : le fichier matérialise l'exigence du README (« l'accès
 au jeu de calibration exige un jeton émis après le gel du modèle ») en code, et
-`CalibrationVerrouillee` la rend bruyante.
+`CalibrationLocked` la rend bruyante.
 
 ### ADR-3 — `bench/{manifeste,graines}.py`
 
@@ -334,12 +334,12 @@ package facade is the only door `types` uses. The cap of
 mécanisme réel de démarrage à chaud est la réutilisation de l'instance `MPSolver`, qui
 laisse GLOP repartir de sa base courante quand seul l'objectif change.
 
-Or `resoudre(poly, c, *, depart=…)` est sans état, et `MILESTONE-2.md` §4 interdit d'en
+Or `solve(poly, c, *, depart=…)` est sans état, et `MILESTONE-2.md` §4 interdit d'en
 changer la signature. Le compromis retenu : un cache borné de quatre modèles, indexé par
 l'`id` du polytope, dont la valeur **retient le polytope par référence forte** — tant
 qu'il est là, son `id` ne peut pas être réattribué, donc la clé reste correcte.
 
-`depart` n'est pas consommé comme un point de départ numérique : sa **présence** est le
+`start` n'est pas consommé comme un point de départ numérique : sa **présence** est le
 signal « je suis dans une boucle sur le même polytope, réutilise le modèle ». C'est une
 lecture littérale de l'intention du §10 (« LP sans `depart=` dans la boucle FW : ×3 à ×5
 de temps perdu »), et la mesure la confirme : **×3,6**.
@@ -347,7 +347,7 @@ de temps perdu »), et la mesure la confirme : **×3,6**.
 Un état global dans un module que `ARCHITECTURE.md` §3 déclare *pur* mérite une
 justification : le cache ne change **aucun résultat**, seulement le temps. La pureté visée
 ici — déterminisme, rien d'appris — est intacte, et un test de propriété vérifie à chaque
-exécution que froid et chaud rendent la même solution. `vider_cache()` rend le départ à
+exécution que froid et chaud rendent la même solution. `clear_cache()` rend le départ à
 froid explicite pour les mesures.
 
 ### ADR-7 — Load-bearing walls: side inequalities read from the proposed plan
@@ -357,7 +357,7 @@ froid explicite pour les mesures.
 
 **Context.** `MILESTONE-2.md` §3 asked for `A_eq` rows tying rooms to load-bearing walls.
 They were never written; the proof then compared each wall with itself — walls are not
-decision variables — so `structure_preservee` was always true, and rooms crossed
+decision variables — so `structure_kept` was always true, and rooms crossed
 load-bearing walls under a valid certificate (AUDIT.md §3 n°1; 35 of 200 benchmark cases
 in performance mode).
 
@@ -365,9 +365,9 @@ in performance mode).
 
 1. A load-bearing wall is a **fixed obstacle**, not an equality. Each room keeps one
    side of each wall — `x + w <= c`, `x >= c`, `y + h <= c` or `y >= c` — read from the
-   proposed plan by `deduire_ordre(plan, structure=...)` (`OrdreRelatif.wall_sides`),
+   proposed plan by `deduce_order(plan, structure=...)` (`OrdreRelatif.wall_sides`),
    the half-plane the room penetrates least among those with room before the outline.
-   `construire_polytope(ordre, ctx)` keeps its signature: the incidence travels in the
+   `build_polytope(ordre, ctx)` keeps its signature: the incidence travels in the
    order, like the relative order between rooms.
 2. Equalities were rejected: they would pin rooms to walls and forbid a room from
    being bounded by a wall on one side only, or from not touching it at all.
@@ -375,9 +375,9 @@ in performance mode).
    load-bearing wall (geometric test, oblique walls included).
 4. Oblique load-bearing walls raise `UnsupportedInput`: no single linear side row
    describes them, and ignoring them silently is what this ADR removes.
-5. **Columns** (`Structure.poteaux`) are fixed data and are not constrained: a column
+5. **Columns** (`Structure.columns`) are fixed data and are not constrained: a column
    inside a room is normal in housing. Nothing about them is certified.
-6. **Openings** are relative to walls (`Ouverture.mur_id`), and walls are not decision
+6. **Openings** are relative to walls (`Opening.wall_id`), and walls are not decision
    variables: an opening on a facade stays put (the outline is fixed), but an opening on
    an interior partition does **not** follow a moved room. The README claim "windows
    follow" is withdrawn (PLAN.md 1.8).
@@ -392,14 +392,14 @@ rooms (see `docs/formules/polytope-separe.md`).
 > **Addendum (phase 3, 2026-09-25).** `legalize` valide ses arguments une seule fois à
 > l'entrée (`archlux.validation.validate_inputs`, `InvalidInput`) : un contrôle unique ne
 > coûte rien, l'objection ci-dessous ne s'y applique pas. Les types **hors de la boucle
-> chaude** valident aussi à la construction : `Ouverture` (plages de `s` et `largeur_rel`)
-> et `PreuveGeometrique` (une preuve valide ne rapporte aucune faute). `Piece`, `Mur` et
+> chaude** valident aussi à la construction : `Opening` (plages de `s` et `relative_width`)
+> et `GeometricProof` (une preuve valide ne rapporte aucune faute). `Room`, `Wall` et
 > `Orientation` restent libres : Frank-Wolfe les construit par milliers, et la preuve doit
 > pouvoir *rapporter* une pièce mal formée. `depuis_dict` contrôle les plages sur les
 > données brutes, avant de construire, pour rapporter toutes les violations ensemble.
 
 `ARCHITECTURE.md` §6 documente `s ∈ [0,1]` et `largeur_rel ∈ ]0,1]`, et une pièce a des
-dimensions positives. Rien ne le faisait respecter : `Ouverture(s=42.0)` se construisait
+dimensions positives. Rien ne le faisait respecter : `Opening(s=42.0)` se construisait
 sans broncher.
 
 | Option | Verdict |
@@ -469,11 +469,11 @@ coupes et ceux de dérive. Écrite une fois ici, elle évite trois générateurs
 |---|---|---|
 | Unités | mètres, m², degrés d'azimut | Docstrings ; revue |
 | Origine | coin bas-gauche, `y` vers le nord | `geom.polytope` |
-| Déterminisme | tri explicite des identifiants, jamais l'ordre d'un `set` | `Plan.ids_pieces`, `OrdreRelatif.pieces` |
+| Déterminisme | tri explicite des identifiants, jamais l'ordre d'un `set` | `Plan.ids_pieces`, `RelativeOrder.rooms` |
 | Graines | `seed: int` obligatoire, **sans défaut** | Signatures de `uq.derive`, `light.validation` |
-| Métriques | valeur **+** intervalle, jamais un scalaire nu | `BornePerformance` |
+| Métriques | valeur **+** intervalle, jamais un scalaire nu | `PerformanceBound` |
 | Journaux | `structlog`, structuré, jamais de texte libre | Revue |
-| Dictionnaires gelés | tuples de paires dans les types gelés | `Referentiel`, `Manifeste`, `Certificat` |
+| Dictionnaires gelés | tuples de paires dans les types gelés | `Regulation`, `Manifest`, `Certificate` |
 
 Le dernier point mérite un mot : un `dict` dans un `dataclass(frozen=True)` reste mutable
 et n'est pas hachable. Les types du modèle utilisent donc des `tuple[tuple[str, T], ...]`
@@ -487,8 +487,8 @@ Les huit anti-patterns d'`ARCHITECTURE.md` §10 valent comme motif de refus en r
 discussion sur le cas particulier. Les trois plus coûteux à découvrir tard :
 
 1. **Raster en entrée d'un substitut.** Gradient nul presque partout, optimiseur aveugle.
-   Détectable seulement par `valider_gradient` — d'où son caractère obligatoire.
+   Détectable seulement par `validate_gradient` — d'où son caractère obligatoire.
 2. **Jeu de calibration vu à l'entraînement.** Aucun test ne le signale ; seul le jeton
    d'ADR-2 l'empêche.
-3. **`origines` omis du `Polytope`.** Le diagnostic dual du jalon 5 devient impossible et
+3. **`origins` omis du `Polytope`.** Le diagnostic dual du jalon 5 devient impossible et
    le module doit être reconstruit.

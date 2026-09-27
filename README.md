@@ -256,7 +256,7 @@ another order might fit. The Farkas certificate is checked in exact rational
 arithmetic; when it cannot be (for instance when the conflict involves minimum-area
 cuts, which are not rows of the polytope), the message says "Certificate NOT verified:
 treat as a solver diagnosis, not a proof". `legalize` raises `Infeasible` with the same
-information (`origines`, `certificat_farkas`, `verified`).
+information (`origins`, `certificat_farkas`, `verified`).
 
 Generative models always return something, even when the request is impossible, and
 the result is then wrong somewhere without any warning. archlux refuses and says why.
@@ -276,7 +276,7 @@ the result is then wrong somewhere without any warning. archlux refuses and says
 "Room A is left of room B" means that A ends before B starts: `x_A + w_A <= x_B`. With
 one such separation per pair of rooms, overlap becomes impossible by construction, not
 discouraged by a penalty. The order is read from the proposed plan
-(`geom.graphe.deduire_ordre`), and each room is also kept on its side of every
+(`geom.graphe.deduce_order`), and each room is also kept on its side of every
 load-bearing wall.
 
 Minimum areas (`w h >= a`) are not linear but define a convex set. The classic mode
@@ -448,7 +448,7 @@ INPUT: proposed plan, load-bearing structure, orientation, program
 Every layer is deterministic: same inputs, same outputs. `lmo` is not pure in the
 strict sense: it keeps a small module-level cache of solver models (at most four) to
 warm-start Frank-Wolfe; the cache changes timing, never results
-(`lmo.solveur.vider_cache` empties it). `lmo` receives a cost vector and does not know
+(`lmo.solveur.clear_cache` empties it). `lmo` receives a cost vector and does not know
 whether it comes from a distance or from a daylight gradient: this is what lets one
 solver serve both modes.
 

@@ -233,7 +233,7 @@ def _verifier_enveloppe_admissible(
     Raises
     ------
     Infeasible
-        ``largeur_min`` exceeds one of the two dimensions of the envelope. Without rooms,
+        ``min_width`` exceeds one of the two dimensions of the envelope. Without rooms,
         there is no ``w``/``h`` variable and so nothing to refuse.
     """
     if not rooms:

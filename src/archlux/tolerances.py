@@ -17,7 +17,7 @@ Not registered yet (inventoried in phase 1.5): ``geom.diagnostic._AIRE_MIN``, th
 Known inconsistencies (to be resolved in phase 1.5)
 ----------------------------------------------------
 - Contact: rooms are adjacent below ``CONTACT_M`` in ``geom.graphe`` but contacts are
-  frozen below ``SNAP_M`` in ``geom.polytope.figer_contacts``.
+  frozen below ``SNAP_M`` in ``geom.polytope.freeze_contacts``.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ CONTACT_M: Final = 1e-9
 
 SNAP_M: Final = 1e-7
 """Gap under which a contact is frozen or a rectangle edge is snapped
-(``geom.polytope.figer_contacts``, ``geom.rectilineaire._TOL_RECT``); also the tolerance
+(``geom.polytope.freeze_contacts``, ``geom.rectilineaire._TOL_RECT``); also the tolerance
 under which a load-bearing wall counts as axis-aligned, or as a point to ignore
 (``geom.graphe``)."""
 
