@@ -13,6 +13,7 @@ silent error capable of invalidating a publication. Two modes follow from this:
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -310,6 +311,16 @@ class Loop:
             restantes -= len(acquis)
 
             fit = getattr(self.surrogate, "fit", None)
+            legacy_fit = getattr(self.surrogate, "ajuster", None)
+            if fit is None and legacy_fit is not None:
+                # A surrogate written before the English rename: still retrained, with a
+                # warning, never silently left untrained (review of the stack, #12).
+                warnings.warn(
+                    f"{type(self.surrogate).__name__}.ajuster is deprecated, rename it fit",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                fit = legacy_fit
             if fit is not None and len(xs_lab) >= 2:
                 fit(
                     tuple(xs_lab),

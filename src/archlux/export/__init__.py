@@ -29,6 +29,7 @@ __getattr__ = lazy_aliases(
     {
         "DiagnosticPathologie": Alias(PathologyDiagnostic, "archlux.export.PathologyDiagnostic"),
         "RapportExport": Alias(ExportReport, "archlux.export.ExportReport"),
+        "diagnostiquer": Alias(diagnose, "archlux.export.diagnose"),
         "intervalle_wilson": Alias(wilson_interval, "archlux.export.wilson_interval"),
     },
 )

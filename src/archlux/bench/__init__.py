@@ -34,6 +34,7 @@ __getattr__ = lazy_aliases(
     __name__,
     {
         "Decoupage": Alias(Split, "archlux.bench.Split"),
+        "ModeleTrace": Alias(ModelTrace, "archlux.bench.ModelTrace"),
         "Intervalle": Alias(Interval, "archlux.bench.Interval"),
         "LigneBrute": Alias(RawRow, "archlux.bench.RawRow"),
         "RapportBanc": Alias(BenchReport, "archlux.bench.BenchReport"),

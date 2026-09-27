@@ -205,8 +205,8 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `pathologie.py` | `pathologies.py` | | `survie.py` | `survival.py` |
 | `graines.py` | `seeds.py` | | `manifeste.py` | `manifest.py` |
 | `protocole.py` (bench) | `protocol.py` | | `json_io.py` | `json_io.py` |
-| `tests/unites` | `tests/unit` | | `tests/proprietes` | `tests/properties` |
-| `experiences/` | `experiments/` | | `resultats/` | `results/` |
+| `tests/unites` | `tests/unit` (done) | | `tests/proprietes` | `tests/properties` (done) |
+| `experiences/` | `experiments/` (done) | | `resultats/` | `results/` (done) |
 
 ## Light modules (rename wave 5, batch 5)
 

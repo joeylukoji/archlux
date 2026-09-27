@@ -90,7 +90,7 @@ def run(
                 )
             )
 
-    raw_path = dossier / "resultats_bruts.csv"
+    raw_path = dossier / "raw_results.csv"
     _ecrire_bruts(raw_path, rows)
 
     return Result(

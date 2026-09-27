@@ -129,9 +129,18 @@ def _ecrire_spf_minimal(plan: Plan, path: Path) -> str:
     """Deterministic IFC4 SPF: Project / Site / Building / Storey / Space / Wall."""
     # GlobalIds must be unique across files, not only within one: salted by the plan
     # geometry, two different plans never share one, and one plan always gets the same.
-    salt = hashlib.sha256(
-        repr((plan.rooms, plan.walls, plan.openings, plan.outline)).encode()
-    ).hexdigest()[:16]
+    # Values only, never ``repr`` of the dataclasses: a class or field rename must not
+    # change the GlobalIds of the same plan (BIM tools track objects by them).
+    geometry = (
+        [(r.id, r.type, r.x, r.y, r.w, r.h) for r in plan.rooms],
+        [(w.id, w.a, w.b, w.load_bearing, w.thickness) for w in plan.walls],
+        [
+            (o.id, o.wall_id, o.s, o.relative_width, o.sill_height, o.head_height)
+            for o in plan.openings
+        ],
+        list(plan.outline),
+    )
+    salt = hashlib.sha256(repr(geometry).encode()).hexdigest()[:16]
 
     def guid(label: str) -> str:
         """``IfcGloballyUniqueId`` of ``label`` in this plan."""
