@@ -75,11 +75,16 @@ class CalibrationToken:
 
 def _model_fingerprint(model: object) -> str:
     """SHA-256 fingerprint of the weights, without importing ``torch`` or ``light``."""
-    explicit = getattr(model, "weights_fingerprint", None)
-    if isinstance(explicit, str) and explicit:
-        return explicit
+    # English name first, then the French one: LearnedSurrogate still exposes
+    # ``empreinte_poids``, and a user model written before the rename keeps ``poids``.
+    for name in ("weights_fingerprint", "empreinte_poids"):
+        explicit = getattr(model, name, None)
+        if isinstance(explicit, str) and explicit:
+            return explicit
     buffers: list[bytes] = []
     weights = getattr(model, "weights", None)
+    if weights is None:
+        weights = getattr(model, "poids", None)
     if isinstance(weights, np.ndarray):
         buffers.append(np.ascontiguousarray(weights, dtype=float).tobytes())
     for name in ("W1", "b1", "W2", "b2", "W3"):

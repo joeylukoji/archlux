@@ -21,7 +21,7 @@ k = \bigl\lceil (n+1)(1-\alpha)\bigr\rceil,
 \hat q = s_{(k)}\ \text{si}\ k\le n,\ \text{sinon indéfini}.
 \]
 
-Intervalle annoncé au point \((\hat y, \hat\sigma)\) :
+Interval annoncé au point \((\hat y, \hat\sigma)\) :
 
 \[
 \bigl[\hat y - \hat q\,\hat\sigma,\ \hat y + \hat q\,\hat\sigma\bigr].

@@ -36,7 +36,7 @@ class DriftDiagnostic:
 
     echangeable: bool
     statistique: float
-    seuil: float
+    threshold: float
     n_observations: int
     message: str
 
@@ -131,7 +131,7 @@ def check_drift(
     return DriftDiagnostic(
         echangeable=echangeable,
         statistique=statistique,
-        seuil=_SEUIL_P,
+        threshold=_SEUIL_P,
         n_observations=n_obs,
         message=message,
     )

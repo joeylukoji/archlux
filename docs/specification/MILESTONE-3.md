@@ -79,7 +79,7 @@ def encode(deg: float, harmoniques: int = 3) -> np.ndarray:
 def moyenne_circulaire(degres: Sequence[float]) -> float: ...
 def variance_circulaire(degres: Sequence[float]) -> float: ...
 def test_rayleigh(degres: Sequence[float]) -> tuple[float, float]:  # (R, p)
-def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Resultat: ...
+def regression_circulaire_lineaire(theta: np.ndarray, y: np.ndarray) -> Result: ...
 def stratifier(donnees, par_orientation: int = 8) -> dict[str, np.ndarray]: ...
 ```
 
@@ -276,7 +276,7 @@ def frank_wolfe(
 @dataclass(frozen=True)
 class ResultatFW:
     x: np.ndarray
-    valeur: float
+    value: float
     ecart_dualite: float        # MAJORE l'écart à l'optimum — garantie
     iterations: int
     valide_partout: bool
@@ -318,7 +318,7 @@ def test_dualite_majore_l_ecart_reel():
     """Sur un petit cas résoluble exactement."""
     r = frank_wolfe(POLY_PETIT, OBJ, X0, max_iter=10)
     opt = resoudre_exactement(POLY_PETIT, OBJ)
-    assert opt - r.valeur <= r.ecart_dualite + 1e-6
+    assert opt - r.value <= r.ecart_dualite + 1e-6
 
 def test_ecartement_converge_plus_vite():
     a = frank_wolfe(POLY, OBJ, X0, pas="standard",   tol_dualite=1e-5)
@@ -360,7 +360,7 @@ def legalize(plan, ctx, *, objective=None, budget=None, trace=False):
 
     q = devectorize(x, plan)
     preuve = verifier_exactement(q, ctx)
-    if not preuve.valide:
+    if not preuve.valid:
         raise InvariantViole(preuve.violations)
     return replace(q, certificate=Certificate(geometry=preuve, ...))
 ```

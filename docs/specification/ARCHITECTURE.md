@@ -288,20 +288,20 @@ archlux/
 ├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependances.py,
 │                                                #   test_hygiene.py, test_language.py
 ├── benchmarks/{test_budgets.py,guarantees/}
-├── experiences/            # experiment scripts (milestones 2 to 9)
-├── resultats/              # raw results and published tables
+├── experiments/            # experiment scripts (milestones 2 to 9)
+├── results/              # raw results and published tables
 ├── scripts/                # data preparation, labelling by the frozen oracle
 └── splits/v1/              # frozen split
 ```
 
-**Rule:** a script in `experiences/` longer than 50 lines signals a function
+**Rule:** a script in `experiments/` longer than 50 lines signals a function
 missing from the library. Since phase 2, 11 of 16 scripts comply; the five corpus
 scripts that can only be checked against their data (`j7_sd_*`, `j8_*`, `j9_*`) do not
 yet: known debt (PLAN.md phase 2). A script imports only public names: those of
 `archlux.__all__` and the `__all__` of a documented module (`archlux.data.synthese`,
 `archlux.certify`, `archlux.uq.fiabilite`...), never a name starting with `_`, and
-never another script. `python scripts/resultats.py` (or `make resultats`) runs them;
-their outputs carry no timing, so `resultats/SHA256SUMS` fingerprints them.
+never another script. `python scripts/results.py` (or `make results`) runs them;
+their outputs carry no timing, so `results/SHA256SUMS` fingerprints them.
 
 ---
 

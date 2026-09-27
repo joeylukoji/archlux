@@ -22,7 +22,7 @@ de liberté** (les deux coordonnées de coupe). Le `mae_reseau = 0,0175` contre
 `mae_analytique = 6,4007` publié au jalon 4 mesure exactement cela, **sur le jeu
 d'entraînement** : une régression réussie sur une fonction déterministe, sans bruit.
 Ces deux chiffres ne se reproduisent plus avec le code livré (le même script donne
-0,33 et 41,9) ; sur un jeu de test, en phase 2 (`resultats/j4_gradient.csv`, revue
+0,33 et 41,9) ; sur un jeu de test, en phase 2 (`results/j4_gradient.csv`, revue
 [j4](../revues/j4.md)), l'erreur du réseau est 1,19 contre 37,3.
 
 !!! danger "Ce que cela veut dire pour un article"
@@ -92,7 +92,7 @@ calibrer séparément sur le sous-jeu à baies observées et sur le jeu imputé,
 
 ## 3. Ce que le corpus synthétique peut et ne peut pas faire
 
-`data.synthese.generer_corpus` reste utile, et doit rester :
+`data.synthese.generate_corpus` reste utile, et doit rester :
 
 - il fait tourner la CI sans télécharger des gigaoctets ;
 - il est déterministe, donc les certificats sont reproductibles ;
@@ -129,8 +129,8 @@ Le verrou d'implémentation est `uq.gestion.issue_token` : le jeton n'est
 
 ## 5. Ce que la jointure a donné, une fois faite
 
-Le chargeur existe désormais (`data.chargeurs.charger_etiquettes_sd`,
-`etiqueter`, `decouper_par_site`) et la jointure fonctionne :
+Le chargeur existe désormais (`data.chargeurs.load_sd_labels`,
+`label`, `split_by_site`) et la jointure fonctionne :
 
 | | |
 |---|--:|
@@ -154,7 +154,7 @@ est le facteur limitant.
 | Projection ouverture WKT → `(mur_id, s, largeur_rel)` | idem |
 | Adaptateur Radiance derrière `Surrogate` | `light/radiance.py`, extra `sim` |
 | Transformeur sur jetons | `light/appris.py` — aujourd'hui `_charger_torch` lève toujours |
-| Résultats de couverture sur corpus réel | `resultats/` |
+| Résultats de couverture sur corpus réel | `results/` |
 
 **Voir aussi :** [Swiss Dwellings](swiss-dwellings.md), [MSD](msd.md),
 [CubiCasa5K](cubicasa.md), [synthétique](synthetique.md),
