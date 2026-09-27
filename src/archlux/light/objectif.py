@@ -16,7 +16,7 @@ import numpy as np
 
 from archlux.errors import InvariantViolation
 from archlux.light.protocole import Glazing, Surrogate
-from archlux.types import Orientation
+from archlux.types import Indicator, Orientation
 
 __all__ = ["Daylight"]
 
@@ -41,7 +41,7 @@ class Daylight:
             raise InvariantViolation(("q_chapeau doit être ≥ 0",))
 
     @property
-    def indicator(self) -> str:
+    def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé, délégué au substitut enveloppé."""
         return self.surrogate.indicator
 
