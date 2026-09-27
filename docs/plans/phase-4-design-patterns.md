@@ -223,14 +223,28 @@ day count.
 **Ratchet**: `MAX_VIOLATIONS` (block 0's `tests/test_complexity.py`) moved from 33 to
 28 across items 12, 13, 15 — five named functions fixed, zero new violations.
 
-### 4. `lmo`
+### 4. `lmo` — done
 
-16. Replace the model cache (currently a global dict keyed by `id()`) with an
-    explicit, injectable `CacheLP` object, thread-safe, passed to `solve` instead of
-    read from module state. `clear_cache()` becomes a method.
-17. Break `_solve_with_area_cuts` (`cuts.py`, CC 12) and `solve` (`solveur.py`, CC 16)
-    under CC 10 once the cache is an object (some of their complexity is cache
-    bookkeeping that moves with it).
+16. Replaced the module-global cache dict (`_CACHE: OrderedDict[...]`, keyed by
+    `id(poly)`, no locking) with `CacheLP`: an explicit, injectable, thread-safe
+    (`threading.Lock`) object (`get`/`put`/`clear`). A module-level `_DEFAULT_CACHE =
+    CacheLP()` keeps the existing zero-argument call sites and `clear_cache()` working
+    unchanged; `solve()` gained an optional `cache: CacheLP | None = None` parameter for
+    callers that want an isolated cache (e.g. concurrent solves on independent
+    polytopes). Covered in isolation by `tests/unit/test_cache_lp.py` (empty-start,
+    put/get round-trip, clear, eviction beyond `maxsize`, isolation between two
+    instances, `solve` giving the identical answer regardless of which cache serves it,
+    and a `threading.Thread`-based concurrency test).
+17. `solve` (`solveur.py`, was CC 16) split into `_cached_model` (the cache get/build/put
+    sequence, now trivial once the cache is an object) and `_infeasible_solution` (the
+    GLOP infeasible/unbounded/Farkas-certificate branch); both under CC 10.
+    `_solve_with_area_cuts` (`cuts.py`, was CC 12) split off its per-iteration
+    tighten-or-give-up step into `_tighten_if_short`; under CC 10.
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 28 to 26 across items 16-17 (`solve` and
+`_solve_with_area_cuts`). Verified: full suite green (no regressions), `mypy src`
+clean, `radon cc solveur.py cuts.py -n C -s` empty, coverage 89.27% (ratchet 88.8%),
+`mkdocs build --strict` clean.
 
 ### 5. `solve`
 

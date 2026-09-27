@@ -8,6 +8,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 4 (`lmo`): injectable cache, two functions under CC 10
+
+- `CacheLP` (new, `lmo/solveur.py`): replaces the module-global `_CACHE` dict (keyed by `id(poly)`, no locking) with an explicit, thread-safe (`threading.Lock`), injectable object (`get`/`put`/`clear`). `solve()` gains an optional `cache: CacheLP | None = None` parameter; a module-level `_DEFAULT_CACHE` keeps existing call sites and `clear_cache()` working unchanged.
+- `solve` (`lmo/solveur.py`, was CC 16) split into `_cached_model` and `_infeasible_solution`; both under CC 10.
+- `_solve_with_area_cuts` (`lmo/cuts.py`, was CC 12) split off `_tighten_if_short`; now under CC 10.
+- New `tests/unit/test_cache_lp.py`: `CacheLP` in isolation (empty-start, put/get, clear, eviction beyond `maxsize`, two independent instances not seeing each other), `solve` giving the identical answer regardless of which cache serves it, and a `threading.Thread`-based concurrency test.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 28 to 26.
+
 ### Changed — PLAN.md phase 4, block 3 (`geom`): five functions under CC 10
 
 - `deduce_grid` (`geom/pavage.py`, was CC 31) split into `_deduce_lines` (+ `_anchor_outline_vertices`), `_room_bounds`, `_verify_partition`; now an orchestrator, under CC 10.

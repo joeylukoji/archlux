@@ -14,6 +14,7 @@ Duality, phase I and Farkas: ``docs/formules/farkas.md``.
 from __future__ import annotations
 
 import math
+import threading
 import time
 import warnings
 from collections import OrderedDict
@@ -38,25 +39,75 @@ if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
     from archlux.lmo.cuts import Cut
 
-__all__ = ["LPSolution", "clear_cache", "solve"]
+__all__ = ["CacheLP", "LPSolution", "clear_cache", "solve"]
 
 _TAILLE_CACHE = 4
-"""Number of models kept for the warm start.
+"""Number of models kept for the warm start, in the default cache.
 
 A Frank-Wolfe loop works on **one** polytope; four is plenty, and bounds the memory
 footprint of this cache.
 """
 
-_CACHE: OrderedDict[int, tuple[Polytope, Any, list[Any], list[Any]]] = OrderedDict()
-"""GLOP models already built, keyed by the polytope's ``id``.
 
-The polytope is kept **by strong reference** in the value: as long as it is there, its
-``id`` cannot be reassigned to another object, and the key stays correct.
+class CacheLP:
+    """GLOP models already built, keyed by a polytope's ``id()``. Injectable, thread-safe.
 
-This cache changes no result, only the time: same inputs, same solution. The purity
-that `ARCHITECTURE.md` §3 demands of ``lmo`` — determinism, nothing learned — is
-preserved, and a property test checks it on every run.
-"""
+    PLAN.md phase 4, block 4: replaces a module-global dict. A global mutable is harder
+    to test in isolation (state silently leaks between tests unless every one remembers
+    :func:`clear_cache`) and unsafe if two threads ever solve on different polytopes at
+    once. An instance is safe on its own; :func:`solve` still defaults to one shared
+    instance, so existing callers need no change.
+
+    The polytope is kept **by strong reference** in each entry: as long as it is there,
+    its ``id()`` cannot be reassigned to another object, so the key stays correct.
+
+    This cache changes no result, only the time: same inputs, same solution. The purity
+    that `ARCHITECTURE.md` §3 demands of ``lmo`` — determinism, nothing learned — is
+    preserved, and a property test checks it on every run.
+
+    Parameters
+    ----------
+    maxsize : int, optional
+        Number of models kept; the oldest is evicted first. Default 4.
+    """
+
+    def __init__(self, *, maxsize: int = _TAILLE_CACHE) -> None:
+        self._maxsize = maxsize
+        self._lock = threading.Lock()
+        self._entries: OrderedDict[int, tuple[Polytope, Any, list[Any], list[Any]]] = OrderedDict()
+
+    def get(self, poly: Polytope) -> tuple[Any, list[Any], list[Any]] | None:
+        """The ``(solver, variables, constraints)`` built for ``poly``, or ``None``."""
+        with self._lock:
+            entree = self._entries.get(id(poly))
+            if entree is None:
+                return None
+            self._entries.move_to_end(id(poly))
+            _, solveur, variables, contraintes = entree
+            return solveur, variables, contraintes
+
+    def put(
+        self,
+        poly: Polytope,
+        solveur: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
+        variables: list[Any],
+        contraintes: list[Any],
+    ) -> None:
+        """Store the model built for ``poly``, evicting the oldest beyond ``maxsize``."""
+        with self._lock:
+            self._entries[id(poly)] = (poly, solveur, variables, contraintes)
+            self._entries.move_to_end(id(poly))
+            while len(self._entries) > self._maxsize:
+                self._entries.popitem(last=False)
+
+    def clear(self) -> None:
+        """Forget every cached model."""
+        with self._lock:
+            self._entries.clear()
+
+
+_DEFAULT_CACHE = CacheLP()
+"""The cache :func:`solve` uses when its caller passes no ``cache``."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,11 +139,12 @@ class LPSolution:
 
 
 def clear_cache() -> None:
-    """Forget the models kept for the warm start.
+    """Forget the models kept for the warm start, in the default cache.
 
     Useful for performance measurements, which must be able to guarantee a cold start.
+    A caller with its own :class:`CacheLP` clears it directly, via :meth:`CacheLP.clear`.
     """
-    _CACHE.clear()
+    _DEFAULT_CACHE.clear()
 
 
 def _statut(code: int) -> Literal["optimal", "infaisable", "non_borne", "limite"]:
@@ -266,6 +318,60 @@ def _certificat_farkas(poly: Polytope, cuts: list[Cut] | None) -> tuple[VecteurF
     )
 
 
+def _infeasible_solution(
+    poly: Polytope,
+    cuts: list[Cut] | None,
+    n_var: int,
+    solveur: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
+    statut: Literal["optimal", "infaisable", "non_borne", "limite"],
+    debut: float,
+) -> LPSolution:
+    """The unbounded or Farkas-certified result of a GLOP-reported infeasibility.
+
+    Extracted from :func:`solve` (PLAN.md phase 4, block 4). GLOP conflates
+    "infeasible" and "unbounded". The auxiliary problem settles it: a zero optimum
+    means the constraints are satisfiable, hence the failure came from the objective.
+    Without this distinction, ``api.legalize`` would raise "the programme does not fit
+    in the envelope" on an open domain.
+    """
+    if _is_feasible(poly, cuts):
+        return LPSolution(
+            x=np.zeros(n_var),
+            value=float("-inf"),
+            status="non_borne",
+            iterations=solveur.iterations(),
+            time_ms=(time.perf_counter() - debut) * 1000.0,
+        )
+    farkas, farkas_eq = _certificat_farkas(poly, cuts)
+    return LPSolution(
+        x=np.zeros(n_var),
+        value=float("inf"),
+        status=statut,
+        farkas_certificate=farkas,
+        farkas_certificate_eq=farkas_eq,
+        iterations=solveur.iterations(),
+        time_ms=(time.perf_counter() - debut) * 1000.0,
+    )
+
+
+def _cached_model(
+    poly: Polytope, cuts: list[Cut] | None, start: VecteurF | None, cache: CacheLP
+) -> tuple[Any, list[Any], list[Any]]:
+    """The GLOP model for ``poly``: reused from ``cache`` if warm-startable, else built.
+
+    Extracted from :func:`solve` (PLAN.md phase 4, block 4). A model is reusable only
+    with a ``start`` (the caller wants a warm start) and with no ``cuts``: a cut
+    invalidates the cached model, since it changes the system, not just the objective.
+    """
+    en_cache = cache.get(poly)
+    if start is not None and en_cache is not None and not cuts:
+        return en_cache
+    solveur, variables, contraintes = _construire_modele(poly, cuts)
+    if not cuts:
+        cache.put(poly, solveur, variables, contraintes)
+    return solveur, variables, contraintes
+
+
 @renamed_parameters({"depart": "start", "coupes": "cuts", "duaux": "duals"})
 def solve(
     poly: Polytope,
@@ -274,6 +380,7 @@ def solve(
     start: VecteurF | None = None,
     cuts: list[Cut] | None = None,
     duals: bool = False,
+    cache: CacheLP | None = None,
 ) -> LPSolution:
     """Minimise ``<c, x>`` over the polytope, with the supplied cuts.
 
@@ -304,6 +411,10 @@ def solve(
         know: after :func:`archlux.geom.polytope.freeze_contacts`, the saturated
         constraints — the most informative ones — are moved into ``A_eq`` and their
         price therefore disappears from the diagnosis.
+    cache : CacheLP or None, optional
+        Where a built model is kept for the warm start. Defaults to one shared
+        instance; pass an own :class:`CacheLP` for isolation (a test, or two threads
+        solving on different polytopes at once).
 
     Returns
     -------
@@ -342,19 +453,9 @@ def solve(
     if start is not None and start.shape != (n_var,):
         raise InvariantViolation((f"start has shape {start.shape}, expected ({n_var},)",))
 
-    cle = id(poly)
-    en_cache = _CACHE.get(cle)
-    reutilisable = start is not None and en_cache is not None and not cuts
-    if reutilisable and en_cache is not None:
-        _, solveur, variables, contraintes = en_cache
-        _CACHE.move_to_end(cle)
-    else:
-        solveur, variables, contraintes = _construire_modele(poly, cuts)
-        if not cuts:
-            _CACHE[cle] = (poly, solveur, variables, contraintes)
-            _CACHE.move_to_end(cle)
-            while len(_CACHE) > _TAILLE_CACHE:
-                _CACHE.popitem(last=False)
+    solveur, variables, contraintes = _cached_model(
+        poly, cuts, start, cache if cache is not None else _DEFAULT_CACHE
+    )
 
     objective = solveur.Objective()
     for variable, coefficient in zip(variables, c, strict=True):
@@ -366,28 +467,7 @@ def solve(
     temps_ms = (time.perf_counter() - debut) * 1000.0
 
     if statut == "infaisable":
-        # GLOP conflates "infeasible" and "unbounded". The auxiliary problem settles it:
-        # a zero optimum means the constraints are satisfiable, hence the failure came
-        # from the objective. Without this distinction, ``api.legalize`` would raise
-        # "the programme does not fit in the envelope" on an open domain.
-        if _is_feasible(poly, cuts):
-            return LPSolution(
-                x=np.zeros(n_var),
-                value=float("-inf"),
-                status="non_borne",
-                iterations=solveur.iterations(),
-                time_ms=(time.perf_counter() - debut) * 1000.0,
-            )
-        farkas, farkas_eq = _certificat_farkas(poly, cuts)
-        return LPSolution(
-            x=np.zeros(n_var),
-            value=float("inf"),
-            status=statut,
-            farkas_certificate=farkas,
-            farkas_certificate_eq=farkas_eq,
-            iterations=solveur.iterations(),
-            time_ms=(time.perf_counter() - debut) * 1000.0,
-        )
+        return _infeasible_solution(poly, cuts, n_var, solveur, statut, debut)
 
     x = np.array([v.solution_value() for v in variables], dtype=float)
     return LPSolution(
