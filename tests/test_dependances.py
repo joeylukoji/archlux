@@ -265,3 +265,60 @@ def test_no_relative_imports(fichier: Path) -> None:
     arbre = ast.parse(fichier.read_text(encoding="utf-8"))
     relative = [n.lineno for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom) and n.level]
     assert not relative, f"{_chemin_module(fichier)}: relative imports at lines {relative}"
+
+
+_ROOT_EAGER = frozenset({"types", "errors"})
+"""``archlux/__init__.py``'s own eager top-level imports: initializing the parent
+package is unavoidable before any ``import archlux.<x>`` runs, so every dynamic check
+below sees these two regardless of ``x`` (`test_import_cost.py` checks the root itself
+does not go further than this)."""
+
+
+def _closure(paquet: str) -> frozenset[str]:
+    """Every top-level layer ``paquet`` may reach, directly or through one it may reach.
+
+    ``AUTORISE`` entries name the layers a package may import from; this expands that
+    one level to every level, so a name reached only *through* an allowed layer (e.g.
+    ``api`` reaches ``uq`` through ``certify``) is not mistaken for a violation.
+    """
+    seen: set[str] = {paquet, *_ROOT_EAGER}
+    pile = [paquet, *_ROOT_EAGER]
+    while pile:
+        for cible in AUTORISE.get(pile.pop(), frozenset()):
+            racine = cible.split(".")[0]
+            if racine not in seen:
+                seen.add(racine)
+                pile.append(racine)
+    return frozenset(seen)
+
+
+@pytest.mark.parametrize("paquet", sorted(p for p in AUTORISE if p != "__init__"))
+def test_a_fresh_import_loads_only_the_declared_layers(paquet: str) -> None:
+    """The static AST walk above cannot see a dynamic ``importlib.import_module`` call,
+    or a transitive import the declared sets did not anticipate (PLAN.md phase 4,
+    block 1: a *dynamic*, ``sys.modules``-based check, alongside the static one).
+
+    ``__init__`` (the root package) is excluded: its own laziness is already checked,
+    more precisely, by ``test_import_cost.py``.
+    """
+    code = (
+        "import sys\n"
+        f"import archlux.{paquet}\n"
+        "print(','.join(sorted(m.removeprefix('archlux.') for m in sys.modules "
+        "if m.startswith('archlux.'))))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+    autorise = _closure(paquet)
+    for module in result.stdout.strip().split(","):
+        if not module:
+            continue
+        racine = module.split(".")[0]
+        if racine in LEAVES or racine in autorise:
+            continue
+        pytest.fail(
+            f"import archlux.{paquet} actually loads archlux.{module}, not reachable "
+            f"through AUTORISE[{paquet!r}] = {sorted(AUTORISE[paquet])}"
+        )

@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
+
+- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Covers `api` like every other package, through a transitive closure of the existing `AUTORISE` declarations.
+- `__version__`'s import path confirmed already correct (`_version.py` is a genuine leaf); no change needed.
+- This closes PLAN.md phase 4, block 1.
+
 ### Added — PLAN.md phase 4, block 1 (imports and layers): lazy certify and light facades
 
 - `archlux.light` and `archlux.certify` are now lazy facades: asking for one name (e.g. `light.Daylight` or `certify.render`) imports only the module that defines it, not every sibling submodule. Verified empirically (`tests/unit/test_lazy_facades.py`, fresh-interpreter subprocess checks) — `light.Daylight` no longer loads `analytique`/`simulateur`; `certify.render` no longer loads `proof`/`borne`.
