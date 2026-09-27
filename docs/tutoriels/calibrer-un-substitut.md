@@ -55,8 +55,8 @@ oracle = SplitFluxOracle()
 rng = np.random.default_rng(17)
 xs = tuple(disposition(rng) for _ in range(80))
 ys = np.array([oracle.evaluate(x, ctx.orientation) for x in xs])
-modele = DenseSurrogate(largeur=8)
-modele.fit(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
+model = DenseSurrogate(largeur=8)
+model.fit(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
 
 for sous_dossier in ("train", "calibration", "test"):
     Path("splits/v1", sous_dossier).mkdir(parents=True, exist_ok=True)
@@ -65,10 +65,10 @@ for sous_dossier in ("train", "calibration", "test"):
 ## 1. Geler puis émettre le jeton
 
 ```python
-from archlux.uq.gestion import GestionDonnees, geler_et_emettre
+from archlux.uq.gestion import DataManagement, freeze_and_issue
 
-jeton = geler_et_emettre(modele, horodatage="2026-09-09T12:00:00Z")
-calibration = GestionDonnees("splits/v1").pour_calibration(jeton, modele)
+token = freeze_and_issue(model, timestamp="2026-09-09T12:00:00Z")
+calibration = DataManagement("splits/v1").for_calibration(token, model)
 ```
 
 Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
@@ -77,19 +77,19 @@ Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
 ## 2. Ajuster un calibrateur par indicateur
 
 ```python
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.uq.conforme import ConformalCalibrator
 
 plans_calibration = [disposition(rng) for _ in range(200)]  # jamais vus à l'entraînement
-predictions = np.array([modele.evaluate(x, ctx.orientation) for x in plans_calibration])
+predictions = np.array([model.evaluate(x, ctx.orientation) for x in plans_calibration])
 verites = np.array([oracle.evaluate(x, ctx.orientation) for x in plans_calibration])
-incertitudes = np.array([modele.uncertainty(x, ctx.orientation) for x in plans_calibration])
+incertitudes = np.array([model.uncertainty(x, ctx.orientation) for x in plans_calibration])
 
-cal = CalibrateurConforme(indicator="sDA")
+cal = ConformalCalibrator(indicator="sDA")
 cal.fit(predictions, verites, incertitudes, alpha=0.10)
 
 x_nouveau = disposition(rng)  # tiré comme la calibration : échangeable avec elle
-prediction = modele.evaluate(x_nouveau, ctx.orientation)
-sigma = modele.uncertainty(x_nouveau, ctx.orientation)
+prediction = model.evaluate(x_nouveau, ctx.orientation)
+sigma = model.uncertainty(x_nouveau, ctx.orientation)
 borne = cal.borne(prediction, sigma, ">=", regime="exchangeable")
 assert borne.lower <= prediction <= borne.upper
 # borne.lower, borne.coverage, borne.n_calibration
@@ -105,7 +105,7 @@ optimiseur, dont la couverture n'est alors pas garantie.
 ```python
 from archlux.light.objectif import Daylight
 
-objectif = Daylight(modele, q_chapeau=cal.q)  # pessimiste=True par défaut
+objectif = Daylight(model, q_chapeau=cal.q)  # pessimiste=True par défaut
 q = ax.legalize(
     plan, ctx, objective=objectif, calibration=cal.snapshot(), budget=0.5, pavage=True
 )
@@ -127,17 +127,17 @@ vraie valeur connue : \(|y - \hat{y}| / \hat{\sigma}\), comme à l'ajustement.
 
 ```python
 from archlux.certify.borne import build_bound
-from archlux.uq.derive import controler_derive
+from archlux.uq.derive import check_drift
 
 plans_production = [disposition(rng) for _ in range(50)]
 scores_production = np.array(
     [
-        abs(oracle.evaluate(x, ctx.orientation) - modele.evaluate(x, ctx.orientation))
-        / modele.uncertainty(x, ctx.orientation)
+        abs(oracle.evaluate(x, ctx.orientation) - model.evaluate(x, ctx.orientation))
+        / model.uncertainty(x, ctx.orientation)
         for x in plans_production
     ]
 )
-derive = controler_derive(scores_production, cal.snapshot(), seed=17)
+derive = check_drift(scores_production, cal.snapshot(), seed=17)
 certificat_borne = build_bound(
     prediction, cal.snapshot(), derive, uncertainty=sigma, regime="exchangeable"
 )
@@ -148,7 +148,7 @@ Ces plans sont tirés comme la calibration : le test ne détecte pas de dérive 
 détectées :
 
 ```python
-derive_forte = controler_derive(3.0 * scores_production, cal.snapshot(), seed=17)
+derive_forte = check_drift(3.0 * scores_production, cal.snapshot(), seed=17)
 assert not derive_forte.echangeable
 assert (
     build_bound(

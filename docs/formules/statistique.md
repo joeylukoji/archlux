@@ -1,6 +1,6 @@
 # Statistique — prédiction conforme
 
-**Code :** `uq.conforme.quantile_conforme`, `uq.conforme.CalibrateurConforme`.
+**Code :** `uq.conforme.conformal_quantile`, `uq.conforme.ConformalCalibrator`.
 
 Cette page est le formulaire du jalon 5. Les duaux, Farkas, \(\delta_\infty\)
 restent des **nombres exacts** : ils n'appartiennent pas ici.
@@ -21,7 +21,7 @@ k = \bigl\lceil (n+1)(1-\alpha)\bigr\rceil,
 \hat q = s_{(k)}\ \text{si}\ k\le n,\ \text{sinon indéfini}.
 \]
 
-Intervalle annoncé au point \((\hat y, \hat\sigma)\) :
+Interval annoncé au point \((\hat y, \hat\sigma)\) :
 
 \[
 \bigl[\hat y - \hat q\,\hat\sigma,\ \hat y + \hat q\,\hat\sigma\bigr].
@@ -58,9 +58,9 @@ de `np.quantile(s, 0.90)` seul.
 
 | Symbole | Fonction |
 |---|---|
-| \(s_{(k)}\) | `quantile_conforme` |
-| \(\hat q\) | `CalibrateurConforme.fit` / `.q` |
-| intervalle | `CalibrateurConforme.borne` → `PerformanceBound` |
+| \(s_{(k)}\) | `conformal_quantile` |
+| \(\hat q\) | `ConformalCalibrator.fit` / `.q` |
+| intervalle | `ConformalCalibrator.borne` → `PerformanceBound` |
 | CRPS | `uq.fiabilite.crps` |
 | \(J=\hat\mu-\hat q\,\hat\sigma\) | `light.objectif.Daylight` |
 

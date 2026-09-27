@@ -27,8 +27,8 @@ and [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md)
 1. Open an issue (or comment on an existing issue) before a structural
    change.
 2. One PR = one intent. Prefer several micro-commits to a monolith.
-3. Tests first for new behaviour (`tests/unites/`,
-   `tests/proprietes/`). Public seams only.
+3. Tests first for new behaviour (`tests/unit/`,
+   `tests/properties/`). Public seams only.
 4. After non-trivial Python: rerun at least
    `pytest tests/test_dependances.py` and the tests of the touched module;
    `ruff check` + `mypy` on the modified files.
@@ -60,7 +60,7 @@ with `1.2.0` must remain reproducible with `1.2.x`.
 | `tests/` | Units, properties, budgets |
 | `docs/` | MkDocs site (`mkdocs build --strict`) |
 | `docs/specification/ARCHITECTURE.md` | Binding rules |
-| `experiences/` | Scripts reproducing the tables |
+| `experiments/` | Scripts reproducing the tables |
 
 ## AI-assisted development
 

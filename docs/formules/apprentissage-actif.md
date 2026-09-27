@@ -70,9 +70,9 @@ facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
 |---|---|
 | produit \(\hat\sigma\times\hat f\) | `active.selection.UncertaintyTimesDensity` |
 | référence aléatoire | `active.selection.Aleatoire` |
-| \(\hat f\) | `active.densite.densite_noyau` |
-| \(h\) (Scott) | `densite_noyau(..., bande=None)` |
-| boucle | `active.boucle.Loop.run` → `RapportActif` |
+| \(\hat f\) | `active.densite.kernel_density` |
+| \(h\) (Scott) | `kernel_density(..., bande=None)` |
+| boucle | `active.boucle.Loop.run` → `ActiveReport` |
 
 ## Cas d'utilisation
 

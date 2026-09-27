@@ -52,7 +52,7 @@ def disposition(rng: np.random.Generator) -> np.ndarray:
 ```python
 from archlux.light.base import DenseSurrogate
 from archlux.light.simulateur import SplitFluxOracle
-from archlux.uq.gestion import emettre_jeton
+from archlux.uq.gestion import issue_token
 
 sim = SplitFluxOracle()
 rng = np.random.default_rng(17)
@@ -64,9 +64,9 @@ ys = np.array([sim.evaluate(x, o) for x, o in zip(xs, orientations, strict=True)
 dense = DenseSurrogate(largeur=8)
 dense.fit(xs, ys, orientations, seed=17, epoques=30)
 Path("poids").mkdir(exist_ok=True)
-chemin = Path("poids/dense.npz")
-empreinte = dense.save(chemin)
-jeton = emettre_jeton(empreinte, "2026-09-09T10:00:00Z")  # après gel
+path = Path("poids/dense.npz")
+fingerprint = dense.save(path)
+token = issue_token(fingerprint, "2026-09-09T10:00:00Z")  # après gel
 ```
 
 `sauver` rend l'empreinte SHA-256 du fichier écrit ; le jeton la lie à l'instant du
@@ -79,7 +79,7 @@ gel. C'est lui qui ouvrira le jeu de calibration au
 from archlux.light.appris import LearnedSurrogate
 from archlux.light.validation import validate_gradient
 
-reseau = LearnedSurrogate(chemin, empreinte, gele=True)
+reseau = LearnedSurrogate(path, fingerprint, gele=True)
 points = np.stack([disposition(rng) for _ in range(8)])
 rapport = validate_gradient(reseau, points, ctx.orientation, seed=17, reference=sim)
 assert rapport.accord_de_signe > 0.80

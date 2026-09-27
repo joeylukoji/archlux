@@ -23,7 +23,7 @@ diagnostic dual.
 ```python
 def test_couverture_empirique():
     """Sur le jeu de TEST, jamais sur celui de calibration."""
-    bornes  = [modele.borne(p) for p in JEU_TEST]
+    bornes  = [model.borne(p) for p in JEU_TEST]
     verites = [ORACLE.evaluate(p, CTX) for p in JEU_TEST]  # SplitFluxOracle (forme fermée)
     couv = np.mean([v >= b.borne for v, b in zip(verites, bornes)])
     assert 0.86 <= couv <= 0.94          # visée 0,90
@@ -62,7 +62,7 @@ class JetonCalibration:
     horodatage: str
     def verifier(self) -> None: ...
 
-def geler_et_emettre(modele) -> JetonCalibration:
+def geler_et_emettre(model) -> JetonCalibration:
     """Émet le jeton donnant accès au jeu de calibration.
     Le modèle ne doit plus être modifié après cet appel."""
 ```
@@ -73,10 +73,10 @@ def geler_et_emettre(modele) -> JetonCalibration:
 
 ```python
 def test_calibration_refuse_un_modele_modifie():
-    j = geler_et_emettre(modele)
-    modele.tete_valeur.weight.data += 0.01
+    j = geler_et_emettre(model)
+    model.tete_valeur.weight.data += 0.01
     with pytest.raises(ModelModified):
-        donnees.pour_calibration(j)
+        donnees.for_calibration(j)
 ```
 
 - [ ] Le test passe
@@ -161,9 +161,9 @@ def crps(predictions, verites, incertitudes) -> float: ...
 
 ```python
 def test_calibration_tient_par_orientation():
-    for secteur, jeu in stratifier(JEU_TEST, par_orientation=8).items():
+    for sector, jeu in stratifier(JEU_TEST, par_orientation=8).items():
         couv = couverture(CAL, jeu)
-        assert 0.84 <= couv <= 0.96, f"calibration cassée sur {secteur}"
+        assert 0.84 <= couv <= 0.96, f"calibration cassée sur {sector}"
 ```
 
 - [ ] Le test passe
@@ -262,12 +262,12 @@ Les prix duaux du programme linéaire répondent à : *de combien l'objectif s'a
 si je relâchais cette contrainte d'une unité ?*
 
 ```python
-def translate_duals(duaux, origines, *, seuil=1e-6) -> tuple[PrixDual, ...]:
+def translate_duals(duaux, origines, *, threshold=1e-6) -> tuple[PrixDual, ...]:
     return tuple(sorted(
         (PrixDual(contrainte=origines[i], prix=float(d),
                   interpretation=phrase(origines[i], d),
                   validite=intervalle_validite(i))
-         for i, d in enumerate(duaux) if abs(d) > seuil),
+         for i, d in enumerate(duaux) if abs(d) > threshold),
         key=lambda p: -abs(p.prix)))
 ```
 
