@@ -8,11 +8,17 @@ prove that the result is the original with the names swapped back.
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
 
 TOOL = Path(__file__).resolve().parents[2] / "scripts" / "rename_identifiers.py"
+
+# The tool reads f-strings token by token, which only Python 3.12+ (PEP 701) allows; it
+# refuses to run on 3.11 by design. Its behaviour is tested where it runs, and its
+# refusal is tested where it does not (test_the_tool_refuses_python_3_11).
+needs_312 = pytest.mark.skipif(sys.version_info < (3, 12), reason="rename tool needs 3.12+")
 
 
 @pytest.fixture(scope="module")
@@ -40,6 +46,7 @@ class Holder:
 '''
 
 
+@needs_312
 def test_identifiers_are_renamed_but_not_strings_or_comments(tool) -> None:  # type: ignore[no-untyped-def]
     new, count = tool.rename_source(SOURCE, {"Piece": "Room"})
     assert count == 6
@@ -53,6 +60,7 @@ def test_identifiers_are_renamed_but_not_strings_or_comments(tool) -> None:  # t
     assert "{Room.__name__} ok" in new
 
 
+@needs_312
 def test_keyword_arguments_and_attributes_are_renamed(tool) -> None:  # type: ignore[no-untyped-def]
     text = "plan = Plan(pieces=(), murs=())\nn = len(plan.pieces)\n"
     new, count = tool.rename_source(text, {"pieces": "rooms", "murs": "walls"})
@@ -60,6 +68,7 @@ def test_keyword_arguments_and_attributes_are_renamed(tool) -> None:  # type: ig
     assert count == 3
 
 
+@needs_312
 def test_prose_renaming_is_opt_in(tool) -> None:  # type: ignore[no-untyped-def]
     new, _ = tool.rename_source(SOURCE, {"Piece": "Room"}, prose=True)
     assert "# a Room in a comment" in new
@@ -67,6 +76,7 @@ def test_prose_renaming_is_opt_in(tool) -> None:  # type: ignore[no-untyped-def]
     assert 'label = "Piece"' in new  # a plain string literal is never touched
 
 
+@needs_312
 def test_line_endings_are_preserved(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     path = tmp_path / "a.py"
     path.write_bytes(b"x = Piece()\r\ny = 1\r\n")
@@ -74,6 +84,7 @@ def test_line_endings_are_preserved(tool, tmp_path: Path) -> None:  # type: igno
     assert path.read_bytes() == b"x = Room()\r\ny = 1\r\n"
 
 
+@needs_312
 def test_a_dry_run_writes_nothing(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     path = tmp_path / "a.py"
     path.write_text("x = Piece()\n", encoding="utf-8")
@@ -82,6 +93,7 @@ def test_a_dry_run_writes_nothing(tool, tmp_path: Path) -> None:  # type: ignore
     assert path.read_text(encoding="utf-8") == "x = Piece()\n"
 
 
+@needs_312
 def test_markdown_code_blocks_are_renamed_but_not_prose(tool) -> None:  # type: ignore[no-untyped-def]
     text = "A Piece is a room.\n\n```python\nx = Piece(id='a')\n```\n\nUse `Piece` here.\n"
     new, count = tool.rename_markdown(text, {"Piece": "Room"})
@@ -110,6 +122,7 @@ def test_names_defined_by_several_owners_are_reported(tool, tmp_path: Path) -> N
     assert shared["pieces"] == ["Order", "Plan"]
 
 
+@needs_312
 def test_the_command_refuses_a_shared_name_unless_allowed(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "m.py").write_text(
         "class A:\n    pieces = 1\nclass B:\n    pieces = 2\n", encoding="utf-8"
@@ -121,11 +134,13 @@ def test_the_command_refuses_a_shared_name_unless_allowed(tool, tmp_path: Path) 
     assert "rooms" in (tmp_path / "m.py").read_text(encoding="utf-8")
 
 
+@needs_312
 def test_verify_accepts_a_pure_rename(tool) -> None:  # type: ignore[no-untyped-def]
     new, _ = tool.rename_source(SOURCE, {"Piece": "Room"})
     assert tool.verify_inverse(SOURCE, new, {"Piece": "Room"})
 
 
+@needs_312
 def test_verify_rejects_a_change_that_is_not_a_rename(tool) -> None:  # type: ignore[no-untyped-def]
     new, _ = tool.rename_source(SOURCE, {"Piece": "Room"})
     tampered = new.replace("id=piece.id", "id=piece.name")
@@ -142,6 +157,7 @@ def test_string_literal_hits_are_reported_not_changed(tool) -> None:  # type: ig
     assert hits == [(1, "pieces")]
 
 
+@needs_312
 def test_excluded_paths_are_left_alone(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "keep").mkdir()
     (tmp_path / "keep" / "a.py").write_text("x = Piece()\n", encoding="utf-8")
@@ -152,6 +168,7 @@ def test_excluded_paths_are_left_alone(tool, tmp_path: Path) -> None:  # type: i
     assert (tmp_path / "b.py").read_text(encoding="utf-8") == "y = Room()\n"
 
 
+@needs_312
 def test_a_prose_only_change_next_to_the_new_name_is_still_proved(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     """``errors`` exists in the file (a library keyword); only a comment mentions the old name."""
     text = "# see erreurs\nopen(f, errors='x')\n"
@@ -171,12 +188,14 @@ def test_the_new_name_already_used_beside_the_old_one_is_a_conflict(tool) -> Non
     assert tool.identifier_conflicts(text, {"erreurs": "errors"}) == ["erreurs"]
 
 
+@needs_312
 def test_the_command_refuses_a_conflict(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     (tmp_path / "m.py").write_text("erreurs = []\nerrors = {}\n", encoding="utf-8")
     assert tool.main(["--map", "erreurs=errors", "--apply", str(tmp_path)]) == 3
     assert "erreurs = []" in (tmp_path / "m.py").read_text(encoding="utf-8")
 
 
+@needs_312
 def test_an_allowed_conflict_is_renamed_but_reported_unproved(tool, tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
     path = tmp_path / "m.py"
     path.write_text("import shapely.erreurs\nopen(f, errors='x')\n", encoding="utf-8")
@@ -186,6 +205,7 @@ def test_an_allowed_conflict_is_renamed_but_reported_unproved(tool, tmp_path: Pa
     assert "unproved" in capsys.readouterr().out
 
 
+@needs_312
 def test_the_proof_only_swaps_back_the_names_the_file_uses(tool, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
     """``Room`` already exists in this file; only the unrelated ``Piece`` rename is applied."""
     path = tmp_path / "m.py"
@@ -195,3 +215,10 @@ def test_the_proof_only_swaps_back_the_names_the_file_uses(tool, tmp_path: Path)
     assert (
         path.read_text(encoding="utf-8") == "from x import Room, Bedroom\nvalue = Room(Bedroom)\n"
     )
+
+
+@pytest.mark.skipif(sys.version_info >= (3, 12), reason="the tool runs on 3.12+")
+def test_the_tool_refuses_python_3_11(tool) -> None:  # type: ignore[no-untyped-def]
+    """On 3.11 the tool must refuse loudly, never rename f-strings half-way."""
+    with pytest.raises(RuntimeError, match=r"3\.12"):
+        tool.rename_source(SOURCE, {"Piece": "Room"})

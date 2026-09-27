@@ -37,6 +37,7 @@ from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.light.base import DenseSurrogate
 from archlux.light.protocole import Glazing
+from archlux.types import Indicateur
 
 if TYPE_CHECKING:
     import numpy as np
@@ -78,7 +79,7 @@ class LearnedSurrogate:
     indicateur_vise: Indicator = "sDA"
 
     @property
-    def indicator(self) -> str:
+    def indicator(self) -> Indicateur:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
