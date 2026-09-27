@@ -1,15 +1,15 @@
-"""Protocole ``Substitut`` : la **seule** interface entre le noyau pur et l'appris.
+"""``Surrogate`` protocol: the **only** interface between the pure core and the learned part.
 
-Trois méthodes, pas une de plus. C'est cette étroitesse qui permet trois implémentations
-interchangeables — analytique (formules fermées), apprise (transformeur), simulateur
-exact — sans que ``solve`` ne sache laquelle il manipule.
+Three methods, not one more. That narrowness is what allows three interchangeable
+implementations (analytic with closed forms, learned with a transformer, and the
+split-flux oracle) without ``solve`` knowing which one it handles.
 
-`solve` dépend de **ce fichier**, jamais de :mod:`archlux.light.appris`. Le test de
-dépendance (`tests/test_dependances.py`) fait échouer la CI si cette règle est franchie.
+`solve` depends on **this file**, never on :mod:`archlux.light.appris`. The dependency
+test (`tests/test_dependances.py`) fails the CI if this rule is crossed.
 
-Entrée **vectorielle uniquement**. Un substitut prenant une image en entrée a un gradient
-nul presque partout : l'optimiseur devient aveugle et le projet est impossible
-(`ARCHITECTURE.md` §10, premier anti-pattern).
+**Vector input only.** A surrogate taking an image as input has a gradient of zero almost
+everywhere: the optimizer goes blind and the project is impossible (`ARCHITECTURE.md`
+§10, first anti-pattern).
 """
 
 from __future__ import annotations
@@ -17,170 +17,167 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from archlux.types import Indicateur
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.types import Indicator
 
 if TYPE_CHECKING:
     from archlux.arrays import VecteurF
     from archlux.types import Opening, Orientation, Wall
 
-__all__ = ["Baies", "Substitut", "SubstitutParPiece", "WrapsSurrogate", "point_prediction"]
+__all__ = ["Glazing", "PerRoomSurrogate", "Surrogate", "WrapsSurrogate", "point_prediction"]
 
 
 @dataclass(frozen=True, slots=True)
-class Baies:
-    """Fenestration d'un plan, **invariante** pendant l'optimisation.
+class Glazing:
+    """Glazing of a plan, **invariant** during the optimization.
 
-    Le vecteur de décision ne porte que ``(x, y, w, h)`` par pièce : il ne dit
-    **rien** des ouvertures. Or ce sont elles qui déterminent l'éclairement.
-    Mesuré sur 369 appartements suisses, cible = irradiance simulée par lancer de
-    rayons, découpage par site : le substitut analytique obtient ``R² = −0,000``
-    et le perceptron ``R² = −0,667``, tous deux au niveau — ou en dessous — de la
-    simple moyenne. Aucun modèle ne peut faire mieux à partir de rectangles sans
-    fenêtres ; ce n'est pas un défaut de capacité, c'est un défaut d'entrée.
+    The decision vector only carries ``(x, y, w, h)`` per room: it says **nothing** about
+    the openings. Yet they are what determines daylight. Measured on 369 Swiss
+    apartments, target = irradiance simulated by ray tracing, split by site: the analytic
+    surrogate gets ``R² = −0.000`` and the perceptron ``R² = −0.667``, both at or below
+    the plain mean. No model can do better from rectangles without windows; this is not a
+    capacity defect, it is an input defect.
 
-    Les baies sont décrites **relativement à leur mur** (`ARCHITECTURE.md` §10) et
-    ne bougent pas pendant Frank-Wolfe : seules les cloisons se déplacent, et les
-    ouvertures suivent sans synchronisation. Cet objet se construit donc une fois,
-    au départ, et se transmet inchangé à chaque itération.
+    Openings are described **relatively to their wall** (`ARCHITECTURE.md` §10) and do not
+    move during Frank-Wolfe: only the partitions move, and the openings follow without
+    synchronization. This object is therefore built once, at the start, and passed on
+    unchanged to every iteration.
 
     Attributes
     ----------
-    murs : tuple of Mur
-        Murs porteurs des ouvertures. Nécessaires pour dériver une position
-        absolue à la demande, jamais pour la stocker.
-    ouvertures : tuple of Ouverture
-        Baies, en coordonnées relatives ``(mur_id, s, largeur_rel)``.
+    walls : tuple of Wall
+        Walls carrying the openings. Needed to derive an absolute position on demand,
+        never to store it.
+    openings : tuple of Opening
+        Openings, in relative coordinates ``(wall_id, s, relative_width)``.
     """
 
-    murs: tuple[Wall, ...] = ()
-    ouvertures: tuple[Opening, ...] = ()
+    walls: tuple[Wall, ...] = ()
+    openings: tuple[Opening, ...] = ()
 
     @property
-    def vide(self) -> bool:
-        """Dire si aucune fenestration n'est décrite.
+    def empty(self) -> bool:
+        """Say whether no glazing is described.
 
-        Un substitut qui reçoit des baies vides doit se comporter **exactement**
-        comme s'il n'en avait pas reçu : c'est ce qui rend l'extension du
-        protocole rétrocompatible.
+        A surrogate that receives empty glazing must behave **exactly** as if it had
+        received none: that is what makes the extension of the protocol backward
+        compatible.
         """
-        return not self.ouvertures
+        return not self.openings
 
 
 @runtime_checkable
-class SubstitutParPiece(Protocol):
-    """Substitut qui expose ses valeurs **par pièce**, et pas seulement leur somme.
+class PerRoomSurrogate(Protocol):
+    """Surrogate that exposes its values **per room**, not only their sum.
 
-    Pourquoi ce protocole existe
-    ----------------------------
-    :class:`Substitut` rend **un scalaire par plan**. L'éclairement est une
-    grandeur **par pièce**, et la mesure est sans appel : sur 367 466 pièces de
-    Swiss Dwellings, **92 % de la variance est intra-appartement**. L'identité
-    du bâtiment — qui porte masque urbain, climat et position solaire —
-    n'explique que 2,6 %.
+    Why this protocol exists
+    ------------------------
+    :class:`Surrogate` returns **one scalar per plan**. Daylight is a **per-room**
+    quantity, and the measurement is unambiguous: over 367,466 rooms of Swiss Dwellings,
+    **92 % of the variance is within the apartment**. The identity of the building, which
+    carries urban mask, climate and sun position, explains only 2.6 %.
 
-    Agréger en moyenne de logement revient donc à prédire une quantité dont la
-    variance ne pèse que 7,7 % du phénomène. C'est ce qui explique les
-    ``R² ≈ 0`` mesurés, davantage que la pauvreté des entrées.
+    Aggregating to a dwelling mean therefore amounts to predicting a quantity whose
+    variance is only 7.7 % of the phenomenon. That explains the measured ``R² ≈ 0``, more
+    than the poverty of the inputs does.
 
-    Conséquence : **aucun indicateur de type sDA n'est représentable** par un
-    scalaire de plan. Le sDA se définit par pièce — part du sol au-dessus de
-    300 lux — jamais par logement.
+    Consequence: **no sDA-type indicator is representable** by a plan scalar. The sDA is
+    defined per room (share of the floor above 300 lux), never per dwelling.
 
-    Ce protocole est **facultatif** et **additif**. ``solve`` continue de
-    n'utiliser que :class:`Substitut` : la scalarisation reste explicite et à
-    la charge de l'appelant, ce qui évite qu'une moyenne implicite se glisse
-    dans l'objectif d'optimisation.
+    This protocol is **optional** and **additive**. ``solve`` keeps using only
+    :class:`Surrogate`: the scalarization stays explicit and is the caller's job, which
+    keeps an implicit mean from slipping into the optimization objective.
     """
 
-    def evaluer_pieces(
-        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate_rooms(
+        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> VecteurF:
-        """Rendre une valeur par pièce, dans l'ordre de ``Polytope.index``.
+        """Return one value per room, in the order of ``Polytope.index``.
 
         Returns
         -------
         numpy.ndarray
-            Dimension ``len(x) // 4`` — une valeur par pièce.
+            Dimension ``len(x) // 4``: one value per room.
 
         Guarantees
         ----------
-        - Cohérence : la scalarisation retenue par l'implémentation doit
-          redonner :meth:`Substitut.evaluer`. Pour les substituts analytiques
-          du dépôt, c'est la **somme** — vérifié par test.
+        - Consistency: the scalarization chosen by the implementation must give back
+          :meth:`Surrogate.evaluate`. For the analytic surrogates of the repository this
+          is the **sum**, checked by a test.
         """
         ...
 
 
 @runtime_checkable
-class Substitut(Protocol):
-    """Modèle différentiable d'un indicateur d'éclairement.
+class Surrogate(Protocol):
+    """Differentiable model of a daylight indicator.
 
-    Toute implémentation respecte trois obligations :
+    Every implementation honours three obligations:
 
-    1. l'entrée est le vecteur de décision du polytope, jamais un raster — et,
-       depuis l'extension du protocole, les :class:`Baies` qui l'accompagnent ;
-    2. :meth:`gradient` est cohérent avec :meth:`evaluer` — vérifié par
-       :func:`archlux.light.validation.valider_gradient` ;
-    3. :meth:`incertitude` ne rend jamais un scalaire nu sans son échelle.
+    1. the input is the decision vector of the polytope, never a raster and, since the
+       extension of the protocol, the :class:`Glazing` that goes with it;
+    2. :meth:`gradient` is consistent with :meth:`evaluate`, checked by
+       :func:`archlux.light.validation.valider_gradient`;
+    3. :meth:`uncertainty` never returns a bare scalar without its scale.
     """
 
     @property
-    def indicateur(self) -> Indicateur:
-        """Nom de l'indicateur modélisé (``"sDA"``, ``"ASE"``, …)."""
+    def indicator(self) -> Indicator:
+        """Name of the modelled indicator (``"sDA"``, ``"ASE"``, ...)."""
         ...
 
-    def evaluer(
-        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
+    def evaluate(
+        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Estimer l'indicateur pour le plan encodé par ``x``.
+        """Estimate the indicator for the plan encoded by ``x``.
 
         Parameters
         ----------
         x : numpy.ndarray
-            Vecteur de décision, ordonné par ``Polytope.index``.
+            Decision vector, ordered by ``Polytope.index``.
         orientation : Orientation
-            Azimut, traité comme variable circulaire.
-        baies : Baies or None, optional
-            Fenestration, constante pendant l'optimisation. ``None`` — le défaut —
-            signifie « information absente » : l'implémentation doit alors se
-            rabattre sur son hypothèse par défaut, comme avant l'extension du
-            protocole. Une implémentation a le droit de l'ignorer.
+            Azimuth, treated as a circular variable.
+        glazing : Glazing or None, optional
+            Glazing, constant during the optimization. ``None``, the default, means
+            "information absent": the implementation must then fall back on its default
+            assumption, as before the extension of the protocol. An implementation may
+            ignore it.
 
         Returns
         -------
         float
-            Estimation ponctuelle. **Sans garantie** en soi : la garantie vient de
-            :mod:`archlux.uq`, qui l'assortit d'un intervalle conforme.
+            Point estimate. **No guarantee** in itself: the guarantee comes from
+            :mod:`archlux.uq`, which attaches a conformal interval to it.
 
         Guarantees
         ----------
-        - Performance : **probabiliste uniquement**, et seulement une fois la valeur
-          passée par la calibration conforme. Cette méthode seule ne garantit rien.
+        - Performance: **probabilistic only**, and only once the value has gone through
+          the conformal calibration. This method alone guarantees nothing.
         """
         ...
 
     def gradient(
-        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
+        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> VecteurF:
-        """Rendre ∂indicateur/∂x, dans la base du polytope.
+        """Return ∂indicator/∂x, in the basis of the polytope.
 
-        C'est **tout** ce que l'apprentissage fournit au système : une direction. Le
-        générateur décide l'ordre, le solveur décide les dimensions.
+        This is **all** that learning provides to the system: a direction. The generator
+        decides the order, the solver decides the dimensions.
 
         Returns
         -------
         numpy.ndarray
-            Même dimension que ``x``.
+            Same dimension as ``x``.
         """
         ...
 
-    def incertitude(
-        self, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
+    def uncertainty(
+        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Écart-type prédictif, en unité de l'indicateur.
+        """Predictive standard deviation, in the unit of the indicator.
 
-        Sert de score de non-conformité à :mod:`archlux.uq.conforme` et de critère
-        d'échantillonnage à l'apprentissage actif du jalon 6.
+        Serves as the non-conformity score of :mod:`archlux.uq.conforme` and as the
+        sampling criterion of the active learning of milestone 6.
         """
         ...
 
@@ -189,18 +186,18 @@ class Substitut(Protocol):
 class WrapsSurrogate(Protocol):
     """An objective built on a surrogate, such as the pessimistic ``Daylight``.
 
-    Its :meth:`Substitut.evaluer` may return ``mu - q sigma`` rather than a prediction;
-    ``substitut`` gives access to the prediction itself (PLAN.md batch 1.6).
+    Its :meth:`Surrogate.evaluate` may return ``mu - q sigma`` rather than a prediction;
+    ``surrogate`` gives access to the prediction itself (PLAN.md batch 1.6).
     """
 
     @property
-    def substitut(self) -> Substitut:
-        """The wrapped surrogate, whose ``evaluer`` is a point prediction."""
+    def surrogate(self) -> Surrogate:
+        """The wrapped surrogate, whose ``evaluate`` is a point prediction."""
         ...
 
 
 def point_prediction(
-    objective: Substitut, x: VecteurF, orientation: Orientation, *, baies: Baies | None = None
+    objective: Surrogate, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
 ) -> tuple[float, float]:
     """Point prediction ``mu`` and uncertainty ``sigma`` behind an objective.
 
@@ -214,11 +211,21 @@ def point_prediction(
     glare (:class:`archlux.light.analytique.SubstitutAnalytique`). The prediction is
     given back as a positive ASE, the quantity the calibration and the report read.
     """
-    surrogate: Substitut = objective
+    surrogate: Surrogate = objective
     while isinstance(surrogate, WrapsSurrogate):
-        surrogate = surrogate.substitut
-    mu = float(surrogate.evaluer(x, orientation, baies=baies))
-    sigma = float(surrogate.incertitude(x, orientation, baies=baies))
-    if surrogate.indicateur == "ASE":
+        surrogate = surrogate.surrogate
+    mu = float(surrogate.evaluate(x, orientation, glazing=glazing))
+    sigma = float(surrogate.uncertainty(x, orientation, glazing=glazing))
+    if surrogate.indicator == "ASE":
         mu = -mu
     return mu, sigma
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "Substitut": Alias(Surrogate, "archlux.light.protocole.Surrogate"),
+        "Baies": Alias(Glazing, "archlux.light.protocole.Glazing"),
+        "SubstitutParPiece": Alias(PerRoomSurrogate, "archlux.light.protocole.PerRoomSurrogate"),
+    },
+)

@@ -27,7 +27,7 @@ from archlux.types import Context, Orientation, Plan, Regulation, Room, Structur
 
 GRID_M = 0.10
 MIN_SIDE_M = 2.0
-ROOM_TYPES = ("chambre", "cuisine", "sdb", "wc", "couloir")
+ROOM_TYPES = ("bedroom", "kitchen", "bathroom", "toilet", "corridor")
 """Current (French) room type names; they follow the glossary rename in batch E5."""
 
 
@@ -87,7 +87,7 @@ def generate(seed: int, index: int, wall: WallKind = "full") -> Scenario:
         )
     assert cuts, "outline too small to split"
 
-    kinds = ["sejour", *(str(rng.choice(ROOM_TYPES)) for _ in rects[1:])]
+    kinds = ["living_room", *(str(rng.choice(ROOM_TYPES)) for _ in rects[1:])]
     rooms = tuple(
         Room(id=f"r{i}", type=kind, x=round(x, 2), y=round(y, 2), w=round(w, 2), h=round(h, 2))
         for i, (kind, (x, y, w, h)) in enumerate(zip(kinds, rects, strict=True))

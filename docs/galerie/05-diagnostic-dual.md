@@ -10,7 +10,7 @@ un porteur de 20 cm, ou élargir le dégagement ?
 import numpy as np
 from scipy import sparse
 
-from archlux.certify.dual import traduire_duaux
+from archlux.certify.dual import translate_duals
 from archlux.geom.polytope import Polytope
 
 poly = Polytope(
@@ -18,20 +18,20 @@ poly = Polytope(
     b=np.ones(3),
     A_eq=sparse.csr_matrix((0, 3)),
     b_eq=np.zeros(0),
-    bornes=((0.0, 1.0),) * 3,
+    bounds=((0.0, 1.0),) * 3,
     index={"a.x": 0, "a.y": 1, "a.w": 2},
-    origines=(
+    origins=(
         "mur porteur axe 3",
         "surface minimale cuisine",
         "largeur de passage",
     ),
 )
-for phrase, prix in traduire_duaux(np.array([-4.1, -1.7, 0.0]), poly):
+for phrase, prix in translate_duals(np.array([-4.1, -1.7, 0.0]), poly):
     print(f"{prix:+.1f}  {phrase}")
 ```
 
 Les prix duaux viennent du même LP que la légalisation (`lmo.resoudre(...,
-duaux=True)`). `Polytope.origines` les rend lisibles ; un indice de ligne nu
+duaux=True)`). `Polytope.origins` les rend lisibles ; un indice de ligne nu
 ne l'est pas. Les prix nuls (contraintes inactives) sont filtrés.
 
 **Résultat.**

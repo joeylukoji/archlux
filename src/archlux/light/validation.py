@@ -13,19 +13,20 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidSurrogate
 
 if TYPE_CHECKING:
-    from archlux.light.protocole import Substitut
+    from archlux.light.protocole import Surrogate
     from archlux.types import Orientation
 
-__all__ = ["RapportGradient", "valider_gradient"]
+__all__ = ["GradientReport", "validate_gradient"]
 
 _NUIT = 1e-8
 
 
 @dataclass(frozen=True, slots=True)
-class RapportGradient:
+class GradientReport:
     """Comparaison du gradient déclaré aux différences finies d'une référence.
 
     Attributes
@@ -44,9 +45,9 @@ class RapportGradient:
 
 
 def _differences_finies(
-    substitut: Substitut, x: np.ndarray, orientation: Orientation, pas: float
+    surrogate: Surrogate, x: np.ndarray, orientation: Orientation, pas: float
 ) -> np.ndarray:
-    """Pente centrée de ``evaluer`` le long de chaque coordonnée de ``x``."""
+    """Pente centrée de ``evaluate`` le long de chaque coordonnée de ``x``."""
     x0 = np.asarray(x, dtype=float).ravel()
     g = np.empty_like(x0)
     for i in range(x0.size):
@@ -54,29 +55,29 @@ def _differences_finies(
         plus[i] += pas
         moins[i] -= pas
         g[i] = (
-            float(substitut.evaluer(plus, orientation))
-            - float(substitut.evaluer(moins, orientation))
+            float(surrogate.evaluate(plus, orientation))
+            - float(surrogate.evaluate(moins, orientation))
         ) / (2.0 * pas)
     return g
 
 
-def valider_gradient(
-    substitut: Substitut,
+def validate_gradient(
+    surrogate: Surrogate,
     points: np.ndarray,
     orientation: Orientation,
     *,
     seed: int,
-    reference: Substitut | None = None,
+    reference: Surrogate | None = None,
     pas: float = 0.10,
     epsilon: float = 1e-5,
     tolerance: float = 1e-3,
     seuil_signe: float = 0.80,
-) -> RapportGradient:
+) -> GradientReport:
     """Comparer le gradient du substitut aux différences finies.
 
     Si ``reference`` est fournie (oracle gelé), on compare les **signes**
     au pente réelle — c'est le point de contrôle du projet. Sinon, on vérifie
-    la cohérence interne ``gradient`` vs ``evaluer`` du même objet.
+    la cohérence interne ``gradient`` vs ``evaluate`` du même objet.
 
     Parameters
     ----------
@@ -134,11 +135,11 @@ def valider_gradient(
     cosinus: list[float] = []
     signes: list[bool] = []
     for x in matrice:
-        declare = np.asarray(substitut.gradient(x, orientation), dtype=float).ravel()
+        declare = np.asarray(surrogate.gradient(x, orientation), dtype=float).ravel()
         cible = (
             _differences_finies(oracle, x, orientation, pas_fd)
             if oracle is not None
-            else _differences_finies(substitut, x, orientation, pas_fd)
+            else _differences_finies(surrogate, x, orientation, pas_fd)
         )
         norme_c = float(np.linalg.norm(cible))
         norme_d = float(np.linalg.norm(declare))
@@ -160,7 +161,7 @@ def valider_gradient(
                 signes.append(False)
             else:
                 signes.append((a >= 0.0) == (b >= 0.0))
-    rapport = RapportGradient(
+    rapport = GradientReport(
         erreur_relative_max=max(errors) if errors else 0.0,
         cosinus_moyen=float(np.mean(cosinus)) if cosinus else 1.0,
         accord_de_signe=float(np.mean(signes)) if signes else 1.0,
@@ -184,3 +185,12 @@ def valider_gradient(
                 report=rapport,
             )
     return replace(rapport, conforme=True)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "RapportGradient": Alias(GradientReport, "archlux.light.validation.GradientReport"),
+        "valider_gradient": Alias(validate_gradient, "archlux.light.validation.validate_gradient"),
+    },
+)

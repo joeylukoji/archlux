@@ -1,4 +1,4 @@
-"""Empreinte géométrique et distance de Hausdorff — dédupliquer avant de découper."""
+"""Geometric fingerprint and Hausdorff distance — deduplicate before splitting."""
 
 from __future__ import annotations
 
@@ -8,26 +8,28 @@ from typing import TYPE_CHECKING
 from shapely.geometry import box
 from shapely.ops import unary_union
 
+from archlux._deprecation import Alias, lazy_aliases
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from archlux.types import Plan
 
 __all__ = [
-    "SEUIL_HAUSDORFF_M",
-    "distance_cotes",
-    "empreinte_geometrique",
+    "HAUSDORFF_THRESHOLD_M",
+    "geometric_fingerprint",
     "hausdorff",
-    "paires_quasi_identiques",
+    "near_duplicate_pairs",
+    "side_distance",
 ]
 
-SEUIL_HAUSDORFF_M = 0.02
-"""Seuil en mètres : deux pavages plus proches sont le même logement (`MILESTONE-4.md`)."""
+HAUSDORFF_THRESHOLD_M = 0.02
+"""Threshold in metres: two tilings closer than this are the same unit (`MILESTONE-4.md`)."""
 
 
-def empreinte_geometrique(plan: Plan) -> str:
-    """Hacher le pavage arrondi au millimètre, pièces triées par identifiant."""
-    pieces = tuple(
+def geometric_fingerprint(plan: Plan) -> str:
+    """Hash the tiling rounded to the millimetre, rooms sorted by identifier."""
+    rooms = tuple(
         (
             p.id,
             p.type,
@@ -36,25 +38,25 @@ def empreinte_geometrique(plan: Plan) -> str:
             round(p.w, 3),
             round(p.h, 3),
         )
-        for p in sorted(plan.rooms, key=lambda piece: piece.id)
+        for p in sorted(plan.rooms, key=lambda room: room.id)
     )
-    return hashlib.blake2b(repr(pieces).encode(), digest_size=16).hexdigest()
+    return hashlib.blake2b(repr(rooms).encode(), digest_size=16).hexdigest()
 
 
-def distance_cotes(a: Plan, b: Plan) -> float:
-    """Écart L-infini des cotes, pièces appariées par identifiant.
+def side_distance(a: Plan, b: Plan) -> float:
+    """L-infinity gap between dimensions, rooms matched by identifier.
 
-    La Hausdorff des *unions* est nulle pour deux pavages du même contour :
-    elle ne détecte pas un doublon de partition. C'est l'écart des rectangles
-    qui compte pour dédupliquer avant de découper.
+    The Hausdorff distance of the *unions* is zero for two tilings of the same
+    outline: it does not detect a partition duplicate. It is the gap between
+    the rectangles that matters for deduplicating before splitting.
     """
     gauche = {p.id: p for p in a.rooms}
     droite = {p.id: p for p in b.rooms}
     if gauche.keys() != droite.keys():
         return hausdorff(a, b)
     if not gauche:
-        # Deux pavages vides sont identiques ; ``max`` sur un vide lèverait un
-        # ``ValueError`` nu, hors du domaine d'erreurs du projet (§7).
+        # Two empty tilings are identical; ``max`` over an empty sequence would raise a
+        # bare ``ValueError``, outside the project's error domain (§7).
         return 0.0
     return max(
         max(
@@ -68,33 +70,50 @@ def distance_cotes(a: Plan, b: Plan) -> float:
 
 
 def hausdorff(a: Plan, b: Plan) -> float:
-    """Distance de Hausdorff entre les unions de rectangles, en mètres."""
+    """Hausdorff distance between the unions of rectangles, in metres."""
     ua = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in a.rooms])
     ub = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in b.rooms])
     return float(ua.hausdorff_distance(ub))
 
 
-def paires_quasi_identiques(
-    plans: Sequence[tuple[str, Plan]], *, seuil: float = SEUIL_HAUSDORFF_M
+def near_duplicate_pairs(
+    plans: Sequence[tuple[str, Plan]], *, threshold: float = HAUSDORFF_THRESHOLD_M
 ) -> tuple[tuple[str, str], ...]:
-    """Paires d'identifiants dont l'écart de cotes est sous ``seuil``.
+    """Pairs of identifiers whose dimension gap is under ``threshold``.
 
-    La relation « écart ≤ seuil » n'est **pas transitive** : ``a ~ b`` et ``b ~ c``
-    n'impliquent pas ``a ~ c``. Cette fonction rend donc les arêtes du graphe de
-    similarité, jamais des classes. Un appelant qui déduplique doit fermer ces arêtes
-    en composantes connexes (union-find) avant de découper, sinon deux membres d'une
-    même chaîne peuvent atterrir de part et d'autre d'une frontière train/test.
+    The relation "gap <= threshold" is **not transitive**: ``a ~ b`` and ``b ~ c``
+    do not imply ``a ~ c``. This function therefore returns the edges of the
+    similarity graph, never classes. A caller that deduplicates must close these
+    edges into connected components (union-find) before splitting, otherwise two
+    members of the same chain can land on either side of a train/test boundary.
 
     Complexity
     ----------
-    ``O(n²)`` comparaisons ; les empreintes sont calculées **une fois par plan**
-    (``O(n)``) et non par paire.
+    ``O(n^2)`` comparisons; fingerprints are computed **once per plan** (``O(n)``),
+    not per pair.
     """
-    empreintes = [empreinte_geometrique(plan) for _, plan in plans]
+    empreintes = [geometric_fingerprint(plan) for _, plan in plans]
     paires: list[tuple[str, str]] = []
     for i, (ida, pa) in enumerate(plans):
         for decalage, (idb, pb) in enumerate(plans[i + 1 :]):
             j = i + 1 + decalage
-            if empreintes[i] == empreintes[j] or distance_cotes(pa, pb) <= seuil:
+            if empreintes[i] == empreintes[j] or side_distance(pa, pb) <= threshold:
                 paires.append((ida, idb) if ida < idb else (idb, ida))
     return tuple(paires)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "empreinte_geometrique": Alias(
+            geometric_fingerprint, "archlux.data.dedup.geometric_fingerprint"
+        ),
+        "distance_cotes": Alias(side_distance, "archlux.data.dedup.side_distance"),
+        "paires_quasi_identiques": Alias(
+            near_duplicate_pairs, "archlux.data.dedup.near_duplicate_pairs"
+        ),
+        "SEUIL_HAUSDORFF_M": Alias(
+            HAUSDORFF_THRESHOLD_M, "archlux.data.dedup.HAUSDORFF_THRESHOLD_M"
+        ),
+    },
+)

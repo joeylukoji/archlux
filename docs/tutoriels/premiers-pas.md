@@ -17,8 +17,8 @@ import archlux as ax
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     rooms=(
-        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
     walls=(),
     openings=(),
@@ -35,11 +35,11 @@ q = ax.legalize(plan, ctx)
 assert q.certificate is not None
 assert q.certificate.geometry.valid
 assert q.certificate.performance is None  # légalisation classique : pas de borne
-print(q.certificate.rapport())
+print(q.certificate.report())
 ```
 
 `legalize` renvoie un plan **prouvé** valide (pavage, surfaces, porteurs).
-La section `[PREDICTION]` du rapport reste `NON EVALUABLE` tant qu'aucune
+La section `[PREDICTION]` du rapport reste `NOT EVALUABLE` tant qu'aucune
 calibration conforme n'a été attachée.
 
 ## Charger depuis un fichier
@@ -54,14 +54,14 @@ from pathlib import Path
 
 Path("sortie_generateur.json").write_text(
     """{
-      "schema": "1",
-      "contour": [[0, 0], [12, 0], [12, 9], [0, 9]],
-      "pieces": [
-        {"id": "sejour", "type": "sejour", "x": 0, "y": 0, "w": 6.05, "h": 9},
-        {"id": "chambre", "type": "chambre", "x": 6, "y": 0, "w": 6, "h": 5},
-        {"id": "sdb", "type": "salle_de_bain", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
+      "schema": "2",
+      "outline": [[0, 0], [12, 0], [12, 9], [0, 9]],
+      "rooms": [
+        {"id": "living_room", "type": "living_room", "x": 0, "y": 0, "w": 6.05, "h": 9},
+        {"id": "bedroom", "type": "bedroom", "x": 6, "y": 0, "w": 6, "h": 5},
+        {"id": "bathroom", "type": "bathroom", "x": 6, "y": 5.03, "w": 6, "h": 3.97}
       ],
-      "murs": [], "ouvertures": [], "certificat": null
+      "walls": [], "openings": [], "certificate": null
     }""",
     encoding="utf-8",
 )
@@ -77,7 +77,7 @@ dès que l'entrée peut contenir un vide, ce qui est le cas des sorties de gén�
 sans lui, les séparations sont des inégalités, le plan troué est déjà son propre point
 le plus proche, et la vérification exacte le rejette (`InvariantViolation`).
 
-Le schéma JSON est versionné, et `certificat` vaut `null` sur un plan proposé ; voir
+Le schéma JSON est versionné, et `certificate` vaut `null` sur un plan proposé ; voir
 [référence](../reference/schema-json.md).
 
 ## Suite

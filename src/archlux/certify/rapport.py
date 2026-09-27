@@ -1,20 +1,21 @@
-"""Rendu textuel du certificat. Les deux natures de garantie restent séparées.
+"""Text rendering of the certificate. The two kinds of guarantee stay separate.
 
-Aucune ligne du rapport ne mélange l'exact et le probabiliste, et aucun score composite
-ne les agrège : un lecteur doit pouvoir dire, pour chaque chiffre, s'il s'agit d'une
-preuve ou d'une prédiction.
+No line of the report mixes the exact and the probabilistic, and no composite score
+aggregates them: a reader must be able to tell, for every figure, whether it is a proof or
+a prediction.
 """
 
 from __future__ import annotations
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux._version import __version__
 from archlux.types import Certificate, GeometricProof, Manifest, PerformanceBound
 
-__all__ = ["rendre"]
+__all__ = ["render"]
 
-_HORS_PERIMETRE = (
-    "Confort d'été, systèmes techniques, matériaux — hors périmètre "
-    "(oracle gelé split-flux, pas un sDA LM-83)"
+_OUT_OF_SCOPE = (
+    "Summer comfort, technical systems, materials: out of scope "
+    "(frozen split-flux oracle, not an LM-83 sDA)"
 )
 
 
@@ -23,102 +24,109 @@ def _version() -> str:
     return __version__
 
 
-def _fmt(valeur: float, digits: int = 2) -> str:
-    return f"{valeur:.{digits}f}".replace(".", ",")
+def _fmt(value: float, digits: int = 2) -> str:
+    return f"{value:.{digits}f}"
 
 
 def _verdict(ok: bool) -> str:
-    return "verifie" if ok else "echec"
+    return "verified" if ok else "failed"
 
 
-def _section_geometrie(preuve: GeometricProof) -> str:
-    chev = "aucun" if not preuve.overlap else "present"
-    gaps = "aucun" if not preuve.gaps else "present"
-    surfaces = "ok" if preuve.areas_ok else "insuffisantes"
-    structure = "oui" if preuve.structure_kept else "non"
-    deplacement = f"{_fmt(preuve.max_displacement)} m"
+def _section_geometry(proof: GeometricProof) -> str:
+    overlap = "none" if not proof.overlap else "present"
+    gaps = "none" if not proof.gaps else "present"
+    areas = "ok" if proof.areas_ok else "insufficient"
+    structure = "yes" if proof.structure_kept else "no"
+    displacement = f"{_fmt(proof.max_displacement)} m"
     return (
-        "GEOMETRIE                                       [EXACT]\n"
-        f"  Chevauchement          {chev:<13} {_verdict(not preuve.overlap)}\n"
-        f"  Jours                  {gaps:<13} {_verdict(not preuve.gaps)}\n"
-        f"  Surfaces minimales     {surfaces:<13} {_verdict(preuve.areas_ok)}\n"
-        f"  Structure preservee    {structure:<13} {_verdict(preuve.structure_kept)}\n"
-        f"  Deplacement maximal    {deplacement}"
+        "GEOMETRY                                        [EXACT]\n"
+        f"  Overlap                {overlap:<13} {_verdict(not proof.overlap)}\n"
+        f"  Gaps                   {gaps:<13} {_verdict(not proof.gaps)}\n"
+        f"  Minimum areas          {areas:<13} {_verdict(proof.areas_ok)}\n"
+        f"  Structure kept         {structure:<13} {_verdict(proof.structure_kept)}\n"
+        f"  Maximum displacement   {displacement}"
     )
 
 
-def _section_performance(borne: PerformanceBound | None) -> str:
-    if borne is None:
-        corps = "  NON EVALUABLE — pas de calibration, ou dérive (échangeabilité rompue)"
-        bandeau = "[PREDICTION — non évaluable]"
+def _section_performance(bound: PerformanceBound | None) -> str:
+    if bound is None:
+        body = "  NOT EVALUABLE: no calibration, or drift (exchangeability broken)"
+        banner = "[PREDICTION: not evaluable]"
     else:
-        pct = f"{borne.coverage * 100.0:.0f}"
-        if borne.coverage_guaranteed:
-            bandeau = f"[PREDICTION — couverture {pct} %]"
+        pct = f"{bound.coverage * 100.0:.0f}"
+        if bound.coverage_guaranteed:
+            banner = f"[PREDICTION: coverage {pct} %]"
         else:
             # Batch 1.6: the optimizer chose this plan, the coverage is not guaranteed.
-            bandeau = "[PREDICTION — plan selectionne, couverture NON garantie]"
-        if borne.indicator == "ASE":
-            ligne = (
-                f"  {borne.indicator}   <= {_fmt(borne.upper)}   "
-                f"(predit {_fmt(borne.value)}, "
-                f"marge {_fmt(borne.upper - borne.value)})"
+            banner = "[PREDICTION: selected plan, coverage NOT guaranteed]"
+        if bound.indicator == "ASE":
+            line = (
+                f"  {bound.indicator}   <= {_fmt(bound.upper)}   "
+                f"(predicted {_fmt(bound.value)}, "
+                f"margin {_fmt(bound.upper - bound.value)})"
             )
         else:
-            ligne = (
-                f"  {borne.indicator}   >= {_fmt(borne.lower)}   "
-                f"(predit {_fmt(borne.value)}, "
-                f"marge {_fmt(borne.value - borne.lower)})"
+            line = (
+                f"  {bound.indicator}   >= {_fmt(bound.lower)}   "
+                f"(predicted {_fmt(bound.value)}, "
+                f"margin {_fmt(bound.value - bound.lower)})"
             )
-        corps = f"{ligne}\n  calibration : {borne.n_calibration} évaluations de l'oracle gelé"
-        if not borne.coverage_guaranteed:
-            corps += (
-                f"\n  regime selectionne : plan choisi par l'optimiseur ; la couverture "
-                f"nominale de {pct} % suppose un plan echangeable avec la calibration"
-                "\n  (malediction du vainqueur). Reevaluer ce plan avec l'oracle avant "
-                "de publier une couverture."
+        body = f"{line}\n  calibration: {bound.n_calibration} evaluations of the frozen oracle"
+        if not bound.coverage_guaranteed:
+            body += (
+                "\n  selected regime: the plan was chosen by the optimizer; the nominal "
+                f"coverage of {pct} % assumes a plan exchangeable with the calibration"
+                "\n  (winner's curse). Re-evaluate this plan with the oracle before "
+                "publishing a coverage."
             )
-    return f"PERFORMANCE                        {bandeau}\n{corps}"
+    return f"PERFORMANCE                        {banner}\n{body}"
 
 
-def _section_diagnostic(duaux: tuple[tuple[str, float], ...]) -> str:
-    if not duaux:
-        corps = "  (aucune contrainte active au-delà du seuil)"
+def _section_diagnostic(duals: tuple[tuple[str, float], ...]) -> str:
+    if not duals:
+        body = "  (no active constraint above the threshold)"
     else:
-        corps = "\n".join(f"  {libelle}" for libelle, _prix in duaux)
-    return f"DIAGNOSTIC\n{corps}"
+        body = "\n".join(f"  {label}" for label, _price in duals)
+    return f"DIAGNOSTIC\n{body}"
 
 
-def _en_tete(manifeste: Manifest | None) -> str:
-    paquet = _version()
-    if manifeste is None:
-        return f"CERTIFICAT                              archlux {paquet}"
+def _header(manifest: Manifest | None) -> str:
+    if manifest is None:
+        return f"CERTIFICATE                             archlux {_version()}"
     return (
-        f"CERTIFICAT                              archlux {manifeste.version}     "
-        f"graine {manifeste.seed}"
+        f"CERTIFICATE                             archlux {manifest.version}     "
+        f"seed {manifest.seed}"
     )
 
 
-def rendre(certificat: Certificate) -> str:
-    """Rendre le certificat en texte lisible.
+def render(certificate: Certificate) -> str:
+    """Render the certificate as readable text.
 
     Returns
     -------
     str
-        Rapport à deux natures. Si ``certificat.performance`` est ``None``, la section
-        performance affiche ``NON EVALUABLE`` — jamais un intervalle par défaut. La
-        section ``NON EVALUABLE`` de périmètre est **toujours** présente.
+        A report of two kinds. If ``certificate.performance`` is ``None``, the
+        performance section says ``NOT EVALUABLE``: never a default interval. The scope
+        section ``NOT EVALUABLE`` is **always** present.
     """
-    parties = [
-        _en_tete(certificat.manifest),
+    parts = [
+        _header(certificate.manifest),
         "",
-        _section_geometrie(certificat.geometry),
+        _section_geometry(certificate.geometry),
         "",
-        _section_performance(certificat.performance),
+        _section_performance(certificate.performance),
         "",
-        _section_diagnostic(certificat.duals),
+        _section_diagnostic(certificate.duals),
         "",
-        "NON EVALUABLE",
-        f"  {_HORS_PERIMETRE}",
+        "NOT EVALUABLE",
+        f"  {_OUT_OF_SCOPE}",
     ]
-    return "\n".join(parties) + "\n"
+    return "\n".join(parts) + "\n"
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "rendre": Alias(render, "archlux.certify.rapport.render"),
+    },
+)

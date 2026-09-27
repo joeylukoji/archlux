@@ -25,6 +25,9 @@ Project constraint: read `docs/specification/ARCHITECTURE.md` before any change.
 | **Review / clean up** existing code against the repo standards | `review-and-refactor` | `tdd` unless the tests break |
 | Document the architecture (blueprint, diagrams, ADR) | `architecture-blueprint-generator` | changing the code in the same pass |
 | Browse a site, form, screenshot, scrape, UI QA | `agent-browser` | the Python skills |
+| Security review, untrusted input, auth, secrets, dependency/supply-chain audit | `agent-skills:security-auditor` (skill `agent-skills:security-and-hardening`) | — |
+| Plan or execute a **deprecation/rename wave** (PLAN.md 3.9 style: old name kept as alias, then removed) | `agent-skills:deprecation-and-migration` | rewriting call sites without an alias period unless already agreed |
+| Split a messy working tree into atomic commits, cut a release, pick a semver bump, write a changelog entry | `agent-skills:git-workflow-and-versioning` | — |
 
 ## Frequent combos
 
@@ -66,6 +69,20 @@ Analyse the repo and produce an extensible blueprint. Do not invent an architect
 ### `agent-browser`
 
 Browser automation (`agent-browser` CLI). Load `agent-browser skills get core` before the first command. Prefer this skill over any other browser tool.
+
+### `agent-skills:security-auditor` / `agent-skills:security-and-hardening`
+
+Vulnerability and hardening pass (OWASP-style): untrusted input, auth, storage, third-party integrations, dependency audits. Complements `review-and-refactor`, does not replace it.
+
+### `agent-skills:deprecation-and-migration`
+
+How to age out an old name, API or schema version without breaking callers (expand/contract, alias windows, sunset criteria). Use it to plan a wave before running `scripts/rename_identifiers.py`, not instead of it.
+
+### `agent-skills:git-workflow-and-versioning`
+
+Atomic commits, branch/PR hygiene, semver bumps, changelog writing.
+
+**Overlaps, kept out of automatic dispatch to avoid duplicate work:** `agent-skills:code-reviewer` and `agent-skills:test-engineer` cover the same ground as `review-and-refactor` and `tdd` on this repo. Invoke them by name only if asked explicitly (e.g. a second opinion, or a dedicated coverage-gap audit distinct from red-green).
 
 ## Locations
 

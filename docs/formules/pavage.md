@@ -113,7 +113,7 @@ sature vite — 8 ne gagne rien sur 4 :
 ## Résultats
 
 4 796 corruptions de 300 appartements MSD réels ; bruts et table dans
-`resultats/j7_reparation_brut.csv` et `resultats/j7_reparation.md` :
+`results/j7_reparation_brut.csv` et `results/j7_reparation.md` :
 
 | Faute | `legalize` | `pavage=True` | repli |
 |---|--:|--:|--:|

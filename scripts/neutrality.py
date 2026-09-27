@@ -11,9 +11,12 @@ another operating system, so ``tests/test_neutrality.py`` compares strictly only
 Two fingerprints, because two things can change:
 
 ``json``
-    The plans as written by ``vers_dict`` (schema v1), floats rounded to a micrometre.
-    Waves 1 to 3 (names of exceptions, classes, fields) must keep it **identical**: the
-    JSON keys are an explicit v1 mapping, not the Python field names.
+    The plans as written by ``to_dict``, floats rounded to a micrometre. Waves 1 to 3
+    (exceptions, classes, fields) and the first step of wave 4 (English room types) kept
+    it **identical**: the JSON keys were an explicit schema v1 mapping. The second step of
+    wave 4 (schema v2, English keys) changed the text on purpose and the reference was
+    recorded again; the ``geometry`` fingerprint, which did not move, is the proof that
+    the plans mean the same.
 ``geometry``
     Only what the plans *mean*: the rectangles, the validity flags and the displacement,
     with no key and no type name. Wave 4 (JSON v2, English room types) changes the text of
@@ -40,7 +43,7 @@ sys.path.insert(0, str(ROOT))
 from benchmarks.guarantees.scenarios import Scenario, generate, perturb  # noqa: E402
 
 from archlux import ArchluxError, Plan, legalize  # noqa: E402
-from archlux.io.json_io import vers_dict  # noqa: E402
+from archlux.io.json_io import to_dict  # noqa: E402
 from archlux.light.analytique import SubstitutAnalytique  # noqa: E402
 
 REFERENCE = ROOT / "tests" / "references" / "neutrality.json"
@@ -101,9 +104,7 @@ def fingerprints() -> dict[str, object]:
     outputs = _outputs()
     as_json, as_geometry = hashlib.sha256(), hashlib.sha256()
     for label, plan in outputs:
-        text = (
-            "refused" if plan is None else json.dumps(_canonical(vers_dict(plan)), sort_keys=True)
-        )
+        text = "refused" if plan is None else json.dumps(_canonical(to_dict(plan)), sort_keys=True)
         as_json.update(f"{label}:{text}\n".encode())
         meaning = "refused" if plan is None else json.dumps(_geometry(plan))
         as_geometry.update(f"{label}:{meaning}\n".encode())

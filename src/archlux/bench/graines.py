@@ -1,47 +1,56 @@
-"""Dérivation déterministe de graines. Aucune graine implicite nulle part.
+"""Deterministic seed derivation. No implicit seed anywhere.
 
-Une graine par exécution, dérivée en sous-graines nommées : deux composantes ne partagent
-jamais un flux aléatoire, et une exécution se rejoue exactement.
+One seed per run, derived into named sub-seeds: two components never share a random
+stream, and a run replays exactly.
 
-Le hachage est **cryptographique et sans sel** (BLAKE2b tronqué). C'est délibéré :
-``hash()`` de Python est randomisé d'un processus à l'autre, ce qui rendrait la
-dérivation non reproductible — exactement ce que ce module existe pour empêcher.
+The hash is **cryptographic and unsalted** (truncated BLAKE2b). This is deliberate:
+Python's ``hash()`` is randomized from one process to another, which would make
+derivation non-reproducible — exactly what this module exists to prevent.
 """
 
 from __future__ import annotations
 
-from archlux.seeds import derive
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.seeds import derive as _derive
 
-__all__ = ["deriver"]
+__all__ = ["derive"]
 
 
-def deriver(seed: int, nom: str) -> int:
-    """Dériver une sous-graine stable à partir d'une graine racine et d'un nom.
+def derive(seed: int, name: str) -> int:
+    """Derive a stable sub-seed from a root seed and a name.
 
     Parameters
     ----------
     seed : int
-        Graine racine de l'exécution, telle qu'inscrite au manifeste.
-    nom : str
-        Nom du flux (``"calibration"``, ``"permutation"``, …). Deux noms distincts
-        donnent deux flux indépendants ; le même nom redonne toujours le même flux.
+        Root seed of the run, as recorded in the manifest.
+    name : str
+        Stream name (``"calibration"``, ``"permutation"``, …). Two distinct names
+        give two independent streams; the same name always gives back the same
+        stream.
 
     Returns
     -------
     int
-        Sous-graine dans ``[0, 2**32)``, stable d'une version et d'une machine à
-        l'autre.
+        Sub-seed in ``[0, 2**32)``, stable across versions and machines.
 
     Complexity
     ----------
-    O(len(nom)).
+    O(len(name)).
 
     Examples
     --------
-    >>> from archlux.bench.graines import deriver
-    >>> deriver(17, "calibration") == deriver(17, "calibration")
+    >>> from archlux.bench.graines import derive
+    >>> derive(17, "calibration") == derive(17, "calibration")
     True
-    >>> deriver(17, "calibration") == deriver(17, "permutation")
+    >>> derive(17, "calibration") == derive(17, "permutation")
     False
     """
-    return derive(seed, nom)
+    return _derive(seed, name)
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "deriver": Alias(derive, "archlux.bench.graines.derive"),
+    },
+)

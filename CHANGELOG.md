@@ -8,6 +8,184 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Fixed — review of the English-API stack (PRs #3 to #16)
+
+- **CI was red on every PR of the stack**, and its `qualite` job stopped at mypy, hiding
+  the later steps: the surrogates declared `indicator -> str` against the protocol's
+  literal; numpy 2.5 changed the arguments of `NDArray[float64]`; the rename tool needs
+  Python 3.12 (its tests now run on 3.12+ and check the refusal on 3.11); doctests and
+  the guarantee benchmark still used renamed names; `scripts/neutrality.py` was not
+  formatted; the identifier guard failed on the export batch. Fixed where each defect
+  was introduced, and merged up the stack.
+- **Calibration lock**: freezing a `LearnedSurrogate` raised "no hashable weights": the
+  fingerprint looked up `weights_fingerprint` only; it also reads `empreinte_poids`.
+- **Active learning**: the loop looked up `fit` only, so a surrogate that still defines
+  `ajuster` was silently never retrained; it is now retrained, with a
+  `DeprecationWarning`.
+- `from archlux.export import diagnostiquer` works again (deprecated alias); 16 aliases
+  that no test covered are now in `test_function_aliases.py`, and the old
+  `archlux.lmo.coupes` module has its own test.
+- A malformed schema v1 file raised a bare `TypeError` from the v1 upgrade; it raises
+  `InvariantViolation` again, as before schema v2.
+- `legalize` names the members to rename when given a surrogate with the pre-0.10 French
+  ones (`evaluer -> evaluate`, ...): the protocol methods have no alias.
+- Input door: a flat outline is an `InvalidInput`, no longer an internal error; a numpy
+  integer is a valid `budget_reparation`; a non-numeric opening position is an
+  `InvalidInput`; a `Context` built positionally (whose fields shifted) is refused with
+  a hint.
+- The non-strict `xfail` on `test_a_saturated_budget_is_not_an_internal_error` is
+  removed: it passed everywhere (XPASS) and hid the test's result either way.
+- **IFC GlobalIds are stable across renames**: their per-plan salt hashed `repr` of the
+  dataclasses, so renaming a class or a field changed every GlobalId of the same plan;
+  it now hashes the values only, and a test pins one GlobalId.
+- `from archlux.bench import ModeleTrace` works again (deprecated alias).
+- `experiments/j7_sd_etiquettes.py` and `j8_visuels.py` read fields renamed in wave 3
+  (`plan.murs`, `certificat`, `Glazing.ouvertures`) and would have crashed on the
+  corpus.
+- The input door reports `regulation.min_width`, not the French field name.
+- `json_io.__all__` listed `SCHEMA_VERSION` twice; `.gitignore` follows `results/`.
+- **Behaviour change, documented**: the guarantee bench labels methods by class name,
+  and derives its bootstrap seed from that label; the rename of the surrogate classes
+  therefore changes the `method` column of `raw_results.csv` and the bootstrap
+  intervals of `archlux.bench` (no published figure depends on them).
+- `results/` regenerated after the renames (statuses `GapNeedsTiling`, English room
+  types in the figures) and `SHA256SUMS` updated.
+
+### Remediation — PLAN.md phase 3.9, wave 6 (final step): rename experiences/ and resultats/
+
+- `experiences/` becomes `experiments/`, `resultats/` becomes `results/`; `scripts/resultats.py` becomes `scripts/results.py`, and the Makefile targets follow (`results`, `check-results`, `results-corpus`).
+- `src/archlux/bench/run.py`'s output filename `resultats_bruts.csv` becomes `raw_results.csv` (not asserted by any test).
+- Historical, dated documents (`AUDIT.md`, `PLAN.md`, `docs/revues/*.md`, `docs/specification/MILESTONE-2.md`, and the older `CHANGELOG.md` entries) keep their old path mentions, as a record of what was written at the time.
+- `docs/plans/phase-3-9-english-api.md` marks waves 0–6 done; the parameter-alias question stays open.
+- **This closes PLAN.md 3.9's wave 6 and the whole English-API rename plan** (waves 0 to 6). Phase 4 (the design-pattern restructuring) is next.
+
+### Remediation — PLAN.md phase 3.9, wave 6: rename tests/unites and tests/proprietes
+
+- `tests/unites` becomes `tests/unit` (the glossary's own documented target, not `tests/units`); `tests/proprietes` becomes `tests/properties`. Every Python import, doc reference and the `pyproject.toml` comment are updated. `tests/references` needs no rename: the name already reads correctly in English.
+- Historical, dated documents (`AUDIT.md`, `PLAN.md`, `docs/revues/*.md`, `docs/specification/MILESTONE-2.md`) are left untouched, as agreed for those tracks.
+- Found and fixed along the way: a stale `RapportExport` reference in `src/archlux/types.py` (predates this wave — batch 7 renamed the class but missed this cross-module forward reference), and two glossary table rows whose parenthetical asides put `Plan`/`Manifest`/`Corruption` in backticks in the French column, which made `test_identifiers.py` treat them as banned; reworded without backticks.
+
+### Remediation — PLAN.md phase 3.9, wave 5, seventh batch: export, data and bench
+
+- `archlux.export`, `archlux.data` and `archlux.bench` are English: `ExportReport`, `MSDApartment`, `LoadStatistics`, `Split`, `Corruption.corrupt`, `BenchReport`, `Result`, `Interval`... Old names stay importable with a `DeprecationWarning` until 1.0.0.
+- `Corruption`'s Mode values keep their French names (`deplacer`/`elargir`/`retrecir`/`aplatir`): they are recorded in raw results and seeds, so renaming them would change published figures. `Split`'s and `Corruption`'s fields are renamed without alias (fields, not classes — ADR 0001 rule 6).
+- Prose of all twenty modules is translated to English and enrolled in the language and identifier guards. `legalize`'s own `fusions`/`pavage`/`budget_reparation` parameters are untouched (still the open decision).
+
+### Remediation — PLAN.md phase 3.9, wave 5, sixth batch: uncertainty, active learning and orientation
+
+- `archlux.uq`, `archlux.active` and `archlux.orient.circulaire` are English: `ConformalCalibrator`, `DriftReport`, `DataManagement`, `CalibrationToken`, `ActiveReport`, `RandomStrategy`, `RegressionResult`, `dominant_direction`... Old names stay importable with a `DeprecationWarning` until 1.0.0.
+- `CalibrationToken` fields (`empreinte_poids`, `horodatage_gel`) and its `verifier` method, and `DataManagement`'s `pour_entrainement`/`pour_test`/`pour_calibration` methods, are renamed without alias (fields and methods, not classes/functions — ADR 0001 rule 6).
+- Prose (docstrings, comments, messages) of all eight modules is translated to English and enrolled in the language and identifier guards.
+
+### Remediation — PLAN.md phase 3.9, wave 5, fifth batch: light modules (rename only)
+
+- `SubstitutAnalytique`, `SubstitutAppris`, `SubstitutDense`, the token helpers, `facteur_lumiere_jour`, `valider_gradient`, `Indicateur`... are English (`AnalyticSurrogate`, `plan_to_tokens`, `daylight_factor`, `validate_gradient`, `Indicator`). Old names stay importable with a `DeprecationWarning` until 1.0.0. Methods `ajuster`, `sauver`, `n_parametres` become `fit`, `save`, `n_parameters` without alias.
+- `test_a_saturated_budget_is_not_an_internal_error` is marked `xfail(strict=False)`: renaming inside it changed its derandomized seed and exposed a latent defect (a saturated budget can leave a 4e-9 m² overlap that the exact proof rejects after an earlier test warmed the LP cache). Not caused by the rename; to fix in phase 4.
+
+### Remediation — PLAN.md phase 3.9, wave 5, fourth batch (part 2): English prose of geometry and LMO
+
+- Docstrings, comments and messages of `geom.{graphe,polytope,pavage,rectilineaire,diagnostic}`, `lmo.solveur` and `lmo.cuts` are English, and the seven modules are enrolled in the language and identifier guards.
+- `SolutionLP` becomes `LPSolution` (deprecated alias kept). Parameters `duaux`, `pieces` and `a_min` become `duals`, `rooms` and `min_area` in the solver and cut functions (no alias, as for fields).
+- Runtime labels of the `origins` (`separation horizontale…`, `trame x#…`) stay French for now: `certify.dual` parses them.
+
+### Remediation — PLAN.md phase 3.9, wave 5, fourth batch: geometry and LMO names (rename only)
+
+- Public functions, classes and fields of `geom` (`graphe`, `polytope`, `pavage`, `rectilineaire`, `diagnostic`), `lmo.solveur`, `lmo.cuts` and `export.pathologie` are English (`solve`, `build_polytope`, `RelativeOrder`, `Cut`, `Polytope.bounds`, ...).
+- The French function and class names stay importable with a `DeprecationWarning` until 1.0.0; `archlux.lmo.coupes` is a module shim for `archlux.lmo.cuts`. Fields are renamed without alias.
+- The prose of these modules is translated in the next commit. Neutrality fingerprints are unchanged.
+
+### Remediation — PLAN.md phase 3.9, wave 4, step 2: JSON schema v2
+
+#### Changed — file format (pre-1.0)
+- **`Plan.to_json` writes schema v2**: English keys (`outline`, `rooms`, `walls`,
+  `openings`, `certificate`, `load_bearing`, `wall_id`, `relative_width`, `geometry`,
+  `valid`, `gaps`, `duals`, `manifest`, `seed`...) and English room types.
+  `SCHEMA_VERSION` is `"2"`. **A file written by this release cannot be read by an older
+  one**: v1 files are still read, v2 files are not readable before this release.
+- **`Plan.from_json` reads v1 and v2.** A v1 file is converted by the explicit
+  `archlux.io.json_io.upgrade_v1` (keys and the six French room types), then read as v2;
+  loading and saving a v1 file converts it. An unknown version is refused and the message
+  says `'2'` or `'1'` are accepted.
+- New `archlux/io/plan-v2.schema.json` (the v1 schema stays, for reading tests); the
+  reference page `docs/reference/schema-json.md` is rewritten in English for v2, with the
+  v1 to v2 key table. Reader error messages that named French keys now name the v2 keys.
+- The `json` neutrality fingerprint was recorded again (the text changed on purpose); the
+  `geometry` fingerprint did not move: the plans mean the same.
+
+### Remediation — PLAN.md phase 3.9, wave 4, step 1: English room types
+
+#### Changed — data values (pre-1.0)
+- The room types are English in memory: `sejour` is `living_room`, `chambre` is `bedroom`,
+  `cuisine` is `kitchen`, `sdb` is `bathroom`, `wc` is `toilet`, `couloir` is `corridor`.
+  `Regulation.min_areas` keys, the surrogate token encoder, the synthetic corpus and the SVG
+  palette follow. **Code that builds `Room(type="sejour")` or a `Regulation` keyed by the
+  French names must change**: an unknown type gets no minimum area (a warning says so).
+- Schema v1 files are unchanged: the reader maps the six French values to the English ones
+  and any other type passes through, the writer maps them back, so the written JSON is
+  byte-identical (neutrality fingerprints unchanged). Schema v2 comes in the next step.
+
+### Remediation — PLAN.md phase 3.9, wave 5, third batch: the surrogate protocol and the JSON module
+
+#### Changed — API (pre-1.0)
+- **Surrogate protocol**, deprecated aliases until 1.0.0 for the classes: `Substitut` is
+  `Surrogate`, `Baies` is `Glazing`, `SubstitutParPiece` is `PerRoomSurrogate`. **The
+  methods and the keyword of the protocol change, with no alias**: `evaluer()` is
+  `evaluate()`, `incertitude()` is `uncertainty()`, `indicateur` is `indicator`,
+  `evaluer_pieces()` is `evaluate_rooms()`, the keyword `baies=` is `glazing=`,
+  `Glazing.murs`, `ouvertures`, `vide` are `walls`, `openings`, `empty`, and
+  `WrapsSurrogate.substitut` is `surrogate`. A user-written surrogate must rename its
+  methods: `isinstance(x, Surrogate)` checks them, and `legalize` raises `TypeError` for an
+  object that still has the French ones.
+- **`archlux.io.json_io`**, aliases until 1.0.0: `charger` is `load`, `ecrire` is `write`,
+  `vers_dict` is `to_dict`, `depuis_dict` is `from_dict`, `manifeste_vers_dict` is
+  `manifest_to_dict`, `VERSION_SCHEMA` is `SCHEMA_VERSION`. The messages of the reader
+  and the writer are in English.
+- The JSON keys stay those of schema v1 and, deliberately, so does the key `indicateur`
+  inside the `.npz` archives of saved surrogates: models saved before this change still
+  load. (A token rename had changed it silently; a test caught it.)
+
+### Remediation — PLAN.md phase 3.9, wave 5, second batch: English prose of the public core
+
+#### Changed
+- `types`, `api`, the package root, `feasibility`, `certify.rapport` and `certify.borne`
+  are fully in English: docstrings, comments, error messages.
+- **The text of the certificate report is in English**: `GEOMETRY`, `Overlap`, `Gaps`,
+  `verified`, `NOT EVALUABLE`, `[PREDICTION: coverage 90 %]`, decimal point instead of
+  decimal comma. Code that matches the French text of `Certificate.report()` must change;
+  documentation and tests were updated.
+- Parameters: `build_bound(value, calibration, drift, *, uncertainty, regime)` (was
+  `valeur`, `derive`, `incertitude`), `is_feasible(program, ...)` (was `programme`),
+  `Plan.to_svg(path, title=...)`, `translate_duals(..., threshold=...)`.
+- `tests/test_doctests.py` runs the `>>>` examples of every module: six examples had
+  rotted after the renames (`Piece(...)`, `pieces=`) and were repaired.
+
+### Remediation — PLAN.md phase 3.9, wave 5, first batch: public methods and functions
+
+#### Changed — API (pre-1.0)
+- Functions and one class, deprecated aliases until 1.0.0: `rendre` is `render`,
+  `construire_borne` is `build_bound`, `traduire_duaux` is `translate_duals`,
+  `CertificatFaisabilite` is `FeasibilityCertificate` (method `expliquer()` is `explain()`,
+  no alias).
+- Methods and fields, **no alias**: `Room.aire` and `centre` are `area` and `center`,
+  `Wall.longueur` is `length`, `Opening.segment_absolu()` is `absolute_segment()`,
+  `Plan.ids_pieces` is `room_ids`, `Certificate.rapport()` is `report()`,
+  `Verdict.faisable` and `certificat` are `feasible` and `certificate`, and
+  `FeasibilityCertificate.origines`, `certificat_farkas` are `origins`, `farkas_certificate`.
+
+### Review follow-ups (after waves 0 to 3)
+
+#### Fixed
+- `python -W error::DeprecationWarning` no longer crashes when importing `legalize`: the
+  OR-Tools import, whose SWIG bindings emit their own `DeprecationWarning`s and crash the
+  interpreter when they are errors, is shielded in `lmo.solveur`. archlux's own modules
+  raise no `DeprecationWarning`.
+
+#### Changed — internal, no behaviour change
+- `legalize` (cyclomatic complexity 22, 69 statements) is split into a private `_Problem`
+  (the plan, its context and its domain) and five steps: options check, problem building,
+  refusal, classic result and light optimization. `legalize` itself is now a short pipeline
+  (PLAN.md phase 4, block `api`, done early). The neutrality fingerprints are unchanged.
+
 ### Remediation — PLAN.md phase 3.9, wave 3: English field names (in progress, no alias)
 
 #### Changed — API break (pre-1.0, clean break: no deprecated alias for fields)
@@ -145,7 +323,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `data.chargeurs` no longer swallows every exception when reading a WKT: an unreadable
   WKT (`shapely.errors.ShapelyError`, `TypeError`) rejects the apartment, anything else
   is a bug and propagates.
-- `tests/unites/test_typed_errors.py` fails on any new `raise ValueError`, `raise Exception`
+- `tests/unit/test_typed_errors.py` fails on any new `raise ValueError`, `raise Exception`
   or `except Exception` in `src/archlux`.
 
 ### Remediation — PLAN.md phase 3, slice E: lazy `legalize` (3.13)
@@ -156,7 +334,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   of `numpy`, `scipy.sparse`, `shapely` and `ortools` moves to the first `legalize` call or
   attribute access. `from archlux import legalize` and `archlux.legalize` are unchanged.
   The cost of *using* the library is the same; only merely importing it got cheaper.
-  Covered by `tests/unites/test_import_cost.py` (no solver dependency loaded, under 0.5 s).
+  Covered by `tests/unit/test_import_cost.py` (no solver dependency loaded, under 0.5 s).
 
 ### Remediation — PLAN.md phase 3, slice D: exports on the model (3.11)
 
@@ -233,7 +411,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
   so a room and a wall of the same id no longer share one), `IfcRelVoidsElement` links
   each opening to its wall, and an opening on a wall absent from the plan is a new
   pathology, `ouverture_orpheline`. 90 of 90 repaired plans pass ifcopenshell (0 of 90
-  before). `ifcopenshell` joins the `dev` extra; `tests/unites/test_ifc_validation.py`.
+  before). `ifcopenshell` joins the `dev` extra; `tests/unit/test_ifc_validation.py`.
 - After review: GlobalIds are salted with the plan geometry, so two different plans
   never share one (labels alone gave two flats with the same room ids the same
   `IfcSpace` ids); one plan still always gets the same ids.
@@ -1105,7 +1283,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
 - `bench.graines.deriver` : sous-graines nommees, stables d'une machine a l'autre
   (BLAKE2b, jamais `hash()` qui est randomise par processus). Valeurs epinglees par test.
 - `bench.manifeste.emettre` : manifeste de reproductibilite, graine obligatoire.
-- `tests/proprietes/strategies.py` : `plans_quelconques` operationnelle, partagee par
+- `tests/properties/strategies.py` : `plans_quelconques` operationnelle, partagee par
   les jalons suivants.
 - `docs/reference/schema-json.md` : le format d'echange documente.
 
@@ -1113,7 +1291,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
 - Squelette du projet : arborescence, configuration qualite, CI, contrats de modules.
 - `tests/test_dependances.py` : les regles de dependance de `ARCHITECTURE.md` §5 sont
   verifiees automatiquement des le premier commit, `__init__.py` compris.
-- `tests/unites/test_protocole_substitut.py` : verifie que chaque implementation de
+- `tests/unit/test_protocole_substitut.py` : verifie que chaque implementation de
   `Substitut` respecte le protocole, signatures comprises.
 
 ### Modifie
@@ -1179,7 +1357,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
   isoles que `networkx.transitive_reduction` laisse tomber.
 - `GrapheContraintes.fermeture()` : information d'ordre reelle, qui permet de prouver que
   la reduction ne perd rien.
-- `tests/proprietes/strategies.ordres_valides` : ordres construits **sans reutiliser**
+- `tests/properties/strategies.ordres_valides` : ordres construits **sans reutiliser**
   `deduire_ordre`, pour que les tests de propriete ne soient pas tautologiques.
 
 ### Ajoute — validation a la frontiere (ADR-6)
@@ -1197,7 +1375,7 @@ Premier livrable publiable : un plan entre, un plan valide et sa preuve exacte s
 - `io.json_io.ecrire` laissait remonter un `ValueError` de la bibliotheque standard sur
   une valeur non finie ; il leve desormais `InvariantViole`, conformement a
   `ARCHITECTURE.md` §7. `NaN` est precisement ce que produit un solveur bogue.
-- `tests/proprietes/strategies.py` ne generait jamais de `violations` non vides ni de
+- `tests/properties/strategies.py` ne generait jamais de `violations` non vides ni de
   `performance` non nulle : la moitie probabiliste de la serialisation du certificat
   n'etait **jamais executee**, malgre 200 exemples Hypothesis. Generateur elargi.
 - Couverture des modules du jalon 1 portee a 100 % (`types`, `erreurs`, `io`, `bench`).

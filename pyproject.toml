@@ -56,7 +56,7 @@ packages = ["src/archlux"]
 # benchmarks/ est inclus : sans lui, `pytest -m budget` de la CI ne collecte rien et le
 # job « budgets » passe au vert sans avoir rien mesuré.
 testpaths = ["tests", "benchmarks"]
-# Rend `tests.proprietes.strategies` importable : les stratégies Hypothesis sont
+# Rend `tests.properties.strategies` importable : les stratégies Hypothesis sont
 # partagées entre jalons, elles ne peuvent pas vivre dans un seul fichier de test.
 pythonpath = ["."]
 addopts = "-q --strict-markers"
@@ -91,7 +91,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "ANN"]
-"experiences/*" = ["D", "ANN"]
+"experiments/*" = ["D", "ANN"]
 "scripts/*" = ["D", "ANN"]
 # `json_io` est la frontière avec des données non typées : `Any` y décrit exactement ce
 # qui entre, une valeur JSON quelconque. Le typage reprend ses droits dès la sortie des
@@ -116,7 +116,7 @@ ignore_missing_imports = true
 
 [tool.interrogate]
 fail-under = 95
-exclude = ["tests", "experiences", "benchmarks"]
+exclude = ["tests", "experiments", "benchmarks"]
 ignore-nested-functions = true
 
 [tool.coverage.run]
