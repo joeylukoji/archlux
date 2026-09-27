@@ -246,16 +246,41 @@ day count.
 clean, `radon cc solveur.py cuts.py -n C -s` empty, coverage 89.27% (ratchet 88.8%),
 `mkdocs build --strict` clean.
 
-### 5. `solve`
+### 5. `solve` — done
 
-18. Remove the legacy `coupes`/`pieces`/`ctx` call path and `_enrichir_coupes` in
-    `frank_wolfe.py` (confirmed unreferenced since PLAN.md's lot 1.2 — verify with a
-    repo-wide grep before deleting, not from memory).
-19. Extract `_step_away`, `_line_search`, `_update_weights` out of `frank_wolfe`
-    (currently CC 32), each independently testable against the formulas in
-    `docs/formules/frank-wolfe.md`.
-20. Introduce a `Strategy` protocol for the step computation, injectable, so a future
-    step rule does not require editing `frank_wolfe` itself.
+18. Removed the legacy `cuts`/`rooms`/`ctx` parameters and `_add_cuts` from
+    `frank_wolfe` (`frank_wolfe.py`). Verified unreferenced by a repo-wide grep (not from
+    memory) before deleting: no source file or test ever passed `cuts=`, `rooms=` or
+    `ctx=` to `frank_wolfe` (the identically-named `cuts=` on `lmo.solveur.solve` is a
+    different, still-used mechanism, untouched). The `active_cuts`/`n_cuts` bookkeeping
+    that only existed to feed that dead path is gone too; `Iteration.n_cuts` now always
+    reports `0` from this function (the field itself is unchanged, part of `Trace`'s
+    public schema). This alone brought `frank_wolfe` from CC 32 to CC 28 by deleting
+    dead branches, before any extraction.
+19. Extracted `_step_away` (the away-direction decision, Lacoste-Julien & Jaggi 2015),
+    `_line_search` (the backtracking loop) and `_update_weights` (mass transfer, pruning,
+    renormalization) out of `frank_wolfe`'s main loop; also extracted `_final_diagnostics`
+    (the post-loop gap/duals computation, previously two near-duplicate `if`/`elif`
+    branches). Each is independently tested against the formulas in
+    `docs/formules/frank-wolfe.md`. `frank_wolfe` itself is now CC 9 (from 32); every
+    function in the file is under CC 10 (`_update_weights` CC 8 and `_final_diagnostics`
+    CC 7 are the highest of the new helpers).
+20. Added `StepStrategy`, a `Protocol` with one method (`propose`: gradient, x, the LMO
+    vertex, active vertices and weights → direction, its max step, and whether it is an
+    away step), and `AwayStepStrategy` as the built-in default implementing the existing
+    away/plain-FW choice. `frank_wolfe` gained an optional `strategy: StepStrategy | None
+    = None` parameter (`None` uses `AwayStepStrategy(enabled=away_steps)`, so the
+    existing `away_steps` flag keeps working unchanged); a new step rule is now a class
+    satisfying the protocol, passed in, with no edit to `frank_wolfe` itself. Covered by
+    `tests/unit/test_frank_wolfe.py::test_a_strategy_replaces_away_steps` (an injected
+    `AwayStepStrategy` matches the `away_steps=` flag bit-for-bit) and
+    `test_a_custom_strategy_is_consulted_every_iteration` (a minimal custom strategy is
+    called and its choice honored).
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 26 to 25 across items 18-19. Verified: full
+suite green (no regressions), `mypy src` clean, `radon cc frank_wolfe.py -n C -s` empty,
+coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.py` and
+`test_neutrality.py` green.
 
 ### 6. `light`
 

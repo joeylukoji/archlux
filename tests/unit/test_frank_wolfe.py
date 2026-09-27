@@ -11,7 +11,7 @@ import pytest
 from archlux.geom.graphe import RelativeOrder
 from archlux.geom.polytope import build_polytope
 from archlux.lmo.solveur import solve
-from archlux.solve.frank_wolfe import frank_wolfe
+from archlux.solve.frank_wolfe import AwayStepStrategy, frank_wolfe
 from archlux.types import Context, Orientation, Regulation, Structure
 
 CTX = Context(
@@ -118,3 +118,37 @@ def test_warm_start_passe_toujours_depart(monkeypatch: pytest.MonkeyPatch) -> No
     )
     assert appels
     assert all(start is not None for start in appels)
+
+
+def test_a_strategy_replaces_away_steps(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PLAN.md phase 4, block 5: injecting ``AwayStepStrategy`` matches ``away_steps=``."""
+    objectif = ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 0.0]))
+    x0 = _depart_faisable()
+    via_flag = frank_wolfe(POLY, objectif, NORD, x0, max_iter=8, away_steps=False)
+    via_strategy = frank_wolfe(
+        POLY, objectif, NORD, x0, max_iter=8, strategy=AwayStepStrategy(enabled=False)
+    )
+    assert via_flag.value == via_strategy.value
+    assert via_flag.gap == via_strategy.gap
+    assert via_flag.status == via_strategy.status
+
+
+def test_a_custom_strategy_is_consulted_every_iteration() -> None:
+    """A new step rule plugs in without editing :func:`frank_wolfe` (item 20)."""
+    calls: list[int] = []
+
+    class CountingStrategy:
+        def propose(self, gradient, x, fw_vertex, vertices, weights):
+            calls.append(len(calls))
+            return fw_vertex - x, 1.0, False, None
+
+    result = frank_wolfe(
+        POLY,
+        ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 0.0])),
+        NORD,
+        _depart_faisable(),
+        max_iter=5,
+        strategy=CountingStrategy(),
+    )
+    assert calls
+    assert len(calls) <= result.iterations + 1

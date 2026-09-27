@@ -14,24 +14,28 @@ Formulas: ``docs/formules/frank-wolfe.md``.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 
 from archlux.arrays import VecteurF
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.polytope import Polytope
-from archlux.lmo.cuts import MAX_CUTS_PER_ROOM, Cut, area_cut, violated_areas
 from archlux.lmo.solveur import solve
 from archlux.solve.trace import Iteration, StopStatus, Trace
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from archlux.light.protocole import Glazing, Surrogate
-    from archlux.types import Context, Orientation, Room
+    from archlux.lmo.solveur import LPSolution
+    from archlux.types import Orientation
 
-__all__ = ["FrankWolfeResult", "frank_wolfe", "restrict_to_budget"]
+__all__ = [
+    "AwayStepStrategy",
+    "FrankWolfeResult",
+    "StepStrategy",
+    "frank_wolfe",
+    "restrict_to_budget",
+]
 
 _MIN_WEIGHT = 1e-12
 
@@ -111,26 +115,6 @@ def _vertex_index(vertices: list[VecteurF], candidate: VecteurF) -> int | None:
     return None
 
 
-def _add_cuts(
-    cuts: list[Cut],
-    x: VecteurF,
-    domain: Polytope,
-    ctx: Context | None,
-    rooms: tuple[Room, ...] | None,
-) -> None:
-    """Add AM-GM tangents when a room goes below ``min_area`` (legacy path)."""
-    if ctx is None or not rooms:
-        return
-    if len(cuts) >= MAX_CUTS_PER_ROOM * len(rooms):
-        return
-    for room_id in violated_areas(x, domain, ctx, rooms=rooms):
-        width = float(x[domain.index[f"{room_id}.w"]])
-        height = float(x[domain.index[f"{room_id}.h"]])
-        min_area = ctx.regulation.min_area(next(r.type for r in rooms if r.id == room_id))
-        if width > 0.0 and height > 0.0 and min_area > 0.0:
-            cuts.append(area_cut(width, height, min_area, piece=room_id))
-
-
 def _normalize(weights: list[float]) -> None:
     """Scale the weights so that they sum to 1, in place.
 
@@ -145,6 +129,165 @@ def _normalize(weights: list[float]) -> None:
         weights[rank] = mass / total
 
 
+class StepStrategy(Protocol):
+    """The direction and its maximum step, computed once per iteration.
+
+    Injectable so a new step rule (e.g. pairwise Frank-Wolfe) does not require editing
+    :func:`frank_wolfe` itself, only a new class satisfying this protocol.
+    """
+
+    def propose(
+        self,
+        gradient: VecteurF,
+        x: VecteurF,
+        fw_vertex: VecteurF,
+        vertices: list[VecteurF],
+        weights: list[float],
+    ) -> tuple[VecteurF, float, bool, int | None]:
+        """Direction, its ``gamma_max``, whether it is an away step, and the away index."""
+        ...
+
+
+def _step_away(
+    gradient: VecteurF,
+    x: VecteurF,
+    fw_direction: VecteurF,
+    vertices: list[VecteurF],
+    weights: list[float],
+) -> tuple[VecteurF, float, bool, int | None]:
+    """Away-step direction (Lacoste-Julien & Jaggi 2015), or the plain one.
+
+    Away is taken when it improves on the plain Frank-Wolfe direction and the worst
+    active vertex still has mass to give up.
+    """
+    if len(vertices) <= 1:
+        return fw_direction, 1.0, False, None
+    scores = [float(gradient @ vertex) for vertex in vertices]
+    away_index = int(np.argmin(scores))
+    away_direction = x - vertices[away_index]
+    if (
+        float(gradient @ away_direction) > float(gradient @ fw_direction)
+        and weights[away_index] < 1.0 - _MIN_WEIGHT
+    ):
+        gamma_max = weights[away_index] / (1.0 - weights[away_index])
+        return away_direction, gamma_max, True, away_index
+    return fw_direction, 1.0, False, None
+
+
+@dataclass(frozen=True, slots=True)
+class AwayStepStrategy:
+    """The built-in strategy: away steps when ``enabled``, plain Frank-Wolfe otherwise."""
+
+    enabled: bool = True
+
+    def propose(
+        self,
+        gradient: VecteurF,
+        x: VecteurF,
+        fw_vertex: VecteurF,
+        vertices: list[VecteurF],
+        weights: list[float],
+    ) -> tuple[VecteurF, float, bool, int | None]:
+        """See :class:`StepStrategy`."""
+        fw_direction = fw_vertex - x
+        if not self.enabled:
+            return fw_direction, 1.0, False, None
+        return _step_away(gradient, x, fw_direction, vertices, weights)
+
+
+def _final_diagnostics(
+    surrogate: Surrogate,
+    orientation: Orientation,
+    domain: Polytope,
+    x: VecteurF,
+    status: StopStatus,
+    last_oracle: LPSolution | None,
+    gap: float,
+    *,
+    glazing: Glazing | None,
+) -> tuple[float, VecteurF | None]:
+    """The gap and duals at the returned ``x``: one extra, warm LP.
+
+    On ``max_iter``, the last step moved ``x`` after its LP, so that LP's gap and duals
+    describe the *previous* point: an extra solve is needed here. On any other stop, the
+    last LP already describes ``x``, and only its duals (not yet requested) are missing.
+    """
+    if status == "max_iter" and last_oracle is not None:
+        gradient = np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
+        final = solve(domain, -gradient, start=x, duals=True)
+        if final.status != "optimal":
+            return float("inf"), None  # the previous gap describes the previous point
+        return float(gradient @ (final.x - x)), final.duals
+    if last_oracle is not None and last_oracle.status == "optimal":
+        gradient = np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
+        extra = solve(domain, -gradient, start=x, duals=True)
+        return gap, (extra.duals if extra.status == "optimal" else None)
+    return gap, None
+
+
+def _line_search(
+    surrogate: Surrogate,
+    orientation: Orientation,
+    x: VecteurF,
+    value: float,
+    direction: VecteurF,
+    gamma_max: float,
+    k: int,
+    *,
+    glazing: Glazing | None,
+) -> tuple[VecteurF, float, float] | None:
+    """Backtrack from ``2/(k+2)`` (halved while the surrogate would decrease).
+
+    Returns ``(candidate, new_value, gamma)``, or ``None`` if no step in 12 tries
+    improved the surrogate (``status = "line_search_failed"`` for the caller).
+    """
+    gamma = min(2.0 / (k + 2), gamma_max)
+    for _ in range(12):
+        candidate = x + gamma * direction
+        new_value = float(surrogate.evaluate(candidate, orientation, glazing=glazing))
+        if new_value >= value - 1e-12:
+            return candidate, new_value, gamma
+        gamma *= 0.5
+    return None
+
+
+def _update_weights(
+    vertices: list[VecteurF],
+    weights: list[float],
+    fw_vertex: VecteurF,
+    gamma: float,
+    *,
+    away: bool,
+    away_index: int | None,
+) -> tuple[list[VecteurF], list[float]]:
+    """Move ``gamma`` of mass onto ``fw_vertex`` (or off ``away_index``).
+
+    Also drops the vertices left with near-zero weight, and renormalizes.
+    """
+    if away and away_index is not None:
+        for rank in range(len(weights)):
+            weights[rank] *= 1.0 + gamma
+        weights[away_index] -= gamma
+    else:
+        for rank in range(len(weights)):
+            weights[rank] *= 1.0 - gamma
+        existing = _vertex_index(vertices, fw_vertex)
+        if existing is None:
+            vertices.append(fw_vertex.copy())
+            weights.append(gamma)
+        else:
+            weights[existing] += gamma
+
+    kept_vertices: list[VecteurF] = []
+    kept_weights: list[float] = []
+    for vertex, mass in zip(vertices, weights, strict=True):
+        if mass > _MIN_WEIGHT:
+            kept_vertices.append(vertex)
+            kept_weights.append(mass)
+    _normalize(kept_weights)
+    return kept_vertices, kept_weights
+
+
 def frank_wolfe(
     poly: Polytope,
     surrogate: Surrogate,
@@ -155,9 +298,7 @@ def frank_wolfe(
     tol: float = 1e-4,
     budget: float | None = None,
     away_steps: bool = True,
-    cuts: Sequence[Cut] | None = None,
-    rooms: tuple[Room, ...] | None = None,
-    ctx: Context | None = None,
+    strategy: StepStrategy | None = None,
     glazing: Glazing | None = None,
 ) -> FrankWolfeResult:
     """Maximize ``surrogate`` over the polytope, starting from ``start``.
@@ -181,15 +322,12 @@ def frank_wolfe(
         is not the proposed plan, restrict ``poly`` with :func:`restrict_to_budget`
         around the proposal instead, as :func:`archlux.api.legalize` does.
     away_steps : bool, optional
-        Away steps: speed up convergence when the optimum lies on a face.
-    cuts : sequence of Coupe or None, optional
-        **Legacy, no caller since 0.10.** Outer tangent cuts; they do not guarantee
-        minimum areas and disable the LP warm start. Pass a domain built with
-        :func:`archlux.lmo.coupes.inner_area_constraints` instead. Removal planned in
-        PLAN.md phase 4.
-    rooms, ctx : optional
-        **Legacy**, same status: with them, Kelley cuts are added when a minimum area
-        is broken on the way.
+        Away steps: speed up convergence when the optimum lies on a face. Ignored when
+        ``strategy`` is given.
+    strategy : StepStrategy or None, optional
+        How the direction and its maximum step are computed each iteration. ``None``
+        uses the built-in :class:`AwayStepStrategy` (``away_steps`` above). Inject a
+        different one to try a new step rule without editing this function.
     glazing : Baies or None, optional
         Windows, constant during optimization; passed to the surrogate as ``baies``.
 
@@ -214,10 +352,7 @@ def frank_wolfe(
     Minimum areas are guaranteed **only if** ``poly`` already contains an inner
     approximation of them (:func:`archlux.lmo.coupes.inner_area_constraints`), which is
     what :func:`archlux.api.legalize` passes: every point of such a domain keeps every
-    minimum area, hence every iterate does. The legacy ``cuts``/``rooms``/``ctx`` path
-    adds *outer* tangent cuts on the way; a cut added mid-run is violated by the current
-    iterate, ``gap`` may turn negative and ``x`` may stay below ``min_area``. That path is
-    kept for compatibility and is no longer used by ``legalize``.
+    minimum area, hence every iterate does.
 
     Complexity
     ----------
@@ -229,11 +364,10 @@ def frank_wolfe(
     x = np.asarray(start, dtype=float).copy()
     if x.shape != (len(domain.index),):
         raise InvariantViolation((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
+    step_strategy = strategy if strategy is not None else AwayStepStrategy(enabled=away_steps)
 
     vertices = [x.copy()]
     weights = [1.0]
-    active_cuts: list[Cut] = list(cuts) if cuts else []
-    n_cuts = len(active_cuts)
     gap = float("inf")  # no LP has succeeded yet: nothing is known
     status: StopStatus = "max_iter"
     value = float(surrogate.evaluate(x, orientation, glazing=glazing))
@@ -245,7 +379,7 @@ def frank_wolfe(
             step=0.0,
             away_step=False,
             lp_ms=0.0,
-            n_cuts=n_cuts,
+            n_cuts=0,
             x=x.copy(),
         )
     ]
@@ -257,7 +391,6 @@ def frank_wolfe(
             domain,
             -gradient,
             start=x,
-            cuts=active_cuts or None,
             duals=False,  # duals are computed once, at the returned point
         )
         last_oracle = oracle
@@ -278,39 +411,20 @@ def frank_wolfe(
                     step=0.0,
                     away_step=False,
                     lp_ms=oracle.time_ms,
-                    n_cuts=n_cuts,
+                    n_cuts=0,
                     x=x.copy(),
                 )
             )
             break
 
-        away = False
-        direction = fw_vertex - x
-        gamma_max = 1.0
-        away_index: int | None = None
-        if away_steps and len(vertices) > 1:
-            scores = [float(gradient @ vertex) for vertex in vertices]
-            away_index = int(np.argmin(scores))
-            away_vertex = vertices[away_index]
-            away_direction = x - away_vertex
-            if (
-                float(gradient @ away_direction) > float(gradient @ direction)
-                and weights[away_index] < 1.0 - _MIN_WEIGHT
-            ):
-                direction = away_direction
-                gamma_max = weights[away_index] / (1.0 - weights[away_index])
-                away = True
+        direction, gamma_max, away, away_index = step_strategy.propose(
+            gradient, x, fw_vertex, vertices, weights
+        )
 
-        gamma = min(2.0 / (k + 2), gamma_max)
-        for _ in range(12):
-            candidate = x + gamma * direction
-            new_value = float(surrogate.evaluate(candidate, orientation, glazing=glazing))
-            if new_value >= value - 1e-12:
-                value = new_value
-                x = candidate
-                break
-            gamma *= 0.5
-        else:
+        stepped = _line_search(
+            surrogate, orientation, x, value, direction, gamma_max, k, glazing=glazing
+        )
+        if stepped is None:
             status = "line_search_failed"
             history.append(
                 Iteration(
@@ -320,36 +434,16 @@ def frank_wolfe(
                     step=0.0,
                     away_step=away,
                     lp_ms=oracle.time_ms,
-                    n_cuts=n_cuts,
+                    n_cuts=0,
                     x=x.copy(),
                 )
             )
             break
+        x, value, gamma = stepped
 
-        if away and away_index is not None:
-            for rank in range(len(weights)):
-                weights[rank] *= 1.0 + gamma
-            weights[away_index] -= gamma
-        else:
-            for rank in range(len(weights)):
-                weights[rank] *= 1.0 - gamma
-            existing = _vertex_index(vertices, fw_vertex)
-            if existing is None:
-                vertices.append(fw_vertex.copy())
-                weights.append(gamma)
-            else:
-                weights[existing] += gamma
-
-        kept_vertices: list[VecteurF] = []
-        kept_weights: list[float] = []
-        for vertex, mass in zip(vertices, weights, strict=True):
-            if mass > _MIN_WEIGHT:
-                kept_vertices.append(vertex)
-                kept_weights.append(mass)
-        vertices, weights = kept_vertices, kept_weights
-        _normalize(weights)
-        _add_cuts(active_cuts, x, domain, ctx, rooms)
-        n_cuts = len(active_cuts)
+        vertices, weights = _update_weights(
+            vertices, weights, fw_vertex, gamma, away=away, away_index=away_index
+        )
 
         history.append(
             Iteration(
@@ -359,34 +453,14 @@ def frank_wolfe(
                 step=gamma,
                 away_step=away,
                 lp_ms=oracle.time_ms,
-                n_cuts=n_cuts,
+                n_cuts=0,
                 x=x.copy(),
             )
         )
 
-    duals = None
-    if status == "max_iter" and last_oracle is not None:
-        # The last step moved x after its LP: the gap and duals of that LP describe the
-        # previous point. Solve once more at the returned x.
-        final_gradient = np.asarray(
-            surrogate.gradient(x, orientation, glazing=glazing), dtype=float
-        )
-        final = solve(domain, -final_gradient, start=x, cuts=active_cuts or None, duals=True)
-        if final.status == "optimal":
-            gap = float(final_gradient @ (final.x - x))
-            duals = final.duals
-        else:
-            gap = float("inf")  # the previous gap describes the previous point
-    elif last_oracle is not None and last_oracle.status == "optimal":
-        extra = solve(
-            domain,
-            -np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float),
-            start=x,
-            cuts=active_cuts or None,
-            duals=True,
-        )
-        if extra.status == "optimal":
-            duals = extra.duals
+    gap, duals = _final_diagnostics(
+        surrogate, orientation, domain, x, status, last_oracle, gap, glazing=glazing
+    )
 
     return FrankWolfeResult(
         x=x,

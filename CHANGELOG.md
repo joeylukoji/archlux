@@ -8,6 +8,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 5 (`solve`): dead legacy path removed, `frank_wolfe` under CC 10, injectable step strategy
+
+- Removed `frank_wolfe`'s legacy `cuts`/`rooms`/`ctx` parameters and `_add_cuts` (unreferenced by any source file or test, confirmed by a repo-wide grep before deleting): brought `frank_wolfe` from CC 32 to CC 28 by deleting dead branches alone.
+- `frank_wolfe` (`solve/frank_wolfe.py`) split into `_step_away`, `_line_search`, `_update_weights` and `_final_diagnostics`; now CC 9. Every function in the file is under CC 10.
+- New `StepStrategy` protocol (one method, `propose`) and `AwayStepStrategy`, the built-in default: `frank_wolfe` gains an optional `strategy: StepStrategy | None = None` parameter, so a new step rule plugs in without editing `frank_wolfe` itself. The existing `away_steps` flag keeps working unchanged (`None` uses `AwayStepStrategy(enabled=away_steps)`).
+- New tests in `tests/unit/test_frank_wolfe.py`: an injected `AwayStepStrategy` matches the `away_steps=` flag bit-for-bit, and a minimal custom strategy is consulted every iteration.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 26 to 25.
+
 ### Changed — PLAN.md phase 4, block 4 (`lmo`): injectable cache, two functions under CC 10
 
 - `CacheLP` (new, `lmo/solveur.py`): replaces the module-global `_CACHE` dict (keyed by `id(poly)`, no locking) with an explicit, thread-safe (`threading.Lock`), injectable object (`get`/`put`/`clear`). `solve()` gains an optional `cache: CacheLP | None = None` parameter; a module-level `_DEFAULT_CACHE` keeps existing call sites and `clear_cache()` working unchanged.
