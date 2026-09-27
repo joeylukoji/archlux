@@ -9,7 +9,7 @@ introspection of the ``dataclass`` types. It is longer and that is deliberate: a
 field to the model must force a decision about what it becomes in the published format,
 instead of silently appearing in files that other tools already read.
 
-The JSON keys are those of schema v1 (French names such as ``"porteur"`` or ``"jours"``):
+The JSON keys are those of schema v1 (French names such as ``"load_bearing"`` or ``"gaps"``):
 the Python names of the model are English, and this module is the mapping between the two.
 """
 
@@ -39,16 +39,27 @@ from archlux.types import (
 
 __all__ = [
     "SCHEMA_VERSION",
-    "SCHEMA_VERSION",
     "from_dict",
     "load",
     "manifest_to_dict",
     "to_dict",
+    "upgrade_v1",
     "write",
 ]
 
-SCHEMA_VERSION = "1"
+SCHEMA_VERSION = "2"
 """Version of the JSON schema. Incremented on any non backward compatible change."""
+
+
+_TYPES_FROM_V1 = {
+    "sejour": "living_room",
+    "chambre": "bedroom",
+    "cuisine": "kitchen",
+    "sdb": "bathroom",
+    "wc": "toilet",
+    "couloir": "corridor",
+}
+"""The French room types of schema v1 files, and the English types of the model."""
 
 
 # ======================================================================================
@@ -104,22 +115,24 @@ def _check_ranges(data: Any) -> None:
     O(n) in the number of elements of the plan.
     """
     violations: list[str] = []
-    for room in data["pieces"]:
+    for room in data["rooms"]:
         for field in ("w", "h"):
             value = _real(room[field], f"room {room['id']}.{field}")
             if value <= 0.0:
                 violations.append(f"room {room['id']}: {field} = {value}; expected > 0")
-    for wall in data["murs"]:
-        thickness = _real(wall["epaisseur"], f"mur {wall['id']}.epaisseur")
+    for wall in data["walls"]:
+        thickness = _real(wall["thickness"], f"wall {wall['id']}.thickness")
         if thickness <= 0.0:
-            violations.append(f"mur {wall['id']} : epaisseur = {thickness} ; attendu > 0")
-    for opening in data["ouvertures"]:
-        s = _real(opening["s"], f"ouverture {opening['id']}.s")
-        width = _real(opening["largeur_rel"], f"ouverture {opening['id']}.largeur_rel")
+            violations.append(f"wall {wall['id']}: thickness = {thickness}; expected > 0")
+    for opening in data["openings"]:
+        s = _real(opening["s"], f"opening {opening['id']}.s")
+        width = _real(opening["relative_width"], f"opening {opening['id']}.relative_width")
         if not 0.0 <= s <= 1.0:
             violations.append(f"opening {opening['id']}: s = {s}; expected in [0, 1]")
         if not 0.0 < width <= 1.0:
-            violations.append(f"opening {opening['id']}: largeur_rel = {width}; expected in ]0, 1]")
+            violations.append(
+                f"opening {opening['id']}: relative_width = {width}; expected in ]0, 1]"
+            )
     if violations:
         raise InvariantViolation(tuple(violations))
 
@@ -132,12 +145,12 @@ def _check_ranges(data: Any) -> None:
 def _proof_to_dict(proof: GeometricProof) -> dict[str, Any]:
     """Serialize a geometric proof; no probability field enters it."""
     return {
-        "valide": proof.valid,
-        "chevauchement": proof.overlap,
-        "jours": proof.gaps,
-        "surfaces_ok": proof.areas_ok,
-        "structure_preservee": proof.structure_kept,
-        "deplacement_max": proof.max_displacement,
+        "valid": proof.valid,
+        "overlap": proof.overlap,
+        "gaps": proof.gaps,
+        "areas_ok": proof.areas_ok,
+        "structure_kept": proof.structure_kept,
+        "max_displacement": proof.max_displacement,
         "violations": list(proof.violations),
     }
 
@@ -145,12 +158,12 @@ def _proof_to_dict(proof: GeometricProof) -> dict[str, Any]:
 def _proof_from_dict(data: Any) -> GeometricProof:
     """Rebuild a geometric proof from its JSON form."""
     return GeometricProof(
-        valid=bool(data["valide"]),
-        overlap=bool(data["chevauchement"]),
-        gaps=bool(data["jours"]),
-        areas_ok=bool(data["surfaces_ok"]),
-        structure_kept=bool(data["structure_preservee"]),
-        max_displacement=_real(data["deplacement_max"], "preuve.deplacement_max"),
+        valid=bool(data["valid"]),
+        overlap=bool(data["overlap"]),
+        gaps=bool(data["gaps"]),
+        areas_ok=bool(data["areas_ok"]),
+        structure_kept=bool(data["structure_kept"]),
+        max_displacement=_real(data["max_displacement"], "preuve.deplacement_max"),
         violations=tuple(str(v) for v in data["violations"]),
     )
 
@@ -158,11 +171,11 @@ def _proof_from_dict(data: Any) -> GeometricProof:
 def _bound_to_dict(bound: PerformanceBound) -> dict[str, Any]:
     """Serialize a performance bound, coverage and n_calibration included."""
     return {
-        "indicateur": bound.indicator,
-        "valeur": bound.value,
-        "borne_inf": bound.lower,
-        "borne_sup": bound.upper,
-        "couverture": bound.coverage,
+        "indicator": bound.indicator,
+        "value": bound.value,
+        "lower": bound.lower,
+        "upper": bound.upper,
+        "coverage": bound.coverage,
         "n_calibration": bound.n_calibration,
         "regime": bound.regime,
     }
@@ -172,21 +185,21 @@ def _regime(data: Any) -> Regime:
     """The regime of a serialized bound; missing or unknown is refused."""
     regime = data.get("regime") if isinstance(data, dict) else None
     if regime not in REGIMES:
-        raise InvariantViolation((f"borne.regime: expected one of {REGIMES}, got {regime!r}",))
+        raise InvariantViolation((f"bound.regime: expected one of {REGIMES}, got {regime!r}",))
     return regime  # type: ignore[no-any-return]
 
 
 def _bound_from_dict(data: Any) -> PerformanceBound:
     """Rebuild a performance bound; refuse an unknown indicator."""
-    indicator = data["indicateur"]
+    indicator = data["indicator"]
     if indicator not in ("sDA", "ASE", "UDI", "vue"):
         raise InvariantViolation((f"unknown indicator: {indicator!r}",))
     return PerformanceBound(
         indicator=indicator,
-        value=_real(data["valeur"], "borne.valeur"),
-        lower=_real(data["borne_inf"], "borne.borne_inf"),
-        upper=_real(data["borne_sup"], "borne.borne_sup"),
-        coverage=_real(data["couverture"], "borne.couverture"),
+        value=_real(data["value"], "bound.valeur"),
+        lower=_real(data["lower"], "bound.borne_inf"),
+        upper=_real(data["upper"], "bound.borne_sup"),
+        coverage=_real(data["coverage"], "bound.couverture"),
         n_calibration=int(data["n_calibration"]),
         # Files written before batch 1.6 carry no regime. They could only come from a
         # hand-built bound (legalize never filled one), so none is assumed: reading
@@ -197,44 +210,44 @@ def _bound_from_dict(data: Any) -> PerformanceBound:
 
 def manifest_to_dict(manifest: Manifest) -> dict[str, Any]:
     """Serialize a :class:`~archlux.types.Manifest` (single JSON / benchmark form)."""
-    modele = manifest.model
+    model = manifest.model
     return {
         "version": manifest.version,
-        "horodatage": manifest.timestamp,
-        "graine": manifest.seed,
-        "empreinte_donnees": manifest.data_fingerprint,
-        "decoupage": manifest.split,
-        "environnement": [list(p) for p in manifest.environment],
-        "parametres": [list(p) for p in manifest.parameters],
-        "modele": None
-        if modele is None
+        "timestamp": manifest.timestamp,
+        "seed": manifest.seed,
+        "data_fingerprint": manifest.data_fingerprint,
+        "split": manifest.split,
+        "environment": [list(p) for p in manifest.environment],
+        "parameters": [list(p) for p in manifest.parameters],
+        "model": None
+        if model is None
         else {
-            "poids": modele.weights_fingerprint,
-            "calibration_n": modele.calibration_n,
-            "alpha": modele.alpha,
+            "weights_fingerprint": model.weights_fingerprint,
+            "calibration_n": model.calibration_n,
+            "alpha": model.alpha,
         },
     }
 
 
 def _manifest_from_dict(data: Any) -> Manifest:
     """Rebuild a manifest, ``ModelTrace`` included if present."""
-    brut = data.get("modele")
-    modele = None
-    if brut is not None:
-        modele = ModelTrace(
-            weights_fingerprint=str(brut["poids"]),
-            calibration_n=int(brut["calibration_n"]),
-            alpha=float(brut["alpha"]),
+    raw = data.get("model")
+    model = None
+    if raw is not None:
+        model = ModelTrace(
+            weights_fingerprint=str(raw["weights_fingerprint"]),
+            calibration_n=int(raw["calibration_n"]),
+            alpha=float(raw["alpha"]),
         )
     return Manifest(
         version=str(data["version"]),
-        timestamp=str(data["horodatage"]),
-        seed=int(data["graine"]),
-        data_fingerprint=data["empreinte_donnees"],
-        split=data["decoupage"],
-        environment=_pairs(data["environnement"]),
-        parameters=_pairs(data["parametres"]),
-        model=modele,
+        timestamp=str(data["timestamp"]),
+        seed=int(data["seed"]),
+        data_fingerprint=data["data_fingerprint"],
+        split=data["split"],
+        environment=_pairs(data["environment"]),
+        parameters=_pairs(data["parameters"]),
+        model=model,
     )
 
 
@@ -245,12 +258,12 @@ def _certificate_to_dict(certificate: Certificate | None) -> dict[str, Any] | No
     performance = certificate.performance
     manifest = certificate.manifest
     return {
-        "geometrie": _proof_to_dict(certificate.geometry),
+        "geometry": _proof_to_dict(certificate.geometry),
         # An explicit `None` rather than an absent key: "no performance guarantee" is
         # information, not a serialization oversight.
         "performance": None if performance is None else _bound_to_dict(performance),
-        "duaux": [[libelle, cout] for libelle, cout in certificate.duals],
-        "manifeste": None if manifest is None else manifest_to_dict(manifest),
+        "duals": [[label, cost] for label, cost in certificate.duals],
+        "manifest": None if manifest is None else manifest_to_dict(manifest),
     }
 
 
@@ -259,15 +272,118 @@ def _certificate_from_dict(data: Any) -> Certificate | None:
     if data is None:
         return None
     performance = data["performance"]
-    manifest = data["manifeste"]
+    manifest = data["manifest"]
     return Certificate(
-        geometry=_proof_from_dict(data["geometrie"]),
+        geometry=_proof_from_dict(data["geometry"]),
         performance=None if performance is None else _bound_from_dict(performance),
-        duals=tuple(
-            (str(libelle), _real(cout, f"dual {libelle}")) for libelle, cout in data["duaux"]
-        ),
+        duals=tuple((str(label), _real(cost, f"dual {label}")) for label, cost in data["duals"]),
         manifest=None if manifest is None else _manifest_from_dict(manifest),
     )
+
+
+# ======================================================================================
+# Schema v1 to v2
+# ======================================================================================
+
+_V1_KEYS: dict[str, dict[str, str]] = {
+    "plan": {
+        "contour": "outline",
+        "pieces": "rooms",
+        "murs": "walls",
+        "ouvertures": "openings",
+        "certificat": "certificate",
+    },
+    "wall": {"porteur": "load_bearing", "epaisseur": "thickness"},
+    "opening": {
+        "mur_id": "wall_id",
+        "largeur_rel": "relative_width",
+        "hauteur_allege": "sill_height",
+        "hauteur_linteau": "head_height",
+    },
+    "certificate": {"geometrie": "geometry", "duaux": "duals", "manifeste": "manifest"},
+    "geometry": {
+        "valide": "valid",
+        "chevauchement": "overlap",
+        "jours": "gaps",
+        "surfaces_ok": "areas_ok",
+        "structure_preservee": "structure_kept",
+        "deplacement_max": "max_displacement",
+    },
+    "performance": {
+        "indicateur": "indicator",
+        "valeur": "value",
+        "borne_inf": "lower",
+        "borne_sup": "upper",
+        "couverture": "coverage",
+    },
+    "manifest": {
+        "horodatage": "timestamp",
+        "graine": "seed",
+        "empreinte_donnees": "data_fingerprint",
+        "decoupage": "split",
+        "environnement": "environment",
+        "parametres": "parameters",
+        "modele": "model",
+    },
+    "model": {"poids": "weights_fingerprint"},
+}
+"""The French keys of a schema v1 file, section by section, and their v2 names."""
+
+
+def _rename_keys(section: Any, kind: str) -> Any:
+    """A copy of ``section`` with the v1 keys of ``kind`` renamed; anything else is kept."""
+    if not isinstance(section, dict):
+        return section
+    mapping = _V1_KEYS[kind]
+    return {mapping.get(key, key): value for key, value in section.items()}
+
+
+def _room_from_v1(room: Any) -> Any:
+    """A v1 room with its French type mapped; a malformed room is returned unchanged."""
+    if not isinstance(room, dict) or not isinstance(room.get("type"), str):
+        return room
+    return {**room, "type": _TYPES_FROM_V1.get(room["type"], room["type"])}
+
+
+def upgrade_v1(data: dict[str, Any]) -> dict[str, Any]:
+    """Convert a schema v1 document into the equivalent schema v2 document.
+
+    Renames the French keys to their English names, maps the six French room types to the
+    English ones (any other type passes through) and sets ``"schema"`` to ``"2"``. A
+    malformed document is converted as far as it goes: the v2 reader then reports what is
+    wrong with it. The input is not modified.
+
+    Parameters
+    ----------
+    data : dict
+        A decoded schema v1 document.
+
+    Returns
+    -------
+    dict
+        The same plan as a schema v2 document.
+    """
+    plan: dict[str, Any] = _rename_keys(data, "plan")
+    plan["schema"] = SCHEMA_VERSION
+    # Only well-formed parts are converted; anything else passes through unchanged, so
+    # that the v2 reader refuses it with a typed error, never a bare TypeError.
+    rooms = plan.get("rooms", [])
+    if isinstance(rooms, list):
+        plan["rooms"] = [_room_from_v1(room) for room in rooms]
+    for key, kind in (("walls", "wall"), ("openings", "opening")):
+        items = plan.get(key, [])
+        if isinstance(items, list):
+            plan[key] = [_rename_keys(item, kind) for item in items]
+    certificate = _rename_keys(plan.get("certificate"), "certificate")
+    if isinstance(certificate, dict):
+        certificate["geometry"] = _rename_keys(certificate.get("geometry"), "geometry")
+        certificate["performance"] = _rename_keys(certificate.get("performance"), "performance")
+        manifest = _rename_keys(certificate.get("manifest"), "manifest")
+        if isinstance(manifest, dict):
+            manifest["model"] = _rename_keys(manifest.get("model"), "model")
+        certificate["manifest"] = manifest
+    plan["certificate"] = certificate
+    return plan
 
 
 # ======================================================================================
@@ -299,8 +415,8 @@ def to_dict(plan: Plan) -> dict[str, Any]:
     """
     return {
         "schema": SCHEMA_VERSION,
-        "contour": [[x, y] for x, y in plan.outline],
-        "pieces": [
+        "outline": [[x, y] for x, y in plan.outline],
+        "rooms": [
             {
                 "id": p.id,
                 "type": p.type,
@@ -311,28 +427,28 @@ def to_dict(plan: Plan) -> dict[str, Any]:
             }
             for p in plan.rooms
         ],
-        "murs": [
+        "walls": [
             {
                 "id": m.id,
                 "a": [m.a[0], m.a[1]],
                 "b": [m.b[0], m.b[1]],
-                "porteur": m.load_bearing,
-                "epaisseur": m.thickness,
+                "load_bearing": m.load_bearing,
+                "thickness": m.thickness,
             }
             for m in plan.walls
         ],
-        "ouvertures": [
+        "openings": [
             {
                 "id": o.id,
-                "mur_id": o.wall_id,
+                "wall_id": o.wall_id,
                 "s": o.s,
-                "largeur_rel": o.relative_width,
-                "hauteur_allege": o.sill_height,
-                "hauteur_linteau": o.head_height,
+                "relative_width": o.relative_width,
+                "sill_height": o.sill_height,
+                "head_height": o.head_height,
             }
             for o in plan.openings
         ],
-        "certificat": _certificate_to_dict(plan.certificate),
+        "certificate": _certificate_to_dict(plan.certificate),
     }
 
 
@@ -341,7 +457,7 @@ def from_dict(data: dict[str, Any]) -> Plan:
 
     Parameters
     ----------
-    donnees : dict
+    data : dict
         Structure as returned by :func:`to_dict`.
 
     Returns
@@ -360,8 +476,12 @@ def from_dict(data: dict[str, Any]) -> Plan:
     O(n) in the number of elements of the plan.
     """
     version = data.get("schema")
-    if version != SCHEMA_VERSION:
-        raise InvariantViolation((f"unknown JSON schema {version!r}, expected {SCHEMA_VERSION!r}",))
+    if version == "1":
+        data = upgrade_v1(data)
+    elif version != SCHEMA_VERSION:
+        raise InvariantViolation(
+            (f"unknown JSON schema {version!r}, expected {SCHEMA_VERSION!r} or '1'",)
+        )
     try:
         # Before building: ``Opening`` refuses an out-of-range ``s`` itself, which would
         # hide every other violation of the file behind the first one.
@@ -371,36 +491,36 @@ def from_dict(data: dict[str, Any]) -> Plan:
                 Room(
                     id=str(p["id"]),
                     type=str(p["type"]),
-                    x=_real(p["x"], f"piece {p['id']}.x"),
-                    y=_real(p["y"], f"piece {p['id']}.y"),
-                    w=_real(p["w"], f"piece {p['id']}.w"),
-                    h=_real(p["h"], f"piece {p['id']}.h"),
+                    x=_real(p["x"], f"room {p['id']}.x"),
+                    y=_real(p["y"], f"room {p['id']}.y"),
+                    w=_real(p["w"], f"room {p['id']}.w"),
+                    h=_real(p["h"], f"room {p['id']}.h"),
                 )
-                for p in data["pieces"]
+                for p in data["rooms"]
             ),
             walls=tuple(
                 Wall(
                     id=str(m["id"]),
-                    a=_point(m["a"], f"mur {m['id']}.a"),
-                    b=_point(m["b"], f"mur {m['id']}.b"),
-                    load_bearing=bool(m["porteur"]),
-                    thickness=_real(m["epaisseur"], f"mur {m['id']}.epaisseur"),
+                    a=_point(m["a"], f"wall {m['id']}.a"),
+                    b=_point(m["b"], f"wall {m['id']}.b"),
+                    load_bearing=bool(m["load_bearing"]),
+                    thickness=_real(m["thickness"], f"wall {m['id']}.thickness"),
                 )
-                for m in data["murs"]
+                for m in data["walls"]
             ),
             openings=tuple(
                 Opening(
                     id=str(o["id"]),
-                    wall_id=str(o["mur_id"]),
-                    s=_real(o["s"], f"ouverture {o['id']}.s"),
-                    relative_width=_real(o["largeur_rel"], f"ouverture {o['id']}.largeur_rel"),
-                    sill_height=_real(o["hauteur_allege"], f"ouverture {o['id']}.hauteur_allege"),
-                    head_height=_real(o["hauteur_linteau"], f"ouverture {o['id']}.hauteur_linteau"),
+                    wall_id=str(o["wall_id"]),
+                    s=_real(o["s"], f"opening {o['id']}.s"),
+                    relative_width=_real(o["relative_width"], f"opening {o['id']}.relative_width"),
+                    sill_height=_real(o["sill_height"], f"opening {o['id']}.sill_height"),
+                    head_height=_real(o["head_height"], f"opening {o['id']}.head_height"),
                 )
-                for o in data["ouvertures"]
+                for o in data["openings"]
             ),
-            outline=tuple(_point(pt, f"contour[{i}]") for i, pt in enumerate(data["contour"])),
-            certificate=_certificate_from_dict(data["certificat"]),
+            outline=tuple(_point(pt, f"outline[{i}]") for i, pt in enumerate(data["outline"])),
+            certificate=_certificate_from_dict(data["certificate"]),
         )
     except (KeyError, TypeError, ValueError) as cause:
         raise InvariantViolation((f"invalid JSON structure: {cause}",)) from cause
@@ -412,7 +532,7 @@ def load(path: Path | str) -> Plan:
 
     Parameters
     ----------
-    chemin : Path or str
+    path : Path or str
         Source file, UTF-8 encoded.
 
     Returns
@@ -429,11 +549,11 @@ def load(path: Path | str) -> Plan:
         (`ARCHITECTURE.md` §7).
     """
     try:
-        texte = Path(path).read_text(encoding="utf-8")
+        text = Path(path).read_text(encoding="utf-8")
     except UnicodeDecodeError as cause:
         raise InvariantViolation((f"{path} is not UTF-8 encoded: {cause}",)) from cause
     try:
-        data = json.loads(texte)
+        data = json.loads(text)
     except json.JSONDecodeError as cause:
         raise InvariantViolation((f"{path} is not valid JSON: {cause}",)) from cause
     if not isinstance(data, dict):
@@ -452,7 +572,7 @@ def write(plan: Plan, path: Path | str) -> None:
     ----------
     plan : Plan
         Plan to write.
-    chemin : Path or str
+    path : Path or str
         Destination file; its parent directory must exist.
 
     Raises
@@ -464,7 +584,7 @@ def write(plan: Plan, path: Path | str) -> None:
         than surface as a ``ValueError`` of the standard library.
     """
     try:
-        texte = json.dumps(
+        text = json.dumps(
             to_dict(plan),
             sort_keys=True,
             ensure_ascii=False,
@@ -473,7 +593,7 @@ def write(plan: Plan, path: Path | str) -> None:
         )
     except ValueError as cause:
         raise InvariantViolation((f"non-finite value in the plan: {cause}",)) from cause
-    Path(path).write_text(texte + "\n", encoding="utf-8", newline="\n")
+    Path(path).write_text(text + "\n", encoding="utf-8", newline="\n")
 
 
 __getattr__ = lazy_aliases(

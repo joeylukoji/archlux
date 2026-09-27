@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from archlux.geom.rectilineaire import FUSION_DROIT, PieceRectilineaire
+from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
 from archlux.types import Context, Plan, Room
 
 TOLERANCE = 1e-6
@@ -43,7 +43,7 @@ def _seam(a: Room, b: Room, kind: str) -> tuple[float, float, float, str]:
 
     For a seam on a vertical edge, the axis is ``"x"`` and ``[lo, hi]`` is a y range.
     """
-    if kind == FUSION_DROIT:
+    if kind == MERGE_RIGHT:
         return abs(a.x + a.w - b.x), max(a.y, b.y), min(a.y + a.h, b.y + b.h), "x"
     return abs(a.y + a.h - b.y), max(a.x, b.x), min(a.x + a.w, b.x + b.w), "y"
 
@@ -55,7 +55,7 @@ def _fusion_holds(a: Room, b: Room, kind: str, min_contact: float) -> bool:
 
 
 def _fused_area_violations(
-    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[PieceRectilineaire, ...]
+    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[RectilinearRoom, ...]
 ) -> tuple[set[str], list[Violation]]:
     """Fused rooms measured as a whole: every recorded edge holds, the sum meets the minimum.
 
@@ -69,7 +69,7 @@ def _fused_area_violations(
         if not parts:
             continue
         members.update(part.id for part in parts)
-        for i, j, kind in piece.fusions:
+        for i, j, kind in piece.merges:
             a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
             if (
                 a is not None
@@ -85,7 +85,7 @@ def _fused_area_violations(
 
 
 def violations(
-    plan: Plan, ctx: Context, *, fusions: tuple[PieceRectilineaire, ...] = ()
+    plan: Plan, ctx: Context, *, fusions: tuple[RectilinearRoom, ...] = ()
 ) -> list[Violation]:
     """Tiling, minimum areas and load-bearing walls, checked from coordinates only.
 
@@ -138,7 +138,7 @@ def violations(
         # A seam of a fused room is inside the room: a wall along it cuts the room in two.
         by_id = {room.id: room for room in rooms}
         for piece in fusions:
-            for i, j, kind in piece.fusions:
+            for i, j, kind in piece.merges:
                 first = by_id.get(piece.rectangles[i].id)
                 second = by_id.get(piece.rectangles[j].id)
                 if first is None or second is None:

@@ -22,7 +22,7 @@ Backend : OR-Tools **GLOP** (simplexe).
 ## Duaux
 
 Si `duaux=True`, les prix sont extraits **dans l'ordre des lignes de \(A\)** — le
-seul ordre appariable avec `Polytope.origines`. Les coupes et les égalités ne sont
+seul ordre appariable avec `Polytope.origins`. Les coupes et les égalités ne sont
 pas dans ce vecteur au jalon 2 : un dual de coupe de surface n'est pas encore
 libellé. Les composantes \(\lvert y_i\rvert \le 10^{-9}\) sont omises à l'API.
 
@@ -72,7 +72,7 @@ libellé métier : `separation horizontale a|b`, `contour droit b`.
 (tiling, fusions, frozen contacts) with two slacks. Before, a conflict among those
 equalities left it without an optimum and the certificate empty: 68 of 200 noisy
 benchmark plans were refused with "origines non renseignees". Each equality now carries
-a label (`Polytope.origines_eq`), and the refusal names every row with a non-zero weight.
+a label (`Polytope.origins_eq`), and the refusal names every row with a non-zero weight.
 
 **The certificate is checked, not believed.** Let \(y \ge 0\) be the multipliers of
 \(Ax \le b\) and \(z\) those of \(A_{eq}x = b_{eq}\). Every admissible \(x\) satisfies

@@ -106,8 +106,8 @@ class Infeasible(ArchluxError):
         Dual vector of the auxiliary problem (a ``numpy.ndarray``), not typed here so that
         this module stays free of dependencies.
     origins : tuple of str
-        Readable labels of the constraints in conflict, from ``Polytope.origines`` and,
-        since batch 1.5c, ``Polytope.origines_eq`` (tiling, fusions, contacts).
+        Readable labels of the constraints in conflict, from ``Polytope.origins`` and,
+        since batch 1.5c, ``Polytope.origins_eq`` (tiling, fusions, contacts).
     verified : bool or None
         Whether the certificate was checked in exact arithmetic
         (:func:`archlux.certify.farkas.verify_infeasibility`); ``None`` if no check

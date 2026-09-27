@@ -12,8 +12,8 @@ from math import isfinite
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.types import PerformanceBound, Regime
-from archlux.uq.conforme import Calibration, borner, quantile_conforme
-from archlux.uq.derive import DiagnosticDerive
+from archlux.uq.conforme import Calibration, bound, conformal_quantile
+from archlux.uq.derive import DriftDiagnostic
 
 __all__ = ["Calibration", "bound_selected_plan", "build_bound", "check_calibration"]
 
@@ -21,7 +21,7 @@ __all__ = ["Calibration", "bound_selected_plan", "build_bound", "check_calibrati
 def build_bound(
     value: float,
     calibration: Calibration,
-    drift: DiagnosticDerive,
+    drift: DriftDiagnostic,
     *,
     uncertainty: float,
     regime: Regime,
@@ -62,7 +62,7 @@ def build_bound(
     """
     if not drift.echangeable:
         return None
-    return borner(value, calibration, uncertainty=uncertainty, regime=regime)
+    return bound(value, calibration, uncertainty=uncertainty, regime=regime)
 
 
 def check_calibration(calibration: object) -> None:
@@ -78,7 +78,7 @@ def check_calibration(calibration: object) -> None:
         raise InvariantViolation(
             (f"calibration must be a Calibration, got {type(calibration).__name__}",)
         )
-    quantile_conforme(calibration.scores, calibration.alpha)
+    conformal_quantile(calibration.scores, calibration.alpha)
 
 
 def bound_selected_plan(
@@ -111,7 +111,7 @@ def bound_selected_plan(
     """
     if not (isfinite(uncertainty) and uncertainty > 0.0):
         return None
-    return borner(value, calibration, uncertainty=uncertainty, regime="selected")
+    return bound(value, calibration, uncertainty=uncertainty, regime="selected")
 
 
 __getattr__ = lazy_aliases(

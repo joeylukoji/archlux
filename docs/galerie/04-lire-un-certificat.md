@@ -12,8 +12,8 @@ from archlux.types import PerformanceBound, Manifest
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     rooms=(
-        ax.Room(id="sejour", type="sejour", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Room(id="chambre", type="chambre", x=6.0, y=0.0, w=6.0, h=9.0),
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
     ),
     walls=(),
     openings=(),

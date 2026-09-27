@@ -93,6 +93,27 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `expliquer()` | `explain()` | |
 | `Verdict.faisable`, `Verdict.certificat` | `Verdict.feasible`, `Verdict.certificate` | |
 
+## Geometry and LMO modules (rename wave 5, batch 4)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `OrdreRelatif` (field `pieces`) | `RelativeOrder` (field `rooms`) | |
+| `GrapheContraintes` (`a_separation`, `fermeture`) | `ConstraintGraph` (`has_separation`, `closure`) | |
+| `deduire_ordre`, `construire_graphe`, `reduction_transitive` | `deduce_order`, `build_graph`, `transitive_reduction` | |
+| `construire_polytope`, `figer_contacts`, `vectoriser`, `devectoriser`, `etendre_ecarts_l1` | `build_polytope`, `freeze_contacts`, `vectorize`, `devectorize`, `extend_l1_slack` | parameter `gabarit` becomes `template` |
+| `Polytope.bornes`, `origines`, `origines_eq`, `labels_eq()`, `contient()` | `bounds`, `origins`, `origins_eq`, `eq_labels()`, `contains()` | |
+| `CHAMPS` | `FIELDS` | |
+| `Trame` | `Grid` | fields `lignes_x`, `lignes_y`, `ancrees_x`, `ancrees_y` become `x_lines`, `y_lines`, `anchored_x`, `anchored_y`; `n_cellules` becomes `n_cells` |
+| `deduire_trame`, `contraintes_pavage`, `etendre_pavage` | `deduce_grid`, `tiling_constraints`, `extend_tiling` | parameters `trame`, `support_min` become `grid`, `min_support` |
+| `PieceRectilineaire` (field `fusions`) | `RectilinearRoom` (field `merges`) | |
+| `decomposer`, `recomposer`, `contraintes_fusion`, `etendre_fusions` | `decompose`, `recompose`, `merge_constraints`, `extend_merges` | parameters `polygone`, `type_piece` become `polygon`, `room_type` |
+| `FUSION_DROIT`, `FUSION_HAUT` | `MERGE_RIGHT`, `MERGE_TOP` | |
+| `diagnostiquer` | `diagnose` | fields `recouvrements`, `part_jour`, `part_trou`, `morceaux`, `cellules`, `cote` become `overlaps`, `gap_share`, `hole_share`, `fragments`, `cells`, `size` |
+| `resoudre`, `vider_cache` | `solve`, `clear_cache` | parameters `depart`, `coupes` become `start`, `cuts` |
+| `SolutionLP` | `LPSolution`; fields `valeur`, `statut`, `duaux`, `certificat_farkas`, `certificat_farkas_eq`, `temps_ms` become `value`, `status`, `duals`, `farkas_certificate`, `farkas_certificate_eq`, `time_ms` | |
+| `Coupe` (`coeffs`, `borne_inf`, `origine`, `satisfait()`) | `Cut` (`coefficients`, `lower_bound`, `origin`, `satisfied()`) | |
+| `coupe_surface`, `surfaces_violees`, `resoudre_avec_surfaces`, `MAX_COUPES_PAR_PIECE` | `area_cut`, `violated_areas`, `solve_with_areas`, `MAX_CUTS_PER_ROOM` | |
+
 ## Geometry and solver
 
 | French | English |
@@ -184,5 +205,45 @@ Public parameters that follow the same rename: `pavage` becomes `tiling`,
 | `pathologie.py` | `pathologies.py` | | `survie.py` | `survival.py` |
 | `graines.py` | `seeds.py` | | `manifeste.py` | `manifest.py` |
 | `protocole.py` (bench) | `protocol.py` | | `json_io.py` | `json_io.py` |
-| `tests/unites` | `tests/unit` | | `tests/proprietes` | `tests/properties` |
-| `experiences/` | `experiments/` | | `resultats/` | `results/` |
+| `tests/unites` | `tests/unit` (done) | | `tests/proprietes` | `tests/properties` (done) |
+| `experiences/` | `experiments/` (done) | | `resultats/` | `results/` (done) |
+
+## Light modules (rename wave 5, batch 5)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `SubstitutAnalytique`, `SubstitutAppris`, `SubstitutDense` | `AnalyticSurrogate`, `LearnedSurrogate`, `DenseSurrogate` | |
+| `facteur_secteur`, `descripteurs`, `facteur_lumiere_jour` | `sector_factor`, `descriptors`, `daylight_factor` | |
+| `permuter_pieces`, `plan_vers_vecteur`, `plan_vers_jetons`, `vecteur_vers_jetons` | `permute_rooms`, `plan_to_vector`, `plan_to_tokens`, `vector_to_tokens` | |
+| `DIM_JETON`, `CHAMPS_PAR_PIECE` | `TOKEN_DIM`, `FIELDS_PER_ROOM` | |
+| `RapportGradient`, `valider_gradient` | `GradientReport`, `validate_gradient` | |
+| `Indicateur` | `Indicator` | type alias in `archlux.types` |
+| methods `ajuster`, `sauver`, `n_parametres` | `fit`, `save`, `n_parameters` | surrogates and `CalibrateurConforme` |
+
+## Uncertainty, active learning and orientation modules (rename wave 5, batch 6)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `CalibrateurConforme`, `borner`, `n_minimal_conforme`, `quantile_conforme` | `ConformalCalibrator`, `bound`, `minimal_n_conformal`, `conformal_quantile` | `archlux.uq.conforme` |
+| `DiagnosticDerive`, `RapportDerive`, `controler_derive`, `mesurer_derive` | `DriftDiagnostic`, `DriftReport`, `check_drift`, `measure_drift` | `archlux.uq.derive` |
+| `diagramme_fiabilite`, `stratifier_par_orientation` | `reliability_diagram`, `stratify_by_orientation` | `archlux.uq.fiabilite` |
+| `GestionDonnees`, `JetonCalibration`, `emettre_jeton`, `geler_et_emettre`, `ouvrir_calibration` | `DataManagement`, `CalibrationToken`, `issue_token`, `freeze_and_issue`, `open_calibration` | `archlux.uq.gestion`; fields `empreinte_poids`, `horodatage_gel` become `weights_fingerprint`, `freeze_timestamp`; method `verifier` becomes `verify`; methods `pour_entrainement`, `pour_test`, `pour_calibration` become `for_training`, `for_test`, `for_calibration` (no alias) |
+| `RapportActif`, `Aleatoire`, `StrategieAcquisition`, `densite_noyau` | `ActiveReport`, `RandomStrategy`, `AcquisitionStrategy`, `kernel_density` | `archlux.active` |
+| `ResultatRegression`, `difference_angulaire`, `direction_dominante`, `encoder`, `moyenne_circulaire`, `regression_circulaire_lineaire`, `stratifier`, `variance_circulaire` | `RegressionResult`, `angular_difference`, `dominant_direction`, `encode_orientation`, `circular_mean`, `circular_linear_regression`, `stratify`, `circular_variance` | `archlux.orient.circulaire` |
+| parameters/fields `valeur`, `couverture`, `horodatage`, `modele`, `poids`, `jeton` | `value`, `coverage`, `timestamp`, `model`, `weights`, `token` | across `uq` and `orient`, no alias (not public class names) |
+
+## Export, data and bench modules (rename wave 5, batch 7)
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `RapportExport`, `DiagnosticPathologie`, `intervalle_wilson` | `ExportReport`, `PathologyDiagnostic`, `wilson_interval` | `archlux.export` |
+| `comparer`, `planche` | `compare`, `sheet` | `archlux.export.svg` |
+| `AppartementMSD`, `StatistiquesChargement`, `charger_msd`, `charger_etiquettes_sd`, `etiqueter`, `decouper_par_site` | `MSDApartment`, `LoadStatistics`, `load_msd`, `load_sd_labels`, `label`, `split_by_site` | `archlux.data.chargeurs`; constants `COLONNE_SOLEIL_DEFAUT`, `TYPES_EXCLUS` become `DEFAULT_SUN_COLUMN`, `EXCLUDED_TYPES` |
+| `corrompre` | `corrupt` | `archlux.data.corruption`; field `piece_id`/`axe` become `room_id`/`axis`; Mode values `deplacer`/`elargir`/`retrecir`/`aplatir` become `move`/`widen`/`narrow`/`flatten` |
+| `Decoupage`, `charger_decoupage` | `Split`, `load_split` | `archlux.data.decoupage`; fields `nom`/`entrainement`/`empreinte` become `name`/`train`/`fingerprint` |
+| `empreinte_geometrique`, `distance_cotes`, `paires_quasi_identiques`, `SEUIL_HAUSDORFF_M` | `geometric_fingerprint`, `side_distance`, `near_duplicate_pairs`, `HAUSDORFF_THRESHOLD_M` | `archlux.data.dedup` |
+| `imputer_ouvertures`, `RATIO_BAIE_DEFAUT` | `impute_openings`, `DEFAULT_OPENING_RATIO` | `archlux.data.imputation` |
+| `generer_corpus`, `TAILLE_MAX` | `generate_corpus`, `MAX_SIZE` | `archlux.data.synthese` |
+| `deriver`, `emettre` | `derive`, `emit` | `archlux.bench.graines`, `archlux.bench.manifeste` |
+| `RapportBanc`, `StrateOrientation`, `LigneBrute`, `Resultat`, `Intervalle`, `bootstrap_apparie`, `puissance` | `BenchReport`, `OrientationStratum`, `RawRow`, `Result`, `Interval`, `paired_bootstrap`, `power` | `archlux.bench.{rapport,run,stats}` |
+| identifiers `contour`, `murs`, `ouvertures`, `pieces`, `poids`, `couverture`, `manifeste` (local names, not Plan or Manifest fields) | `outline`, `walls`, `openings`, `rooms`, `weights`, `coverage`, `manifest` | across `export` and `data`, no alias (locals, not public fields) |

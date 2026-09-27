@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from numbers import Real
 from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Literal
@@ -24,13 +25,13 @@ from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
-    from archlux.export import RapportExport
+    from archlux.export import ExportReport
 
 __all__ = [
     "Certificate",
     "Context",
     "GeometricProof",
-    "Indicateur",
+    "Indicator",
     "Manifest",
     "ModelTrace",
     "Opening",
@@ -46,7 +47,7 @@ __all__ = [
 
 Point = tuple[float, float]
 
-Indicateur = Literal["sDA", "ASE", "UDI", "vue"]
+Indicator = Literal["sDA", "ASE", "UDI", "vue"]
 """Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
 ``PerformanceBound``, the ``Surrogate`` protocol, the surrogates and the calibration all
 share it."""
@@ -67,7 +68,7 @@ class Room:
         Stable identifier, unique within a plan. It is a sort key: the iteration order
         is always explicit, never that of a ``set``.
     type : str
-        Program category (``"sejour"``, ``"sdb"``, ...). Determines the regulatory
+        Program category (``"living_room"``, ``"bathroom"``, ...). Determines the regulatory
         thresholds through :class:`Regulation`.
     x, y, w, h : float
         Position and dimensions, in metres.
@@ -140,11 +141,17 @@ class Opening:
 
     def __post_init__(self) -> None:
         """Refuse ``s`` outside ``[0, 1]`` and ``relative_width`` outside ``]0, 1]``."""
+        for name in ("s", "relative_width"):  # a string compared with a float is a TypeError
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise InvalidInput(
+                    f"openings[{self.id}].{name}", f"must be a number, got {value!r}"
+                )
         if not 0.0 <= self.s <= 1.0:
-            raise InvalidInput(f"ouvertures[{self.id}].s", f"must be in [0, 1], got {self.s}")
+            raise InvalidInput(f"openings[{self.id}].s", f"must be in [0, 1], got {self.s}")
         if not 0.0 < self.relative_width <= 1.0:
             raise InvalidInput(
-                f"ouvertures[{self.id}].largeur_rel",
+                f"openings[{self.id}].relative_width",
                 f"must be in ]0, 1], got {self.relative_width}",
             )
 
@@ -270,7 +277,7 @@ class Plan:
 
         to_dxf(self, path)
 
-    def to_ifc(self, path: Path | str, *, validate: bool = True) -> RapportExport:
+    def to_ifc(self, path: Path | str, *, validate: bool = True) -> ExportReport:
         """Write the plan as IFC4 and return the report of the export.
 
         Facade over :func:`archlux.export.ifc.to_ifc`. With ``validate`` (default), a
@@ -434,7 +441,7 @@ class PerformanceBound:
     plan does not hold for a plan the optimizer selected (:data:`Regime`).
     """
 
-    indicator: Indicateur
+    indicator: Indicator
     value: float
     lower: float
     upper: float
@@ -515,7 +522,7 @@ class Certificate:
     Attributes
     ----------
     duaux : tuple of (str, float)
-        Dual prices **already translated** through ``Polytope.origines``:
+        Dual prices **already translated** through ``Polytope.origins``:
         ``("load-bearing wall p1 at x = 6 m: ...", 4.1)``. Never a bare row index.
     """
 
@@ -554,6 +561,7 @@ DEPRECATED_NAMES: Final = MappingProxyType(
         "BornePerformance": "PerformanceBound",
         "Manifeste": "Manifest",
         "ModeleTrace": "ModelTrace",
+        "Indicateur": "Indicator",
     }
 )
 """Former French names of the model classes, kept as deprecated aliases until 1.0.0 (ADR 0001,

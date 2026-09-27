@@ -1,1 +1,1 @@
-"""Entrées / sorties : schéma JSON versionné."""
+"""Input and output: the versioned JSON schema."""

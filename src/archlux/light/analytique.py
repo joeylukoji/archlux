@@ -21,11 +21,12 @@ from typing import ClassVar
 
 import numpy as np
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encoder
-from archlux.types import Indicateur, Orientation
+from archlux.orient.circulaire import encode_orientation
+from archlux.types import Indicator, Orientation
 
-__all__ = ["FACTEURS_SECTEUR", "SubstitutAnalytique", "facteur_secteur"]
+__all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
 
 _EPS = 1e-12
 _N_CHAMPS = 4
@@ -54,7 +55,7 @@ ou remplace par une simulation annuelle, jamais comme la regle citee.
 """
 
 
-def facteur_secteur(orientation: Orientation) -> float:
+def sector_factor(orientation: Orientation) -> float:
     """Poids d'exposition du secteur de 45 degres contenant ``orientation``.
 
     Passe par :func:`archlux.orient.circulaire.encoder`, jamais par le degre brut :
@@ -70,14 +71,14 @@ def facteur_secteur(orientation: Orientation) -> float:
     float
         Un element de :data:`FACTEURS_SECTEUR`, dans ``[0.45, 1.00]``.
     """
-    features = encoder(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmoniques=1)
     azimut = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
     secteur = int((azimut + 22.5) // 45.0) % 8
     return FACTEURS_SECTEUR[secteur]
 
 
 @dataclass(frozen=True, slots=True)
-class SubstitutAnalytique:
+class AnalyticSurrogate:
     """Modèle de facteur de lumière du jour par règle de profondeur limite.
 
     La profondeur au-delà de laquelle une pièce cesse d'être éclairée naturellement
@@ -94,7 +95,7 @@ class SubstitutAnalytique:
         Écart-type constant. Ce substitut ne modélise pas son erreur.
     """
 
-    indicateur_vise: Indicateur = "sDA"
+    indicateur_vise: Indicator = "sDA"
     sigma_nominal: float = 0.08
 
     FACTEUR_PROFONDEUR: ClassVar[float] = 2.5
@@ -110,7 +111,7 @@ class SubstitutAnalytique:
     """Alias de classe vers :data:`FACTEURS_SECTEUR` (contrat public conservé)."""
 
     @property
-    def indicator(self) -> Indicateur:
+    def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
@@ -169,7 +170,7 @@ class SubstitutAnalytique:
         """Score positif de chaque pièce, sans le signe de l'indicateur."""
         vecteur = np.asarray(x, dtype=float).ravel()
         n_pieces = vecteur.size // _N_CHAMPS
-        features = encoder(orientation, harmoniques=1)
+        features = encode_orientation(orientation, harmoniques=1)
         cos_t, sin_t = float(features[0]), float(features[1])
         cos2, sin2 = cos_t * cos_t, sin_t * sin_t
         profondeur_utile = (
@@ -190,7 +191,7 @@ class SubstitutAnalytique:
 
     def _facteur_orientation(self, orientation: Orientation) -> float:
         """Table à 8 secteurs. Délègue à :func:`facteur_secteur`, sans état."""
-        return facteur_secteur(orientation)
+        return sector_factor(orientation)
 
     def _score_et_gradient(
         self, x: np.ndarray, orientation: Orientation, *, avec_gradient: bool
@@ -200,7 +201,7 @@ class SubstitutAnalytique:
         n_pieces = vecteur.size // _N_CHAMPS
         gradient = np.zeros_like(vecteur, dtype=float)
 
-        features = encoder(orientation, harmoniques=1)
+        features = encode_orientation(orientation, harmoniques=1)
         cos_t = float(features[0])
         sin_t = float(features[1])
         cos2 = cos_t * cos_t
@@ -254,3 +255,14 @@ class SubstitutAnalytique:
         if self.indicateur_vise == "ASE":
             return -total, -gradient
         return total, gradient
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "facteur_secteur": Alias(sector_factor, "archlux.light.analytique.sector_factor"),
+        "SubstitutAnalytique": Alias(
+            AnalyticSurrogate, "archlux.light.analytique.AnalyticSurrogate"
+        ),
+    },
+)

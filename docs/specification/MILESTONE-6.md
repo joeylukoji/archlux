@@ -56,7 +56,7 @@ Une pièce en L = deux rectangles + une contrainte les rendant solidaires.
 
 ```python
 @dataclass(frozen=True)
-class PieceRectilineaire:
+class RectilinearRoom:
     id: str
     rectangles: tuple[Room, ...]          # 2 à 4
     fusions: tuple[tuple[int, int, str], ...]   # (i, j, "partage_bord_droit")
@@ -72,11 +72,11 @@ class PieceRectilineaire:
 ```python
 @given(poly=polygones_rectilineaires())
 def test_decomposition_recompose(poly):
-    assert recomposer(decomposer(poly)).equals(poly)
+    assert recompose(decompose(poly)).equals(poly)
 
 @given(plan=plans_avec_pieces_en_L())
 def test_validite_preservee(plan):
-    assert ax.legalize(plan, CTX).certificate.geometry.valide
+    assert ax.legalize(plan, CTX).certificate.geometry.valid
 ```
 
 - [ ] Les 2 tests passent
@@ -132,8 +132,8 @@ diviserait le budget total du projet.
 **Fichier :** `src/archlux/export/`
 
 ```python
-def to_ifc(plan: Plan, chemin: Path, *, validate: bool = True) -> RapportExport: ...
-def to_dxf(plan: Plan, chemin: Path) -> None: ...
+def to_ifc(plan: Plan, path: Path, *, validate: bool = True) -> ExportReport: ...
+def to_dxf(plan: Plan, path: Path) -> None: ...
 def survival_rate(plans: list[Plan]) -> tuple[float, tuple[float, float]]: ...
 ```
 
@@ -154,7 +154,7 @@ d'utilité industrielle.
 ```python
 @given(plan=plans_valides())
 def test_export_valide(plan):
-    assert to_ifc(plan, tmp, validate=True).valide
+    assert to_ifc(plan, tmp, validate=True).valid
 
 def test_taux_de_survie_avec_wilson():
     taux, (lo, hi) = survival_rate(SORTIES_MODELES_PUBLICS)
@@ -176,11 +176,11 @@ class Manifest:
     archlux: str
     horodatage: str
     graine: int
-    empreinte_donnees: str
-    decoupage: str
+    data_fingerprint: str
+    split: str
     environnement: dict[str, str]
-    modele: dict[str, str | int | float]     # poids, calibration_n, alpha
-    parametres: dict
+    model: dict[str, str | int | float]     # poids, calibration_n, alpha
+    parameters: dict
 ```
 
 - [x] `Manifest` écrit **à chaque exécution**, sans exception
@@ -192,7 +192,7 @@ class Manifest:
 ```python
 def test_manifeste_complet():
     m = bench.run(...).manifest
-    assert m.modele["poids"] and m.modele["calibration_n"] > 0
+    assert m.model["poids"] and m.model["calibration_n"] > 0
 
 def test_evaluate_by_obligatoire():
     with pytest.raises(TypeError):

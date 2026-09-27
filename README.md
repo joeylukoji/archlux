@@ -10,10 +10,10 @@
 **Where it works, and where it does not.** archlux repairs plans that are *almost*
 right. On 4,796 corruptions of 300 real apartments (MSD corpus: gaps, overlaps,
 undersized and shifted rooms), it returns a certified valid plan in **93.9 %** of cases
-(95 % CI [93.2, 94.5], tiling mode with fallback; `resultats/j7_reparation.md`). On raw
+(95 % CI [93.2, 94.5], tiling mode with fallback; `results/j7_reparation.md`). On raw
 outputs of a generative model (HouseDiffusion, 740 plans, none valid at the start), it
 returns an intact certified plan in only **about 20 %** of cases (17.8 % to 23.0 %
-across three sets; `resultats/j8_generation.md`): four plans out of five are too far
+across three sets; `results/j8_generation.md`): four plans out of five are too far
 from any exact tiling to be repaired without losing a room. Post hoc legalization does
 not replace a generator that respects the tiling condition. Both figures predate the
 load-bearing wall constraints of batch 1.1 and will be measured again (PLAN.md, J7 and
@@ -176,10 +176,10 @@ factor, not a simulation).
 ```python
 import numpy as np
 
-from archlux.light import Daylight, SplitFluxOracle, SubstitutAnalytique
-from archlux.uq.conforme import CalibrateurConforme
+from archlux.light import Daylight, SplitFluxOracle, AnalyticSurrogate
+from archlux.uq.conforme import ConformalCalibrator
 
-surrogate, oracle = SubstitutAnalytique(), SplitFluxOracle()
+surrogate, oracle = AnalyticSurrogate(), SplitFluxOracle()
 rng = np.random.default_rng(17)
 held_out = []  # layouts of the same three rooms, never used to fit the surrogate
 for _ in range(200):
@@ -187,8 +187,8 @@ for _ in range(200):
     held_out.append(np.array([0, 0, w, 9, w, 0, 12 - w, h, w, h, 12 - w, 9 - h], float))
 
 azimuth = ctx.orientation
-calibrator = CalibrateurConforme(indicator="sDA")
-calibrator.ajuster(
+calibrator = ConformalCalibrator(indicator="sDA")
+calibrator.fit(
     np.array([surrogate.evaluate(x, azimuth) for x in held_out]),
     np.array([oracle.evaluate(x, azimuth) for x in held_out]),
     np.array([surrogate.uncertainty(x, azimuth) for x in held_out]),
@@ -321,10 +321,10 @@ azimuth, and the glazing (`baies`). Shipped implementations:
 
 | Class | What it is |
 |---|---|
-| `SubstitutAnalytique` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
+| `AnalyticSurrogate` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
 | `SplitFluxOracle` | Analytic part + BRE split-flux daylight factor: the **frozen oracle** of the CI, used to test the chain end to end. A closed form, not a simulation and not ground truth |
-| `light.base.SubstitutDense` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
-| `light.appris.SubstitutAppris` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
+| `light.base.DenseSurrogate` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
+| `light.appris.LearnedSurrogate` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
 | `Daylight` | Wraps a surrogate and returns the pessimistic value `mu - q sigma` |
 
 The input is a set of numbers per room, not an image: moving a wall by 2 cm changes no
@@ -491,7 +491,7 @@ and test (20 %, opened once). If the calibration set leaks into training, the co
 guarantee is silently wrong, and no test or review would notice. `uq.gestion` keeps
 three distinct directories and hands out the calibration set against a token issued
 after the model is frozen. This is a checkable discipline, not a lock: the token is an
-unkeyed checksum, and `CalibrateurConforme` calibrates from plain arrays without asking
+unkeyed checksum, and `ConformalCalibrator` calibrates from plain arrays without asking
 for it (the module docstring lists the known bypasses).
 
 ---
@@ -580,7 +580,7 @@ Not implemented yet:
 |---|---|
 | **Non-Manhattan geometry** (oblique walls, non-rectilinear rooms) | Not supported. An oblique load-bearing wall raises `UnsupportedInput`; oblique MSD plans are rejected by the loader |
 | **sDA / ASE trade-off curve** (Pareto front with warm restarts) | No code |
-| Learned token transformer (PyTorch) | Not implemented: `SubstitutAppris` refuses `.pt` weights |
+| Learned token transformer (PyTorch) | Not implemented: `LearnedSurrogate` refuses `.pt` weights |
 | Daylight labels from a physical simulation (Swiss Dwellings `sun_*`, Radiance) | Not wired; the CI oracle is a closed form |
 | Coverage measured on real data, and on plans selected by the optimizer | Open research question (PLAN.md, J5) |
 | Dual prices translated into daylight points | Prices are listed in LP units |
@@ -594,7 +594,7 @@ The development plan is [`PLAN.md`](PLAN.md); the audit it answers is
 
 ## Reproducibility
 
-`archlux.bench.emettre(seed=...)` builds a **manifest**: version, UTC timestamp, seed,
+`archlux.bench.emit(seed=...)` builds a **manifest**: version, UTC timestamp, seed,
 data fingerprint, split, environment versions, parameters, model fingerprint and
 calibration size. `legalize` itself does not attach one. Format example (illustrative
 values):
@@ -614,7 +614,7 @@ values):
 
 - Every sampling function takes a **seed, with no default**.
 - Splits are **frozen and published** as lists of identifiers.
-- Raw results are published **before** any aggregation (`resultats/*_brut.csv`).
+- Raw results are published **before** any aggregation (`results/*_brut.csv`).
 - **The calibration set is published with the model**: without it, a conformal bound
   cannot be checked.
 - Any change in the behaviour of the oracle or of the certificate is a **major

@@ -1,6 +1,6 @@
 """Translation of dual prices into the language of an architect.
 
-A raw dual price is "the number of row 47". Crossed with ``Polytope.origines`` it becomes
+A raw dual price is "the number of row 47". Crossed with ``Polytope.origins`` it becomes
 "load-bearing wall p1 at x = 6 m: relaxing it by 10 cm would change the total displacement
 by -0.20 m". That translation is the main usable output of the certificate: it says
 **which constraint to relax**.
@@ -54,7 +54,7 @@ def describe_origin(label: str) -> str | None:
     Parameters
     ----------
     label : str
-        An entry of ``Polytope.origines``.
+        An entry of ``Polytope.origins``.
 
     Returns
     -------
@@ -134,7 +134,7 @@ def translate_duals(
     """
     vector = np.asarray(duals, dtype=float).ravel()
     pairs: list[tuple[str, float]] = []
-    for label, raw in zip(poly.origines, vector, strict=True):
+    for label, raw in zip(poly.origins, vector, strict=True):
         price = float(raw)
         description = describe_origin(label)
         if abs(price) <= threshold or description is None:
