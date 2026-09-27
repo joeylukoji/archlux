@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvalidSurrogate
 
 if TYPE_CHECKING:
@@ -61,6 +61,7 @@ def _differences_finies(
     return g
 
 
+@renamed_parameters({"substitut": "surrogate"})
 def validate_gradient(
     surrogate: Surrogate,
     points: np.ndarray,

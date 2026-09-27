@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import REGIMES, Indicator, PerformanceBound, Regime
 
@@ -230,6 +230,7 @@ def _intervalle(
     )
 
 
+@renamed_parameters({"valeur": "value", "incertitude": "uncertainty"})
 def bound(
     value: float, calibration: Calibration, *, uncertainty: float, regime: Regime
 ) -> PerformanceBound:

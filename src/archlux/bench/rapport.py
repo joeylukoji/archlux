@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.bench.graines import derive
 from archlux.bench.run import Result
 from archlux.bench.stats import Interval, paired_bootstrap
@@ -56,6 +56,7 @@ def _secteur_par_degre(degres: Iterable[float], *, n_secteurs: int) -> dict[floa
     return correspondance
 
 
+@renamed_parameters({"resultat": "result"})
 def report(
     result: Result,
     *,

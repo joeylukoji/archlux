@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.api import legalize
 from archlux.errors import GapNeedsTiling, Infeasible
 from archlux.types import Context, Plan, Structure
@@ -68,6 +68,7 @@ def _legalize_any_dimensions(program: Plan, ctx: Context) -> None:
         legalize(program, ctx, pavage=True)
 
 
+@renamed_parameters({"programme": "program"})
 def is_feasible(program: Plan, structure: Structure, ctx: Context) -> Verdict:
     """Decide whether a program (relative order fixed) admits a valid plan.
 

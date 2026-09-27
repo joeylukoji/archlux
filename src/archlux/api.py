@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from archlux._deprecation import renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.certify.borne import bound_selected_plan, check_calibration
 from archlux.certify.dual import translate_duals
@@ -61,6 +62,7 @@ __all__ = ["gradient_distance", "legalize"]
 _DUAL_THRESHOLD = 1e-9
 
 
+@renamed_parameters({"x_propose": "x_proposed"})
 def gradient_distance(x_proposed: VecteurF) -> VecteurF:
     r"""Cost vector of the L1 epigraph: zeros on :math:`x`, ones on :math:`e`.
 

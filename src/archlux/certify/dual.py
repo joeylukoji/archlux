@@ -24,7 +24,7 @@ import re
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.geom.polytope import Polytope
 
@@ -96,6 +96,7 @@ def _sentence(description: str, price: float, *, objective: str, step_m: float) 
     return f"{description}: relaxing it by {step} {effect} ({_VALIDITY})"
 
 
+@renamed_parameters({"duaux": "duals", "seuil": "threshold"})
 def translate_duals(
     duals: VecteurF,
     poly: Polytope,

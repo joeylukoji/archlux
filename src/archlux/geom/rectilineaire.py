@@ -31,7 +31,7 @@ from scipy import sparse
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, unary_union
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation, UnsupportedInput
 from archlux.geom.polytope import Polytope
 from archlux.tolerances import AREA_PROOF_M2
@@ -307,6 +307,7 @@ def _detecter_fusions(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ..
     return tuple(propres)
 
 
+@renamed_parameters({"polygone": "polygon", "type_piece": "room_type"})
 def decompose(
     polygon: Polygon,
     *,
@@ -418,6 +419,7 @@ def merge_constraints(
     return tuple(egalites)
 
 
+@renamed_parameters({"fusions": "merges", "referentiel": "regulation"})
 def minimum_area_shares(
     rooms: tuple[Room, ...],
     merges: tuple[RectilinearRoom, ...],

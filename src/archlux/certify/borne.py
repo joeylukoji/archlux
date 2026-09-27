@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from math import isfinite
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import PerformanceBound, Regime
 from archlux.uq.conforme import Calibration, bound, conformal_quantile
@@ -18,6 +18,7 @@ from archlux.uq.derive import DriftDiagnostic
 __all__ = ["Calibration", "bound_selected_plan", "build_bound", "check_calibration"]
 
 
+@renamed_parameters({"valeur": "value", "derive": "drift", "incertitude": "uncertainty"})
 def build_bound(
     value: float,
     calibration: Calibration,

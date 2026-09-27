@@ -7,7 +7,7 @@ import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux._version import __version__
 from archlux.errors import ArchluxError
 from archlux.export.pathologie import diagnose
@@ -36,6 +36,7 @@ class ExportReport:
     minimal SPF remains the sole writer as long as no code path calls it."""
 
 
+@renamed_parameters({"chemin": "path"})
 def to_ifc(plan: Plan, path: Path | str, *, validate: bool = True) -> ExportReport:
     """Export a plan to IFC4 (spaces = rooms; walls; annotated openings).
 

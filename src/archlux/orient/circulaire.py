@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvalidInput, InvariantViolation
 from archlux.types import Orientation
 
@@ -123,6 +123,7 @@ def circular_mean(degres: np.ndarray | Sequence[float]) -> float:
     return 0.0 if deg > 360.0 - 1e-9 else deg
 
 
+@renamed_parameters({"poids": "weights"})
 def dominant_direction(
     degres: np.ndarray | Sequence[float],
     weights: np.ndarray | Sequence[float] | None = None,

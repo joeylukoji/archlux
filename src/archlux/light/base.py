@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.jetons import vector_to_tokens
@@ -56,6 +56,7 @@ def _analytique(indicator: Indicator) -> AnalyticSurrogate:
     return AnalyticSurrogate(indicateur_vise=indicator)
 
 
+@renamed_parameters({"baies": "glazing"})
 def descriptors(
     x: np.ndarray, orientation: Orientation, glazing: Glazing | None = None
 ) -> np.ndarray:

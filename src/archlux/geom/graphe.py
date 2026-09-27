@@ -19,7 +19,7 @@ import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InconsistentOrder, MissingSeparation, UnsupportedInput
 from archlux.tolerances import CONTACT_M, SNAP_M
 
@@ -421,6 +421,7 @@ def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe:
     return graphe
 
 
+@renamed_parameters({"pieces": "rooms"})
 def build_graph(ordre: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
     """Assemble the two directed graphs and validate the order.
 

@@ -50,7 +50,7 @@ from shapely.errors import ShapelyError
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.geom.rectilineaire import RectilinearRoom, decompose
 from archlux.orient.circulaire import dominant_direction
@@ -413,6 +413,16 @@ def _lire_groupes(
     return groupes
 
 
+@renamed_parameters(
+    {
+        "chemin": "path",
+        "referentiel": "regulation",
+        "max_pieces": "max_rooms",
+        "types_exclus": "excluded_types",
+        "statistiques": "stats",
+        "limite": "limit",
+    }
+)
 def load_msd(
     path: Path | str,
     *,
@@ -657,6 +667,7 @@ def _flux_simulations(path: Path) -> Iterator[dict[str, str]]:
         yield from csv.DictReader(fichier)
 
 
+@renamed_parameters({"chemin": "path", "colonne": "column"})
 def load_sd_labels(
     path: Path | str, *, column: str = DEFAULT_SUN_COLUMN
 ) -> dict[tuple[str, str], tuple[float, float]]:
@@ -711,6 +722,9 @@ def load_sd_labels(
     return table
 
 
+@renamed_parameters(
+    {"appartement": "apartment", "etiquettes": "labels", "couverture_min": "min_coverage"}
+)
 def label(
     apartment: MSDApartment,
     labels: dict[tuple[str, str], tuple[float, float]],
@@ -762,6 +776,7 @@ def label(
     return float(np.average(valeurs, weights=weights))
 
 
+@renamed_parameters({"appartements": "apartments"})
 def split_by_site(
     apartments: Sequence[MSDApartment],
     *,

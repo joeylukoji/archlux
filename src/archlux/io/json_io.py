@@ -20,7 +20,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import (
     REGIMES,
@@ -208,6 +208,7 @@ def _bound_from_dict(data: Any) -> PerformanceBound:
     )
 
 
+@renamed_parameters({"manifeste": "manifest"})
 def manifest_to_dict(manifest: Manifest) -> dict[str, Any]:
     """Serialize a :class:`~archlux.types.Manifest` (single JSON / benchmark form)."""
     model = manifest.model
@@ -452,6 +453,7 @@ def to_dict(plan: Plan) -> dict[str, Any]:
     }
 
 
+@renamed_parameters({"donnees": "data"})
 def from_dict(data: dict[str, Any]) -> Plan:
     """Rebuild a plan from a JSON-compatible structure.
 
@@ -527,6 +529,7 @@ def from_dict(data: dict[str, Any]) -> Plan:
     return plan
 
 
+@renamed_parameters({"chemin": "path"})
 def load(path: Path | str) -> Plan:
     """Read a plan from a JSON file.
 
@@ -561,6 +564,7 @@ def load(path: Path | str) -> Plan:
     return from_dict(data)
 
 
+@renamed_parameters({"chemin": "path"})
 def write(plan: Plan, path: Path | str) -> None:
     r"""Write a plan as JSON, sorted keys, UTF-8 encoding, ``\n`` line ending.
 

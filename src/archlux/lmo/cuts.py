@@ -60,6 +60,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy import sparse
 
+from archlux._deprecation import renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.errors import InvariantViolation
 from archlux.lmo.solveur import solve
@@ -212,6 +213,7 @@ class Cut:
         return bool(total + tol >= self.lower_bound)
 
 
+@renamed_parameters({"a_min": "min_area"})
 def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
     """Tangent to the hyperbola ``w h = a_min`` at the projected point of ``(w₀, h₀)``.
 
@@ -256,6 +258,7 @@ def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
     return Cut(coefficients=coefficients, lower_bound=2.0 * min_area, origin=origin)
 
 
+@renamed_parameters({"pieces": "rooms"})
 def violated_areas(
     x: VecteurF | Sequence[float],
     poly: Polytope,
@@ -422,6 +425,7 @@ def _empiler_tangentes(
         comptes[identifiant] += 1
 
 
+@renamed_parameters({"pieces": "rooms", "depart": "start", "duaux": "duals"})
 def solve_with_areas(
     poly: Polytope,
     c: VecteurF,
@@ -551,6 +555,7 @@ reference gain, at least 0.95 of it in 96 % of scenarios, for +4 ms median; the 
 1.25-ratio grid reached 0.95 in only 81 % of them."""
 
 
+@renamed_parameters({"pieces": "rooms"})
 def inner_area_constraints(
     poly: Polytope,
     x: VecteurF,

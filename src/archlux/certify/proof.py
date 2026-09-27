@@ -55,6 +55,7 @@ from math import inf, isfinite, isnan
 from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
+from archlux._deprecation import renamed_parameters
 from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
 from archlux.types import Context, GeometricProof, Plan, Room, Wall
@@ -505,6 +506,7 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
     return delta
 
 
+@renamed_parameters({"fusions": "merges"})
 def verify_exactly(
     plan: Plan,
     ctx: Context,

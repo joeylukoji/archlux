@@ -97,7 +97,7 @@ LEAVES: dict[str, frozenset[str]] = {
     "seeds": frozenset({"__future__", "hashlib"}),
     "arrays": frozenset({"__future__", "typing", "numpy"}),
     "_deprecation": frozenset(
-        {"__future__", "sys", "warnings", "dataclasses", "typing", "collections"}
+        {"__future__", "functools", "sys", "warnings", "dataclasses", "typing", "collections"}
     ),
 }
 """Modules importable by every layer, with the only imports they may make themselves."""

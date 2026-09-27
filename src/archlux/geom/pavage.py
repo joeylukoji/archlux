@@ -69,7 +69,7 @@ from scipy import sparse
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import GridNotRecoverable, InvariantViolation, UnsupportedInput
 
 if TYPE_CHECKING:
@@ -363,6 +363,7 @@ def _reparer_partition(
     return None if reste else incidences
 
 
+@renamed_parameters({"support_min": "min_support"})
 def deduce_grid(
     plan: Plan,
     ctx: Context,
@@ -519,6 +520,7 @@ def deduce_grid(
     )
 
 
+@renamed_parameters({"trame": "grid"})
 def snap_to_grid(plan: Plan, grid: Grid) -> Plan:
     """Place every room of ``plan`` on the reference lines of its recovered grid.
 
@@ -551,6 +553,7 @@ def snap_to_grid(plan: Plan, grid: Grid) -> Plan:
     return replace(plan, rooms=tuple(rooms))
 
 
+@renamed_parameters({"trame": "grid"})
 def tiling_constraints(
     grid: Grid, index: dict[str, int]
 ) -> tuple[tuple[str, dict[str, float], float], ...]:
@@ -623,6 +626,7 @@ def tiling_constraints(
     return tuple(egalites)
 
 
+@renamed_parameters({"trame": "grid"})
 def extend_tiling(poly: Polytope, grid: Grid) -> Polytope:
     """Add the tiling equalities to the polytope (``A_eq``, ``b_eq``).
 

@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 
 # OR-Tools' SWIG bindings emit DeprecationWarnings while they import; with
 # ``python -W error::DeprecationWarning`` the interpreter then crashes inside the C
@@ -266,6 +266,7 @@ def _certificat_farkas(poly: Polytope, cuts: list[Cut] | None) -> tuple[VecteurF
     )
 
 
+@renamed_parameters({"depart": "start", "coupes": "cuts", "duaux": "duals"})
 def solve(
     poly: Polytope,
     c: VecteurF,

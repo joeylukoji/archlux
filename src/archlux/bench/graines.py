@@ -10,12 +10,13 @@ derivation non-reproducible — exactly what this module exists to prevent.
 
 from __future__ import annotations
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.seeds import derive as _derive
 
 __all__ = ["derive"]
 
 
+@renamed_parameters({"nom": "name"})
 def derive(seed: int, name: str) -> int:
     """Derive a stable sub-seed from a root seed and a name.
 

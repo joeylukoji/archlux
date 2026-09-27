@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import math
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 
 __all__ = ["wilson_interval"]
 
 
+@renamed_parameters({"succes": "successes"})
 def wilson_interval(successes: int, n: int, *, z: float = 1.96) -> tuple[float, float]:
     """Wilson confidence interval for a proportion.
 

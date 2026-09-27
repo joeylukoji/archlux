@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.types import Indicator
 
 if TYPE_CHECKING:
@@ -196,6 +196,7 @@ class WrapsSurrogate(Protocol):
         ...
 
 
+@renamed_parameters({"baies": "glazing"})
 def point_prediction(
     objective: Surrogate, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
 ) -> tuple[float, float]:
