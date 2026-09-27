@@ -4,7 +4,7 @@
 
 ## Énoncé
 
-Toute exécution produit un **manifeste** (version, graine, empreintes, `ModeleTrace`)
+Toute exécution produit un **manifeste** (version, graine, empreintes, `ModelTrace`)
 **avant** les résultats. Les **bruts** sont écrits **avant** toute agrégation.
 Le rapport est **stratifié par orientation** (rose à 8 secteurs) — jamais une moyenne
 globale seule : deux méthodes peuvent avoir la même moyenne et se croiser au sud.
@@ -59,13 +59,13 @@ strate ».
 
 Approximation par \(t\) non centrée, paramètre \(d\) de Cohen. Sert **avant**
 l'expérience à dimensionner \(n\) ; l'invoquer *après* un résultat non
-significatif (« puissance observée ») n'a pas de valeur inférentielle.
+significatif (« power observée ») n'a pas de valeur inférentielle.
 
 ## Hypothèses
 
 - `evaluate_by` est un oracle **externe** — jamais le substitut qu'on optimise,
   sans quoi on mesure l'erreur du modèle contre lui-même.
-- Graine racine obligatoire ; sous-graines via `bench.graines.deriver`.
+- Graine racine obligatoire ; sous-graines via `bench.graines.derive`.
 - Le bootstrap suppose les \(d_i\) échangeables entre plans ; il ne corrige **pas**
   une dépendance entre plans issus d'un même bâtiment. Sur un corpus réel
   (plusieurs étages d'un même immeuble), rééchantillonner par **grappe**.
@@ -76,14 +76,14 @@ significatif (« puissance observée ») n'a pas de valeur inférentielle.
 
 | Symbole | Fonction |
 |---|---|
-| manifeste | `bench.manifeste.emettre` / `ModeleTrace` |
-| orchestration | `bench.run` → `Resultat` |
+| manifeste | `bench.manifeste.emit` / `ModelTrace` |
+| orchestration | `bench.run` → `Result` |
 | comparaison | `bench.compare` |
 | rapport | `bench.rapport` |
-| \(\mathrm{IC}\) bootstrap | `bench.stats.bootstrap_apparie` |
+| \(\mathrm{IC}\) bootstrap | `bench.stats.paired_bootstrap` |
 | équivalence | `bench.stats.tost` |
 | multiplicité | `bench.stats.holm` |
-| dimensionnement | `bench.stats.puissance` |
+| dimensionnement | `bench.stats.power` |
 
 ## Cas d'utilisation
 

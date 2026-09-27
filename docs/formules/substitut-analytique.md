@@ -1,6 +1,6 @@
 # Substitut analytique
 
-**Code :** `light.analytique.SubstitutAnalytique`.
+**Code :** `light.analytique.AnalyticSurrogate`.
 
 ## Énoncé
 
@@ -43,7 +43,7 @@ différences finies centrées.
 
 ## Code
 
-`SubstitutAnalytique.evaluer`, `.gradient`, `.incertitude`.
+`AnalyticSurrogate.evaluate`, `.gradient`, `.incertitude`.
 Constantes : `FACTEUR_PROFONDEUR`, `HAUTEUR_LINTEAU`, `KAPPA_SUD`,
 `FACTEURS_SECTEUR` — `ClassVar`, jamais de magie dans le corps.
 

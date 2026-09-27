@@ -1,4 +1,4 @@
-"""Rapport stratifié par orientation — obligatoire, sans agrégat global seul."""
+"""Report stratified by orientation — mandatory, never a lone global aggregate."""
 
 from __future__ import annotations
 
@@ -8,105 +8,113 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux.bench.graines import deriver
-from archlux.bench.run import Resultat
-from archlux.bench.stats import Intervalle, bootstrap_apparie
-from archlux.erreurs import InvariantViole
-from archlux.orient.circulaire import stratifier
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.bench.graines import derive
+from archlux.bench.run import Result
+from archlux.bench.stats import Interval, paired_bootstrap
+from archlux.errors import InvariantViolation
+from archlux.orient.circulaire import stratify
 
-__all__ = ["N_REPLICATIONS", "RapportBanc", "StrateOrientation", "report"]
+__all__ = ["N_REPLICATIONS", "BenchReport", "OrientationStratum", "report"]
 
 N_REPLICATIONS = 2000
-"""Réplications bootstrap par strate.
+"""Bootstrap replications per stratum.
 
-Une borne à 2,5 % estimée sur 199 réplications est le 5ᵉ ordre statistique : son
-erreur de Monte-Carlo domine la largeur qu'on prétend publier. 2000 ramène cette
-erreur sous le bruit d'échantillonnage pour une table d'article.
+A 2.5% bound estimated over 199 replications is the 5th order statistic: its
+Monte-Carlo error dominates the width being claimed for publication. 2000 brings
+that error below the sampling noise for a paper table.
 """
 
 
 @dataclass(frozen=True, slots=True)
-class StrateOrientation:
-    """Agrégats d'une rose des vents (secteur)."""
+class OrientationStratum:
+    """Aggregates of a wind rose (sector)."""
 
-    secteur: str
+    sector: str
     n: int
-    scores_par_methode: Mapping[str, Intervalle]
+    scores_by_method: Mapping[str, Interval]
 
 
 @dataclass(frozen=True, slots=True)
-class RapportBanc:
-    """Sortie de :func:`report` : une strate par secteur, y compris les vides."""
+class BenchReport:
+    """Output of :func:`report`: one stratum per sector, including empty ones."""
 
-    strates: tuple[StrateOrientation, ...]
+    strata: tuple[OrientationStratum, ...]
 
 
 def _secteur_par_degre(degres: Iterable[float], *, n_secteurs: int) -> dict[float, str]:
-    """Associer chaque azimut distinct à son secteur, via ``orient.stratifier``.
+    """Map each distinct azimuth to its sector, via ``orient.stratify``.
 
-    ``stratifier`` rend des valeurs groupées, pas des indices : on l'interroge donc
-    azimut distinct par azimut distinct. Deux azimuts égaux tombent toujours dans le
-    même secteur, donc ``O(distincts)`` appels suffisent.
+    ``stratify`` returns grouped values, not indices, so it is queried distinct
+    azimuth by distinct azimuth. Two equal azimuths always fall in the same sector,
+    so ``O(distinct)`` calls suffice.
     """
     correspondance: dict[float, str] = {}
     for deg in degres:
-        groupes = stratifier([deg], n_secteurs=n_secteurs)
-        correspondance[deg] = next(nom for nom, valeurs in groupes.items() if valeurs.size)
+        groupes = stratify([deg], n_secteurs=n_secteurs)
+        correspondance[deg] = next(name for name, valeurs in groupes.items() if valeurs.size)
     return correspondance
 
 
 def report(
-    resultat: Resultat,
+    result: Result,
     *,
     seed: int,
     n_secteurs: int = 8,
-) -> RapportBanc:
-    """Agréger **après** les bruts, stratifié par orientation.
+) -> BenchReport:
+    """Aggregate **after** the raw rows, stratified by orientation.
 
-    La stratification est imposée (`MILESTONE-6.md` §5) : pas de résumé global unique.
+    Stratification is mandatory (`MILESTONE-6.md` §5): no single global summary.
 
-    **Limite connue** : les intervalles sont marginaux, un par couple
-    (secteur × méthode). Lire ``n_secteurs × n_méthodes`` intervalles à 95 % comme
-    autant de conclusions simultanées surestime la significativité ; corriger la
-    famille avec :func:`archlux.bench.stats.holm` avant toute publication.
+    **Known limitation**: the intervals are marginal, one per (sector, method) pair.
+    Reading ``n_secteurs × n_methods`` 95% intervals as that many simultaneous
+    conclusions overstates significance; correct the family with
+    :func:`archlux.bench.stats.holm` before any publication.
     """
     if n_secteurs < 1:
-        raise InvariantViole(("n_secteurs doit être ≥ 1",))
+        raise InvariantViolation(("n_secteurs must be >= 1",))
 
-    # Le binning vient de ``stratifier`` seul : le réimplémenter ici laissait deux
-    # conventions de secteur diverger en silence à la moindre retouche d'``orient``.
-    noms = tuple(stratifier([0.0], n_secteurs=n_secteurs).keys())
-    secteur_de = _secteur_par_degre(
-        {ligne.orientation_deg for ligne in resultat.lignes}, n_secteurs=n_secteurs
+    # The binning comes from ``stratify`` alone: reimplementing it here would let two
+    # sector conventions silently diverge at the slightest tweak to ``orient``.
+    noms = tuple(stratify([0.0], n_secteurs=n_secteurs).keys())
+    sector_of = _secteur_par_degre(
+        {ligne.orientation_deg for ligne in result.rows}, n_secteurs=n_secteurs
     )
 
-    par_secteur: dict[str, dict[str, list[float]]] = {nom: defaultdict(list) for nom in noms}
-    for ligne in resultat.lignes:
-        par_secteur[secteur_de[ligne.orientation_deg]][ligne.methode].append(ligne.score)
+    par_secteur: dict[str, dict[str, list[float]]] = {name: defaultdict(list) for name in noms}
+    for ligne in result.rows:
+        par_secteur[sector_of[ligne.orientation_deg]][ligne.method].append(ligne.score)
 
-    strates: list[StrateOrientation] = []
-    for nom in noms:
-        scores: dict[str, Intervalle] = {}
-        for methode, valeurs in sorted(par_secteur[nom].items()):
+    strata: list[OrientationStratum] = []
+    for name in noms:
+        scores: dict[str, Interval] = {}
+        for method, valeurs in sorted(par_secteur[name].items()):
             if len(valeurs) >= 2:
                 zeros = [0.0] * len(valeurs)
-                ic = bootstrap_apparie(
+                ic = paired_bootstrap(
                     valeurs,
                     zeros,
-                    # Sous-graine nommée plutôt que ``seed + i`` : deux strates
-                    # voisines ne se retrouvent pas avec des graines adjacentes.
-                    seed=deriver(seed, f"strate:{nom}:{methode}"),
+                    # Named sub-seed rather than ``seed + i``: two neighboring strata
+                    # do not end up with adjacent seeds.
+                    seed=derive(seed, f"strate:{name}:{method}"),
                     n_replications=N_REPLICATIONS,
                     alpha=0.05,
                 )
-                scores[methode] = Intervalle(
-                    valeur=float(np.mean(valeurs)), bas=ic.bas, haut=ic.haut
-                )
+                scores[method] = Interval(value=float(np.mean(valeurs)), low=ic.low, high=ic.high)
             elif len(valeurs) == 1:
-                # Intervalle **dégénéré** : une observation ne borne rien. Il est
-                # rendu de largeur nulle et doit être lu comme « non estimable ».
+                # **Degenerate** interval: a single observation bounds nothing. It is
+                # returned with zero width and must be read as "not estimable".
                 v = float(valeurs[0])
-                scores[methode] = Intervalle(valeur=v, bas=v, haut=v)
-        n_plans = max((len(v) for v in par_secteur[nom].values()), default=0)
-        strates.append(StrateOrientation(secteur=nom, n=n_plans, scores_par_methode=scores))
-    return RapportBanc(strates=tuple(strates))
+                scores[method] = Interval(value=v, low=v, high=v)
+        n_plans = max((len(v) for v in par_secteur[name].values()), default=0)
+        strata.append(OrientationStratum(sector=name, n=n_plans, scores_by_method=scores))
+    return BenchReport(strata=tuple(strata))
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "RapportBanc": Alias(BenchReport, "archlux.bench.rapport.BenchReport"),
+        "StrateOrientation": Alias(OrientationStratum, "archlux.bench.rapport.OrientationStratum"),
+    },
+)

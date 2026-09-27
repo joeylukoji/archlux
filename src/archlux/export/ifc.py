@@ -1,4 +1,4 @@
-"""Export IFC4 : SPF minimal (CI) ; IfcOpenShell si extra ``bim``."""
+"""IFC4 export: minimal SPF (CI); IfcOpenShell if extra ``bim``."""
 
 from __future__ import annotations
 
@@ -7,92 +7,93 @@ import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 
+from archlux._deprecation import Alias, lazy_aliases
 from archlux._version import __version__
-from archlux.erreurs import ArchluxError
-from archlux.export.pathologie import diagnostiquer
+from archlux.errors import ArchluxError
+from archlux.export.pathologie import diagnose
 from archlux.types import Plan
 
-__all__ = ["RapportExport", "to_ifc"]
+__all__ = ["ExportReport", "to_ifc"]
 
 
 @dataclass(frozen=True, slots=True)
-class RapportExport:
-    """Résultat d'un export IFC."""
+class ExportReport:
+    """Result of an IFC export."""
 
-    valide: bool
-    chemin: Path
+    valid: bool
+    path: Path
     pathologies: tuple[str, ...]
-    moteur: str
-    """Écrivain **réellement** employé : ``"spf-minimal"`` ou ``"refuse"``.
+    engine: str
+    """Writer **actually** used: ``"spf-minimal"`` or ``"refuse"``.
 
-    Ne nomme jamais une bibliothèque qui n'a pas écrit le fichier : ce champ finit
-    dans des traces de reproductibilité, où une provenance fausse est pire qu'absente.
+    Never name a library that did not write the file: this field ends up in
+    reproducibility traces, where a false provenance is worse than none.
     """
 
-    n_espaces: int
-    ifcopenshell_disponible: bool = False
-    """``ifcopenshell`` est installé (extra ``bim``). **Disponible ≠ utilisé** : le
-    SPF minimal reste l'unique écrivain tant qu'aucun chemin ne l'appelle."""
+    n_spaces: int
+    ifcopenshell_available: bool = False
+    """``ifcopenshell`` is installed (extra ``bim``). **Available != used**: the
+    minimal SPF remains the sole writer as long as no code path calls it."""
 
 
-def to_ifc(plan: Plan, chemin: Path | str, *, validate: bool = True) -> RapportExport:
-    """Exporter un plan en IFC4 (espaces = pièces ; murs ; baies annotées).
+def to_ifc(plan: Plan, path: Path | str, *, validate: bool = True) -> ExportReport:
+    """Export a plan to IFC4 (spaces = rooms; walls; annotated openings).
 
     Parameters
     ----------
     plan : Plan
-        Plan à exporter. Le certificat éventuel est annexé en ``Pset_Archlux``.
-    chemin : Path or str
-        Fichier ``.ifc`` (écrasé).
+        Plan to export. Any certificate is appended as ``Pset_Archlux``.
+    path : Path or str
+        ``.ifc`` file (overwritten).
     validate : bool, optional
-        Si vrai (défaut), un plan pathologique n'est **pas** écrit.
+        If true (default), a pathological plan is **not** written.
 
     Returns
     -------
-    RapportExport
-        ``valide`` suit le diagnostic de pathologie. ``moteur`` nomme l'écrivain
-        réellement employé — toujours ``"spf-minimal"`` aujourd'hui. La présence de
-        ``ifcopenshell`` est rapportée à part (``ifcopenshell_disponible``) : la
-        version précédente concaténait ``"+ifcopenshell"`` au seul vu de
-        ``find_spec``, alors qu'aucune ligne du fichier n'en venait.
+    ExportReport
+        ``valid`` follows the pathology diagnostic. ``engine`` names the writer
+        actually used — always ``"spf-minimal"`` today. The presence of
+        ``ifcopenshell`` is reported separately (``ifcopenshell_available``): the
+        previous version appended ``"+ifcopenshell"`` on the sole basis of
+        ``find_spec``, even though no line of the file came from it.
     """
-    chemin = Path(chemin)
-    diag = diagnostiquer(plan)
+    path = Path(path)
+    diag = diagnose(plan)
     if validate and not diag.exportable:
-        return RapportExport(
-            valide=False,
-            chemin=chemin,
+        return ExportReport(
+            valid=False,
+            path=path,
             pathologies=diag.pathologies,
-            moteur="refuse",
-            n_espaces=0,
+            engine="refuse",
+            n_spaces=0,
         )
 
-    moteur = _ecrire_spf_minimal(plan, chemin)
+    engine = _ecrire_spf_minimal(plan, path)
 
-    return RapportExport(
-        valide=diag.exportable,
-        chemin=chemin,
+    return ExportReport(
+        valid=diag.exportable,
+        path=path,
         pathologies=diag.pathologies,
-        moteur=moteur,
-        n_espaces=len(plan.pieces),
-        ifcopenshell_disponible=importlib.util.find_spec("ifcopenshell") is not None,
+        engine=engine,
+        n_spaces=len(plan.rooms),
+        ifcopenshell_available=importlib.util.find_spec("ifcopenshell") is not None,
     )
 
 
 def _annexe_certificat(plan: Plan) -> str:
-    """Annexe texte ; l'échec de rendu ne doit pas bloquer l'export feuille."""
-    if plan.certificat is None:
+    """Text annex; a rendering failure must not block the leaf export."""
+    if plan.certificate is None:
         return ""
     try:
-        texte = plan.certificat.rapport()
+        texte = plan.certificate.report()
     except (ImportError, AttributeError, ArchluxError):
-        # ``rapport()`` importe ``certify`` en local : hors graphe d'``export``.
-        texte = "certificat present"
+        # ``report()`` imports ``certify`` locally: outside the ``export`` graph.
+        texte = "certificate present"
     return _safe(texte.replace("\n", " | "), lim=1800)
 
 
 def _safe(texte: str, *, lim: int = 120) -> str:
-    """Neutraliser apostrophes et antislashs, et tronquer, pour une chaine STEP."""
+    """Neutralize apostrophes and backslashes, and truncate, for a STEP string."""
     return texte.replace("'", " ").replace("\\", "/")[:lim]
 
 
@@ -101,10 +102,10 @@ _IFC_BASE64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
 
 
 def _guid(etiquette: str) -> str:
-    """Identifiant IFC déterministe dérivé d'une étiquette stable.
+    """Deterministic IFC identifier derived from a stable label.
 
-    Le paramètre n'est **pas** une graine au sens d'`ARCHITECTURE.md` §7 : rien
-    n'est échantillonné ici.
+    The parameter is **not** a seed in the sense of `ARCHITECTURE.md` §7: nothing
+    is sampled here.
 
     The 128 first bits of SHA-256 of the label, written in IFC base 64: 22 characters
     of ``0-9A-Za-z_$``, the first one in ``0-3`` (22 x 6 = 132 bits, the top 4 are
@@ -120,17 +121,26 @@ def _guid(etiquette: str) -> str:
 
 
 def _version_paquet() -> str:
-    """Version du code source (évite une métadonnée d'install périmée)."""
+    """Version of the source code (avoids a stale install metadata)."""
     return __version__
 
 
-def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
-    """IFC4 SPF déterministe : Project / Site / Building / Storey / Space / Wall."""
+def _ecrire_spf_minimal(plan: Plan, path: Path) -> str:
+    """Deterministic IFC4 SPF: Project / Site / Building / Storey / Space / Wall."""
     # GlobalIds must be unique across files, not only within one: salted by the plan
     # geometry, two different plans never share one, and one plan always gets the same.
-    salt = hashlib.sha256(
-        repr((plan.pieces, plan.murs, plan.ouvertures, plan.contour)).encode()
-    ).hexdigest()[:16]
+    # Values only, never ``repr`` of the dataclasses: a class or field rename must not
+    # change the GlobalIds of the same plan (BIM tools track objects by them).
+    geometry = (
+        [(r.id, r.type, r.x, r.y, r.w, r.h) for r in plan.rooms],
+        [(w.id, w.a, w.b, w.load_bearing, w.thickness) for w in plan.walls],
+        [
+            (o.id, o.wall_id, o.s, o.relative_width, o.sill_height, o.head_height)
+            for o in plan.openings
+        ],
+        list(plan.outline),
+    )
+    salt = hashlib.sha256(repr(geometry).encode()).hexdigest()[:16]
 
     def guid(label: str) -> str:
         """``IfcGloballyUniqueId`` of ``label`` in this plan."""
@@ -140,18 +150,18 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     nxt = 1
 
     def alloc() -> int:
-        """Reserver le prochain numero d'entite STEP."""
+        """Reserve the next STEP entity number."""
         nonlocal nxt
         cur = nxt
         nxt += 1
         return cur
 
     def emit(num: int, corps: str) -> None:
-        """Ecrire une ligne d'entite STEP dans le tampon."""
+        """Write a STEP entity line to the buffer."""
         ents.append(f"#{num}={corps};")
 
     def point(x: float, y: float, z: float = 0.0) -> int:
-        """Emettre un ``IFCCARTESIANPOINT`` et rendre son numero."""
+        """Emit an ``IFCCARTESIANPOINT`` and return its number."""
         num = alloc()
         emit(num, f"IFCCARTESIANPOINT(({x:.6f},{y:.6f},{z:.6f}))")
         return num
@@ -163,7 +173,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         return num
 
     def axis2(x: float, y: float, z: float = 0.0) -> int:
-        """Emettre un ``IFCAXIS2PLACEMENT3D`` a la position donnee."""
+        """Emit an ``IFCAXIS2PLACEMENT3D`` at the given position."""
         p = point(x, y, z)
         num = alloc()
         emit(num, f"IFCAXIS2PLACEMENT3D(#{p},$,$)")
@@ -173,8 +183,8 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
     emit(id_pers, "IFCPERSON($,$,'archlux',$,$,$,$,$)")
     id_org = alloc()
     emit(id_org, "IFCORGANIZATION($,'archlux',$,$,$)")
-    # ``ApplicationDeveloper`` est obligatoire au schéma IFC4 : le laisser à ``$``
-    # produisait un fichier qu'un validateur strict rejette.
+    # ``ApplicationDeveloper`` is mandatory in the IFC4 schema: leaving it as ``$``
+    # produced a file that a strict validator rejects.
     id_app = alloc()
     emit(id_app, f"IFCAPPLICATION(#{id_org},'{_version_paquet()}','archlux','archlux')")
     id_po = alloc()
@@ -218,13 +228,13 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         f"IFCBUILDING('{guid('building')}',#{id_owner},'batiment',$,$,#{id_bat_pl},$,$,.ELEMENT.,$,$,$)",
     )
 
-    id_et_ax = axis2(0.0, 0.0, 0.0)
-    id_et_pl = alloc()
-    emit(id_et_pl, f"IFCLOCALPLACEMENT(#{id_bat_pl},#{id_et_ax})")
+    id_floor_ax = axis2(0.0, 0.0, 0.0)
+    id_floor_pl = alloc()
+    emit(id_floor_pl, f"IFCLOCALPLACEMENT(#{id_bat_pl},#{id_floor_ax})")
     id_etage = alloc()
     emit(
         id_etage,
-        f"IFCBUILDINGSTOREY('{guid('storey')}',#{id_owner},'RDC',$,$,#{id_et_pl},$,$,.ELEMENT.,0.0)",
+        f"IFCBUILDINGSTOREY('{guid('storey')}',#{id_owner},'RDC',$,$,#{id_floor_pl},$,$,.ELEMENT.,0.0)",
     )
 
     for rel_id, parent, enfants in (
@@ -239,7 +249,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         )
 
     espaces: list[int] = []
-    for piece in plan.pieces:
+    for piece in plan.rooms:
         coins = (
             (piece.x, piece.y),
             (piece.x + piece.w, piece.y),
@@ -252,7 +262,7 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         emit(id_poly, f"IFCPOLYLINE(({','.join(f'#{p}' for p in pts)}))")
         id_ax = axis2(0.0, 0.0, 0.0)
         id_pl = alloc()
-        emit(id_pl, f"IFCLOCALPLACEMENT(#{id_et_pl},#{id_ax})")
+        emit(id_pl, f"IFCLOCALPLACEMENT(#{id_floor_pl},#{id_ax})")
         id_sr = alloc()
         emit(id_sr, f"IFCSHAPEREPRESENTATION(#{id_ctx},'FootPrint','Curve2D',(#{id_poly}))")
         id_psd = alloc()
@@ -266,10 +276,10 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         espaces.append(id_space)
 
     if espaces:
-        # ``IfcSpace`` est un ``IfcSpatialStructureElement`` : il s'**agrège** à
-        # l'étage. ``IfcRelContainedInSpatialStructure`` interdit explicitement les
-        # éléments de structure spatiale dans ``RelatedElements`` (IFC4), et c'est ce
-        # qu'écrivait la version précédente — un fichier rejeté par tout validateur.
+        # ``IfcSpace`` is an ``IfcSpatialStructureElement``: it **aggregates** to the
+        # storey. ``IfcRelContainedInSpatialStructure`` explicitly forbids spatial
+        # structure elements in ``RelatedElements`` (IFC4), and that is what the
+        # previous version wrote — a file rejected by every validator.
         id_agg = alloc()
         emit(
             id_agg,
@@ -279,12 +289,12 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
 
     murs_ids: list[int] = []
     wall_entity: dict[str, int] = {}
-    for mur in plan.murs:
+    for mur in plan.walls:
         # Placed at the storey origin: the axis already holds absolute coordinates. The
         # previous placement at ``mur.a`` shifted every wall by ``a`` (drawn from 2a).
         id_ax = axis2(0.0, 0.0, 0.0)
         id_pl = alloc()
-        emit(id_pl, f"IFCLOCALPLACEMENT(#{id_et_pl},#{id_ax})")
+        emit(id_pl, f"IFCLOCALPLACEMENT(#{id_floor_pl},#{id_ax})")
         id_p1 = point2(mur.a[0], mur.a[1])
         id_p2 = point2(mur.b[0], mur.b[1])
         id_line = alloc()
@@ -302,8 +312,8 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
         wall_entity[mur.id] = id_wall
 
     if murs_ids:
-        # Les murs, eux, sont bien des éléments **contenus** dans l'étage. Sans cette
-        # relation ils restaient orphelins de toute structure spatiale.
+        # Walls, on the other hand, are indeed elements **contained** in the storey.
+        # Without this relation they remained orphaned from any spatial structure.
         id_cont = alloc()
         emit(
             id_cont,
@@ -311,19 +321,19 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
             f"({','.join(f'#{e}' for e in murs_ids)}),#{id_etage})",
         )
 
-    for ouv in plan.ouvertures:
+    for ouv in plan.openings:
         id_ouv = alloc()
         emit(
             id_ouv,
             f"IFCOPENINGELEMENT('{guid(f'opening/{ouv.id}')}',#{id_owner},'{_safe(ouv.id)}',"
-            f"$,'mur={_safe(ouv.mur_id)} s={ouv.s:.4f}',$,$,$,$)",
+            f"$,'mur={_safe(ouv.wall_id)} s={ouv.s:.4f}',$,$,$,$)",
         )
-        if ouv.mur_id in wall_entity:  # else refused by diagnostiquer when validating
+        if ouv.wall_id in wall_entity:  # else refused by diagnostiquer when validating
             id_void = alloc()
             emit(
                 id_void,
                 f"IFCRELVOIDSELEMENT('{guid(f'void/{ouv.id}')}',#{id_owner},$,$,"
-                f"#{wall_entity[ouv.mur_id]},#{id_ouv})",
+                f"#{wall_entity[ouv.wall_id]},#{id_ouv})",
             )
 
     annexe = _annexe_certificat(plan)
@@ -358,5 +368,13 @@ def _ecrire_spf_minimal(plan: Plan, chemin: Path) -> str:
             "END-ISO-10303-21;",
         ]
     )
-    chemin.write_text(texte + "\n", encoding="utf-8")
+    path.write_text(texte + "\n", encoding="utf-8")
     return "spf-minimal"
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "RapportExport": Alias(ExportReport, "archlux.export.ifc.ExportReport"),
+    },
+)

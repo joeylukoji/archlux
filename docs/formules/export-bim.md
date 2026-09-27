@@ -35,16 +35,16 @@ Les bornes restent dans \([0,1]\) même pour de petits \(n\) ou \(\hat p\) extr�
 | Symbole | Fonction |
 |---|---|
 | diagnostic | `diagnostiquer` |
-| IFC | `to_ifc` → `RapportExport` |
+| IFC | `to_ifc` → `ExportReport` |
 | DXF | `to_dxf` |
-| Wilson | `intervalle_wilson` |
+| Wilson | `wilson_interval` |
 | survie | `survival_rate` |
 
 ## Cas d'utilisation
 
 | Faire | Ne pas faire |
 |---|---|
-| Publier \((\hat p, [lo, hi])\) Wilson | Intervalle normal (bornes négatives) |
+| Publier \((\hat p, [lo, hi])\) Wilson | Interval normal (bornes négatives) |
 | Refuser l'écriture si `validate=True` | Exporter un plan pathologique « en silence » |
 | Annexer le rapport de certificat | Mélanger garantie exacte et performance dans l'IFC |
 

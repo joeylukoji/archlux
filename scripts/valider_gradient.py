@@ -19,14 +19,14 @@ for _ in range(36):
     o = Orientation(deg=float(rng.uniform(0.0, 360.0)))
     xs.append(x)
     oris.append(o)
-    ys.append(SIM.evaluer(x, o))
+    ys.append(SIM.evaluate(x, o))
 dense = SubstitutDense()
 dense.ajuster(tuple(xs), np.array(ys), tuple(oris), seed=17, epoques=40, lr=0.12)
 sud = Orientation(deg=180.0)
 pts = np.stack([np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (5.0, 6.0, 7.0, 7.5)])
 rapport = valider_gradient(dense, pts, sud, seed=17, reference=SIM)
 assert rapport.accord_de_signe > 0.80, "NE PAS passer au jalon 5"
-Path("resultats/j4_gradient.md").write_text(
+Path("results/j4_gradient.md").write_text(
     f"# Point de contrôle gradient\n\naccord_de_signe = {rapport.accord_de_signe:.3f}\n"
     f"cosinus_moyen = {rapport.cosinus_moyen:.3f}\nconforme = {rapport.conforme}\n",
     encoding="utf-8",

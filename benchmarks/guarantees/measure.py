@@ -16,11 +16,11 @@ Every output is checked by the independent checker of ``tests/checkers.py``, nev
 - ``false_certificate``: a plan came out, its certificate says *valid*, and the
   independent checker finds a violation. The worst outcome: a proof that lies;
 - ``invalid_but_flagged``: a plan came out with violations, and its certificate says so;
-- ``refused_infeasible``: ``legalize`` raised ``Infaisable``, an honest refusal;
+- ``refused_infeasible``: ``legalize`` raised ``Infeasible``, an honest refusal;
 - ``refused_unsupported``: ``legalize`` raised ``UnsupportedInput`` (for instance a
   tiling grid that cannot be recovered): an input outside what the library handles;
 - ``refused_invariant``: ``legalize`` raised another ``ArchluxError`` (typically
-  ``InvariantViole``: the proof caught a defective solver output). Safe, but a defect;
+  ``InvariantViolation``: the proof caught a defective solver output). Safe, but a defect;
 - ``crash``: any other exception.
 
 Input preparation (corruption, noise) happens before and outside the measured call, so
@@ -46,12 +46,12 @@ from benchmarks.guarantees.scenarios import Scenario, WallKind, generate, pertur
 from tests import checkers
 
 import archlux
-from archlux.data.corruption import corrompre
-from archlux.erreurs import ArchluxError, Infaisable, UnsupportedInput
-from archlux.export.svg import comparer
-from archlux.light.analytique import SubstitutAnalytique
+from archlux.data.corruption import corrupt
+from archlux.errors import ArchluxError, Infeasible, UnsupportedInput
+from archlux.export.svg import compare
+from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.objectif import Daylight
-from archlux.types import Contexte, Plan
+from archlux.types import Context, Plan
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results"
@@ -84,7 +84,7 @@ class Mode:
     description: str
     family: WallKind
     prepare: Callable[[Scenario], Plan]
-    run: Callable[[Plan, Contexte], Plan]
+    run: Callable[[Plan, Context], Plan]
     budget: float | None = None
     """Displacement budget the output must respect, checked independently."""
 
@@ -106,7 +106,7 @@ def _as_is(s: Scenario) -> Plan:
 
 def _one_fault(s: Scenario) -> Plan:
     """AUDIT.md J7 regime: one room off by up to 25 cm, the grid still exists."""
-    corrupted, _ = corrompre(s.plan, seed=zlib.crc32(s.name.encode()), amplitude=0.25)
+    corrupted, _ = corrupt(s.plan, seed=zlib.crc32(s.name.encode()), amplitude=0.25)
     return corrupted
 
 
@@ -116,16 +116,16 @@ def _noisy(s: Scenario) -> Plan:
     return perturb(s.plan, seed=zlib.crc32(s.name.encode()))
 
 
-def _classic(plan: Plan, ctx: Contexte) -> Plan:
+def _classic(plan: Plan, ctx: Context) -> Plan:
     return archlux.legalize(plan, ctx)
 
 
-def _classic_tiling(plan: Plan, ctx: Contexte) -> Plan:
+def _classic_tiling(plan: Plan, ctx: Context) -> Plan:
     return archlux.legalize(plan, ctx, pavage=True)
 
 
-def _performance(plan: Plan, ctx: Contexte) -> Plan:
-    return archlux.legalize(plan, ctx, objective=SubstitutAnalytique())
+def _performance(plan: Plan, ctx: Context) -> Plan:
+    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate())
 
 
 BUDGET_M = 0.3
@@ -133,14 +133,12 @@ BUDGET_M = 0.3
 what Frank-Wolfe would like to move, so that the budget actually binds."""
 
 
-def _performance_tiling_budget(plan: Plan, ctx: Contexte) -> Plan:
-    return archlux.legalize(
-        plan, ctx, objective=SubstitutAnalytique(), pavage=True, budget=BUDGET_M
-    )
+def _performance_tiling_budget(plan: Plan, ctx: Context) -> Plan:
+    return archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), pavage=True, budget=BUDGET_M)
 
 
-def _daylight(plan: Plan, ctx: Contexte) -> Plan:
-    objective = Daylight(SubstitutAnalytique(), q_chapeau=1.0)
+def _daylight(plan: Plan, ctx: Context) -> Plan:
+    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
     return archlux.legalize(plan, ctx, objective=objective)
 
 
@@ -212,7 +210,7 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
     start = time.perf_counter()
     try:
         result = mode.run(given, scenario.context)
-    except Infaisable as error:
+    except Infeasible as error:
         return _refusal(scenario, start, "refused_infeasible", error), None
     except UnsupportedInput as error:
         return _refusal(scenario, start, "refused_unsupported", error), None
@@ -225,7 +223,7 @@ def _run_case(scenario: Scenario, mode: Mode) -> tuple[Case, tuple[Plan, Plan] |
     found = checkers.violations(result, scenario.context)
     if mode.budget is not None:
         found += checkers.budget_violations(result, given, mode.budget)
-    certified = bool(result.certificat and result.certificat.geometrie.valide)
+    certified = bool(result.certificate and result.certificate.geometry.valid)
     outcome: Outcome = (
         "ok" if not found else "false_certificate" if certified else "invalid_but_flagged"
     )
@@ -254,7 +252,7 @@ def _gallery(
     label: str,
     key: str,
     measured: list[tuple[Case, tuple[Plan, Plan] | None]],
-    context_of: dict[str, Contexte],
+    context_of: dict[str, Context],
 ) -> list[str]:
     folder = RESULTS / label
     written: list[str] = []
@@ -264,11 +262,11 @@ def _gallery(
         folder.mkdir(parents=True, exist_ok=True)
         given, result = plans
         name = f"{key}-{case.scenario}.svg"
-        svg = comparer(
+        svg = compare(
             given,
             result,
-            contour=context_of[case.scenario].contour,
-            walls=context_of[case.scenario].structure.murs_porteurs,
+            outline=context_of[case.scenario].outline,
+            walls=context_of[case.scenario].structure.load_bearing_walls,
             titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
         _write(folder / name, svg)

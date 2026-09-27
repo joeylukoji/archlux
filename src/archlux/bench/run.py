@@ -1,4 +1,4 @@
-"""Orchestration du banc : manifeste → bruts → résultat (sans agrégation)."""
+"""Bench orchestration: manifest -> raw rows -> result (no aggregation)."""
 
 from __future__ import annotations
 
@@ -8,113 +8,121 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from archlux.bench.manifeste import emettre
-from archlux.erreurs import InvariantViole
-from archlux.io.json_io import manifeste_vers_dict
-from archlux.light.protocole import Substitut
-from archlux.types import Manifeste, ModeleTrace, Orientation, Plan
+from archlux._deprecation import Alias, lazy_aliases
+from archlux.bench.manifeste import emit
+from archlux.errors import InvariantViolation
+from archlux.io.json_io import manifest_to_dict
+from archlux.light.protocole import Surrogate
+from archlux.types import Manifest, ModelTrace, Orientation, Plan
 
-__all__ = ["LigneBrute", "Manifest", "Resultat", "run"]
-
-Manifest = Manifeste  # alias wording `MILESTONE-6.md`
+__all__ = ["Manifest", "RawRow", "Result", "run"]
 
 
 @dataclass(frozen=True, slots=True)
-class LigneBrute:
-    """Une mesure avant toute agrégation."""
+class RawRow:
+    """A measurement before any aggregation."""
 
     plan_id: str
-    methode: str
+    method: str
     orientation_deg: float
     score: float
 
 
 @dataclass(frozen=True, slots=True)
-class Resultat:
-    """Sortie de :func:`run` : manifeste + chemins + lignes brutes."""
+class Result:
+    """Output of :func:`run`: manifest + paths + raw rows."""
 
-    manifest: Manifeste
-    chemin_bruts: Path
-    chemin_manifeste: Path
-    lignes: tuple[LigneBrute, ...]
+    manifest: Manifest
+    raw_path: Path
+    manifest_path: Path
+    rows: tuple[RawRow, ...]
 
 
 def run(
     *,
     plans: Sequence[Plan],
     orientations: Sequence[Orientation],
-    methods: Sequence[Substitut],
-    evaluate_by: Callable[[Plan, Substitut], float],
+    methods: Sequence[Surrogate],
+    evaluate_by: Callable[[Plan, Surrogate], float],
     seed: int,
-    empreinte_donnees: str,
-    decoupage: str,
-    modele: ModeleTrace,
-    repertoire: Path | str,
-    parametres: Mapping[str, str] | None = None,
-) -> Resultat:
-    """Exécuter le banc : écrire le manifeste, puis les bruts, puis retourner.
+    data_fingerprint: str,
+    split: str,
+    model: ModelTrace,
+    directory: Path | str,
+    parameters: Mapping[str, str] | None = None,
+) -> Result:
+    """Run the bench: write the manifest, then the raw rows, then return.
 
-    L'ordre est contraignant (`MILESTONE-6.md` §5) : aucun agrégat avant les bruts.
+    The order is binding (`MILESTONE-6.md` §5): no aggregate before the raw rows.
     """
     if len(plans) != len(orientations):
-        raise InvariantViole(("plans et orientations doivent avoir la même longueur",))
+        raise InvariantViolation(("plans and orientations must have the same length",))
     if not methods:
-        raise InvariantViole(("au moins une méthode est requise",))
+        raise InvariantViolation(("at least one method is required",))
 
-    dossier = Path(repertoire)
+    dossier = Path(directory)
     dossier.mkdir(parents=True, exist_ok=True)
 
-    manifeste = emettre(
+    manifest = emit(
         seed=seed,
-        empreinte_donnees=empreinte_donnees,
-        decoupage=decoupage,
-        parametres=dict(parametres) if parametres else None,
-        modele=modele,
+        data_fingerprint=data_fingerprint,
+        split=split,
+        parameters=dict(parameters) if parameters else None,
+        model=model,
     )
-    chemin_manifeste = dossier / "manifeste.json"
-    _ecrire_manifeste(chemin_manifeste, manifeste)
+    manifest_path = dossier / "manifest.json"
+    _ecrire_manifeste(manifest_path, manifest)
 
-    lignes: list[LigneBrute] = []
+    rows: list[RawRow] = []
     for plan, orientation in zip(plans, orientations, strict=True):
-        # ``ids_pieces`` est trié : l'identifiant de banc ne dépend pas de l'ordre
-        # d'insertion du tuple ``pieces``.
-        plan_id = "-".join(plan.ids_pieces) if plan.ids_pieces else "vide"
-        for methode in methods:
-            nom = type(methode).__name__
-            score = float(evaluate_by(plan, methode))
-            lignes.append(
-                LigneBrute(
+        # ``room_ids`` is sorted: the bench identifier does not depend on the
+        # insertion order of the ``rooms`` tuple.
+        plan_id = "-".join(plan.room_ids) if plan.room_ids else "vide"
+        for method in methods:
+            name = type(method).__name__
+            score = float(evaluate_by(plan, method))
+            rows.append(
+                RawRow(
                     plan_id=plan_id,
-                    methode=nom,
+                    method=name,
                     orientation_deg=float(orientation.deg),
                     score=score,
                 )
             )
 
-    chemin_bruts = dossier / "resultats_bruts.csv"
-    _ecrire_bruts(chemin_bruts, lignes)
+    raw_path = dossier / "raw_results.csv"
+    _ecrire_bruts(raw_path, rows)
 
-    return Resultat(
-        manifest=manifeste,
-        chemin_bruts=chemin_bruts,
-        chemin_manifeste=chemin_manifeste,
-        lignes=tuple(lignes),
+    return Result(
+        manifest=manifest,
+        raw_path=raw_path,
+        manifest_path=manifest_path,
+        rows=tuple(rows),
     )
 
 
-def _ecrire_manifeste(chemin: Path, manifeste: Manifeste) -> None:
-    # Même forme que le schéma JSON des certificats (`io.json_io`) — une seule vérité.
-    """Ecrire le manifeste en JSON, cles triees, avant tout resultat."""
-    payload = manifeste_vers_dict(manifeste)
-    chemin.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+def _ecrire_manifeste(path: Path, manifest: Manifest) -> None:
+    # Same shape as the certificates' JSON schema (`io.json_io`) — a single truth.
+    """Write the manifest as JSON, sorted keys, before any result."""
+    payload = manifest_to_dict(manifest)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _ecrire_bruts(chemin: Path, lignes: Sequence[LigneBrute]) -> None:
-    """Ecrire les mesures brutes en CSV, avant toute agregation."""
-    with chemin.open("w", encoding="utf-8", newline="") as f:
+def _ecrire_bruts(path: Path, rows: Sequence[RawRow]) -> None:
+    """Write the raw measurements as CSV, before any aggregation."""
+    with path.open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(["plan_id", "methode", "orientation_deg", "score"])
-        for ligne in lignes:
+        for ligne in rows:
             w.writerow(
-                [ligne.plan_id, ligne.methode, f"{ligne.orientation_deg:.6f}", f"{ligne.score:.8f}"]
+                [ligne.plan_id, ligne.method, f"{ligne.orientation_deg:.6f}", f"{ligne.score:.8f}"]
             )
+
+
+__getattr__ = lazy_aliases(
+    __name__,
+    {
+        "LigneBrute": Alias(RawRow, "archlux.bench.run.RawRow"),
+        "Resultat": Alias(Result, "archlux.bench.run.Result"),
+    },
+)
