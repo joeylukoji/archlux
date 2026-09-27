@@ -68,7 +68,7 @@ def test_tiling_conflicts_are_named_and_verified(index: int) -> None:
     mode = MODES["classic_noisy"]
     scenario = generate(17, index)
     try:
-        archlux.legalize(mode.prepare(scenario), scenario.context, pavage=True)
+        archlux.legalize(mode.prepare(scenario), scenario.context, tiling=True)
     except Infeasible as refusal:
         assert refusal.origins, "an infeasibility must name its constraints"
         assert refusal.verified is True

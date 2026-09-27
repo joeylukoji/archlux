@@ -87,8 +87,8 @@ def test_bad_budget_is_refused(budget: float) -> None:
 
 def test_bad_repair_budget_is_refused() -> None:
     with pytest.raises(InvalidInput) as raised:
-        legalize(make_plan(), make_context(), pavage=True, budget_reparation=-1)
-    assert raised.value.field == "budget_reparation"
+        legalize(make_plan(), make_context(), tiling=True, repair_budget=-1)
+    assert raised.value.field == "repair_budget"
 
 
 @pytest.mark.parametrize("degrees", [math.nan, math.inf])
@@ -137,7 +137,7 @@ def test_gap_without_tiling_says_to_use_tiling() -> None:
     """3.4: the refusal names the cause and the fix, and is an input limit."""
     from archlux import GapNeedsTiling, UnsupportedInput
 
-    with pytest.raises(GapNeedsTiling, match=r"pavage=True") as raised:
+    with pytest.raises(GapNeedsTiling, match=r"tiling=True") as raised:
         legalize(gapped_plan(), make_context())
     assert isinstance(raised.value, UnsupportedInput)
     assert raised.value.violations
@@ -145,7 +145,7 @@ def test_gap_without_tiling_says_to_use_tiling() -> None:
 
 
 def test_gap_is_repaired_with_tiling() -> None:
-    fixed = legalize(gapped_plan(), make_context(), pavage=True)
+    fixed = legalize(gapped_plan(), make_context(), tiling=True)
     assert fixed.certificate is not None
     assert fixed.certificate.geometry.valid
 
@@ -265,7 +265,7 @@ def test_a_flat_outline_is_an_invalid_input() -> None:
 
 def test_a_numpy_integer_repair_budget_is_accepted() -> None:
     plan, ctx = _review_plan_and_context()
-    legalize(plan, ctx, budget_reparation=np.int64(0))  # type: ignore[arg-type]
+    legalize(plan, ctx, repair_budget=np.int64(0))  # type: ignore[arg-type]
 
 
 def test_a_non_numeric_opening_position_is_an_invalid_input() -> None:

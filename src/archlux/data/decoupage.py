@@ -6,7 +6,7 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 
 __all__ = ["Split", "load_split"]
@@ -40,6 +40,7 @@ def _lignes(path: Path) -> tuple[str, ...]:
     return tuple(vus)
 
 
+@renamed_parameters({"chemin": "path"})
 def load_split(path: Path) -> Split:
     """Load a fixed split and verify that the three sets are disjoint.
 

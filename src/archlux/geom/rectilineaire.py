@@ -12,7 +12,7 @@ vertical cut separates, the horizontal cut with the smallest ordinate (bottom fi
 is tried before declaring failure. On the MSD corpus, this fallback raises the
 decomposition rate from 45 % to nearly all aligned rooms.
 
-Outside a dedicated branch: pass ``fusions=`` to :func:`archlux.api.legalize` to
+Outside a dedicated branch: pass ``merges=`` to :func:`archlux.api.legalize` to
 impose the solidarity equalities.
 
 Shape and area of a fused room (PLAN.md batch 1.7): :func:`overlap_constraints` keeps
@@ -31,7 +31,7 @@ from scipy import sparse
 from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import split, unary_union
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation, UnsupportedInput
 from archlux.geom.polytope import Polytope
 from archlux.tolerances import AREA_PROOF_M2
@@ -307,6 +307,7 @@ def _detecter_fusions(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ..
     return tuple(propres)
 
 
+@renamed_parameters({"polygone": "polygon", "type_piece": "room_type"})
 def decompose(
     polygon: Polygon,
     *,
@@ -418,6 +419,7 @@ def merge_constraints(
     return tuple(egalites)
 
 
+@renamed_parameters({"fusions": "merges", "referentiel": "regulation"})
 def minimum_area_shares(
     rooms: tuple[Room, ...],
     merges: tuple[RectilinearRoom, ...],
@@ -436,9 +438,9 @@ def minimum_area_shares(
     rooms : tuple of Piece
         Rooms of the plan whose proportions set the shares (the proposed plan, or the
         start point of an optimization).
-    fusions : tuple of PieceRectilineaire
+    merges : tuple of PieceRectilineaire
         Fused rooms; their sub-rectangles are found in ``rooms`` by id.
-    referentiel : Referentiel
+    regulation : Referentiel
         Minimum area by room type; a fused room takes the largest minimum of the types
         of its sub-rectangles.
 
@@ -500,7 +502,7 @@ def overlap_constraints(
 ) -> tuple[tuple[_Row, ...], tuple[_Row, ...]]:
     """Keep the shape of a fused room on the axis orthogonal to each shared edge.
 
-    A fusion glues one edge line (:func:`contraintes_fusion`) but lets the two
+    A fusion glues one edge line (:func:`merge_constraints`) but lets the two
     sub-rectangles slide along it: an L could turn into a T, a Z, or two detached
     pieces (AUDIT.md §5.2). For each fusion, with ``[a0, a1]`` and ``[b0, b1]`` the
     intervals of the two sub-rectangles along the shared edge:
@@ -591,14 +593,14 @@ def extend_merges(poly: Polytope, piece: RectilinearRoom, *, min_contact: float 
     min_contact : float, optional
         Minimum length of every shared edge, in metres
         (:func:`overlap_constraints`). :func:`archlux.api.legalize` passes
-        ``referentiel.largeur_min``.
+        ``regulation.min_width``.
 
     Returns
     -------
     Polytope
         New instance: fusion equalities and aligned ends in ``A_eq`` (labelled in
-        ``origines_eq``), end order and minimum contact in ``A`` (labelled in
-        ``origines``).
+        ``origins_eq``), end order and minimum contact in ``A`` (labelled in
+        ``origins``).
     """
     merges = tuple(
         (f"fusion {label}", terms, rhs)

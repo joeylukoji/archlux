@@ -1,4 +1,4 @@
-"""Recovery of the tiling grid from a nearly valid plan (``legalize(..., pavage=True)``).
+"""Recovery of the tiling grid from a nearly valid plan (``legalize(..., tiling=True)``).
 
 The faulty cases come from the guarantee benchmark (``benchmarks/guarantees``), modes
 ``classic_noisy`` and ``partial_one_fault``. They are written out as literals so that
@@ -50,7 +50,7 @@ NOISY_RIGHT_EDGE = _plan(
 
 
 def test_tiling_legalization_of_a_noisy_edge_keeps_every_guarantee() -> None:
-    result = archlux.legalize(NOISY_RIGHT_EDGE, _context(), pavage=True)
+    result = archlux.legalize(NOISY_RIGHT_EDGE, _context(), tiling=True)
     assert result.certificate is not None
     assert result.certificate.geometry.valid
     assert checkers.violations(result, _context()) == []
@@ -102,7 +102,7 @@ def test_a_room_overlapping_a_neighbour_on_both_axes_keeps_the_grid_relation() -
             min_width=1.0,
         ),
     )
-    result = archlux.legalize(plan, ctx, pavage=True)
+    result = archlux.legalize(plan, ctx, tiling=True)
     assert checkers.violations(result, ctx) == []
     by_id = {room.id: room for room in result.rooms}
     assert by_id["r4"].x == pytest.approx(by_id["r7"].x + by_id["r7"].w)

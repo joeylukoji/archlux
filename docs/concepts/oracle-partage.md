@@ -6,7 +6,7 @@ pas une métaphore : c'est le même appel, avec un autre vecteur de coûts.
 Le bloc ci-dessous s'exécute tel quel. Il reprend le plan de la
 [galerie 01](../galerie/01-corriger-un-plan.md) (deux pièces qui se recouvrent d'un
 mètre), construit le polytope des plans valides pour l'ordre lu sur la proposition,
-puis appelle deux fois `lmo.resoudre` : une fois pour la légalisation classique, une
+puis appelle deux fois `lmo.solveur.solve` : une fois pour la légalisation classique, une
 fois pour le pas d'une itération Frank-Wolfe.
 
 ```python
@@ -65,7 +65,7 @@ le pas \(2/(k+2)\), le divise par deux tant que l'objectif baisse, ajoute
 des pas « away », et s'arrête quand le gap de Frank-Wolfe passe sous la tolérance.
 
 Le démarrage à chaud (`depart=x` **à chaque** itération) ne change pas la
-solution, seulement le temps : seule la présence de `depart` compte, elle permet de
+solution, seulement le temps : seule la présence de `start` compte, elle permet de
 réutiliser le modèle déjà construit pour ce polytope. L'omettre dans une boucle de
 50 tours coûte un facteur 3 à 5.
 

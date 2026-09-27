@@ -100,7 +100,7 @@ def test_legalize_preserve_validite_avec_L() -> None:
     import archlux
 
     plan, piece = _plan_avec_L(chevauche=True)
-    q = archlux.legalize(plan, CONTEXTE_DEFAUT, fusions=(piece,))
+    q = archlux.legalize(plan, CONTEXTE_DEFAUT, merges=(piece,))
     assert q.certificate is not None
     assert q.certificate.geometry.valid
     sous = sorted(

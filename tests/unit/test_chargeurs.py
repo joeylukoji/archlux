@@ -129,7 +129,7 @@ def test_legalize_est_idempotent_sur_un_plan_reel_valide(tmp_path: Path) -> None
     appart = next(iter(load_msd(csv)))
     assert verify_exactly(appart.plan, appart.context).valid
 
-    corrige = ax.legalize(appart.plan, appart.context, fusions=appart.merges)
+    corrige = ax.legalize(appart.plan, appart.context, merges=appart.merges)
     preuve = corrige.certificate.geometry
     assert preuve.valid
     assert preuve.max_displacement == pytest.approx(0.0, abs=1e-9)
@@ -147,7 +147,7 @@ def test_largeur_minimale_heritee_deforme_un_plan_reel(tmp_path: Path) -> None:
     etroit = Regulation(min_areas=(), min_width=6.0)  # plus large que les pieces
     appart = next(iter(load_msd(csv, regulation=etroit)))
     with pytest.raises(ax.ArchluxError):
-        ax.legalize(appart.plan, appart.context, fusions=appart.merges)
+        ax.legalize(appart.plan, appart.context, merges=appart.merges)
 
 
 def test_statistiques_ventilent_les_rejets(tmp_path: Path) -> None:

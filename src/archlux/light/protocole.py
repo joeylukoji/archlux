@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.types import Indicator
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ class Surrogate(Protocol):
     1. the input is the decision vector of the polytope, never a raster and, since the
        extension of the protocol, the :class:`Glazing` that goes with it;
     2. :meth:`gradient` is consistent with :meth:`evaluate`, checked by
-       :func:`archlux.light.validation.valider_gradient`;
+       :func:`archlux.light.validation.validate_gradient`;
     3. :meth:`uncertainty` never returns a bare scalar without its scale.
     """
 
@@ -196,6 +196,7 @@ class WrapsSurrogate(Protocol):
         ...
 
 
+@renamed_parameters({"baies": "glazing"})
 def point_prediction(
     objective: Surrogate, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
 ) -> tuple[float, float]:
@@ -208,7 +209,7 @@ def point_prediction(
     is removed, so that ``Daylight(Daylight(s))`` does not keep one margin.
 
     Surrogates return ASE **negated**, so that Frank-Wolfe, which maximizes, reduces
-    glare (:class:`archlux.light.analytique.SubstitutAnalytique`). The prediction is
+    glare (:class:`archlux.light.analytique.AnalyticSurrogate`). The prediction is
     given back as a positive ASE, the quantity the calibration and the report read.
     """
     surrogate: Surrogate = objective

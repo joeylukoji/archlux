@@ -23,12 +23,12 @@ silencieux). Si le LP est infaisable → `Infeasible` avec
 
 ## Chaîne, une ligne par étape
 
-1. `deduire_ordre` — le générateur décide l'ordre ([graphe](ordre-relatif.md)).
-2. `construire_polytope` — \(Ax\le b\).
-3. `etendre_ecarts_l1` — \((x,e)\in\mathbb{R}^{2n}\).
+1. `deduce_order` — le générateur décide l'ordre ([graphe](ordre-relatif.md)).
+2. `build_polytope` — \(Ax\le b\).
+3. `extend_l1_slack` — \((x,e)\in\mathbb{R}^{2n}\).
 4. `gradient_distance` — \(c=(0_n,1_n)\).
-5. `resoudre_avec_surfaces` — GLOP + Kelley + bornes.
-6. `devectoriser` — murs et baies suivent (baie relative au mur).
+5. `solve_with_areas` — GLOP + Kelley + bornes.
+6. `devectorize` — murs et baies suivent (baie relative au mur).
 7. `verify_exactly(..., reference=plan)` — \(\delta_\infty\).
 8. `Certificate(geometrie=..., performance=None, duaux=...)`.
 
@@ -38,7 +38,7 @@ affirmer.
 ## Branche performantielle (`objective=Substitut`)
 
 Après l'étape 8, le point L1 devient \(x_0\). Les contacts saturés passent
-en égalités (`figer_contacts`) : Frank-Wolfe reste un pavage. Then the minimum areas
+en égalités (`freeze_contacts`) : Frank-Wolfe reste un pavage. Then the minimum areas
 are replaced by an **inner** polyhedral approximation
 (`inner_area_constraints`, see [coupes de surface](coupes-surface.md)): every point of
 the domain, hence every iterate, keeps every minimum area, and no tangent cut is needed.

@@ -117,7 +117,7 @@ def test_a_real_certificate_lists_only_business_constraints() -> None:
         outline=outline,
         regulation=Regulation(min_areas=(), min_width=1.5),
     )
-    duals = legalize(plan, ctx, pavage=True).certificate.duals  # type: ignore[union-attr]
+    duals = legalize(plan, ctx, tiling=True).certificate.duals  # type: ignore[union-attr]
     assert duals
     assert not any("ecart" in phrase for phrase, _ in duals)
     assert any("load-bearing wall p1" in phrase for phrase, _ in duals)

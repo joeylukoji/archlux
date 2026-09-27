@@ -1,6 +1,6 @@
 # Épigraphe de la distance L1
 
-**Code :** `geom.polytope.etendre_ecarts_l1`, `api.gradient_distance`.
+**Code :** `geom.polytope.extend_l1_slack`, `api.gradient_distance`.
 
 ## Énoncé
 

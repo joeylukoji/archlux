@@ -69,7 +69,7 @@ fingerprint = dense.save(path)
 token = issue_token(fingerprint, "2026-09-09T10:00:00Z")  # après gel
 ```
 
-`sauver` rend l'empreinte SHA-256 du fichier écrit ; le jeton la lie à l'instant du
+`save` rend l'empreinte SHA-256 du fichier écrit ; le jeton la lie à l'instant du
 gel. C'est lui qui ouvrira le jeu de calibration au
 [tutoriel suivant](calibrer-un-substitut.md).
 
@@ -84,7 +84,7 @@ points = np.stack([disposition(rng) for _ in range(8)])
 rapport = validate_gradient(reseau, points, ctx.orientation, seed=17, reference=sim)
 assert rapport.accord_de_signe > 0.80
 
-q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, pavage=True)
+q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, tiling=True)
 assert q.certificate is not None and q.certificate.geometry.valid
 ```
 

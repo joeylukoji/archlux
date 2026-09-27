@@ -1,8 +1,8 @@
 
 # Polytope des séparations
 
-**Code :** `geom.polytope.construire_polytope`, `Polytope.contient`, `vectoriser`,
-`devectoriser`.
+**Code :** `geom.polytope.build_polytope`, `Polytope.contient`, `vectorize`,
+`devectorize`.
 
 ## Énoncé
 

@@ -32,7 +32,7 @@ ctx = ax.Context(
     outline=plan.outline,
     regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
-q = ax.legalize(plan, ctx, pavage=True)  # pavage : les pièces couvrent tout le contour
+q = ax.legalize(plan, ctx, tiling=True)  # tiling : les pièces couvrent tout le contour
 print(q.certificate.report())
 ```
 

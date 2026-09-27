@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from math import isfinite
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import PerformanceBound, Regime
 from archlux.uq.conforme import Calibration, bound, conformal_quantile
@@ -18,6 +18,7 @@ from archlux.uq.derive import DriftDiagnostic
 __all__ = ["Calibration", "bound_selected_plan", "build_bound", "check_calibration"]
 
 
+@renamed_parameters({"valeur": "value", "derive": "drift", "incertitude": "uncertainty"})
 def build_bound(
     value: float,
     calibration: Calibration,
@@ -40,7 +41,7 @@ def build_bound(
         ``σ̂`` of the point, **strictly positive**, for normalized calibration scores;
         ``1.0`` for raw ones. Mandatory (PLAN.md batch 1.6).
     regime : {"exchangeable", "selected"}
-        See :func:`archlux.uq.conforme.borner`.
+        See :func:`archlux.uq.conforme.bound`.
 
     Returns
     -------
@@ -53,11 +54,11 @@ def build_bound(
     Two traps that the signature does not catch:
 
     - **``uncertainty`` must match the calibration.** The only calibration builder of the
-      repository, :meth:`archlux.uq.conforme.CalibrateurConforme.ajuster`, divides the
+      repository, :meth:`archlux.uq.conforme.ConformalCalibrator.fit`, divides the
       scores by ``σ``; ``Calibration`` does not record it, the caller does.
     - **A drift verdict that does not reject is not a proof of exchangeability.** It is
       treated here as a permission to publish; with few observations, the test of
-      :func:`archlux.uq.derive.controler_derive` has almost no power. The certificate
+      :func:`archlux.uq.derive.check_drift` has almost no power. The certificate
       therefore says "drift not detected", never "no drift".
     """
     if not drift.echangeable:
@@ -98,7 +99,7 @@ def bound_selected_plan(
     value : float
         Prediction of the surrogate at the returned plan.
     calibration : Calibration
-        Scores normalized by ``σ`` (:meth:`archlux.uq.conforme.CalibrateurConforme.ajuster`).
+        Scores normalized by ``σ`` (:meth:`archlux.uq.conforme.ConformalCalibrator.fit`).
     uncertainty : float
         ``σ̂`` of the surrogate at the returned plan, strictly positive.
 

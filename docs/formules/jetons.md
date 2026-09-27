@@ -6,7 +6,7 @@
 
 Un plan n'est pas une image. Il devient un **ensemble** de jetons
 \(\{\phi_1,\ldots,\phi_N\}\subset\mathbb{R}^{d}\), \(d=32\)
-(`DIM_JETON`), de **deux familles**, dans cet ordre : les pièces, puis les baies.
+(`TOKEN_DIM`), de **deux familles**, dans cet ordre : les pièces, puis les baies.
 
 \[
 N = \underbrace{n_{\text{pièces}}}_{\text{toujours}}

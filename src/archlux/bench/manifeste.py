@@ -10,7 +10,7 @@ import datetime as dt
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux._version import __version__
 from archlux.types import Manifest, ModelTrace
 
@@ -46,6 +46,14 @@ def _environnement() -> tuple[tuple[str, str], ...]:
     return tuple(sorted(releve.items()))
 
 
+@renamed_parameters(
+    {
+        "empreinte_donnees": "data_fingerprint",
+        "decoupage": "split",
+        "parametres": "parameters",
+        "modele": "model",
+    }
+)
 def emit(
     *,
     seed: int,

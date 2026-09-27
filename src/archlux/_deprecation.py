@@ -10,20 +10,29 @@ Behaviour, identical to the copies it replaces: the warning is attributed to the
 ``from module import OldName`` warns once (the import machinery probes with ``hasattr``
 first); any other name raises ``AttributeError``. Aliases are not listed in ``__all__``.
 
+Renamed keyword parameters of a public function go through :func:`renamed_parameters`::
+
+    @renamed_parameters({"chemin": "path"})
+    def write(plan: Plan, path: str | Path) -> None: ...
+
 A leaf: it imports nothing from archlux, so every layer may use it.
 """
 
 from __future__ import annotations
 
+import functools
 import sys
 import warnings
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-__all__ = ["Alias", "lazy_aliases"]
+__all__ = ["Alias", "lazy_aliases", "renamed_parameters"]
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,3 +97,60 @@ def lazy_aliases(
         return alias.value
 
     return __getattr__
+
+
+def renamed_parameters(
+    renames: Mapping[str, str],
+) -> Callable[[Callable[_P, _R]], Callable[_P, _R]]:
+    """Accept the old name of renamed keyword parameters, with a ``DeprecationWarning``.
+
+    Parameters
+    ----------
+    renames : mapping of str to str
+        Old keyword to its new name, for instance ``{"chemin": "path"}``. Strings, like
+        the keys of :func:`lazy_aliases`, so the old names never appear as identifiers.
+
+    Returns
+    -------
+    callable
+        A decorator. The decorated function keeps its signature (``inspect.signature``
+        follows ``__wrapped__``); passing both the old and the new name raises
+        ``TypeError``, as passing one argument twice would.
+
+    Examples
+    --------
+    >>> import warnings
+    >>> @renamed_parameters({"chemin": "path"})
+    ... def write(path: str) -> str:
+    ...     return path
+    >>> with warnings.catch_warnings(record=True) as caught:
+    ...     warnings.simplefilter("always")
+    ...     write(chemin="plan.json")
+    'plan.json'
+    >>> str(caught[0].message)
+    'write(chemin=...) is deprecated, use path=... (ADR 0001)'
+    """
+
+    def decorate(func: Callable[_P, _R]) -> Callable[_P, _R]:
+        @functools.wraps(func)
+        def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+            if kwargs and not renames.keys().isdisjoint(kwargs):
+                for old, new in renames.items():
+                    if old not in kwargs:
+                        continue
+                    if new in kwargs:
+                        raise TypeError(
+                            f"{func.__qualname__}() got both {old}= (deprecated) and {new}="
+                        )
+                    warnings.warn(
+                        f"{func.__qualname__}({old}=...) is deprecated, use {new}=... (ADR 0001)",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
+                    kwargs[new] = kwargs.pop(old)
+            return func(*args, **kwargs)
+
+        vars(wrapper)["__renamed_parameters__"] = dict(renames)
+        return wrapper
+
+    return decorate

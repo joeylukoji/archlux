@@ -27,7 +27,7 @@ _EPS_SIGMA = 1e-5
 class Daylight:
     """Substitut dont :meth:`evaluate` rend la borne pessimiste ``μ − q σ``.
 
-    Implémente :class:`~archlux.light.protocole.Substitut` : Frank-Wolfe n'a pas à
+    Implémente :class:`~archlux.light.protocole.Surrogate` : Frank-Wolfe n'a pas à
     savoir que l'objectif est une borne plutôt qu'une prédiction.
     """
 
@@ -56,7 +56,7 @@ class Daylight:
             Vecteur de décision.
         orientation : Orientation
             Azimut.
-        baies : Baies or None, optional
+        glazing : Baies or None, optional
             Glazing, forwarded unchanged to the wrapped surrogate.
 
         Returns
@@ -67,7 +67,7 @@ class Daylight:
         Notes
         -----
         Pour ASE, le substitut doit déjà renvoyer une valeur **négative**
-        (contrat ``SubstitutAnalytique`` / ``SplitFluxOracle``). Alors
+        (contrat ``AnalyticSurrogate`` / ``SplitFluxOracle``). Alors
         ``μ − qσ`` reste le bon sens sous maximisation : l'incertitude
         détériore l'objectif. Ne pas envelopper un ASE positif brut.
         """

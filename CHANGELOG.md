@@ -8,6 +8,32 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — old keyword names of public functions accepted again, deprecated
+
+- **Renamed keyword parameters of public functions stay accepted** with a
+  `DeprecationWarning` until 1.0.0 (ADR 0001 rule 6, applied to parameters; this closes
+  the "open decision" of wave 5). Fifty-one functions renamed a keyword with no alias, and
+  an old call failed with a bare `TypeError`: `to_ifc(plan, chemin=...)`,
+  `verify_exactly(..., fusions=...)`, `snap_to_grid(plan, trame=...)`,
+  `render_svg(plan, contour=...)`, `bench.run(..., repertoire=...)`, `holm(p_valeurs=...)`...
+  The table was built by comparing every public signature of `b35a3c8` (before the
+  rename) with the current one; `tests/unit/test_parameter_aliases.py` pins it. Passing
+  the old and the new keyword together raises `TypeError`. Fields and methods of classes
+  stay renamed without alias, as stated below. New helper:
+  `archlux._deprecation.renamed_parameters`.
+- **`legalize(fusions=, pavage=, budget_reparation=)` become `merges=`, `tiling=` and
+  `repair_budget=`** (and `deduce_grid(budget_reparation=)` becomes `repair_budget=`),
+  old names deprecated. `merges`, not the glossary's former `merged_rooms`: it is the name
+  `verify_exactly` and `minimum_area_shares` already give the same tuple. The `pavage`
+  column of the published raw CSVs is unchanged; `results/` is byte-identical.
+  `InvalidInput.field` for a negative budget now reads `repair_budget`, whichever name the
+  caller used.
+- The `tiling grid` branch of `Infeasible.relaxable` is tested; `_Problem.minima` is
+  read-only; about 200 references to French names in docstrings (Sphinx roles that no
+  longer resolved, numpydoc parameter names) and in the current docs name the English
+  objects; `CLAUDE.md` no longer lists the `agent-skills` rows both as "routed
+  automatically" and "not auto-dispatched", and says the plugin is not in the repository.
+
 ### Fixed — review of the English-API stack (PRs #3 to #16)
 
 - **CI was red on every PR of the stack**, and its `qualite` job stopped at mypy, hiding
@@ -69,7 +95,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 - `archlux.export`, `archlux.data` and `archlux.bench` are English: `ExportReport`, `MSDApartment`, `LoadStatistics`, `Split`, `Corruption.corrupt`, `BenchReport`, `Result`, `Interval`... Old names stay importable with a `DeprecationWarning` until 1.0.0.
 - `Corruption`'s Mode values keep their French names (`deplacer`/`elargir`/`retrecir`/`aplatir`): they are recorded in raw results and seeds, so renaming them would change published figures. `Split`'s and `Corruption`'s fields are renamed without alias (fields, not classes — ADR 0001 rule 6).
-- Prose of all twenty modules is translated to English and enrolled in the language and identifier guards. `legalize`'s own `fusions`/`pavage`/`budget_reparation` parameters are untouched (still the open decision).
+- Prose of all twenty modules is translated to English and enrolled in the language and identifier guards. `legalize`'s own `fusions`/`pavage`/`budget_reparation` parameters are untouched (still the open decision; since renamed, see above).
 
 ### Remediation — PLAN.md phase 3.9, wave 5, sixth batch: uncertainty, active learning and orientation
 
@@ -85,7 +111,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 ### Remediation — PLAN.md phase 3.9, wave 5, fourth batch (part 2): English prose of geometry and LMO
 
 - Docstrings, comments and messages of `geom.{graphe,polytope,pavage,rectilineaire,diagnostic}`, `lmo.solveur` and `lmo.cuts` are English, and the seven modules are enrolled in the language and identifier guards.
-- `SolutionLP` becomes `LPSolution` (deprecated alias kept). Parameters `duaux`, `pieces` and `a_min` become `duals`, `rooms` and `min_area` in the solver and cut functions (no alias, as for fields).
+- `SolutionLP` becomes `LPSolution` (deprecated alias kept). Parameters `duaux`, `pieces` and `a_min` become `duals`, `rooms` and `min_area` in the solver and cut functions (no alias, as for fields; deprecated keyword aliases added since, see above).
 - Runtime labels of the `origins` (`separation horizontale…`, `trame x#…`) stay French for now: `certify.dual` parses them.
 
 ### Remediation — PLAN.md phase 3.9, wave 5, fourth batch: geometry and LMO names (rename only)

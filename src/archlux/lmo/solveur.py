@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 
 # OR-Tools' SWIG bindings emit DeprecationWarnings while they import; with
 # ``python -W error::DeprecationWarning`` the interpreter then crashes inside the C
@@ -266,6 +266,7 @@ def _certificat_farkas(poly: Polytope, cuts: list[Cut] | None) -> tuple[VecteurF
     )
 
 
+@renamed_parameters({"depart": "start", "coupes": "cuts", "duaux": "duals"})
 def solve(
     poly: Polytope,
     c: VecteurF,
@@ -296,11 +297,11 @@ def solve(
     cuts : list of Cut or None, optional
         Accumulated cuts, fed back between two calls. They invalidate the cached model:
         their number changes the system, not just the objective.
-    duaux : bool, optional
+    duals : bool, optional
         Extract the dual prices, in the row order of ``poly.A`` — this order is what
         makes them pairable with ``poly.origins``. **The rows of ``poly.A_eq`` and the
         cuts do not appear in it**: they have no label in ``origins``. A consequence to
-        know: after :func:`archlux.geom.polytope.figer_contacts`, the saturated
+        know: after :func:`archlux.geom.polytope.freeze_contacts`, the saturated
         constraints — the most informative ones — are moved into ``A_eq`` and their
         price therefore disappears from the diagnosis.
 
@@ -330,7 +331,7 @@ def solve(
 
     Notes
     -----
-    **Do not simplify this signature.** ``start`` and ``duaux`` look useless at
+    **Do not simplify this signature.** ``start`` and ``duals`` look useless at
     milestone 2; they are indispensable at milestones 3 and 5. Adding them afterwards
     forces the interface to be restructured to carry the state (`MILESTONE-2.md` §4).
     """

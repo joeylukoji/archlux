@@ -5,7 +5,7 @@
 ## Énoncé
 
 Pour chaque pièce, le vecteur \((x,y,w,h)\) et l'azimut \(\theta\) (via
-[`encoder`](circulaire.md), jamais le degré brut) donnent un score
+[`encode_orientation`](circulaire.md), jamais le degré brut) donnent un score
 
 \[
 f_i=L\cdot\min(P,D)\cdot\exp(\kappa\,s),\qquad

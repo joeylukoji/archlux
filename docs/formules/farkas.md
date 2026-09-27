@@ -1,6 +1,6 @@
 # Simplexe, duaux et Farkas
 
-**Code :** `lmo.solveur.resoudre`, `_certificat_farkas`, `_est_faisable`.
+**Code :** `lmo.solveur.solve`, `_certificat_farkas`, `_est_faisable`.
 
 ## Énoncé — primal
 
@@ -63,7 +63,7 @@ Les coupes \(\ge\) sont relâchées dans l'autre sens ; sans cela une coupe
 impossible rend l'auxiliaire lui-même infaisable, et ses duaux ne veulent plus
 rien dire.
 
-Le vecteur a une entrée par ligne de \(A\). Croisé avec `origines`, il devient un
+Le vecteur a une entrée par ligne de \(A\). Croisé avec `origins`, il devient un
 libellé métier : `separation horizontale a|b`, `contour droit b`.
 
 ## Equalities and exact verification (batch 1.5c)

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from shapely.geometry import box
 from shapely.ops import unary_union
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -76,6 +76,7 @@ def hausdorff(a: Plan, b: Plan) -> float:
     return float(ua.hausdorff_distance(ub))
 
 
+@renamed_parameters({"seuil": "threshold"})
 def near_duplicate_pairs(
     plans: Sequence[tuple[str, Plan]], *, threshold: float = HAUSDORFF_THRESHOLD_M
 ) -> tuple[tuple[str, str], ...]:

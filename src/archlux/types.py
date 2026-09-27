@@ -88,7 +88,7 @@ class Room:
 
     @property
     def center(self) -> Point:
-        """Geometric center, used by ``geom.graphe.deduire_ordre``."""
+        """Geometric center, used by ``geom.graphe.deduce_order``."""
         return (self.x + self.w / 2.0, self.y + self.h / 2.0)
 
 
@@ -160,7 +160,7 @@ class Opening:
 
         Parameters
         ----------
-        mur : Mur
+        wall : Mur
             The wall carrying this opening; its ``id`` must equal ``self.wall_id``.
 
         Returns
@@ -290,7 +290,7 @@ class Plan:
     def to_svg(self, path: Path | str, *, title: str = "", walls: tuple[Wall, ...] = ()) -> None:
         """Draw the plan as a standalone SVG file, valid or not (the diagnostic use).
 
-        Facade over :func:`archlux.export.svg.rendre` (exported as ``render_svg``).
+        Facade over :func:`archlux.export.svg.render` (exported as ``render_svg``).
         ``walls`` adds walls to draw, typically ``ctx.structure.load_bearing_walls``.
         """
         from archlux.export import render_svg

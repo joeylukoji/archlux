@@ -1,6 +1,6 @@
 # Décomposition rectilinéaire
 
-**Code :** `geom.rectilineaire.decomposer` / `recomposer` / `etendre_fusions`.
+**Code :** `geom.rectilineaire.decompose` / `recompose` / `extend_merges`.
 
 ## Énoncé
 
@@ -20,7 +20,7 @@ y_i + h_i = y_j
 \quad\text{(partage\_bord\_haut)}.
 \]
 
-Ces égalités entrent dans \(A_{\mathrm{eq}}\) via `etendre_fusions` ; le polytope
+Ces égalités entrent dans \(A_{\mathrm{eq}}\) via `extend_merges` ; le polytope
 reste linéaire.
 
 ## Hypothèses
@@ -34,9 +34,9 @@ reste linéaire.
 
 | Symbole | Fonction |
 |---|---|
-| partition | `decomposer` |
-| union | `recomposer` |
-| \(A_{\mathrm{eq}}\) | `etendre_fusions` → `legalize(..., fusions=)` |
+| partition | `decompose` |
+| union | `recompose` |
+| \(A_{\mathrm{eq}}\) | `extend_merges` → `legalize(..., merges=)` |
 
 ## Cas d'utilisation
 

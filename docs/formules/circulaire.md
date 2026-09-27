@@ -44,14 +44,14 @@ y\approx a\cos\theta+b\sin\theta+c.
 
 ## Code
 
-`encode`, `encoder`, `circular_mean`, `concentration`, `circular_variance`,
-`rayleigh`, `circular_linear_regression`, `stratifier`.
+`encode`, `encode_orientation`, `circular_mean`, `concentration`, `circular_variance`,
+`rayleigh`, `circular_linear_regression`, `stratify`.
 
 ## Cas d'utilisation
 
 | Faire | Ne pas faire |
 |---|---|
-| Passer tout azimut par `encoder` avant un modèle | Soustraire des degrés comme des réels |
+| Passer tout azimut par `encode_orientation` avant un modèle | Soustraire des degrés comme des réels |
 | Stratifier une rose des vents en 8 secteurs | Croire qu'un \(p\) de Rayleigh *prouve* une cause physique |
 
 ## Source

@@ -43,7 +43,7 @@ raster, et un substitut à entrée raster a un gradient nul presque partout
   `Structure.load_bearing_walls` stays empty on this corpus (see `data/chargeurs.py`);
   the load-bearing guarantee is exercised by the synthetic benchmark instead
   (`benchmarks/guarantees`). Columns are loaded but not constrained (ADR-7).
-- **Géométrie non-Manhattan** → exerce `geom.rectilineaire.decomposer` sur autre
+- **Géométrie non-Manhattan** → exerce `geom.rectilineaire.decompose` sur autre
   chose qu'un cas de test.
 - **Orientation cardinale conservée** → `Orientation` cesse d'être tirée au sort.
 - **Complexes multi-logements** → des ordres relatifs autrement plus riches que

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy import sparse
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.graphe import build_graph, transitive_reduction
@@ -233,7 +233,7 @@ def _verifier_enveloppe_admissible(
     Raises
     ------
     Infeasible
-        ``largeur_min`` exceeds one of the two dimensions of the envelope. Without rooms,
+        ``min_width`` exceeds one of the two dimensions of the envelope. Without rooms,
         there is no ``w``/``h`` variable and so nothing to refuse.
     """
     if not rooms:
@@ -451,6 +451,7 @@ def vectorize(plan: Plan, index: dict[str, int]) -> VecteurF:
     return point
 
 
+@renamed_parameters({"gabarit": "template"})
 def devectorize(x: VecteurF, template: Plan, index: dict[str, int]) -> Plan:
     """Rebuild a plan from a solution vector.
 

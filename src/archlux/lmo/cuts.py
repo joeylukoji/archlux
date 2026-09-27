@@ -60,6 +60,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy import sparse
 
+from archlux._deprecation import renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.errors import InvariantViolation
 from archlux.lmo.solveur import solve
@@ -212,6 +213,7 @@ class Cut:
         return bool(total + tol >= self.lower_bound)
 
 
+@renamed_parameters({"a_min": "min_area"})
 def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
     """Tangent to the hyperbola ``w h = a_min`` at the projected point of ``(w₀, h₀)``.
 
@@ -219,7 +221,7 @@ def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
     ----------
     w0, h0 : float
         Linearisation point, strictly positive (current solution).
-    a_min : float
+    min_area : float
         Minimum area, in square metres, strictly positive.
     piece : str, optional
         Room identifier, prefix of the variables ``<id>.w`` / ``<id>.h``.
@@ -232,7 +234,7 @@ def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
     Raises
     ------
     InvariantViolation
-        Point that is not strictly positive, or ``a_min`` not strictly positive.
+        Point that is not strictly positive, or ``min_area`` not strictly positive.
 
     Guarantees
     ----------
@@ -256,6 +258,7 @@ def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
     return Cut(coefficients=coefficients, lower_bound=2.0 * min_area, origin=origin)
 
 
+@renamed_parameters({"pieces": "rooms"})
 def violated_areas(
     x: VecteurF | Sequence[float],
     poly: Polytope,
@@ -264,7 +267,7 @@ def violated_areas(
     rooms: tuple[Room, ...],
     minima: Mapping[str, float] | None = None,
 ) -> tuple[str, ...]:
-    """List the rooms whose ``w h`` is strictly below ``a_min``.
+    """List the rooms whose ``w h`` is strictly below ``min_area``.
 
     Parameters
     ----------
@@ -274,7 +277,7 @@ def violated_areas(
         Provides ``index``.
     ctx : Context
         Provides the regulation's minimum areas.
-    pieces : tuple of Room
+    rooms : tuple of Room
         Identifiers and types — the polytope does not carry the programme.
     minima : mapping of str to float, optional
         Minimum area per room id, overriding the type's (the sub-rectangles of a fused
@@ -389,7 +392,7 @@ def _identifiants_a_couper(
     rooms: tuple[Room, ...],
     comptes: Counter[str],
 ) -> list[str]:
-    """Rooms still below ``a_min`` and under the cut cap."""
+    """Rooms still below ``min_area`` and under the cut cap."""
     restantes: list[str] = []
     for identifiant in _short_of_area(x, poly, need, rooms):
         if comptes[identifiant] >= MAX_CUTS_PER_ROOM:
@@ -422,6 +425,7 @@ def _empiler_tangentes(
         comptes[identifiant] += 1
 
 
+@renamed_parameters({"pieces": "rooms", "depart": "start", "duaux": "duals"})
 def solve_with_areas(
     poly: Polytope,
     c: VecteurF,
@@ -442,11 +446,11 @@ def solve_with_areas(
         Objective, dimension ``len(poly.index)``.
     ctx : Context
         Area regulation.
-    pieces : tuple of Room
+    rooms : tuple of Room
         Programme, to give each identifier its type.
     start : numpy.ndarray or None, optional
         Warm start of the first call.
-    duaux : bool, optional
+    duals : bool, optional
         Extract the duals of the last LP.
     minima : mapping of str to float, optional
         Minimum area per room id, overriding the type's. The sub-rectangles of a fused
@@ -509,7 +513,7 @@ def _solve_with_area_cuts(
     duals: bool,
     margin: float,
 ) -> LPSolution:
-    """The Kelley loop of :func:`resoudre_avec_surfaces`, aiming ``margin`` above minima."""
+    """The Kelley loop of :func:`solve_with_areas`, aiming ``margin`` above minima."""
     domaine = poly
     cuts: list[Cut] = _coupes_initiales(domaine, need, rooms)
     comptes: Counter[str] = Counter()
@@ -551,6 +555,7 @@ reference gain, at least 0.95 of it in 96 % of scenarios, for +4 ms median; the 
 1.25-ratio grid reached 0.95 in only 81 % of them."""
 
 
+@renamed_parameters({"pieces": "rooms"})
 def inner_area_constraints(
     poly: Polytope,
     x: VecteurF,
@@ -564,7 +569,7 @@ def inner_area_constraints(
 
     Tangent cuts (:func:`area_cut`) are an *outer* approximation: their vertices
     can lie below the hyperbola, so a convex combination of a valid point and such a
-    vertex can break the minimum area. That is how Frank-Wolfe went below ``a_min``
+    vertex can break the minimum area. That is how Frank-Wolfe went below ``min_area``
     (AUDIT.md §3 n°6). This function does the opposite: every point it keeps satisfies
     the minimum area, and so does every convex combination of such points.
 
@@ -601,7 +606,7 @@ def inner_area_constraints(
         Start point, typically the classic legalization result.
     ctx : Contexte
         Provides the minimum area of each room type.
-    pieces : tuple of Piece
+    rooms : tuple of Piece
         Rooms, for their types.
     spread : tuple of float, optional
         Relative node widths.

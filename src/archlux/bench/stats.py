@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import stats as scipy_stats
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 
 __all__ = ["Interval", "holm", "paired_bootstrap", "power", "tost"]
@@ -80,6 +80,7 @@ def tost(
     return p < alpha, p
 
 
+@renamed_parameters({"p_valeurs": "p_values"})
 def holm(p_values: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]:
     """Holm-Bonferroni correction for multiple comparisons.
 
@@ -137,6 +138,7 @@ def holm(p_values: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]:
     return tuple(bool(v) for v in rejections)
 
 
+@renamed_parameters({"effet": "effect"})
 def power(
     effect: float,
     sigma: float,

@@ -24,7 +24,7 @@ import re
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.geom.polytope import Polytope
 
@@ -96,6 +96,7 @@ def _sentence(description: str, price: float, *, objective: str, step_m: float) 
     return f"{description}: relaxing it by {step} {effect} ({_VALIDITY})"
 
 
+@renamed_parameters({"duaux": "duals", "seuil": "threshold"})
 def translate_duals(
     duals: VecteurF,
     poly: Polytope,
@@ -109,11 +110,11 @@ def translate_duals(
 
     Parameters
     ----------
-    duaux : numpy.ndarray
+    duals : numpy.ndarray
         Dual prices, in the order of the rows of ``poly.A``.
     poly : Polytope
-        Provides ``origines``, indispensable and not reconstructible afterwards.
-    seuil : float, optional
+        Provides ``origins``, indispensable and not reconstructible afterwards.
+    threshold : float, optional
         Below it the constraint is inactive and is not reported.
     n_max : int, optional
         Number of constraints reported, the costliest first.

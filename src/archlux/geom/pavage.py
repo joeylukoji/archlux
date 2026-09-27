@@ -69,7 +69,7 @@ from scipy import sparse
 from shapely import contains_xy
 from shapely.geometry import Polygon
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import GridNotRecoverable, InvariantViolation, UnsupportedInput
 
 if TYPE_CHECKING:
@@ -363,13 +363,14 @@ def _reparer_partition(
     return None if reste else incidences
 
 
+@renamed_parameters({"support_min": "min_support", "budget_reparation": "repair_budget"})
 def deduce_grid(
     plan: Plan,
     ctx: Context,
     *,
     tolerance: float = 0.01,
     min_support: int = 2,
-    budget_reparation: int = 4,
+    repair_budget: int = 4,
 ) -> Grid:
     """Recover the grid of the proposed plan and **prove** that it tiles the outline.
 
@@ -391,7 +392,7 @@ def deduce_grid(
         without guessing a metric tolerance. Default 2: an interior wall separates
         two rooms, so it carries at least two edges. ``min_support=1`` disables
         consolidation.
-    budget_reparation : int, optional
+    repair_budget : int, optional
         Maximum number of one-step adjustments of the partition repair. Default 4.
         ``0`` disables the repair.
 
@@ -496,9 +497,7 @@ def deduce_grid(
         # Local defect of a few cells: try a bounded index adjustment
         # before refusing. Beyond the budget, it is no longer a wrong dimension.
         repare = (
-            _reparer_partition(incidences, dedans, budget_reparation)
-            if budget_reparation > 0
-            else None
+            _reparer_partition(incidences, dedans, repair_budget) if repair_budget > 0 else None
         )
         if repare is None:
             raise GridNotRecoverable(excess=trop, missing=manque)
@@ -519,6 +518,7 @@ def deduce_grid(
     )
 
 
+@renamed_parameters({"trame": "grid"})
 def snap_to_grid(plan: Plan, grid: Grid) -> Plan:
     """Place every room of ``plan`` on the reference lines of its recovered grid.
 
@@ -551,6 +551,7 @@ def snap_to_grid(plan: Plan, grid: Grid) -> Plan:
     return replace(plan, rooms=tuple(rooms))
 
 
+@renamed_parameters({"trame": "grid"})
 def tiling_constraints(
     grid: Grid, index: dict[str, int]
 ) -> tuple[tuple[str, dict[str, float], float], ...]:
@@ -569,7 +570,7 @@ def tiling_constraints(
     -------
     tuple
         Triplets ``(label, terms, right_hand_side)``, same conventions as
-        :func:`~archlux.geom.rectilineaire.contraintes_fusion`.
+        :func:`~archlux.geom.rectilineaire.merge_constraints`.
 
     Raises
     ------
@@ -623,6 +624,7 @@ def tiling_constraints(
     return tuple(egalites)
 
 
+@renamed_parameters({"trame": "grid"})
 def extend_tiling(poly: Polytope, grid: Grid) -> Polytope:
     """Add the tiling equalities to the polytope (``A_eq``, ``b_eq``).
 

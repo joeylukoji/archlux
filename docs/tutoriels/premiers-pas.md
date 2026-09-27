@@ -67,12 +67,12 @@ Path("sortie_generateur.json").write_text(
 )
 
 plan = ax.Plan.from_json("sortie_generateur.json")
-q = ax.legalize(plan, ctx, pavage=True)
+q = ax.legalize(plan, ctx, tiling=True)
 assert q.certificate is not None and q.certificate.geometry.valid
 q.to_json("plan_legalise.json")
 ```
 
-`pavage=True` impose que les pièces couvrent exactement le contour. Il est nécessaire
+`tiling=True` impose que les pièces couvrent exactement le contour. Il est nécessaire
 dès que l'entrée peut contenir un vide, ce qui est le cas des sorties de générateur :
 sans lui, les séparations sont des inégalités, le plan troué est déjà son propre point
 le plus proche, et la vérification exacte le rejette (`InvariantViolation`).

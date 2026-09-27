@@ -70,7 +70,7 @@ def _incertitudes_acquisition(
 ) -> np.ndarray:
     """Surrogate σ̂ x (1 + distance to the nearest already-simulated point).
 
-    A constant ``incertitude`` (e.g. ``SubstitutDense``) does not discriminate:
+    A constant ``incertitude`` (e.g. ``DenseSurrogate``) does not discriminate:
     the distance to the already-labeled points forces exploration.
     """
     base = np.array(
@@ -110,7 +110,7 @@ class Loop:
 
     Parameters
     ----------
-    substitut : Substitut
+    surrogate : Substitut
         Model to improve. If it exposes ``fit``, it is retrained every cycle.
     simulateur : Substitut
         Frozen oracle (e.g. ``SplitFluxOracle``).
@@ -128,7 +128,7 @@ class Loop:
         silently that could not be replayed.
     alpha : float, optional
         Target conformal level (default 0.10 -> 90% coverage). Also sets the
-        minimum calibration size, via :func:`~archlux.uq.conforme.n_minimal_conforme`.
+        minimum calibration size, via :func:`~archlux.uq.conforme.minimal_n_conformal`.
     part_calibration : float, optional
         Fraction of the acquired points set aside for calibration when no
         independent set is supplied. ``0.0`` disables the set-aside -- ``calibration=``

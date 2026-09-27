@@ -124,7 +124,7 @@ def test_performance_mode_never_moves_a_room_beyond_the_budget(
     budget = 0.3
     try:
         result = archlux.legalize(
-            proposed, ctx, objective=AnalyticSurrogate(), budget=budget, pavage=True
+            proposed, ctx, objective=AnalyticSurrogate(), budget=budget, tiling=True
         )
     except archlux.ArchluxError:
         return  # refusing is allowed; exceeding the budget is not
@@ -140,7 +140,7 @@ def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Conte
     plan, ctx = scenario
     proposed, _ = corrupt(plan, seed=len(plan.rooms), amplitude=0.25)
     try:
-        classic = archlux.legalize(proposed, ctx, pavage=True)
+        classic = archlux.legalize(proposed, ctx, tiling=True)
     except archlux.ArchluxError:
         return
     needed = _max_move(classic, proposed)
@@ -148,7 +148,7 @@ def test_a_saturated_budget_is_not_an_internal_error(scenario: tuple[Plan, Conte
         return
     budget = needed - 1e-9  # the LP meets it within its tolerance; the proof accepts it
     try:
-        archlux.legalize(proposed, ctx, objective=AnalyticSurrogate(), budget=budget, pavage=True)
+        archlux.legalize(proposed, ctx, objective=AnalyticSurrogate(), budget=budget, tiling=True)
     except InvariantViolation as error:
         pytest.fail(f"internal error on a saturated budget: {error}")
     except archlux.ArchluxError:

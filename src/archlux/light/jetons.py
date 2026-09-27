@@ -11,7 +11,7 @@ from dataclasses import replace
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvalidInput
 from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode, encode_orientation
@@ -140,6 +140,7 @@ def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     return jetons, masque
 
 
+@renamed_parameters({"baies": "glazing"})
 def vector_to_tokens(
     x: np.ndarray, orientation: Orientation, glazing: Glazing | None = None
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -151,7 +152,7 @@ def vector_to_tokens(
         Vecteur de décision ``(x, y, w, h)`` par pièce.
     orientation : Orientation
         Azimut du bâtiment.
-    baies : Baies or None, optional
+    glazing : Baies or None, optional
         Fenestration. ``None`` rend les seuls jetons de pièce — c'est le
         comportement d'avant l'extension du protocole, et il est **exactement**
         conservé.

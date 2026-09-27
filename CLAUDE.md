@@ -20,7 +20,10 @@ The descriptions in `.claude/agents/` are the routing signal. Delegate **proacti
 
 After non-trivial Python code, chain `review-and-refactor`.
 
+## From the `agent-skills` plugin (routed automatically when installed)
+
+- `agent-skills:security-auditor`, `agent-skills:deprecation-and-migration`, `agent-skills:git-workflow-and-versioning` — routed by `AGENTS.md` like the agents above. The plugin is **not vendored** in this repository: it must be installed in the user's Claude Code. Without it, skip these rows; nothing else depends on them.
+
 ## Available on demand (not auto-dispatched)
 
-- `agent-skills:security-auditor`, `agent-skills:deprecation-and-migration`, `agent-skills:git-workflow-and-versioning` — routed automatically, see `AGENTS.md`.
 - `ponytail` (`/ponytail`, `/ponytail-review`, `/ponytail-audit`) — pushes toward the most minimal, densest code. **Not** dispatched automatically here: it conflicts with this repo's own conventions (numpy docstrings, `ARCHITECTURE.md`'s explicitness, `review-and-refactor`). Invoke it by name only if explicitly asked for a concision pass.

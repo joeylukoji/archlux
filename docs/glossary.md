@@ -75,7 +75,10 @@ Unchanged because they already read as English or are standard terms: `id`, `typ
 `trace`, `orientation`, `structure`, `deg`.
 
 Public parameters that follow the same rename: `pavage` becomes `tiling`,
-`budget_reparation` becomes `repair_budget`, `fusions` becomes `merged_rooms`.
+`budget_reparation` becomes `repair_budget`, `fusions` becomes `merges` (the name
+`verify_exactly` and `minimum_area_shares` already use for the same tuple). The old keywords
+stay accepted with a `DeprecationWarning` until 1.0.0, like every renamed keyword of a
+public function (`archlux._deprecation.renamed_parameters`).
 
 ## Public functions and methods (rename wave 5, first batch)
 

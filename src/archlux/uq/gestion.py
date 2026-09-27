@@ -41,7 +41,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import CalibrationLocked, InvariantViolation, ModelModified
 
 __all__ = [
@@ -99,6 +99,7 @@ def _model_fingerprint(model: object) -> str:
     return hashlib.sha256(b"".join(buffers)).hexdigest()
 
 
+@renamed_parameters({"modele": "model", "horodatage": "timestamp"})
 def freeze_and_issue(model: object, *, timestamp: str | None = None) -> CalibrationToken:
     """Issue the token **after** the weights are frozen, never before.
 
@@ -121,6 +122,9 @@ def freeze_and_issue(model: object, *, timestamp: str | None = None) -> Calibrat
     return issue_token(_model_fingerprint(model), instant)
 
 
+@renamed_parameters(
+    {"empreinte_poids": "weights_fingerprint", "horodatage_gel": "freeze_timestamp"}
+)
 def issue_token(weights_fingerprint: str, freeze_timestamp: str) -> CalibrationToken:
     """Issue a token for a frozen model.
 
@@ -143,6 +147,7 @@ def issue_token(weights_fingerprint: str, freeze_timestamp: str) -> CalibrationT
     return CalibrationToken(weights_fingerprint, freeze_timestamp, signature)
 
 
+@renamed_parameters({"jeton": "token"})
 def open_calibration(racine: Path, token: CalibrationToken) -> Path:
     """Open the calibration directory; a valid token is required.
 

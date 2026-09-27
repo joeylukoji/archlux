@@ -5,7 +5,7 @@ plans from a new generator can fall outside the calibrated domain; the bound is 
 still computable, but it no longer guarantees anything. This module detects that and
 says so.
 
-``uq`` imports neither ``light`` nor ``solve``: :func:`mesurer_derive` works on
+``uq`` imports neither ``light`` nor ``solve``: :func:`measure_drift` works on
 arrays that are already evaluated.
 """
 
@@ -90,7 +90,7 @@ def check_drift(
       (e-value, conformal martingale mixture) or at least a corrected threshold.
     - **Power not characterized.** No power analysis accompanies the threshold: for
       small ``n_observations``, ``echangeable=True`` means "drift not detected", not
-      "no drift". :func:`archlux.certify.borne.construire_borne` nonetheless treats
+      "no drift". :func:`archlux.certify.borne.build_bound` nonetheless treats
       this boolean as authorization to publish.
     - **Poorly targeted statistic.** Kolmogorov-Smirnov is most sensitive to the
       center of the distribution, while conformal coverage depends only on the

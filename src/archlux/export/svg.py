@@ -33,7 +33,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvalidInput
 
 if TYPE_CHECKING:
@@ -176,6 +176,7 @@ def _panneau(
     return parties
 
 
+@renamed_parameters({"contour": "outline"})
 def render(
     plan: Plan,
     *,
@@ -219,6 +220,7 @@ def render(
     return _document(_LARGEUR_PANNEAU, hauteur, parties)
 
 
+@renamed_parameters({"contour": "outline"})
 def compare(
     avant: Plan,
     apres: Plan,
@@ -264,6 +266,7 @@ def compare(
     return sheet(((avant, titres[0]), (apres, titres[1])), outline=outline, walls=walls)
 
 
+@renamed_parameters({"contour": "outline"})
 def sheet(
     volets: tuple[tuple[Plan, str], ...],
     *,

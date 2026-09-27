@@ -48,10 +48,10 @@ s = lmo.resoudre(poly_fw, c=-substitut.gradient(x_k, orientation), depart=x_k)
 ```
 
 **Daylight oracle.** The core only knows the `Surrogate` protocol.
-Shipped implementations: `SubstitutAnalytique` (closed forms), `SplitFluxOracle`
+Shipped implementations: `AnalyticSurrogate` (closed forms), `SplitFluxOracle`
 (analytic + BRE split-flux: the **frozen oracle** of the CI, a closed form, neither a
-simulation nor a ground truth), `SubstitutDense` (`numpy` perceptron) and
-`SubstitutAppris` (which refuses `.pt` weights: the transformer does not exist). A
+simulation nor a ground truth), `DenseSurrogate` (`numpy` perceptron) and
+`LearnedSurrogate` (which refuses `.pt` weights: the transformer does not exist). A
 ray-tracing engine (Radiance) is **off the critical path**: empty `sim` extra, never
 imported by the core, never required by the CI nor by milestones 5–6. It can be plugged in
 later behind the same protocol. The daylight guarantee of milestone 5 is about **this
@@ -85,7 +85,7 @@ INPUTS: proposed plan · load-bearing structure · orientation · room program
 learned, isolated behind a protocol. They are not all **pure**: `lmo` keeps
 a mutable global cache of GLOP models (at most 4, `lmo.solveur._CACHE`, ADR-8 of the
 blueprint) for the Frank-Wolfe warm start. This cache changes the time, never
-the result; `lmo.solveur.vider_cache` empties it, and the budget tests empty it before
+the result; `lmo.solveur.clear_cache` empties it, and the budget tests empty it before
 measuring a cold LP.
 
 ---
@@ -135,7 +135,7 @@ bench   ← everything
 - [ ] `lmo` must never import `light`
 - [ ] `light` must never import `geom`, `lmo` or `solve`
 - [ ] `active` imports no `light.*` implementation (only the protocol)
-- [ ] `export` imports neither `geom` nor `certify` (certificate appendix via `Plan.certificat`)
+- [ ] `export` imports neither `geom` nor `certify` (certificate appendix via `Plan.certificate`)
 - [ ] `feasibility` imports neither `light` nor `uq` (no performance promise)
 - [ ] no module may import `bench`
 - [ ] `data` may read `geom` and `orient` (corpus loaders **only**),
@@ -185,7 +185,7 @@ class Plan:
 - [ ] The **absolute** position of an opening is **never stored**, always derived
 - [ ] A legalized plan **always** carries its certificate
 - [ ] `GeometricProof` has **no** probability field
-- [ ] `PerformanceBound` **always** carries `couverture` and `n_calibration`
+- [ ] `PerformanceBound` **always** carries `coverage` and `n_calibration`
 
 ---
 
@@ -232,7 +232,7 @@ class Plan:
 favourable case**: a 5 × 3 grid of rooms that is already valid, with no load-bearing wall, no tiling,
 analytic surrogate. Since batch 1.2, it also covers the performance mode with tight
 minimum areas (15 rooms) and a scaling test at 15, 50 and 100 rooms. No
-budget covers a noisy input, `pavage=True` or load-bearing walls: for these cases,
+budget covers a noisy input, `tiling=True` or load-bearing walls: for these cases,
 the `benchmarks/guarantees/` bench records median times (about 5 ms in classical mode,
 15 to 20 ms in performance mode over 200 scenarios) without making them a contract. Under
 `--benchmark-disable`, an unmeasured budget is **skipped**, not validated.

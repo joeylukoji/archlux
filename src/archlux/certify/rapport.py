@@ -7,7 +7,7 @@ a prediction.
 
 from __future__ import annotations
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux._version import __version__
 from archlux.types import Certificate, GeometricProof, Manifest, PerformanceBound
 
@@ -99,6 +99,7 @@ def _header(manifest: Manifest | None) -> str:
     )
 
 
+@renamed_parameters({"certificat": "certificate"})
 def render(certificate: Certificate) -> str:
     """Render the certificate as readable text.
 

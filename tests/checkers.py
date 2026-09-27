@@ -55,7 +55,7 @@ def _fusion_holds(a: Room, b: Room, kind: str, min_contact: float) -> bool:
 
 
 def _fused_area_violations(
-    rooms: tuple[Room, ...], ctx: Context, fusions: tuple[RectilinearRoom, ...]
+    rooms: tuple[Room, ...], ctx: Context, merges: tuple[RectilinearRoom, ...]
 ) -> tuple[set[str], list[Violation]]:
     """Fused rooms measured as a whole: every recorded edge holds, the sum meets the minimum.
 
@@ -64,7 +64,7 @@ def _fused_area_violations(
     by_id = {room.id: room for room in rooms}
     members: set[str] = set()
     found: list[Violation] = []
-    for piece in fusions:
+    for piece in merges:
         parts = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
         if not parts:
             continue
@@ -85,12 +85,12 @@ def _fused_area_violations(
 
 
 def violations(
-    plan: Plan, ctx: Context, *, fusions: tuple[RectilinearRoom, ...] = ()
+    plan: Plan, ctx: Context, *, merges: tuple[RectilinearRoom, ...] = ()
 ) -> list[Violation]:
     """Tiling, minimum areas and load-bearing walls, checked from coordinates only.
 
     Pairwise disjoint rooms whose areas add up to the outline area tile it exactly. A
-    fused room (``fusions``) is measured as a whole: its sub-rectangles must keep every
+    fused room (``merges``) is measured as a whole: its sub-rectangles must keep every
     recorded shared edge, and their areas add up to the room's.
     """
     found: list[Violation] = []
@@ -109,7 +109,7 @@ def violations(
             Violation("coverage", f"rooms cover {total:.6f} m² of a {target:.6f} m² outline")
         )
 
-    fused, fused_found = _fused_area_violations(rooms, ctx, fusions)
+    fused, fused_found = _fused_area_violations(rooms, ctx, merges)
     found.extend(fused_found)
     for room in rooms:
         if room.id in fused:
@@ -137,7 +137,7 @@ def violations(
                 found.append(Violation("wall", f"{room.id} crosses load-bearing wall {wall.id}"))
         # A seam of a fused room is inside the room: a wall along it cuts the room in two.
         by_id = {room.id: room for room in rooms}
-        for piece in fusions:
+        for piece in merges:
             for i, j, kind in piece.merges:
                 first = by_id.get(piece.rectangles[i].id)
                 second = by_id.get(piece.rectangles[j].id)

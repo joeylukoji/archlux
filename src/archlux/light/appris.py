@@ -6,7 +6,7 @@ et ``tests/test_dependances.py`` en fait un test bloquant de la CI.
 Ce module ne connaît ni ``geom``, ni ``lmo``, ni ``solve`` : il ne voit qu'un vecteur et
 une orientation, et rend un nombre, un gradient et une incertitude.
 
-Tant que les poids sont un ``npz`` du perceptron (:class:`~archlux.light.base.SubstitutDense`),
+Tant que les poids sont un ``npz`` du perceptron (:class:`~archlux.light.base.DenseSurrogate`),
 ``torch`` n'est pas chargé. Un fichier ``.pt`` déclenche le transformeur.
 
 État réel du transformeur
@@ -17,7 +17,7 @@ Tant que les poids sont un ``npz`` du perceptron (:class:`~archlux.light.base.Su
 type de retour est ``NoReturn``, et le contrôle
 de taille contre :data:`MAX_PARAMETRES` qu'elle exécute d'abord ne peut donc que changer
 le message d'erreur, jamais laisser passer un modèle. Le seul substitut appris réellement
-servi par :class:`SubstitutAppris` est le perceptron numpy de
+servi par :class:`LearnedSurrogate` est le perceptron numpy de
 :mod:`archlux.light.base`, chargé depuis un ``npz``.
 
 Conséquence pour la lecture des résultats : tout chiffre de « substitut appris » produit

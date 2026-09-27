@@ -8,7 +8,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.bench.manifeste import emit
 from archlux.errors import InvariantViolation
 from archlux.io.json_io import manifest_to_dict
@@ -38,6 +38,15 @@ class Result:
     rows: tuple[RawRow, ...]
 
 
+@renamed_parameters(
+    {
+        "empreinte_donnees": "data_fingerprint",
+        "decoupage": "split",
+        "modele": "model",
+        "repertoire": "directory",
+        "parametres": "parameters",
+    }
+)
 def run(
     *,
     plans: Sequence[Plan],

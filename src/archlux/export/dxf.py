@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from archlux._deprecation import renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.export.pathologie import diagnose
 from archlux.types import Plan
@@ -11,6 +12,7 @@ from archlux.types import Plan
 __all__ = ["to_dxf"]
 
 
+@renamed_parameters({"chemin": "path"})
 def to_dxf(plan: Plan, path: Path | str) -> None:
     """Export the rooms as ``LWPOLYLINE`` (2D plan).
 

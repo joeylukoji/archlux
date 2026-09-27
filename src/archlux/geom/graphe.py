@@ -19,7 +19,7 @@ import math
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Literal
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InconsistentOrder, MissingSeparation, UnsupportedInput
 from archlux.tolerances import CONTACT_M, SNAP_M
 
@@ -362,7 +362,7 @@ def _wall_side(room: Room, wall: Wall, envelope: Envelope | None) -> WallSide:
 
     - a room disjoint from the wall penetrates some half-plane negatively, and the
       least penetrated is the axis of the largest gap: the rule used between two rooms
-      in :func:`deduire_ordre`;
+      in :func:`deduce_order`;
     - a room crossing the wall gets the smallest correction, which may go *around* the
       end of a partial wall (1 cm over the end moves the room 1 cm, not across the wall).
 
@@ -421,6 +421,7 @@ def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe:
     return graphe
 
 
+@renamed_parameters({"pieces": "rooms"})
 def build_graph(ordre: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
     """Assemble the two directed graphs and validate the order.
 
@@ -428,7 +429,7 @@ def build_graph(ordre: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
     ----------
     ordre : RelativeOrder
         Partial order, typically from :func:`deduce_order`.
-    pieces : sequence of str
+    rooms : sequence of str
         **Authoritative** set of the expected rooms. An edge carrying an
         identifier absent from this set is refused: better to fail than to
         constrain a phantom room.

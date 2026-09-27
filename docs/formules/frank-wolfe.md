@@ -18,7 +18,7 @@ s_k\in\arg\max_{s\in P}\langle\nabla f(x_k),s\rangle
 =\arg\min_{s\in P}\langle -\nabla f(x_k),s\rangle,
 \]
 
-that is `lmo.resoudre(poly, c=-gradient, depart=x_k)`. The standard step is
+that is `lmo.solveur.solve(poly, c=-gradient, depart=x_k)`. The standard step is
 \(\gamma_k=\min\{2/(k+2),\gamma_{\max}\}\), halved while \(f\) decreases. The gap
 
 \[
@@ -52,7 +52,7 @@ therefore reports:
   meets the budget only up to the LP tolerance when the budget is saturated. The proof
   checks \(\max \lvert x - \hat x\rvert \le \Delta\); a budget too small for the plan
   raises `Infeasible`.
-- After L1, `figer_contacts` turns saturated separations into equalities and pins
+- After L1, `freeze_contacts` turns saturated separations into equalities and pins
   \(x, y\) to saturated outline edges: Frank-Wolfe keeps a tiling (no gap between rooms)
   while moving interior partitions. Saturated minimum widths stay free: a narrow room
   can grow.

@@ -1,6 +1,6 @@
 # Pavage exact
 
-**Code :** `geom.pavage.deduire_trame`, `etendre_pavage` ; `api.legalize(..., pavage=True)`.
+**Code :** `geom.pavage.deduce_grid`, `extend_tiling` ; `api.legalize(..., tiling=True)`.
 
 ## Le problème
 
@@ -98,14 +98,14 @@ sature vite — 8 ne gagne rien sur 4 :
     Fermer un jour, c'est agrandir quelqu'un : la réparation peut **absorber une
     pièce manquante dans sa voisine**, et le plan sort avec une pièce de moins que
     le générateur n'en avait prévu. Un appelant qui doit préserver le programme
-    pièce par pièce passe ``budget_reparation=0`` — la partition est alors vérifiée,
+    pièce par pièce passe ``repair_budget=0`` — la partition est alors vérifiée,
     jamais retouchée.
 
 ## Deux propriétés
 
 1. **Le système reste faisable.** Les positions de trame du plan de référence sont
    toujours un point admissible. Geler des contacts *approximativement* saturés
-   (`figer_contacts`) n'offre aucune garantie de ce genre : 8 % de LP infaisables
+   (`freeze_contacts`) n'offre aucune garantie de ce genre : 8 % de LP infaisables
    mesurés, pour 41,5 % de réparation seulement.
 2. **La garantie est structurelle.** Elle ne dépend d'aucune tolérance à
    l'exécution : la vérification de partition a déjà eu lieu.
@@ -115,7 +115,7 @@ sature vite — 8 ne gagne rien sur 4 :
 4 796 corruptions de 300 appartements MSD réels ; bruts et table dans
 `results/j7_reparation_brut.csv` et `results/j7_reparation.md` :
 
-| Faute | `legalize` | `pavage=True` | repli |
+| Faute | `legalize` | `tiling=True` | repli |
 |---|--:|--:|--:|
 | jour | 10,0 % | 97,6 % | **98,0 %** |
 | sous-dimension | 4,8 % | 96,0 % | **96,3 %** |
@@ -129,7 +129,7 @@ IC 95 % sur le repli global : [93,2 – 94,5]. Temps médian 6,5 ms, sous le bud
 
 Le repli n'ajoute qu'un point : la contrainte de pavage domine presque partout à
 elle seule. Il reste utile là où la corruption détruit la structure combinatoire —
-`deduire_trame` refuse alors plutôt que de deviner, et le L1 seul reprend la main.
+`deduce_grid` refuse alors plutôt que de deviner, et le L1 seul reprend la main.
 
 ## Cas d'utilisation
 
