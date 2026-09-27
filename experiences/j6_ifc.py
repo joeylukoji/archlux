@@ -42,7 +42,7 @@ with tempfile.TemporaryDirectory() as tmp, OUT.open("w", newline="", encoding="u
         path = Path(tmp) / f"{plan_id}.ifc"
         exported = to_ifc(
             ax.Plan(repaired.rooms, (wall,), (), plan.outline), path, validate=True
-        ).valid
+        ).valide  # RapportExport keeps its French field until the export batch
         logger = ifcopenshell.validate.json_logger()
         if exported:
             ifcopenshell.validate.validate(ifcopenshell.open(str(path)), logger, express_rules=True)
