@@ -16,7 +16,7 @@ import numpy as np
 
 from archlux.erreurs import InvariantViole
 from archlux.light.protocole import Baies, Substitut
-from archlux.types import Orientation
+from archlux.types import Indicateur, Orientation
 
 __all__ = ["Daylight"]
 
@@ -41,7 +41,7 @@ class Daylight:
             raise InvariantViole(("q_chapeau doit être ≥ 0",))
 
     @property
-    def indicateur(self) -> str:
+    def indicateur(self) -> Indicateur:
         """Nom de l'indicateur modélisé, délégué au substitut enveloppé."""
         return self.substitut.indicateur
 
