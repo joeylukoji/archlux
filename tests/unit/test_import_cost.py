@@ -42,6 +42,18 @@ def test_legalize_is_still_reachable_from_the_package() -> None:
     assert result.returncode == 0, result.stderr
 
 
+def test_legalize_trace_is_also_reachable_from_the_package() -> None:
+    code = (
+        "import archlux\n"
+        "from archlux import legalize_trace as imported\n"
+        "import archlux.api\n"
+        "assert archlux.legalize_trace is archlux.api.legalize_trace is imported\n"
+        "assert 'legalize_trace' in archlux.__all__ and 'legalize_trace' in dir(archlux)\n"
+    )
+    result = run(code)
+    assert result.returncode == 0, result.stderr
+
+
 def test_an_unknown_attribute_still_raises() -> None:
     result = run("import archlux\narchlux.nothing_here\n")
     assert result.returncode != 0

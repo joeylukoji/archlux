@@ -64,8 +64,11 @@ from archlux.types import (
 # ``light`` / ``bench`` / ``feasibility``: loaded lazily through ``__getattr__`` so that
 # ``import archlux`` pulls neither ``torch`` nor the benchmark.
 __all__ = [  # noqa: RUF022
-    # the public function: only one, that is the thesis of the project in the API
+    # the public function is the thesis of the project in the API; legalize_trace is
+    # the same call with its Frank-Wolfe trace returned instead of attached (PLAN.md
+    # phase 4, block 2)
     "legalize",
+    "legalize_trace",
     # data model; input and output go through Plan.from_json / Plan.to_json and not
     # through free functions: one single way to load a plan.
     "Plan",
@@ -109,14 +112,15 @@ if TYPE_CHECKING:
     import archlux.feasibility as feasibility
     import archlux.light as light
     from archlux.api import legalize as legalize
+    from archlux.api import legalize_trace as legalize_trace
 
 # ``legalize`` drags in numpy, scipy.sparse, shapely and ortools (about 1 s): it is
 # resolved on first use, so that ``import archlux`` stays under 0.5 s (PLAN.md 3.13).
-_LAZY_FUNCTIONS = {"legalize": "archlux.api"}
+_LAZY_FUNCTIONS = {"legalize": "archlux.api", "legalize_trace": "archlux.api"}
 
 
 def _lazy_attribute(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
-    """Load ``light``, ``bench``, ``feasibility`` and ``legalize`` on first use."""
+    """Load a lazy package or function on first use."""
     # Local import: do not pollute ``dir(archlux)`` with ``importlib``.
     import importlib
 

@@ -165,8 +165,8 @@ def test_performance_mode_keeps_tight_minimum_areas() -> None:
         regulation=Regulation(min_areas=(("bedroom", 11.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
-    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), trace=True)
+    result, trace = archlux.legalize_trace(plan, ctx, objective=AnalyticSurrogate())
     assert checkers.violations(result, ctx) == []
-    for iteration in result.trace.iterates:  # type: ignore[union-attr]
+    for iteration in trace.iterates:  # type: ignore[union-attr]
         areas = iteration.reshape(-1, 4)[:, 2] * iteration.reshape(-1, 4)[:, 3]
         assert np.all(areas >= 11.0 * (1 - 1e-9)), "every iterate keeps the minimum area"

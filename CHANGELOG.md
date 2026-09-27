@@ -8,6 +8,13 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 2 (`types`): `legalize_trace`, `vectorize`
+
+- `legalize_trace(plan, ctx, ...) -> (Plan, Trace | None)`: the Frank-Wolfe trace as a return value instead of `Plan.trace`. `legalize(..., trace=True)` still works, now deprecated (warns, points at `legalize_trace`); `None` in classic mode (no Frank-Wolfe pass).
+- `archlux.types.vectorize(plan)` and `FIELDS_VECTOR`: the plain `(x, y, w, h)`-per-room encoding, no solver index needed, next to (not replacing) `geom.polytope.vectorize`. `light.jetons.plan_to_vector` now delegates to it instead of duplicating the computation.
+- Migrated four internal test call sites from `legalize(trace=True)` to `legalize_trace(...)`.
+- **Found infeasible, documented, not done**: moving `ModelTrace`/`Manifest` into `bench` (PLAN.md's own block-2 item) would need `io.json_io` and `certify.rapport` to import `bench`, a leaf nobody may import; the two nominal exemptions that would require exceed the project's existing cap of 3 (already spent on `types`'s own three). See `docs/plans/phase-4-design-patterns.md`.
+
 ### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
 
 - `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Covers `api` like every other package, through a transitive closure of the existing `AUTORISE` declarations.

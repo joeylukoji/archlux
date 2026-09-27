@@ -16,6 +16,7 @@ from archlux.errors import InvalidInput
 from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode, encode_orientation
 from archlux.types import Context, Opening, Orientation, Plan, Wall
+from archlux.types import vectorize as _vectorize
 
 __all__ = [
     "FIELDS_PER_ROOM",
@@ -28,7 +29,7 @@ __all__ = [
 
 TOKEN_DIM = 32
 FIELDS_PER_ROOM = 4
-"""``(x, y, w, h)`` par pièce. Dupliqué ici pour que ``light`` n'importe pas ``geom``."""
+"""``len(archlux.types.FIELDS_VECTOR)``: ``(x, y, w, h)`` par pièce."""
 _TYPES = ("living_room", "bedroom", "kitchen", "bathroom", "corridor", "toilet")
 _EPS = 1e-12
 
@@ -42,11 +43,13 @@ def permute_rooms(plan: Plan, ordre: tuple[int, ...]) -> Plan:
 
 
 def plan_to_vector(plan: Plan) -> np.ndarray:
-    """Vecteur de décision ``(x, y, w, h)`` par pièce, même contrat que le polytope."""
-    return np.array(
-        [(piece.x, piece.y, piece.w, piece.h) for piece in plan.rooms],
-        dtype=float,
-    ).ravel()
+    """``(x, y, w, h)`` per room, in ``plan.rooms`` order.
+
+    :func:`archlux.types.vectorize` (PLAN.md phase 4, block 2): kept here under its own
+    name since ``light`` may not import ``geom``, and this is the plain encoding, not
+    the solver's index-ordered one.
+    """
+    return _vectorize(plan)
 
 
 def _jeton_piece(

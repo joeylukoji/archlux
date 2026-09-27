@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -168,11 +170,66 @@ def test_legalize_trace_remonte_les_iteres() -> None:
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
     )
-    q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=AnalyticSurrogate(), trace=True)
+    with pytest.warns(DeprecationWarning, match="legalize_trace"):
+        q = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=AnalyticSurrogate(), trace=True)
     assert isinstance(q.trace, Trace)
     assert q.trace.iterates
     assert q.certificate is not None
     assert q.certificate.geometry.valid
+
+
+def test_legalize_trace_positive_is_deprecated() -> None:
+    """PLAN.md phase 4, block 2: ``trace=True`` still works, but points at the
+    replacement."""
+    plan = Plan(
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=12.0, h=9.0),),
+        walls=(),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
+    )
+    with pytest.warns(DeprecationWarning, match="legalize_trace"):
+        q = archlux.legalize(plan, CONTEXTE_DEFAUT, trace=True)
+    assert q.trace is None  # classic mode: no Frank-Wolfe pass, nothing to warn about
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        archlux.legalize(plan, CONTEXTE_DEFAUT)  # trace=False by default: no warning
+
+
+def test_legalize_trace_returns_the_trace_instead_of_attaching_it() -> None:
+    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.solve.trace import Trace
+
+    plan = Plan(
+        rooms=(
+            Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+            Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
+        ),
+        walls=(),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # legalize_trace must not warn about itself
+        q, trace = archlux.legalize_trace(plan, CONTEXTE_DEFAUT, objective=AnalyticSurrogate())
+    assert q.trace is None  # the trace is returned, not attached
+    assert isinstance(trace, Trace)
+    assert trace.iterates
+    assert q.certificate is not None
+    assert q.certificate.geometry.valid
+
+
+def test_legalize_trace_is_none_in_classic_mode() -> None:
+    """No ``objective`` means no Frank-Wolfe pass: nothing to trace."""
+    plan = Plan(
+        rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=12.0, h=9.0),),
+        walls=(),
+        openings=(),
+        outline=CONTEXTE_DEFAUT.outline,
+    )
+    q, trace = archlux.legalize_trace(plan, CONTEXTE_DEFAUT)
+    assert trace is None
+    assert q.trace is None
+    assert q.certificate is not None and q.certificate.geometry.valid
 
 
 def test_budget_zero_reste_au_point_l1() -> None:

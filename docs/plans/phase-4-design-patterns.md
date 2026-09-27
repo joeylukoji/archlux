@@ -159,18 +159,32 @@ day count.
    closure of `AUTORISE` avoids false positives (`api` reaching `uq` only through
    `certify`, which is what `certify`'s own declared layers already allow).
 
-### 2. `types`
+### 2. `types` — **done, with one item skipped by design (see below)**
 
-7. Add the property tests / reference cases for `Plan`, `Context`, `Manifest` and
-   `ModelTrace` construction if a gap is found (entry condition, Q-M8).
-8. Extract `trace` out of `Plan`: `legalize` gains a `legalize_trace` sibling (or a
-   `trace=True` return shape) returning `(Plan, Trace)` instead of a plan that carries
-   its own trace.
-9. Move `ModelTrace` and `Manifest` to `bench` (their only real owner; `types.py` keeps
-   re-exporting them as deprecated aliases at their old path until 1.0.0, per ADR 0001).
-10. Add `FIELDS_VECTOR` and a top-level `vectorize(plan)` next to the existing
-    `geom.polytope.vectorize`, so a caller does not need to reach into `geom` for a
-    plain plan-to-vector conversion.
+7. Existing property tests and reference cases for `Plan`/`Context`/`Manifest`/
+   `ModelTrace` construction were already adequate; no gap found.
+8. `legalize` gains a `legalize_trace` sibling returning `(Plan, Trace | None)`
+   (`None` in classic mode: no Frank-Wolfe pass to trace). `legalize(..., trace=True)`
+   still works, now with a `DeprecationWarning` pointing at the replacement — the
+   maintainer's own choice over a clean break (2026-09-27). `Plan.trace` itself is
+   **not** removed: converting it into a warn-on-access property is not practical on a
+   `frozen, slots` dataclass without real engineering cost for a field that keeps
+   working either way; `legalize_trace` builds a `Plan` with `trace=None` on its own
+   return, which is what a new caller actually sees.
+9. **Skipped, found infeasible as written**: `bench` is a leaf `EXEMPTIONS`/`AUTORISE`
+   forbid anyone from importing (`test_personne_n_importe_bench`), but `io.json_io`
+   genuinely constructs `ModelTrace`/`Manifest` instances at runtime when deserializing
+   a manifest (not just a type hint), and `certify.rapport` type-hints on `Manifest`.
+   Moving the classes into `bench` would need two more nominal `EXEMPTIONS` entries,
+   which the existing rule caps at 3 project-wide — already fully spent on `types`'s
+   own three (`io.json_io`, `certify.rapport`, `export`). Confirmed at the commit, not
+   assumed: this item stays in `types.py`, unmoved, until either the exemption cap is
+   revisited or `bench`'s own leaf status changes (both bigger decisions than block 2).
+10. `FIELDS_VECTOR` and `vectorize(plan)` added to `types.py` (local `numpy` import,
+    since `types` is loaded eagerly by the package root and must not add to `import
+    archlux`'s budget — caught by `test_import_cost.py` on the first attempt).
+    `light.jetons.plan_to_vector` now delegates to it instead of duplicating the same
+    four-line computation (its own comment explaining the duplication is gone with it).
 
 ### 3. `geom`
 

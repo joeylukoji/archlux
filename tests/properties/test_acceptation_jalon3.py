@@ -43,20 +43,20 @@ def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
     Frank-Wolfe travaille sur ``figer_contacts``, pas sur le relaxé d'ordre du
     point final.
     """
-    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
-    assert isinstance(result.trace, Trace)
-    assert result.trace.iterates
+    _result, trace = archlux.legalize_trace(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
+    assert isinstance(trace, Trace)
+    assert trace.iterates
     poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
-    poly_fw = freeze_contacts(poly, result.trace.iterates[0])
-    assert all(poly_fw.contains(point, tol=1e-6) for point in result.trace.iterates)
+    poly_fw = freeze_contacts(poly, trace.iterates[0])
+    assert all(poly_fw.contains(point, tol=1e-6) for point in trace.iterates)
 
 
 @given(plan=plans_valides())
 @settings(max_examples=20, deadline=None)
 def test_objectif_monotone(plan: Plan) -> None:
-    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE, trace=True)
-    assert isinstance(result.trace, Trace)
-    for avant, apres in pairwise(result.trace.values):
+    _result, trace = archlux.legalize_trace(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
+    assert isinstance(trace, Trace)
+    for avant, apres in pairwise(trace.values):
         assert apres >= avant - 1e-9
 
 
