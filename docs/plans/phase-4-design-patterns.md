@@ -282,7 +282,7 @@ suite green (no regressions), `mypy src` clean, `radon cc frank_wolfe.py -n C -s
 coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.py` and
 `test_neutrality.py` green.
 
-### 6. `light` (item 21 done)
+### 6. `light` — done (21 done, 22 skipped, 23 done)
 
 21. Added `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`, `"ASE"` the only `"<="`)
     and `types.indicator_sign` (`-1.0`/`1.0`), next to the existing `REGIMES` registry —
@@ -303,12 +303,34 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     Verified: full suite green, `mypy src` clean, coverage 89.53% (ratchet 88.8%),
     `mkdocs build --strict` clean. No complexity change (duplication removal, not a
     CC reduction); ratchet stays at 25.
-22. Split `DenseSurrogate` (`light/base.py`) into model (weights, `evaluate`,
-    `gradient`), trainer (`fit`) and serializer (`save`/`load`) — three collaborating
-    objects instead of one class doing all three.
-23. Add a `Fingerprintable` protocol (`archlux.uq.gestion._model_fingerprint`'s duck
-    type, made explicit) that a surrogate can implement instead of being introspected
-    by attribute name.
+22. **Skipped, found premature by design review (`python-design-patterns` +
+    ponytail-lite gut check, confirmed with the user before touching code)**:
+    splitting `DenseSurrogate` (`light/base.py`) into model/trainer/serializer objects.
+    It is a cohesive ~260-line class (weights + `evaluate`/`gradient`/`fit`/`save`/
+    `load`) with a single consumer (`LearnedSurrogate`) and no test or caller currently
+    blocked by the coupling — nothing wants a different trainer or a different
+    serializer for it, and the trainer would still need write access to the model's
+    weights either way, so the split moves coupling around rather than removing it.
+    Revisit if a second training strategy or a second serialization format is ever
+    actually needed.
+23. Added `types.Fingerprintable` (`@runtime_checkable Protocol`, one property:
+    `weights_fingerprint: str`) and implemented it on `DenseSurrogate`
+    (`light/base.py`), reusing the same SHA-256-over-weight-arrays computation
+    `uq.gestion._model_fingerprint`'s fallback already did by guessing at `W1`/`b1`/...
+    attribute names. `_model_fingerprint` already checked for a `weights_fingerprint`
+    attribute first (added for third-party models), so no change was needed there:
+    `DenseSurrogate` now takes that fast, explicit path instead of the by-name
+    guessing, and survives an internal rename that the guessing would silently miss.
+    The guessing fallback is kept for genuinely unknown third-party models (e.g. a raw
+    `torch` module) that cannot be asked to implement an archlux protocol. Lives in
+    `types.py` (not `light/protocole.py`) because `uq` may import `types` but not
+    `light` (`ARCHITECTURE.md` §5 layering). Covered by
+    `tests/unit/test_substitut_dense.py`:
+    `test_dense_implements_fingerprintable`,
+    `test_an_untrained_model_refuses_to_fingerprint`,
+    `test_freeze_and_issue_uses_the_explicit_fingerprint`.
+    Verified: full suite green, `mypy src` clean, coverage 89.38% (ratchet 88.8%),
+    `mkdocs build --strict` clean. No complexity change; ratchet stays at 25.
 
 ### 7. `orient`
 

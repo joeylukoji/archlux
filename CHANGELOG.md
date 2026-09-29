@@ -8,6 +8,13 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 6 (`light`), item 23: `Fingerprintable` protocol
+
+- `types.Fingerprintable` (`@runtime_checkable Protocol`, one property: `weights_fingerprint: str`), implemented on `DenseSurrogate`. `uq.gestion._model_fingerprint` already checked for this attribute before guessing at `W1`/`b1`/... by name; `DenseSurrogate` now takes that explicit path and survives an internal rename the guessing would silently miss. The guessing fallback stays for third-party models (e.g. a raw `torch` module) that cannot implement an archlux protocol.
+- Lives in `types.py`, not `light/protocole.py`, because `uq` may import `types` but not `light`.
+- **Skipped, found premature, item 22**: splitting `DenseSurrogate` into model/trainer/serializer objects. A cohesive class, one consumer, no caller blocked by the coupling; the split would move coupling around, not remove it. See `docs/plans/phase-4-design-patterns.md`.
+- New tests in `tests/unit/test_substitut_dense.py`.
+
 ### Added — PLAN.md phase 4, block 6 (`light`), item 21: `INDICATOR_SENSE` registry
 
 - `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`) and `types.indicator_sign` (`-1.0`/`1.0`): replace six `indicator == "ASE"` sign flips (`light/analytique.py`, `light/simulateur.py`, `light/protocole.py`, `uq/conforme.py`) and two comparison-direction branches (`certify/rapport.py`, `uq/conforme.py`), plus two spots that separately repeated the four-indicator-name list (`light/base.py`).

@@ -147,6 +147,28 @@ class DenseSurrogate:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
 
+    @property
+    def weights_fingerprint(self) -> str:
+        """Implements :class:`archlux.types.Fingerprintable`.
+
+        ``uq.gestion._model_fingerprint`` reads this directly instead of guessing at
+        ``W1``/``b1``/... by name, so it survives an internal rename here.
+        """
+        if (
+            self.W1 is None
+            or self.b1 is None
+            or self.W2 is None
+            or self.b2 is None
+            or self.W3 is None
+        ):
+            raise InvariantViolation(("fingerprinting an untrained model",))
+        buffers = [
+            np.ascontiguousarray(w, dtype=float).tobytes()
+            for w in (self.W1, self.b1, self.W2, self.b2, self.W3)
+        ]
+        buffers.append(np.asarray(float(self.b3), dtype=float).tobytes())
+        return hashlib.sha256(b"".join(buffers)).hexdigest()
+
     def n_parameters(self) -> int:
         """Nombre de scalaires entraînés."""
         if (

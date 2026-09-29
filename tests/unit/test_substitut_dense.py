@@ -14,7 +14,8 @@ from archlux.light.base import DenseSurrogate
 from archlux.light.protocole import Surrogate
 from archlux.light.simulateur import SplitFluxOracle
 from archlux.light.validation import validate_gradient
-from archlux.types import Orientation
+from archlux.types import Fingerprintable, Orientation
+from archlux.uq.gestion import freeze_and_issue
 
 _SIM = SplitFluxOracle()
 _ANA = AnalyticSurrogate()
@@ -110,3 +111,26 @@ def test_empreinte_divergente_leve(tmp_path: Path) -> None:
     reseau = LearnedSurrogate(path, "0" * 64, gele=True)
     with pytest.raises(InvariantViolation):
         reseau.n_parameters()
+
+
+def test_dense_implements_fingerprintable() -> None:
+    """PLAN.md phase 4, block 6, item 23: an explicit fingerprint, not attribute guessing."""
+    xs, ys, oris = _jeu(seed=5, n=12)
+    dense = DenseSurrogate()
+    dense.fit(xs, ys, oris, seed=5, epoques=8, lr=0.12)
+    assert isinstance(dense, Fingerprintable)
+    assert dense.weights_fingerprint == dense.weights_fingerprint  # stable, not time-based
+
+
+def test_an_untrained_model_refuses_to_fingerprint() -> None:
+    with pytest.raises(InvariantViolation):
+        _ = DenseSurrogate().weights_fingerprint
+
+
+def test_freeze_and_issue_uses_the_explicit_fingerprint(tmp_path: Path) -> None:
+    """``uq.gestion._model_fingerprint`` takes the ``weights_fingerprint`` fast path."""
+    xs, ys, oris = _jeu(seed=7, n=12)
+    dense = DenseSurrogate()
+    dense.fit(xs, ys, oris, seed=7, epoques=8, lr=0.12)
+    token = freeze_and_issue(dense, timestamp="2026-09-29T00:00:00Z")
+    assert token.weights_fingerprint == dense.weights_fingerprint
