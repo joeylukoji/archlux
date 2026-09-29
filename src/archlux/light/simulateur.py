@@ -21,7 +21,7 @@ from archlux.light.analytique import AnalyticSurrogate, sector_factor
 from archlux.light.jetons import FIELDS_PER_ROOM
 from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode_orientation
-from archlux.types import Indicator, Orientation
+from archlux.types import Indicator, Orientation, indicator_sign
 
 __all__ = ["SplitFluxOracle", "daylight_factor"]
 
@@ -204,7 +204,7 @@ class SplitFluxOracle:
         base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
         parts = np.asarray(base.evaluate_rooms(x, orientation), dtype=float).copy()
         vecteur = np.asarray(x, dtype=float).ravel()
-        signe = -1.0 if self.indicateur_vise == "ASE" else 1.0
+        signe = indicator_sign(self.indicateur_vise)
         for i in range(vecteur.size // FIELDS_PER_ROOM):
             largeur = float(vecteur[i * FIELDS_PER_ROOM + 2])
             hauteur = float(vecteur[i * FIELDS_PER_ROOM + 3])
@@ -225,7 +225,7 @@ class SplitFluxOracle:
         )
         vecteur = np.asarray(x, dtype=float).ravel()
         n_pieces = vecteur.size // FIELDS_PER_ROOM
-        signe_extra = -1.0 if self.indicateur_vise == "ASE" else 1.0
+        signe_extra = indicator_sign(self.indicateur_vise)
         extra = 0.0
         for i in range(n_pieces):
             largeur = float(vecteur[i * FIELDS_PER_ROOM + 2])

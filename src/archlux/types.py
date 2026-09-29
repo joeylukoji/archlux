@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "FIELDS_VECTOR",
+    "INDICATOR_SENSE",
     "Certificate",
     "Context",
     "GeometricProof",
@@ -45,6 +46,7 @@ __all__ = [
     "Room",
     "Structure",
     "Wall",
+    "indicator_sign",
     "vectorize",
 ]
 
@@ -54,6 +56,18 @@ Indicator = Literal["sDA", "ASE", "UDI", "vue"]
 """Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
 ``PerformanceBound``, the ``Surrogate`` protocol, the surrogates and the calibration all
 share it."""
+
+INDICATOR_SENSE: Final[MappingProxyType[Indicator, str]] = MappingProxyType(
+    {"sDA": ">=", "ASE": "<=", "UDI": ">=", "vue": ">="}
+)
+"""Comparison direction of each indicator: ``\"<=\"`` where lower is better (ASE, glare),
+``\">=\"`` otherwise. Single source for the sign flip and the report/calibration
+formatting that used to each spell out ``indicator == "ASE"`` (PLAN.md phase 4, block 6)."""
+
+
+def indicator_sign(indicator: Indicator) -> float:
+    """``-1.0`` where lower is better (ASE), ``1.0`` otherwise: the surrogates' sign flip."""
+    return -1.0 if INDICATOR_SENSE[indicator] == "<=" else 1.0
 
 
 # ======================================================================================

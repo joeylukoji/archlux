@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
-from archlux.types import Indicator
+from archlux.types import Indicator, indicator_sign
 
 if TYPE_CHECKING:
     from archlux.arrays import VecteurF
@@ -217,8 +217,7 @@ def point_prediction(
         surrogate = surrogate.surrogate
     mu = float(surrogate.evaluate(x, orientation, glazing=glazing))
     sigma = float(surrogate.uncertainty(x, orientation, glazing=glazing))
-    if surrogate.indicator == "ASE":
-        mu = -mu
+    mu *= indicator_sign(surrogate.indicator)
     return mu, sigma
 
 

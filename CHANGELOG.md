@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 6 (`light`), item 21: `INDICATOR_SENSE` registry
+
+- `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`) and `types.indicator_sign` (`-1.0`/`1.0`): replace six `indicator == "ASE"` sign flips (`light/analytique.py`, `light/simulateur.py`, `light/protocole.py`, `uq/conforme.py`) and two comparison-direction branches (`certify/rapport.py`, `uq/conforme.py`), plus two spots that separately repeated the four-indicator-name list (`light/base.py`).
+- Scoped down from the plan's own wording: no `unit`/`range` fields, since nothing in the codebase reads either today. Add them when a real caller needs one.
+- New tests in `tests/unit/test_shared_types.py` cover the registry and grep `src` for any remaining `== "ASE"` outside `types.py`.
+
 ### Changed — PLAN.md phase 4, block 5 (`solve`): dead legacy path removed, `frank_wolfe` under CC 10, injectable step strategy
 
 - Removed `frank_wolfe`'s legacy `cuts`/`rooms`/`ctx` parameters and `_add_cuts` (unreferenced by any source file or test, confirmed by a repo-wide grep before deleting): brought `frank_wolfe` from CC 32 to CC 28 by deleting dead branches alone.

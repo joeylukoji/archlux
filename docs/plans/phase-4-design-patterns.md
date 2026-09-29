@@ -282,10 +282,27 @@ suite green (no regressions), `mypy src` clean, `radon cc frank_wolfe.py -n C -s
 coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.py` and
 `test_neutrality.py` green.
 
-### 6. `light`
+### 6. `light` (item 21 done)
 
-21. Add an indicator **registry** (name, sense, unit, range) that replaces the
-    `if name == "ASE"` branches scattered across `light`, `certify` and `uq`.
+21. Added `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`, `"ASE"` the only `"<="`)
+    and `types.indicator_sign` (`-1.0`/`1.0`), next to the existing `REGIMES` registry —
+    same shape, same file, no new pattern. Replaces the six `indicator == "ASE"` sign
+    flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py`,
+    `uq/conforme.py`) and two comparison-direction branches (`certify/rapport.py`,
+    `uq/conforme.py`), plus two other spots that separately repeated the four-name list
+    (`light/base.py`'s `_analytique` cache size and `DenseSurrogate.load`'s validation).
+    **Scoped down from the plan's own wording**: no `unit`/`range` fields — nothing in
+    the codebase reads a unit or a numeric range for an indicator today (grepped first);
+    adding them now would be exactly the unrequested, unused abstraction
+    `python-design-patterns`/ponytail's `lite` check exists to catch. Add them if and
+    when a real caller needs one. Covered by `tests/unit/test_shared_types.py`:
+    `test_the_indicator_registry_covers_every_indicator`,
+    `test_ase_is_the_only_lower_is_better_indicator`, `test_indicator_sign_matches_the_sense`,
+    `test_no_module_spells_out_the_ase_comparison_again` (greps `src` for `== "ASE"`
+    outside `types.py`, the same style as the existing `test_the_indicator_literal_is_written_once`).
+    Verified: full suite green, `mypy src` clean, coverage 89.53% (ratchet 88.8%),
+    `mkdocs build --strict` clean. No complexity change (duplication removal, not a
+    CC reduction); ratchet stays at 25.
 22. Split `DenseSurrogate` (`light/base.py`) into model (weights, `evaluate`,
     `gradient`), trainer (`fit`) and serializer (`save`/`load`) — three collaborating
     objects instead of one class doing all three.

@@ -21,7 +21,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.jetons import vector_to_tokens
 from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode
-from archlux.types import Indicator, Orientation
+from archlux.types import INDICATOR_SENSE, Indicator, Orientation
 
 __all__ = ["DenseSurrogate", "descriptors"]
 
@@ -45,7 +45,7 @@ SIGMA_PLANCHER = 0.02
 """
 
 
-@lru_cache(maxsize=len(("sDA", "ASE", "UDI", "vue")))
+@lru_cache(maxsize=len(INDICATOR_SENSE))
 def _analytique(indicator: Indicator) -> AnalyticSurrogate:
     """Instance analytique partagée : gelée, sans état, réutilisable sans copie.
 
@@ -358,16 +358,10 @@ class DenseSurrogate:
     @classmethod
     def load(cls, chemin: Path) -> DenseSurrogate:
         """Relire un ``npz`` produit par :meth:`save`."""
-        indicateurs: tuple[Indicator, ...] = (
-            "sDA",
-            "ASE",
-            "UDI",
-            "vue",
-        )
         with np.load(Path(chemin), allow_pickle=False) as archive:
             indicator = str(archive["indicateur"])
             # Matching by equality types the result on every mypy version, without a cast.
-            vise = next((known for known in indicateurs if known == indicator), None)
+            vise = next((known for known in INDICATOR_SENSE if known == indicator), None)
             if vise is None:
                 raise InvariantViolation((f"indicateur inconnu dans les poids : {indicator}",))
             modele = cls(indicateur_vise=vise)
