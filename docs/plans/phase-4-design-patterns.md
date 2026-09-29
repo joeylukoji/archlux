@@ -332,10 +332,30 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     Verified: full suite green, `mypy src` clean, coverage 89.38% (ratchet 88.8%),
     `mkdocs build --strict` clean. No complexity change; ratchet stays at 25.
 
-### 7. `orient`
+### 7. `orient` — done
 
-24. Add one `sector(deg, n, *, center)` function and make `light`, `uq` and `bench`
-    call it instead of each keeping its own binning logic.
+24. Added `orient.circulaire.sector(deg, n_secteurs, *, center=True)`: the centered
+    (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized.
+    `stratify` now calls it instead of repeating the formula; `light/analytique.py`'s
+    `sector_factor` (was `int((azimut + 22.5) // 45.0) % 8`, hand-rolled, scalar-only,
+    no wraparound past 360) now calls `sector(azimut, 8)` too — same result, plus
+    negative-angle and >360 wraparound for free. `bench/rapport.py` already delegated
+    to `stratify`; nothing to change there.
+    **`uq` found infeasible, documented, not done, same class of problem as blocks 2/3's
+    skipped items**: `uq.fiabilite.stratify_by_orientation` keeps its own copy of the
+    edge-aligned half of the formula, because `uq` may only import `types` and `errors`
+    (`ARCHITECTURE.md` §5) — not `orient`, where `sector` lives — and the exemption this
+    would need is one more than the project's cap of 3, already fully spent. The two
+    functions were already documented as intentionally different partitions (centered
+    vs edge-aligned), so this is a real, pre-existing architectural boundary, not new
+    duplication created by this item.
+    Covered by `tests/unit/test_circulaire.py`:
+    `test_sector_centered_matches_stratify`, `test_sector_edge_aligned_starts_at_zero`,
+    `test_sector_wraps_negative_and_over_360_degrees`, `test_sector_is_vectorized`.
+    Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` green
+    (no new cross-layer import), coverage 89.41% (ratchet 88.8%), `mkdocs build
+    --strict` clean, `test_language.py`/`test_neutrality.py` green. No complexity
+    change; ratchet stays at 25.
 
 ### 8. `uq`
 

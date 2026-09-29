@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 7 (`orient`), item 24: shared `sector()`
+
+- `orient.circulaire.sector(deg, n_secteurs, *, center=True)`: the centered (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized. `stratify` now calls it instead of repeating the formula; `light.analytique.sector_factor` (was a hand-rolled, scalar-only formula with no wraparound past 360°) calls it too. `bench.rapport` already delegated to `stratify`.
+- **Found infeasible, documented, not done**: `uq.fiabilite.stratify_by_orientation` keeps its own copy of the edge-aligned half of the formula, because `uq` may not import `orient` (`ARCHITECTURE.md` §5) and the exemption this would need exceeds the project's cap of 3, already spent. The two were already documented as intentionally different partitions (centered vs edge-aligned). See `docs/plans/phase-4-design-patterns.md`.
+- New tests in `tests/unit/test_circulaire.py`.
+
 ### Added — PLAN.md phase 4, block 6 (`light`), item 23: `Fingerprintable` protocol
 
 - `types.Fingerprintable` (`@runtime_checkable Protocol`, one property: `weights_fingerprint: str`), implemented on `DenseSurrogate`. `uq.gestion._model_fingerprint` already checked for this attribute before guessing at `W1`/`b1`/... by name; `DenseSurrogate` now takes that explicit path and survives an internal rename the guessing would silently miss. The guessing fallback stays for third-party models (e.g. a raw `torch` module) that cannot implement an archlux protocol.

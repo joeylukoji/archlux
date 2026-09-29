@@ -23,7 +23,7 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode_orientation
+from archlux.orient.circulaire import encode_orientation, sector
 from archlux.types import Indicator, Orientation, indicator_sign
 
 __all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
@@ -73,8 +73,7 @@ def sector_factor(orientation: Orientation) -> float:
     """
     features = encode_orientation(orientation, harmoniques=1)
     azimut = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
-    secteur = int((azimut + 22.5) // 45.0) % 8
-    return FACTEURS_SECTEUR[secteur]
+    return FACTEURS_SECTEUR[int(sector(azimut, 8))]
 
 
 @dataclass(frozen=True, slots=True)

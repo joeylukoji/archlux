@@ -33,6 +33,7 @@ __all__ = [
     "encode",
     "encode_orientation",
     "rayleigh",
+    "sector",
     "stratify",
 ]
 
@@ -287,6 +288,42 @@ def circular_linear_regression(theta: np.ndarray, y: np.ndarray) -> RegressionRe
     )
 
 
+def sector(
+    deg: float | np.ndarray | Sequence[float],
+    n_secteurs: int,
+    *,
+    center: bool = True,
+) -> np.ndarray:
+    """Index of the sector of width ``360 / n_secteurs`` containing each azimuth.
+
+    Parameters
+    ----------
+    deg : float or array-like
+        Azimuth(s), in degrees. Any real value: wrapped modulo 360 first.
+    n_secteurs : int
+        Number of equal-width sectors.
+    center : bool, optional
+        ``True`` (default): sector 0 is centered on 0 degrees, i.e.
+        ``[-w/2, w/2[`` where ``w = 360 / n_secteurs`` (the compass-rose convention
+        :func:`stratify` names). ``False``: sector 0 is ``[0, w[`` (edge-aligned), the
+        convention :func:`archlux.uq.fiabilite.stratify_by_orientation` needs and
+        cannot get from here (``uq`` may not import ``orient``, ARCHITECTURE.md §5) —
+        it keeps its own copy of this half of the formula.
+
+    Returns
+    -------
+    numpy.ndarray
+        Integer sector index per input angle, in ``[0, n_secteurs[``. A scalar
+        ``deg`` returns a 0-d array; ``int(...)`` converts it.
+    """
+    valeurs = np.asarray(deg, dtype=float)
+    largeur = 360.0 / n_secteurs
+    angles = valeurs % 360.0
+    if center:
+        angles = (angles + largeur / 2.0) % 360.0
+    return np.floor(angles / largeur).astype(int) % n_secteurs
+
+
 def stratify(
     degres: np.ndarray | Sequence[float],
     *,
@@ -304,9 +341,7 @@ def stratify(
     if n_secteurs < 1:
         raise InvalidInput("n_secteurs", f"must be >= 1, got {n_secteurs}")
     valeurs = np.ravel(np.asarray(degres, dtype=float))
-    largeur = 360.0 / n_secteurs
-    decale = (valeurs % 360.0 + largeur / 2.0) % 360.0
-    indices = np.floor(decale / largeur).astype(int) % n_secteurs
+    indices = sector(valeurs, n_secteurs)
     noms = _NOMS_HUIT if n_secteurs == 8 else tuple(str(i) for i in range(n_secteurs))
     return {nom: valeurs[indices == rang] for rang, nom in enumerate(noms)}
 
