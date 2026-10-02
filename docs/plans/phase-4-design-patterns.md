@@ -357,13 +357,27 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     --strict` clean, `test_language.py`/`test_neutrality.py` green. No complexity
     change; ratchet stays at 25.
 
-### 8. `uq`
+### 8. `uq` — done
 
-25. Replace the `W1..b3` attribute reflection in `_model_fingerprint` with the
-    `Fingerprintable` protocol from block 6.
-26. Replace a silently-swallowed `nan` (if any is found — audit first) with an explicit
-    exception or a structured log event; do not guess which without re-reading the code
-    at that commit.
+25. **Already satisfied by block 6, item 23**: `DenseSurrogate` implements
+    `Fingerprintable` and `_model_fingerprint` already checked for that attribute
+    first, so it takes the explicit path with no change needed here. The `W1..b3`
+    guessing loop in `_model_fingerprint` is **not** removed — rereading this item
+    against the actual code: that loop is the documented fallback for third-party
+    models (a raw ``torch`` module, or anything else that cannot be asked to
+    implement an archlux protocol), named explicitly in `freeze_and_issue`'s own
+    docstring ("weights (numpy arrays `weights` / `W*`) are frozen. An already
+    computed `weights_fingerprint` attribute is used as is."). Removing it would
+    drop that documented support for no benefit to the one first-party caller, which
+    already takes the fast path. Nothing further to do.
+26. **Audited, none found.** Checked every `nan`/`isnan`/`isfinite`/`errstate` site in
+    `uq`, `certify` and `light`: `fiabilite.reliability_diagram`'s `nan` for a level
+    too demanding for `n` is explicit and documented in its own docstring (a visible
+    sentinel in the returned array, not swallowed); every other `isfinite` check in
+    `uq` (`conforme.py`, `derive.py`, `fiabilite.py`) raises `InvariantViolation` on
+    non-finite input instead of continuing; `certify/proof.py`'s displacement
+    computation explicitly turns a `NaN` gap into `inf` with a comment explaining why
+    (`max()` would otherwise silently drop it). No silent swallow exists to fix.
 
 ### 9. `certify`
 
