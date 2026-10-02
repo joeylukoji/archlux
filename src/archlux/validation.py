@@ -160,7 +160,7 @@ def resolve_outline(plan: Plan, ctx: Context) -> Context:
     return ctx if ctx.outline else replace(ctx, outline=plan.outline)
 
 
-def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
+def _warn_unregulated_types(plan: Plan, ctx: Context, stacklevel: int) -> None:
     """Warn about room types the regulation has no threshold for.
 
     A typo such as ``"sejuor"`` silently removes the minimum-area requirement of the room
@@ -177,7 +177,7 @@ def _warn_unregulated_types(plan: Plan, ctx: Context) -> None:
             f"(known: {sorted(known)}): no minimum is enforced for them. "
             "Check for a typo, or add the type to the regulation",
             UserWarning,
-            stacklevel=5,  # this <- validate_inputs <- legalize <- its alias wrapper <- caller
+            stacklevel=stacklevel + 2,  # this <- validate_inputs <- (stacklevel frames)
         )
 
 
@@ -187,6 +187,7 @@ def validate_inputs(
     *,
     budget: float | None = None,
     repair_budget: int = 0,
+    stacklevel: int = 3,
 ) -> None:
     """Refuse a malformed plan, context or option before any solving.
 
@@ -200,6 +201,10 @@ def validate_inputs(
         Displacement budget in metres; ``None`` means no budget.
     repair_budget : int, optional
         Repair steps granted to the tiling grid recovery.
+    stacklevel : int, optional
+        Where the type warning points, counted from the caller of this function as for
+        :func:`warnings.warn` (``2`` is that caller's caller). Each public entry point
+        passes the depth that lands on *its* caller.
 
     Raises
     ------
@@ -222,4 +227,4 @@ def validate_inputs(
     _integer("repair_budget", repair_budget)
     if repair_budget < 0:
         raise InvalidInput("repair_budget", f"must be >= 0, got {repair_budget}")
-    _warn_unregulated_types(plan, ctx)
+    _warn_unregulated_types(plan, ctx, stacklevel)
