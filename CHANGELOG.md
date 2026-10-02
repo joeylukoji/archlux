@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Fixed — PLAN.md phase 4, block 8 (`uq`), item 26: one silent `nan` in `reliability_diagram`
+
+- `uq.fiabilite.reliability_diagram` caught every `InvariantViolation` from `conformal_quantile` and wrote `nan`, while documenting only the "level too demanding for `n`" case. A level outside `]0, 1[` (e.g. `1.5`) or a single `nan` truth (non-finite reference scores) therefore gave a silent `nan` row or grid. **Behaviour change**: both now raise `InvariantViolation`; the `nan` sentinel stays only for the documented too-small-`n` case, detected by comparing the conformal rank with `n` instead of catching the exception. Valid inputs give identical outputs.
+- Audit of the remaining `nan`/`inf` sites in `uq`, `certify` and `light`: all explicit and documented (`certify/farkas.py`'s `nan` margin, reason "non-finite multiplier", and `-inf` for an unbounded variable; `certify/borne.py`'s `None` for a non-finite `σ̂`). See `docs/plans/phase-4-design-patterns.md` item 26.
+- New tests in `tests/unit/test_jalon5_certificat.py`.
+
 ### Added — PLAN.md phase 4, block 7 (`orient`), item 24: shared `sector()`
 
 - `orient.circulaire.sector(deg, n_sectors, *, center=True)`: the centered (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized. `stratify` now calls it instead of repeating the formula; `light.analytique.sector_factor` calls it too (same result, now shared). `bench.rapport` already delegated to `stratify`.

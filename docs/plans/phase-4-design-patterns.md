@@ -394,14 +394,21 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     computed `weights_fingerprint` attribute is used as is."). Removing it would
     drop that documented support for no benefit to the one first-party caller, which
     already takes the fast path. Nothing further to do.
-26. **Audited, none found.** Checked every `nan`/`isnan`/`isfinite`/`errstate` site in
-    `uq`, `certify` and `light`: `fiabilite.reliability_diagram`'s `nan` for a level
-    too demanding for `n` is explicit and documented in its own docstring (a visible
-    sentinel in the returned array, not swallowed); every other `isfinite` check in
-    `uq` (`conforme.py`, `derive.py`, `fiabilite.py`) raises `InvariantViolation` on
-    non-finite input instead of continuing; `certify/proof.py`'s displacement
-    computation explicitly turns a `NaN` gap into `inf` with a comment explaining why
-    (`max()` would otherwise silently drop it). No silent swallow exists to fix.
+26. **Audited, one found and fixed.** Checked every `nan`/`isnan`/`isfinite`/`errstate`
+    site in `uq`, `certify` and `light`. **Found**: `fiabilite.reliability_diagram`
+    caught *every* `InvariantViolation` from `conformal_quantile` and wrote `nan`,
+    although its docstring documented only the "level too demanding for `n`" case: a
+    level outside `]0, 1[` or a single `nan` truth gave a silent `nan`. **Fixed**: both
+    now raise `InvariantViolation`; the `nan` sentinel is kept only for the documented
+    too-small-`n` case, detected by comparing the conformal rank with `n` rather than by
+    catching the exception. Explicit, documented sites left as they are: every other
+    `isfinite` check in `uq` (`conforme.py`, `derive.py`, `fiabilite.py`) raises
+    `InvariantViolation`; `certify/farkas.py` returns a `nan` margin with reason
+    "non-finite multiplier" (~l. 76) and a `-inf` margin with reason "unbounded variable"
+    (~l. 108), both with `valid=False`; `certify/borne.py` returns `None` (`NOT
+    EVALUABLE`) when `σ̂` is not positive and finite (~l. 113); `certify/proof.py`'s
+    displacement computation turns a `NaN` gap into `inf` with a comment explaining why
+    (`max()` would otherwise silently drop it).
 
 ### 9. `certify`
 
