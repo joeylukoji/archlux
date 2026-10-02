@@ -12,8 +12,9 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 - `legalize_trace(plan, ctx, ...) -> (Plan, Trace | None)`: the Frank-Wolfe trace as a return value instead of `Plan.trace`. `legalize(..., trace=True)` still works, now deprecated (warns, points at `legalize_trace`); `None` in classic mode (no Frank-Wolfe pass).
 - `archlux.types.vectorize(plan)` and `FIELDS_VECTOR`: the plain `(x, y, w, h)`-per-room encoding, no solver index needed, next to (not replacing) `geom.polytope.vectorize`. `light.jetons.plan_to_vector` now delegates to it instead of duplicating the computation.
+- `legalize` and `legalize_trace` share a private body instead of `legalize_trace` filtering the deprecation warning with `warnings.catch_warnings()` (process-wide, not thread-safe); the room-type warning points at the caller of either entry point.
 - Migrated four internal test call sites from `legalize(trace=True)` to `legalize_trace(...)`.
-- **Found infeasible, documented, not done**: moving `ModelTrace`/`Manifest` into `bench` (PLAN.md's own block-2 item) would need `io.json_io` and `certify.rapport` to import `bench`, a leaf nobody may import; the two nominal exemptions that would require exceed the project's existing cap of 3 (already spent on `types`'s own three). See `docs/plans/phase-4-design-patterns.md`.
+- **Found infeasible, documented, not done**: moving `ModelTrace`/`Manifest` into `bench` (PLAN.md's own block-2 item) would make `io.json_io` and `certify.rapport` import `bench`. `test_personne_n_importe_bench` rejects any such import (it never reads `EXEMPTIONS`, and its static check also sees `TYPE_CHECKING` imports), as does the dynamic no-`bench` check: the move needs a change to `bench`'s leaf rule (with an ADR), not exemption budget. See `docs/plans/phase-4-design-patterns.md`.
 
 ### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
 

@@ -176,15 +176,18 @@ day count.
    `frozen, slots` dataclass without real engineering cost for a field that keeps
    working either way; `legalize_trace` builds a `Plan` with `trace=None` on its own
    return, which is what a new caller actually sees.
-9. **Skipped, found infeasible as written**: `bench` is a leaf `EXEMPTIONS`/`AUTORISE`
-   forbid anyone from importing (`test_personne_n_importe_bench`), but `io.json_io`
-   genuinely constructs `ModelTrace`/`Manifest` instances at runtime when deserializing
-   a manifest (not just a type hint), and `certify.rapport` type-hints on `Manifest`.
-   Moving the classes into `bench` would need two more nominal `EXEMPTIONS` entries,
-   which the existing rule caps at 3 project-wide — already fully spent on `types`'s
-   own three (`io.json_io`, `certify.rapport`, `export`). Confirmed at the commit, not
-   assumed: this item stays in `types.py`, unmoved, until either the exemption cap is
-   revisited or `bench`'s own leaf status changes (both bigger decisions than block 2).
+9. **Skipped, found infeasible as written**: `io.json_io` genuinely constructs
+   `ModelTrace`/`Manifest` instances at runtime when deserializing a manifest, and
+   `certify.rapport` type-hints on `Manifest`, so moving the classes into `bench`
+   would make both import `bench`. The first blocker is `test_personne_n_importe_bench`
+   (`tests/test_dependances.py`): it rejects any `archlux.bench` import from outside
+   `bench` and never reads `EXEMPTIONS`, so no exemption entry could allow it. The
+   static AST walk also sees imports under `if TYPE_CHECKING:`, so a hint-only import
+   in `certify.rapport` is caught as well; and the dynamic
+   `test_a_fresh_import_loads_no_bench_and_no_torch` forbids any package but `bench`
+   from loading it at runtime. The move therefore needs a change to `bench`'s leaf
+   rule in `ARCHITECTURE.md` §5 (with an ADR), not exemption budget: a bigger decision
+   than block 2. Confirmed at the commit, not assumed: the classes stay in `types.py`.
 10. `FIELDS_VECTOR` and `vectorize(plan)` added to `types.py` (local `numpy` import,
     since `types` is loaded eagerly by the package root and must not add to `import
     archlux`'s budget — caught by `test_import_cost.py` on the first attempt).
