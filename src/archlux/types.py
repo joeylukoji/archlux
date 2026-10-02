@@ -210,8 +210,9 @@ class Plan:
     A **legalized** plan always carries its ``certificate``; a proposed plan never does.
     The field is therefore the marker of the state of the plan, not a decoration.
 
-    ``trace`` is only set if ``legalize(..., trace=True)``: it is the Frank-Wolfe
-    sequence, **not serialized** (it does not belong to the JSON schema).
+    ``trace`` holds the Frank-Wolfe sequence only on the deprecated path
+    ``legalize(..., trace=True)``; its replacement, :func:`~archlux.api.legalize_trace`,
+    returns the trace instead. **Not serialized** (not part of the JSON schema).
     """
 
     rooms: tuple[Room, ...]
@@ -220,8 +221,8 @@ class Plan:
     outline: tuple[Point, ...] = ()
     certificate: Certificate | None = None
     # Typed ``object`` on purpose: ``solve.Trace`` would add a ``types → solve`` edge,
-    # which is forbidden. The trace is not serialized; only ``trace=True`` callers
-    # consume it.
+    # which is forbidden. The trace is not serialized; only the deprecated ``trace=True``
+    # path fills it (``legalize_trace`` is the replacement).
     # ``compare=False``: the trace is a diagnostic, not part of the plan's identity. With
     # it in the comparison, ``hash(plan)`` failed on the trace's arrays.
     trace: object | None = field(default=None, compare=False, repr=False)
