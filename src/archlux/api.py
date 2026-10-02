@@ -683,7 +683,7 @@ def legalize(
             "legalize(trace=True) is deprecated, use legalize_trace(...) -> (Plan, Trace)"
             " (ADR 0001)",
             DeprecationWarning,
-            stacklevel=2,
+            stacklevel=3,  # warn <- legalize <- its alias wrapper <- caller
         )
     # _legalize <- legalize <- its alias wrapper <- caller.
     return _legalize(

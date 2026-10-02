@@ -187,8 +187,9 @@ def test_legalize_trace_positive_is_deprecated() -> None:
         openings=(),
         outline=CONTEXTE_DEFAUT.outline,
     )
-    with pytest.warns(DeprecationWarning, match="legalize_trace"):
+    with pytest.warns(DeprecationWarning, match="legalize_trace") as caught:
         q = archlux.legalize(plan, CONTEXTE_DEFAUT, trace=True)
+    assert caught[0].filename == __file__  # the caller's line, not the alias wrapper
     assert q.trace is None  # classic mode: no Frank-Wolfe pass, nothing to warn about
     with warnings.catch_warnings():
         warnings.simplefilter("error")

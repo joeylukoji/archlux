@@ -395,6 +395,8 @@ def _cached_model(
     invalidates the cached model, since it changes the system, not just the objective.
     The model is **checked out** of ``cache`` (removed from it); the caller puts it back
     with :meth:`CacheLP.put` once done, so no two threads ever share it.
+    A cold solve (no ``start``) without cuts builds a fresh model, which the caller then
+    stores in place of any cached one: same answer, a refreshed entry.
     """
     if start is not None and not cuts:
         en_cache = cache.take(poly)
