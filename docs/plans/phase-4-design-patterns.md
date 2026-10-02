@@ -417,21 +417,42 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
 Verified: full suite green, `mypy src` clean, coverage 89.41% (ratchet 88.8%),
 `mkdocs build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
-### 10. `feasibility`
+### 10. `feasibility` — done
 
-29. Move the business logic out of `feasibility/__init__.py` into `verdict.py`; the
-    package root re-exports.
-30. Share `_solve_l1` between `feasibility` and `api` (today likely duplicated or
-    near-duplicated — confirm at the commit, not from memory).
+29. Moved `FeasibilityCertificate`, `Verdict`, `is_feasible` and the private
+    `_legalize_any_dimensions` out of `feasibility/__init__.py` into
+    `feasibility/verdict.py`; the package root is now a four-line re-export plus the
+    existing `lazy_aliases` deprecated-name shim — the same shape as every other
+    package in this project. `feasibility` is itself imported lazily by the root
+    package (`archlux/__init__.py`'s `_LAZY`), so this buys no further import-cost
+    benefit on its own; it is purely the structural separation this item asks for.
+    Covered by new `tests/unit/test_feasibility_package.py`: the root re-exports
+    `verdict`'s three public names by identity, and `__init__.py`'s source has no
+    `def` of its own.
+30. **Found stale, not applicable.** No `_solve_l1` (or any solving logic at all)
+    exists in `feasibility`: `is_feasible` has zero LP code of its own — it calls the
+    public `archlux.api.legalize` and reads the `Infeasible` exception it raises.
+    There is nothing to deduplicate between the two modules; this item's premise
+    (written before PLAN.md 3.9's English rename, presumably) does not hold against
+    the current code.
 
-### 11. `api`
+Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
+`tests/unit/test_import_cost.py` green (no layering or import-cost change).
 
-31. Replace the two `pavage`/tiling-related booleans with one `pavage: TilingMode |
-    None` (or equivalent single value), resolving the parameter-alias question left
-    open by PLAN.md 3.9 (see PR #17, already merged) for this specific parameter pair.
-32. Confirm `legalize`'s pipeline (`_Problem`, `_build_problem`, `_admits`, from PR #8)
-    is still under CC 10 end to end after blocks 2–10 land; extract further only if a
-    later block pushed it back up.
+### 11. `api` — audited, no code change
+
+31. **Found already resolved, not applicable.** `legalize` has exactly one
+    tiling-related parameter, `tiling: bool` — `pavage` is only its deprecated French
+    alias (`@renamed_parameters`), already a clean rename, not two competing booleans.
+    Grepped `api.py` for every `bool = True`/`bool = False` parameter to confirm: no
+    second, conflicting tiling-mode flag exists to merge with it. The "parameter-alias
+    question left open by PLAN.md 3.9" this item refers to was already closed by the
+    `pavage` → `tiling` rename (`CHANGELOG.md`, PLAN.md 3.9 wave 5/PR #17); nothing
+    left to do here.
+32. **Confirmed.** `radon cc api.py -n C -s` on the current file (after blocks 2-10):
+    empty. The highest function in `api.py` is `_refusal`/`_active_origins` at CC 7;
+    `legalize` itself is CC 6, `_build_problem` CC 6, `_admits` CC 2. The pipeline
+    stayed healthy through every block; nothing to extract.
 
 ### 12. `active`
 

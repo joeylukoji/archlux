@@ -8,6 +8,17 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 10 (`feasibility`): business logic moved to `verdict.py`
+
+- `FeasibilityCertificate`, `Verdict`, `is_feasible` and `_legalize_any_dimensions` moved from `feasibility/__init__.py` to `feasibility/verdict.py`; the package root is now a four-line re-export plus the existing deprecated-alias shim, the same shape as every other package. No import-cost change: `feasibility` is already imported lazily by the root package.
+- New `tests/unit/test_feasibility_package.py`.
+- **Found stale, not applicable**: item 30, sharing `_solve_l1` between `feasibility` and `api`. No such function, or any solving logic at all, exists in `feasibility` — `is_feasible` delegates entirely to `archlux.api.legalize`. Nothing to deduplicate.
+
+### Audited — PLAN.md phase 4, block 11 (`api`): both items already closed, no code change
+
+- Item 31 (merge two tiling-related booleans into one `TilingMode`): `legalize` has exactly one tiling parameter, `tiling: bool` (`pavage` is only its deprecated alias) — already resolved by the earlier `pavage` → `tiling` rename. No second boolean exists to merge.
+- Item 32 (confirm `legalize`'s pipeline stayed under CC 10 through blocks 2-10): confirmed, `radon cc api.py -n C -s` is empty; the highest function is CC 7.
+
 ### Changed — PLAN.md phase 4, block 9 (`certify`): three functions under CC 10
 
 - `verify_infeasibility` (`certify/farkas.py`, was CC 20) split into `_accumulate` (the inequality/equality row-weighting loop, previously duplicated almost verbatim) and `_lowest_over_box`; now CC 10.
