@@ -539,10 +539,13 @@ cross-layer import), coverage 89.51% (ratchet 88.8%), `mkdocs build --strict` cl
     `_write_certificate_annex`. The call order in the new orchestrator is unchanged, so
     STEP entity numbering and every `IfcGloballyUniqueId` are unchanged too — **verified
     by comparing a SHA-256 of the rendered `.ifc` file before and after the split: byte
-    identical**, not just "the semantic tests still pass" (`ifcopenshell` is not
-    installed in this environment, so the stricter schema/rule-validation tests in
-    `tests/unit/test_ifc_validation.py` are skipped here; the hash comparison is the
-    real guarantee for this specific change). `_ecrire_spf_minimal` itself is now CC 4.
+    identical**. The strict schema/rule-validation tests in
+    `tests/unit/test_ifc_validation.py` run in CI (ifcopenshell comes with the `dev`
+    extra) and pass; the before/after SHA-256 is additional evidence of byte identity,
+    now pinned by a golden test
+    (`test_the_export_of_a_certified_plan_is_byte_identical`: walls, an opening and a
+    certificate annex; its hash also matches the pre-split writer).
+    `_ecrire_spf_minimal` itself is now CC 4.
 38. **Scoped down from the plan's own wording, after reading the actual risk.**
     `pathologie.diagnose` is **not** changed to read overlaps from `Plan.certificate`.
     Reasons found before writing any code:
