@@ -4,7 +4,8 @@ Never imports ``geom``, ``lmo`` or ``solve``: it sees only a vector and an azimu
 
 A lazy facade (PLAN.md phase 4, block 1): asking for one name imports only the module
 that defines it. ``import archlux.light`` still loads no ``torch``; ``appris`` stays an
-explicit import, ``archlux.light.appris``.
+explicit import, ``archlux.light.appris``. ``dir()`` lists the public API (``__all__``)
+on purpose: submodules and dunders are left out.
 """
 
 from __future__ import annotations
@@ -54,7 +55,7 @@ __getattr__ = lazy_aliases(
             "archlux.light.analytique", "AnalyticSurrogate", "archlux.light.AnalyticSurrogate"
         ),
     },
-    fallback=lazy_module_attributes(globals(), _ATTRS),
+    fallback=lazy_module_attributes(__name__, globals(), _ATTRS),
 )
 
 
