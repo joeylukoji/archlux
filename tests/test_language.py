@@ -78,6 +78,8 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/geom/graphe.py",
     "src/archlux/geom/polytope.py",
     "src/archlux/geom/pavage.py",
+    "src/archlux/geom/grid.py",
+    "src/archlux/geom/grid_repair.py",
     "src/archlux/geom/rectilineaire.py",
     "src/archlux/geom/diagnostic.py",
     "src/archlux/lmo/solveur.py",

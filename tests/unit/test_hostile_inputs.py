@@ -217,6 +217,19 @@ def test_the_type_warning_points_at_the_caller() -> None:
     assert record[0].filename == __file__
 
 
+def test_the_type_warning_points_at_the_caller_of_legalize_trace() -> None:
+    from archlux.api import legalize_trace
+
+    ctx = replace(make_context(), regulation=Regulation(min_areas=(("living_room", 1.0),)))
+    with pytest.warns(UserWarning, match="sejuor") as record:
+        legalize_trace(
+            make_plan(type="sejuor"),
+            replace(ctx, regulation=replace(ctx.regulation, min_width=1.0)),
+        )
+    assert record[0].filename == __file__
+    assert not [w for w in record if issubclass(w.category, DeprecationWarning)]
+
+
 def test_is_feasible_keeps_the_scope_of_the_refusal() -> None:
     """A refusal *with* restrictions (here the load-bearing sides) must say which."""
     from archlux import Wall

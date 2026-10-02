@@ -13,12 +13,14 @@ English. What it did not touch is *structure*. Measured on 2026-09-27:
   `lmo/cuts.py` (671), `geom/rectilineaire.py` (646), `geom/polytope.py` (617),
   `io/json_io.py` (613), `api.py` (608), `certify/proof.py` (605), `types.py` (573),
   `geom/graphe.py` (522), `lmo/solveur.py` (414), `uq/conforme.py` (408).
-- **33 functions/methods exceed cyclomatic complexity 10** (`radon cc src -n C`), five of
+- **33 radon blocks exceed cyclomatic complexity 10** (32 functions/methods plus the class `Loop`) (`radon cc src -n C`), five of
   them past 30: `data/chargeurs.py::_convertir` (E, 38), `geom/graphe.py::deduce_order`
   (E, 33), `solve/frank_wolfe.py::frank_wolfe` (E, 32), `geom/pavage.py::deduce_grid`
   (E, 31), `active/boucle.py::Loop.run` (D, 29).
-- **Line coverage is 92.0%**, short of the 95% gate (branch coverage not measured yet:
-  `pytest-cov`'s branch mode needs enabling — see Testing Decisions).
+- **Line coverage is 92%** (4902 of 5323 statements; `pytest --cov=archlux
+  --cov-report=term` with branch mode off, re-measured 2026-10-02), short of the 95% gate
+  (branch coverage not measured yet: `pytest-cov`'s branch mode needs enabling — see
+  Testing Decisions).
 - A few modules mix unrelated responsibilities under one name: `types.py` carries both
   the pure model (`Room`, `Wall`, `Plan`...) and the run trace (`ModelTrace`, part of
   `Manifest`); `light/base.py`'s `DenseSurrogate` is model, training and serialization in
@@ -129,7 +131,7 @@ day count.
    readable local check (prints every violation; not CI-blocking, like `make results`).
 3. Branch coverage enabled (`[tool.coverage.run] branch = true`, CI's `Tests` step gets
    `--cov-branch`). Baseline re-measured with branches counted: **88.9%** combined
-   (down from the line-only 92.0%, as expected — branches add denominator). The ratchet
+   (down from the line-only 92%, as expected — branches add denominator). The ratchet
    floor moved from 87.9 to 88.8; the true two-figure gate (95% lines / 90% branches)
    is checked with `coverage report --skip-covered` when a block's tests move it, not
    read off this single combined number.
@@ -153,11 +155,14 @@ day count.
    `tests/test_dependances.py`: for every top-level package, import it in a fresh
    subprocess and read `sys.modules` back — a dynamic check the static AST walk cannot
    do (it cannot see a computed `importlib.import_module(...)` call, and it checks
-   *declared* imports, not what actually loads transitively). `api` is covered like
-   every other package (it was already in `AUTORISE`; PLAN.md's own wording undersold
-   this — the gap was the missing dynamic check, not a missing entry). A transitive
-   closure of `AUTORISE` avoids false positives (`api` reaching `uq` only through
-   `certify`, which is what `certify`'s own declared layers already allow).
+   *declared* imports, not what actually loads transitively). `api` was in `AUTORISE`
+   but missing from `ARCHITECTURE.md` §5 itself: PLAN.md was right that it needed adding,
+   and §5 now has an `api ←` line. The dynamic check imports every submodule and every
+   `__all__` name (a lazy facade loads almost nothing otherwise) and checks a `FORBIDDEN`
+   table derived from §5 with no transitive closure; a closure of `AUTORISE` is used only
+   for the separate "declared layers" check, where it would otherwise flag `api` reaching
+   `uq` through `certify`. That closure hid a real gap: `feasibility` loads `light.protocole`
+   and `uq` through `api`. §5 now states this as an explicit, justified exception.
 
 ### 2. `types` — **done, with one item skipped by design (see below)**
 
@@ -171,29 +176,39 @@ day count.
    `frozen, slots` dataclass without real engineering cost for a field that keeps
    working either way; `legalize_trace` builds a `Plan` with `trace=None` on its own
    return, which is what a new caller actually sees.
-9. **Skipped, found infeasible as written**: `bench` is a leaf `EXEMPTIONS`/`AUTORISE`
-   forbid anyone from importing (`test_personne_n_importe_bench`), but `io.json_io`
-   genuinely constructs `ModelTrace`/`Manifest` instances at runtime when deserializing
-   a manifest (not just a type hint), and `certify.rapport` type-hints on `Manifest`.
-   Moving the classes into `bench` would need two more nominal `EXEMPTIONS` entries,
-   which the existing rule caps at 3 project-wide — already fully spent on `types`'s
-   own three (`io.json_io`, `certify.rapport`, `export`). Confirmed at the commit, not
-   assumed: this item stays in `types.py`, unmoved, until either the exemption cap is
-   revisited or `bench`'s own leaf status changes (both bigger decisions than block 2).
+9. **Skipped, found infeasible as written**: `io.json_io` genuinely constructs
+   `ModelTrace`/`Manifest` instances at runtime when deserializing a manifest, and
+   `certify.rapport` type-hints on `Manifest`, so moving the classes into `bench`
+   would make both import `bench`. The first blocker is `test_personne_n_importe_bench`
+   (`tests/test_dependances.py`): it rejects any `archlux.bench` import from outside
+   `bench` and never reads `EXEMPTIONS`, so no exemption entry could allow it. The
+   static AST walk also sees imports under `if TYPE_CHECKING:`, so a hint-only import
+   in `certify.rapport` is caught as well; and the dynamic
+   `test_a_fresh_import_loads_no_bench_and_no_torch` forbids any package but `bench`
+   from loading it at runtime. The move therefore needs a change to `bench`'s leaf
+   rule in `ARCHITECTURE.md` §5 (with an ADR), not exemption budget: a bigger decision
+   than block 2. Confirmed at the commit, not assumed: the classes stay in `types.py`.
 10. `FIELDS_VECTOR` and `vectorize(plan)` added to `types.py` (local `numpy` import,
     since `types` is loaded eagerly by the package root and must not add to `import
     archlux`'s budget — caught by `test_import_cost.py` on the first attempt).
     `light.jetons.plan_to_vector` now delegates to it instead of duplicating the same
     four-line computation (its own comment explaining the duplication is gone with it).
 
-### 3. `geom` — **CC reduction done (12, 13, 15); 11 and 14 not done, see below**
+### 3. `geom` — **CC reduction (12, 13, 15) and the `pavage.py` split (11) done; 14 not done; exit gate not yet met, see below**
 
-11. **Not done.** Splitting `pavage.py` into `trame.py` + a slimmer `pavage.py` was
-    superseded: item 12 already brings every function in the file under CC 10 without
-    a file split, which was the concrete, exit-gate-relevant half of this item. The
-    SRP/file-organization half remains open — a real future task, not attempted here
-    to keep this batch's risk bounded (a file split needs its own deprecated-shim
-    machinery, on top of the extractions already done).
+11. **Done.** `pavage.py` (745 lines) split in three, English names per ADR 0001
+    (glossary: trame → grid): `geom/grid.py` (`Grid`, `deduce_grid` and its inference
+    helpers), `geom/grid_repair.py` (`_consolider`, `_couverture`, `_retouches`,
+    `_reparer_partition`), and a slimmer `geom/pavage.py` keeping the tiling
+    constraints (`snap_to_grid`, `tiling_constraints`, `extend_tiling`). Pure move:
+    `geom.pavage` re-exports `Grid`/`deduce_grid` and keeps its `lazy_aliases` table
+    for the French names; imports run `pavage → grid → grid_repair`, no cycle;
+    `results/` unchanged. An earlier draft of this item claimed the CC extractions of
+    item 12 "already bring every function in the file under CC 10" and met the exit
+    gate — that was false. **Still open for later**: `_consolider` D(24),
+    `_reparer_partition` C(14) and `tiling_constraints` C(13) remain above CC 10 (with other `geom` functions), and
+    `graphe.py` (625), `polytope.py` (629), `rectilineaire.py` (656 lines) remain above
+    the 400-line gate.
 12. `deduce_grid` (`pavage.py`, was CC 31) split into `_deduce_lines` (grouping and
     outline anchoring, itself split further into `_anchor_outline_vertices`),
     `_room_bounds` (bounds + flatness check), `_verify_partition` (coverage/repair).
@@ -227,17 +242,26 @@ day count.
 
 16. Replaced the module-global cache dict (`_CACHE: OrderedDict[...]`, keyed by
     `id(poly)`, no locking) with `CacheLP`: an explicit, injectable, thread-safe
-    (`threading.Lock`) object (`get`/`put`/`clear`). A module-level `_DEFAULT_CACHE =
+    (`threading.Lock`) object (`get`/`put`/`take`/`clear`; `maxsize >= 1` validated).
+    It is still keyed by `id(poly)` — not a module global any more, but the key is kept
+    deliberately: each entry holds a strong reference to its polytope, so that `id()`
+    cannot be reused while the entry lives. Thread safety covers the whole solve, not
+    only get/put: `solve` checks the model out of the cache (`take`) for the
+    set-objective / `Solve()` / read-solution sequence and puts it back afterwards, so
+    no two threads ever hold the same OR-Tools model (one that finds it checked out
+    builds its own). A module-level `_DEFAULT_CACHE =
     CacheLP()` keeps the existing zero-argument call sites and `clear_cache()` working
     unchanged; `solve()` gained an optional `cache: CacheLP | None = None` parameter for
-    callers that want an isolated cache (e.g. concurrent solves on independent
-    polytopes). Covered in isolation by `tests/unit/test_cache_lp.py` (empty-start,
+    callers that want an isolated cache (e.g. a test). Covered in isolation by `tests/unit/test_cache_lp.py` (empty-start,
     put/get round-trip, clear, eviction beyond `maxsize`, isolation between two
     instances, `solve` giving the identical answer regardless of which cache serves it,
-    and a `threading.Thread`-based concurrency test).
+    a warm solve through an injected cache, and a `threading.Barrier`-based test of
+    concurrent warm solves with different objectives on one shared cache — which
+    segfaulted before the check-out fix).
 17. `solve` (`solveur.py`, was CC 16) split into `_cached_model` (the cache get/build/put
-    sequence, now trivial once the cache is an object) and `_infeasible_solution` (the
-    GLOP infeasible/unbounded/Farkas-certificate branch); both under CC 10.
+    sequence, now trivial once the cache is an object), `_solve_model` and
+    `_infeasible_solution` (the GLOP infeasible/unbounded/Farkas-certificate branch);
+    each at most CC 10 (rank B or better).
     `_solve_with_area_cuts` (`cuts.py`, was CC 12) split off its per-iteration
     tighten-or-give-up step into `_tighten_if_short`; under CC 10.
 
@@ -261,8 +285,9 @@ clean, `radon cc solveur.py cuts.py -n C -s` empty, coverage 89.27% (ratchet 88.
     `_line_search` (the backtracking loop) and `_update_weights` (mass transfer, pruning,
     renormalization) out of `frank_wolfe`'s main loop; also extracted `_final_diagnostics`
     (the post-loop gap/duals computation, previously two near-duplicate `if`/`elif`
-    branches). Each is independently tested against the formulas in
-    `docs/formules/frank-wolfe.md`. `frank_wolfe` itself is now CC 9 (from 32); every
+    branches). `_step_away`, `_line_search` and `_update_weights` are
+    independently tested (`tests/unit/test_frank_wolfe_steps.py`) against the formulas
+    in `docs/formules/frank-wolfe.md`. `frank_wolfe` itself is now CC 9 (from 32); every
     function in the file is under CC 10 (`_update_weights` CC 8 and `_final_diagnostics`
     CC 7 are the highest of the new helpers).
 20. Added `StepStrategy`, a `Protocol` with one method (`propose`: gradient, x, the LMO
@@ -286,9 +311,9 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
 
 21. Added `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`, `"ASE"` the only `"<="`)
     and `types.indicator_sign` (`-1.0`/`1.0`), next to the existing `REGIMES` registry —
-    same shape, same file, no new pattern. Replaces the six `indicator == "ASE"` sign
-    flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py`,
-    `uq/conforme.py`) and two comparison-direction branches (`certify/rapport.py`,
+    same shape, same file, no new pattern. Replaces the five `indicator == "ASE"` sign
+    flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py` x1)
+    and two comparison-direction branches (`certify/rapport.py`,
     `uq/conforme.py`), plus two other spots that separately repeated the four-name list
     (`light/base.py`'s `_analytique` cache size and `DenseSurrogate.load`'s validation).
     **Scoped down from the plan's own wording**: no `unit`/`range` fields — nothing in
@@ -334,12 +359,11 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
 
 ### 7. `orient` — done
 
-24. Added `orient.circulaire.sector(deg, n_secteurs, *, center=True)`: the centered
+24. Added `orient.circulaire.sector(deg, n_sectors, *, center=True)`: the centered
     (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized.
     `stratify` now calls it instead of repeating the formula; `light/analytique.py`'s
-    `sector_factor` (was `int((azimut + 22.5) // 45.0) % 8`, hand-rolled, scalar-only,
-    no wraparound past 360) now calls `sector(azimut, 8)` too — same result, plus
-    negative-angle and >360 wraparound for free. `bench/rapport.py` already delegated
+    `sector_factor` (was `int((azimut + 22.5) // 45.0) % 8`, hand-rolled,
+    scalar-only) now calls `sector(azimut, 8)` too — same result, now shared. `bench/rapport.py` already delegated
     to `stratify`; nothing to change there.
     **`uq` found infeasible, documented, not done, same class of problem as blocks 2/3's
     skipped items**: `uq.fiabilite.stratify_by_orientation` keeps its own copy of the
@@ -370,14 +394,21 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     computed `weights_fingerprint` attribute is used as is."). Removing it would
     drop that documented support for no benefit to the one first-party caller, which
     already takes the fast path. Nothing further to do.
-26. **Audited, none found.** Checked every `nan`/`isnan`/`isfinite`/`errstate` site in
-    `uq`, `certify` and `light`: `fiabilite.reliability_diagram`'s `nan` for a level
-    too demanding for `n` is explicit and documented in its own docstring (a visible
-    sentinel in the returned array, not swallowed); every other `isfinite` check in
-    `uq` (`conforme.py`, `derive.py`, `fiabilite.py`) raises `InvariantViolation` on
-    non-finite input instead of continuing; `certify/proof.py`'s displacement
-    computation explicitly turns a `NaN` gap into `inf` with a comment explaining why
-    (`max()` would otherwise silently drop it). No silent swallow exists to fix.
+26. **Audited, one found and fixed.** Checked every `nan`/`isnan`/`isfinite`/`errstate`
+    site in `uq`, `certify` and `light`. **Found**: `fiabilite.reliability_diagram`
+    caught *every* `InvariantViolation` from `conformal_quantile` and wrote `nan`,
+    although its docstring documented only the "level too demanding for `n`" case: a
+    level outside `]0, 1[` or a single `nan` truth gave a silent `nan`. **Fixed**: both
+    now raise `InvariantViolation`; the `nan` sentinel is kept only for the documented
+    too-small-`n` case, detected by comparing the conformal rank with `n` rather than by
+    catching the exception. Explicit, documented sites left as they are: every other
+    `isfinite` check in `uq` (`conforme.py`, `derive.py`, `fiabilite.py`) raises
+    `InvariantViolation`; `certify/farkas.py` returns a `nan` margin with reason
+    "non-finite multiplier" (~l. 76) and a `-inf` margin with reason "unbounded variable"
+    (~l. 108), both with `valid=False`; `certify/borne.py` returns `None` (`NOT
+    EVALUABLE`) when `σ̂` is not positive and finite (~l. 113); `certify/proof.py`'s
+    displacement computation turns a `NaN` gap into `inf` with a comment explaining why
+    (`max()` would otherwise silently drop it).
 
 ### 9. `certify` — item 27 skipped by the maintainer, item 28 done
 
@@ -393,13 +424,13 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
       loop, shared by both, previously duplicated almost verbatim) and
       `_lowest_over_box` (the box-minimization loop, returning the name of the first
       unbounded variable instead of raising, since the caller needs the name for its
-      message). Now CC 10.
+      message). Now exactly CC 10 (rank B).
     - `rational_tiling`: `_identified_boxes` (the raw-rooms-to-`Fraction`-boxes and
       edge-identification setup), `_box_violations` (thin-room / outside-outline),
-      `_pairwise_overlaps`, `_coverage_violation`. Now CC 7.
+      `_pairwise_overlaps`, `_coverage_violation`. Now CC 5.
     - `verify_exactly`: `_malformed_rooms` and `_overlap_and_gaps` (the
       rational-vs-GEOS branch, including the overlap-triggers-a-GEOS-gap-fallback
-      case). Now CC 6.
+      case). Now CC 8.
     One caller each for all three (`api.py`'s `_refusal`/`.prove()`, and
     `rational_tiling`'s own caller `verify_exactly`), confirmed with `graphify explain`
     before touching them.
@@ -439,20 +470,21 @@ Verified: full suite green, `mypy src` clean, coverage 89.41% (ratchet 88.8%),
 Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
 `tests/unit/test_import_cost.py` green (no layering or import-cost change).
 
-### 11. `api` — audited, no code change
+### 11. `api` — pipeline done, item 31 deferred
 
-31. **Found already resolved, not applicable.** `legalize` has exactly one
-    tiling-related parameter, `tiling: bool` — `pavage` is only its deprecated French
-    alias (`@renamed_parameters`), already a clean rename, not two competing booleans.
-    Grepped `api.py` for every `bool = True`/`bool = False` parameter to confirm: no
-    second, conflicting tiling-mode flag exists to merge with it. The "parameter-alias
-    question left open by PLAN.md 3.9" this item refers to was already closed by the
-    `pavage` → `tiling` rename (`CHANGELOG.md`, PLAN.md 3.9 wave 5/PR #17); nothing
-    left to do here.
-32. **Confirmed.** `radon cc api.py -n C -s` on the current file (after blocks 2-10):
-    empty. The highest function in `api.py` is `_refusal`/`_active_origins` at CC 7;
-    `legalize` itself is CC 6, `_build_problem` CC 6, `_admits` CC 2. The pipeline
-    stayed healthy through every block; nothing to extract.
+31. **Deferred.** The pair this item means is `tiling: bool` + `repair_budget: int`
+    (`repair_budget` has no effect when `tiling` is false), not `pavage`/`tiling`: an
+    earlier note calling it "already resolved" was wrong. Folding them into
+    `tiling: int | None` is deferred because (1) these keywords were just renamed in
+    PR #17 (`fusions`/`pavage`/`budget_reparation` → `merges`/`tiling`/`repair_budget`)
+    and another public change now would churn users, and (2) in Python `bool` is an
+    `int` (`True == 1`), so `tiling=True` would be ambiguous with a repair budget of 1.
+32. **Done.** The planned Pipeline: `api._legalize` (shared by `legalize` and
+    `legalize_trace`) now chains `_plan_polytope` (validation + `_build_problem`) →
+    `_legalize_l1` (L1 pass or typed refusal) → `_optimize_light` (light mode, certifies
+    its own plan) → `_certify` (classic mode). Private refactor only: no public API
+    change, `scripts/results.py --check` byte-identical, warning stacklevels still point
+    at the caller, every function under CC 10, complexity ratchet unchanged.
 
 ### 12. `active` — done
 
