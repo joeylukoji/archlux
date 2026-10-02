@@ -3,7 +3,8 @@
 > **Note (0.10, ADR 0001).** This historical specification keeps the names of its time:
 > `ResultatFW` is now `FrankWolfeResult`, and `Trace.iteres` / `objectif` / `ecarts` are
 > `iterates` / `values` / `gaps`. The old `Trace` names still work, as deprecated aliases,
-> so the snippets below run unchanged.
+> so the snippets below run unchanged. `legalize(..., trace=True)` is deprecated too:
+> new code calls `legalize_trace(...)`, which returns `(Plan, Trace)`.
 
 > **Prérequis : `ARCHITECTURE.md`, `DOCUMENTATION.md`, jalon 2 terminé.**
 > Durée visée : 5 semaines.

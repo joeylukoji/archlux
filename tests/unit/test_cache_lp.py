@@ -3,6 +3,7 @@
 Replaces a module-global dict keyed by ``id()``. The default cache (used when
 ``solve`` gets no explicit ``cache``) is still exercised by ``test_solveur.py`` and
 the warm-start benchmark; this file is about the object itself: isolation, eviction,
+concurrent warm solves on one shared cache,
 and that ``solve`` gives the identical result regardless of which cache serves it
 (the whole point of PLAN.md 3.13's "warm start changes the time, not the answer").
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 import threading
 
 import numpy as np
+import pytest
 
 from archlux.geom.graphe import RelativeOrder
 from archlux.geom.polytope import build_polytope
@@ -56,6 +58,11 @@ def test_eviction_drops_the_oldest_beyond_maxsize() -> None:
     assert cache.get(polys[2]) is not None
 
 
+def test_maxsize_below_one_is_rejected() -> None:
+    with pytest.raises(ValueError, match="maxsize"):
+        CacheLP(maxsize=0)
+
+
 def test_two_caches_do_not_see_each_other() -> None:
     """The isolation the object form buys over a module global."""
     a, b = CacheLP(), CacheLP()
@@ -74,19 +81,45 @@ def test_solve_gives_the_same_answer_with_an_own_cache() -> None:
     assert default.value == own_cache.value
     assert default.status == own_cache.status
 
+    # Warm path through the injected cache: a second solve with ``start`` and a
+    # different objective reuses the model built above and must match a cold solve.
+    c2 = np.zeros(len(POLY_AB.index))
+    c2[POLY_AB.index["B.w"]] = -1.0
+    cache = CacheLP()
+    first = solve(POLY_AB, c=c, cache=cache)
+    warm = solve(POLY_AB, c=c2, start=first.x, cache=cache)
+    cold = solve(POLY_AB, c=c2, cache=CacheLP())
+    np.testing.assert_array_equal(warm.x, cold.x)
+    assert warm.value == cold.value
 
-def test_concurrent_put_does_not_corrupt_the_cache() -> None:
-    """A global dict was not safe if two threads solved on different polytopes at
-    once; an instance with its own lock is (PLAN.md phase 4, block 4)."""
-    cache = CacheLP(maxsize=50)
-    polys = [build_polytope(ORDRE_AB, CTX) for _ in range(50)]
 
-    def worker(poly: object) -> None:
-        cache.put(poly, object(), [], [])  # type: ignore[arg-type]
+def test_concurrent_warm_solves_on_one_shared_cache_keep_their_own_objective() -> None:
+    """Threads warm-starting on the same polytope through one shared cache must not
+    overwrite each other's objective on the cached GLOP model (review of PR #22)."""
+    n_threads, rounds = 8, 40
+    names = sorted(POLY_AB.index)
+    objectives = []
+    for i in range(n_threads):
+        c = np.zeros(len(POLY_AB.index))
+        c[POLY_AB.index[names[i % len(names)]]] = -1.0 if i % 2 == 0 else 1.0
+        objectives.append(c)
+    expected = [solve(POLY_AB, c=c, cache=CacheLP()) for c in objectives]
+    x0 = expected[0].x
+    shared = CacheLP()
+    solve(POLY_AB, c=objectives[0], cache=shared)  # warm the shared model
+    barrier = threading.Barrier(n_threads)
+    failures: list[str] = []
 
-    threads = [threading.Thread(target=worker, args=(poly,)) for poly in polys]
+    def worker(i: int) -> None:
+        for r in range(rounds):
+            barrier.wait()
+            got = solve(POLY_AB, c=objectives[i], start=x0, cache=shared)
+            if got.value != expected[i].value or not np.array_equal(got.x, expected[i].x):
+                failures.append(f"thread {i} round {r}: {got.value} != {expected[i].value}")
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(n_threads)]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
-    assert all(cache.get(poly) is not None for poly in polys)
+    assert not failures, failures[:5]
