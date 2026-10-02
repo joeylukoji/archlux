@@ -285,8 +285,9 @@ clean, `radon cc solveur.py cuts.py -n C -s` empty, coverage 89.27% (ratchet 88.
     `_line_search` (the backtracking loop) and `_update_weights` (mass transfer, pruning,
     renormalization) out of `frank_wolfe`'s main loop; also extracted `_final_diagnostics`
     (the post-loop gap/duals computation, previously two near-duplicate `if`/`elif`
-    branches). Each is independently tested against the formulas in
-    `docs/formules/frank-wolfe.md`. `frank_wolfe` itself is now CC 9 (from 32); every
+    branches). `_step_away`, `_line_search` and `_update_weights` are
+    independently tested (`tests/unit/test_frank_wolfe_steps.py`) against the formulas
+    in `docs/formules/frank-wolfe.md`. `frank_wolfe` itself is now CC 9 (from 32); every
     function in the file is under CC 10 (`_update_weights` CC 8 and `_final_diagnostics`
     CC 7 are the highest of the new helpers).
 20. Added `StepStrategy`, a `Protocol` with one method (`propose`: gradient, x, the LMO
