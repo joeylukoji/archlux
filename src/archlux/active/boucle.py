@@ -343,8 +343,8 @@ class Loop:
     ) -> list[int]:
         """Select, simulate, split and (re)fit for one acquisition cycle.
 
-        ``state``'s lists are mutated in place. Returns the acquired pool indices (for the caller's
-        remaining-budget bookkeeping).
+        ``state``'s lists are mutated in place. Returns the acquired pool indices (for
+        the caller's remaining-budget bookkeeping).
 
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
         """
@@ -483,25 +483,32 @@ class Loop:
             )
             restantes -= len(acquis)
             self._recalibrate_cycle(
-                cycle, calibrateur, xs_cal, ys_cal, os_cal, n_min, hold, historique
+                cycle,
+                calibrateur,
+                state.xs_cal,
+                state.ys_cal,
+                state.os_cal,
+                n_min,
+                hold,
+                historique,
             )
             cycle += 1
 
         if calibrateur.n < 1:
-            if len(xs_cal) < n_min:
+            if len(state.xs_cal) < n_min:
                 raise InvariantViolation(
                     (
-                        f"insufficient calibration: n={len(xs_cal)} < {n_min} for "
+                        f"insufficient calibration: n={len(state.xs_cal)} < {n_min} for "
                         f"alpha={self.alpha}; increase budget or part_calibration, "
                         f"or pass an independent calibration= set",
                     )
                 )
-            self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
+            self._calibrer(calibrateur, state.xs_cal, state.ys_cal, state.os_cal)
             historique.append(_largeur_moyenne(calibrateur, self.surrogate, hold))
 
         largeur = historique[-1] if historique else float("nan")
         return ActiveReport(
-            n_simulations=len(state.xs_lab) + len(xs_cal),
+            n_simulations=len(state.xs_lab) + len(state.xs_cal),
             largeur_intervalle_finale=largeur,
             q_final=float(calibrateur.q),
             n_calibration=int(calibrateur.n),
