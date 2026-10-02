@@ -24,7 +24,6 @@ from archlux._deprecation import Alias, lazy_aliases
 from archlux.active.densite import kernel_density
 from archlux.active.selection import AcquisitionStrategy
 from archlux.errors import InvariantViolation
-from archlux.light.protocole import Adjustable
 from archlux.seeds import derive
 from archlux.uq.conforme import ConformalCalibrator, minimal_n_conformal
 
@@ -32,7 +31,7 @@ if TYPE_CHECKING:
     from archlux.light.protocole import Surrogate
     from archlux.types import Orientation
 
-__all__ = ["ActiveReport", "Batch", "Loop"]
+__all__ = ["ActiveReport", "Loop"]
 
 _LOG = structlog.get_logger("archlux.active.boucle")
 
@@ -66,7 +65,7 @@ class Batch:
     internally (PLAN.md phase 4, block 12, item 33). Scoped to internal use: changing
     ``Loop.run``'s own public parameter list (``propositions``/``orientations``,
     ``holdout``/``holdout_orientations``, ``calibration``/``calibration_orientations``)
-    would break every existing caller for a cosmetic gain.
+    would break every existing caller for a cosmetic gain. Not in ``__all__``.
     """
 
     x: tuple[np.ndarray, ...]
@@ -284,18 +283,24 @@ class Loop:
     ) -> None:
         """Retrain ``surrogate`` on the labeled set, if it is adjustable and large enough.
 
-        Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36). Prefers
-        :class:`~archlux.light.protocole.Adjustable` (item 34) over
-        ``getattr(surrogate, "fit", None)``; a surrogate written before the English
-        rename (only ``ajuster``) is still retrained, with a deprecation warning.
+        Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
+        :class:`~archlux.light.protocole.Adjustable` (item 34) documents the contract,
+        but the runtime test stays a callable ``fit`` attribute: ``isinstance`` on the
+        protocol would also demand ``gradient`` (never called here) and, on Python
+        >= 3.12, ignore a wrapper's ``__getattr__`` -- silently skipping retraining.
+        A surrogate written before the English rename (only ``ajuster``) is still
+        retrained, with a deprecation warning.
         """
-        fit = self.surrogate.fit if isinstance(self.surrogate, Adjustable) else None
+        fit = getattr(self.surrogate, "fit", None)
+        if not callable(fit):
+            fit = None
         legacy_fit = getattr(self.surrogate, "ajuster", None)
         if fit is None and legacy_fit is not None:
+            # stacklevel: _fit_cycle -> _run_cycle -> run -> the caller of run.
             warnings.warn(
                 f"{type(self.surrogate).__name__}.ajuster is deprecated, rename it fit",
                 DeprecationWarning,
-                stacklevel=2,
+                stacklevel=4,
             )
             fit = legacy_fit
         if fit is not None and len(xs_lab) >= 2:

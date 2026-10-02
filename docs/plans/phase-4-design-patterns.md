@@ -494,12 +494,19 @@ Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
     public parameter list (`propositions`/`orientations`,
     `holdout`/`holdout_orientations`, `calibration`/`calibration_orientations`) is
     unchanged — merging those into `Batch` too would break every existing caller for a
-    cosmetic gain. `Batch` is internal plumbing, not a public-API change.
-34. Added `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`):
-    `Loop._fit_cycle` now checks `isinstance(self.surrogate, Adjustable)` instead of
-    `getattr(surrogate, "fit", None)`. The legacy `ajuster`-attribute fallback (a
-    surrogate written before the English rename) stays attribute-based, since no
-    protocol can represent "the old, deprecated spelling of this method."
+    cosmetic gain. `Batch` is internal plumbing, not a public-API change (not in
+    `active/boucle.py`'s `__all__`).
+34. Added `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`) to
+    document the contract. `Loop._fit_cycle` deliberately keeps its run-time test on a
+    callable `fit` attribute (`callable(getattr(surrogate, "fit", None))`), not
+    `isinstance(self.surrogate, Adjustable)`: the protocol check also demands
+    `gradient`/`evaluate`/`uncertainty`/`indicator`, so a surrogate with `fit` but no
+    `gradient` (which `Loop` never calls) would silently stop being retrained, and on
+    Python >= 3.12 it ignores `__getattr__`, skipping a forwarding wrapper. The legacy
+    `ajuster`-attribute fallback (a surrogate written before the English rename) stays
+    attribute-based too, since no protocol can represent "the old, deprecated spelling
+    of this method"; its warning uses `stacklevel=4` so it still names the caller of
+    `Loop.run`.
 35. **Found stale, not applicable.** `active/boucle.py` already calls
     `archlux.seeds.derive` directly (not a local scheme) at all three of its seed
     sites. It cannot go through `bench.graines.derive` as the item literally asks:
@@ -512,7 +519,9 @@ Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
     need `self.surrogate`/`self.simulateur`/`self.seed`). `run` itself is now CC 6;
     `Loop`'s own class-aggregate complexity drops from 11 to 5. Covered by new tests in
     `tests/unit/test_actif.py` (`Batch`'s length-mismatch guard and `__len__`, and that
-    a trainable vs. a frozen surrogate correctly (dis)satisfies `Adjustable`), on top of
+    a trainable vs. a frozen surrogate correctly (dis)satisfies `Adjustable`; after
+    review, that a surrogate without `gradient` and a `__getattr__` wrapper are both
+    retrained and that the `ajuster` warning names the caller's file), on top of
     the five pre-existing `Loop`/acquisition tests, all still green.
 
 **Ratchet**: `MAX_VIOLATIONS` moved from 22 to 20 (`run` and `Loop`'s own
