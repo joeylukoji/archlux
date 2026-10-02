@@ -10,6 +10,7 @@ from scipy import sparse
 
 from archlux.certify.borne import build_bound
 from archlux.certify.dual import translate_duals
+from archlux.errors import InvariantViolation
 from archlux.geom.polytope import Polytope
 from archlux.light.objectif import Daylight
 from archlux.light.protocole import Surrogate
@@ -193,3 +194,26 @@ def test_daylight_sans_pessimisme_ignore_sigma() -> None:
     x = np.ones(2)
     j = Daylight(_FauxSubstitut(40.0, 9.0), q_chapeau=2.0, pessimiste=False)
     assert j.evaluate(x, orientation) == pytest.approx(40.0)
+
+
+def test_reliability_diagram_rejects_levels_outside_unit_interval() -> None:
+    """A level outside ]0, 1[ is a caller error, not a ``nan`` row."""
+    mu, y, sigma = np.zeros(50), np.linspace(-1.0, 1.0, 50), np.ones(50)
+    with pytest.raises(InvariantViolation):
+        reliability_diagram(mu, y, sigma, niveaux=np.array([1.5, -0.2]))
+
+
+def test_reliability_diagram_rejects_non_finite_truths() -> None:
+    """A ``nan`` truth makes the reference scores non-finite: raise, never a ``nan`` grid."""
+    mu, y, sigma = np.zeros(50), np.linspace(-1.0, 1.0, 50), np.ones(50)
+    y[3] = np.nan
+    with pytest.raises(InvariantViolation):
+        reliability_diagram(mu, y, sigma, niveaux=np.array([0.8]))
+
+
+def test_reliability_diagram_keeps_nan_only_for_too_small_n() -> None:
+    """The documented sentinel survives: a level too demanding for ``n`` gives ``nan``."""
+    mu, y, sigma = np.zeros(5), np.linspace(-1.0, 1.0, 5), np.ones(5)
+    grille = reliability_diagram(mu, y, sigma, niveaux=np.array([0.5, 0.99]))
+    assert np.isfinite(grille[0, 1])
+    assert np.isnan(grille[1, 1])

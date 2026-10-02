@@ -13,6 +13,7 @@ Formulas: ``docs/formules/frank-wolfe.md``.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Protocol
 
@@ -195,6 +196,20 @@ class AwayStepStrategy:
         return _step_away(gradient, x, fw_direction, vertices, weights)
 
 
+def _resolve_strategy(strategy: StepStrategy | None, *, away_steps: bool) -> StepStrategy:
+    """The injected strategy, or the built-in one; warns if ``away_steps=False`` is lost."""
+    if strategy is None:
+        return AwayStepStrategy(enabled=away_steps)
+    if not away_steps:
+        warnings.warn(
+            "frank_wolfe: away_steps=False is ignored because strategy= is given; "
+            "pass AwayStepStrategy(enabled=False) instead",
+            UserWarning,
+            stacklevel=3,
+        )
+    return strategy
+
+
 def _final_diagnostics(
     surrogate: Surrogate,
     orientation: Orientation,
@@ -323,7 +338,8 @@ def frank_wolfe(
         around the proposal instead, as :func:`archlux.api.legalize` does.
     away_steps : bool, optional
         Away steps: speed up convergence when the optimum lies on a face. Ignored when
-        ``strategy`` is given.
+        ``strategy`` is given; passing ``False`` together with ``strategy`` emits a
+        ``UserWarning``.
     strategy : StepStrategy or None, optional
         How the direction and its maximum step are computed each iteration. ``None``
         uses the built-in :class:`AwayStepStrategy` (``away_steps`` above). Inject a
@@ -364,7 +380,7 @@ def frank_wolfe(
     x = np.asarray(start, dtype=float).copy()
     if x.shape != (len(domain.index),):
         raise InvariantViolation((f"start of shape {x.shape}, expected ({len(domain.index)},)",))
-    step_strategy = strategy if strategy is not None else AwayStepStrategy(enabled=away_steps)
+    step_strategy = _resolve_strategy(strategy, away_steps=away_steps)
 
     vertices = [x.copy()]
     weights = [1.0]

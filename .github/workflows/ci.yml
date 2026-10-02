@@ -42,6 +42,7 @@ jobs:
       - name: Regles de dependance (ARCHITECTURE.md §5) -- bloquant
         run: pytest tests/test_dependances.py -q
       - name: Tests
+        # --cov-branch is redundant: [tool.coverage.run] branch = true in pyproject is authoritative.
         run: pytest --cov=archlux --cov-branch --cov-report=term-missing
 
   budgets:
