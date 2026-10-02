@@ -16,25 +16,30 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - New `tests/unit/test_cache_lp.py`: `CacheLP` in isolation (empty-start, put/get, clear, eviction beyond `maxsize`, two independent instances not seeing each other), `solve` giving the identical answer regardless of which cache serves it, and a `threading.Thread`-based concurrency test.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 28 to 26.
 
-### Changed — PLAN.md phase 4, block 3 (`geom`): five functions under CC 10
+### Changed — PLAN.md phase 4, block 3 (`geom`): five functions under CC 10, `pavage.py` split
 
 - `deduce_grid` (`geom/pavage.py`, was CC 31) split into `_deduce_lines` (+ `_anchor_outline_vertices`), `_room_bounds`, `_verify_partition`; now an orchestrator, under CC 10.
 - `deduce_order` (`geom/graphe.py`, was CC 33) split into `_pairwise_order`, `_outline_envelope`, `_wall_sides_and_groups` (itself split into `_assign_group_sides`, `_group_members`, `_bounding_hull`, `_assign_wall_side_for_group`); now under CC 10.
 - `freeze_contacts` (`geom/polytope.py`, was CC 16) split off `_frozen_bounds`; now under CC 10.
 - `_coupe_verticale`/`_coupe_horizontale` (`geom/rectilineaire.py`, were CC 14 each): their duplicated GEOS-geometry-type branch and collinear-piece-joining loop factored into shared `_line_pieces`/`_chord_through_pivot` helpers instead of split in place. Both now under CC 10.
+- `geom/pavage.py` (745 lines) split by responsibility: `geom/grid.py` (`Grid`, `deduce_grid`, inference helpers) and `geom/grid_repair.py` (consolidation and bounded partition repair); `geom/pavage.py` keeps the tiling constraints and re-exports every public name it served, French deprecated aliases included. Pure move, `results/` byte-identical. Not yet at the exit gate: `_consolider` D(24), `_reparer_partition` C(14), `tiling_constraints` C(13) stay above CC 10 (as do other `geom` functions, e.g. `diagnose`, `overlap_constraints`), and `graphe.py` (625), `polytope.py` (629), `rectilineaire.py` (656 lines) stay above 400 lines — left for later.
+- Unit tests for the extracted helpers `_chord_through_pivot` (both axes), `_line_pieces` (GeometryCollection branch) and `_verify_partition`.
+- `.gitignore`: `/graphify-out/` becomes `graphify-out/`, ignoring the graphify output directory at any depth.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 33 to 28.
-- **Found infeasible, documented, not done**: moving `diagnostic.py` to `data/` (PLAN.md's own block-3 item) hits the same wall as block 2's `ModelTrace`/`Manifest` move — a deprecated shim would need `geom` to import `data`, the wrong direction, and the exemption this needs exceeds the project's cap of 3. Splitting `pavage.py` into `trame.py` is also not done: superseded by the CC-reduction extractions, which already meet the exit-gate's concrete requirement; the file-organization half stays open. See `docs/plans/phase-4-design-patterns.md`.
+- **Found infeasible, documented, not done**: moving `diagnostic.py` to `data/` (PLAN.md's own block-3 item) hits the same wall as block 2's `ModelTrace`/`Manifest` move — a deprecated shim would need `geom` to import `data`, the wrong direction, and the exemption this needs exceeds the project's cap of 3. See `docs/plans/phase-4-design-patterns.md`.
 
 ### Added — PLAN.md phase 4, block 2 (`types`): `legalize_trace`, `vectorize`
 
 - `legalize_trace(plan, ctx, ...) -> (Plan, Trace | None)`: the Frank-Wolfe trace as a return value instead of `Plan.trace`. `legalize(..., trace=True)` still works, now deprecated (warns, points at `legalize_trace`); `None` in classic mode (no Frank-Wolfe pass).
 - `archlux.types.vectorize(plan)` and `FIELDS_VECTOR`: the plain `(x, y, w, h)`-per-room encoding, no solver index needed, next to (not replacing) `geom.polytope.vectorize`. `light.jetons.plan_to_vector` now delegates to it instead of duplicating the computation.
+- `legalize` and `legalize_trace` share a private body instead of `legalize_trace` filtering the deprecation warning with `warnings.catch_warnings()` (process-wide, not thread-safe); the room-type warning points at the caller of either entry point.
 - Migrated four internal test call sites from `legalize(trace=True)` to `legalize_trace(...)`.
-- **Found infeasible, documented, not done**: moving `ModelTrace`/`Manifest` into `bench` (PLAN.md's own block-2 item) would need `io.json_io` and `certify.rapport` to import `bench`, a leaf nobody may import; the two nominal exemptions that would require exceed the project's existing cap of 3 (already spent on `types`'s own three). See `docs/plans/phase-4-design-patterns.md`.
+- **Found infeasible, documented, not done**: moving `ModelTrace`/`Manifest` into `bench` (PLAN.md's own block-2 item) would make `io.json_io` and `certify.rapport` import `bench`. `test_personne_n_importe_bench` rejects any such import (it never reads `EXEMPTIONS`, and its static check also sees `TYPE_CHECKING` imports), as does the dynamic no-`bench` check: the move needs a change to `bench`'s leaf rule (with an ADR), not exemption budget. See `docs/plans/phase-4-design-patterns.md`.
 
 ### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
 
-- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Covers `api` like every other package, through a transitive closure of the existing `AUTORISE` declarations.
+- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Each fresh import also loads every submodule and every `__all__` name, so the lazy facades are actually exercised. A `FORBIDDEN` table encodes each `ARCHITECTURE.md` §5 rule (torch, `lmo`/`light`, `solve`/`active` protocol only, `export`, `data`) and is checked with no transitive closure; no package but `bench` loads `bench`, none loads `torch`. The transitive closure of `AUTORISE` remains only for the coarser declared-layers check.
+- `ARCHITECTURE.md` §5 gains an `api ←` line (matching `AUTORISE["api"]`) and states the `feasibility` exception: it reaches `light.protocole` and `uq` only through `api` (`is_feasible` calls `legalize`), never directly, and loads nothing `api` does not.
 - `__version__`'s import path confirmed already correct (`_version.py` is a genuine leaf); no change needed.
 - This closes PLAN.md phase 4, block 1.
 
@@ -45,7 +50,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md phase 4, block 0: complexity and coverage tooling
 
-- `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of functions above cyclomatic complexity 10 (33 today), lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
+- `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of radon blocks above cyclomatic complexity 10 (33 today: 32 functions/methods plus the class `Loop`), and fails if it drops without the constant being lowered, lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
 - Branch coverage enabled (`--cov-branch`); the coverage ratchet floor moves from 87.9% to 88.8% (measured with branches counted).
 - `docs/plans/phase-4-design-patterns.md`: the phase-4 refactor plan, block by block, with `graphify` (call-graph mapping before an extraction) and `ponytail` (`lite` intensity, a design-time check against over-applying a pattern) verified compatible and scoped for this phase; every block now also sweeps its own files for remaining French-named private helpers (19 found so far) ahead of its structural commits.
 

@@ -126,6 +126,7 @@ active  ← types, light.protocole, uq
 export  ← types, errors
 feasibility ← types, errors, api
 certify ← types, geom, uq
+api     ← types, errors, validation, geom, lmo, solve, light PROTOCOL, certify, io
 bench   ← everything
 ```
 
@@ -136,12 +137,19 @@ bench   ← everything
 - [ ] `light` must never import `geom`, `lmo` or `solve`
 - [ ] `active` imports no `light.*` implementation (only the protocol)
 - [ ] `export` imports neither `geom` nor `certify` (certificate appendix via `Plan.certificate`)
-- [ ] `feasibility` imports neither `light` nor `uq` (no performance promise)
+- [ ] `feasibility` imports neither `light` nor `uq` (no performance promise).
+      **Justified exception:** `is_feasible` calls `legalize`, so `feasibility` depends
+      on `api` by design and therefore *loads* `light.protocole` (via `solve`) and `uq`
+      (via `certify`) through it. It never imports them directly (static test), loads no
+      `light` implementation, and loads nothing `api` does not already load (dynamic test)
 - [ ] no module may import `bench`
 - [ ] `data` may read `geom` and `orient` (corpus loaders **only**),
       never `lmo`, `solve` or `light`: it produces inputs, it solves nothing
 
-Automated test that guards this rule:
+Every rule above is checked twice by `tests/test_dependances.py`: statically (the AST
+of every module against `AUTORISE`) and dynamically (`FORBIDDEN`: a fresh subprocess
+imports the package, all its submodules and every name of its `__all__`, then reads
+`sys.modules`, with no transitive closure). The simplest of these tests:
 
 ```python
 def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/test_dependances.py
@@ -272,7 +280,7 @@ archlux/
 │   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer
 │   ├── arrays.py            # `VecteurF`, the float64 array alias of the numerical core
 │   ├── types.py
-│   ├── geom/{graphe,polytope,pavage,rectilineaire,diagnostic}.py
+│   ├── geom/{graphe,polytope,pavage,grid,grid_repair,rectilineaire,diagnostic}.py
 │   ├── lmo/{solveur,coupes}.py
 │   ├── solve/{frank_wolfe,trace}.py
 │   ├── light/{protocole,analytique,appris,base,jetons,objectif,simulateur,validation}.py
