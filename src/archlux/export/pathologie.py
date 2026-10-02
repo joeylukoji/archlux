@@ -114,10 +114,15 @@ def diagnose(plan: Plan) -> PathologyDiagnostic:
 
     Codes
     -----
-    ``arete_nulle``, ``sommets_dupliques``, ``auto_intersection``,
-    ``solide_non_ferme``, ``overlap``, ``dimension_non_positive``,
-    ``ouverture_orpheline`` (an opening on a wall absent from ``plan.walls``: IFC4 wants
-    every ``IfcOpeningElement`` to void an element).
+    Each pathology is ``code:subject``:
+
+    - ``dimension_non_positive:{room}``, ``auto_intersection:{room}``;
+    - ``arete_nulle:{wall}`` (zero-length wall);
+    - ``ouverture_orpheline:{opening}`` (an opening on a wall absent from
+      ``plan.walls``: IFC4 wants every ``IfcOpeningElement`` to void an element);
+    - ``sommets_dupliques:outline``, ``auto_intersection:outline``,
+      ``solide_non_ferme:outline``;
+    - ``chevauchement:{a}|{b}`` (two rooms overlap; ids sorted).
     """
     trouves, pieces_ok = _room_pathologies(plan.rooms)
     trouves += _wall_pathologies(plan.walls)
