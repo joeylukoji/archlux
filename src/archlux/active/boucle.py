@@ -81,6 +81,23 @@ class Batch:
         return len(self.x)
 
 
+@dataclass(slots=True)
+class _CampaignState:
+    """The lists one ``Loop.run`` campaign grows in place, cycle after cycle.
+
+    ``*_lab`` feed ``fit``; ``*_cal`` feed the conformal calibration only, never
+    ``fit``; ``exclus`` holds the pool indices already acquired.
+    """
+
+    xs_cal: list[np.ndarray]
+    ys_cal: list[float]
+    os_cal: list[Orientation]
+    xs_lab: list[np.ndarray] = field(default_factory=list)
+    ys_lab: list[float] = field(default_factory=list)
+    os_lab: list[Orientation] = field(default_factory=list)
+    exclus: list[int] = field(default_factory=list)
+
+
 def _empiler(xs: list[np.ndarray]) -> np.ndarray:
     """Stack plan vectors into a ``(n, d)`` matrix."""
     return np.stack([np.asarray(x, dtype=float).ravel() for x in xs])
@@ -320,31 +337,24 @@ class Loop:
         dens: np.ndarray,
         rng: np.random.Generator,
         n_prendre: int,
-        exclus: list[int],
-        xs_lab: list[np.ndarray],
-        ys_lab: list[float],
-        os_lab: list[Orientation],
-        xs_cal: list[np.ndarray],
-        ys_cal: list[float],
-        os_cal: list[Orientation],
+        state: _CampaignState,
         *,
         independante: bool,
     ) -> list[int]:
         """Select, simulate, split and (re)fit for one acquisition cycle.
 
-        ``exclus``, ``xs_lab``/``ys_lab``/``os_lab`` and ``xs_cal``/``ys_cal``/``os_cal``
-        are mutated in place. Returns the acquired pool indices (for the caller's
+        ``state``'s lists are mutated in place. Returns the acquired pool indices (for the caller's
         remaining-budget bookkeeping).
 
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
         """
-        inc = _incertitudes_acquisition(self.surrogate, pool, xs_lab)
+        inc = _incertitudes_acquisition(self.surrogate, pool, state.xs_lab)
         idxs = self.acquire.selectionner(
             inc,
             dens,
             n=n_prendre,
             seed=derive(self.seed, f"selection/{cycle}"),
-            exclus=np.asarray(exclus, dtype=int) if exclus else None,
+            exclus=np.asarray(state.exclus, dtype=int) if state.exclus else None,
         )
         acquis = [int(i) for i in idxs]
         # Split BEFORE any fitting: this is what physically prevents ``fit``
@@ -355,15 +365,15 @@ class Loop:
             o = pool.orientations[i]
             y = float(self.simulateur.evaluate(x, o))
             if rang in vers_calibration:
-                xs_cal.append(x)
-                ys_cal.append(y)
-                os_cal.append(o)
+                state.xs_cal.append(x)
+                state.ys_cal.append(y)
+                state.os_cal.append(o)
             else:
-                xs_lab.append(x)
-                ys_lab.append(y)
-                os_lab.append(o)
-            exclus.append(i)
-        self._fit_cycle(cycle, xs_lab, ys_lab, os_lab)
+                state.xs_lab.append(x)
+                state.ys_lab.append(y)
+                state.os_lab.append(o)
+            state.exclus.append(i)
+        self._fit_cycle(cycle, state.xs_lab, state.ys_lab, state.os_lab)
         return acquis
 
     def _recalibrate_cycle(
@@ -452,13 +462,10 @@ class Loop:
         xs_cal, ys_cal, os_cal, independante = _seed_calibration(
             self.simulateur, calibration, calibration_orientations, n_min, self.alpha
         )
+        state = _CampaignState(xs_cal, ys_cal, os_cal)
 
         pool = Batch(tuple(propositions), tuple(orientations))
         dens = kernel_density(_empiler(propositions), _empiler(reference_optimiseur))
-        xs_lab: list[np.ndarray] = []
-        ys_lab: list[float] = []
-        os_lab: list[Orientation] = []
-        exclus: list[int] = []
         historique: list[float] = []
         restantes = self.budget
         cycle = 0
@@ -468,23 +475,11 @@ class Loop:
         rng = np.random.default_rng(derive(self.seed, "split"))
 
         while restantes > 0:
-            n_prendre = min(self.batch, restantes, len(pool) - len(exclus))
+            n_prendre = min(self.batch, restantes, len(pool) - len(state.exclus))
             if n_prendre < 1:
                 break
             acquis = self._run_cycle(
-                cycle,
-                pool,
-                dens,
-                rng,
-                n_prendre,
-                exclus,
-                xs_lab,
-                ys_lab,
-                os_lab,
-                xs_cal,
-                ys_cal,
-                os_cal,
-                independante=independante,
+                cycle, pool, dens, rng, n_prendre, state, independante=independante
             )
             restantes -= len(acquis)
             self._recalibrate_cycle(
@@ -506,7 +501,7 @@ class Loop:
 
         largeur = historique[-1] if historique else float("nan")
         return ActiveReport(
-            n_simulations=len(xs_lab) + len(xs_cal),
+            n_simulations=len(state.xs_lab) + len(xs_cal),
             largeur_intervalle_finale=largeur,
             q_final=float(calibrateur.q),
             n_calibration=int(calibrateur.n),
