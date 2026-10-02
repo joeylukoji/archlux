@@ -307,9 +307,12 @@ def _structure(
     return (not violations, tuple(violations))
 
 
+_Bounds = tuple[Fraction, Fraction, Fraction, Fraction]  # (x0, y0, x1, y1)
+
+
 def _rectangular_outline(
     outline: tuple[tuple[float, float], ...],
-) -> tuple[Fraction, Fraction, Fraction, Fraction] | None:
+) -> _Bounds | None:
     """Exact bounds of an axis-aligned rectangular outline, ``None`` for any other shape.
 
     Every vertex lies on the bounding box and the polygon fills it: collinear vertices
@@ -342,7 +345,7 @@ def _identify(values: list[Fraction], tolerance: Fraction) -> dict[Fraction, Fra
 
 
 _Box = tuple[str, Fraction, Fraction, Fraction, Fraction]
-_OutlineBox = tuple[Fraction, Fraction, Fraction, Fraction]
+_OutlineBox = tuple[Fraction, Fraction, Fraction, Fraction]  # (x0, x1, y0, y1)
 
 
 def _box_violations(boxes: list[_Box], outline: _OutlineBox) -> list[str]:
@@ -375,9 +378,7 @@ def _pairwise_overlaps(boxes: list[_Box]) -> list[str]:
     return violations
 
 
-def _identified_boxes(
-    plan: Plan, bounds: _OutlineBox
-) -> tuple[list[_Box], list[_Box], _OutlineBox]:
+def _identified_boxes(plan: Plan, bounds: _Bounds) -> tuple[list[_Box], list[_Box], _OutlineBox]:
     """Rooms and outline as exact ``Fraction`` boxes, edges within ``SNAP_M`` identified.
 
     Returns the identified boxes, the raw (pre-identification) boxes for
@@ -490,9 +491,7 @@ def _area(box_: tuple[Fraction, Fraction, Fraction, Fraction] | None) -> Fractio
     return (box_[1] - box_[0]) * (box_[3] - box_[2])
 
 
-def _raw_residuals(
-    raw: list[_Box], bounds: tuple[Fraction, Fraction, Fraction, Fraction]
-) -> list[str]:
+def _raw_residuals(raw: list[_Box], bounds: _Bounds) -> list[str]:
     """Bound, on the raw coordinates, what the identification may have erased.
 
     With ``C`` the outline and ``R_i`` the raw rooms, Bonferroni's inequality

@@ -55,6 +55,14 @@ def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray)
     return float(np.mean(termes))
 
 
+def _check_diagram_inputs(cibles: np.ndarray, reference: np.ndarray) -> None:
+    """Raise on caller errors, so that ``nan`` only ever means "n too small"."""
+    if not bool(np.all((cibles > 0.0) & (cibles < 1.0))):
+        raise InvariantViolation(("nominal levels outside ]0, 1[",))
+    if reference.size == 0 or not bool(np.all(np.isfinite(reference))):
+        raise InvariantViolation(("reference scores empty or non-finite",))
+
+
 def reliability_diagram(
     predictions: np.ndarray,
     verites: np.ndarray,
@@ -83,6 +91,12 @@ def reliability_diagram(
         Shape ``(n_niveaux, 2)``: column 0 = nominal, column 1 = empirical. Levels too
         demanding for ``n`` receive ``nan``.
 
+    Raises
+    ------
+    InvariantViolation
+        If the arrays have incompatible lengths, a level lies outside ``]0, 1[``, or
+        the reference scores are empty or non-finite (e.g. a ``nan`` truth).
+
     Notes
     -----
     **Without ``scores_calibration``, the empirical column is a tautology.** The
@@ -108,14 +122,15 @@ def reliability_diagram(
         if scores_calibration is None
         else np.asarray(scores_calibration, dtype=float).ravel()
     )
+    _check_diagram_inputs(cibles, reference)
+    n_reference = int(reference.size)
     lignes: list[list[float]] = []
     for gamma in cibles:
         alpha = 1.0 - float(gamma)
-        try:
-            q_chapeau = conformal_quantile(reference, alpha)
-        except InvariantViolation:
-            lignes.append([float(gamma), float("nan")])
+        if math.ceil((n_reference + 1) * (1.0 - alpha)) > n_reference:
+            lignes.append([float(gamma), float("nan")])  # documented: n too small
             continue
+        q_chapeau = conformal_quantile(reference, alpha)
         empirique = float(np.mean(scores <= q_chapeau))
         lignes.append([float(gamma), empirique])
     return np.asarray(lignes, dtype=float)
