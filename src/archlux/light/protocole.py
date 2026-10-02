@@ -194,10 +194,12 @@ class Adjustable(Surrogate, Protocol):
     """A :class:`Surrogate` that can also be retrained from labeled data.
 
     Not every surrogate is adjustable: the analytic and split-flux ones are frozen,
-    closed-form. :class:`archlux.active.boucle.Loop` checks for this capability
-    (``isinstance(surrogate, Adjustable)``) instead of assuming every surrogate has
-    ``fit``, or guessing via ``getattr(surrogate, "fit", None)`` (PLAN.md phase 4,
-    block 12, item 34).
+    closed-form. This protocol documents the contract :class:`archlux.active.boucle.Loop`
+    relies on (PLAN.md phase 4, block 12, item 34). At run time ``Loop`` still tests
+    for a callable ``fit`` attribute rather than ``isinstance(surrogate, Adjustable)``:
+    the protocol check would also demand ``gradient``, which ``Loop`` never calls, and
+    on Python >= 3.12 it ignores ``__getattr__``, so a forwarding wrapper would be
+    silently left untrained.
     """
 
     def fit(

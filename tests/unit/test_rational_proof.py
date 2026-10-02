@@ -163,3 +163,26 @@ def test_the_geos_path_detects_faults_on_a_non_rectangular_outline(
     proof = verify_exactly(plan, _ctx(_L_SHAPE))
     assert not proof.valid
     assert (proof.overlap, proof.gaps) == (overlap, gaps)
+
+
+def test_box_violations_are_reported_before_pairwise_overlaps() -> None:
+    """``rational_tiling`` lists per-room violations first, then pairwise overlaps."""
+    plan = _plan(_room("A", 0.0, 0.0, 0.6, 0.6), _room("B", 0.0, 0.5, 0.6, 0.6))
+    violations = rational_tiling(plan, _ctx())
+    assert violations is not None
+    assert violations[0] == "gap: room B lies partly outside the outline"
+    assert violations[1].startswith("overlap A|B: ")
+
+
+def test_coverage_violation_none_on_exact_tiling_and_reported_on_gap() -> None:
+    """``_coverage_violation`` is ``None`` iff the boxes cover the outline exactly."""
+    from fractions import Fraction
+
+    from archlux.certify.proof import _coverage_violation
+
+    zero, half, one = Fraction(0), Fraction(1, 2), Fraction(1)
+    outline = (zero, one, zero, one)
+    tiled = [("A", zero, half, zero, one), ("B", half, one, zero, one)]
+    assert _coverage_violation(tiled, outline) is None
+    gapped = [("A", zero, half, zero, one)]
+    assert _coverage_violation(gapped, outline) == "gap: uncovered area 0.5 m² (exact)"

@@ -17,9 +17,9 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Changed — PLAN.md phase 4, block 12 (`active`): `Batch` value object, `Adjustable` protocol, `Loop.run` under CC 10
 
-- `Batch(x, orientations)` (`active/boucle.py`): replaces the parallel `xs`/`orientations` lists `Loop` passed to its own helpers. Scoped to internal use: `Loop.run`'s public parameter list is unchanged, since merging it into `Batch` too would break every existing caller.
-- `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`): `Loop` now checks `isinstance(surrogate, Adjustable)` instead of `getattr(surrogate, "fit", None)`. The legacy `ajuster` fallback (pre-English-rename surrogates) stays attribute-based.
-- `Loop.run` (was CC 29) split into `_validate_run_inputs`, `_seed_calibration`, `_run_cycle`, `_fit_cycle`, `_recalibrate_cycle`; now CC 6. `Loop`'s own class-aggregate complexity drops from 11 to 5.
+- `Batch(x, orientations)` (`active/boucle.py`): replaces the parallel `xs`/`orientations` lists `Loop` passed to its own helpers. Internal plumbing, not exported (`__all__` lists only `ActiveReport` and `Loop`): `Loop.run`'s public parameter list is unchanged, since merging it into `Batch` too would break every existing caller.
+- `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`) documents the contract of a retrainable surrogate. `Loop`'s run-time test deliberately stays a callable `fit` attribute (`callable(getattr(surrogate, "fit", None))`, the pre-block behaviour): `isinstance(surrogate, Adjustable)` would also demand `gradient`, which `Loop` never calls, and on Python >= 3.12 ignores `__getattr__`, so a surrogate without `gradient` or a forwarding wrapper would silently stop being retrained. The legacy `ajuster` fallback (pre-English-rename surrogates) stays attribute-based, and its `DeprecationWarning` again points at the caller of `Loop.run` (`stacklevel=4` after the split).
+- `Loop.run` (was CC 29) split into `_validate_run_inputs`, `_seed_calibration`, `_run_cycle`, `_fit_cycle`, `_recalibrate_cycle`; now CC 6. The lists a campaign grows in place travel in a private `_CampaignState` dataclass, so `_run_cycle` takes 7 parameters instead of 13. `Loop`'s own class-aggregate complexity drops from 11 to 5.
 - **Found stale, not applicable**: deriving `active`'s seeds through `bench.graines.derive` — `active` may not import `bench`, and `bench.graines.derive` is itself a thin wrapper around `archlux.seeds.derive`, which `active` already calls directly.
 - New tests in `tests/unit/test_actif.py`.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 22 to 20.
@@ -30,74 +30,92 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - New `tests/unit/test_feasibility_package.py`.
 - **Found stale, not applicable**: item 30, sharing `_solve_l1` between `feasibility` and `api`. No such function, or any solving logic at all, exists in `feasibility` — `is_feasible` delegates entirely to `archlux.api.legalize`. Nothing to deduplicate.
 
-### Audited — PLAN.md phase 4, block 11 (`api`): both items already closed, no code change
+### Changed — PLAN.md phase 4, block 11 (`api`): `legalize` as a pipeline; item 31 deferred
 
-- Item 31 (merge two tiling-related booleans into one `TilingMode`): `legalize` has exactly one tiling parameter, `tiling: bool` (`pavage` is only its deprecated alias) — already resolved by the earlier `pavage` → `tiling` rename. No second boolean exists to merge.
-- Item 32 (confirm `legalize`'s pipeline stayed under CC 10 through blocks 2-10): confirmed, `radon cc api.py -n C -s` is empty; the highest function is CC 7.
+- Item 32: the private body of `legalize`/`legalize_trace` is now the planned pipeline `_plan_polytope` → `_legalize_l1` → `_optimize_light` → `_certify`. No public API change; results byte-identical; every function under CC 10.
+- Item 31 (fold `tiling: bool` + `repair_budget: int` into `tiling: int | None`): deferred, not resolved. These keywords were just renamed in PR #17, and since `bool` is an `int` in Python, `tiling=True` would be ambiguous with a repair budget of 1.
 
 ### Changed — PLAN.md phase 4, block 9 (`certify`): three functions under CC 10
 
-- `verify_infeasibility` (`certify/farkas.py`, was CC 20) split into `_accumulate` (the inequality/equality row-weighting loop, previously duplicated almost verbatim) and `_lowest_over_box`; now CC 10.
-- `rational_tiling` (`certify/proof.py`, was CC 23) split into `_identified_boxes`, `_box_violations`, `_pairwise_overlaps`, `_coverage_violation`; now CC 7.
-- `verify_exactly` (`certify/proof.py`, was CC 22) split into `_malformed_rooms` and `_overlap_and_gaps`; now CC 6.
+- `verify_infeasibility` (`certify/farkas.py`, was CC 20) split into `_accumulate` (the inequality/equality row-weighting loop, previously duplicated almost verbatim) and `_lowest_over_box`; now exactly CC 10 (rank B).
+- `rational_tiling` (`certify/proof.py`, was CC 23) split into `_identified_boxes`, `_box_violations`, `_pairwise_overlaps`, `_coverage_violation`; now CC 5.
+- `verify_exactly` (`certify/proof.py`, was CC 22) split into `_malformed_rooms` and `_overlap_and_gaps`; now CC 8.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 25 to 22.
 - **Skipped by design, confirmed with the maintainer first**: item 27, turning `GeometricProof`'s fixed boolean fields into a tuple of named predicates. No schema change this phase; `GeometricProof` and `io/json_io.py`'s migration machinery are unchanged. See `docs/plans/phase-4-design-patterns.md`.
-- Blocks 8 (`uq`) closed with no code change: both its items were already satisfied by earlier work or, on audit, found nothing to fix. See the plan doc.
+
+### Fixed — PLAN.md phase 4, block 8 (`uq`), item 26: one silent `nan` in `reliability_diagram`
+
+- `uq.fiabilite.reliability_diagram` caught every `InvariantViolation` from `conformal_quantile` and wrote `nan`, while documenting only the "level too demanding for `n`" case. A level outside `]0, 1[` (e.g. `1.5`) or a single `nan` truth (non-finite reference scores) therefore gave a silent `nan` row or grid. **Behaviour change**: both now raise `InvariantViolation`; the `nan` sentinel stays only for the documented too-small-`n` case, detected by comparing the conformal rank with `n` instead of catching the exception. Valid inputs give identical outputs.
+- Audit of the remaining `nan`/`inf` sites in `uq`, `certify` and `light`: all explicit and documented (`certify/farkas.py`'s `nan` margin, reason "non-finite multiplier", and `-inf` for an unbounded variable; `certify/borne.py`'s `None` for a non-finite `σ̂`). See `docs/plans/phase-4-design-patterns.md` item 26.
+- New tests in `tests/unit/test_jalon5_certificat.py`.
 
 ### Added — PLAN.md phase 4, block 7 (`orient`), item 24: shared `sector()`
 
-- `orient.circulaire.sector(deg, n_secteurs, *, center=True)`: the centered (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized. `stratify` now calls it instead of repeating the formula; `light.analytique.sector_factor` (was a hand-rolled, scalar-only formula with no wraparound past 360°) calls it too. `bench.rapport` already delegated to `stratify`.
+- `orient.circulaire.sector(deg, n_sectors, *, center=True)`: the centered (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized. `stratify` now calls it instead of repeating the formula; `light.analytique.sector_factor` calls it too (same result, now shared). `bench.rapport` already delegated to `stratify`.
 - **Found infeasible, documented, not done**: `uq.fiabilite.stratify_by_orientation` keeps its own copy of the edge-aligned half of the formula, because `uq` may not import `orient` (`ARCHITECTURE.md` §5) and the exemption this would need exceeds the project's cap of 3, already spent. The two were already documented as intentionally different partitions (centered vs edge-aligned). See `docs/plans/phase-4-design-patterns.md`.
 - New tests in `tests/unit/test_circulaire.py`.
 
 ### Added — PLAN.md phase 4, block 6 (`light`), item 23: `Fingerprintable` protocol
 
 - `types.Fingerprintable` (`@runtime_checkable Protocol`, one property: `weights_fingerprint: str`), implemented on `DenseSurrogate`. `uq.gestion._model_fingerprint` already checked for this attribute before guessing at `W1`/`b1`/... by name; `DenseSurrogate` now takes that explicit path and survives an internal rename the guessing would silently miss. The guessing fallback stays for third-party models (e.g. a raw `torch` module) that cannot implement an archlux protocol.
+- **Behaviour change**: freezing an *untrained* `DenseSurrogate` now raises `InvariantViolation` ("fingerprinting an untrained model"). Before, the guessing path hashed only `b3=0.0` and issued a token. Consequently `uq.gestion.DataManagement.for_calibration(token, model=untrained)` now raises `InvariantViolation` instead of `ModelModified`. Pinned by `test_freezing_an_untrained_dense_model_raises`.
 - Lives in `types.py`, not `light/protocole.py`, because `uq` may import `types` but not `light`.
 - **Skipped, found premature, item 22**: splitting `DenseSurrogate` into model/trainer/serializer objects. A cohesive class, one consumer, no caller blocked by the coupling; the split would move coupling around, not remove it. See `docs/plans/phase-4-design-patterns.md`.
 - New tests in `tests/unit/test_substitut_dense.py`.
 
 ### Added — PLAN.md phase 4, block 6 (`light`), item 21: `INDICATOR_SENSE` registry
 
-- `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`) and `types.indicator_sign` (`-1.0`/`1.0`): replace six `indicator == "ASE"` sign flips (`light/analytique.py`, `light/simulateur.py`, `light/protocole.py`, `uq/conforme.py`) and two comparison-direction branches (`certify/rapport.py`, `uq/conforme.py`), plus two spots that separately repeated the four-indicator-name list (`light/base.py`).
+- `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`) and `types.indicator_sign` (`-1.0`/`1.0`): replace five `indicator == "ASE"` sign flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py` x1) and two comparison-direction branches (`certify/rapport.py`, `uq/conforme.py`), plus two spots that separately repeated the four-indicator-name list (`light/base.py`).
 - Scoped down from the plan's own wording: no `unit`/`range` fields, since nothing in the codebase reads either today. Add them when a real caller needs one.
 - New tests in `tests/unit/test_shared_types.py` cover the registry and grep `src` for any remaining `== "ASE"` outside `types.py`.
 
 ### Changed — PLAN.md phase 4, block 5 (`solve`): dead legacy path removed, `frank_wolfe` under CC 10, injectable step strategy
 
-- Removed `frank_wolfe`'s legacy `cuts`/`rooms`/`ctx` parameters and `_add_cuts` (unreferenced by any source file or test, confirmed by a repo-wide grep before deleting): brought `frank_wolfe` from CC 32 to CC 28 by deleting dead branches alone.
+- Deleting the legacy cut path (see **Removed** below) brought `frank_wolfe` from CC 32 to CC 28 by deleting dead branches alone.
 - `frank_wolfe` (`solve/frank_wolfe.py`) split into `_step_away`, `_line_search`, `_update_weights` and `_final_diagnostics`; now CC 9. Every function in the file is under CC 10.
 - New `StepStrategy` protocol (one method, `propose`) and `AwayStepStrategy`, the built-in default: `frank_wolfe` gains an optional `strategy: StepStrategy | None = None` parameter, so a new step rule plugs in without editing `frank_wolfe` itself. The existing `away_steps` flag keeps working unchanged (`None` uses `AwayStepStrategy(enabled=away_steps)`).
 - New tests in `tests/unit/test_frank_wolfe.py`: an injected `AwayStepStrategy` matches the `away_steps=` flag bit-for-bit, and a minimal custom strategy is consulted every iteration.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 26 to 25.
+- `frank_wolfe(strategy=..., away_steps=False)` emits a `UserWarning`: `away_steps` is ignored when a strategy is injected.
+- New `tests/unit/test_frank_wolfe_steps.py`: `_step_away`, `_line_search` and `_update_weights` tested against `docs/formules/frank-wolfe.md`, which now states the away-step `gamma_max = w_a / (1 - w_a)` and the weight update.
 
-### Changed — PLAN.md phase 4, block 4 (`lmo`): injectable cache, two functions under CC 10
+### Removed — PLAN.md phase 4, block 5 (`solve`)
 
-- `CacheLP` (new, `lmo/solveur.py`): replaces the module-global `_CACHE` dict (keyed by `id(poly)`, no locking) with an explicit, thread-safe (`threading.Lock`), injectable object (`get`/`put`/`clear`). `solve()` gains an optional `cache: CacheLP | None = None` parameter; a module-level `_DEFAULT_CACHE` keeps existing call sites and `clear_cache()` working unchanged.
-- `solve` (`lmo/solveur.py`, was CC 16) split into `_cached_model` and `_infeasible_solution`; both under CC 10.
+- **Breaking (public signature):** `frank_wolfe`'s keyword parameters `cuts`, `rooms` and `ctx` (and the private `_add_cuts` behind them) are removed, without deprecation alias; a call passing any of them now raises `TypeError`. Migration: bake the minimum-area constraints into the polytope beforehand with `archlux.lmo.cuts.inner_area_constraints` (what `archlux.api.legalize` already does) and pass that polytope as `poly`.
+- Consequently `Iteration.n_cuts` is now always `0` in traces produced by `frank_wolfe` (the field stays in `Trace`'s schema).
+
+### Changed — PLAN.md phase 4, block 4 (`lmo`): injectable cache, two functions at most CC 10
+
+- `CacheLP` (new, `lmo/solveur.py`): replaces the module-global `_CACHE` dict (keyed by `id(poly)`, no locking) with an explicit, injectable object (`get`/`put`/`take`/`clear`; `maxsize < 1` raises `InvalidInput` (a `ValueError`)). Still keyed by `id(poly)`, safe because each entry holds a strong reference to its polytope. Thread-safety guarantee: `solve` checks the model out of the cache for the whole set-objective / `Solve()` / read-solution sequence and puts it back after, so no two threads ever share one OR-Tools model (a thread finding it checked out builds its own; same answer); concurrent `solve` calls on one shared cache are safe. `solve()` gains an optional `cache: CacheLP | None = None` parameter; a module-level `_DEFAULT_CACHE` keeps existing call sites and `clear_cache()` working unchanged.
+- `solve` (`lmo/solveur.py`, was CC 16) split into `_cached_model`, `_solve_model` and `_infeasible_solution`; each at most CC 10 (rank B).
 - `_solve_with_area_cuts` (`lmo/cuts.py`, was CC 12) split off `_tighten_if_short`; now under CC 10.
-- New `tests/unit/test_cache_lp.py`: `CacheLP` in isolation (empty-start, put/get, clear, eviction beyond `maxsize`, two independent instances not seeing each other), `solve` giving the identical answer regardless of which cache serves it, and a `threading.Thread`-based concurrency test.
+- New `tests/unit/test_cache_lp.py`: `CacheLP` in isolation (empty-start, put/get, clear, eviction beyond `maxsize`, two independent instances not seeing each other), `solve` giving the identical answer regardless of which cache serves it, a warm solve through an injected cache, and a `threading.Barrier`-based test of concurrent warm solves with different objectives on one shared cache (segfaulted before the check-out fix).
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 28 to 26.
 
-### Changed — PLAN.md phase 4, block 3 (`geom`): five functions under CC 10
+### Changed — PLAN.md phase 4, block 3 (`geom`): five functions under CC 10, `pavage.py` split
 
 - `deduce_grid` (`geom/pavage.py`, was CC 31) split into `_deduce_lines` (+ `_anchor_outline_vertices`), `_room_bounds`, `_verify_partition`; now an orchestrator, under CC 10.
 - `deduce_order` (`geom/graphe.py`, was CC 33) split into `_pairwise_order`, `_outline_envelope`, `_wall_sides_and_groups` (itself split into `_assign_group_sides`, `_group_members`, `_bounding_hull`, `_assign_wall_side_for_group`); now under CC 10.
 - `freeze_contacts` (`geom/polytope.py`, was CC 16) split off `_frozen_bounds`; now under CC 10.
 - `_coupe_verticale`/`_coupe_horizontale` (`geom/rectilineaire.py`, were CC 14 each): their duplicated GEOS-geometry-type branch and collinear-piece-joining loop factored into shared `_line_pieces`/`_chord_through_pivot` helpers instead of split in place. Both now under CC 10.
+- `geom/pavage.py` (745 lines) split by responsibility: `geom/grid.py` (`Grid`, `deduce_grid`, inference helpers) and `geom/grid_repair.py` (consolidation and bounded partition repair); `geom/pavage.py` keeps the tiling constraints and re-exports every public name it served, French deprecated aliases included. Pure move, `results/` byte-identical. Not yet at the exit gate: `_consolider` D(24), `_reparer_partition` C(14), `tiling_constraints` C(13) stay above CC 10 (as do other `geom` functions, e.g. `diagnose`, `overlap_constraints`), and `graphe.py` (625), `polytope.py` (629), `rectilineaire.py` (656 lines) stay above 400 lines — left for later.
+- Unit tests for the extracted helpers `_chord_through_pivot` (both axes), `_line_pieces` (GeometryCollection branch) and `_verify_partition`.
+- `.gitignore`: `/graphify-out/` becomes `graphify-out/`, ignoring the graphify output directory at any depth.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 33 to 28.
-- **Found infeasible, documented, not done**: moving `diagnostic.py` to `data/` (PLAN.md's own block-3 item) hits the same wall as block 2's `ModelTrace`/`Manifest` move — a deprecated shim would need `geom` to import `data`, the wrong direction, and the exemption this needs exceeds the project's cap of 3. Splitting `pavage.py` into `trame.py` is also not done: superseded by the CC-reduction extractions, which already meet the exit-gate's concrete requirement; the file-organization half stays open. See `docs/plans/phase-4-design-patterns.md`.
+- **Found infeasible, documented, not done**: moving `diagnostic.py` to `data/` (PLAN.md's own block-3 item) hits the same wall as block 2's `ModelTrace`/`Manifest` move — a deprecated shim would need `geom` to import `data`, the wrong direction, and the exemption this needs exceeds the project's cap of 3. See `docs/plans/phase-4-design-patterns.md`.
 
 ### Added — PLAN.md phase 4, block 2 (`types`): `legalize_trace`, `vectorize`
 
 - `legalize_trace(plan, ctx, ...) -> (Plan, Trace | None)`: the Frank-Wolfe trace as a return value instead of `Plan.trace`. `legalize(..., trace=True)` still works, now deprecated (warns, points at `legalize_trace`); `None` in classic mode (no Frank-Wolfe pass).
 - `archlux.types.vectorize(plan)` and `FIELDS_VECTOR`: the plain `(x, y, w, h)`-per-room encoding, no solver index needed, next to (not replacing) `geom.polytope.vectorize`. `light.jetons.plan_to_vector` now delegates to it instead of duplicating the computation.
+- `legalize` and `legalize_trace` share a private body instead of `legalize_trace` filtering the deprecation warning with `warnings.catch_warnings()` (process-wide, not thread-safe); the room-type warning points at the caller of either entry point.
 - Migrated four internal test call sites from `legalize(trace=True)` to `legalize_trace(...)`.
-- **Found infeasible, documented, not done**: moving `ModelTrace`/`Manifest` into `bench` (PLAN.md's own block-2 item) would need `io.json_io` and `certify.rapport` to import `bench`, a leaf nobody may import; the two nominal exemptions that would require exceed the project's existing cap of 3 (already spent on `types`'s own three). See `docs/plans/phase-4-design-patterns.md`.
+- **Found infeasible, documented, not done**: moving `ModelTrace`/`Manifest` into `bench` (PLAN.md's own block-2 item) would make `io.json_io` and `certify.rapport` import `bench`. `test_personne_n_importe_bench` rejects any such import (it never reads `EXEMPTIONS`, and its static check also sees `TYPE_CHECKING` imports), as does the dynamic no-`bench` check: the move needs a change to `bench`'s leaf rule (with an ADR), not exemption budget. See `docs/plans/phase-4-design-patterns.md`.
 
 ### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
 
-- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Covers `api` like every other package, through a transitive closure of the existing `AUTORISE` declarations.
+- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Each fresh import also loads every submodule and every `__all__` name, so the lazy facades are actually exercised. A `FORBIDDEN` table encodes each `ARCHITECTURE.md` §5 rule (torch, `lmo`/`light`, `solve`/`active` protocol only, `export`, `data`) and is checked with no transitive closure; no package but `bench` loads `bench`, none loads `torch`. The transitive closure of `AUTORISE` remains only for the coarser declared-layers check.
+- `ARCHITECTURE.md` §5 gains an `api ←` line (matching `AUTORISE["api"]`) and states the `feasibility` exception: it reaches `light.protocole` and `uq` only through `api` (`is_feasible` calls `legalize`), never directly, and loads nothing `api` does not.
 - `__version__`'s import path confirmed already correct (`_version.py` is a genuine leaf); no change needed.
 - This closes PLAN.md phase 4, block 1.
 
@@ -108,7 +126,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md phase 4, block 0: complexity and coverage tooling
 
-- `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of functions above cyclomatic complexity 10 (33 today), lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
+- `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of radon blocks above cyclomatic complexity 10 (33 today: 32 functions/methods plus the class `Loop`), and fails if it drops without the constant being lowered, lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
 - Branch coverage enabled (`--cov-branch`); the coverage ratchet floor moves from 87.9% to 88.8% (measured with branches counted).
 - `docs/plans/phase-4-design-patterns.md`: the phase-4 refactor plan, block by block, with `graphify` (call-graph mapping before an extraction) and `ponytail` (`lite` intensity, a design-time check against over-applying a pattern) verified compatible and scoped for this phase; every block now also sweeps its own files for remaining French-named private helpers (19 found so far) ahead of its structural commits.
 

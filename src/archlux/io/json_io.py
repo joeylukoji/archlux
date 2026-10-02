@@ -23,6 +23,7 @@ from typing import Any
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import (
+    INDICATOR_SENSE,
     REGIMES,
     Certificate,
     GeometricProof,
@@ -192,7 +193,7 @@ def _regime(data: Any) -> Regime:
 def _bound_from_dict(data: Any) -> PerformanceBound:
     """Rebuild a performance bound; refuse an unknown indicator."""
     indicator = data["indicator"]
-    if indicator not in ("sDA", "ASE", "UDI", "vue"):
+    if indicator not in INDICATOR_SENSE:
         raise InvariantViolation((f"unknown indicator: {indicator!r}",))
     return PerformanceBound(
         indicator=indicator,

@@ -422,6 +422,98 @@ def _not_a_surrogate(objective: object) -> str:
     return f"{message}; it has the pre-0.10 French members, rename them: {renames}"
 
 
+def _plan_polytope(
+    plan: Plan,
+    ctx: Context,
+    *,
+    objective: Surrogate | None,
+    calibration: Calibration | None,
+    budget: float | None,
+    merges: tuple[RectilinearRoom, ...],
+    tiling: bool,
+    repair_budget: int,
+    stacklevel: int,
+) -> _Problem:
+    """Stage 1: validate the inputs and derive the plan's polytope (the :class:`_Problem`).
+
+    ``stacklevel`` counts the frames from this function up to the public caller.
+    """
+    if objective is not None and not isinstance(objective, Surrogate):
+        raise TypeError(_not_a_surrogate(objective))
+    validate_inputs(plan, ctx, budget=budget, repair_budget=repair_budget, stacklevel=stacklevel)
+    ctx = resolve_outline(plan, ctx)
+    _check_calibration(objective, calibration)
+    return _build_problem(
+        plan,
+        ctx,
+        merges=merges,
+        budget=budget,
+        tiling=tiling,
+        repair_budget=repair_budget,
+    )
+
+
+def _legalize_l1(
+    problem: _Problem,
+) -> tuple[Polytope, Plan, GeometricProof, tuple[tuple[str, float], ...]]:
+    """Stage 2: the L1 legalization, or the typed refusal.
+
+    Returns the full polytope, the corrected plan, its exact proof and the L1 duals.
+    """
+    poly, poly_l1 = problem.domain()
+    sol = problem.solve(poly_l1)
+    if sol.status == "infaisable":
+        raise _refusal(problem, poly_l1, sol)
+    corrected, proof = _classic_result(problem, sol, poly_l1)
+    # sol was solved on poly_l1: the duals line up with poly_l1.A / origines, not poly.
+    return poly, corrected, proof, _translated_duals(sol.duals, poly_l1)
+
+
+def _certify(corrected: Plan, proof: GeometricProof, duals: tuple[tuple[str, float], ...]) -> Plan:
+    """Stage 4 (classic mode): attach the geometric certificate, no performance claim."""
+    return replace(
+        corrected,
+        certificate=Certificate(geometry=proof, performance=None, duals=duals),
+    )
+
+
+def _legalize(
+    plan: Plan,
+    ctx: Context,
+    *,
+    objective: Surrogate | None,
+    calibration: Calibration | None,
+    budget: float | None,
+    trace: bool,
+    merges: tuple[RectilinearRoom, ...],
+    tiling: bool,
+    repair_budget: int,
+    stacklevel: int,
+) -> Plan:
+    """Body shared by :func:`legalize` and :func:`legalize_trace`, without deprecation.
+
+    The pipeline ``_plan_polytope -> _legalize_l1 -> _optimize_light -> _certify``
+    (:func:`_optimize_light` certifies its own plan). ``stacklevel`` counts the frames
+    from this function up to the public caller, so the input warnings point at that
+    caller whichever entry point it used.
+    """
+    problem = _plan_polytope(
+        plan,
+        ctx,
+        objective=objective,
+        calibration=calibration,
+        budget=budget,
+        merges=merges,
+        tiling=tiling,
+        repair_budget=repair_budget,
+        stacklevel=stacklevel + 1,
+    )
+    poly, corrected, proof, duals = _legalize_l1(problem)
+    if objective is None:
+        return _certify(corrected, proof, duals)
+    return _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)
+
+
 @renamed_parameters({"fusions": "merges", "pavage": "tiling", "budget_reparation": "repair_budget"})
 def legalize(
     plan: Plan,
@@ -591,35 +683,21 @@ def legalize(
             "legalize(trace=True) is deprecated, use legalize_trace(...) -> (Plan, Trace)"
             " (ADR 0001)",
             DeprecationWarning,
-            stacklevel=2,
+            stacklevel=3,  # warn <- legalize <- its alias wrapper <- caller
         )
-    if objective is not None and not isinstance(objective, Surrogate):
-        raise TypeError(_not_a_surrogate(objective))
-    validate_inputs(plan, ctx, budget=budget, repair_budget=repair_budget)
-    ctx = resolve_outline(plan, ctx)
-    _check_calibration(objective, calibration)
-
-    problem = _build_problem(
+    # _legalize <- legalize <- its alias wrapper <- caller.
+    return _legalize(
         plan,
         ctx,
-        merges=merges,
+        objective=objective,
+        calibration=calibration,
         budget=budget,
+        trace=trace,
+        merges=merges,
         tiling=tiling,
         repair_budget=repair_budget,
+        stacklevel=4,
     )
-    poly, poly_l1 = problem.domain()
-    sol = problem.solve(poly_l1)
-    if sol.status == "infaisable":
-        raise _refusal(problem, poly_l1, sol)
-    corrected, proof = _classic_result(problem, sol, poly_l1)
-    # sol was solved on poly_l1: the duals line up with poly_l1.A / origines, not poly.
-    duals = _translated_duals(sol.duals, poly_l1)
-    if objective is None:
-        return replace(
-            corrected,
-            certificate=Certificate(geometry=proof, performance=None, duals=duals),
-        )
-    return _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)
 
 
 def legalize_trace(
@@ -677,21 +755,17 @@ def legalize_trace(
     >>> q.trace is None and trace is None  # classic mode: no Frank-Wolfe pass
     True
     """
-    with warnings.catch_warnings():
-        # The trace=True warning is for a direct caller of legalize; this call is the
-        # replacement itself, not a use of the deprecated path.
-        warnings.filterwarnings(
-            "ignore", category=DeprecationWarning, message=r"legalize\(trace=True\)"
-        )
-        result = legalize(
-            plan,
-            ctx,
-            objective=objective,
-            calibration=calibration,
-            budget=budget,
-            trace=True,
-            merges=merges,
-            tiling=tiling,
-            repair_budget=repair_budget,
-        )
+    # _legalize <- legalize_trace <- caller.
+    result = _legalize(
+        plan,
+        ctx,
+        objective=objective,
+        calibration=calibration,
+        budget=budget,
+        trace=True,
+        merges=merges,
+        tiling=tiling,
+        repair_budget=repair_budget,
+        stacklevel=3,
+    )
     return replace(result, trace=None), cast("Trace | None", result.trace)
