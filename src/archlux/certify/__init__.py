@@ -2,7 +2,8 @@
 
 A lazy facade (PLAN.md phase 4, block 1): asking for one name imports only the module
 that defines it, so a caller who only wants ``render`` does not pay for the proof or
-the bound.
+the bound. ``dir()`` lists the public API (``__all__``) on purpose: submodules and
+dunders are left out.
 """
 
 from __future__ import annotations
@@ -45,7 +46,7 @@ __getattr__ = lazy_aliases(
             "archlux.certify.dual", "translate_duals", "archlux.certify.translate_duals"
         ),
     },
-    fallback=lazy_module_attributes(globals(), _ATTRS),
+    fallback=lazy_module_attributes(__name__, globals(), _ATTRS),
 )
 
 

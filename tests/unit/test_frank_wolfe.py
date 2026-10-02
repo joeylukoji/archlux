@@ -120,17 +120,30 @@ def test_warm_start_passe_toujours_depart(monkeypatch: pytest.MonkeyPatch) -> No
     assert all(start is not None for start in appels)
 
 
-def test_a_strategy_replaces_away_steps(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("enabled", [False, True])
+def test_a_strategy_replaces_away_steps(enabled: bool) -> None:
     """PLAN.md phase 4, block 5: injecting ``AwayStepStrategy`` matches ``away_steps=``."""
     objectif = ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 0.0]))
     x0 = _depart_faisable()
-    via_flag = frank_wolfe(POLY, objectif, NORD, x0, max_iter=8, away_steps=False)
+    via_flag = frank_wolfe(POLY, objectif, NORD, x0, max_iter=8, away_steps=enabled)
     via_strategy = frank_wolfe(
-        POLY, objectif, NORD, x0, max_iter=8, strategy=AwayStepStrategy(enabled=False)
+        POLY, objectif, NORD, x0, max_iter=8, strategy=AwayStepStrategy(enabled=enabled)
     )
+    np.testing.assert_array_equal(via_flag.x, via_strategy.x)
     assert via_flag.value == via_strategy.value
     assert via_flag.gap == via_strategy.gap
     assert via_flag.status == via_strategy.status
+    assert via_flag.iterations == via_strategy.iterations
+    assert via_flag.trace.values == via_strategy.trace.values
+    assert via_flag.trace.gaps == via_strategy.trace.gaps
+    assert via_flag.trace.status == via_strategy.trace.status
+    assert via_flag.trace.final_gap == via_strategy.trace.final_gap
+    flags = [(it.k, it.step, it.away_step) for it in via_flag.trace.iterations]
+    injected = [(it.k, it.step, it.away_step) for it in via_strategy.trace.iterations]
+    assert flags == injected
+    assert len(via_flag.trace.iterates) == len(via_strategy.trace.iterates)
+    for a, b in zip(via_flag.trace.iterates, via_strategy.trace.iterates, strict=True):
+        np.testing.assert_array_equal(a, b)
 
 
 def test_a_custom_strategy_is_consulted_every_iteration() -> None:
@@ -138,7 +151,14 @@ def test_a_custom_strategy_is_consulted_every_iteration() -> None:
     calls: list[int] = []
 
     class CountingStrategy:
-        def propose(self, gradient, x, fw_vertex, vertices, weights):
+        def propose(
+            self,
+            gradient: np.ndarray,
+            x: np.ndarray,
+            fw_vertex: np.ndarray,
+            vertices: list[np.ndarray],
+            weights: list[float],
+        ) -> tuple[np.ndarray, float, bool, int | None]:
             calls.append(len(calls))
             return fw_vertex - x, 1.0, False, None
 
@@ -152,3 +172,17 @@ def test_a_custom_strategy_is_consulted_every_iteration() -> None:
     )
     assert calls
     assert len(calls) <= result.iterations + 1
+
+
+def test_strategy_with_away_steps_false_warns() -> None:
+    """``away_steps=False`` is ignored when ``strategy`` is given: say so."""
+    with pytest.warns(UserWarning, match="away_steps"):
+        frank_wolfe(
+            POLY,
+            ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 0.0])),
+            NORD,
+            _depart_faisable(),
+            max_iter=2,
+            away_steps=False,
+            strategy=AwayStepStrategy(),
+        )

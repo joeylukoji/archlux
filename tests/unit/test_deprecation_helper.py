@@ -96,14 +96,14 @@ def test_a_lazy_alias_imports_only_on_first_use() -> None:
 
 def test_lazy_module_attributes_resolves_and_caches() -> None:
     served: dict[str, object] = {}
-    fallback = lazy_module_attributes(served, {"Alias": "archlux._deprecation"})
+    fallback = lazy_module_attributes("pkg", served, {"Alias": "archlux._deprecation"})
     assert fallback("Alias") is Alias
     assert served == {"Alias": Alias}  # cached: a later lookup skips __getattr__
 
 
 def test_lazy_module_attributes_raises_for_an_unknown_name() -> None:
-    fallback = lazy_module_attributes({}, {"Alias": "archlux._deprecation"})
-    with pytest.raises(AttributeError, match="Nothing"):
+    fallback = lazy_module_attributes("pkg", {}, {"Alias": "archlux._deprecation"})
+    with pytest.raises(AttributeError, match="module 'pkg' has no attribute 'Nothing'"):
         fallback("Nothing")
 
 
@@ -134,3 +134,11 @@ def test_a_fallback_serves_the_names_that_are_not_aliases() -> None:
         assert sum(issubclass(w.category, DeprecationWarning) for w in caught) == 1
     finally:
         del sys.modules["archlux_demo_fallback"]
+
+
+@pytest.mark.parametrize("package", ["archlux.light", "archlux.certify"])
+def test_a_lazy_facade_raises_the_standard_message_for_an_unknown_name(package: str) -> None:
+    import importlib
+
+    with pytest.raises(AttributeError, match=f"^module '{package}' has no attribute 'X'$"):
+        _ = importlib.import_module(package).X

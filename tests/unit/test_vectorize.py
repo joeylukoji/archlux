@@ -18,12 +18,17 @@ def _plan(*rooms: Room) -> Plan:
     return Plan(rooms=rooms, outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)))
 
 
+def test_fields_vector_is_pinned() -> None:
+    assert FIELDS_VECTOR == ("x", "y", "w", "h")
+
+
 def test_vectorize_flattens_in_room_order() -> None:
     plan = _plan(
-        Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
-        Room(id="b", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
+        Room(id="a", type="living_room", x=0.0, y=0.5, w=6.0, h=9.0),
+        Room(id="b", type="bedroom", x=6.0, y=0.0, w=5.5, h=8.0),
     )
-    np.testing.assert_array_equal(vectorize(plan), [0.0, 0.0, 6.0, 9.0, 6.0, 0.0, 6.0, 9.0])
+    expected = [getattr(room, f) for room in plan.rooms for f in FIELDS_VECTOR]
+    np.testing.assert_array_equal(vectorize(plan), expected)
 
 
 def test_vectorize_shape_matches_fields_vector_times_rooms() -> None:
