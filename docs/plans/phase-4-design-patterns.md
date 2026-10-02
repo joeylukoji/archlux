@@ -424,13 +424,13 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
       loop, shared by both, previously duplicated almost verbatim) and
       `_lowest_over_box` (the box-minimization loop, returning the name of the first
       unbounded variable instead of raising, since the caller needs the name for its
-      message). Now CC 10.
+      message). Now exactly CC 10 (rank B).
     - `rational_tiling`: `_identified_boxes` (the raw-rooms-to-`Fraction`-boxes and
       edge-identification setup), `_box_violations` (thin-room / outside-outline),
-      `_pairwise_overlaps`, `_coverage_violation`. Now CC 7.
+      `_pairwise_overlaps`, `_coverage_violation`. Now CC 5.
     - `verify_exactly`: `_malformed_rooms` and `_overlap_and_gaps` (the
       rational-vs-GEOS branch, including the overlap-triggers-a-GEOS-gap-fallback
-      case). Now CC 6.
+      case). Now CC 8.
     One caller each for all three (`api.py`'s `_refusal`/`.prove()`, and
     `rational_tiling`'s own caller `verify_exactly`), confirmed with `graphify explain`
     before touching them.

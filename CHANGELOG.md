@@ -10,9 +10,9 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Changed — PLAN.md phase 4, block 9 (`certify`): three functions under CC 10
 
-- `verify_infeasibility` (`certify/farkas.py`, was CC 20) split into `_accumulate` (the inequality/equality row-weighting loop, previously duplicated almost verbatim) and `_lowest_over_box`; now CC 10.
-- `rational_tiling` (`certify/proof.py`, was CC 23) split into `_identified_boxes`, `_box_violations`, `_pairwise_overlaps`, `_coverage_violation`; now CC 7.
-- `verify_exactly` (`certify/proof.py`, was CC 22) split into `_malformed_rooms` and `_overlap_and_gaps`; now CC 6.
+- `verify_infeasibility` (`certify/farkas.py`, was CC 20) split into `_accumulate` (the inequality/equality row-weighting loop, previously duplicated almost verbatim) and `_lowest_over_box`; now exactly CC 10 (rank B).
+- `rational_tiling` (`certify/proof.py`, was CC 23) split into `_identified_boxes`, `_box_violations`, `_pairwise_overlaps`, `_coverage_violation`; now CC 5.
+- `verify_exactly` (`certify/proof.py`, was CC 22) split into `_malformed_rooms` and `_overlap_and_gaps`; now CC 8.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 25 to 22.
 - **Skipped by design, confirmed with the maintainer first**: item 27, turning `GeometricProof`'s fixed boolean fields into a tuple of named predicates. No schema change this phase; `GeometricProof` and `io/json_io.py`'s migration machinery are unchanged. See `docs/plans/phase-4-design-patterns.md`.
 
