@@ -10,7 +10,8 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
 
-- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Covers `api` like every other package, through a transitive closure of the existing `AUTORISE` declarations.
+- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Each fresh import also loads every submodule and every `__all__` name, so the lazy facades are actually exercised. A `FORBIDDEN` table encodes each `ARCHITECTURE.md` §5 rule (torch, `lmo`/`light`, `solve`/`active` protocol only, `export`, `data`) and is checked with no transitive closure; no package but `bench` loads `bench`, none loads `torch`. The transitive closure of `AUTORISE` remains only for the coarser declared-layers check.
+- `ARCHITECTURE.md` §5 gains an `api ←` line (matching `AUTORISE["api"]`) and states the `feasibility` exception: it reaches `light.protocole` and `uq` only through `api` (`is_feasible` calls `legalize`), never directly, and loads nothing `api` does not.
 - `__version__`'s import path confirmed already correct (`_version.py` is a genuine leaf); no change needed.
 - This closes PLAN.md phase 4, block 1.
 

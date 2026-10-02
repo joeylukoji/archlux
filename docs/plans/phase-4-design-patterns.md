@@ -155,11 +155,14 @@ day count.
    `tests/test_dependances.py`: for every top-level package, import it in a fresh
    subprocess and read `sys.modules` back — a dynamic check the static AST walk cannot
    do (it cannot see a computed `importlib.import_module(...)` call, and it checks
-   *declared* imports, not what actually loads transitively). `api` is covered like
-   every other package (it was already in `AUTORISE`; PLAN.md's own wording undersold
-   this — the gap was the missing dynamic check, not a missing entry). A transitive
-   closure of `AUTORISE` avoids false positives (`api` reaching `uq` only through
-   `certify`, which is what `certify`'s own declared layers already allow).
+   *declared* imports, not what actually loads transitively). `api` was in `AUTORISE`
+   but missing from `ARCHITECTURE.md` §5 itself: PLAN.md was right that it needed adding,
+   and §5 now has an `api ←` line. The dynamic check imports every submodule and every
+   `__all__` name (a lazy facade loads almost nothing otherwise) and checks a `FORBIDDEN`
+   table derived from §5 with no transitive closure; a closure of `AUTORISE` is used only
+   for the separate "declared layers" check, where it would otherwise flag `api` reaching
+   `uq` through `certify`. That closure hid a real gap: `feasibility` loads `light.protocole`
+   and `uq` through `api`. §5 now states this as an explicit, justified exception.
 
 ### 2. `types`
 
