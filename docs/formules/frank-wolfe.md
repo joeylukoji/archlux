@@ -63,6 +63,20 @@ Frank-Wolfe (1956): move towards a vertex, with a decreasing step. The away step
 Lacoste-Julien & Jaggi (2015) remove mass from the worst active vertex, which speeds
 up convergence on faces.
 
+The iterate is kept as \(x=\sum_i w_i v_i\) over active vertices \(v_i\) (weights
+\(w_i>0\), \(\sum_i w_i=1\)). With \(a=\arg\min_i\langle\nabla f(x),v_i\rangle\), the away
+direction \(d_A=x-v_a\) is taken when \(\langle\nabla f,d_A\rangle>\langle\nabla
+f,s-x\rangle\) and \(w_a<1\); its maximum step is \(\gamma_{\max}=w_a/(1-w_a)\), else
+\(\gamma_{\max}=1\). The weight update is
+
+- plain step: \(w\leftarrow(1-\gamma)w\), then \(w_s\mathrel{+}=\gamma\) (\(s\) added
+  if new);
+- away step: \(w\leftarrow(1+\gamma)w\), then \(w_a\mathrel{-}=\gamma\) (at
+  \(\gamma_{\max}\), \(w_a=0\));
+
+vertices whose weight falls to \(\le 10^{-12}\) are dropped and the rest renormalized.
+The line search tries at most 12 halvings and reports `line_search_failed` otherwise.
+
 The identity oracle = legalizer is the core of the project: one solver, two cost
 vectors \(c\).
 

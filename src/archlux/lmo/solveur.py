@@ -33,7 +33,7 @@ with warnings.catch_warnings():
     from ortools.linear_solver import pywraplp
 
 from archlux.arrays import VecteurF
-from archlux.errors import InvariantViolation
+from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
@@ -58,8 +58,18 @@ class CacheLP:
     once. An instance is safe on its own; :func:`solve` still defaults to one shared
     instance, so existing callers need no change.
 
-    The polytope is kept **by strong reference** in each entry: as long as it is there,
-    its ``id()`` cannot be reassigned to another object, so the key stays correct.
+    The key stays ``id(poly)`` (``Polytope`` is not hashable by value, and hashing its
+    arrays on every call would cost more than the warm start saves). This is safe
+    because the polytope is kept **by strong reference** in each entry: as long as it
+    is there, its ``id()`` cannot be reassigned to another object, so the key stays
+    correct.
+
+    Thread-safety guarantee: every method holds an internal lock, and :func:`solve`
+    checks a model **out** (:meth:`take`) for the whole set-objective / ``Solve()`` /
+    read-solution sequence and puts it back afterwards. No two threads ever hold the
+    same OR-Tools model at once; a thread that finds the model checked out simply
+    builds its own (a cold solve, same answer). Concurrent :func:`solve` calls on one
+    shared cache — same or different polytopes — are therefore safe.
 
     This cache changes no result, only the time: same inputs, same solution. The purity
     that `ARCHITECTURE.md` §3 demands of ``lmo`` — determinism, nothing learned — is
@@ -69,9 +79,16 @@ class CacheLP:
     ----------
     maxsize : int, optional
         Number of models kept; the oldest is evicted first. Default 4.
+
+    Raises
+    ------
+    InvalidInput
+        ``maxsize`` below 1 (also a ``ValueError``).
     """
 
     def __init__(self, *, maxsize: int = _TAILLE_CACHE) -> None:
+        if maxsize < 1:
+            raise InvalidInput("maxsize", f"must be at least 1, got {maxsize}")
         self._maxsize = maxsize
         self._lock = threading.Lock()
         self._entries: OrderedDict[int, tuple[Polytope, Any, list[Any], list[Any]]] = OrderedDict()
@@ -99,6 +116,20 @@ class CacheLP:
             self._entries.move_to_end(id(poly))
             while len(self._entries) > self._maxsize:
                 self._entries.popitem(last=False)
+
+    def take(self, poly: Polytope) -> tuple[Any, list[Any], list[Any]] | None:
+        """Remove and return the model built for ``poly`` (check it out), or ``None``.
+
+        While checked out, no other thread can obtain that model: it either builds its
+        own or waits for nothing. :func:`solve` hands it back with :meth:`put` once the
+        solution is read.
+        """
+        with self._lock:
+            entree = self._entries.pop(id(poly), None)
+            if entree is None:
+                return None
+            _, solveur, variables, contraintes = entree
+            return solveur, variables, contraintes
 
     def clear(self) -> None:
         """Forget every cached model."""
@@ -362,14 +393,14 @@ def _cached_model(
     Extracted from :func:`solve` (PLAN.md phase 4, block 4). A model is reusable only
     with a ``start`` (the caller wants a warm start) and with no ``cuts``: a cut
     invalidates the cached model, since it changes the system, not just the objective.
+    The model is **checked out** of ``cache`` (removed from it); the caller puts it back
+    with :meth:`CacheLP.put` once done, so no two threads ever share it.
     """
-    en_cache = cache.get(poly)
-    if start is not None and en_cache is not None and not cuts:
-        return en_cache
-    solveur, variables, contraintes = _construire_modele(poly, cuts)
-    if not cuts:
-        cache.put(poly, solveur, variables, contraintes)
-    return solveur, variables, contraintes
+    if start is not None and not cuts:
+        en_cache = cache.take(poly)
+        if en_cache is not None:
+            return en_cache
+    return _construire_modele(poly, cuts)
 
 
 @renamed_parameters({"depart": "start", "coupes": "cuts", "duaux": "duals"})
@@ -413,8 +444,9 @@ def solve(
         price therefore disappears from the diagnosis.
     cache : CacheLP or None, optional
         Where a built model is kept for the warm start. Defaults to one shared
-        instance; pass an own :class:`CacheLP` for isolation (a test, or two threads
-        solving on different polytopes at once).
+        instance; pass an own :class:`CacheLP` for isolation (e.g. a test). Either
+        way, concurrent calls are safe: the model is checked out of the cache for the
+        whole solve, so two threads never share one OR-Tools model.
 
     Returns
     -------
@@ -453,9 +485,27 @@ def solve(
     if start is not None and start.shape != (n_var,):
         raise InvariantViolation((f"start has shape {start.shape}, expected ({n_var},)",))
 
-    solveur, variables, contraintes = _cached_model(
-        poly, cuts, start, cache if cache is not None else _DEFAULT_CACHE
-    )
+    cache = cache if cache is not None else _DEFAULT_CACHE
+    solveur, variables, contraintes = _cached_model(poly, cuts, start, cache)
+    try:
+        return _solve_model(poly, c, cuts, duals, solveur, variables, contraintes, debut)
+    finally:
+        if not cuts:
+            cache.put(poly, solveur, variables, contraintes)
+
+
+def _solve_model(
+    poly: Polytope,
+    c: VecteurF,
+    cuts: list[Cut] | None,
+    duals: bool,
+    solveur: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
+    variables: list[Any],
+    contraintes: list[Any],
+    debut: float,
+) -> LPSolution:
+    """Set the objective on a model this thread holds exclusively, solve, read back."""
+    n_var = len(poly.index)
 
     objective = solveur.Objective()
     for variable, coefficient in zip(variables, c, strict=True):
