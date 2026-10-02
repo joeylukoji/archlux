@@ -76,7 +76,14 @@ def test_line_search_starts_at_two_over_k_plus_two_and_halves() -> None:
     surrogate = ScriptedSurrogate(values=[0.0, 0.5, 2.0])  # value at x is 1.0
     x = np.zeros(1)
     result = _line_search(
-        surrogate, NORD, x, 1.0, np.array([1.0]), 1.0, 2, glazing=None  # type: ignore[arg-type]
+        surrogate,
+        NORD,
+        x,
+        1.0,
+        np.array([1.0]),
+        1.0,
+        2,
+        glazing=None,  # type: ignore[arg-type]
     )
     assert result is not None
     candidate, new_value, gamma = result
@@ -90,7 +97,14 @@ def test_line_search_starts_at_two_over_k_plus_two_and_halves() -> None:
 def test_line_search_caps_the_first_step_at_gamma_max() -> None:
     surrogate = ScriptedSurrogate(values=[1.0])
     result = _line_search(
-        surrogate, NORD, np.zeros(1), 1.0, np.array([1.0]), 0.1, 0, glazing=None  # type: ignore[arg-type]
+        surrogate,
+        NORD,
+        np.zeros(1),
+        1.0,
+        np.array([1.0]),
+        0.1,
+        0,
+        glazing=None,  # type: ignore[arg-type]
     )
     assert result is not None
     assert result[2] == 0.1
@@ -99,7 +113,14 @@ def test_line_search_caps_the_first_step_at_gamma_max() -> None:
 def test_line_search_gives_up_after_twelve_tries() -> None:
     surrogate = ScriptedSurrogate(values=[0.0] * 20)
     result = _line_search(
-        surrogate, NORD, np.zeros(1), 1.0, np.array([1.0]), 1.0, 0, glazing=None  # type: ignore[arg-type]
+        surrogate,
+        NORD,
+        np.zeros(1),
+        1.0,
+        np.array([1.0]),
+        1.0,
+        0,
+        glazing=None,  # type: ignore[arg-type]
     )
     assert result is None
     assert len(surrogate.seen) == 12
