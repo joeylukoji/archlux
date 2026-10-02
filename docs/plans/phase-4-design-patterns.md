@@ -311,9 +311,9 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
 
 21. Added `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`, `"ASE"` the only `"<="`)
     and `types.indicator_sign` (`-1.0`/`1.0`), next to the existing `REGIMES` registry —
-    same shape, same file, no new pattern. Replaces the six `indicator == "ASE"` sign
-    flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py`,
-    `uq/conforme.py`) and two comparison-direction branches (`certify/rapport.py`,
+    same shape, same file, no new pattern. Replaces the five `indicator == "ASE"` sign
+    flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py` x1)
+    and two comparison-direction branches (`certify/rapport.py`,
     `uq/conforme.py`), plus two other spots that separately repeated the four-name list
     (`light/base.py`'s `_analytique` cache size and `DenseSurrogate.load`'s validation).
     **Scoped down from the plan's own wording**: no `unit`/`range` fields — nothing in

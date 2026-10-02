@@ -11,13 +11,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 ### Added — PLAN.md phase 4, block 6 (`light`), item 23: `Fingerprintable` protocol
 
 - `types.Fingerprintable` (`@runtime_checkable Protocol`, one property: `weights_fingerprint: str`), implemented on `DenseSurrogate`. `uq.gestion._model_fingerprint` already checked for this attribute before guessing at `W1`/`b1`/... by name; `DenseSurrogate` now takes that explicit path and survives an internal rename the guessing would silently miss. The guessing fallback stays for third-party models (e.g. a raw `torch` module) that cannot implement an archlux protocol.
+- **Behaviour change**: freezing an *untrained* `DenseSurrogate` now raises `InvariantViolation` ("fingerprinting an untrained model"). Before, the guessing path hashed only `b3=0.0` and issued a token. Consequently `uq.gestion.DataManagement.for_calibration(token, model=untrained)` now raises `InvariantViolation` instead of `ModelModified`. Pinned by `test_freezing_an_untrained_dense_model_raises`.
 - Lives in `types.py`, not `light/protocole.py`, because `uq` may import `types` but not `light`.
 - **Skipped, found premature, item 22**: splitting `DenseSurrogate` into model/trainer/serializer objects. A cohesive class, one consumer, no caller blocked by the coupling; the split would move coupling around, not remove it. See `docs/plans/phase-4-design-patterns.md`.
 - New tests in `tests/unit/test_substitut_dense.py`.
 
 ### Added — PLAN.md phase 4, block 6 (`light`), item 21: `INDICATOR_SENSE` registry
 
-- `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`) and `types.indicator_sign` (`-1.0`/`1.0`): replace six `indicator == "ASE"` sign flips (`light/analytique.py`, `light/simulateur.py`, `light/protocole.py`, `uq/conforme.py`) and two comparison-direction branches (`certify/rapport.py`, `uq/conforme.py`), plus two spots that separately repeated the four-indicator-name list (`light/base.py`).
+- `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`) and `types.indicator_sign` (`-1.0`/`1.0`): replace five `indicator == "ASE"` sign flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py` x1) and two comparison-direction branches (`certify/rapport.py`, `uq/conforme.py`), plus two spots that separately repeated the four-indicator-name list (`light/base.py`).
 - Scoped down from the plan's own wording: no `unit`/`range` fields, since nothing in the codebase reads either today. Add them when a real caller needs one.
 - New tests in `tests/unit/test_shared_types.py` cover the registry and grep `src` for any remaining `== "ASE"` outside `types.py`.
 

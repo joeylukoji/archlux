@@ -58,7 +58,7 @@ Indicator = Literal["sDA", "ASE", "UDI", "vue"]
 ``PerformanceBound``, the ``Surrogate`` protocol, the surrogates and the calibration all
 share it."""
 
-INDICATOR_SENSE: Final[MappingProxyType[Indicator, str]] = MappingProxyType(
+INDICATOR_SENSE: Final[MappingProxyType[Indicator, Literal["<=", ">="]]] = MappingProxyType(
     {"sDA": ">=", "ASE": "<=", "UDI": ">=", "vue": ">="}
 )
 """Comparison direction of each indicator: ``\"<=\"`` where lower is better (ASE, glare),
