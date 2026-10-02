@@ -13,12 +13,14 @@ English. What it did not touch is *structure*. Measured on 2026-09-27:
   `lmo/cuts.py` (671), `geom/rectilineaire.py` (646), `geom/polytope.py` (617),
   `io/json_io.py` (613), `api.py` (608), `certify/proof.py` (605), `types.py` (573),
   `geom/graphe.py` (522), `lmo/solveur.py` (414), `uq/conforme.py` (408).
-- **33 functions/methods exceed cyclomatic complexity 10** (`radon cc src -n C`), five of
+- **33 radon blocks exceed cyclomatic complexity 10** (32 functions/methods plus the class `Loop`) (`radon cc src -n C`), five of
   them past 30: `data/chargeurs.py::_convertir` (E, 38), `geom/graphe.py::deduce_order`
   (E, 33), `solve/frank_wolfe.py::frank_wolfe` (E, 32), `geom/pavage.py::deduce_grid`
   (E, 31), `active/boucle.py::Loop.run` (D, 29).
-- **Line coverage is 92.0%**, short of the 95% gate (branch coverage not measured yet:
-  `pytest-cov`'s branch mode needs enabling — see Testing Decisions).
+- **Line coverage is 92%** (4902 of 5323 statements; `pytest --cov=archlux
+  --cov-report=term` with branch mode off, re-measured 2026-10-02), short of the 95% gate
+  (branch coverage not measured yet: `pytest-cov`'s branch mode needs enabling — see
+  Testing Decisions).
 - A few modules mix unrelated responsibilities under one name: `types.py` carries both
   the pure model (`Room`, `Wall`, `Plan`...) and the run trace (`ModelTrace`, part of
   `Manifest`); `light/base.py`'s `DenseSurrogate` is model, training and serialization in
@@ -129,7 +131,7 @@ day count.
    readable local check (prints every violation; not CI-blocking, like `make results`).
 3. Branch coverage enabled (`[tool.coverage.run] branch = true`, CI's `Tests` step gets
    `--cov-branch`). Baseline re-measured with branches counted: **88.9%** combined
-   (down from the line-only 92.0%, as expected — branches add denominator). The ratchet
+   (down from the line-only 92%, as expected — branches add denominator). The ratchet
    floor moved from 87.9 to 88.8; the true two-figure gate (95% lines / 90% branches)
    is checked with `coverage report --skip-covered` when a block's tests move it, not
    read off this single combined number.
