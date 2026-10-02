@@ -141,4 +141,4 @@ def test_a_lazy_facade_raises_the_standard_message_for_an_unknown_name(package: 
     import importlib
 
     with pytest.raises(AttributeError, match=f"^module '{package}' has no attribute 'X'$"):
-        importlib.import_module(package).X
+        _ = importlib.import_module(package).X
