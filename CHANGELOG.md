@@ -8,6 +8,15 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 12 (`active`): `Batch` value object, `Adjustable` protocol, `Loop.run` under CC 10
+
+- `Batch(x, orientations)` (`active/boucle.py`): replaces the parallel `xs`/`orientations` lists `Loop` passed to its own helpers. Scoped to internal use: `Loop.run`'s public parameter list is unchanged, since merging it into `Batch` too would break every existing caller.
+- `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`): `Loop` now checks `isinstance(surrogate, Adjustable)` instead of `getattr(surrogate, "fit", None)`. The legacy `ajuster` fallback (pre-English-rename surrogates) stays attribute-based.
+- `Loop.run` (was CC 29) split into `_validate_run_inputs`, `_seed_calibration`, `_run_cycle`, `_fit_cycle`, `_recalibrate_cycle`; now CC 6. `Loop`'s own class-aggregate complexity drops from 11 to 5.
+- **Found stale, not applicable**: deriving `active`'s seeds through `bench.graines.derive` — `active` may not import `bench`, and `bench.graines.derive` is itself a thin wrapper around `archlux.seeds.derive`, which `active` already calls directly.
+- New tests in `tests/unit/test_actif.py`.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 22 to 20.
+
 ### Changed — PLAN.md phase 4, block 10 (`feasibility`): business logic moved to `verdict.py`
 
 - `FeasibilityCertificate`, `Verdict`, `is_feasible` and `_legalize_any_dimensions` moved from `feasibility/__init__.py` to `feasibility/verdict.py`; the package root is now a four-line re-export plus the existing deprecated-alias shim, the same shape as every other package. No import-cost change: `feasibility` is already imported lazily by the root package.

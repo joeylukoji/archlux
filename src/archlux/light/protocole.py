@@ -24,7 +24,14 @@ if TYPE_CHECKING:
     from archlux.arrays import VecteurF
     from archlux.types import Opening, Orientation, Wall
 
-__all__ = ["Glazing", "PerRoomSurrogate", "Surrogate", "WrapsSurrogate", "point_prediction"]
+__all__ = [
+    "Adjustable",
+    "Glazing",
+    "PerRoomSurrogate",
+    "Surrogate",
+    "WrapsSurrogate",
+    "point_prediction",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,6 +186,32 @@ class Surrogate(Protocol):
         Serves as the non-conformity score of :mod:`archlux.uq.conforme` and as the
         sampling criterion of the active learning of milestone 6.
         """
+        ...
+
+
+@runtime_checkable
+class Adjustable(Surrogate, Protocol):
+    """A :class:`Surrogate` that can also be retrained from labeled data.
+
+    Not every surrogate is adjustable: the analytic and split-flux ones are frozen,
+    closed-form. :class:`archlux.active.boucle.Loop` checks for this capability
+    (``isinstance(surrogate, Adjustable)``) instead of assuming every surrogate has
+    ``fit``, or guessing via ``getattr(surrogate, "fit", None)`` (PLAN.md phase 4,
+    block 12, item 34).
+    """
+
+    def fit(
+        self,
+        xs: tuple[VecteurF, ...],
+        ys: VecteurF,
+        orientations: tuple[Orientation, ...],
+        *,
+        seed: int,
+        epoques: int = 120,
+        lr: float = 0.08,
+        glazing: tuple[Glazing | None, ...] | None = None,
+    ) -> None:
+        """Retrain in place from labeled data."""
         ...
 
 

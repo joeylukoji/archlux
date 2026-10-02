@@ -6,9 +6,11 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from archlux.active.boucle import Loop
+from archlux.active.boucle import Batch, Loop
 from archlux.active.densite import kernel_density
 from archlux.active.selection import RandomStrategy, UncertaintyTimesDensity
+from archlux.errors import InvariantViolation
+from archlux.light.protocole import Adjustable
 from archlux.types import Orientation
 
 
@@ -205,3 +207,25 @@ def test_a_surrogate_that_still_has_ajuster_is_retrained_with_a_warning() -> Non
             calibration_orientations=[Orientation(0.0) for _ in calib],
         )
     assert calls, "the legacy surrogate was never retrained"
+
+
+def test_batch_rejects_mismatched_lengths() -> None:
+    """PLAN.md phase 4, block 12, item 33: `x` and `orientations` stay in sync."""
+    import pytest
+
+    with pytest.raises(InvariantViolation):
+        Batch(x=(np.zeros(4),), orientations=())
+
+
+def test_batch_len_is_the_candidate_count() -> None:
+    batch = Batch(x=(np.zeros(4), np.ones(4)), orientations=(Orientation(0.0), Orientation(90.0)))
+    assert len(batch) == 2
+
+
+def test_a_trainable_surrogate_satisfies_adjustable() -> None:
+    """PLAN.md phase 4, block 12, item 34: `fit` makes a surrogate `Adjustable`."""
+    assert isinstance(_ModeleLocal(), Adjustable)
+
+
+def test_a_frozen_surrogate_does_not_satisfy_adjustable() -> None:
+    assert not isinstance(_OracleRegion(), Adjustable)

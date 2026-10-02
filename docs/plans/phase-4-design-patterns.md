@@ -454,16 +454,39 @@ Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
     `legalize` itself is CC 6, `_build_problem` CC 6, `_admits` CC 2. The pipeline
     stayed healthy through every block; nothing to extract.
 
-### 12. `active`
+### 12. `active` — done
 
-33. Add a `Batch(x, orientations)` value object replacing the positional tuples `Loop`
-    passes around.
-34. Add an `Adjustable` protocol for what `Loop.run` expects from a surrogate
-    (`fit`/`evaluate`/`gradient`), replacing the `getattr(surrogate, "fit", None)` duck
-    typing found and fixed during PLAN.md 3.9 wave 5 batch 5.
-35. Derive every seed in `active` through `bench.graines.derive`, not a local scheme.
-36. Break `Loop.run` (CC 29, the highest after `_convertir`) under CC 10 using the
-    `Batch`/`Adjustable` types from the two commits above.
+33. Added `Batch(x, orientations)` (`active/boucle.py`), a frozen value object replacing
+    the parallel `xs`/`orientations` lists `Loop` passed to `_incertitudes_acquisition`
+    and `_largeur_moyenne`. **Scoped down from the plan's own wording**: `Loop.run`'s own
+    public parameter list (`propositions`/`orientations`,
+    `holdout`/`holdout_orientations`, `calibration`/`calibration_orientations`) is
+    unchanged — merging those into `Batch` too would break every existing caller for a
+    cosmetic gain. `Batch` is internal plumbing, not a public-API change.
+34. Added `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`):
+    `Loop._fit_cycle` now checks `isinstance(self.surrogate, Adjustable)` instead of
+    `getattr(surrogate, "fit", None)`. The legacy `ajuster`-attribute fallback (a
+    surrogate written before the English rename) stays attribute-based, since no
+    protocol can represent "the old, deprecated spelling of this method."
+35. **Found stale, not applicable.** `active/boucle.py` already calls
+    `archlux.seeds.derive` directly (not a local scheme) at all three of its seed
+    sites. It cannot go through `bench.graines.derive` as the item literally asks:
+    `active` may import `types`/`errors`/`light.protocole`/`uq`, not `bench`
+    (`ARCHITECTURE.md` §5) — and `bench.graines.derive` is itself only a thin
+    backward-compatible wrapper around `archlux.seeds.derive`, the same leaf `active`
+    already calls. No change needed.
+36. Broke `Loop.run` (was CC 29) into `_validate_run_inputs`, `_seed_calibration` (free
+    functions) and `_run_cycle`/`_fit_cycle`/`_recalibrate_cycle` (methods, since they
+    need `self.surrogate`/`self.simulateur`/`self.seed`). `run` itself is now CC 6;
+    `Loop`'s own class-aggregate complexity drops from 11 to 5. Covered by new tests in
+    `tests/unit/test_actif.py` (`Batch`'s length-mismatch guard and `__len__`, and that
+    a trainable vs. a frozen surrogate correctly (dis)satisfies `Adjustable`), on top of
+    the five pre-existing `Loop`/acquisition tests, all still green.
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 22 to 20 (`run` and `Loop`'s own
+class-aggregate entry both counted as violations).
+Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` green (no new
+cross-layer import), coverage 89.51% (ratchet 88.8%), `mkdocs build --strict` clean.
 
 ### 13. `export`
 
