@@ -242,17 +242,26 @@ day count.
 
 16. Replaced the module-global cache dict (`_CACHE: OrderedDict[...]`, keyed by
     `id(poly)`, no locking) with `CacheLP`: an explicit, injectable, thread-safe
-    (`threading.Lock`) object (`get`/`put`/`clear`). A module-level `_DEFAULT_CACHE =
+    (`threading.Lock`) object (`get`/`put`/`take`/`clear`; `maxsize >= 1` validated).
+    It is still keyed by `id(poly)` — not a module global any more, but the key is kept
+    deliberately: each entry holds a strong reference to its polytope, so that `id()`
+    cannot be reused while the entry lives. Thread safety covers the whole solve, not
+    only get/put: `solve` checks the model out of the cache (`take`) for the
+    set-objective / `Solve()` / read-solution sequence and puts it back afterwards, so
+    no two threads ever hold the same OR-Tools model (one that finds it checked out
+    builds its own). A module-level `_DEFAULT_CACHE =
     CacheLP()` keeps the existing zero-argument call sites and `clear_cache()` working
     unchanged; `solve()` gained an optional `cache: CacheLP | None = None` parameter for
-    callers that want an isolated cache (e.g. concurrent solves on independent
-    polytopes). Covered in isolation by `tests/unit/test_cache_lp.py` (empty-start,
+    callers that want an isolated cache (e.g. a test). Covered in isolation by `tests/unit/test_cache_lp.py` (empty-start,
     put/get round-trip, clear, eviction beyond `maxsize`, isolation between two
     instances, `solve` giving the identical answer regardless of which cache serves it,
-    and a `threading.Thread`-based concurrency test).
+    a warm solve through an injected cache, and a `threading.Barrier`-based test of
+    concurrent warm solves with different objectives on one shared cache — which
+    segfaulted before the check-out fix).
 17. `solve` (`solveur.py`, was CC 16) split into `_cached_model` (the cache get/build/put
-    sequence, now trivial once the cache is an object) and `_infeasible_solution` (the
-    GLOP infeasible/unbounded/Farkas-certificate branch); both under CC 10.
+    sequence, now trivial once the cache is an object), `_solve_model` and
+    `_infeasible_solution` (the GLOP infeasible/unbounded/Farkas-certificate branch);
+    each at most CC 10 (rank B or better).
     `_solve_with_area_cuts` (`cuts.py`, was CC 12) split off its per-iteration
     tighten-or-give-up step into `_tighten_if_short`; under CC 10.
 
