@@ -470,20 +470,21 @@ Verified: full suite green, `mypy src` clean, coverage 89.41% (ratchet 88.8%),
 Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
 `tests/unit/test_import_cost.py` green (no layering or import-cost change).
 
-### 11. `api` — audited, no code change
+### 11. `api` — pipeline done, item 31 deferred
 
-31. **Found already resolved, not applicable.** `legalize` has exactly one
-    tiling-related parameter, `tiling: bool` — `pavage` is only its deprecated French
-    alias (`@renamed_parameters`), already a clean rename, not two competing booleans.
-    Grepped `api.py` for every `bool = True`/`bool = False` parameter to confirm: no
-    second, conflicting tiling-mode flag exists to merge with it. The "parameter-alias
-    question left open by PLAN.md 3.9" this item refers to was already closed by the
-    `pavage` → `tiling` rename (`CHANGELOG.md`, PLAN.md 3.9 wave 5/PR #17); nothing
-    left to do here.
-32. **Confirmed.** `radon cc api.py -n C -s` on the current file (after blocks 2-10):
-    empty. The highest function in `api.py` is `_refusal`/`_active_origins` at CC 7;
-    `legalize` itself is CC 6, `_build_problem` CC 6, `_admits` CC 2. The pipeline
-    stayed healthy through every block; nothing to extract.
+31. **Deferred.** The pair this item means is `tiling: bool` + `repair_budget: int`
+    (`repair_budget` has no effect when `tiling` is false), not `pavage`/`tiling`: an
+    earlier note calling it "already resolved" was wrong. Folding them into
+    `tiling: int | None` is deferred because (1) these keywords were just renamed in
+    PR #17 (`fusions`/`pavage`/`budget_reparation` → `merges`/`tiling`/`repair_budget`)
+    and another public change now would churn users, and (2) in Python `bool` is an
+    `int` (`True == 1`), so `tiling=True` would be ambiguous with a repair budget of 1.
+32. **Done.** The planned Pipeline: `api._legalize` (shared by `legalize` and
+    `legalize_trace`) now chains `_plan_polytope` (validation + `_build_problem`) →
+    `_legalize_l1` (L1 pass or typed refusal) → `_optimize_light` (light mode, certifies
+    its own plan) → `_certify` (classic mode). Private refactor only: no public API
+    change, `scripts/results.py --check` byte-identical, warning stacklevels still point
+    at the caller, every function under CC 10, complexity ratchet unchanged.
 
 ### 12. `active`
 

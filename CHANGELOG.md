@@ -14,10 +14,10 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - New `tests/unit/test_feasibility_package.py`.
 - **Found stale, not applicable**: item 30, sharing `_solve_l1` between `feasibility` and `api`. No such function, or any solving logic at all, exists in `feasibility` — `is_feasible` delegates entirely to `archlux.api.legalize`. Nothing to deduplicate.
 
-### Audited — PLAN.md phase 4, block 11 (`api`): both items already closed, no code change
+### Changed — PLAN.md phase 4, block 11 (`api`): `legalize` as a pipeline; item 31 deferred
 
-- Item 31 (merge two tiling-related booleans into one `TilingMode`): `legalize` has exactly one tiling parameter, `tiling: bool` (`pavage` is only its deprecated alias) — already resolved by the earlier `pavage` → `tiling` rename. No second boolean exists to merge.
-- Item 32 (confirm `legalize`'s pipeline stayed under CC 10 through blocks 2-10): confirmed, `radon cc api.py -n C -s` is empty; the highest function is CC 7.
+- Item 32: the private body of `legalize`/`legalize_trace` is now the planned pipeline `_plan_polytope` → `_legalize_l1` → `_optimize_light` → `_certify`. No public API change; results byte-identical; every function under CC 10.
+- Item 31 (fold `tiling: bool` + `repair_budget: int` into `tiling: int | None`): deferred, not resolved. These keywords were just renamed in PR #17, and since `bool` is an `int` in Python, `tiling=True` would be ambiguous with a repair budget of 1.
 
 ### Changed — PLAN.md phase 4, block 9 (`certify`): three functions under CC 10
 
