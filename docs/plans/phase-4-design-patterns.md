@@ -194,14 +194,21 @@ day count.
     `light.jetons.plan_to_vector` now delegates to it instead of duplicating the same
     four-line computation (its own comment explaining the duplication is gone with it).
 
-### 3. `geom` — **CC reduction done (12, 13, 15); 11 and 14 not done, see below**
+### 3. `geom` — **CC reduction (12, 13, 15) and the `pavage.py` split (11) done; 14 not done; exit gate not yet met, see below**
 
-11. **Not done.** Splitting `pavage.py` into `trame.py` + a slimmer `pavage.py` was
-    superseded: item 12 already brings every function in the file under CC 10 without
-    a file split, which was the concrete, exit-gate-relevant half of this item. The
-    SRP/file-organization half remains open — a real future task, not attempted here
-    to keep this batch's risk bounded (a file split needs its own deprecated-shim
-    machinery, on top of the extractions already done).
+11. **Done.** `pavage.py` (745 lines) split in three, English names per ADR 0001
+    (glossary: trame → grid): `geom/grid.py` (`Grid`, `deduce_grid` and its inference
+    helpers), `geom/grid_repair.py` (`_consolider`, `_couverture`, `_retouches`,
+    `_reparer_partition`), and a slimmer `geom/pavage.py` keeping the tiling
+    constraints (`snap_to_grid`, `tiling_constraints`, `extend_tiling`). Pure move:
+    `geom.pavage` re-exports `Grid`/`deduce_grid` and keeps its `lazy_aliases` table
+    for the French names; imports run `pavage → grid → grid_repair`, no cycle;
+    `results/` unchanged. An earlier draft of this item claimed the CC extractions of
+    item 12 "already bring every function in the file under CC 10" and met the exit
+    gate — that was false. **Still open for later**: `_consolider` D(24),
+    `_reparer_partition` C(14) and `tiling_constraints` C(13) remain above CC 10 (with other `geom` functions), and
+    `graphe.py` (625), `polytope.py` (629), `rectilineaire.py` (656 lines) remain above
+    the 400-line gate.
 12. `deduce_grid` (`pavage.py`, was CC 31) split into `_deduce_lines` (grouping and
     outline anchoring, itself split further into `_anchor_outline_vertices`),
     `_room_bounds` (bounds + flatness check), `_verify_partition` (coverage/repair).
