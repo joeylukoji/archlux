@@ -10,11 +10,18 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Changed — PLAN.md phase 4, block 5 (`solve`): dead legacy path removed, `frank_wolfe` under CC 10, injectable step strategy
 
-- Removed `frank_wolfe`'s legacy `cuts`/`rooms`/`ctx` parameters and `_add_cuts` (unreferenced by any source file or test, confirmed by a repo-wide grep before deleting): brought `frank_wolfe` from CC 32 to CC 28 by deleting dead branches alone.
+- Deleting the legacy cut path (see **Removed** below) brought `frank_wolfe` from CC 32 to CC 28 by deleting dead branches alone.
 - `frank_wolfe` (`solve/frank_wolfe.py`) split into `_step_away`, `_line_search`, `_update_weights` and `_final_diagnostics`; now CC 9. Every function in the file is under CC 10.
 - New `StepStrategy` protocol (one method, `propose`) and `AwayStepStrategy`, the built-in default: `frank_wolfe` gains an optional `strategy: StepStrategy | None = None` parameter, so a new step rule plugs in without editing `frank_wolfe` itself. The existing `away_steps` flag keeps working unchanged (`None` uses `AwayStepStrategy(enabled=away_steps)`).
 - New tests in `tests/unit/test_frank_wolfe.py`: an injected `AwayStepStrategy` matches the `away_steps=` flag bit-for-bit, and a minimal custom strategy is consulted every iteration.
 - The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 26 to 25.
+- `frank_wolfe(strategy=..., away_steps=False)` emits a `UserWarning`: `away_steps` is ignored when a strategy is injected.
+- New `tests/unit/test_frank_wolfe_steps.py`: `_step_away`, `_line_search` and `_update_weights` tested against `docs/formules/frank-wolfe.md`, which now states the away-step `gamma_max = w_a / (1 - w_a)` and the weight update.
+
+### Removed — PLAN.md phase 4, block 5 (`solve`)
+
+- **Breaking (public signature):** `frank_wolfe`'s keyword parameters `cuts`, `rooms` and `ctx` (and the private `_add_cuts` behind them) are removed, without deprecation alias; a call passing any of them now raises `TypeError`. Migration: bake the minimum-area constraints into the polytope beforehand with `archlux.lmo.cuts.inner_area_constraints` (what `archlux.api.legalize` already does) and pass that polytope as `poly`.
+- Consequently `Iteration.n_cuts` is now always `0` in traces produced by `frank_wolfe` (the field stays in `Trace`'s schema).
 
 ### Changed — PLAN.md phase 4, block 4 (`lmo`): injectable cache, two functions at most CC 10
 
