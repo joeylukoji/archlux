@@ -17,7 +17,8 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
 
-- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Covers `api` like every other package, through a transitive closure of the existing `AUTORISE` declarations.
+- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Each fresh import also loads every submodule and every `__all__` name, so the lazy facades are actually exercised. A `FORBIDDEN` table encodes each `ARCHITECTURE.md` §5 rule (torch, `lmo`/`light`, `solve`/`active` protocol only, `export`, `data`) and is checked with no transitive closure; no package but `bench` loads `bench`, none loads `torch`. The transitive closure of `AUTORISE` remains only for the coarser declared-layers check.
+- `ARCHITECTURE.md` §5 gains an `api ←` line (matching `AUTORISE["api"]`) and states the `feasibility` exception: it reaches `light.protocole` and `uq` only through `api` (`is_feasible` calls `legalize`), never directly, and loads nothing `api` does not.
 - `__version__`'s import path confirmed already correct (`_version.py` is a genuine leaf); no change needed.
 - This closes PLAN.md phase 4, block 1.
 
@@ -28,7 +29,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md phase 4, block 0: complexity and coverage tooling
 
-- `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of functions above cyclomatic complexity 10 (33 today), lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
+- `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of radon blocks above cyclomatic complexity 10 (33 today: 32 functions/methods plus the class `Loop`), and fails if it drops without the constant being lowered, lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.
 - Branch coverage enabled (`--cov-branch`); the coverage ratchet floor moves from 87.9% to 88.8% (measured with branches counted).
 - `docs/plans/phase-4-design-patterns.md`: the phase-4 refactor plan, block by block, with `graphify` (call-graph mapping before an extraction) and `ponytail` (`lite` intensity, a design-time check against over-applying a pattern) verified compatible and scoped for this phase; every block now also sweeps its own files for remaining French-named private helpers (19 found so far) ahead of its structural commits.
 

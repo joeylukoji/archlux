@@ -20,7 +20,7 @@ until asked, and the package's own current names resolved the same way::
     __getattr__ = lazy_aliases(
         __name__,
         {"OldName": LazyAlias("archlux.pkg.module", "CurrentName", "archlux.pkg.CurrentName")},
-        fallback=lazy_module_attributes(globals(), _ATTRS),
+        fallback=lazy_module_attributes(__name__, globals(), _ATTRS),
     )
 
 Renamed keyword parameters of a public function go through :func:`renamed_parameters`::
@@ -146,7 +146,7 @@ def lazy_aliases(
 
 
 def lazy_module_attributes(
-    module_globals: dict[str, object], attrs: Mapping[str, str]
+    module_name: str, module_globals: dict[str, object], attrs: Mapping[str, str]
 ) -> Callable[[str], object]:
     """Build a ``fallback`` that imports a name's module only when the name is used.
 
@@ -156,6 +156,8 @@ def lazy_module_attributes(
 
     Parameters
     ----------
+    module_name : str
+        ``__name__`` of the module, used in the ``AttributeError`` message.
     module_globals : dict
         The importing module's ``globals()``.
     attrs : mapping of str to str
@@ -170,19 +172,19 @@ def lazy_module_attributes(
 
     Examples
     --------
-    >>> fallback = lazy_module_attributes({}, {"Alias": "archlux._deprecation"})
+    >>> fallback = lazy_module_attributes("pkg", {}, {"Alias": "archlux._deprecation"})
     >>> fallback("Alias") is Alias
     True
     >>> fallback("NoSuchName")
     Traceback (most recent call last):
         ...
-    AttributeError: NoSuchName
+    AttributeError: module 'pkg' has no attribute 'NoSuchName'
     """
 
     def _fallback(name: str) -> object:
         module = attrs.get(name)
         if module is None:
-            raise AttributeError(name)
+            raise AttributeError(f"module {module_name!r} has no attribute {name!r}")
         value = getattr(importlib.import_module(module), name)
         module_globals[name] = value  # resolved once: later lookups skip __getattr__
         return value
