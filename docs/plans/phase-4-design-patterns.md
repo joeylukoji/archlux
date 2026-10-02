@@ -359,12 +359,11 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
 
 ### 7. `orient` — done
 
-24. Added `orient.circulaire.sector(deg, n_secteurs, *, center=True)`: the centered
+24. Added `orient.circulaire.sector(deg, n_sectors, *, center=True)`: the centered
     (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized.
     `stratify` now calls it instead of repeating the formula; `light/analytique.py`'s
-    `sector_factor` (was `int((azimut + 22.5) // 45.0) % 8`, hand-rolled, scalar-only,
-    no wraparound past 360) now calls `sector(azimut, 8)` too — same result, plus
-    negative-angle and >360 wraparound for free. `bench/rapport.py` already delegated
+    `sector_factor` (was `int((azimut + 22.5) // 45.0) % 8`, hand-rolled,
+    scalar-only) now calls `sector(azimut, 8)` too — same result, now shared. `bench/rapport.py` already delegated
     to `stratify`; nothing to change there.
     **`uq` found infeasible, documented, not done, same class of problem as blocks 2/3's
     skipped items**: `uq.fiabilite.stratify_by_orientation` keeps its own copy of the
