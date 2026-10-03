@@ -164,31 +164,79 @@ day count.
    `uq` through `certify`. That closure hid a real gap: `feasibility` loads `light.protocole`
    and `uq` through `api`. §5 now states this as an explicit, justified exception.
 
-### 2. `types`
+### 2. `types` — **done, with one item skipped by design (see below)**
 
-7. Add the property tests / reference cases for `Plan`, `Context`, `Manifest` and
-   `ModelTrace` construction if a gap is found (entry condition, Q-M8).
-8. Extract `trace` out of `Plan`: `legalize` gains a `legalize_trace` sibling (or a
-   `trace=True` return shape) returning `(Plan, Trace)` instead of a plan that carries
-   its own trace.
-9. Move `ModelTrace` and `Manifest` to `bench` (their only real owner; `types.py` keeps
-   re-exporting them as deprecated aliases at their old path until 1.0.0, per ADR 0001).
-10. Add `FIELDS_VECTOR` and a top-level `vectorize(plan)` next to the existing
-    `geom.polytope.vectorize`, so a caller does not need to reach into `geom` for a
-    plain plan-to-vector conversion.
+7. Existing property tests and reference cases for `Plan`/`Context`/`Manifest`/
+   `ModelTrace` construction were already adequate; no gap found.
+8. `legalize` gains a `legalize_trace` sibling returning `(Plan, Trace | None)`
+   (`None` in classic mode: no Frank-Wolfe pass to trace). `legalize(..., trace=True)`
+   still works, now with a `DeprecationWarning` pointing at the replacement — the
+   maintainer's own choice over a clean break (2026-09-27). `Plan.trace` itself is
+   **not** removed: converting it into a warn-on-access property is not practical on a
+   `frozen, slots` dataclass without real engineering cost for a field that keeps
+   working either way; `legalize_trace` builds a `Plan` with `trace=None` on its own
+   return, which is what a new caller actually sees.
+9. **Skipped, found infeasible as written**: `io.json_io` genuinely constructs
+   `ModelTrace`/`Manifest` instances at runtime when deserializing a manifest, and
+   `certify.rapport` type-hints on `Manifest`, so moving the classes into `bench`
+   would make both import `bench`. The first blocker is `test_personne_n_importe_bench`
+   (`tests/test_dependances.py`): it rejects any `archlux.bench` import from outside
+   `bench` and never reads `EXEMPTIONS`, so no exemption entry could allow it. The
+   static AST walk also sees imports under `if TYPE_CHECKING:`, so a hint-only import
+   in `certify.rapport` is caught as well; and the dynamic
+   `test_a_fresh_import_loads_no_bench_and_no_torch` forbids any package but `bench`
+   from loading it at runtime. The move therefore needs a change to `bench`'s leaf
+   rule in `ARCHITECTURE.md` §5 (with an ADR), not exemption budget: a bigger decision
+   than block 2. Confirmed at the commit, not assumed: the classes stay in `types.py`.
+10. `FIELDS_VECTOR` and `vectorize(plan)` added to `types.py` (local `numpy` import,
+    since `types` is loaded eagerly by the package root and must not add to `import
+    archlux`'s budget — caught by `test_import_cost.py` on the first attempt).
+    `light.jetons.plan_to_vector` now delegates to it instead of duplicating the same
+    four-line computation (its own comment explaining the duplication is gone with it).
 
-### 3. `geom`
+### 3. `geom` — **CC reduction (12, 13, 15) and the `pavage.py` split (11) done; 14 not done; exit gate not yet met, see below**
 
-11. Split `pavage.py` into `trame.py` (grid inference and repair: `deduce_grid`,
-    `_consolider`, `_reparer_partition`) and a slimmer `pavage.py` (the tiling
-    constraints only: `tiling_constraints`, `extend_tiling`).
-12. Break `deduce_grid` (CC 31) under CC 10: extract its per-axis passes into named
-    helpers with their own docstrings and tests, one commit per extraction.
-13. Break `deduce_order` (`graphe.py`, CC 33) the same way.
-14. Move `diagnostic.py` to `data/` (it inspects a plan's pathologies from measured
-    data, not from the geometry-construction pipeline that owns the rest of `geom`).
-15. Break `freeze_contacts` (`polytope.py`, CC 16) and `_coupe_verticale`/
-    `_coupe_horizontale` (`rectilineaire.py`, CC 14 each) under CC 10.
+11. **Done.** `pavage.py` (745 lines) split in three, English names per ADR 0001
+    (glossary: trame → grid): `geom/grid.py` (`Grid`, `deduce_grid` and its inference
+    helpers), `geom/grid_repair.py` (`_consolider`, `_couverture`, `_retouches`,
+    `_reparer_partition`), and a slimmer `geom/pavage.py` keeping the tiling
+    constraints (`snap_to_grid`, `tiling_constraints`, `extend_tiling`). Pure move:
+    `geom.pavage` re-exports `Grid`/`deduce_grid` and keeps its `lazy_aliases` table
+    for the French names; imports run `pavage → grid → grid_repair`, no cycle;
+    `results/` unchanged. An earlier draft of this item claimed the CC extractions of
+    item 12 "already bring every function in the file under CC 10" and met the exit
+    gate — that was false. **Still open for later**: `_consolider` D(24),
+    `_reparer_partition` C(14) and `tiling_constraints` C(13) remain above CC 10 (with other `geom` functions), and
+    `graphe.py` (625), `polytope.py` (629), `rectilineaire.py` (656 lines) remain above
+    the 400-line gate.
+12. `deduce_grid` (`pavage.py`, was CC 31) split into `_deduce_lines` (grouping and
+    outline anchoring, itself split further into `_anchor_outline_vertices`),
+    `_room_bounds` (bounds + flatness check), `_verify_partition` (coverage/repair).
+    `deduce_grid` itself is now an orchestrator, under CC 10.
+13. `deduce_order` (`graphe.py`, was CC 33) split into `_pairwise_order` (the
+    center-comparison loop), `_outline_envelope`, and `_wall_sides_and_groups` — the
+    last one, still over CC 10 on its own, split again into `_assign_group_sides`,
+    then `_group_members`/`_bounding_hull`/`_assign_wall_side_for_group`.
+    `deduce_order` itself is now under CC 10.
+14. **Skipped, found infeasible as written, same class of problem as block 2's item
+    9**: a deprecated shim at the old `geom/diagnostic.py` path would need to import
+    `archlux.data.diagnostic`, but `geom` may not import `data` (the layering is the
+    other way round: `data` depends on `geom`, never the reverse). The nominal
+    exemption this needs is one more than the project's cap of 3, already fully spent.
+    Confirmed at the commit (tried the move, hit the same wall, reverted cleanly): stays
+    in `geom/`, unmoved, until the exemption cap or `data`/`geom`'s relative layering is
+    revisited — a bigger decision than block 3.
+15. `freeze_contacts` (`polytope.py`, was CC 16) split off its bounds-freezing pass
+    into `_frozen_bounds`; now under CC 10. `_coupe_verticale`/`_coupe_horizontale`
+    (`rectilineaire.py`, were CC 14 each) were near-exact mirrors of each other (axes
+    swapped) with the same three-way GEOS-geometry-type branch and the same
+    collinear-piece-joining loop duplicated; factored into two shared helpers
+    (`_line_pieces`, `_chord_through_pivot`, parametrized by axis) instead of just
+    splitting each in place — removes the duplication PLAN.md's own pattern column
+    names for this block (SRP) rather than only chasing the complexity number.
+
+**Ratchet**: `MAX_VIOLATIONS` (block 0's `tests/test_complexity.py`) moved from 33 to
+28 across items 12, 13, 15 — five named functions fixed, zero new violations.
 
 ### 4. `lmo`
 

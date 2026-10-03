@@ -37,11 +37,11 @@ _SETTINGS = settings(max_examples=GATE_EXAMPLES, deadline=None, derandomize=True
 
 def _trace(plan: Plan, ctx: Context) -> tuple[Plan, Trace] | None:
     try:
-        result = archlux.legalize(plan, ctx, objective=ANALYTIC, trace=True)
+        result, trace = archlux.legalize_trace(plan, ctx, objective=ANALYTIC)
     except ArchluxError:
         return None  # a typed refusal has no iterates
-    assert isinstance(result.trace, Trace)
-    return result, result.trace
+    assert isinstance(trace, Trace)
+    return result, trace
 
 
 def _iterates_are_valid(plan: Plan, ctx: Context) -> None:

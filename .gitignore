@@ -42,4 +42,4 @@ session_memory.json
 /.claude/worktrees/
 
 # graphify's generated knowledge graph (regenerate locally: graphify update src/archlux)
-/graphify-out/
+graphify-out/

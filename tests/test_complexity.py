@@ -23,9 +23,10 @@ cc_visit = _radon_cc.cc_visit
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "archlux"
 
-MAX_VIOLATIONS = 33
-"""Measured 2026-09-27, before any phase-4 commit. Lower it in the same commit that
-brings a block under CC 10; never raise it."""
+MAX_VIOLATIONS = 28
+"""33 at the start of phase 4 (2026-09-27); block 3 brought `deduce_grid`,
+`deduce_order`, `freeze_contacts`, `_coupe_verticale` and `_coupe_horizontale` under
+CC 10. Lower it in the same commit that brings a block under CC 10; never raise it."""
 
 
 def _blocks() -> list[Any]:

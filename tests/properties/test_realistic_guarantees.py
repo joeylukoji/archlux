@@ -97,10 +97,10 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
 
     This is what makes an interrupted run usable, a claim of the README."""
     plan, ctx = scenario
-    result = archlux.legalize(plan, ctx, objective=AnalyticSurrogate(), trace=True)
-    assert result.trace is not None
+    result, trace = archlux.legalize_trace(plan, ctx, objective=AnalyticSurrogate())
+    assert trace is not None
     index = build_polytope(deduce_order(plan, structure=ctx.structure), ctx).index
-    for step, x in enumerate(result.trace.iterates):
+    for step, x in enumerate(trace.iterates):
         iterate = devectorize(x, result, index)
         assert _independent_violations(iterate, ctx) == [], f"iterate {step}"
 

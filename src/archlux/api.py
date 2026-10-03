@@ -16,9 +16,10 @@ Full chain, assumptions and contra-indications: ``docs/formules/pipeline.md``.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, replace
 from types import MappingProxyType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -59,8 +60,9 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from archlux.certify.borne import Calibration
+    from archlux.solve.trace import Trace
 
-__all__ = ["gradient_distance", "legalize"]
+__all__ = ["gradient_distance", "legalize", "legalize_trace"]
 
 _DUAL_THRESHOLD = 1e-9
 
@@ -420,6 +422,53 @@ def _not_a_surrogate(objective: object) -> str:
     return f"{message}; it has the pre-0.10 French members, rename them: {renames}"
 
 
+def _legalize(
+    plan: Plan,
+    ctx: Context,
+    *,
+    objective: Surrogate | None,
+    calibration: Calibration | None,
+    budget: float | None,
+    trace: bool,
+    merges: tuple[RectilinearRoom, ...],
+    tiling: bool,
+    repair_budget: int,
+    stacklevel: int,
+) -> Plan:
+    """Body shared by :func:`legalize` and :func:`legalize_trace`, without deprecation.
+
+    ``stacklevel`` counts the frames from this function up to the public caller, so the
+    input warnings point at that caller whichever entry point it used.
+    """
+    if objective is not None and not isinstance(objective, Surrogate):
+        raise TypeError(_not_a_surrogate(objective))
+    validate_inputs(plan, ctx, budget=budget, repair_budget=repair_budget, stacklevel=stacklevel)
+    ctx = resolve_outline(plan, ctx)
+    _check_calibration(objective, calibration)
+
+    problem = _build_problem(
+        plan,
+        ctx,
+        merges=merges,
+        budget=budget,
+        tiling=tiling,
+        repair_budget=repair_budget,
+    )
+    poly, poly_l1 = problem.domain()
+    sol = problem.solve(poly_l1)
+    if sol.status == "infaisable":
+        raise _refusal(problem, poly_l1, sol)
+    corrected, proof = _classic_result(problem, sol, poly_l1)
+    # sol was solved on poly_l1: the duals line up with poly_l1.A / origines, not poly.
+    duals = _translated_duals(sol.duals, poly_l1)
+    if objective is None:
+        return replace(
+            corrected,
+            certificate=Certificate(geometry=proof, performance=None, duals=duals),
+        )
+    return _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)
+
+
 @renamed_parameters({"fusions": "merges", "pavage": "tiling", "budget_reparation": "repair_budget"})
 def legalize(
     plan: Plan,
@@ -459,6 +508,11 @@ def legalize(
         A budget too small for the plan raises ``Infeasible``.
     trace : bool, optional
         If true, attaches the Frank-Wolfe trace to ``result.trace`` (not serialized).
+
+        .. deprecated:: 0.10
+            Use :func:`legalize_trace` instead, which returns ``(Plan, Trace)`` instead
+            of smuggling the trace through a field of ``Plan`` (PLAN.md phase 4, block
+            2). ``trace=True`` still works, with a warning, until 1.0.0 (ADR 0001).
     merges : tuple of PieceRectilineaire, optional
         Fused rooms (L, T, U, Z) decomposed into sub-rectangles. Their shared edges
         become equalities of ``A_eq``; on the orthogonal axis, the order of the
@@ -579,30 +633,94 @@ def legalize(
     >>> q.certificate.geometry.valid
     True
     """
-    if objective is not None and not isinstance(objective, Surrogate):
-        raise TypeError(_not_a_surrogate(objective))
-    validate_inputs(plan, ctx, budget=budget, repair_budget=repair_budget)
-    ctx = resolve_outline(plan, ctx)
-    _check_calibration(objective, calibration)
-
-    problem = _build_problem(
+    if trace:
+        warnings.warn(
+            "legalize(trace=True) is deprecated, use legalize_trace(...) -> (Plan, Trace)"
+            " (ADR 0001)",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    # _legalize <- legalize <- its alias wrapper <- caller.
+    return _legalize(
         plan,
         ctx,
-        merges=merges,
+        objective=objective,
+        calibration=calibration,
         budget=budget,
+        trace=trace,
+        merges=merges,
         tiling=tiling,
         repair_budget=repair_budget,
+        stacklevel=4,
     )
-    poly, poly_l1 = problem.domain()
-    sol = problem.solve(poly_l1)
-    if sol.status == "infaisable":
-        raise _refusal(problem, poly_l1, sol)
-    corrected, proof = _classic_result(problem, sol, poly_l1)
-    # sol was solved on poly_l1: the duals line up with poly_l1.A / origines, not poly.
-    duals = _translated_duals(sol.duals, poly_l1)
-    if objective is None:
-        return replace(
-            corrected,
-            certificate=Certificate(geometry=proof, performance=None, duals=duals),
-        )
-    return _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)
+
+
+def legalize_trace(
+    plan: Plan,
+    ctx: Context,
+    *,
+    objective: Surrogate | None = None,
+    calibration: Calibration | None = None,
+    budget: float | None = None,
+    merges: tuple[RectilinearRoom, ...] = (),
+    tiling: bool = False,
+    repair_budget: int = 4,
+) -> tuple[Plan, Trace | None]:
+    """Legalize a plan and return its Frank-Wolfe trace instead of attaching it.
+
+    Same behaviour as :func:`legalize`, minus the ``trace`` parameter: PLAN.md phase 4,
+    block 2 moves the trace out of ``Plan`` (a diagnostic, not part of a plan's
+    identity) and into this dedicated return value.
+
+    Parameters
+    ----------
+    plan, ctx, objective, calibration, budget, merges, tiling, repair_budget
+        Exactly as :func:`legalize`.
+
+    Returns
+    -------
+    tuple of (Plan, Trace or None)
+        The legalized plan, exactly as :func:`legalize` returns it (its own
+        ``trace`` field is always ``None`` here), and the Frank-Wolfe trace of the
+        performance pass. ``None`` in classic mode (``objective=None``): there is no
+        Frank-Wolfe pass to trace.
+
+    Raises
+    ------
+    See :func:`legalize`.
+
+    Examples
+    --------
+    >>> from archlux.types import (
+    ...     Context, Orientation, Plan, Regulation, Room, Structure,
+    ... )
+    >>> plan = Plan(
+    ...     rooms=(
+    ...         Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
+    ...         Room(id="b", type="living_room", x=6.0, y=0.0, w=6.0, h=9.0),
+    ...     ),
+    ...     outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
+    ... )
+    >>> ctx = Context(
+    ...     structure=Structure(load_bearing_walls=()),
+    ...     orientation=Orientation(deg=0.0),
+    ...     regulation=Regulation(min_areas=(), min_width=1.0),
+    ... )
+    >>> q, trace = legalize_trace(plan, ctx)
+    >>> q.trace is None and trace is None  # classic mode: no Frank-Wolfe pass
+    True
+    """
+    # _legalize <- legalize_trace <- caller.
+    result = _legalize(
+        plan,
+        ctx,
+        objective=objective,
+        calibration=calibration,
+        budget=budget,
+        trace=True,
+        merges=merges,
+        tiling=tiling,
+        repair_budget=repair_budget,
+        stacklevel=3,
+    )
+    return replace(result, trace=None), cast("Trace | None", result.trace)

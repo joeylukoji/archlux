@@ -280,7 +280,7 @@ archlux/
 │   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer
 │   ├── arrays.py            # `VecteurF`, the float64 array alias of the numerical core
 │   ├── types.py
-│   ├── geom/{graphe,polytope,pavage,rectilineaire,diagnostic}.py
+│   ├── geom/{graphe,polytope,pavage,grid,grid_repair,rectilineaire,diagnostic}.py
 │   ├── lmo/{solveur,coupes}.py
 │   ├── solve/{frank_wolfe,trace}.py
 │   ├── light/{protocole,analytique,appris,base,jetons,objectif,simulateur,validation}.py
