@@ -225,9 +225,9 @@ def _repair_partition(
             return incidences
         best: tuple[int, tuple[str, int, int, int, int], int] | None = None
         for rank, incidence in enumerate(incidences):
-            for propose, cellules, extension in _touch_ups(incidence, shape):
+            for propose, cells, extension in _touch_ups(incidence, shape):
                 targeted = missing if extension else surplus
-                zone = targeted[cellules]
+                zone = targeted[cells]
                 if zone.size and bool(zone.all()):
                     gain = int(zone.size)
                     if best is None or gain > best[2]:

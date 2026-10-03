@@ -295,7 +295,7 @@ def _short_of_area(
 ) -> tuple[str, ...]:
     """Rooms whose ``w h`` is strictly below ``need``, sorted."""
     vector = np.asarray(x, dtype=float)
-    violees: list[str] = []
+    violated: list[str] = []
     for room in rooms:
         threshold = need[room.id]
         if threshold <= 0.0:
@@ -303,8 +303,8 @@ def _short_of_area(
         width = float(vector[poly.index[f"{room.id}.w"]])
         height = float(vector[poly.index[f"{room.id}.h"]])
         if width * height + _AREA_TOLERANCE < threshold:
-            violees.append(room.id)
-    return tuple(sorted(violees))
+            violated.append(room.id)
+    return tuple(sorted(violated))
 
 
 def _target_on_hyperbola(

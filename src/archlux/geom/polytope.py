@@ -185,27 +185,27 @@ def freeze_contacts(poly: Polytope, x: FloatVector, *, tol: float = 1e-7) -> Pol
     if poly.A.shape[0] == 0:
         return replace(poly, bounds=tuple(box_bounds))
     margin = poly.b - np.ravel(poly.A @ x)
-    saturees = margin <= tol
-    if not np.any(saturees):
+    saturated = margin <= tol
+    if not np.any(saturated):
         return replace(poly, bounds=tuple(box_bounds))
-    free = ~saturees
+    free = ~saturated
     n_var = len(poly.index)
     a_free = poly.A[free]
     if a_free.shape[0] == 0:
         a_free = sparse.csr_matrix((0, n_var))
-    a_saturees = poly.A[saturees]
+    a_saturated = poly.A[saturated]
     b_free = poly.b[free]
-    b_saturees = poly.b[saturees]
+    b_saturated = poly.b[saturated]
     if poly.A_eq.shape[0]:
-        a_eq = sparse.vstack([poly.A_eq, a_saturees], format="csr")
-        b_eq = np.concatenate([poly.b_eq, b_saturees])
+        a_eq = sparse.vstack([poly.A_eq, a_saturated], format="csr")
+        b_eq = np.concatenate([poly.b_eq, b_saturated])
     else:
-        a_eq = a_saturees.tocsr()
-        b_eq = b_saturees
+        a_eq = a_saturated.tocsr()
+        b_eq = b_saturated
     origins = tuple(label for label, keep in zip(poly.origins, free, strict=True) if keep)
     frozen = tuple(
         f"contact {label}"
-        for label, is_frozen in zip(poly.origins, saturees, strict=True)
+        for label, is_frozen in zip(poly.origins, saturated, strict=True)
         if is_frozen
     )
     return replace(

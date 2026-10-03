@@ -252,12 +252,12 @@ def _write_spatial_hierarchy(w: _SpfWriter, id_owner: int, id_proj: int) -> tupl
         f"IFCBUILDINGSTOREY('{w.guid('storey')}',#{id_owner},'RDC',$,$,#{id_floor_pl},$,$,.ELEMENT.,0.0)",
     )
 
-    for rel_id, parent, enfants in (
+    for rel_id, parent, children in (
         (w.alloc(), id_proj, (id_site,)),
         (w.alloc(), id_site, (id_bat,)),
         (w.alloc(), id_bat, (storey_id,)),
     ):
-        refs = ",".join(f"#{e}" for e in enfants)
+        refs = ",".join(f"#{e}" for e in children)
         w.emit(
             rel_id,
             f"IFCRELAGGREGATES('{w.guid(f'agg{rel_id}')}',#{id_owner},$,$,#{parent},({refs}))",

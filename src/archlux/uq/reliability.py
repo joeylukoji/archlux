@@ -133,8 +133,8 @@ def reliability_diagram(
             lines.append([float(gamma), float("nan")])  # documented: n too small
             continue
         q_hat = conformal_quantile(reference, alpha)
-        empirique = float(np.mean(scores <= q_hat))
-        lines.append([float(gamma), empirique])
+        empirical = float(np.mean(scores <= q_hat))
+        lines.append([float(gamma), empirical])
     return np.asarray(lines, dtype=float)
 
 

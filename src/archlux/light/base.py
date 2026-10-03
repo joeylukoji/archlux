@@ -399,22 +399,22 @@ class DenseSurrogate:
             target = next((known for known in INDICATOR_SENSE if known == indicator), None)
             if target is None:
                 raise InvariantViolation((f"indicateur inconnu dans les poids : {indicator}",))
-            modele = cls(target_indicator=target)
-            modele.W1 = np.array(archive["W1"], dtype=float, copy=True)
-            modele.b1 = np.array(archive["b1"], dtype=float, copy=True)
-            modele.W2 = np.array(archive["W2"], dtype=float, copy=True)
-            modele.b2 = np.array(archive["b2"], dtype=float, copy=True)
-            modele.W3 = np.array(archive["W3"], dtype=float, copy=True)
-            modele.b3 = float(archive["b3"])
-            modele.mu = np.array(archive["mu"], dtype=float, copy=True)
-            modele.sigma = np.array(archive["sigma"], dtype=float, copy=True)
-            modele.mu_y = float(archive["mu_y"])
-            modele.sigma_y = float(archive["sigma_y"])
+            model = cls(target_indicator=target)
+            model.W1 = np.array(archive["W1"], dtype=float, copy=True)
+            model.b1 = np.array(archive["b1"], dtype=float, copy=True)
+            model.W2 = np.array(archive["W2"], dtype=float, copy=True)
+            model.b2 = np.array(archive["b2"], dtype=float, copy=True)
+            model.W3 = np.array(archive["W3"], dtype=float, copy=True)
+            model.b3 = float(archive["b3"])
+            model.mu = np.array(archive["mu"], dtype=float, copy=True)
+            model.sigma = np.array(archive["sigma"], dtype=float, copy=True)
+            model.mu_y = float(archive["mu_y"])
+            model.sigma_y = float(archive["sigma_y"])
             # Poids anterieurs au recalage affine : identite, comportement inchange.
             if "echelle_base" in archive:
-                modele.base_scale = float(archive["echelle_base"])
-                modele.base_offset = float(archive["decalage_base"])
-        return modele
+                model.base_scale = float(archive["echelle_base"])
+                model.base_offset = float(archive["decalage_base"])
+        return model
 
 
 __getattr__ = lazy_aliases(

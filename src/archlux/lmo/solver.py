@@ -204,7 +204,7 @@ def _glop_bound(solver: object, value: float, *, upper: bool) -> float:
     return infinite if upper else -infinite
 
 
-def _construire_modele(poly: Polytope, cuts: list[Cut] | None) -> tuple[Any, list[Any], list[Any]]:
+def _build_model(poly: Polytope, cuts: list[Cut] | None) -> tuple[Any, list[Any], list[Any]]:
     """Translate a polytope into a GLOP model.
 
     Returns
@@ -267,7 +267,7 @@ def _is_feasible(poly: Polytope, cuts: list[Cut] | None) -> bool:
     The model is identical to that of the real problem — cuts, equalities and bounds
     included — so that the verdict bears on the same system.
     """
-    solver, _, _ = _construire_modele(poly, cuts)
+    solver, _, _ = _build_model(poly, cuts)
     solver.Objective().SetMinimization()
     return _status(solver.Solve()) == "optimal"
 
@@ -313,7 +313,7 @@ def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[FloatVe
     canonical form ``y ≥ 0``, the only one :mod:`archlux.certify.dual` can use without
     every reader having to know the backend's internal convention.
     """
-    solver, variables, constraints = _construire_modele(poly, cuts)
+    solver, variables, constraints = _build_model(poly, cuts)
     objective = solver.Objective()
 
     slacks = [solver.NumVar(0.0, solver.infinity(), f"ecart_{i}") for i in range(len(constraints))]
@@ -403,7 +403,7 @@ def _cached_model(
         cached = cache.take(poly)
         if cached is not None:
             return cached
-    return _construire_modele(poly, cuts)
+    return _build_model(poly, cuts)
 
 
 @renamed_parameters({"depart": "start", "coupes": "cuts", "duaux": "duals"})

@@ -177,12 +177,12 @@ def _identifier(value: str) -> str:
 
 
 def _angles_and_lengths(  # lang-ok: kept private identifier
-    polygones: list[Polygon],
+    polygons: list[Polygon],
 ) -> tuple[list[float], list[float]]:
     """Angle and length of each edge, to estimate the grid direction."""
     angles: list[float] = []
     lengths: list[float] = []
-    for poly in polygones:
+    for poly in polygons:
         coords = list(poly.exterior.coords)[:-1]
         for (x0, y0), (x1, y1) in zip(coords, coords[1:] + coords[:1], strict=True):
             length = math.hypot(x1 - x0, y1 - y0)
@@ -240,7 +240,7 @@ def _grid(values: list[float], tolerance: float) -> dict[float, float]:
     return mapping
 
 
-def _stitch(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
+def _stitch(polygons: list[Polygon], tolerance: float) -> list[Polygon]:
     r"""Snap rooms back together onto a common grid, so they tile exactly.
 
     In MSD an ``area`` is the **interior** surface of a room: neighbouring
@@ -261,14 +261,14 @@ def _stitch(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
     """
     xs: list[float] = []
     ys: list[float] = []
-    for poly in polygones:
+    for poly in polygons:
         for x, y in list(poly.exterior.coords)[:-1]:
             xs.append(float(x))
             ys.append(float(y))
     grid_x = _grid(xs, tolerance)
     grid_y = _grid(ys, tolerance)
     stitched: list[Polygon] = []
-    for poly in polygones:
+    for poly in polygons:
         coords = [(grid_x[float(x)], grid_y[float(y)]) for x, y in list(poly.exterior.coords)[:-1]]
         # Snapping can flatten an edge: remove consecutive vertices that became
         # identical, otherwise shapely returns an invalid polygon.
@@ -313,10 +313,10 @@ def _wall_segment(poly: Polygon) -> LineString | None:  # lang-ok: kept private 
     )
 
 
-def _walls_from_polygons(polygones: list[Polygon], thicknesses: list[float]) -> tuple[Wall, ...]:
+def _walls_from_polygons(polygons: list[Polygon], thicknesses: list[float]) -> tuple[Wall, ...]:
     """Convert solid partitions into axis segments, with stable identifiers."""
     walls: list[Wall] = []
-    for rank, (poly, thickness) in enumerate(zip(polygones, thicknesses, strict=True)):
+    for rank, (poly, thickness) in enumerate(zip(polygons, thicknesses, strict=True)):
         segment = _wall_segment(poly)  # lang-ok: kept private identifier
         if segment is None or segment.length <= _EPS:
             continue
