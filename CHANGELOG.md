@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — bilingual documentation site (English / French)
+
+- The site is built in English (default) and French with `mkdocs-static-i18n` (suffix structure): 48 user pages get a `.fr.md` translation — home, installation, gallery, tutorials, concepts, formulas, data, release, limitations, contributing, JSON schema. The French text starts from the French originals and is brought in line with the English reference; code blocks are identical in both languages.
+- `tests/docs/test_examples.py`: the `.fr.md` pages are not run twice; new tests check that each translated page has its `.fr.md` and that both files have the same fenced code blocks. `tests/test_language.py` never scans `.fr.md` files.
+- `docs/specification/DOCUMENTATION.md`: "Bilingual site" conventions (English reference, `.fr.md` translation, identical code blocks, both updated in the same commit).
+
 ### Fixed — three defects found during the English translation (chantier E)
 
 - `data/loaders.py`: the MSD loader classified a room `decompose` refused by matching the French messages of before the rename, so every refusal was counted as "room not decomposable". `_decomposition_rejection` matches the current messages again ("room not axis-aligned", "room over-fragmented"); tested with real `decompose` refusals. **Behaviour change**: the rejection breakdown of a fresh MSD load differs from a run made after the rename and before this fix; the published j7 figures predate the rename and are unaffected.
