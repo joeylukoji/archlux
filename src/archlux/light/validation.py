@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 __all__ = ["GradientReport", "validate_gradient"]
 
-_NIGHT = 1e-8
+_TINY = 1e-8
 
 
 @renamed_attributes(
@@ -151,29 +151,29 @@ def validate_gradient(
     cosine: list[float] = []
     signs: list[bool] = []
     for x in matrix:
-        declare = np.asarray(surrogate.gradient(x, orientation), dtype=float).ravel()
+        declared = np.asarray(surrogate.gradient(x, orientation), dtype=float).ravel()
         target = (
             _finite_differences(oracle, x, orientation, step_fd)
             if oracle is not None
             else _finite_differences(surrogate, x, orientation, step_fd)
         )
         norm_c = float(np.linalg.norm(target))
-        norm_d = float(np.linalg.norm(declare))
-        if norm_c < _NIGHT and norm_d < _NIGHT:
+        norm_d = float(np.linalg.norm(declared))
+        if norm_c < _TINY and norm_d < _TINY:
             errors.append(0.0)
             cosine.append(1.0)
-            signs.extend([True] * declare.size)
+            signs.extend([True] * declared.size)
             continue
-        denom = max(norm_c, _NIGHT)
-        errors.append(float(np.linalg.norm(declare - target) / denom))
-        if norm_c > _NIGHT and norm_d > _NIGHT:
-            cosine.append(float(np.dot(declare, target) / (norm_d * norm_c)))
+        denom = max(norm_c, _TINY)
+        errors.append(float(np.linalg.norm(declared - target) / denom))
+        if norm_c > _TINY and norm_d > _TINY:
+            cosine.append(float(np.dot(declared, target) / (norm_d * norm_c)))
         else:
             cosine.append(0.0)
-        for a, b in zip(declare, target, strict=True):
+        for a, b in zip(declared, target, strict=True):
             if abs(b) < 1e-3:
                 continue
-            if abs(a) < _NIGHT:
+            if abs(a) < _TINY:
                 signs.append(False)
             else:
                 signs.append((a >= 0.0) == (b >= 0.0))

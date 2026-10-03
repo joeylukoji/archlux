@@ -246,14 +246,14 @@ class AnalyticSurrogate:
 
             d_u_d_l = penetration
             d_u_d_p = south_facade * d_pen_d_p
-            du_dw = d_u_d_l * cos2 + d_u_d_p * sin2
-            du_dh = d_u_d_l * sin2 + d_u_d_p * cos2
+            d_u_d_w = d_u_d_l * cos2 + d_u_d_p * sin2
+            d_u_d_h = d_u_d_l * sin2 + d_u_d_p * cos2
 
             kappa = self.KAPPA_SOUTH
             gradient[base] = score * kappa * (-sin_t)
             gradient[base + 1] = score * kappa * (-cos_t)
-            gradient[base + 2] = du_dw * south_weight
-            gradient[base + 3] = du_dh * south_weight
+            gradient[base + 2] = d_u_d_w * south_weight
+            gradient[base + 3] = d_u_d_h * south_weight
 
         sign = indicator_sign(self.target_indicator)
         return total * sign, gradient * sign

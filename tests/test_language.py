@@ -188,6 +188,7 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/geom/__init__.py",
     "src/archlux/io/__init__.py",
     "src/archlux/light/__init__.py",
+    "src/archlux/light/analytic.py",
     "src/archlux/light/analytique.py",
     "src/archlux/light/appris.py",
     "src/archlux/light/base.py",
