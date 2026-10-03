@@ -1,56 +1,56 @@
-# Vérification exacte
+# Exact verification
 
-**Code :** `certify.proof.verify_exactly`.
+**Code:** `certify.proof.verify_exactly`.
 
-Indépendante du solveur : si GLOP a un bogue, c'est cette inspection qui le
-montre (`ARCHITECTURE.md` : ne jamais croire le solveur).
+Independent of the solver: if GLOP has a bug, this inspection is what
+shows it (`ARCHITECTURE.md`: never trust the solver).
 
-## Énoncé
+## Statement
 
-Quatre prédicats, conjonction pour `valid`. **Aucun n'est probabiliste.**
+Four predicates, conjoined into `valid`. **None of them is probabilistic.**
 
 \[
-\mathrm{valide}
- = \neg\mathrm{chevauchement}
- \land \neg\mathrm{jours}
- \land \mathrm{surfaces\_ok}
- \land \mathrm{structure\_preservee}.
+\mathrm{valid}
+ = \neg\mathrm{overlap}
+ \land \neg\mathrm{gaps}
+ \land \mathrm{areas\_ok}
+ \land \mathrm{structure\_kept}.
 \]
 
-### Chevauchement
+### Overlap
 
-Pour chaque paire de rectangles \(R_i,R_j\), aire d'intersection
-\(\lambda(R_i\cap R_j)\) (GEOS / Shapely, clipping de Vatti, 1992). Chevauchement
-ssi cette aire dépasse `OVERLAP_M2` \(=10^{-9}\,\mathrm{m}^2\). Message :
-`"overlap cuisine|sdb: 0.0300 m²"`. Complexité \(O(n^2)\) paires, assumée. Ce chemin
-GEOS ne sert plus qu'aux contours non rectangulaires ; un contour rectangulaire passe
-par la preuve rationnelle ci-dessous.
+For each pair of rectangles \(R_i,R_j\), intersection area
+\(\lambda(R_i\cap R_j)\) (GEOS / Shapely, Vatti clipping, 1992). Overlap
+iff this area exceeds `OVERLAP_M2` \(=10^{-9}\,\mathrm{m}^2\). Message:
+`"overlap kitchen|bathroom: 0.0300 m²"`. Complexity \(O(n^2)\) pairs, accepted. This GEOS
+path now only serves non-rectangular outlines; a rectangular outline goes
+through the rational proof below.
 
-### Jours
+### Gaps
 
-Soit \(U=\bigcup_i R_i\) et \(C\) le polygone du contour. Un jour existe ssi
+Let \(U=\bigcup_i R_i\) and \(C\) the outline polygon. A gap exists iff
 
 \[
 \bigl\lvert \lambda(U)-\lambda(C)\bigr\rvert > \tau,
 \qquad \tau=10^{-6}\,\mathrm{m}^2.
 \]
 
-Un pavage exact vérifie \(\lambda(U)=\lambda(C)\) et \(\lambda(R_i\cap R_j)=0\)
-pour \(i\neq j\) (additivité de Lebesgue sur une union disjointe, Halmos, 1950).
+An exact tiling satisfies \(\lambda(U)=\lambda(C)\) and \(\lambda(R_i\cap R_j)=0\)
+for \(i\neq j\) (Lebesgue additivity over a disjoint union, Halmos, 1950).
 
-Ce test est plus fort que « pas de trou intérieur » : un plan qui ne *remplit*
-pas l'enveloppe est rejeté. Le [L1](epigraphe-l1.md) ne force pas le remplissage ;
-`legalize` ne promet un pavage que si l'entrée en est déjà un (guillotine) ou si
-l'union des pièces recouvre \(C\) (chevauchement à corriger sans créer de jour).
+This test is stronger than "no interior hole": a plan that does not *fill*
+the envelope is rejected. [L1](l1-epigraph.md) does not force filling;
+`legalize` only promises a tiling if the input already is one (slicing) or if
+the union of the rooms covers \(C\) (an overlap to correct without creating a gap).
 
-### Surfaces
+### Areas
 
 \[
 w_p h_p \ge a_{\min}(\mathrm{type}(p))
 \]
 
-pour chaque pièce, à \(10^{-9}\,\mathrm{m}^2\) près. \(a_{\min}=0\) si le type
-est inconnu (`Regulation.min_area`).
+for each room, up to \(10^{-9}\,\mathrm{m}^2\). \(a_{\min}=0\) if the type
+is unknown (`Regulation.min_area`).
 
 **Fused rooms** (an L decomposed into sub-rectangles, `verify_exactly(..., merges=)`).
 The minimum applies to the union \(U = \bigcup_k R_k\) of the parts, never to each
@@ -81,9 +81,9 @@ structure (same end points, order irrelevant). Columns are not checked.
 *Before 0.10 this predicate only compared each wall with itself (walls are not decision
 variables), so it was always true (AUDIT.md §3 n°1).*
 
-### Déplacement
+### Displacement
 
-Norme \(\ell_\infty\) sur les quatre cotes, max sur les pièces de même `id` :
+\(\ell_\infty\) norm over the four dimensions, max over the rooms with the same `id`:
 
 \[
 \delta_\infty
@@ -92,7 +92,7 @@ Norme \(\ell_\infty\) sur les quatre cotes, max sur les pièces de même `id` :
  \quad[\mathrm{m}].
 \]
 
-`reference=None` rend \(0\).
+`reference=None` returns \(0\).
 
 ## Exact rational proof of the tiling (rectangular outlines)
 
@@ -135,18 +135,18 @@ paths agree on every plan, not only on the benchmark (review of batch 1.5, M2).
 and legalized), the rational proof and the GEOS check give identical overlap and gap
 verdicts. The certification of 15 rooms takes about 0.8 ms (1.5 ms with GEOS).
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Appeler *après* le solveur, sur le plan dévectorisé | Réutiliser les duaux ou `poly.contient` comme preuve utilisateur |
-| Rapporter **toutes** les violations | S'arrêter à la première |
-| Mettre un champ de probabilité dans `GeometricProof` | — interdit : la thèse du projet est dans ce type |
+| Call it *after* the solver, on the devectorized plan | Reuse the duals or `poly.contains` as a user-facing proof |
+| Report **all** the violations | Stop at the first one |
+| Put a probability field in `GeometricProof` | — forbidden: the project's thesis lives in this type |
 
 ## Source
 
 - Vatti (1992), *CACM* — clipping, [doi:10.1145/129902.129906](https://doi.org/10.1145/129902.129906).
-- Halmos (1950), *Measure Theory* — additivité.
-- La norme \(\lVert\cdot\rVert_\infty\) est la définition usuelle ; pas un théorème.
+- Halmos (1950), *Measure Theory* — additivity.
+- The \(\lVert\cdot\rVert_\infty\) norm is the usual definition; not a theorem.
 
-[Bibliographie](sources.md).
+[Bibliography](sources.md).

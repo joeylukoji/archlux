@@ -1,22 +1,22 @@
-# Coupes de surface
+# Area cuts
 
-**Code :** `lmo.coupes.area_cut`, `violated_areas`, `solve_with_areas`.
+**Code:** `lmo.cuts.area_cut`, `violated_areas`, `solve_with_areas`.
 
-## Énoncé
+## Statement
 
-La contrainte réglementaire \(w h \ge a_{\min}\) n'est **pas** une inégalité
-linéaire. Sur \(\mathbb{R}_{>0}^2\), posons \(g(w,h)=\log w+\log h\). \(g\) est
-concave (Boyd & Vandenberghe, 2004, §3.1.5). Ses super-niveaux
+The regulatory constraint \(w h \ge a_{\min}\) is **not** a linear
+inequality. On \(\mathbb{R}_{>0}^2\), let \(g(w,h)=\log w+\log h\). \(g\) is
+concave (Boyd & Vandenberghe, 2004, §3.1.5). Its superlevel sets
 
 \[
 K=\bigl\{(w,h):w>0,\; h>0,\; wh\ge a_{\min}\bigr\}
  =\bigl\{ g \ge \log a_{\min}\bigr\}
 \]
 
-sont donc **convexes** (ibid., §3.1.6).
+are therefore **convex** (ibid., §3.1.6).
 
-Au point de contact \((w_0,h_0)\) de l'hyperbole \(w_0 h_0=a_{\min}\),
-\(\nabla g=(1/w_0,\,1/h_0)\) et le demi-espace d'appui contenant \(K\) s'écrit
+At the contact point \((w_0,h_0)\) of the hyperbola \(w_0 h_0=a_{\min}\),
+\(\nabla g=(1/w_0,\,1/h_0)\) and the supporting half-space containing \(K\) reads
 
 \[
 \frac{w-w_0}{w_0}+\frac{h-h_0}{h_0}\ge 0
@@ -24,9 +24,9 @@ Au point de contact \((w_0,h_0)\) de l'hyperbole \(w_0 h_0=a_{\min}\),
 h_0 w + w_0 h \ge 2 a_{\min}.
 \]
 
-## Dérivation — gradient
+## Derivation — gradient
 
-Multiplier \(\nabla g\cdot\bigl((w,h)-(w_0,h_0)\bigr)\ge 0\) par \(w_0 h_0>0\) :
+Multiply \(\nabla g\cdot\bigl((w,h)-(w_0,h_0)\bigr)\ge 0\) by \(w_0 h_0>0\):
 
 \[
 h_0(w-w_0)+w_0(h-h_0)\ge 0
@@ -34,60 +34,60 @@ h_0(w-w_0)+w_0(h-h_0)\ge 0
 h_0 w + w_0 h \ge 2 w_0 h_0 = 2 a_{\min}.
 \]
 
-## Dérivation — AM-GM (même inégalité)
+## Derivation — AM-GM (same inequality)
 
-Hardy, Littlewood & Pólya (1952), théorème 16 :
+Hardy, Littlewood & P&oacute;lya (1952), theorem 16:
 
 \[
 \frac{1}{2}\Bigl(\frac{w}{w_0}+\frac{h}{h_0}\Bigr)
  \ge \sqrt{\frac{wh}{w_0 h_0}}.
 \]
 
-Sur l'hyperbole \(w_0 h_0=a_{\min}\), le membre de droite vaut au moins \(1\) dès
-que \(wh\ge a_{\min}\), d'où \(h_0 w+w_0 h\ge 2 a_{\min}\). **Aucun** point de
-\(K\) n'est exclu. Un point de produit strictement inférieur peut l'être.
+On the hyperbola \(w_0 h_0=a_{\min}\), the right-hand side is at least \(1\) as soon
+as \(wh\ge a_{\min}\), hence \(h_0 w+w_0 h\ge 2 a_{\min}\). **No** point of
+\(K\) is excluded. A point with a strictly smaller product may be.
 
-## Projection avant la tangente
+## Projection before the tangent
 
-Si le point courant viole \(wh<a_{\min}\), la tangente écrite *là* passe par un
-point **intérieur au complémentaire** de \(K\). Elle coupe alors l'hyperbole et
-exclut des rectangles admissibles de même rapport d'aspect.
+If the current point violates \(wh<a_{\min}\), the tangent written *there* goes through a
+point **inside the complement** of \(K\). It then cuts the hyperbola and
+excludes admissible rectangles with the same aspect ratio.
 
-On projette d'abord sur l'hyperbole en conservant le rapport :
+We first project onto the hyperbola, keeping the ratio:
 
 \[
 (w_\star,h_\star)
  =\sqrt{\frac{a_{\min}}{wh}}\,(w,h).
 \]
 
-C'est le code de `area_cut`.
+This is the code of `area_cut`.
 
-## Pourquoi Kelley seul oscille
+## Why Kelley alone oscillates
 
-Le simplexe ne rend que des **sommets** d'un polyèdre. \(K\) a un bord
-strictement convexe : l'optimum de \(\min(w+h)\) sur \(K\) est le carré
-\((\sqrt{a},\sqrt{a})\) (AM-GM), qui n'est un sommet d'aucune approximation
-finie. Les sommets glissent sur une corde \(w+h=2\sqrt{a}\), produit
+The simplex only returns **vertices** of a polyhedron. \(K\) has a strictly
+convex boundary: the optimum of \(\min(w+h)\) over \(K\) is the square
+\((\sqrt{a},\sqrt{a})\) (AM-GM), which is a vertex of no finite
+approximation. The vertices slide along a chord \(w+h=2\sqrt{a}\), with product
 \(a-\delta^2\).
 
-Kelley (1960) densifie les tangentes. En complément, on **resserre les bornes**
-\(w\ge w_\star\), \(h\ge h_\star\) (intersection hyperbole–boîte si le rayon sort)
-puis on relance GLOP, qui réajuste \(x,y\). Si ce resserrement rend le LP
-infaisable (mauvais rapport d'aspect), on **l'abandonne** et on continue les
-coupes — on ne déclare pas le programme infaisable.
+Kelley (1960) densifies the tangents. In addition, we **tighten the bounds**
+\(w\ge w_\star\), \(h\ge h_\star\) (hyperbola–box intersection if the ray leaves the box)
+then rerun GLOP, which readjusts \(x,y\). If this tightening makes the LP
+infeasible (wrong aspect ratio), we **drop it** and keep cutting
+— we do not declare the program infeasible.
 
-Tangentes initiales : le carré et les intersections de l'hyperbole avec
-\(w=w_{\min}\), \(h=h_{\min}\), si elles tiennent dans la boîte des bornes.
+Initial tangents: the square and the intersections of the hyperbola with
+\(w=w_{\min}\), \(h=h_{\min}\), if they fit in the box of the bounds.
 
-`MAX_COUPES_PAR_PIECE = 10` : au-delà, `log.warning("coupe.limite", piece=...)`.
+`MAX_CUTS_PER_ROOM = 10`: beyond it, `log.warning("coupe.limite", piece=...)`.
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Appeler `solve_with_areas` depuis `legalize` (le référentiel connaît \(a_{\min}\)) | Mettre la boucle dans `lmo.solver.solve` — `lmo` ignore l'origine de \(c\) **et** le programme |
-| Projeter avant d'écrire la coupe | Passer \(wh\ge a\) à GLOP comme produit |
-| Laisser `a_min=0` sans coupe | Croire qu'après 10 coupes le sommet LP est *sur* l'hyperbole : d'où le resserrement de bornes |
+| Call `solve_with_areas` from `legalize` (the regulation knows \(a_{\min}\)) | Put the loop in `lmo.solver.solve` — `lmo` ignores where \(c\) comes from **and** the room program |
+| Project before writing the cut | Pass \(wh\ge a\) to GLOP as a product |
+| Leave `a_min=0` without a cut | Believe that after 10 cuts the LP vertex is *on* the hyperbola: hence the tightening of bounds |
 
 ## Inner approximation, for Frank-Wolfe
 
@@ -98,7 +98,7 @@ an outer approximation may lie below the hyperbola, so the mix can break the min
 area. That is what happened until 0.10 (AUDIT.md §3 n°6).
 
 Frank-Wolfe therefore works on an **inner** approximation
-(`lmo.coupes.inner_area_constraints`). Around the start \((w_0, h_0)\), take nodes
+(`lmo.cuts.inner_area_constraints`). Around the start \((w_0, h_0)\), take nodes
 \(w_k = f_k w_0\), \(f_k = 1.1^k\) for \(k = -24, \dots, 24\) (about 0.10 to 9.85), and
 \(h_k = a / w_k\). Nodes are not filtered by the variable bounds (the region is
 intersected with them anyway): filtering froze rooms whose height a contact had fixed.
@@ -143,7 +143,7 @@ Since Frank-Wolfe no longer needs tangent cuts, its LP calls keep the warm start
 ## Source
 
 - Boyd & Vandenberghe (2004), §3.1.5–3.1.6.
-- Hardy, Littlewood & Pólya (1952), th. 16.
+- Hardy, Littlewood & P&oacute;lya (1952), th. 16.
 - Kelley (1960), *SIAM J.*, [doi:10.1137/0108053](https://doi.org/10.1137/0108053).
 
-[Bibliographie](sources.md).
+[Bibliography](sources.md).
