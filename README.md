@@ -286,7 +286,7 @@ cut `3w + 3h >= 18` accepts `w = 5.9, h = 0.1`, whose area is 0.59 m²). The loo
 cuts until the exact check passes, and the proof then checks every area. The
 performance mode instead uses an *inner* approximation (chords of the hyperbola around
 the start, `lmo.coupes.inner_area_constraints`), so that every iterate keeps every
-minimum area. See `docs/formules/coupes-surface.md`.
+minimum area. See `docs/formulas/area-cuts.md`.
 
 ### Step 2: one solver, two objectives
 
@@ -333,7 +333,7 @@ Openings are stored relative to their wall (`Opening.wall_id`, relative abscissa
 `s`); their absolute position is never stored. The solver moves rooms, never walls, and
 the glazing is passed unchanged to the surrogate during the optimization.
 
-Read [`docs/donnees/verite-terrain.md`](docs/donnees/verite-terrain.md) before quoting
+Read [`docs/data/ground-truth.md`](docs/data/ground-truth.md) before quoting
 any daylight figure: the shipped labels come from a closed form, not from a measured
 or simulated physical quantity.
 
@@ -376,7 +376,7 @@ This is the core of the project, and the two must never be confused.
 
 - **Geometry, exact.** On an axis-aligned rectangular outline, overlaps and gaps are
   decided in rational arithmetic (`certify.proof.rational_tiling`; theorem and proof in
-  `docs/formules/preuve-exacte.md`). The only tolerance is the identification of edges
+  `docs/formulas/exact-proof.md`). The only tolerance is the identification of edges
   closer than `SNAP_M`, and the raw plan is bounded as well so that this identification
   cannot accept a plan the floating-point check would reject. Other outlines use GEOS
   with the tolerances of `archlux/tolerances.py`. Infeasibility is proved by a Farkas
@@ -393,7 +393,7 @@ This is the core of the project, and the two must never be confused.
 
 The two are **distinct types**: `GeometricProof` has no probability field,
 `PerformanceBound` always carries its coverage, calibration size and regime. See
-[`docs/concepts/deux-garanties.md`](docs/concepts/deux-garanties.md).
+[`docs/concepts/two-guarantees.md`](docs/concepts/two-guarantees.md).
 
 ---
 
@@ -477,9 +477,9 @@ public data sets.
 
 | Corpus | What it brings | Licence | Access |
 |---|---|---|---|
-| **[Swiss Dwellings](docs/donnees/swiss-dwellings.md)** | geometry and simulated sun, view and noise per room (45,000 apartments) | CC BY 4.0 | [doi:10.5281/zenodo.7788422](https://doi.org/10.5281/zenodo.7788422) |
-| **[MSD](docs/donnees/msd.md)** (Modified Swiss Dwellings) | annotated load-bearing walls and columns, cardinal orientation kept; many plans are not rectilinear | CC BY-SA 4.0 | [arXiv:2407.10121](https://arxiv.org/abs/2407.10121) |
-| **[CubiCasa5K](docs/donnees/cubicasa.md)** | annotated doors and windows, vector SVG | research, non-commercial | [github.com/CubiCasa/CubiCasa5k](https://github.com/CubiCasa/CubiCasa5k) |
+| **[Swiss Dwellings](docs/data/swiss-dwellings.md)** | geometry and simulated sun, view and noise per room (45,000 apartments) | CC BY 4.0 | [doi:10.5281/zenodo.7788422](https://doi.org/10.5281/zenodo.7788422) |
+| **[MSD](docs/data/msd.md)** (Modified Swiss Dwellings) | annotated load-bearing walls and columns, cardinal orientation kept; many plans are not rectilinear | CC BY-SA 4.0 | [arXiv:2407.10121](https://arxiv.org/abs/2407.10121) |
+| **[CubiCasa5K](docs/data/cubicasa.md)** | annotated doors and windows, vector SVG | research, non-commercial | [github.com/CubiCasa/CubiCasa5k](https://github.com/CubiCasa/CubiCasa5k) |
 | **RPLAN** | 80,000 plans, comparability with the vision literature | on request | [project page](http://staff.ustc.edu.cn/~fuxm/projects/DeepLayout/index.html) |
 
 The MSD loader (`data.loaders`) keeps only axis-aligned plans with a simple outline:
@@ -625,7 +625,7 @@ values):
 ## Limitations
 
 Read before any professional use. Full version (in French):
-[`docs/limites.md`](docs/limites.md).
+[`docs/limitations.md`](docs/limitations.md).
 
 - Daylight figures are **early-design estimates** against a frozen closed-form oracle.
   They replace no regulatory daylight or thermal study.
@@ -652,11 +652,11 @@ The documentation site is still in French (translation: PLAN.md, track E22).
 
 | | |
 |---|---|
-| [Gallery](docs/galerie/) | Worked examples |
-| [Tutorials](docs/tutoriels/) | Guided walkthroughs |
+| [Gallery](docs/gallery/) | Worked examples |
+| [Tutorials](docs/tutorials/) | Guided walkthroughs |
 | [Concepts](docs/concepts/) | The why rather than the how |
 | [API reference](docs/reference/) | Signatures |
-| [Limitations](docs/limites.md) | What the system does not do |
+| [Limitations](docs/limitations.md) | What the system does not do |
 | [Glossary](docs/glossary.md) | French and English names |
 | [`ARCHITECTURE.md`](docs/specification/ARCHITECTURE.md) | For contributors |
 

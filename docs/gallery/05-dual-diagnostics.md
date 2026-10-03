@@ -22,7 +22,7 @@ poly = Polytope(
     index={"a.x": 0, "a.y": 1, "a.w": 2},
     origins=(
         "load-bearing wall axis 3",
-        "minimum area kitchen",
+        "kitchen minimum area",
         "passage width",
     ),
 )
@@ -38,7 +38,7 @@ does not. Zero prices (inactive constraints) are filtered out.
 
 ```
 -4.1  load-bearing wall axis 3: relaxing it by 10 cm would change the total displacement by -0.41 m (valid for small changes only, a few tens of cm)
--1.7  minimum area kitchen: relaxing it by 10 cm would change the total displacement by -0.17 m (valid for small changes only, a few tens of cm)
+-1.7  kitchen minimum area: relaxing it by 10 cm would change the total displacement by -0.17 m (valid for small changes only, a few tens of cm)
 ```
 
 The raw price (`-4.1`) is the change of the objective per metre of relaxation; the sentence
