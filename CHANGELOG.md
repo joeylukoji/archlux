@@ -8,6 +8,10 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Tests — PLAN.md phase 4, block 15 (`bench`): `bench/stats.py` at 100 % branch coverage
+
+- New `tests/unit/test_stats_edges.py`: the refusal paths of `paired_bootstrap`, `tost`, `holm` and `power`, and the zero-variance branch of `tost`. `bench/stats.py` goes from 77 % to 100 %; total branch coverage 90.57 %.
+
 ### Changed — PLAN.md phase 4, block 14 (`data`): `_convert` split into named stages
 
 - `_convert` (`data/loaders.py`, was CC 36) split into `_parse_entities`, `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. Rejection reasons and their order are unchanged.

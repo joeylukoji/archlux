@@ -596,12 +596,16 @@ build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 43. **Not done, needs a decision.** `impute_openings` has no caller in the library, only
     tests and a French alias. Removing it deletes a public name; kept until confirmed.
 
-### 15. `bench`
+### 15. `bench` — done
 
-44. Extract the generic Wilson-interval summary duplicated in `experiments/j8_generation.py`
-    into `bench` (a reusable function, not a copy per experiment script).
-45. Raise `bench/stats.py`'s test coverage past 90% if the branch-coverage baseline
-    (block 0.3) shows a gap.
+44. **Already satisfied, no change.** No copy of the Wilson interval is left in
+    `experiments/`: `j6_ifc`, `j7_msd_summary` and `j8_generation` all import
+    `wilson_interval` from `archlux.export.wilson`. Moving it into `bench` would make
+    `export` import `bench`, which the layering rules forbid; the shared function
+    already lives in one place.
+45. Done. `bench/stats.py` was at 77 % branch coverage (its refusal paths and the
+    zero-variance TOST branch were untested). Added `tests/unit/test_stats_edges.py`:
+    `stats.py` is now 100 %; total coverage 90.57 %.
 
 ### 16. `experiments/`
 
