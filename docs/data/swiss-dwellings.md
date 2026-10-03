@@ -60,7 +60,7 @@ hexagonal tessellation of the floor, direct **and** diffuse sun.
 4. **Only then** split (`data.splits`). Never the other way round: a duplicate
    straddling training and calibration silently falsifies the conformal
    coverage.
-5. `scripts/preparer_donnees.py` writes the three directories.
+5. `scripts/prepare_data.py` writes the three directories.
 
 ## Cite
 

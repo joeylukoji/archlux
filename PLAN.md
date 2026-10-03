@@ -496,9 +496,9 @@ la bibliothèque (M12) : `decision_vector`, `two_room_vectors`, `two_room_plan`,
    anciens fichiers de `resultats/` et mettre à jour les chiffres (README, `api.py`,
    rapports) ;
 2. réécrire sous 50 lignes, API publique et en anglais, ce qui ne peut être vérifié
-   qu'avec les données : `j7_sd_etiquettes.py`, `j7_sd_par_piece.py` (constructeur de
+   qu'avec les données : `j7_sd_labels.py`, `j7_sd_per_room.py` (constructeur de
    jeu supervisé, M12), `j8_generation.py` (chargeur « boîtes générées → Plan »),
-   `j8_visuels.py`, `j9_orientation.py` (après 6.1).
+   `j8_visuals.py`, `j9_orientation.py` (après 6.1).
 
 ---
 

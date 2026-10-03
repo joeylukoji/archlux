@@ -1,6 +1,6 @@
 """Summary table of milestone 7 from its raw rows (PLAN.md phase 2).
 
-Usage: python experiments/j7_msd_summary.py [RAW_CSV] [OUT_MD]. Fallback: try pavage,
+Usage: python experiments/j7_msd_summary.py [RAW_CSV] [OUT_MD]. Fallback: try `tiling=True`,
 fall back on plain legalize when it refuses, for any reason (the rule behind the published
 93.9 %; falling back only on an unrecoverable grid gives 93.5 %). Wilson 95 % intervals.
 """
@@ -27,7 +27,7 @@ def ok(row: dict[str, str]) -> bool:
 
 
 lines = [
-    "| Group | n | `legalize` | `pavage=True` | fallback | Wilson 95 % |",
+    "| Group | n | `legalize` | `tiling=True` | fallback | Wilson 95 % |",
     "|---|--:|--:|--:|--:|:--:|",
 ]
 groups: dict[str, list[dict[str, dict[str, str]]]] = defaultdict(list)

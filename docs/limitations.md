@@ -61,7 +61,7 @@ constraint belongs *in* the generator — which this repository makes it possibl
 quantify, not what it provides.
 
 Details, protocol and before / after comparisons plan by plan:
-`results/j8_generation.md` and `results/visuels/`.
+`results/j8_generation.md` and `results/visuals/`.
 
 ## The surrogate predicts at the wrong granularity
 

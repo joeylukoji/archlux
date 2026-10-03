@@ -46,7 +46,7 @@ assert rapport.accord_de_signe > 0.80, (
 
 ## 2. Étape 1 — Données : télécharger, dédupliquer, découper
 
-**Fichier :** `src/archlux/data/` + `scripts/preparer_donnees.py`
+**Fichier :** `src/archlux/data/` + `scripts/prepare_data.py`
 
 ### Ordre impératif
 
@@ -122,7 +122,7 @@ def test_distributions_comparables():
 
 ## 3. Étape 2 — Vérité terrain
 
-**Fichier :** `src/archlux/light/simulateur.py` + `scripts/simuler.py`
+**Fichier :** `src/archlux/light/simulateur.py` + `scripts/simulate.py`
 
 L'oracle **obligatoire** est `SplitFluxOracle` (forme fermée, CI). Un lot
 (Radiance) est **hors chemin critique** : même protocole `Surrogate`, jamais
@@ -367,7 +367,7 @@ def valider_gradient(
 
 - [ ] `valider_gradient` avec corrélation **et** accord de signe
 - [ ] Stratification par variable et par orientation
-- [ ] `assert` bloquant dans `scripts/valider_gradient.py`, pas seulement dans la doc
+- [ ] `assert` bloquant dans `scripts/validate_gradient.py`, pas seulement dans la doc
 - [ ] Rapport écrit dans `resultats/j4_gradient.md` (phase 2 : `resultats/j4_gradient.csv`)
 
 > Coût : deux simulations exactes par variable et par plan. À faire sur un **petit
