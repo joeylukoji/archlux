@@ -8,6 +8,18 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 3 (`geom`): five functions under CC 10, `pavage.py` split
+
+- `deduce_grid` (`geom/pavage.py`, was CC 31) split into `_deduce_lines` (+ `_anchor_outline_vertices`), `_room_bounds`, `_verify_partition`; now an orchestrator, under CC 10.
+- `deduce_order` (`geom/graphe.py`, was CC 33) split into `_pairwise_order`, `_outline_envelope`, `_wall_sides_and_groups` (itself split into `_assign_group_sides`, `_group_members`, `_bounding_hull`, `_assign_wall_side_for_group`); now under CC 10.
+- `freeze_contacts` (`geom/polytope.py`, was CC 16) split off `_frozen_bounds`; now under CC 10.
+- `_coupe_verticale`/`_coupe_horizontale` (`geom/rectilineaire.py`, were CC 14 each): their duplicated GEOS-geometry-type branch and collinear-piece-joining loop factored into shared `_line_pieces`/`_chord_through_pivot` helpers instead of split in place. Both now under CC 10.
+- `geom/pavage.py` (745 lines) split by responsibility: `geom/grid.py` (`Grid`, `deduce_grid`, inference helpers) and `geom/grid_repair.py` (consolidation and bounded partition repair); `geom/pavage.py` keeps the tiling constraints and re-exports every public name it served, French deprecated aliases included. Pure move, `results/` byte-identical. Not yet at the exit gate: `_consolider` D(24), `_reparer_partition` C(14), `tiling_constraints` C(13) stay above CC 10 (as do other `geom` functions, e.g. `diagnose`, `overlap_constraints`), and `graphe.py` (625), `polytope.py` (629), `rectilineaire.py` (656 lines) stay above 400 lines — left for later.
+- Unit tests for the extracted helpers `_chord_through_pivot` (both axes), `_line_pieces` (GeometryCollection branch) and `_verify_partition`.
+- `.gitignore`: `/graphify-out/` becomes `graphify-out/`, ignoring the graphify output directory at any depth.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 33 to 28.
+- **Found infeasible, documented, not done**: moving `diagnostic.py` to `data/` (PLAN.md's own block-3 item) hits the same wall as block 2's `ModelTrace`/`Manifest` move — a deprecated shim would need `geom` to import `data`, the wrong direction, and the exemption this needs exceeds the project's cap of 3. See `docs/plans/phase-4-design-patterns.md`.
+
 ### Added — PLAN.md phase 4, block 2 (`types`): `legalize_trace`, `vectorize`
 
 - `legalize_trace(plan, ctx, ...) -> (Plan, Trace | None)`: the Frank-Wolfe trace as a return value instead of `Plan.trace`. `legalize(..., trace=True)` still works, now deprecated (warns, points at `legalize_trace`); `None` in classic mode (no Frank-Wolfe pass).

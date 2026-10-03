@@ -129,6 +129,29 @@ class Polytope:
         return bool(np.all(x >= bas - tol) and np.all(x <= haut + tol))
 
 
+def _frozen_bounds(poly: Polytope, x: VecteurF, tol: float) -> list[tuple[float, float]]:
+    """Bounds of ``x``, pinned wherever it saturates one (PLAN.md phase 4, block 3).
+
+    Extracted from :func:`freeze_contacts`. ``x``/``y`` freeze on **either** bound
+    (an edge attached to the outline can sit at its low or high side); every other
+    field (widths, heights) freezes only at its high bound, since a saturated minimum
+    width must stay free to grow.
+    """
+    noms = {colonne: nom for nom, colonne in poly.index.items()}
+    bornes: list[tuple[float, float]] = []
+    for colonne, (lo, hi) in enumerate(poly.bounds):
+        val = float(x[colonne])
+        champ = noms[colonne].rsplit(".", 1)[1]
+        bas, haut = lo, hi
+        if champ in {"x", "y"}:
+            if val - lo <= tol or hi - val <= tol:
+                bas = haut = val
+        elif hi - val <= tol:
+            bas = haut = val
+        bornes.append((bas, haut))
+    return bornes
+
+
 def freeze_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytope:
     """Turn saturated contacts into equalities, including the outline edges.
 
@@ -157,18 +180,7 @@ def freeze_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polyto
     """
     if x.shape != (len(poly.index),):
         raise InvariantViolation((f"vector of shape {x.shape}, expected ({len(poly.index)},)",))
-    noms = {colonne: nom for nom, colonne in poly.index.items()}
-    bornes: list[tuple[float, float]] = []
-    for colonne, (lo, hi) in enumerate(poly.bounds):
-        val = float(x[colonne])
-        champ = noms[colonne].rsplit(".", 1)[1]
-        bas, haut = lo, hi
-        if champ in {"x", "y"}:
-            if val - lo <= tol or hi - val <= tol:
-                bas = haut = val
-        elif hi - val <= tol:
-            bas = haut = val
-        bornes.append((bas, haut))
+    bornes = _frozen_bounds(poly, x, tol)
 
     if poly.A.shape[0] == 0:
         return replace(poly, bounds=tuple(bornes))
