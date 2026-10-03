@@ -71,17 +71,51 @@ _OVERLAP_TOLERANCE_M2 = OVERLAP_M2
 
 
 def _format_m2(value: float) -> str:
-    """An area with four decimals: two rounded equal numbers once hid a real deficit."""
+    """An area with four decimals: two rounded equal numbers once hid a real deficit.
+
+    Parameters
+    ----------
+    value
+        Area in square metres.
+
+    Returns
+    -------
+    str
+        The area with four decimals and the unit ``m²``.
+    """
     return f"{value:.4f} m²"
 
 
 def _rectangle(room: Room) -> Polygon:
-    """Closed rectangle of the room: lower-left corner plus (w, h)."""
+    """Closed rectangle of the room: lower-left corner plus (w, h).
+
+    Parameters
+    ----------
+    room
+        Room whose box is taken.
+
+    Returns
+    -------
+    Polygon
+        Rectangle spanning ``[x, x + w] × [y, y + h]``.
+    """
     return box(room.x, room.y, room.x + room.w, room.y + room.h)
 
 
 def _outline_polygon(outline: tuple[tuple[float, float], ...]) -> Polygon | None:
-    """Polygon of the outline, or ``None`` if it is degenerate."""
+    """Polygon of the outline, or ``None`` if it is degenerate.
+
+    Parameters
+    ----------
+    outline
+        Vertices of the outline, in order.
+
+    Returns
+    -------
+    Polygon or None
+        The polygon, or ``None`` when the outline has fewer than three vertices, is invalid, or
+        has no area.
+    """
     if len(outline) < 3:
         return None
     polygon = Polygon(outline)
@@ -97,6 +131,19 @@ def _disjoint(a: Room, b: Room) -> bool:
     area is **exactly** zero. This purely arithmetic test skips the shapely call for the
     vast majority of pairs, which keeps the certification budget of §9 without changing
     any result.
+
+    Parameters
+    ----------
+    a
+        First room.
+    b
+        Second room.
+
+    Returns
+    -------
+    bool
+        ``True`` when the two rectangles are separated on ``x`` or on ``y``, so their
+        intersection has no area.
     """
     return a.x + a.w <= b.x or b.x + b.w <= a.x or a.y + a.h <= b.y or b.y + b.h <= a.y
 
@@ -108,6 +155,17 @@ def _overlaps(rooms: tuple[Room, ...]) -> tuple[bool, tuple[str, ...]]:
     have a null intersection and are not reported, while a 1 m by 1 nm sliver just is.
     It differs from :data:`GAP_TOLERANCE_M2`, a thousand times looser, because a gap is
     measured over the whole union, not over one pair.
+
+    Parameters
+    ----------
+    rooms
+        Rooms compared pairwise.
+
+    Returns
+    -------
+    tuple of bool and tuple of str
+        Whether any pair overlaps by more than ``OVERLAP_M2``, and one ``overlap`` message per
+        offending pair.
     """
     violations: list[str] = []
     rectangles = [_rectangle(room) for room in rooms]
@@ -129,6 +187,18 @@ def _gaps(
 
     Comparing areas only would accept a gap compensated by a room outside the outline;
     both set differences are therefore tested separately.
+
+    Parameters
+    ----------
+    rooms
+        Rooms whose union is compared with the outline.
+    outline
+        Outline vertices.
+
+    Returns
+    -------
+    tuple of bool and tuple of str
+        Whether an uncovered gap or an overhang exists, and the matching messages.
     """
     envelope = _outline_polygon(outline)
     if envelope is None:
@@ -147,7 +217,20 @@ def _gaps(
 
 
 def _share_an_edge(a: Room, b: Room) -> bool:
-    """Edges within ``SNAP_M`` of each other, sharing more than ``SNAP_M`` of length."""
+    """Edges within ``SNAP_M`` of each other, sharing more than ``SNAP_M`` of length.
+
+    Parameters
+    ----------
+    a
+        First room.
+    b
+        Second room.
+
+    Returns
+    -------
+    bool
+        ``True`` when the two rooms share an edge longer than ``SNAP_M``.
+    """
 
     def touch(a0: float, a1: float, b0: float, b1: float) -> bool:
         return abs(a1 - b0) <= SNAP_M or abs(b1 - a0) <= SNAP_M
@@ -160,7 +243,18 @@ def _share_an_edge(a: Room, b: Room) -> bool:
 
 
 def _edge_connected(members: list[Room]) -> bool:
-    """Whether the sub-rectangles form one piece through shared edges (not corners)."""
+    """Whether the sub-rectangles form one piece through shared edges (not corners).
+
+    Parameters
+    ----------
+    members
+        Sub-rectangles of one fused room.
+
+    Returns
+    -------
+    bool
+        ``True`` when they form one piece through shared edges.
+    """
     reached = {0}
     frontier = [0]
     while frontier:
@@ -180,6 +274,20 @@ def _recorded_seams(
     The solver keeps these seams (``geom.rectilinear.overlap_constraints``); the proof
     does not take its word for it. Connectivity alone would accept a foot that slid to
     another edge, or a neck of 1e-7 m.
+
+    Parameters
+    ----------
+    fused_room
+        Fused room whose recorded seams are checked.
+    by_id
+        Rooms of the plan, by identifier.
+    min_contact
+        Minimal length, in metres, a seam must keep.
+
+    Returns
+    -------
+    tuple of str
+        One message per seam that no longer holds.
     """
     violations: list[str] = []
     for i, j, kind in fused_room.merges:
@@ -206,6 +314,20 @@ def _fused_area(
     The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
     not form a single polygon (detached, or touching at a corner only) are not one
     room, and have no area to compare; every recorded seam must also still hold.
+
+    Parameters
+    ----------
+    fused_room
+        Fused room to measure.
+    by_id
+        Rooms of the plan, by identifier.
+    ctx
+        Context providing the minimum areas.
+
+    Returns
+    -------
+    tuple of str
+        Messages for an area below its minimum, or for a seam that no longer holds.
     """
     room_id = fused_room.id
     members = [by_id[r.id] for r in fused_room.rectangles if r.id in by_id]
@@ -224,7 +346,23 @@ def _fused_area(
 def _areas(
     rooms: tuple[Room, ...], ctx: Context, merges: tuple[RectilinearRoom, ...] = ()
 ) -> tuple[bool, tuple[str, ...]]:
-    """Area ``w h`` against ``min_area`` of the room type; fused rooms as a whole."""
+    """Area ``w h`` against ``min_area`` of the room type; fused rooms as a whole.
+
+    Parameters
+    ----------
+    rooms
+        Rooms of the plan.
+    ctx
+        Context providing the regulation.
+    merges
+        Fused rooms, decomposed into sub-rectangles.
+
+    Returns
+    -------
+    tuple of bool and tuple of str
+        Whether every room meets its minimum area (fused rooms as a whole), and the violation
+        messages.
+    """
     by_id = {room.id: room for room in rooms}
     fused: set[str] = set()
     violations: list[str] = []
@@ -245,7 +383,20 @@ def _areas(
 
 
 def _same_wall(a: Wall, b: Wall) -> bool:
-    """Same geometry up to tolerance, end points possibly swapped."""
+    """Same geometry up to tolerance, end points possibly swapped.
+
+    Parameters
+    ----------
+    a
+        First wall.
+    b
+        Second wall.
+
+    Returns
+    -------
+    bool
+        ``True`` when both walls have the same geometry, end points in either order.
+    """
 
     def close(p: tuple[float, float], q: tuple[float, float]) -> bool:
         return abs(p[0] - q[0]) <= _WALL_TOLERANCE_M and abs(p[1] - q[1]) <= _WALL_TOLERANCE_M
@@ -260,6 +411,20 @@ def _interiors(
 
     Shrinking each sub-rectangle alone would leave out the seam between them, where a
     wall would cut the room in two (review of batches 1.7 and 1.8, C1).
+
+    Parameters
+    ----------
+    plan
+        Plan whose rooms are shrunk.
+    merges
+        Fused rooms, decomposed into sub-rectangles.
+    tol
+        Shrinking distance, in metres.
+
+    Returns
+    -------
+    list of tuple of str and Polygon
+        ``(room id, interior)`` for each room, shrunk by ``tol``.
     """
     by_id = {room.id: room for room in plan.rooms}
     interiors: list[tuple[str, Polygon]] = []
@@ -293,6 +458,21 @@ def _structure(
     A plan does not have to repeat the structure in ``plan.walls``: load-bearing walls
     belong to the context. If it does declare a wall of the same id, that wall must
     match the structure, otherwise it was moved.
+
+    Parameters
+    ----------
+    plan
+        Plan to check.
+    ctx
+        Context providing the load-bearing structure.
+    merges
+        Fused rooms, decomposed into sub-rectangles.
+
+    Returns
+    -------
+    tuple of bool and tuple of str
+        Whether no room crosses a load-bearing wall and no declared wall was moved, and the
+        messages.
     """
     declared = {wall.id: wall for wall in plan.walls}
     violations: list[str] = []
@@ -319,6 +499,16 @@ def _rectangular_outline(
 
     Every vertex lies on the bounding box and the polygon fills it: collinear vertices
     along an edge are accepted, an L-shaped outline is not.
+
+    Parameters
+    ----------
+    outline
+        Vertices of the outline.
+
+    Returns
+    -------
+    _Bounds or None
+        ``(x0, y0, x1, y1)`` when the outline is an axis-aligned rectangle, ``None`` otherwise.
     """
     polygon = _outline_polygon(outline)
     if polygon is None:
@@ -336,6 +526,18 @@ def _identify(values: list[Fraction], tolerance: Fraction) -> dict[Fraction, Fra
     Two edges closer than the tolerance become the same line. Groups are anchored on
     their first value, so they never chain: every member is within the tolerance of the
     anchor.
+
+    Parameters
+    ----------
+    values
+        Coordinates to group.
+    tolerance
+        Span of a group, as an exact fraction of a metre.
+
+    Returns
+    -------
+    dict
+        Mapping from each value to the anchor of its group.
     """
     mapping: dict[Fraction, Fraction] = {}
     anchor: Fraction | None = None
@@ -354,6 +556,18 @@ def _box_violations(boxes: list[_Box], outline: _OutlineBox) -> list[str]:
     """A room thinner than the identification tolerance, or lying outside the outline.
 
     Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+
+    Parameters
+    ----------
+    boxes
+        Exact boxes ``(id, x0, x1, y0, y1)`` of the rooms.
+    outline
+        Outline box ``(x0, x1, y0, y1)``.
+
+    Returns
+    -------
+    list of str
+        One message per thin room or room outside the outline.
     """
     ox0, ox1, oy0, oy1 = outline
     violations: list[str] = []
@@ -369,6 +583,16 @@ def _pairwise_overlaps(boxes: list[_Box]) -> list[str]:
     """Exact pairwise overlap area of every pair of boxes, ``O(n^2)``, accepted.
 
     Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+
+    Parameters
+    ----------
+    boxes
+        Exact boxes ``(id, x0, x1, y0, y1)`` of the rooms.
+
+    Returns
+    -------
+    list of str
+        One ``overlap`` message per pair with a positive intersection area.
     """
     violations: list[str] = []
     for i, (a, ax0, ax1, ay0, ay1) in enumerate(boxes):
@@ -387,6 +611,18 @@ def _identified_boxes(plan: Plan, bounds: _Bounds) -> tuple[list[_Box], list[_Bo
     :func:`_raw_residuals`, and the identified outline box.
 
     Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+
+    Parameters
+    ----------
+    plan
+        Plan to check.
+    bounds
+        Outline bounds ``(x0, y0, x1, y1)``.
+
+    Returns
+    -------
+    tuple
+        The identified boxes, the raw boxes, and the identified outline box.
     """
     ox0, oy0, ox1, oy1 = bounds
     raw: list[_Box] = [
@@ -413,6 +649,18 @@ def _coverage_violation(boxes: list[_Box], outline: _OutlineBox) -> str | None:
     """Uncovered area, if the rooms' area does not exactly equal the outline's.
 
     Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+
+    Parameters
+    ----------
+    boxes
+        Exact boxes of the rooms.
+    outline
+        Outline box ``(x0, x1, y0, y1)``.
+
+    Returns
+    -------
+    str or None
+        The uncovered-area message, or ``None`` when the rooms cover the outline exactly.
     """
     ox0, ox1, oy0, oy1 = outline
     covered = sum(((x1 - x0) * (y1 - y0) for _, x0, x1, y0, y1 in boxes), Fraction(0))
@@ -479,7 +727,20 @@ def _intersection(
     a: tuple[Fraction, Fraction, Fraction, Fraction],
     b: tuple[Fraction, Fraction, Fraction, Fraction],
 ) -> tuple[Fraction, Fraction, Fraction, Fraction] | None:
-    """Exact intersection of two boxes ``(x0, x1, y0, y1)``, ``None`` if its area is null."""
+    """Exact intersection of two boxes ``(x0, x1, y0, y1)``, ``None`` if its area is null.
+
+    Parameters
+    ----------
+    a
+        First box ``(x0, x1, y0, y1)``.
+    b
+        Second box ``(x0, x1, y0, y1)``.
+
+    Returns
+    -------
+    tuple or None
+        The intersection box, or ``None`` when its area is null.
+    """
     x0, x1 = max(a[0], b[0]), min(a[1], b[1])
     y0, y1 = max(a[2], b[2]), min(a[3], b[3])
     if x1 <= x0 or y1 <= y0:
@@ -500,6 +761,18 @@ def _raw_residuals(raw: list[_Box], bounds: _Bounds) -> list[str]:
     ``λ(∪ R_i ∩ C) ≥ Σ λ(R_i ∩ C) − Σ_{i<j} λ(R_i ∩ R_j ∩ C)`` bounds the uncovered area
     from above by ``λ(C) − Σ λ(R_i ∩ C) + Σ_{i<j} λ(R_i ∩ R_j ∩ C)``; the overhang, by
     ``Σ (λ(R_i) − λ(R_i ∩ C))``, the area of the rooms outside the outline.
+
+    Parameters
+    ----------
+    raw
+        Raw boxes of the rooms, before identification.
+    bounds
+        Outline bounds ``(x0, y0, x1, y1)``.
+
+    Returns
+    -------
+    list of str
+        Messages for each bound the identification may have exceeded.
     """
     ox0, oy0, ox1, oy1 = bounds
     outline = (ox0, ox1, oy0, oy1)
@@ -534,6 +807,19 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
     """L-infinity over (x, y, w, h) of the rooms sharing an identifier; 0 without reference.
 
     ``inf`` as soon as one difference is undefined (a NaN in the plan or the reference).
+
+    Parameters
+    ----------
+    plan
+        Plan whose rooms are measured.
+    reference
+        Proposed plan, or ``None``.
+
+    Returns
+    -------
+    float
+        Largest absolute change of ``x``, ``y``, ``w`` or ``h`` against the reference; zero
+        without a reference, ``inf`` when undefined.
     """
     if reference is None:
         return 0.0
@@ -560,6 +846,16 @@ def _malformed_rooms(plan: Plan) -> tuple[str, ...]:
     """Rooms whose dimensions are not finite and positive.
 
     Extracted from :func:`verify_exactly` (PLAN.md phase 4, block 9).
+
+    Parameters
+    ----------
+    plan
+        Plan to check.
+
+    Returns
+    -------
+    tuple of str
+        One message per room with a non-finite or non-positive dimension.
     """
     return tuple(
         f"room {room.id}: dimensions must be finite and positive "
@@ -582,6 +878,20 @@ def _overlap_and_gaps(
     falls back to GEOS too, keeping the report complete. The plan is invalid either way.
 
     Extracted from :func:`verify_exactly` (PLAN.md phase 4, block 9).
+
+    Parameters
+    ----------
+    plan
+        Plan to check.
+    ctx
+        Context providing the outline.
+    rational
+        Result of :func:`rational_tiling`, or ``None``.
+
+    Returns
+    -------
+    tuple
+        ``(overlap, overlap messages, gaps, gap messages)``.
     """
     if rational is None:
         overlap, v_overlap = _overlaps(plan.rooms)
