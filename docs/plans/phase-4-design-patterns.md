@@ -410,17 +410,43 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     displacement computation turns a `NaN` gap into `inf` with a comment explaining why
     (`max()` would otherwise silently drop it).
 
-### 9. `certify`
+### 9. `certify` — item 27 skipped by the maintainer, item 28 done
 
-27. Turn `GeometricProof` into a tuple of named predicates (`Predicate(name, valid,
-    detail)`) instead of a fixed set of boolean fields, so a new regulatory rule adds a
-    predicate without changing the type or the JSON schema. This is the largest schema
-    change of phase 4: confirm the v2→v3 migration story (a new schema minor, or a v3)
-    with the maintainer before starting (Open Question below).
-28. Break `verify_infeasibility` (`farkas.py`, CC 20), `rational_tiling` and
-    `verify_exactly` (`proof.py`, CC 23 / 22) under CC 10, after the predicate type
-    lands (some of their branching is exactly the per-rule checks block 27 turns into
-    predicates).
+27. **Skipped, confirmed with the maintainer before starting.** Asked whether to do the
+    `GeometricProof` schema change: no schema work (additive minor or a v3), CC
+    reduction only. `GeometricProof` keeps its four fixed boolean fields; no change to
+    `io/json_io.py`'s migration machinery.
+28. Broke `verify_infeasibility` (`farkas.py`, was CC 20), `rational_tiling` and
+    `verify_exactly` (`proof.py`, were CC 23 / 22) under CC 10 by pure extraction, the
+    same method as blocks 3-5, with item 27 skipped: no predicate type to lean on, so
+    each function's existing branches were named and extracted as-is.
+    - `verify_infeasibility`: `_accumulate` (the inequality/equality row-weighting
+      loop, shared by both, previously duplicated almost verbatim) and
+      `_lowest_over_box` (the box-minimization loop, returning the name of the first
+      unbounded variable instead of raising, since the caller needs the name for its
+      message). Now exactly CC 10 (rank B).
+    - `rational_tiling`: `_identified_boxes` (the raw-rooms-to-`Fraction`-boxes and
+      edge-identification setup), `_box_violations` (thin-room / outside-outline),
+      `_pairwise_overlaps`, `_coverage_violation`. Now CC 5.
+    - `verify_exactly`: `_malformed_rooms` and `_overlap_and_gaps` (the
+      rational-vs-GEOS branch, including the overlap-triggers-a-GEOS-gap-fallback
+      case). Now CC 8.
+    One caller each for all three (`api.py`'s `_refusal`/`.prove()`, and
+    `rational_tiling`'s own caller `verify_exactly`), confirmed with `graphify explain`
+    before touching them.
+    **Caught by the test suite, not by review**: the first `verify_exactly` extraction
+    moved `@renamed_parameters({"fusions": "merges"})` so it decorated the newly
+    inserted `_malformed_rooms` instead of `verify_exactly` — an `Edit` whose anchor
+    text didn't include the decorator line. `test_parameter_aliases.py` failed
+    immediately (`KeyError: '__renamed_parameters__'`); fixed by moving the decorator
+    back. Left here as the reason every block in this phase re-runs the full suite
+    before committing, not just `mypy`/`ruff`/targeted tests.
+    `_areas` (CC 11) and `_interiors` (CC 12) in the same file are **not** named by
+    this item and were left alone — out of scope creep, not an oversight.
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 25 to 22 across the three named functions.
+Verified: full suite green, `mypy src` clean, coverage 89.41% (ratchet 88.8%),
+`mkdocs build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
 ### 10. `feasibility`
 

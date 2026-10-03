@@ -8,6 +8,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 9 (`certify`): three functions under CC 10
+
+- `verify_infeasibility` (`certify/farkas.py`, was CC 20) split into `_accumulate` (the inequality/equality row-weighting loop, previously duplicated almost verbatim) and `_lowest_over_box`; now exactly CC 10 (rank B).
+- `rational_tiling` (`certify/proof.py`, was CC 23) split into `_identified_boxes`, `_box_violations`, `_pairwise_overlaps`, `_coverage_violation`; now CC 5.
+- `verify_exactly` (`certify/proof.py`, was CC 22) split into `_malformed_rooms` and `_overlap_and_gaps`; now CC 8.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 25 to 22.
+- **Skipped by design, confirmed with the maintainer first**: item 27, turning `GeometricProof`'s fixed boolean fields into a tuple of named predicates. No schema change this phase; `GeometricProof` and `io/json_io.py`'s migration machinery are unchanged. See `docs/plans/phase-4-design-patterns.md`.
+
 ### Fixed — PLAN.md phase 4, block 8 (`uq`), item 26: one silent `nan` in `reliability_diagram`
 
 - `uq.fiabilite.reliability_diagram` caught every `InvariantViolation` from `conformal_quantile` and wrote `nan`, while documenting only the "level too demanding for `n`" case. A level outside `]0, 1[` (e.g. `1.5`) or a single `nan` truth (non-finite reference scores) therefore gave a silent `nan` row or grid. **Behaviour change**: both now raise `InvariantViolation`; the `nan` sentinel stays only for the documented too-small-`n` case, detected by comparing the conformal rank with `n` instead of catching the exception. Valid inputs give identical outputs.
