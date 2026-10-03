@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import structlog
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.active.density import kernel_density
 from archlux.active.selection import AcquisitionStrategy
 from archlux.errors import InvariantViolation
@@ -36,6 +36,13 @@ __all__ = ["ActiveReport", "Loop"]
 _LOG = structlog.get_logger("archlux.active.loop")
 
 
+@renamed_attributes(
+    {
+        "largeur_intervalle_finale": "final_interval_width",
+        "historique_largeur": "width_history",
+        "calibration_independante": "independent_calibration",
+    }
+)
 @dataclass(frozen=True, slots=True)
 class ActiveReport:
     """Result of a campaign with a fixed simulation budget.
@@ -50,11 +57,11 @@ class ActiveReport:
     """
 
     n_simulations: int
-    largeur_intervalle_finale: float
+    final_interval_width: float
     q_final: float
     n_calibration: int
-    historique_largeur: tuple[float, ...]
-    calibration_independante: bool = False
+    width_history: tuple[float, ...]
+    independent_calibration: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,7 +102,7 @@ class _CampaignState:
     xs_lab: list[np.ndarray] = field(default_factory=list)
     ys_lab: list[float] = field(default_factory=list)
     os_lab: list[Orientation] = field(default_factory=list)
-    exclus: list[int] = field(default_factory=list)
+    excluded: list[int] = field(default_factory=list)
 
 
 def _stack(xs: list[np.ndarray]) -> np.ndarray:
@@ -141,16 +148,16 @@ def _mean_width(
         pred = float(surrogate.evaluate(x, o))
         sigma = float(surrogate.uncertainty(x, o))
         # Held-out plans, never chosen by an optimizer: exchangeable by construction.
-        borne = calibrator.borne(pred, sigma, regime="exchangeable")
-        widths.append(float(borne.upper - borne.lower))
+        bound = calibrator.bound(pred, sigma, regime="exchangeable")
+        widths.append(float(bound.upper - bound.lower))
     return float(np.mean(widths))
 
 
 def _validate_run_inputs(
-    propositions: list[np.ndarray],
+    proposals: list[np.ndarray],
     orientations: list[Orientation],
     batch: int,
-    reference_optimiseur: list[np.ndarray],
+    optimizer_reference: list[np.ndarray],
     holdout: list[np.ndarray] | None,
     holdout_orientations: list[Orientation] | None,
 ) -> Batch:
@@ -158,13 +165,13 @@ def _validate_run_inputs(
 
     Extracted from :meth:`Loop.run` (PLAN.md phase 4, block 12, item 36).
     """
-    if len(propositions) != len(orientations):
+    if len(proposals) != len(orientations):
         raise InvariantViolation(("propositions and orientations have distinct lengths",))
-    if len(propositions) < batch:
+    if len(proposals) < batch:
         raise InvariantViolation(("pool smaller than the batch",))
-    if not reference_optimiseur:
+    if not optimizer_reference:
         raise InvariantViolation(("reference_optimiseur is empty",))
-    hold_x = holdout if holdout is not None else propositions
+    hold_x = holdout if holdout is not None else proposals
     hold_o = holdout_orientations if holdout_orientations is not None else orientations
     if len(hold_x) != len(hold_o):
         raise InvariantViolation(("holdout and orientations have distinct lengths",))
@@ -174,7 +181,7 @@ def _validate_run_inputs(
 
 
 def _seed_calibration(
-    simulateur: Surrogate,
+    simulator: Surrogate,
     calibration: list[np.ndarray] | None,
     calibration_orientations: list[Orientation] | None,
     n_min: int,
@@ -199,11 +206,12 @@ def _seed_calibration(
         xs_cal = [np.asarray(x, dtype=float).copy() for x in calibration]
         os_cal = list(calibration_orientations)
     ys_cal: list[float] = [
-        float(simulateur.evaluate(x, o)) for x, o in zip(xs_cal, os_cal, strict=True)
+        float(simulator.evaluate(x, o)) for x, o in zip(xs_cal, os_cal, strict=True)
     ]
     return xs_cal, ys_cal, os_cal, independent
 
 
+@renamed_attributes({"simulateur": "simulator", "part_calibration": "calibration_share"})
 @dataclass(slots=True)
 class Loop:
     """Acquisition campaign with a fixed simulation budget.
@@ -245,13 +253,13 @@ class Loop:
     """
 
     surrogate: Surrogate
-    simulateur: Surrogate
+    simulator: Surrogate
     acquire: AcquisitionStrategy
     budget: int
     batch: int = 5
     seed: int = field(kw_only=True)
     alpha: float = field(default=0.10, kw_only=True)
-    part_calibration: float = field(default=0.30, kw_only=True)
+    calibration_share: float = field(default=0.30, kw_only=True)
 
     def __post_init__(self) -> None:
         """Validate budget, batch size, level, and calibration fraction."""
@@ -261,8 +269,8 @@ class Loop:
             raise InvariantViolation(("batch must be >= 1",))
         if not 0.0 < self.alpha < 1.0:
             raise InvariantViolation((f"alpha out of ]0, 1[: {self.alpha}",))
-        if not 0.0 <= self.part_calibration < 1.0:
-            raise InvariantViolation((f"part_calibration out of [0, 1[: {self.part_calibration}",))
+        if not 0.0 <= self.calibration_share < 1.0:
+            raise InvariantViolation((f"part_calibration out of [0, 1[: {self.calibration_share}",))
 
     def _calibrate(
         self,
@@ -288,9 +296,9 @@ class Loop:
         The draw is **internal to the batch**: it therefore does not depend on the
         acquisition order, which goes from most exploratory to most exploitative.
         """
-        if independent or self.part_calibration <= 0.0 or n_acquired < 1:
+        if independent or self.calibration_share <= 0.0 or n_acquired < 1:
             return set()
-        n_cal = min(n_acquired, max(1, round(self.part_calibration * n_acquired)))
+        n_cal = min(n_acquired, max(1, round(self.calibration_share * n_acquired)))
         return {int(j) for j in rng.permutation(n_acquired)[:n_cal]}
 
     def _fit_cycle(
@@ -315,21 +323,26 @@ class Loop:
             fit = None
         legacy_fit = getattr(self.surrogate, "ajuster", None)
         if fit is None and legacy_fit is not None:
-            # stacklevel: _fit_cycle -> _run_cycle -> run -> the caller of run.
+            # stacklevel: _fit_cycle -> _run_cycle -> run -> its renamed_parameters
+            # wrapper -> the caller of run.
             warnings.warn(
                 f"{type(self.surrogate).__name__}.ajuster is deprecated, rename it fit",
                 DeprecationWarning,
-                stacklevel=4,
+                stacklevel=5,
             )
             fit = legacy_fit
+            # Such a surrogate also predates the English keyword of the epoch count.
+            epochs_keyword = "epoques"  # lang-ok: keyword of the deprecated ajuster
+        else:
+            epochs_keyword = "epochs"
         if fit is not None and len(xs_lab) >= 2:
             fit(
                 tuple(xs_lab),
                 np.asarray(ys_lab, dtype=float),
                 tuple(os_lab),
                 seed=derive(self.seed, f"fit/{cycle}"),
-                epoques=40,
                 lr=0.12,
+                **{epochs_keyword: 40},
             )
 
     def _run_cycle(
@@ -351,12 +364,12 @@ class Loop:
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
         """
         inc = _acquisition_uncertainties(self.surrogate, pool, state.xs_lab)
-        idxs = self.acquire.selectionner(
+        idxs = self.acquire.select(
             inc,
             dens,
             n=n_take,
             seed=derive(self.seed, f"selection/{cycle}"),
-            exclus=np.asarray(state.exclus, dtype=int) if state.exclus else None,
+            excluded=np.asarray(state.excluded, dtype=int) if state.excluded else None,
         )
         acquired = [int(i) for i in idxs]
         # Split BEFORE any fitting: this is what physically prevents ``fit``
@@ -365,7 +378,7 @@ class Loop:
         for rank, i in enumerate(acquired):
             x = np.asarray(pool.x[i], dtype=float).copy()
             o = pool.orientations[i]
-            y = float(self.simulateur.evaluate(x, o))
+            y = float(self.simulator.evaluate(x, o))
             if rank in to_calibration:
                 state.xs_cal.append(x)
                 state.ys_cal.append(y)
@@ -374,7 +387,7 @@ class Loop:
                 state.xs_lab.append(x)
                 state.ys_lab.append(y)
                 state.os_lab.append(o)
-            state.exclus.append(i)
+            state.excluded.append(i)
         self._fit_cycle(cycle, state.xs_lab, state.ys_lab, state.os_lab)
         return acquired
 
@@ -413,12 +426,15 @@ class Loop:
                 violations=failure.violations,
             )
 
+    @renamed_parameters(
+        {"propositions": "proposals", "reference_optimiseur": "optimizer_reference"}
+    )
     def run(
         self,
-        propositions: list[np.ndarray],
+        proposals: list[np.ndarray],
         orientations: list[Orientation],
         *,
-        reference_optimiseur: list[np.ndarray],
+        optimizer_reference: list[np.ndarray],
         holdout: list[np.ndarray] | None = None,
         holdout_orientations: list[Orientation] | None = None,
         calibration: list[np.ndarray] | None = None,
@@ -453,21 +469,21 @@ class Loop:
             ``n >= n_minimal_conforme(alpha)``, i.e. 9 points at 90% coverage.
         """
         hold = _validate_run_inputs(
-            propositions,
+            proposals,
             orientations,
             self.batch,
-            reference_optimiseur,
+            optimizer_reference,
             holdout,
             holdout_orientations,
         )
         n_min = minimal_n_conformal(self.alpha)
         xs_cal, ys_cal, os_cal, independent = _seed_calibration(
-            self.simulateur, calibration, calibration_orientations, n_min, self.alpha
+            self.simulator, calibration, calibration_orientations, n_min, self.alpha
         )
         state = _CampaignState(xs_cal, ys_cal, os_cal)
 
-        pool = Batch(tuple(propositions), tuple(orientations))
-        dens = kernel_density(_stack(propositions), _stack(reference_optimiseur))
+        pool = Batch(tuple(proposals), tuple(orientations))
+        dens = kernel_density(_stack(proposals), _stack(optimizer_reference))
         history: list[float] = []
         remaining = self.budget
         cycle = 0
@@ -477,7 +493,7 @@ class Loop:
         rng = np.random.default_rng(derive(self.seed, "split"))
 
         while remaining > 0:
-            n_take = min(self.batch, remaining, len(pool) - len(state.exclus))
+            n_take = min(self.batch, remaining, len(pool) - len(state.excluded))
             if n_take < 1:
                 break
             acquired = self._run_cycle(
@@ -508,14 +524,14 @@ class Loop:
             self._calibrate(calibrator, state.xs_cal, state.ys_cal, state.os_cal)
             history.append(_mean_width(calibrator, self.surrogate, hold))
 
-        largeur = history[-1] if history else float("nan")
+        width = history[-1] if history else float("nan")
         return ActiveReport(
             n_simulations=len(state.xs_lab) + len(state.xs_cal),
-            largeur_intervalle_finale=largeur,
+            final_interval_width=width,
             q_final=float(calibrator.q),
             n_calibration=int(calibrator.n),
-            historique_largeur=tuple(history),
-            calibration_independante=independent,
+            width_history=tuple(history),
+            independent_calibration=independent,
         )
 
 

@@ -107,10 +107,10 @@ def snap_to_grid(plan: Plan, grid: Grid) -> Plan:
     """
     lines = {name: (left, right, low, high) for name, left, right, low, high in grid.incidences}
     rooms = []
-    for piece in plan.rooms:
-        left, right, low, high = lines[piece.id]
+    for room in plan.rooms:
+        left, right, low, high = lines[room.id]
         x, y = grid.x_lines[left], grid.y_lines[low]
-        rooms.append(replace(piece, x=x, y=y, w=grid.x_lines[right] - x, h=grid.y_lines[high] - y))
+        rooms.append(replace(room, x=x, y=y, w=grid.x_lines[right] - x, h=grid.y_lines[high] - y))
     return replace(plan, rooms=tuple(rooms))
 
 
@@ -210,18 +210,18 @@ def extend_tiling(poly: Polytope, grid: Grid) -> Polytope:
         return poly
     n_var = len(poly.index)
     lines: list[int] = []
-    colonnes: list[int] = []
+    columns: list[int] = []
     values: list[float] = []
     seconds: list[float] = []
     labels: list[str] = []
-    for rank, (label, terms, borne) in enumerate(equalities):
+    for rank, (label, terms, bound) in enumerate(equalities):
         for name, coef in terms.items():
             lines.append(rank)
-            colonnes.append(poly.index[name])
+            columns.append(poly.index[name])
             values.append(coef)
-        seconds.append(borne)
+        seconds.append(bound)
         labels.append(f"tiling {label}")
-    a_extra = sparse.coo_matrix((values, (lines, colonnes)), shape=(len(equalities), n_var)).tocsr()
+    a_extra = sparse.coo_matrix((values, (lines, columns)), shape=(len(equalities), n_var)).tocsr()
     if poly.A_eq.shape[0]:
         a_eq = sparse.vstack([poly.A_eq, a_extra], format="csr")
         b_eq = np.concatenate([poly.b_eq, np.asarray(seconds, dtype=float)])

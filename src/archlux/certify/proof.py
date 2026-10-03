@@ -173,7 +173,7 @@ def _edge_connected(members: list[Room]) -> bool:
 
 
 def _recorded_seams(
-    piece: RectilinearRoom, by_id: dict[str, Room], min_contact: float
+    fused_room: RectilinearRoom, by_id: dict[str, Room], min_contact: float
 ) -> tuple[str, ...]:
     """Every seam recorded in the decomposition still holds, at least ``min_contact`` long.
 
@@ -182,8 +182,8 @@ def _recorded_seams(
     another edge, or a neck of 1e-7 m.
     """
     violations: list[str] = []
-    for i, j, kind in piece.merges:
-        a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
+    for i, j, kind in fused_room.merges:
+        a, b = by_id.get(fused_room.rectangles[i].id), by_id.get(fused_room.rectangles[j].id)
         if a is None or b is None:
             continue
         if kind == MERGE_RIGHT:
@@ -192,23 +192,25 @@ def _recorded_seams(
             gap, span = abs(a.y + a.h - b.y), min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
         if gap > SNAP_M or span < min_contact - SNAP_M:
             violations.append(
-                f"area {piece.id}: seam {a.id}|{b.id} not kept "
+                f"area {fused_room.id}: seam {a.id}|{b.id} not kept "
                 f"(offset {gap:.3g} m, shared {span:.4f} m < {min_contact:g} m)"
             )
     return tuple(violations)
 
 
-def _fused_area(piece: RectilinearRoom, by_id: dict[str, Room], ctx: Context) -> tuple[str, ...]:
+def _fused_area(
+    fused_room: RectilinearRoom, by_id: dict[str, Room], ctx: Context
+) -> tuple[str, ...]:
     """Area of the recomposed polygon of a fused room against its minimum.
 
     The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
     not form a single polygon (detached, or touching at a corner only) are not one
     room, and have no area to compare; every recorded seam must also still hold.
     """
-    room_id = piece.id
-    members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    room_id = fused_room.id
+    members = [by_id[r.id] for r in fused_room.rectangles if r.id in by_id]
     minimum = max(ctx.regulation.min_area(member.type) for member in members)
-    seams = _recorded_seams(piece, by_id, max(ctx.regulation.min_width, SNAP_M))
+    seams = _recorded_seams(fused_room, by_id, max(ctx.regulation.min_width, SNAP_M))
     if seams:
         return seams
     if not _edge_connected(members):
@@ -226,11 +228,11 @@ def _areas(
     by_id = {room.id: room for room in rooms}
     fused: set[str] = set()
     violations: list[str] = []
-    for piece in merges:
-        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    for fused_room in merges:
+        members = [by_id[r.id] for r in fused_room.rectangles if r.id in by_id]
         fused.update(member.id for member in members)
         if members:
-            violations.extend(_fused_area(piece, by_id, ctx))
+            violations.extend(_fused_area(fused_room, by_id, ctx))
     for room in rooms:
         if room.id in fused:
             continue
@@ -262,13 +264,13 @@ def _interiors(
     by_id = {room.id: room for room in plan.rooms}
     interiors: list[tuple[str, Polygon]] = []
     fused: set[str] = set()
-    for piece in merges:
-        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    for fused_room in merges:
+        members = [by_id[r.id] for r in fused_room.rectangles if r.id in by_id]
         if not members:
             continue
         fused.update(member.id for member in members)
         union = unary_union([_rectangle(member) for member in members])
-        interiors.append((piece.id, union.buffer(-tol, join_style="mitre")))
+        interiors.append((fused_room.id, union.buffer(-tol, join_style="mitre")))
     for room in plan.rooms:
         if room.id in fused or room.w <= 2 * tol or room.h <= 2 * tol:
             continue  # a degenerate room has no interior to cross

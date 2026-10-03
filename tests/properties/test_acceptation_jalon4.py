@@ -29,7 +29,7 @@ def test_reseau_predit_mieux_que_analytique() -> None:
         oris.append(ori)
         ys.append(_SIM.evaluate(x, ori))
     dense = DenseSurrogate()
-    dense.fit(tuple(xs), np.array(ys), tuple(oris), seed=21, epoques=50, lr=0.12)
+    dense.fit(tuple(xs), np.array(ys), tuple(oris), seed=21, epochs=50, lr=0.12)
     hold_x, hold_y, hold_o = [], [], []
     for _ in range(16):
         coupe = float(rng.uniform(4.0, 8.0))
@@ -68,13 +68,13 @@ def test_point_de_controle_gradient() -> None:
         oris.append(ori)
         ys.append(_SIM.evaluate(x, ori))
     dense = DenseSurrogate()
-    dense.fit(tuple(xs), np.array(ys), tuple(oris), seed=8, epoques=50, lr=0.12)
+    dense.fit(tuple(xs), np.array(ys), tuple(oris), seed=8, epochs=50, lr=0.12)
     sud = Orientation(deg=180.0)
     points = np.stack(
         [np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (4.5, 5.5, 6.5, 7.5)]
     )
-    rapport = validate_gradient(dense, points, sud, seed=8, reference=_SIM, pas=0.10)
-    assert rapport.accord_de_signe > 0.80, (
+    rapport = validate_gradient(dense, points, sud, seed=8, reference=_SIM, step=0.10)
+    assert rapport.sign_agreement > 0.80, (
         "Le substitut n'indique pas la bonne direction. NE PAS passer au jalon 5 avant correction."
     )
 
@@ -97,7 +97,7 @@ def test_gradient_checkpoint_as_written_on_80_points_at_four_azimuths() -> None:
     (train_x, train_o), (test_x, _) = draw(36), draw(80)
     dense = DenseSurrogate()
     ys = np.array([_SIM.evaluate(x, o) for x, o in zip(train_x, train_o, strict=True)])
-    dense.fit(tuple(train_x), ys, tuple(train_o), seed=17, epoques=40, lr=0.12)
+    dense.fit(tuple(train_x), ys, tuple(train_o), seed=17, epochs=40, lr=0.12)
     for k, azimuth in enumerate((0.0, 90.0, 180.0, 270.0)):
         points = np.stack(test_x[20 * k : 20 * (k + 1)])
         validate_gradient(dense, points, Orientation(deg=azimuth), seed=17, reference=_SIM)

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.errors import InvalidInput, InvariantViolation
 from archlux.types import Orientation
 
@@ -44,6 +44,7 @@ _EPS_RESULTANT = 1e-12
 """Below this resultant magnitude, no direction is dominant."""
 
 
+@renamed_attributes({"residus": "residuals"})
 @dataclass(frozen=True, slots=True)
 class RegressionResult:
     r"""Fit :math:`y \approx a\cos\theta + b\sin\theta + c`."""
@@ -51,10 +52,11 @@ class RegressionResult:
     a: float
     b: float
     c: float
-    residus: np.ndarray
+    residuals: np.ndarray
 
 
-def encode(deg: float, *, harmoniques: int = 3) -> np.ndarray:
+@renamed_parameters({"harmoniques": "harmonics"})
+def encode(deg: float, *, harmonics: int = 3) -> np.ndarray:
     """Encode an azimuth as ``(cos θ, sin θ, cos 2θ, sin 2θ, ...)``.
 
     Parameters
@@ -69,17 +71,18 @@ def encode(deg: float, *, harmoniques: int = 3) -> np.ndarray:
     numpy.ndarray
         Vector of dimension ``2 * harmoniques``, bounded, continuous at 0°/360°.
     """
-    if harmoniques < 1:
-        raise InvalidInput("harmoniques", f"must be >= 1, got {harmoniques}")
+    if harmonics < 1:
+        raise InvalidInput("harmonics", f"must be >= 1, got {harmonics}")
     theta = math.radians(deg)
-    components = np.empty(2 * harmoniques, dtype=float)
-    for rank in range(1, harmoniques + 1):
+    components = np.empty(2 * harmonics, dtype=float)
+    for rank in range(1, harmonics + 1):
         components[2 * (rank - 1)] = math.cos(rank * theta)
         components[2 * (rank - 1) + 1] = math.sin(rank * theta)
     return components
 
 
-def encode_orientation(orientation: Orientation, *, harmoniques: int = 2) -> np.ndarray:
+@renamed_parameters({"harmoniques": "harmonics"})
+def encode_orientation(orientation: Orientation, *, harmonics: int = 2) -> np.ndarray:
     """Encode an :class:`~archlux.types.Orientation` as Fourier harmonics.
 
     Parameters
@@ -94,24 +97,25 @@ def encode_orientation(orientation: Orientation, *, harmoniques: int = 2) -> np.
     numpy.ndarray
         Vector of dimension ``2 * harmoniques``.
     """
-    return encode(orientation.deg, harmoniques=harmoniques)
+    return encode(orientation.deg, harmonics=harmonics)
 
 
-def _radians(degres: np.ndarray | Sequence[float]) -> np.ndarray:
+def _radians(degrees: np.ndarray | Sequence[float]) -> np.ndarray:
     """Convert a sequence of azimuths to radians, raveled."""
-    samples = np.ravel(np.asarray(degres, dtype=float))
+    samples = np.ravel(np.asarray(degrees, dtype=float))
     if samples.size == 0:
-        raise InvalidInput("degres", "at least one orientation is required")
+        raise InvalidInput("degrees", "at least one orientation is required")
     return np.asarray(np.radians(samples), dtype=float)
 
 
-def _resultant(degres: np.ndarray | Sequence[float]) -> tuple[float, float, int]:
+def _resultant(degrees: np.ndarray | Sequence[float]) -> tuple[float, float, int]:
     """Sum of the unit vectors ``(C, S)`` and count ``n``."""
-    theta = _radians(degres)
+    theta = _radians(degrees)
     return float(np.cos(theta).sum()), float(np.sin(theta).sum()), int(theta.size)
 
 
-def circular_mean(degres: np.ndarray | Sequence[float]) -> float:
+@renamed_parameters({"degres": "degrees"})
+def circular_mean(degrees: np.ndarray | Sequence[float]) -> float:
     """Mean direction, via the sum of the unit vectors.
 
     Returns
@@ -119,17 +123,17 @@ def circular_mean(degres: np.ndarray | Sequence[float]) -> float:
     float
         Mean azimuth in degrees, in ``[0, 360)``. ``360°`` is identified with ``0°``.
     """
-    cosine, sine, _n = _resultant(degres)
+    cosine, sine, _n = _resultant(degrees)
     deg = float(np.degrees(np.arctan2(sine, cosine))) % 360.0
     return 0.0 if deg > 360.0 - 1e-9 else deg
 
 
-@renamed_parameters({"poids": "weights"})
+@renamed_parameters({"poids": "weights", "degres": "degrees", "periode": "period"})
 def dominant_direction(
-    degres: np.ndarray | Sequence[float],
+    degrees: np.ndarray | Sequence[float],
     weights: np.ndarray | Sequence[float] | None = None,
     *,
-    periode: float = 90.0,
+    period: float = 90.0,
 ) -> float:
     r"""Mean direction of a set of axes, weighted and of period ``periode``.
 
@@ -182,11 +186,11 @@ def dominant_direction(
     >>> round(direction_dominante([0.0, 90.0], [1.0, 3.0]), 6)
     0.0
     """
-    angles = np.asarray(degres, dtype=float).ravel()
+    angles = np.asarray(degrees, dtype=float).ravel()
     if angles.size == 0:
         raise InvariantViolation(("no axes: dominant direction is undefined",))
-    if not 0.0 < periode <= 360.0:
-        raise InvariantViolation((f"periode out of ]0, 360]: {periode}",))
+    if not 0.0 < period <= 360.0:
+        raise InvariantViolation((f"periode out of ]0, 360]: {period}",))
     if weights is None:
         lengths = np.ones_like(angles)
     else:
@@ -195,21 +199,22 @@ def dominant_direction(
             raise InvariantViolation(("degres and poids have distinct lengths",))
         if bool(np.any(lengths < 0.0)):
             raise InvariantViolation(("negative weight",))
-    m = 360.0 / periode
+    m = 360.0 / period
     phases = np.radians(m * angles)
     cosine = float(np.sum(lengths * np.cos(phases)))
     sine = float(np.sum(lengths * np.sin(phases)))
     if math.hypot(cosine, sine) <= _EPS_RESULTANT:
         raise InvariantViolation(("null resultant: no dominant direction",))
-    deg = float(np.degrees(math.atan2(sine, cosine)) / m) % periode
+    deg = float(np.degrees(math.atan2(sine, cosine)) / m) % period
     # A direction just below ``periode`` is the same as ``0``: without this
     # realignment, a grid perfectly aligned with the x-axis comes out at
     # 89.999999° instead of 0°, because ``atan2`` returns an infinitesimally
     # negative angle.
-    return 0.0 if deg > periode - _EPS_ANGLE else deg
+    return 0.0 if deg > period - _EPS_ANGLE else deg
 
 
-def concentration(degres: np.ndarray | Sequence[float]) -> float:
+@renamed_parameters({"degres": "degrees"})
+def concentration(degrees: np.ndarray | Sequence[float]) -> float:
     """Length of the mean resultant, in ``[0, 1]``.
 
     Returns
@@ -218,16 +223,18 @@ def concentration(degres: np.ndarray | Sequence[float]) -> float:
         ``0`` = uniform orientations, ``1`` = all identical. This is the circular
         analogue of the inverse of a variance, and it has no angular unit.
     """
-    cosine, sine, effective = _resultant(degres)
+    cosine, sine, effective = _resultant(degrees)
     return math.hypot(cosine, sine) / effective
 
 
-def circular_variance(degres: np.ndarray | Sequence[float]) -> float:
+@renamed_parameters({"degres": "degrees"})
+def circular_variance(degrees: np.ndarray | Sequence[float]) -> float:
     r"""Circular variance :math:`V = 1 - \bar R` (Mardia & Jupp, §2.3)."""
-    return 1.0 - concentration(degres)
+    return 1.0 - concentration(degrees)
 
 
-def rayleigh(degres: np.ndarray | Sequence[float]) -> tuple[float, float]:
+@renamed_parameters({"degres": "degrees"})
+def rayleigh(degrees: np.ndarray | Sequence[float]) -> tuple[float, float]:
     r"""Rayleigh test of uniformity on the circle.
 
     Returns
@@ -246,8 +253,8 @@ def rayleigh(degres: np.ndarray | Sequence[float]) -> tuple[float, float]:
     usual correction :math:`p \approx e^{-Z}\,[1 + (2Z - Z^2)/(4n)]` is not applied
     here. Below about fifty observations, do not publish this ``p`` uncorrected.
     """
-    resultant = concentration(degres)
-    effective = _radians(degres).size
+    resultant = concentration(degrees)
+    effective = _radians(degrees).size
     p_value = math.exp(-effective * resultant * resultant)
     return resultant, p_value
 
@@ -279,12 +286,12 @@ def circular_linear_regression(theta: np.ndarray, y: np.ndarray) -> RegressionRe
     radians = np.radians(azimuth)
     drawing = np.column_stack((np.cos(radians), np.sin(radians), np.ones(azimuth.size)))
     coefficients, *_remainder = np.linalg.lstsq(drawing, response, rcond=None)
-    residus = response - drawing @ coefficients
+    residuals = response - drawing @ coefficients
     return RegressionResult(
         a=float(coefficients[0]),
         b=float(coefficients[1]),
         c=float(coefficients[2]),
-        residus=residus,
+        residuals=residuals,
     )
 
 
@@ -331,10 +338,11 @@ def sector(
     return np.floor(angles / width).astype(int) % n_sectors
 
 
+@renamed_parameters({"degres": "degrees", "n_secteurs": "n_sectors"})
 def stratify(
-    degres: np.ndarray | Sequence[float],
+    degrees: np.ndarray | Sequence[float],
     *,
-    n_secteurs: int = 8,
+    n_sectors: int = 8,
 ) -> dict[str, np.ndarray]:
     """Split azimuths into sectors of equal width.
 
@@ -345,11 +353,11 @@ def stratify(
     n_secteurs : int, optional
         Number of sectors. 8 -> named compass rose (N, NE, ...).
     """
-    if n_secteurs < 1:
-        raise InvalidInput("n_secteurs", f"must be >= 1, got {n_secteurs}")
-    samples = np.ravel(np.asarray(degres, dtype=float))
-    indices = sector(samples, n_secteurs)
-    names = _EIGHT_NAMES if n_secteurs == 8 else tuple(str(i) for i in range(n_secteurs))
+    if n_sectors < 1:
+        raise InvalidInput("n_sectors", f"must be >= 1, got {n_sectors}")
+    samples = np.ravel(np.asarray(degrees, dtype=float))
+    indices = sector(samples, n_sectors)
+    names = _EIGHT_NAMES if n_sectors == 8 else tuple(str(i) for i in range(n_sectors))
     return {name: samples[indices == rank] for rank, name in enumerate(names)}
 
 

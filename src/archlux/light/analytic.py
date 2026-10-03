@@ -21,12 +21,12 @@ from typing import ClassVar
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes
 from archlux.light.protocol import Glazing
 from archlux.orient.circular import encode_orientation, sector
 from archlux.types import Indicator, Orientation, indicator_sign
 
-__all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
+__all__ = ["SECTOR_FACTORS", "AnalyticSurrogate", "sector_factor"]
 
 _EPS = 1e-12
 _N_FIELDS = 4
@@ -34,7 +34,7 @@ _N_FIELDS = 4
 ici pour que ``light`` n'importe pas ``geom``.
 """
 
-FACTEURS_SECTEUR: tuple[float, ...] = (
+SECTOR_FACTORS: tuple[float, ...] = (
     0.45,
     0.55,
     0.70,
@@ -71,11 +71,20 @@ def sector_factor(orientation: Orientation) -> float:
     float
         Un element de :data:`FACTEURS_SECTEUR`, dans ``[0.45, 1.00]``.
     """
-    features = encode_orientation(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmonics=1)
     azimuth = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
-    return FACTEURS_SECTEUR[int(sector(azimuth, 8))]
+    return SECTOR_FACTORS[int(sector(azimuth, 8))]
 
 
+@renamed_attributes(
+    {
+        "indicateur_vise": "target_indicator",
+        "FACTEUR_PROFONDEUR": "DEPTH_FACTOR",
+        "HAUTEUR_LINTEAU": "HEAD_HEIGHT",
+        "KAPPA_SUD": "KAPPA_SOUTH",
+        "FACTEURS_SECTEUR": "SECTOR_FACTORS",
+    }
+)
 @dataclass(frozen=True, slots=True)
 class AnalyticSurrogate:
     """Modèle de facteur de lumière du jour par règle de profondeur limite.
@@ -94,25 +103,25 @@ class AnalyticSurrogate:
         Écart-type constant. Ce substitut ne modélise pas son erreur.
     """
 
-    indicateur_vise: Indicator = "sDA"
+    target_indicator: Indicator = "sDA"
     sigma_nominal: float = 0.08
 
-    FACTEUR_PROFONDEUR: ClassVar[float] = 2.5
+    DEPTH_FACTOR: ClassVar[float] = 2.5
     """Règle usuelle : profondeur utile ≈ 2,5 fois la hauteur de linteau (CIBSE LG10)."""
 
-    HAUTEUR_LINTEAU: ClassVar[float] = 2.15
+    HEAD_HEIGHT: ClassVar[float] = 2.15
     """Linteau typique, en mètres. Marge d'incertitude de la règle : ~30 %."""
 
-    KAPPA_SUD: ClassVar[float] = 0.15
+    KAPPA_SOUTH: ClassVar[float] = 0.15
     """Poids, en 1/m, du placement vers le sud géographique."""
 
-    FACTEURS_SECTEUR: ClassVar[tuple[float, ...]] = FACTEURS_SECTEUR
+    SECTOR_FACTORS: ClassVar[tuple[float, ...]] = SECTOR_FACTORS
     """Alias de classe vers :data:`FACTEURS_SECTEUR` (contrat public conservé)."""
 
     @property
     def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
-        return self.indicateur_vise
+        return self.target_indicator
 
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
@@ -162,29 +171,27 @@ class AnalyticSurrogate:
         granularité que vit 92 % de la variance de l'éclairement réel.
         """
         del glazing
-        return self._parts(x, orientation) * indicator_sign(self.indicateur_vise)
+        return self._parts(x, orientation) * indicator_sign(self.target_indicator)
 
     def _parts(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
         """Score positif de chaque pièce, sans le signe de l'indicateur."""
         vector = np.asarray(x, dtype=float).ravel()
-        n_pieces = vector.size // _N_FIELDS
-        features = encode_orientation(orientation, harmoniques=1)
+        n_rooms = vector.size // _N_FIELDS
+        features = encode_orientation(orientation, harmonics=1)
         cos_t, sin_t = float(features[0]), float(features[1])
         cos2, sin2 = cos_t * cos_t, sin_t * sin_t
-        useful_depth = (
-            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._orientation_factor(orientation)
-        )
-        parts = np.zeros(n_pieces, dtype=float)
-        for i in range(n_pieces):
+        useful_depth = self.DEPTH_FACTOR * self.HEAD_HEIGHT * self._orientation_factor(orientation)
+        parts = np.zeros(n_rooms, dtype=float)
+        for i in range(n_rooms):
             base = i * _N_FIELDS
             pos_x, pos_y = float(vector[base]), float(vector[base + 1])
-            largeur = max(float(vector[base + 2]), _EPS)
+            width = max(float(vector[base + 2]), _EPS)
             height = max(float(vector[base + 3]), _EPS)
-            south_facade = largeur * cos2 + height * sin2
-            depth = largeur * sin2 + height * cos2
+            south_facade = width * cos2 + height * sin2
+            depth = width * sin2 + height * cos2
             penetration = min(depth, useful_depth)
             sudness = -pos_x * sin_t - pos_y * cos_t
-            parts[i] = south_facade * penetration * math.exp(self.KAPPA_SUD * sudness)
+            parts[i] = south_facade * penetration * math.exp(self.KAPPA_SOUTH * sudness)
         return parts
 
     def _orientation_factor(self, orientation: Orientation) -> float:
@@ -196,28 +203,26 @@ class AnalyticSurrogate:
     ) -> tuple[float, np.ndarray]:
         """Score scalaire et, si demandé, ∇x du même scalaire."""
         vector = np.asarray(x, dtype=float).ravel()
-        n_pieces = vector.size // _N_FIELDS
+        n_rooms = vector.size // _N_FIELDS
         gradient = np.zeros_like(vector, dtype=float)
 
-        features = encode_orientation(orientation, harmoniques=1)
+        features = encode_orientation(orientation, harmonics=1)
         cos_t = float(features[0])
         sin_t = float(features[1])
         cos2 = cos_t * cos_t
         sin2 = sin_t * sin_t
-        useful_depth = (
-            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._orientation_factor(orientation)
-        )
+        useful_depth = self.DEPTH_FACTOR * self.HEAD_HEIGHT * self._orientation_factor(orientation)
 
         total = 0.0
-        for i in range(n_pieces):
+        for i in range(n_rooms):
             base = i * _N_FIELDS
             pos_x, pos_y = float(vector[base]), float(vector[base + 1])
-            largeur, height = float(vector[base + 2]), float(vector[base + 3])
-            largeur = max(largeur, _EPS)
+            width, height = float(vector[base + 2]), float(vector[base + 3])
+            width = max(width, _EPS)
             height = max(height, _EPS)
 
-            south_facade = largeur * cos2 + height * sin2
-            depth = largeur * sin2 + height * cos2
+            south_facade = width * cos2 + height * sin2
+            depth = width * sin2 + height * cos2
             # min(profondeur, profondeur_utile) : la penetration est continue mais
             # **non differentiable** en profondeur == profondeur_utile. La convention
             # retenue est la derivee a GAUCHE (d_pen_d_p = 1) ; a droite elle vaut 0.
@@ -232,7 +237,7 @@ class AnalyticSurrogate:
             useful = south_facade * penetration
 
             sudness = -pos_x * sin_t - pos_y * cos_t
-            south_weight = math.exp(self.KAPPA_SUD * sudness)
+            south_weight = math.exp(self.KAPPA_SOUTH * sudness)
             score = useful * south_weight
             total += score
 
@@ -244,19 +249,20 @@ class AnalyticSurrogate:
             du_dw = d_u_d_l * cos2 + d_u_d_p * sin2
             du_dh = d_u_d_l * sin2 + d_u_d_p * cos2
 
-            kappa = self.KAPPA_SUD
+            kappa = self.KAPPA_SOUTH
             gradient[base] = score * kappa * (-sin_t)
             gradient[base + 1] = score * kappa * (-cos_t)
             gradient[base + 2] = du_dw * south_weight
             gradient[base + 3] = du_dh * south_weight
 
-        sign = indicator_sign(self.indicateur_vise)
+        sign = indicator_sign(self.target_indicator)
         return total * sign, gradient * sign
 
 
 __getattr__ = lazy_aliases(
     __name__,
     {
+        "FACTEURS_SECTEUR": Alias(SECTOR_FACTORS, "archlux.light.analytic.SECTOR_FACTORS"),
         "facteur_secteur": Alias(sector_factor, "archlux.light.analytic.sector_factor"),
         "SubstitutAnalytique": Alias(AnalyticSurrogate, "archlux.light.analytic.AnalyticSurrogate"),
     },

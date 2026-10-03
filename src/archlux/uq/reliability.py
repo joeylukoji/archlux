@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import Regime
 from archlux.uq.conformal import ConformalCalibrator, conformal_quantile
@@ -28,7 +28,8 @@ _SIGMA_MIN = 1e-12
 _N_SECTORS = 8
 
 
-def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray) -> float:
+@renamed_parameters({"verites": "truths", "incertitudes": "uncertainties"})
+def crps(predictions: np.ndarray, truths: np.ndarray, uncertainties: np.ndarray) -> float:
     """Mean Gaussian CRPS (Gneiting & Raftery), in the unit of the indicator.
 
     Parameters
@@ -42,8 +43,8 @@ def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray)
         Smaller is better. A ``sigma`` too wide or too narrow degrades the score.
     """
     mu = np.asarray(predictions, dtype=float).ravel()
-    y = np.asarray(verites, dtype=float).ravel()
-    sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
+    y = np.asarray(truths, dtype=float).ravel()
+    sigma = np.maximum(np.asarray(uncertainties, dtype=float).ravel(), _SIGMA_MIN)
     if mu.size != y.size or mu.size != sigma.size or mu.size == 0:
         raise InvariantViolation(("CRPS arrays have incompatible lengths",))
     from scipy.special import erf  # lazy: scipy.special costs 0.8 s at import
@@ -63,11 +64,12 @@ def _check_diagram_inputs(targets: np.ndarray, reference: np.ndarray) -> None:
         raise InvariantViolation(("reference scores empty or non-finite",))
 
 
+@renamed_parameters({"verites": "truths", "incertitudes": "uncertainties", "niveaux": "levels"})
 def reliability_diagram(
     predictions: np.ndarray,
-    verites: np.ndarray,
-    incertitudes: np.ndarray,
-    niveaux: np.ndarray | None = None,
+    truths: np.ndarray,
+    uncertainties: np.ndarray,
+    levels: np.ndarray | None = None,
     *,
     scores_calibration: np.ndarray | None = None,
 ) -> np.ndarray:
@@ -108,14 +110,14 @@ def reliability_diagram(
     published figure must pass a disjoint calibration set.
     """
     pred = np.asarray(predictions, dtype=float).ravel()
-    truth = np.asarray(verites, dtype=float).ravel()
-    sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
+    truth = np.asarray(truths, dtype=float).ravel()
+    sigma = np.maximum(np.asarray(uncertainties, dtype=float).ravel(), _SIGMA_MIN)
     if pred.size != truth.size or pred.size != sigma.size or pred.size == 0:
         raise InvariantViolation(("diagram arrays have incompatible lengths",))
-    if niveaux is None:
+    if levels is None:
         targets = np.linspace(0.50, 0.99, 20)
     else:
-        targets = np.asarray(niveaux, dtype=float).ravel()
+        targets = np.asarray(levels, dtype=float).ravel()
     scores = np.abs(truth - pred) / sigma
     reference = (
         scores
@@ -130,14 +132,15 @@ def reliability_diagram(
         if math.ceil((n_reference + 1) * (1.0 - alpha)) > n_reference:
             lines.append([float(gamma), float("nan")])  # documented: n too small
             continue
-        q_chapeau = conformal_quantile(reference, alpha)
-        empirique = float(np.mean(scores <= q_chapeau))
+        q_hat = conformal_quantile(reference, alpha)
+        empirique = float(np.mean(scores <= q_hat))
         lines.append([float(gamma), empirique])
     return np.asarray(lines, dtype=float)
 
 
+@renamed_parameters({"degres": "degrees", "n_secteurs": "n_sectors"})
 def stratify_by_orientation(
-    degres: np.ndarray, *, n_secteurs: int = _N_SECTORS
+    degrees: np.ndarray, *, n_sectors: int = _N_SECTORS
 ) -> dict[int, np.ndarray]:
     """Indices per azimuth sector, for stratified coverage.
 
@@ -162,13 +165,13 @@ def stratify_by_orientation(
     them ``N, NE, ...``: the two partitions are **not** interchangeable. Here only the
     partition matters (coverage by stratum), not the sector's name.
     """
-    if n_secteurs < 2:
+    if n_sectors < 2:
         raise InvariantViolation(("n_secteurs must be >= 2",))
-    angles = np.asarray(degres, dtype=float).ravel() % 360.0
-    largeur = 360.0 / float(n_secteurs)
-    bins = np.floor(angles / largeur).astype(int)
-    bins = np.clip(bins, 0, n_secteurs - 1)
-    return {k: np.flatnonzero(bins == k) for k in range(n_secteurs)}
+    angles = np.asarray(degrees, dtype=float).ravel() % 360.0
+    width = 360.0 / float(n_sectors)
+    bins = np.floor(angles / width).astype(int)
+    bins = np.clip(bins, 0, n_sectors - 1)
+    return {k: np.flatnonzero(bins == k) for k in range(n_sectors)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -246,7 +249,7 @@ def measure_coverage(
     if (sigma <= 0.0).any():
         raise InvariantViolation(("every uncertainty must be strictly positive",))
     bounds = [
-        calibrator.borne(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
+        calibrator.bound(float(m), float(s), regime=regime) for m, s in zip(mu, sigma, strict=True)
     ]
     inside = [b.lower <= t <= b.upper for b, t in zip(bounds, y, strict=True)]
     from scipy.stats import beta  # lazy: scipy.stats costs 1.3 s at import

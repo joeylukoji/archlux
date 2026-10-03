@@ -25,7 +25,7 @@ from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
-    from archlux.arrays import VecteurF
+    from archlux.arrays import FloatVector
     from archlux.export import ExportReport
 
 __all__ = [
@@ -331,14 +331,14 @@ class Plan:
         """
         from archlux.export import render_svg
 
-        Path(path).write_text(render_svg(self, titre=title, walls=walls), encoding="utf-8")
+        Path(path).write_text(render_svg(self, title=title, walls=walls), encoding="utf-8")
 
 
 FIELDS_VECTOR = ("x", "y", "w", "h")
 """Per-room fields of :func:`vectorize`'s output, in order."""
 
 
-def vectorize(plan: Plan) -> VecteurF:
+def vectorize(plan: Plan) -> FloatVector:
     """Flatten a plan to ``(x, y, w, h)`` per room, in ``plan.rooms`` order.
 
     The plain conversion, with no solver-specific layout: a caller that only wants a

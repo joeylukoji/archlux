@@ -42,8 +42,8 @@ def test_encode_periodique(deg: float) -> None:
 
 def test_encoder_enveloppe_orientation() -> None:
     assert np.allclose(
-        encode_orientation(Orientation(deg=90.0), harmoniques=1),
-        encode(90.0, harmoniques=1),
+        encode_orientation(Orientation(deg=90.0), harmonics=1),
+        encode(90.0, harmonics=1),
     )
 
 
@@ -95,7 +95,7 @@ def test_stratifier_huit_secteurs() -> None:
 def test_sector_centered_matches_stratify() -> None:
     """PLAN.md phase 4, block 7, item 24: `stratify` names what `sector` indexes."""
     degres = np.array([0.0, 10.0, 90.0, 180.0, 350.0])
-    groupes = stratify(degres, n_secteurs=8)
+    groupes = stratify(degres, n_sectors=8)
     noms = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
     for angle in degres:
         idx = int(sector(angle, 8))
@@ -130,6 +130,6 @@ def test_sector_edge_aligned_matches_uq_copy(n_sectors: int) -> None:
     """`uq` keeps its own edge-aligned copy (layering); both must partition alike."""
     degres = np.linspace(0.0, 360.0, 7201, endpoint=False)
     attendu = np.empty(degres.size, dtype=int)
-    for k, idx in stratify_by_orientation(degres, n_secteurs=n_sectors).items():
+    for k, idx in stratify_by_orientation(degres, n_sectors=n_sectors).items():
         attendu[idx] = k
     assert sector(degres, n_sectors=n_sectors, center=False).tolist() == attendu.tolist()

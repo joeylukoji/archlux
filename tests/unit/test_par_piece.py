@@ -55,7 +55,7 @@ def test_la_somme_des_parts_redonne_le_scalaire(
     Sans cette garantie, `solve` optimiserait une grandeur sans rapport avec les
     valeurs par piece exposees, et le certificat serait incoherent avec lui-meme.
     """
-    surrogate = classe(indicateur_vise=indicator)
+    surrogate = classe(target_indicator=indicator)
     x = _plan(n_pieces)
     orientation = Orientation(deg=143.0)
     parts = surrogate.evaluate_rooms(x, orientation)
@@ -74,8 +74,8 @@ def test_le_signe_ase_porte_sur_chaque_piece(classe: type) -> None:
     """
     x = _plan(4)
     orientation = Orientation(deg=200.0)
-    positif = classe(indicateur_vise="sDA").evaluate_rooms(x, orientation)
-    negatif = classe(indicateur_vise="ASE").evaluate_rooms(x, orientation)
+    positif = classe(target_indicator="sDA").evaluate_rooms(x, orientation)
+    negatif = classe(target_indicator="ASE").evaluate_rooms(x, orientation)
     assert np.allclose(negatif, -positif)
     assert np.all(positif > 0.0)
 

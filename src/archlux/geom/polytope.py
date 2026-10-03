@@ -18,7 +18,7 @@ import numpy as np
 from scipy import sparse
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
-from archlux.arrays import VecteurF
+from archlux.arrays import FloatVector
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.graph import build_graph, transitive_reduction
 
@@ -75,9 +75,9 @@ class Polytope:
     """
 
     A: sparse.csr_matrix
-    b: VecteurF
+    b: FloatVector
     A_eq: sparse.csr_matrix
-    b_eq: VecteurF
+    b_eq: FloatVector
     bounds: tuple[tuple[float, float], ...]
     index: dict[str, int]
     origins: tuple[str, ...]
@@ -91,7 +91,7 @@ class Polytope:
         labels = self.origins_eq[:n_rows]
         return labels + tuple(f"equality {k}" for k in range(len(labels), n_rows))
 
-    def contains(self, x: VecteurF, tol: float = 1e-9) -> bool:
+    def contains(self, x: FloatVector, tol: float = 1e-9) -> bool:
         """Tell whether the point ``x`` satisfies every constraint, within ``tol``.
 
         **Naive and direct** check, independent of any solver: it is what
@@ -129,7 +129,7 @@ class Polytope:
         return bool(np.all(x >= low - tol) and np.all(x <= high + tol))
 
 
-def _frozen_bounds(poly: Polytope, x: VecteurF, tol: float) -> list[tuple[float, float]]:
+def _frozen_bounds(poly: Polytope, x: FloatVector, tol: float) -> list[tuple[float, float]]:
     """Bounds of ``x``, pinned wherever it saturates one (PLAN.md phase 4, block 3).
 
     Extracted from :func:`freeze_contacts`. ``x``/``y`` freeze on **either** bound
@@ -152,7 +152,7 @@ def _frozen_bounds(poly: Polytope, x: VecteurF, tol: float) -> list[tuple[float,
     return box_bounds
 
 
-def freeze_contacts(poly: Polytope, x: VecteurF, *, tol: float = 1e-7) -> Polytope:
+def freeze_contacts(poly: Polytope, x: FloatVector, *, tol: float = 1e-7) -> Polytope:
     """Turn saturated contacts into equalities, including the outline edges.
 
     The order polytope is a **relaxation**: ``x_a + w_a <= x_b`` allows a gap,
@@ -233,7 +233,7 @@ def _envelope(ctx: Context) -> tuple[float, float, float, float]:
 
 
 def _check_admissible_envelope(
-    min_width: float, largeur: float, height: float, rooms: tuple[str, ...]
+    min_width: float, width: float, height: float, rooms: tuple[str, ...]
 ) -> None:
     """Refuse an envelope too small for the regulatory minimum width.
 
@@ -254,14 +254,15 @@ def _check_admissible_envelope(
         return
     conflicts = tuple(
         f"minimum width {min_width} m > {label} of the envelope ({extent} m)"
-        for label, extent in (("width", largeur), ("height", height))
+        for label, extent in (("width", width), ("height", height))
         if min_width > extent
     )
     if conflicts:
         raise Infeasible(farkas_certificate=None, origins=conflicts)
 
 
-def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
+@renamed_parameters({"ordre": "order"})
+def build_polytope(order: RelativeOrder, ctx: Context) -> Polytope:
     """Assemble the linear system describing every valid plan of this order.
 
     Constraints produced:
@@ -313,25 +314,25 @@ def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
     Budget: < 5 ms for 15 rooms (`ARCHITECTURE.md` §9).
     """
     xmin, ymin, xmax, ymax = _envelope(ctx)
-    graph = transitive_reduction(build_graph(ordre, ordre.rooms))
+    graph = transitive_reduction(build_graph(order, order.rooms))
 
-    index = _decision_index(ordre.rooms)
+    index = _decision_index(order.rooms)
     n_var = len(index)
 
     lines: list[int] = []
-    colonnes: list[int] = []
+    columns: list[int] = []
     values: list[float] = []
     rhs: list[float] = []
     origins: list[str] = []
 
-    def _add(row_terms: dict[str, float], borne: float, origin: str) -> None:
+    def _add(row_terms: dict[str, float], bound: float, origin: str) -> None:
         """Add a row ``A x <= b`` and its origin label."""
         row = len(origins)
         for name, coefficient in row_terms.items():
             lines.append(row)
-            colonnes.append(index[name])
+            columns.append(index[name])
             values.append(coefficient)
-        rhs.append(borne)
+        rhs.append(bound)
         origins.append(origin)
 
     axes = (("horizontal", "horizontale", "x", "w"), ("vertical", "verticale", "y", "h"))
@@ -343,9 +344,9 @@ def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
                 f"separation {label} {a}|{b}",
             )
 
-    for piece in ordre.rooms:
-        _add({f"{piece}.x": 1.0, f"{piece}.w": 1.0}, xmax, f"contour droit {piece}")
-        _add({f"{piece}.y": 1.0, f"{piece}.h": 1.0}, ymax, f"contour haut {piece}")
+    for room in order.rooms:
+        _add({f"{room}.x": 1.0, f"{room}.w": 1.0}, xmax, f"contour droit {room}")
+        _add({f"{room}.y": 1.0, f"{room}.h": 1.0}, ymax, f"contour haut {room}")
 
     # Load-bearing walls are fixed obstacles: each room keeps the side it was on.
     wall_rows: dict[str, tuple[dict[str, float], float]] = {
@@ -354,7 +355,7 @@ def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
         "below": ({"y": 1.0, "h": 1.0}, 1.0),  # y + h <= bound
         "above": ({"y": -1.0}, -1.0),  # -y <= -bound
     }
-    for side in ordre.wall_sides:
+    for side in order.wall_sides:
         terms, sign = wall_rows[side.side]
         _add(
             {f"{side.room}.{field}": coefficient for field, coefficient in terms.items()},
@@ -362,17 +363,17 @@ def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
             f"load-bearing {side.wall}: {side.room} {side.side} of {side.bound:g}",
         )
 
-    matrix = sparse.coo_matrix((values, (lines, colonnes)), shape=(len(origins), n_var)).tocsr()
+    matrix = sparse.coo_matrix((values, (lines, columns)), shape=(len(origins), n_var)).tocsr()
 
     min_width = ctx.regulation.min_width
-    _check_admissible_envelope(min_width, xmax - xmin, ymax - ymin, ordre.rooms)
+    _check_admissible_envelope(min_width, xmax - xmin, ymax - ymin, order.rooms)
     bounds_by_field = {
         "x": (xmin, xmax),
         "y": (ymin, ymax),
         "w": (min_width, xmax - xmin),
         "h": (min_width, ymax - ymin),
     }
-    box_bounds = tuple(bounds_by_field[field_name] for _ in ordre.rooms for field_name in FIELDS)
+    box_bounds = tuple(bounds_by_field[field_name] for _ in order.rooms for field_name in FIELDS)
 
     return Polytope(
         A=matrix,
@@ -396,7 +397,7 @@ def _decision_index(room_ids: tuple[str, ...]) -> dict[str, int]:
     }
 
 
-def decision_vector(plan: Plan) -> VecteurF:
+def decision_vector(plan: Plan) -> FloatVector:
     """Decision vector of ``plan``, without building a polytope (AUDIT.md M12).
 
     Rooms sorted by identifier, then ``x, y, w, h``: the column order of
@@ -429,7 +430,7 @@ def decision_vector(plan: Plan) -> VecteurF:
     return vectorize(plan, _decision_index(tuple(sorted(room.id for room in plan.rooms))))
 
 
-def vectorize(plan: Plan, index: dict[str, int]) -> VecteurF:
+def vectorize(plan: Plan, index: dict[str, int]) -> FloatVector:
     """Project a plan onto the decision vector ordered by ``index``.
 
     Parameters
@@ -455,18 +456,18 @@ def vectorize(plan: Plan, index: dict[str, int]) -> VecteurF:
     O(n).
     """
     point = np.zeros(len(index), dtype=float)
-    by_id = {piece.id: piece for piece in plan.rooms}
+    by_id = {room.id: room for room in plan.rooms}
     for name, column in index.items():
         room_id, field_name = name.rsplit(".", 1)
-        piece = by_id.get(room_id)
-        if piece is None:
+        room = by_id.get(room_id)
+        if room is None:
             raise InvariantViolation((f"room {room_id} missing from the plan to vectorize",))
-        point[column] = getattr(piece, field_name)
+        point[column] = getattr(room, field_name)
     return point
 
 
 @renamed_parameters({"gabarit": "template"})
-def devectorize(x: VecteurF, template: Plan, index: dict[str, int]) -> Plan:
+def devectorize(x: FloatVector, template: Plan, index: dict[str, int]) -> Plan:
     """Rebuild a plan from a solution vector.
 
     ``template`` provides everything the vector does not carry: walls, openings, outline.
@@ -501,23 +502,23 @@ def devectorize(x: VecteurF, template: Plan, index: dict[str, int]) -> Plan:
     """
     if x.shape != (len(index),):
         raise InvariantViolation((f"vector of shape {x.shape}, expected ({len(index)},)",))
-    missing = sorted(piece.id for piece in template.rooms if f"{piece.id}.x" not in index)
+    missing = sorted(room.id for room in template.rooms if f"{room.id}.x" not in index)
     if missing:
         raise InvariantViolation((f"rooms missing from the polytope: {', '.join(missing)}",))
     rooms = tuple(
         replace(
-            piece,
-            x=float(x[index[f"{piece.id}.x"]]),
-            y=float(x[index[f"{piece.id}.y"]]),
-            w=float(x[index[f"{piece.id}.w"]]),
-            h=float(x[index[f"{piece.id}.h"]]),
+            room,
+            x=float(x[index[f"{room.id}.x"]]),
+            y=float(x[index[f"{room.id}.y"]]),
+            w=float(x[index[f"{room.id}.w"]]),
+            h=float(x[index[f"{room.id}.h"]]),
         )
-        for piece in template.rooms
+        for room in template.rooms
     )
     return replace(template, rooms=rooms, certificate=None)
 
 
-def extend_l1_slack(poly: Polytope, x_ref: VecteurF) -> Polytope:
+def extend_l1_slack(poly: Polytope, x_ref: FloatVector) -> Polytope:
     r"""Epigraph of :math:`\\|x - \\hat{x}\\|_1`: slack variables and two inequalities.
 
     Formula
@@ -585,25 +586,25 @@ def extend_l1_slack(poly: Polytope, x_ref: VecteurF) -> Polytope:
     )
 
     lines: list[int] = []
-    colonnes: list[int] = []
+    columns: list[int] = []
     values: list[float] = []
     second: list[float] = []
     extra_origins: list[str] = []
     for var_rank, name in enumerate(names):
         row = 2 * var_rank
         lines.extend((row, row))
-        colonnes.extend((var_rank, n_var + var_rank))
+        columns.extend((var_rank, n_var + var_rank))
         values.extend((1.0, -1.0))
         second.append(float(x_ref[var_rank]))
         extra_origins.append(f"ecart plus {name}")
         row = 2 * var_rank + 1
         lines.extend((row, row))
-        colonnes.extend((var_rank, n_var + var_rank))
+        columns.extend((var_rank, n_var + var_rank))
         values.extend((-1.0, -1.0))
         second.append(float(-x_ref[var_rank]))
         extra_origins.append(f"ecart moins {name}")
 
-    extra = sparse.coo_matrix((values, (lines, colonnes)), shape=(2 * n_var, 2 * n_var)).tocsr()
+    extra = sparse.coo_matrix((values, (lines, columns)), shape=(2 * n_var, 2 * n_var)).tocsr()
     matrix = sparse.vstack([a_pad, extra]).tocsr() if n_ineq_rows else extra
     inf = float("inf")
     return Polytope(

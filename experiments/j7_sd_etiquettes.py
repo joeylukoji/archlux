@@ -75,11 +75,11 @@ pente, ordonnee = np.polyfit(brut_tr, y_tr, 1)
 pred_ana = pente * brut_te + ordonnee
 pred_nul = np.full_like(y_te, float(y_tr.mean()))
 net = DenseSurrogate()
-net.fit(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150)
+net.fit(x_tr, y_tr, o_tr, seed=GRAINE, epochs=150)
 pred_net = np.array([net.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)])
 # Meme modele, memes hyperparametres, meme graine : seule l'entree change.
 net_b = DenseSurrogate()
-net_b.fit(x_tr, y_tr, o_tr, seed=GRAINE, epoques=150, glazing=b_tr)
+net_b.fit(x_tr, y_tr, o_tr, seed=GRAINE, epochs=150, glazing=b_tr)
 pred_netb = np.array(
     [net_b.evaluate(x, o, glazing=b) for x, o, b in zip(x_te, o_te, b_te, strict=True)]
 )
@@ -99,7 +99,7 @@ p_ca = np.array([net.evaluate(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 s_ca = np.array([net.uncertainty(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 cal.fit(p_ca, y_ca, s_ca, alpha=0.10)
 bornes = [
-    cal.borne(float(p), float(net.uncertainty(x, o)), regime="exchangeable")
+    cal.bound(float(p), float(net.uncertainty(x, o)), regime="exchangeable")
     for p, x, o in zip(pred_net, x_te, o_te, strict=True)
 ]
 couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))

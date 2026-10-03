@@ -126,15 +126,15 @@ def holm(p_values: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]:
     if bool(np.any(p < 0.0) or np.any(p > 1.0)) or bool(np.any(np.isnan(p))):
         raise InvariantViolation(("p-values outside [0, 1]",))
     m = p.size
-    ordre = np.argsort(p, kind="stable")
+    order = np.argsort(p, kind="stable")
     thresholds = alpha / (m - np.arange(m))
-    below_threshold = p[ordre] <= thresholds
+    below_threshold = p[order] <= thresholds
     # Holm stops at the **first** failure: everything after is kept, even if its
     # p-value falls back under its own threshold. The monotone cumulation forces
     # this stop.
     sorted_rejections = np.logical_and.accumulate(below_threshold)
     rejections = np.empty(m, dtype=bool)
-    rejections[ordre] = sorted_rejections
+    rejections[order] = sorted_rejections
     return tuple(bool(v) for v in rejections)
 
 

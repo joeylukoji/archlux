@@ -198,7 +198,7 @@ calibrator.fit(
 better = ax.legalize(
     plan,
     ctx,
-    objective=Daylight(surrogate, q_chapeau=calibrator.q),
+    objective=Daylight(surrogate, q_hat=calibrator.q),
     calibration=calibrator.snapshot(),
     budget=0.5,  # maximum displacement from the proposal, in metres, checked by the proof
     tiling=True,
@@ -218,7 +218,7 @@ PERFORMANCE                        [PREDICTION: selected plan, coverage NOT guar
 ```
 
 A guaranteed coverage needs a plan exchangeable with the calibration set, for instance
-a held-out plan bounded with `calibrator.borne(prediction, sigma, regime="exchangeable")`.
+a held-out plan bounded with `calibrator.bound(prediction, sigma, regime="exchangeable")`.
 In this example the interval is also wide: the analytic surrogate misses the split-flux
 term of the oracle, and the calibration reports that error instead of hiding it.
 

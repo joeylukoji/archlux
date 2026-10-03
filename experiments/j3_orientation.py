@@ -47,8 +47,8 @@ with (OUT / "j3_orientation.csv").open("w", newline="", encoding="utf-8") as han
             writer.writerow(dict(zip(FIELDS, (*row, f"{smallest:.6f}"), strict=True)))
             panels.append((out, f"{deg} deg"))
         name = f"j3_orientation_min{minimum:g}.svg"
-        (OUT / name).write_text(sheet(tuple(panels), colonnes=8), encoding="utf-8")
+        (OUT / name).write_text(sheet(tuple(panels), columns=8), encoding="utf-8")
         r = fit(list(range(0, 360, 45)), moves)  # moves ~ a cos + b sin + c, descriptive only
-        r2 = 1 - sum(r.residus**2) / sum((m - sum(moves) / 8) ** 2 for m in moves)
+        r2 = 1 - sum(r.residuals**2) / sum((m - sum(moves) / 8) ** 2 for m in moves)
         amp, peak = math.hypot(r.a, r.b), math.degrees(math.atan2(r.b, r.a)) % 360
         print(f"minimum {minimum:g}: amplitude {amp:.2f} m at {peak:.0f} deg, R2 {r2:.2f}")

@@ -104,8 +104,8 @@ def test_construire_borne_refuse_la_derive() -> None:
     scores = np.abs(np.random.default_rng(0).normal(0.0, 1.0, 40))
     calibration = Calibration(scores, 0.10, "sDA", "abc")
     derive = DriftDiagnostic(
-        echangeable=False,
-        statistique=0.4,
+        exchangeable=False,
+        statistic=0.4,
         threshold=0.05,
         n_observations=20,
         message="dérive",
@@ -121,17 +121,17 @@ def test_controler_derive_detecte_un_decalage() -> None:
     rng = np.random.default_rng(4)
     cal = Calibration(np.abs(rng.normal(0.0, 1.0, 80)), 0.10, "sDA", "c")
     memes = np.abs(rng.normal(0.0, 1.0, 80))
-    assert check_drift(memes, cal, seed=17).echangeable
+    assert check_drift(memes, cal, seed=17).exchangeable
     decales = np.abs(rng.normal(3.0, 1.0, 80))
-    assert not check_drift(decales, cal, seed=17).echangeable
+    assert not check_drift(decales, cal, seed=17).exchangeable
 
 
 def test_mesurer_derive_positive_si_surestimation() -> None:
     pred = np.array([10.0, 11.0, 12.0, 13.0])
     verite = np.array([9.0, 10.0, 11.0, 12.0])
     rapport = measure_drift(pred, verite, seed=1)
-    assert rapport.derive_moyenne == pytest.approx(1.0)
-    assert rapport.n_echantillons == 4
+    assert rapport.mean_drift == pytest.approx(1.0)
+    assert rapport.n_samples == 4
 
 
 def test_crps_parfait_est_petit() -> None:
@@ -146,7 +146,7 @@ def test_diagramme_fiabilite_est_un_tableau() -> None:
     mu = rng.normal(0.0, 1.0, 80)
     y = mu + rng.normal(0.0, 1.0, 80)
     sigma = np.ones(80)
-    grille = reliability_diagram(mu, y, sigma, niveaux=np.array([0.80, 0.90]))
+    grille = reliability_diagram(mu, y, sigma, levels=np.array([0.80, 0.90]))
     assert grille.shape == (2, 2)
     assert grille[0, 0] == pytest.approx(0.80)
 
@@ -183,8 +183,8 @@ def test_pessimiste_penalise_l_incertitude() -> None:
     """À prédiction égale, le plan le plus incertain a un objectif plus bas."""
     orientation = Orientation(deg=180.0)
     x = np.ones(4)
-    certain = Daylight(_FauxSubstitut(50.0, 0.2), q_chapeau=1.64, pessimiste=True)
-    incertain = Daylight(_FauxSubstitut(50.0, 2.0), q_chapeau=1.64, pessimiste=True)
+    certain = Daylight(_FauxSubstitut(50.0, 0.2), q_hat=1.64, pessimistic=True)
+    incertain = Daylight(_FauxSubstitut(50.0, 2.0), q_hat=1.64, pessimistic=True)
     assert certain.evaluate(x, orientation) > incertain.evaluate(x, orientation)
     assert isinstance(certain, Surrogate)
 
@@ -192,7 +192,7 @@ def test_pessimiste_penalise_l_incertitude() -> None:
 def test_daylight_sans_pessimisme_ignore_sigma() -> None:
     orientation = Orientation(deg=0.0)
     x = np.ones(2)
-    j = Daylight(_FauxSubstitut(40.0, 9.0), q_chapeau=2.0, pessimiste=False)
+    j = Daylight(_FauxSubstitut(40.0, 9.0), q_hat=2.0, pessimistic=False)
     assert j.evaluate(x, orientation) == pytest.approx(40.0)
 
 
@@ -200,7 +200,7 @@ def test_reliability_diagram_rejects_levels_outside_unit_interval() -> None:
     """A level outside ]0, 1[ is a caller error, not a ``nan`` row."""
     mu, y, sigma = np.zeros(50), np.linspace(-1.0, 1.0, 50), np.ones(50)
     with pytest.raises(InvariantViolation):
-        reliability_diagram(mu, y, sigma, niveaux=np.array([1.5, -0.2]))
+        reliability_diagram(mu, y, sigma, levels=np.array([1.5, -0.2]))
 
 
 def test_reliability_diagram_rejects_non_finite_truths() -> None:
@@ -208,12 +208,12 @@ def test_reliability_diagram_rejects_non_finite_truths() -> None:
     mu, y, sigma = np.zeros(50), np.linspace(-1.0, 1.0, 50), np.ones(50)
     y[3] = np.nan
     with pytest.raises(InvariantViolation):
-        reliability_diagram(mu, y, sigma, niveaux=np.array([0.8]))
+        reliability_diagram(mu, y, sigma, levels=np.array([0.8]))
 
 
 def test_reliability_diagram_keeps_nan_only_for_too_small_n() -> None:
     """The documented sentinel survives: a level too demanding for ``n`` gives ``nan``."""
     mu, y, sigma = np.zeros(5), np.linspace(-1.0, 1.0, 5), np.ones(5)
-    grille = reliability_diagram(mu, y, sigma, niveaux=np.array([0.5, 0.99]))
+    grille = reliability_diagram(mu, y, sigma, levels=np.array([0.5, 0.99]))
     assert np.isfinite(grille[0, 1])
     assert np.isnan(grille[1, 1])

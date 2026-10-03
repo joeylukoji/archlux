@@ -114,18 +114,18 @@ def _touch_ups(
     Moving a single index by one step leaves the room rectangular by construction.
     """
     name, left, right, low, high = incidence
-    largeur, height = shape
-    propositions: list[tuple[tuple[str, int, int, int, int], tuple[slice, slice], bool]] = []
+    width, height = shape
+    proposals: list[tuple[tuple[str, int, int, int, int], tuple[slice, slice], bool]] = []
     if left > 0:
-        propositions.append(
+        proposals.append(
             (
                 (name, left - 1, right, low, high),
                 (slice(left - 1, left), slice(low, high)),
                 True,
             )
         )
-    if right < largeur:
-        propositions.append(
+    if right < width:
+        proposals.append(
             (
                 (name, left, right + 1, low, high),
                 (slice(right, right + 1), slice(low, high)),
@@ -133,7 +133,7 @@ def _touch_ups(
             )
         )
     if low > 0:
-        propositions.append(
+        proposals.append(
             (
                 (name, left, right, low - 1, high),
                 (slice(left, right), slice(low - 1, low)),
@@ -141,7 +141,7 @@ def _touch_ups(
             )
         )
     if high < height:
-        propositions.append(
+        proposals.append(
             (
                 (name, left, right, low, high + 1),
                 (slice(left, right), slice(high, high + 1)),
@@ -149,14 +149,14 @@ def _touch_ups(
             )
         )
     if right - left > 1:
-        propositions.append(
+        proposals.append(
             (
                 (name, left + 1, right, low, high),
                 (slice(left, left + 1), slice(low, high)),
                 False,
             )
         )
-        propositions.append(
+        proposals.append(
             (
                 (name, left, right - 1, low, high),
                 (slice(right - 1, right), slice(low, high)),
@@ -164,21 +164,21 @@ def _touch_ups(
             )
         )
     if high - low > 1:
-        propositions.append(
+        proposals.append(
             (
                 (name, left, right, low + 1, high),
                 (slice(left, right), slice(low, low + 1)),
                 False,
             )
         )
-        propositions.append(
+        proposals.append(
             (
                 (name, left, right, low, high - 1),
                 (slice(left, right), slice(high - 1, high)),
                 False,
             )
         )
-    return propositions
+    return proposals
 
 
 def _repair_partition(

@@ -124,14 +124,14 @@ def main() -> None:
             svg = render(
                 plan,
                 contour=context.outline,
-                titre=f"{statut} — {avant}",
+                title=f"{statut} — {avant}",
             )
         else:
             svg = compare(
                 plan,
                 corrige,
                 contour=context.outline,
-                titres=(
+                titles=(
                     f"avant — {avant}",
                     f"après — {statut}, déplacement "
                     f"{corrige.certificate.geometry.max_displacement:.2f} m",

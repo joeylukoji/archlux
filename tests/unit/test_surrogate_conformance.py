@@ -69,7 +69,7 @@ class _Recorder:
 
 def test_daylight_forwards_the_glazing_to_the_wrapped_surrogate() -> None:
     inner = _Recorder()
-    objective = Daylight(inner, q_chapeau=1.5)
+    objective = Daylight(inner, q_hat=1.5)
     glazing = Glazing(walls=(), openings=())
     x, orientation = np.ones(8), Orientation(deg=0.0)
     objective.evaluate(x, orientation, glazing=glazing)
@@ -92,7 +92,7 @@ def test_legalize_accepts_a_daylight_objective() -> None:
         regulation=Regulation(min_areas=(("bedroom", 12.0),), min_width=1.0),
     )
     plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
-    result = archlux.legalize(plan, ctx, objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0))
+    result = archlux.legalize(plan, ctx, objective=Daylight(AnalyticSurrogate(), q_hat=1.0))
     assert checkers.violations(result, ctx) == []
 
 

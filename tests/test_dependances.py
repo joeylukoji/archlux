@@ -95,7 +95,7 @@ LEAVES: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset({"__future__", "typing"}),
     "seeds": frozenset({"__future__", "hashlib"}),
-    "arrays": frozenset({"__future__", "typing", "numpy"}),
+    "arrays": frozenset({"__future__", "typing", "numpy", "warnings"}),
     "_deprecation": frozenset(
         {
             "__future__",

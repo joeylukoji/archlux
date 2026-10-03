@@ -15,7 +15,7 @@ from typing import ClassVar
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes
 from archlux.errors import InvariantViolation
 from archlux.light.analytic import AnalyticSurrogate, sector_factor
 from archlux.light.protocol import Glazing
@@ -37,7 +37,7 @@ _REFLECTION_DENOM = 1.0 - _REFLECTANCE * _REFLECTANCE
 
 def _south_facade(w: float, h: float, orientation: Orientation) -> float:
     """Longueur de façade au sud géographique, même convention que l'analytique."""
-    features = encode_orientation(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmonics=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
     return w * cos2 + h * sin2
@@ -45,7 +45,7 @@ def _south_facade(w: float, h: float, orientation: Orientation) -> float:
 
 def _facade_derivatives(orientation: Orientation) -> tuple[float, float]:
     """∂L/∂w et ∂L/∂h pour la façade sud."""
-    features = encode_orientation(orientation, harmoniques=1)
+    features = encode_orientation(orientation, harmonics=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
     return cos2, sin2
@@ -135,6 +135,7 @@ def _split_flux(
     return df, d_pct_dw / 100.0, d_pct_dh / 100.0
 
 
+@renamed_attributes({"indicateur_vise": "target_indicator", "ECHELLE_DF": "DF_SCALE"})
 @dataclass(frozen=True, slots=True)
 class SplitFluxOracle:
     """Frozen deterministic oracle: CIBSE analytic surrogate plus BRE split-flux daylight.
@@ -148,10 +149,10 @@ class SplitFluxOracle:
     l'analytique rend déjà l'opposé ; le split-flux est nié une seule fois.
     """
 
-    indicateur_vise: Indicator = "sDA"
+    target_indicator: Indicator = "sDA"
     sigma_nominal: float = 0.04
     wwr: float = _DEFAULT_WWR
-    ECHELLE_DF: ClassVar[float] = 100.0
+    DF_SCALE: ClassVar[float] = 100.0
     """Poids m²·% : ``100 * DF * aire`` pour rester à l'échelle de l'analytique.
 
     Ce ``100`` **annule exactement** la division par 100 de ``daylight_factor``,
@@ -165,7 +166,7 @@ class SplitFluxOracle:
     @property
     def indicator(self) -> Indicator:
         """Nom de l'étiquette visée. Le scalaire rendu n'est pas un sDA LM-83."""
-        return self.indicateur_vise
+        return self.target_indicator
 
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
@@ -201,22 +202,22 @@ class SplitFluxOracle:
         :class:`~archlux.light.protocol.SubstitutParPiece`.
         """
         del glazing
-        base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
+        base = AnalyticSurrogate(target_indicator=self.target_indicator)
         parts = np.asarray(base.evaluate_rooms(x, orientation), dtype=float).copy()
         vector = np.asarray(x, dtype=float).ravel()
-        sign = indicator_sign(self.indicateur_vise)
+        sign = indicator_sign(self.target_indicator)
         for i in range(vector.size // FIELDS_PER_ROOM):
-            largeur = float(vector[i * FIELDS_PER_ROOM + 2])
+            width = float(vector[i * FIELDS_PER_ROOM + 2])
             height = float(vector[i * FIELDS_PER_ROOM + 3])
-            df, _, _ = _split_flux(largeur, height, orientation, self.wwr, with_gradient=False)
-            area = max(largeur, _EPS) * max(height, _EPS)
-            parts[i] += sign * self.ECHELLE_DF * df * area
+            df, _, _ = _split_flux(width, height, orientation, self.wwr, with_gradient=False)
+            area = max(width, _EPS) * max(height, _EPS)
+            parts[i] += sign * self.DF_SCALE * df * area
         return parts
 
     def _score_and_gradient(
         self, x: np.ndarray, orientation: Orientation, *, with_gradient: bool
     ) -> tuple[float, np.ndarray]:
-        base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
+        base = AnalyticSurrogate(target_indicator=self.target_indicator)
         value = float(base.evaluate(x, orientation))
         gradient = (
             np.asarray(base.gradient(x, orientation), dtype=float).copy()
@@ -224,27 +225,27 @@ class SplitFluxOracle:
             else np.zeros_like(np.asarray(x, dtype=float).ravel())
         )
         vector = np.asarray(x, dtype=float).ravel()
-        n_pieces = vector.size // FIELDS_PER_ROOM
-        extra_sign = indicator_sign(self.indicateur_vise)
+        n_rooms = vector.size // FIELDS_PER_ROOM
+        extra_sign = indicator_sign(self.target_indicator)
         extra = 0.0
-        for i in range(n_pieces):
-            largeur = float(vector[i * FIELDS_PER_ROOM + 2])
+        for i in range(n_rooms):
+            width = float(vector[i * FIELDS_PER_ROOM + 2])
             height = float(vector[i * FIELDS_PER_ROOM + 3])
             df, d_df_dw, d_df_dh = _split_flux(
-                largeur, height, orientation, self.wwr, with_gradient=with_gradient
+                width, height, orientation, self.wwr, with_gradient=with_gradient
             )
-            area = max(largeur, _EPS) * max(height, _EPS)
+            area = max(width, _EPS) * max(height, _EPS)
             extra += df * area
             if with_gradient:
                 d_area_dw = max(height, _EPS)
-                d_area_dh = max(largeur, _EPS)
+                d_area_dh = max(width, _EPS)
                 gradient[i * FIELDS_PER_ROOM + 2] += (
-                    extra_sign * self.ECHELLE_DF * (d_df_dw * area + df * d_area_dw)
+                    extra_sign * self.DF_SCALE * (d_df_dw * area + df * d_area_dw)
                 )
                 gradient[i * FIELDS_PER_ROOM + 3] += (
-                    extra_sign * self.ECHELLE_DF * (d_df_dh * area + df * d_area_dh)
+                    extra_sign * self.DF_SCALE * (d_df_dh * area + df * d_area_dh)
                 )
-        value += extra_sign * self.ECHELLE_DF * extra
+        value += extra_sign * self.DF_SCALE * extra
         return value, gradient
 
 

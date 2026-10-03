@@ -21,7 +21,7 @@ from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.types import Indicator, indicator_sign
 
 if TYPE_CHECKING:
-    from archlux.arrays import VecteurF
+    from archlux.arrays import FloatVector
     from archlux.types import Opening, Orientation, Wall
 
 __all__ = [
@@ -97,8 +97,8 @@ class PerRoomSurrogate(Protocol):
     """
 
     def evaluate_rooms(
-        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
-    ) -> VecteurF:
+        self, x: FloatVector, orientation: Orientation, *, glazing: Glazing | None = None
+    ) -> FloatVector:
         """Return one value per room, in the order of ``Polytope.index``.
 
         Returns
@@ -134,7 +134,7 @@ class Surrogate(Protocol):
         ...
 
     def evaluate(
-        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
+        self, x: FloatVector, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Estimate the indicator for the plan encoded by ``x``.
 
@@ -164,8 +164,8 @@ class Surrogate(Protocol):
         ...
 
     def gradient(
-        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
-    ) -> VecteurF:
+        self, x: FloatVector, orientation: Orientation, *, glazing: Glazing | None = None
+    ) -> FloatVector:
         """Return ∂indicator/∂x, in the basis of the polytope.
 
         This is **all** that learning provides to the system: a direction. The generator
@@ -179,7 +179,7 @@ class Surrogate(Protocol):
         ...
 
     def uncertainty(
-        self, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
+        self, x: FloatVector, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
         """Predictive standard deviation, in the unit of the indicator.
 
@@ -204,12 +204,12 @@ class Adjustable(Surrogate, Protocol):
 
     def fit(
         self,
-        xs: tuple[VecteurF, ...],
-        ys: VecteurF,
+        xs: tuple[FloatVector, ...],
+        ys: FloatVector,
         orientations: tuple[Orientation, ...],
         *,
         seed: int,
-        epoques: int = 120,
+        epochs: int = 120,
         lr: float = 0.08,
         glazing: tuple[Glazing | None, ...] | None = None,
     ) -> None:
@@ -233,7 +233,11 @@ class WrapsSurrogate(Protocol):
 
 @renamed_parameters({"baies": "glazing"})
 def point_prediction(
-    objective: Surrogate, x: VecteurF, orientation: Orientation, *, glazing: Glazing | None = None
+    objective: Surrogate,
+    x: FloatVector,
+    orientation: Orientation,
+    *,
+    glazing: Glazing | None = None,
 ) -> tuple[float, float]:
     """Point prediction ``mu`` and uncertainty ``sigma`` behind an objective.
 

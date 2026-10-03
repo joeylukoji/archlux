@@ -301,14 +301,14 @@ def _wall_segment(poly: Polygon) -> LineString | None:  # lang-ok: kept private 
     if thickness > _MAX_WALL_WIDTH:
         return None
     _, a, b = sides[-1]
-    centre = poly.centroid
+    center = poly.centroid
     ux = (b[0] - a[0]) / max(math.dist(a, b), _EPS)
     uy = (b[1] - a[1]) / max(math.dist(a, b), _EPS)
     half = math.dist(a, b) / 2.0
     return LineString(
         [
-            (centre.x - half * ux, centre.y - half * uy),
-            (centre.x + half * ux, centre.y + half * uy),
+            (center.x - half * ux, center.y - half * uy),
+            (center.x + half * ux, center.y + half * uy),
         ]
     )
 
@@ -337,10 +337,10 @@ def _opening_from_window(window: Polygon, walls: tuple[Wall, ...], rank: int) ->
     """Project an opening onto the nearest wall, in **relative** coordinates."""
     if not walls:
         return None
-    centre = window.centroid
+    center = window.centroid
     best: tuple[float, Wall] | None = None
     for wall in walls:
-        distance = LineString([wall.a, wall.b]).distance(centre)
+        distance = LineString([wall.a, wall.b]).distance(center)
         if best is None or distance < best[0]:
             best = (distance, wall)
     if best is None:
@@ -350,13 +350,13 @@ def _opening_from_window(window: Polygon, walls: tuple[Wall, ...], rank: int) ->
     length = axis.length
     if length <= _EPS:
         return None
-    s = float(axis.project(Point(centre.x, centre.y)) / length)
-    largeur = float(window.minimum_rotated_rectangle.length / 4.0) if window.area > 0 else 0.0
+    s = float(axis.project(Point(center.x, center.y)) / length)
+    width = float(window.minimum_rotated_rectangle.length / 4.0) if window.area > 0 else 0.0
     # Opening length = longer side of its minimum rotated bounding rectangle.
     coords = list(window.minimum_rotated_rectangle.exterior.coords)[:-1]
     if len(coords) == 4:
-        largeur = max(math.dist(coords[i], coords[(i + 1) % 4]) for i in range(4))
-    relative_width = largeur / length
+        width = max(math.dist(coords[i], coords[(i + 1) % 4]) for i in range(4))
+    relative_width = width / length
     if not 0.0 < relative_width <= 1.0 or not 0.0 <= s <= 1.0:
         return None
     return Opening(id=f"b{rank:04d}", wall_id=wall.id, s=s, relative_width=relative_width)
@@ -419,6 +419,8 @@ def _read_groups(
         "types_exclus": "excluded_types",
         "statistiques": "stats",
         "limite": "limit",
+        "tolerance_calage": "snap_tolerance",
+        "tolerance_recollage": "stitch_tolerance",
     }
 )
 def load_msd(
@@ -427,8 +429,8 @@ def load_msd(
     regulation: Regulation | None = None,
     max_rooms: int = 15,
     max_rectangles: int = 8,
-    tolerance_calage: float = 0.05,
-    tolerance_recollage: float = 0.20,
+    snap_tolerance: float = 0.05,
+    stitch_tolerance: float = 0.20,
     excluded_types: frozenset[str] = EXCLUDED_TYPES,
     stats: LoadStatistics | None = None,
     limit: int | None = None,
@@ -509,8 +511,8 @@ def load_msd(
             active_regulation=active_regulation,
             max_rooms=max_rooms,
             max_rectangles=max_rectangles,
-            tolerance_calage=tolerance_calage,
-            tolerance_recollage=tolerance_recollage,
+            snap_tolerance=snap_tolerance,
+            stitch_tolerance=stitch_tolerance,
         )
         if isinstance(result, str):
             stats.rejections[result] += 1
@@ -526,8 +528,8 @@ def _convert(
     active_regulation: Regulation,
     max_rooms: int,
     max_rectangles: int,
-    tolerance_calage: float,
-    tolerance_recollage: float,
+    snap_tolerance: float,
+    stitch_tolerance: float,
 ) -> MSDApartment | str:
     """Convert an apartment, or return the **rejection reason** in plain text."""
     raw_rooms: list[tuple[str, Polygon]] = []
@@ -564,19 +566,19 @@ def _convert(
     if not angles:
         return "no usable edge"
     try:
-        theta = dominant_direction(angles, lengths, periode=90.0)
+        theta = dominant_direction(angles, lengths, period=90.0)
     except InvariantViolation:
         return "no dominant direction"
 
     def straighten(shape: Polygon) -> Polygon:
-        return _snap(affinity.rotate(shape, -theta, origin=(0.0, 0.0)), tolerance_calage)
+        return _snap(affinity.rotate(shape, -theta, origin=(0.0, 0.0)), snap_tolerance)
 
     straightened = [straighten(shape) for _, shape in raw_rooms]
     if any(not d.is_valid or d.area <= _EPS for d in straightened):
         return "room degenerate after snapping to axes"
     # Snap back together BEFORE decomposing: decomposition assumes exact edges, and
     # it is the snapping step that makes neighbouring rooms contiguous.
-    room_polygons = _stitch(straightened, tolerance_recollage)
+    room_polygons = _stitch(straightened, stitch_tolerance)
     if not room_polygons:
         return "degenerate re-snapping"
     if any(not d.is_valid or d.area <= _EPS for d in room_polygons):
@@ -825,8 +827,8 @@ def split_by_site(
     if len(sites) < 3:
         raise InvariantViolation((f"{len(sites)} site(s): three-way split impossible",))
     rng = np.random.default_rng(seed)
-    ordre = rng.permutation(len(sites))
-    shuffled = [sites[int(i)] for i in ordre]
+    order = rng.permutation(len(sites))
+    shuffled = [sites[int(i)] for i in order]
     n_train = max(1, round(parts[0] * len(shuffled)))
     n_cal = max(1, round(parts[1] * len(shuffled)))
     n_cal = min(n_cal, len(shuffled) - n_train - 1)

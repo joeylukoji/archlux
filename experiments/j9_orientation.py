@@ -62,7 +62,7 @@ def main() -> None:
 
     rows = [json.loads(x) for x in plans_src.read_text(encoding="utf-8").splitlines() if x.strip()]
     echelle = _echelle(rows)
-    surrogate = AnalyticSurrogate(indicateur_vise="sDA")
+    surrogate = AnalyticSurrogate(target_indicator="sDA")
     RACINE.mkdir(parents=True, exist_ok=True)
 
     index = [
@@ -115,7 +115,7 @@ def main() -> None:
 
         name = plan_json["id"]
         (RACINE / f"{name}.svg").write_text(
-            sheet(tuple(volets), contour=context.outline, colonnes=4),
+            sheet(tuple(volets), contour=context.outline, columns=4),
             encoding="utf-8",
         )
         fiche = [

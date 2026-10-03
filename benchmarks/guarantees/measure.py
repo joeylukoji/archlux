@@ -138,7 +138,7 @@ def _performance_tiling_budget(plan: Plan, ctx: Context) -> Plan:
 
 
 def _daylight(plan: Plan, ctx: Context) -> Plan:
-    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_hat=1.0)
     return archlux.legalize(plan, ctx, objective=objective)
 
 
@@ -267,7 +267,7 @@ def _gallery(
             result,
             outline=context_of[case.scenario].outline,
             walls=context_of[case.scenario].structure.load_bearing_walls,
-            titres=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
+            titles=("input", f"output: {case.outcome} ({', '.join(case.kinds)})"),
         )
         _write(folder / name, svg)
         written.append(name)

@@ -42,7 +42,7 @@ class BenchReport:
     strata: tuple[OrientationStratum, ...]
 
 
-def _sector_by_degree(degres: Iterable[float], *, n_secteurs: int) -> dict[float, str]:
+def _sector_by_degree(degrees: Iterable[float], *, n_sectors: int) -> dict[float, str]:
     """Map each distinct azimuth to its sector, via ``orient.stratify``.
 
     ``stratify`` returns grouped values, not indices, so it is queried distinct
@@ -50,18 +50,18 @@ def _sector_by_degree(degres: Iterable[float], *, n_secteurs: int) -> dict[float
     so ``O(distinct)`` calls suffice.
     """
     mapping: dict[float, str] = {}
-    for deg in degres:
-        groups = stratify([deg], n_secteurs=n_secteurs)
+    for deg in degrees:
+        groups = stratify([deg], n_sectors=n_sectors)
         mapping[deg] = next(name for name, values in groups.items() if values.size)
     return mapping
 
 
-@renamed_parameters({"resultat": "result"})
+@renamed_parameters({"resultat": "result", "n_secteurs": "n_sectors"})
 def report(
     result: Result,
     *,
     seed: int,
-    n_secteurs: int = 8,
+    n_sectors: int = 8,
 ) -> BenchReport:
     """Aggregate **after** the raw rows, stratified by orientation.
 
@@ -72,15 +72,13 @@ def report(
     conclusions overstates significance; correct the family with
     :func:`archlux.bench.stats.holm` before any publication.
     """
-    if n_secteurs < 1:
+    if n_sectors < 1:
         raise InvariantViolation(("n_secteurs must be >= 1",))
 
     # The binning comes from ``stratify`` alone: reimplementing it here would let two
     # sector conventions silently diverge at the slightest tweak to ``orient``.
-    names = tuple(stratify([0.0], n_secteurs=n_secteurs).keys())
-    sector_of = _sector_by_degree(
-        {row.orientation_deg for row in result.rows}, n_secteurs=n_secteurs
-    )
+    names = tuple(stratify([0.0], n_sectors=n_sectors).keys())
+    sector_of = _sector_by_degree({row.orientation_deg for row in result.rows}, n_sectors=n_sectors)
 
     by_sector: dict[str, dict[str, list[float]]] = {name: defaultdict(list) for name in names}
     for row in result.rows:

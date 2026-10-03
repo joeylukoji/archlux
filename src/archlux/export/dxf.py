@@ -45,15 +45,15 @@ def to_dxf(plan: Plan, path: Path | str) -> None:
         "2",
         "ENTITIES",
     ]
-    for piece in plan.rooms:
-        x0, y0, x1, y1 = piece.x, piece.y, piece.x + piece.w, piece.y + piece.h
+    for room in plan.rooms:
+        x0, y0, x1, y1 = room.x, room.y, room.x + room.w, room.y + room.h
         corners = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
         rows.extend(
             [
                 "0",
                 "LWPOLYLINE",
                 "8",
-                piece.id,
+                room.id,
                 "90",
                 "4",
                 "70",

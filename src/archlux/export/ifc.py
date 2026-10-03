@@ -270,13 +270,13 @@ def _write_spaces(
 ) -> None:
     """``IFCSPACE`` per room, plus their ``IFCRELAGGREGATES`` to the storey."""
     spaces: list[int] = []
-    for piece in plan.rooms:
+    for room in plan.rooms:
         corners = (
-            (piece.x, piece.y),
-            (piece.x + piece.w, piece.y),
-            (piece.x + piece.w, piece.y + piece.h),
-            (piece.x, piece.y + piece.h),
-            (piece.x, piece.y),
+            (room.x, room.y),
+            (room.x + room.w, room.y),
+            (room.x + room.w, room.y + room.h),
+            (room.x, room.y + room.h),
+            (room.x, room.y),
         )
         pts = [w.point2(x, y) for x, y in corners]
         id_poly = w.alloc()
@@ -291,8 +291,8 @@ def _write_spaces(
         id_space = w.alloc()
         w.emit(
             id_space,
-            f"IFCSPACE('{w.guid(f'space/{piece.id}')}',#{id_owner},'{_safe(piece.id)}',"
-            f"$,'{_safe(piece.type)}',#{id_pl},#{id_psd},$,.ELEMENT.,.INTERNAL.,$)",
+            f"IFCSPACE('{w.guid(f'space/{room.id}')}',#{id_owner},'{_safe(room.id)}',"
+            f"$,'{_safe(room.type)}',#{id_pl},#{id_psd},$,.ELEMENT.,.INTERNAL.,$)",
         )
         spaces.append(id_space)
 

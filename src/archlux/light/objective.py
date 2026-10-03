@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from archlux._deprecation import renamed_attributes
 from archlux.errors import InvariantViolation
 from archlux.light.protocol import Glazing, Surrogate
 from archlux.types import Indicator, Orientation
@@ -23,6 +24,7 @@ __all__ = ["Daylight"]
 _EPS_SIGMA = 1e-5
 
 
+@renamed_attributes({"q_chapeau": "q_hat", "pessimiste": "pessimistic"})
 @dataclass(frozen=True, slots=True)
 class Daylight:
     """Substitut dont :meth:`evaluate` rend la borne pessimiste ``μ − q σ``.
@@ -32,12 +34,12 @@ class Daylight:
     """
 
     surrogate: Surrogate
-    q_chapeau: float
-    pessimiste: bool = True
+    q_hat: float
+    pessimistic: bool = True
 
     def __post_init__(self) -> None:
         """Refuser un quantile négatif : la marge conforme n'inverse pas le sens."""
-        if self.q_chapeau < 0.0:
+        if self.q_hat < 0.0:
             raise InvariantViolation(("q_chapeau doit être ≥ 0",))
 
     @property
@@ -72,19 +74,19 @@ class Daylight:
         détériore l'objectif. Ne pas envelopper un ASE positif brut.
         """
         mu = float(self.surrogate.evaluate(x, orientation, glazing=glazing))
-        if not self.pessimiste:
+        if not self.pessimistic:
             return mu
         sigma = float(self.surrogate.uncertainty(x, orientation, glazing=glazing))
-        return mu - self.q_chapeau * sigma
+        return mu - self.q_hat * sigma
 
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """``∇μ − q̂ ∇σ``. ``∇σ`` par différences finies centrées (Nocedal §8.1)."""
         grad_mu = np.asarray(self.surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
-        if not self.pessimiste:
+        if not self.pessimistic:
             return grad_mu
-        return grad_mu - self.q_chapeau * self._uncertainty_gradient(x, orientation, glazing)
+        return grad_mu - self.q_hat * self._uncertainty_gradient(x, orientation, glazing)
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None

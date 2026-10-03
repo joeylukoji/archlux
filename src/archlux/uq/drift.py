@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.uq.conformal import Calibration
 
@@ -30,17 +30,26 @@ _P_THRESHOLD = 0.05
 _N_PERMUTATIONS = 199
 
 
+@renamed_attributes({"echangeable": "exchangeable", "statistique": "statistic"})
 @dataclass(frozen=True, slots=True)
 class DriftDiagnostic:
     """Exchangeability verdict, with its statistic and threshold."""
 
-    echangeable: bool
-    statistique: float
+    exchangeable: bool
+    statistic: float
     threshold: float
     n_observations: int
     message: str
 
 
+@renamed_attributes(
+    {
+        "derive_moyenne": "mean_drift",
+        "tendance_pente": "trend_slope",
+        "tendance_pvalue": "trend_pvalue",
+        "n_echantillons": "n_samples",
+    }
+)
 @dataclass(frozen=True, slots=True)
 class DriftReport:
     """Prediction - truth gap on **selected** plans, not on the calibration set.
@@ -49,10 +58,10 @@ class DriftReport:
     errors. This is not conformal coverage: exchangeability is doubtful here.
     """
 
-    derive_moyenne: float
-    tendance_pente: float
-    tendance_pvalue: float
-    n_echantillons: int
+    mean_drift: float
+    trend_slope: float
+    trend_pvalue: float
+    n_samples: int
 
 
 def check_drift(
@@ -109,7 +118,7 @@ def check_drift(
 
     # Kolmogorov-Smirnov (not a test of means): a variance drift also breaks
     # exchangeability, even with an unchanged mean.
-    statistique = float(ks_2samp(obs, cal).statistic)
+    statistic = float(ks_2samp(obs, cal).statistic)
     rng = np.random.default_rng(seed)
     pooled = np.concatenate([obs, cal])
     n_obs = int(obs.size)
@@ -117,11 +126,11 @@ def check_drift(
     for _ in range(_N_PERMUTATIONS):
         rng.shuffle(pooled)
         permute = float(ks_2samp(pooled[:n_obs], pooled[n_obs:]).statistic)
-        if permute >= statistique:
+        if permute >= statistic:
             exceedances += 1
     p_value = (exceedances + 1) / (_N_PERMUTATIONS + 1)
-    echangeable = p_value > _P_THRESHOLD
-    if echangeable:
+    exchangeable = p_value > _P_THRESHOLD
+    if exchangeable:
         message = "exchangeability holds: the conformal bound remains interpretable"
     else:
         message = (
@@ -129,15 +138,16 @@ def check_drift(
             "the bound is no longer guaranteed (NOT EVALUABLE)"
         )
     return DriftDiagnostic(
-        echangeable=echangeable,
-        statistique=statistique,
+        exchangeable=exchangeable,
+        statistic=statistic,
         threshold=_P_THRESHOLD,
         n_observations=n_obs,
         message=message,
     )
 
 
-def measure_drift(predictions: np.ndarray, verites: np.ndarray, *, seed: int) -> DriftReport:
+@renamed_parameters({"verites": "truths"})
+def measure_drift(predictions: np.ndarray, truths: np.ndarray, *, seed: int) -> DriftReport:
     """Mean prediction - truth gap, and trend over the arrival order.
 
     Parameters
@@ -161,7 +171,7 @@ def measure_drift(predictions: np.ndarray, verites: np.ndarray, *, seed: int) ->
     formal test.
     """
     pred = np.asarray(predictions, dtype=float).ravel()
-    truth = np.asarray(verites, dtype=float).ravel()
+    truth = np.asarray(truths, dtype=float).ravel()
     if pred.size != truth.size or pred.size == 0:
         raise InvariantViolation(("predictions and truths have incompatible lengths",))
     _ = int(seed)
@@ -176,10 +186,10 @@ def measure_drift(predictions: np.ndarray, verites: np.ndarray, *, seed: int) ->
     else:
         slope, p_value = 0.0, 1.0
     return DriftReport(
-        derive_moyenne=float(slacks.mean()),
-        tendance_pente=slope,
-        tendance_pvalue=p_value,
-        n_echantillons=n,
+        mean_drift=float(slacks.mean()),
+        trend_slope=slope,
+        trend_pvalue=p_value,
+        n_samples=n,
     )
 
 

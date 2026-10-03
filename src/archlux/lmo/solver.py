@@ -32,7 +32,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     from ortools.linear_solver import pywraplp
 
-from archlux.arrays import VecteurF
+from archlux.arrays import FloatVector
 from archlux.errors import InvalidInput, InvariantViolation
 
 if TYPE_CHECKING:
@@ -100,19 +100,20 @@ class CacheLP:
             if entry is None:
                 return None
             self._entries.move_to_end(id(poly))
-            _, solveur, variables, contraintes = entry
-            return solveur, variables, contraintes
+            _, solver, variables, constraints = entry
+            return solver, variables, constraints
 
+    @renamed_parameters({"solveur": "solver", "contraintes": "constraints"})
     def put(
         self,
         poly: Polytope,
-        solveur: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
+        solver: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
         variables: list[Any],
-        contraintes: list[Any],
+        constraints: list[Any],
     ) -> None:
         """Store the model built for ``poly``, evicting the oldest beyond ``maxsize``."""
         with self._lock:
-            self._entries[id(poly)] = (poly, solveur, variables, contraintes)
+            self._entries[id(poly)] = (poly, solver, variables, constraints)
             self._entries.move_to_end(id(poly))
             while len(self._entries) > self._maxsize:
                 self._entries.popitem(last=False)
@@ -128,8 +129,8 @@ class CacheLP:
             entry = self._entries.pop(id(poly), None)
             if entry is None:
                 return None
-            _, solveur, variables, contraintes = entry
-            return solveur, variables, contraintes
+            _, solver, variables, constraints = entry
+            return solver, variables, constraints
 
     def clear(self) -> None:
         """Forget every cached model."""
@@ -157,12 +158,12 @@ class LPSolution:
         Proof of infeasibility, set only if ``status == "infaisable"``.
     """
 
-    x: VecteurF
+    x: FloatVector
     value: float
     status: Literal["optimal", "infaisable", "non_borne", "limite"]
-    duals: VecteurF | None = None
-    farkas_certificate: VecteurF | None = None
-    farkas_certificate_eq: VecteurF | None = None
+    duals: FloatVector | None = None
+    farkas_certificate: FloatVector | None = None
+    farkas_certificate_eq: FloatVector | None = None
     """Farkas multipliers of the rows of ``A_eq`` (free sign, same convention as
     ``farkas_certificate``), set only when ``status == "infaisable"``."""
     iterations: int = 0
@@ -195,11 +196,11 @@ def _status(code: int) -> Literal["optimal", "infaisable", "non_borne", "limite"
     return "limite"
 
 
-def _glop_bound(solveur: object, value: float, *, upper: bool) -> float:
+def _glop_bound(solver: object, value: float, *, upper: bool) -> float:
     """Translate a Python bound (possibly infinite) into a GLOP bound."""
     if math.isfinite(value):
         return float(value)
-    infinite = float(solveur.infinity())  # type: ignore[attr-defined]
+    infinite = float(solver.infinity())  # type: ignore[attr-defined]
     return infinite if upper else -infinite
 
 
@@ -212,36 +213,36 @@ def _construire_modele(poly: Polytope, cuts: list[Cut] | None) -> tuple[Any, lis
         The solver, its variables in column order, and its constraints in the row
         order of ``A`` — this order is what makes the duals pairable with ``origins``.
     """
-    solveur = pywraplp.Solver.CreateSolver("GLOP")
-    if solveur is None:  # pragma: no cover - depends on the OR-Tools installation
+    solver = pywraplp.Solver.CreateSolver("GLOP")
+    if solver is None:  # pragma: no cover - depends on the OR-Tools installation
         raise InvariantViolation(("GLOP backend unavailable",))
 
     names = sorted(poly.index, key=lambda name: poly.index[name])
     variables = [
-        solveur.NumVar(
-            _glop_bound(solveur, poly.bounds[i][0], upper=False),
-            _glop_bound(solveur, poly.bounds[i][1], upper=True),
+        solver.NumVar(
+            _glop_bound(solver, poly.bounds[i][0], upper=False),
+            _glop_bound(solver, poly.bounds[i][1], upper=True),
             name,
         )
         for i, name in enumerate(names)
     ]
 
-    contraintes: list[Any] = []
+    constraints: list[Any] = []
     matrix = poly.A.tocsr()
     for row in range(matrix.shape[0]):
         t_start, end = matrix.indptr[row], matrix.indptr[row + 1]
-        constraint = solveur.RowConstraint(-solveur.infinity(), float(poly.b[row]))
+        constraint = solver.RowConstraint(-solver.infinity(), float(poly.b[row]))
         for column, value in zip(
             matrix.indices[t_start:end], matrix.data[t_start:end], strict=True
         ):
             constraint.SetCoefficient(variables[column], float(value))
-        contraintes.append(constraint)
+        constraints.append(constraint)
 
     eq_constraints = poly.A_eq.tocsr()
     for row in range(eq_constraints.shape[0]):
         t_start, end = eq_constraints.indptr[row], eq_constraints.indptr[row + 1]
-        borne = float(poly.b_eq[row])
-        constraint = solveur.RowConstraint(borne, borne)
+        bound = float(poly.b_eq[row])
+        constraint = solver.RowConstraint(bound, bound)
         for column, value in zip(
             eq_constraints.indices[t_start:end], eq_constraints.data[t_start:end], strict=True
         ):
@@ -249,11 +250,11 @@ def _construire_modele(poly: Polytope, cuts: list[Cut] | None) -> tuple[Any, lis
 
     for cut in cuts or ():
         # A cut is written ``Σ coeffs·v ≥ lower_bound``; GLOP takes the bound as is.
-        constraint = solveur.RowConstraint(cut.lower_bound, solveur.infinity())
+        constraint = solver.RowConstraint(cut.lower_bound, solver.infinity())
         for name, coefficient in cut.coefficients:
             constraint.SetCoefficient(variables[poly.index[name]], float(coefficient))
 
-    return solveur, variables, contraintes
+    return solver, variables, constraints
 
 
 def _is_feasible(poly: Polytope, cuts: list[Cut] | None) -> bool:
@@ -266,12 +267,12 @@ def _is_feasible(poly: Polytope, cuts: list[Cut] | None) -> bool:
     The model is identical to that of the real problem — cuts, equalities and bounds
     included — so that the verdict bears on the same system.
     """
-    solveur, _, _ = _construire_modele(poly, cuts)
-    solveur.Objective().SetMinimization()
-    return _status(solveur.Solve()) == "optimal"
+    solver, _, _ = _construire_modele(poly, cuts)
+    solver.Objective().SetMinimization()
+    return _status(solver.Solve()) == "optimal"
 
 
-def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[VecteurF, VecteurF]:
+def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[FloatVector, FloatVector]:
     """Extract a proof of infeasibility through the **auxiliary problem**.
 
     Each inequality ``a_i x ≤ b_i`` is relaxed by a slack variable ``s_i ≥ 0``, then
@@ -312,22 +313,20 @@ def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[Vecteur
     canonical form ``y ≥ 0``, the only one :mod:`archlux.certify.dual` can use without
     every reader having to know the backend's internal convention.
     """
-    solveur, variables, contraintes = _construire_modele(poly, cuts)
-    objective = solveur.Objective()
+    solver, variables, constraints = _construire_modele(poly, cuts)
+    objective = solver.Objective()
 
-    slacks = [
-        solveur.NumVar(0.0, solveur.infinity(), f"ecart_{i}") for i in range(len(contraintes))
-    ]
-    for constraint, gap in zip(contraintes, slacks, strict=True):
+    slacks = [solver.NumVar(0.0, solver.infinity(), f"ecart_{i}") for i in range(len(constraints))]
+    for constraint, gap in zip(constraints, slacks, strict=True):
         constraint.SetCoefficient(gap, -1.0)
         objective.SetCoefficient(gap, 1.0)
 
     # Equality rows were created right after the rows of A (see _construire_modele).
-    n_rows = len(contraintes)
-    equalities = solveur.constraints()[n_rows : n_rows + poly.A_eq.shape[0]]
+    n_rows = len(constraints)
+    equalities = solver.constraints()[n_rows : n_rows + poly.A_eq.shape[0]]
     for rank, equality in enumerate(equalities):
-        above = solveur.NumVar(0.0, solveur.infinity(), f"eq_plus_{rank}")
-        below = solveur.NumVar(0.0, solveur.infinity(), f"eq_minus_{rank}")
+        above = solver.NumVar(0.0, solver.infinity(), f"eq_plus_{rank}")
+        below = solver.NumVar(0.0, solver.infinity(), f"eq_minus_{rank}")
         equality.SetCoefficient(above, 1.0)
         equality.SetCoefficient(below, -1.0)
         objective.SetCoefficient(above, 1.0)
@@ -335,18 +334,18 @@ def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[Vecteur
 
     # Cuts are relaxed the other way round: they are written ``≥``.
     for position, cut in enumerate(cuts or ()):
-        slack = solveur.NumVar(0.0, solveur.infinity(), f"ecart_coupe_{position}")
-        constraint = solveur.RowConstraint(cut.lower_bound, solveur.infinity())
+        slack = solver.NumVar(0.0, solver.infinity(), f"ecart_coupe_{position}")
+        constraint = solver.RowConstraint(cut.lower_bound, solver.infinity())
         for name, coefficient in cut.coefficients:
             constraint.SetCoefficient(variables[poly.index[name]], float(coefficient))
         constraint.SetCoefficient(slack, 1.0)
         objective.SetCoefficient(slack, 1.0)
 
     objective.SetMinimization()
-    if _status(solveur.Solve()) != "optimal":
-        return np.zeros(len(contraintes), dtype=float), np.zeros(len(equalities), dtype=float)
+    if _status(solver.Solve()) != "optimal":
+        return np.zeros(len(constraints), dtype=float), np.zeros(len(equalities), dtype=float)
     return (
-        -np.array([c.dual_value() for c in contraintes], dtype=float),
+        -np.array([c.dual_value() for c in constraints], dtype=float),
         -np.array([c.dual_value() for c in equalities], dtype=float),
     )
 
@@ -355,7 +354,7 @@ def _infeasible_solution(
     poly: Polytope,
     cuts: list[Cut] | None,
     n_var: int,
-    solveur: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
+    solver: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
     lp_status: Literal["optimal", "infaisable", "non_borne", "limite"],
     t_start: float,
 ) -> LPSolution:
@@ -372,7 +371,7 @@ def _infeasible_solution(
             x=np.zeros(n_var),
             value=float("-inf"),
             status="non_borne",
-            iterations=solveur.iterations(),
+            iterations=solver.iterations(),
             time_ms=(time.perf_counter() - t_start) * 1000.0,
         )
     farkas, farkas_eq = _farkas_certificate(poly, cuts)
@@ -382,13 +381,13 @@ def _infeasible_solution(
         status=lp_status,
         farkas_certificate=farkas,
         farkas_certificate_eq=farkas_eq,
-        iterations=solveur.iterations(),
+        iterations=solver.iterations(),
         time_ms=(time.perf_counter() - t_start) * 1000.0,
     )
 
 
 def _cached_model(
-    poly: Polytope, cuts: list[Cut] | None, start: VecteurF | None, cache: CacheLP
+    poly: Polytope, cuts: list[Cut] | None, start: FloatVector | None, cache: CacheLP
 ) -> tuple[Any, list[Any], list[Any]]:
     """The GLOP model for ``poly``: reused from ``cache`` if warm-startable, else built.
 
@@ -410,9 +409,9 @@ def _cached_model(
 @renamed_parameters({"depart": "start", "coupes": "cuts", "duaux": "duals"})
 def solve(
     poly: Polytope,
-    c: VecteurF,
+    c: FloatVector,
     *,
-    start: VecteurF | None = None,
+    start: FloatVector | None = None,
     cuts: list[Cut] | None = None,
     duals: bool = False,
     cache: CacheLP | None = None,
@@ -490,38 +489,38 @@ def solve(
         raise InvariantViolation((f"start has shape {start.shape}, expected ({n_var},)",))
 
     cache = cache if cache is not None else _DEFAULT_CACHE
-    solveur, variables, contraintes = _cached_model(poly, cuts, start, cache)
+    solver, variables, constraints = _cached_model(poly, cuts, start, cache)
     try:
-        return _solve_model(poly, c, cuts, duals, solveur, variables, contraintes, t_start)
+        return _solve_model(poly, c, cuts, duals, solver, variables, constraints, t_start)
     finally:
         if not cuts:
-            cache.put(poly, solveur, variables, contraintes)
+            cache.put(poly, solver, variables, constraints)
 
 
 def _solve_model(
     poly: Polytope,
-    c: VecteurF,
+    c: FloatVector,
     cuts: list[Cut] | None,
     duals: bool,
-    solveur: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
+    solver: Any,  # noqa: ANN401 - an untyped OR-Tools model, no stubs
     variables: list[Any],
-    contraintes: list[Any],
+    constraints: list[Any],
     t_start: float,
 ) -> LPSolution:
     """Set the objective on a model this thread holds exclusively, solve, read back."""
     n_var = len(poly.index)
 
-    objective = solveur.Objective()
+    objective = solver.Objective()
     for variable, coefficient in zip(variables, c, strict=True):
         objective.SetCoefficient(variable, float(coefficient))
     objective.SetMinimization()
 
-    code = solveur.Solve()
+    code = solver.Solve()
     lp_status = _status(code)
     elapsed_ms = (time.perf_counter() - t_start) * 1000.0
 
     if lp_status == "infaisable":
-        return _infeasible_solution(poly, cuts, n_var, solveur, lp_status, t_start)
+        return _infeasible_solution(poly, cuts, n_var, solver, lp_status, t_start)
 
     x = np.array([v.solution_value() for v in variables], dtype=float)
     return LPSolution(
@@ -529,11 +528,11 @@ def _solve_model(
         value=float(objective.Value()),
         status=lp_status,
         duals=(
-            np.array([constraint.dual_value() for constraint in contraintes], dtype=float)
+            np.array([constraint.dual_value() for constraint in constraints], dtype=float)
             if duals
             else None
         ),
-        iterations=solveur.iterations(),
+        iterations=solver.iterations(),
         time_ms=elapsed_ms,
     )
 

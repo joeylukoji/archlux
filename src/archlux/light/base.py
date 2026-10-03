@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.protocol import Glazing
@@ -27,7 +27,7 @@ __all__ = ["DenseSurrogate", "descriptors"]
 
 _EPS = 1e-8
 
-FRACTION_SIGMA_RESIDUEL = 0.15
+RESIDUAL_SIGMA_FRACTION = 0.15
 """Part de ``sigma_y`` retenue comme sigma predictif apres entrainement.
 
 **Constante non justifiee par une mesure.** Elle postule que le reseau absorbe 85 %
@@ -40,7 +40,7 @@ absolu regresse sur les descripteurs, ou regression quantile), pas par un scalai
 choisi a la main.
 """
 
-SIGMA_PLANCHER = 0.02
+SIGMA_FLOOR = 0.02
 """Plancher du sigma predictif, en unite de l'indicateur. Meme statut : valeur d'atelier.
 """
 
@@ -53,7 +53,7 @@ def _analytic(indicator: Indicator) -> AnalyticSurrogate:
     substitut à chaque évaluation était du travail pur perte sur le chemin critique du
     §9 d'``ARCHITECTURE.md``.
     """
-    return AnalyticSurrogate(indicateur_vise=indicator)
+    return AnalyticSurrogate(target_indicator=indicator)
 
 
 @renamed_parameters({"baies": "glazing"})
@@ -80,7 +80,7 @@ def descriptors(
         raise InvariantViolation(("vecteur de plan vide : aucun jeton",))
     mean = valid.mean(axis=0)
     areas = valid[:, 4]
-    enc = encode(orientation.deg, harmoniques=3)
+    enc = encode(orientation.deg, harmonics=3)
     stats = np.array(
         [
             float(valid.shape[0]),
@@ -123,12 +123,20 @@ def _huber_derivative(residual: float, delta: float = 1.0) -> float:
     return delta * (1.0 if residual > 0.0 else -1.0)
 
 
+@renamed_attributes(
+    {
+        "indicateur_vise": "target_indicator",
+        "largeur": "width",
+        "echelle_base": "base_scale",
+        "decalage_base": "base_offset",
+    }
+)
 @dataclass
 class DenseSurrogate:
     """Réseau dense 3 couches, poids numpy. Entrée vectorielle uniquement."""
 
-    indicateur_vise: Indicator = "sDA"
-    largeur: int = 32
+    target_indicator: Indicator = "sDA"
+    width: int = 32
     W1: np.ndarray | None = None
     b1: np.ndarray | None = None
     W2: np.ndarray | None = None
@@ -139,13 +147,13 @@ class DenseSurrogate:
     sigma: np.ndarray | None = None
     mu_y: float = 0.0
     sigma_y: float = 1.0
-    echelle_base: float = 1.0
-    decalage_base: float = 0.0
+    base_scale: float = 1.0
+    base_offset: float = 0.0
 
     @property
     def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
-        return self.indicateur_vise
+        return self.target_indicator
 
     @property
     def weights_fingerprint(self) -> str:
@@ -208,8 +216,8 @@ class DenseSurrogate:
     ) -> float:
         """Analytique recalée + résidu appris. Sans poids : l'analytique seule."""
         base = (
-            self.echelle_base * float(_analytic(self.indicateur_vise).evaluate(x, orientation))
-            + self.decalage_base
+            self.base_scale * float(_analytic(self.target_indicator).evaluate(x, orientation))
+            + self.base_offset
         )
         if self.W1 is None:
             return base
@@ -233,15 +241,15 @@ class DenseSurrogate:
         """
         x0 = np.asarray(x, dtype=float).ravel().copy()
         g = np.empty_like(x0)
-        pas = 1e-4
+        step = 1e-4
         for i in range(x0.size):
             plus, minus = x0.copy(), x0.copy()
-            plus[i] += pas
-            minus[i] -= pas
+            plus[i] += step
+            minus[i] -= step
             g[i] = (
                 self.evaluate(plus, orientation, glazing=glazing)
                 - self.evaluate(minus, orientation, glazing=glazing)
-            ) / (2.0 * pas)
+            ) / (2.0 * step)
         return g
 
     def uncertainty(
@@ -255,8 +263,9 @@ class DenseSurrogate:
         aucun gain d'adaptativité, et le chiffre ``0,15`` n'est adossé à aucune mesure.
         """
         del x, orientation, glazing
-        return float(max(self.sigma_y * FRACTION_SIGMA_RESIDUEL, SIGMA_PLANCHER))
+        return float(max(self.sigma_y * RESIDUAL_SIGMA_FRACTION, SIGMA_FLOOR))
 
+    @renamed_parameters({"epoques": "epochs"})
     def fit(
         self,
         xs: tuple[np.ndarray, ...],
@@ -264,7 +273,7 @@ class DenseSurrogate:
         orientations: tuple[Orientation, ...],
         *,
         seed: int,
-        epoques: int = 120,
+        epochs: int = 120,
         lr: float = 0.08,
         glazing: tuple[Glazing | None, ...] | None = None,
     ) -> None:
@@ -284,7 +293,7 @@ class DenseSurrogate:
         """
         if len(xs) != len(ys) or len(xs) != len(orientations):
             raise InvariantViolation(("xs, ys et orientations doivent avoir la même longueur",))
-        analytic = _analytic(self.indicateur_vise)
+        analytic = _analytic(self.target_indicator)
         raw = np.array(
             [float(analytic.evaluate(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
         )
@@ -292,12 +301,12 @@ class DenseSurrogate:
         variance = float(np.var(raw))
         if variance > _EPS:
             slope, intercept = np.polyfit(raw, raw_target, 1)
-            self.echelle_base = float(slope)
-            self.decalage_base = float(intercept)
+            self.base_scale = float(slope)
+            self.base_offset = float(intercept)
         else:
-            self.echelle_base = 0.0
-            self.decalage_base = float(np.mean(raw_target))
-        residus = raw_target - (self.echelle_base * raw + self.decalage_base)
+            self.base_scale = 0.0
+            self.base_offset = float(np.mean(raw_target))
+        residuals = raw_target - (self.base_scale * raw + self.base_offset)
         fenestration = glazing if glazing is not None else (None,) * len(xs)
         feats = np.stack(
             [descriptors(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
@@ -306,12 +315,12 @@ class DenseSurrogate:
         self.sigma = feats.std(axis=0)
         self.sigma[self.sigma < _EPS] = 1.0
         feats = (feats - self.mu) / self.sigma
-        self.mu_y = float(np.mean(residus))
-        self.sigma_y = max(float(np.std(residus)), _EPS)
-        targets = (residus - self.mu_y) / self.sigma_y
+        self.mu_y = float(np.mean(residuals))
+        self.sigma_y = max(float(np.std(residuals)), _EPS)
+        targets = (residuals - self.mu_y) / self.sigma_y
         rng = np.random.default_rng(seed)
         dim = int(feats.shape[1])
-        k = self.largeur
+        k = self.width
         self.W1 = rng.normal(0.0, 1.0 / math.sqrt(dim), size=(dim, k))
         self.b1 = np.zeros(k)
         self.W2 = rng.normal(0.0, 1.0 / math.sqrt(k), size=(k, k))
@@ -319,9 +328,9 @@ class DenseSurrogate:
         self.W3 = rng.normal(0.0, 1.0 / math.sqrt(k), size=(k,))
         self.b3 = 0.0
         n = feats.shape[0]
-        for _ in range(epoques):
-            ordre = rng.permutation(n)
-            for index in ordre:
+        for _ in range(epochs):
+            order = rng.permutation(n)
+            for index in order:
                 feat = feats[index]
                 y_hat, h1, h2 = self._forward(feat)
                 residual = y_hat - float(targets[index])
@@ -335,7 +344,8 @@ class DenseSurrogate:
                 self.W1 -= lr * np.outer(feat, d_h1)
                 self.b1 -= lr * d_h1
 
-    def save(self, chemin: Path) -> str:
+    @renamed_parameters({"chemin": "path"})
+    def save(self, path: Path) -> str:
         """Écrire les poids en ``npz``. Rend l'empreinte SHA-256 du fichier **écrit**.
 
         ``numpy.savez`` ajoute lui-même ``.npz`` quand le chemin n'en porte pas ; le
@@ -353,11 +363,11 @@ class DenseSurrogate:
             or self.sigma is None
         ):
             raise InvariantViolation(("sauver un modèle non entraîné",))
-        chemin = Path(chemin)
-        if chemin.suffix != ".npz":
-            chemin = chemin.with_name(chemin.name + ".npz")
+        path = Path(path)
+        if path.suffix != ".npz":
+            path = path.with_name(path.name + ".npz")
         np.savez(
-            chemin,
+            path,
             W1=self.W1,
             b1=self.b1,
             W2=self.W2,
@@ -368,25 +378,28 @@ class DenseSurrogate:
             sigma=self.sigma,
             mu_y=np.array(self.mu_y),
             sigma_y=np.array(self.sigma_y),
-            echelle_base=np.array(self.echelle_base),
-            decalage_base=np.array(self.decalage_base),
             # The key of the saved archive is part of the file format: it stays
             # ``indicator`` so that models saved before the English API still load.
             # mypy matches the ``**`` mapping against ``allow_pickle: bool``
-            **{"indicateur": np.array(self.indicateur_vise)},  # type: ignore[arg-type]
+            **{  # type: ignore[arg-type]
+                "echelle_base": np.array(self.base_scale),
+                "decalage_base": np.array(self.base_offset),
+                "indicateur": np.array(self.target_indicator),
+            },
         )
-        return hashlib.sha256(chemin.read_bytes()).hexdigest()
+        return hashlib.sha256(path.read_bytes()).hexdigest()
 
     @classmethod
-    def load(cls, chemin: Path) -> DenseSurrogate:
+    @renamed_parameters({"chemin": "path"})
+    def load(cls, path: Path) -> DenseSurrogate:
         """Relire un ``npz`` produit par :meth:`save`."""
-        with np.load(Path(chemin), allow_pickle=False) as archive:
+        with np.load(Path(path), allow_pickle=False) as archive:
             indicator = str(archive["indicateur"])
             # Matching by equality types the result on every mypy version, without a cast.
             target = next((known for known in INDICATOR_SENSE if known == indicator), None)
             if target is None:
                 raise InvariantViolation((f"indicateur inconnu dans les poids : {indicator}",))
-            modele = cls(indicateur_vise=target)
+            modele = cls(target_indicator=target)
             modele.W1 = np.array(archive["W1"], dtype=float, copy=True)
             modele.b1 = np.array(archive["b1"], dtype=float, copy=True)
             modele.W2 = np.array(archive["W2"], dtype=float, copy=True)
@@ -399,14 +412,18 @@ class DenseSurrogate:
             modele.sigma_y = float(archive["sigma_y"])
             # Poids anterieurs au recalage affine : identite, comportement inchange.
             if "echelle_base" in archive:
-                modele.echelle_base = float(archive["echelle_base"])
-                modele.decalage_base = float(archive["decalage_base"])
+                modele.base_scale = float(archive["echelle_base"])
+                modele.base_offset = float(archive["decalage_base"])
         return modele
 
 
 __getattr__ = lazy_aliases(
     __name__,
     {
+        "FRACTION_SIGMA_RESIDUEL": Alias(
+            RESIDUAL_SIGMA_FRACTION, "archlux.light.base.RESIDUAL_SIGMA_FRACTION"
+        ),
+        "SIGMA_PLANCHER": Alias(SIGMA_FLOOR, "archlux.light.base.SIGMA_FLOOR"),
         "SubstitutDense": Alias(DenseSurrogate, "archlux.light.base.DenseSurrogate"),
         "descripteurs": Alias(descriptors, "archlux.light.base.descriptors"),
     },

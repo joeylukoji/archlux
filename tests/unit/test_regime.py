@@ -131,7 +131,7 @@ def test_the_fingerprint_identifies_the_data_set_not_the_scores() -> None:
     second.fit(predictions + 10.0, truths + 10.0, sigma)
     assert first.scores is not None and second.scores is not None
     assert np.allclose(first.scores, second.scores)
-    assert first.empreinte_jeu != second.empreinte_jeu
+    assert first.data_fingerprint != second.data_fingerprint
 
 
 def test_the_fingerprint_is_deterministic_and_column_aware() -> None:
@@ -159,7 +159,7 @@ def _plan() -> archlux.Plan:
 def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     plan = _plan()
     surrogate = AnalyticSurrogate()
-    objective = Daylight(surrogate, q_chapeau=1.0)
+    objective = Daylight(surrogate, q_hat=1.0)
     calibration = _calibration(surrogate.indicator)
     result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=objective, calibration=calibration)
     assert result.certificate is not None
@@ -176,7 +176,7 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
 
 def test_legalize_without_calibration_claims_no_performance() -> None:
     result = archlux.legalize(
-        _plan(), CONTEXTE_DEFAUT, objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0)
+        _plan(), CONTEXTE_DEFAUT, objective=Daylight(AnalyticSurrogate(), q_hat=1.0)
     )
     assert result.certificate is not None and result.certificate.performance is None
 
@@ -187,7 +187,7 @@ def test_a_calibration_needs_an_objective() -> None:
 
 
 def test_a_calibration_of_another_indicator_is_refused() -> None:
-    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_hat=1.0)
     other = "ASE" if objective.indicator != "ASE" else "sDA"
     with pytest.raises(ValueError, match="cannot bound"):
         archlux.legalize(
@@ -218,12 +218,12 @@ def test_a_serialized_bound_without_regime_is_refused() -> None:
 
 def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
     """Review C1: surrogates return ASE negated; the certificate reads it positive."""
-    surrogate = AnalyticSurrogate(indicateur_vise="ASE")
+    surrogate = AnalyticSurrogate(target_indicator="ASE")
     calibration = _calibration("ASE")
     result = archlux.legalize(
         _plan(),
         CONTEXTE_DEFAUT,
-        objective=Daylight(surrogate, q_chapeau=1.0),
+        objective=Daylight(surrogate, q_hat=1.0),
         calibration=calibration,
     )
     assert result.certificate is not None
@@ -241,7 +241,7 @@ def test_every_wrapping_layer_is_removed() -> None:
     surrogate = AnalyticSurrogate()
     x = np.array([0.0, 0.0, 5.0, 9.0, 5.0, 0.0, 7.0, 9.0])
     orientation = CONTEXTE_DEFAUT.orientation
-    nested = Daylight(Daylight(surrogate, q_chapeau=1.0), q_chapeau=2.0)
+    nested = Daylight(Daylight(surrogate, q_hat=1.0), q_hat=2.0)
     assert point_prediction(nested, x, orientation)[0] == pytest.approx(
         surrogate.evaluate(x, orientation)
     )
@@ -261,12 +261,12 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     )
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=AnalyticSurrogate())
-    too_small = Calibration(scores=np.ones(5), alpha=0.10, indicator="sDA", empreinte_jeu="x")
+    too_small = Calibration(scores=np.ones(5), alpha=0.10, indicator="sDA", data_fingerprint="x")
     with pytest.raises(InvariantViolation, match="too small"):
         archlux.legalize(
             _plan(),
             tiny_ctx,
-            objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0),
+            objective=Daylight(AnalyticSurrogate(), q_hat=1.0),
             calibration=too_small,
         )
 
@@ -276,7 +276,7 @@ def test_a_calibration_of_the_wrong_type_is_refused() -> None:
         archlux.legalize(
             _plan(),
             CONTEXTE_DEFAUT,
-            objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0),
+            objective=Daylight(AnalyticSurrogate(), q_hat=1.0),
             calibration=object(),  # type: ignore[arg-type]
         )
 
@@ -299,8 +299,8 @@ def test_the_fingerprint_is_computed_on_the_raw_uncertainties() -> None:
     zero, tiny = ConformalCalibrator(), ConformalCalibrator()
     zero.fit(predictions, truths, np.array([0.0, 1.0]), alpha=0.5)
     tiny.fit(predictions, truths, np.array([1e-13, 1.0]), alpha=0.5)
-    assert zero.empreinte_jeu != tiny.empreinte_jeu
-    assert zero.empreinte_jeu == dataset_fingerprint(predictions, truths, np.array([0.0, 1.0]))
+    assert zero.data_fingerprint != tiny.data_fingerprint
+    assert zero.data_fingerprint == dataset_fingerprint(predictions, truths, np.array([0.0, 1.0]))
 
 
 @pytest.mark.parametrize("bad", [-1.0, np.nan, np.inf])

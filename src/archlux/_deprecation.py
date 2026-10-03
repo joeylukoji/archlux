@@ -32,6 +32,14 @@ Renamed keyword parameters of a public function go through :func:`renamed_parame
     @renamed_parameters({"chemin": "path"})
     def write(plan: Plan, path: str | Path) -> None: ...
 
+Renamed fields, class constants and methods of a public class go through
+:func:`renamed_attributes`, written above ``@dataclass``::
+
+    @renamed_attributes({"chemin": "path"})
+    @dataclass(frozen=True)
+    class Report:
+        path: str
+
 A leaf: it imports nothing from archlux, so every layer may use it.
 """
 
@@ -53,11 +61,13 @@ __all__ = [
     "lazy_aliases",
     "lazy_module_attributes",
     "module_shim",
+    "renamed_attributes",
     "renamed_parameters",
 ]
 
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
+_C = TypeVar("_C", bound=type)
 
 _SERVED: dict[str, Mapping[str, Alias | LazyAlias]] = {}
 """Deprecated names each module serves through :func:`lazy_aliases`, by module name.
@@ -292,5 +302,85 @@ def renamed_parameters(
 
         vars(wrapper)["__renamed_parameters__"] = dict(renames)
         return wrapper
+
+    return decorate
+
+
+class _DeprecatedAttribute:
+    """Class-level descriptor serving an old attribute name, with a warning.
+
+    Reading goes to the new attribute of the instance, or of the class when read on the
+    class (a class constant, a method); writing goes to the new attribute too, so that a
+    frozen dataclass still refuses it.
+    """
+
+    def __init__(self, old: str, new: str) -> None:
+        self.old = old
+        self.new = new
+
+    def _warn(self, owner: type) -> None:
+        warnings.warn(
+            f"{owner.__qualname__}.{self.old} is deprecated, use {self.new} (ADR 0001)",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+
+    def __get__(self, instance: object | None, owner: type) -> object:
+        self._warn(owner)
+        return getattr(owner if instance is None else instance, self.new)
+
+    def __set__(self, instance: object, value: object) -> None:
+        self._warn(type(instance))
+        setattr(instance, self.new, value)
+
+
+def renamed_attributes(renames: Mapping[str, str]) -> Callable[[_C], _C]:
+    """Serve the old names of renamed fields, class constants and methods of a class.
+
+    Parameters
+    ----------
+    renames : mapping of str to str
+        Old attribute name to its new name. Strings, like the keys of
+        :func:`lazy_aliases`, so the old names never appear as identifiers.
+
+    Returns
+    -------
+    callable
+        A class decorator, written above ``@dataclass``. Each old name reads (and
+        writes) the new attribute with a ``DeprecationWarning``; the old names that are
+        parameters of ``__init__`` stay accepted as keywords through
+        :func:`renamed_parameters`.
+
+    Examples
+    --------
+    >>> import warnings
+    >>> from dataclasses import dataclass
+    >>> @renamed_attributes({"chemin": "path"})
+    ... @dataclass(frozen=True)
+    ... class Report:
+    ...     path: str
+    >>> with warnings.catch_warnings(record=True) as caught:
+    ...     warnings.simplefilter("always")
+    ...     Report(chemin="a.json").chemin
+    'a.json'
+    >>> [str(w.message) for w in caught]  # doctest: +NORMALIZE_WHITESPACE
+    ['Report.__init__(chemin=...) is deprecated, use path=... (ADR 0001)',
+     'Report.chemin is deprecated, use path (ADR 0001)']
+    """
+
+    def decorate(cls: _C) -> _C:
+        for old, new in renames.items():
+            setattr(cls, old, _DeprecatedAttribute(old, new))
+        init = vars(cls).get("__init__")
+        if init is not None:
+            parameters = init.__code__.co_varnames[: init.__code__.co_argcount]
+            parameters += init.__code__.co_varnames[
+                init.__code__.co_argcount : init.__code__.co_argcount
+                + init.__code__.co_kwonlyargcount
+            ]
+            keywords = {old: new for old, new in renames.items() if new in parameters}
+            if keywords:
+                cls.__init__ = renamed_parameters(keywords)(init)  # type: ignore[misc]
+        return cls
 
     return decorate

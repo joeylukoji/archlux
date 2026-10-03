@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.errors import InvalidSurrogate
 
 if TYPE_CHECKING:
@@ -25,6 +25,15 @@ __all__ = ["GradientReport", "validate_gradient"]
 _NIGHT = 1e-8
 
 
+@renamed_attributes(
+    {
+        "erreur_relative_max": "max_relative_error",
+        "cosinus_moyen": "mean_cosine",
+        "accord_de_signe": "sign_agreement",
+        "graine": "seed",
+        "conforme": "passed",
+    }
+)
 @dataclass(frozen=True, slots=True)
 class GradientReport:
     """Comparaison du gradient déclaré aux différences finies d'une référence.
@@ -36,32 +45,32 @@ class GradientReport:
         sous 0,80, ne pas passer au jalon 5 (`MILESTONE-4.md` §7).
     """
 
-    erreur_relative_max: float
-    cosinus_moyen: float
-    accord_de_signe: float
+    max_relative_error: float
+    mean_cosine: float
+    sign_agreement: float
     n_points: int
-    graine: int
-    conforme: bool
+    seed: int
+    passed: bool
 
 
 def _finite_differences(
-    surrogate: Surrogate, x: np.ndarray, orientation: Orientation, pas: float
+    surrogate: Surrogate, x: np.ndarray, orientation: Orientation, step: float
 ) -> np.ndarray:
     """Pente centrée de ``evaluate`` le long de chaque coordonnée de ``x``."""
     x0 = np.asarray(x, dtype=float).ravel()
     g = np.empty_like(x0)
     for i in range(x0.size):
         plus, minus = x0.copy(), x0.copy()
-        plus[i] += pas
-        minus[i] -= pas
+        plus[i] += step
+        minus[i] -= step
         g[i] = (
             float(surrogate.evaluate(plus, orientation))
             - float(surrogate.evaluate(minus, orientation))
-        ) / (2.0 * pas)
+        ) / (2.0 * step)
     return g
 
 
-@renamed_parameters({"substitut": "surrogate"})
+@renamed_parameters({"substitut": "surrogate", "pas": "step", "seuil_signe": "sign_threshold"})
 def validate_gradient(
     surrogate: Surrogate,
     points: np.ndarray,
@@ -69,10 +78,10 @@ def validate_gradient(
     *,
     seed: int,
     reference: Surrogate | None = None,
-    pas: float = 0.10,
+    step: float = 0.10,
     epsilon: float = 1e-5,
     tolerance: float = 1e-3,
-    seuil_signe: float = 0.80,
+    sign_threshold: float = 0.80,
 ) -> GradientReport:
     """Comparer le gradient du substitut aux différences finies.
 
@@ -131,7 +140,7 @@ def validate_gradient(
     rng = np.random.default_rng(seed)
     matrix = matrix[rng.permutation(matrix.shape[0])]
     oracle = reference
-    step_fd = pas if oracle is not None else epsilon
+    step_fd = step if oracle is not None else epsilon
     errors: list[float] = []
     cosine: list[float] = []
     signs: list[bool] = []
@@ -163,29 +172,29 @@ def validate_gradient(
             else:
                 signs.append((a >= 0.0) == (b >= 0.0))
     report = GradientReport(
-        erreur_relative_max=max(errors) if errors else 0.0,
-        cosinus_moyen=float(np.mean(cosine)) if cosine else 1.0,
-        accord_de_signe=float(np.mean(signs)) if signs else 1.0,
+        max_relative_error=max(errors) if errors else 0.0,
+        mean_cosine=float(np.mean(cosine)) if cosine else 1.0,
+        sign_agreement=float(np.mean(signs)) if signs else 1.0,
         n_points=int(matrix.shape[0]),
-        graine=seed,
-        conforme=False,
+        seed=seed,
+        passed=False,
     )
     if oracle is None:
-        conforme = report.erreur_relative_max <= tolerance
-        if not conforme:
+        passed = report.max_relative_error <= tolerance
+        if not passed:
             raise InvalidSurrogate(
-                f"erreur relative {report.erreur_relative_max:.3g} > {tolerance}",
+                f"erreur relative {report.max_relative_error:.3g} > {tolerance}",
                 report=report,
             )
     else:
-        conforme = report.accord_de_signe >= seuil_signe
-        if not conforme:
+        passed = report.sign_agreement >= sign_threshold
+        if not passed:
             raise InvalidSurrogate(
-                f"accord de signe {report.accord_de_signe:.3f} < {seuil_signe} "
+                f"accord de signe {report.sign_agreement:.3f} < {sign_threshold} "
                 "— ne pas passer au jalon 5",
                 report=report,
             )
-    return replace(report, conforme=True)
+    return replace(report, passed=True)
 
 
 __getattr__ = lazy_aliases(

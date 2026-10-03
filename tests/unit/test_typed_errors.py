@@ -40,14 +40,14 @@ def one_room_plan() -> Plan:
 @pytest.mark.parametrize(
     ("call", "field"),
     [
-        (lambda: encode(10.0, harmoniques=0), "harmoniques"),
-        (lambda: circular_variance([]), "degres"),
+        (lambda: encode(10.0, harmonics=0), "harmonics"),
+        (lambda: circular_variance([]), "degrees"),
         (lambda: circular_linear_regression([1.0, 2.0], [1.0]), "theta"),
         (lambda: circular_linear_regression([1.0, 2.0], [1.0, 2.0]), "theta"),
-        (lambda: stratify([1.0, 2.0], n_secteurs=0), "n_secteurs"),
-        (lambda: sheet(()), "volets"),
+        (lambda: stratify([1.0, 2.0], n_sectors=0), "n_sectors"),
+        (lambda: sheet(()), "panels"),
         (lambda: diagnose(Plan(rooms=(), walls=(), openings=(), outline=SQUARE)), "rooms"),
-        (lambda: permute_rooms(one_room_plan(), (0, 1)), "ordre"),
+        (lambda: permute_rooms(one_room_plan(), (0, 1)), "order"),
     ],
 )
 def test_bad_argument_raises_invalid_input_naming_the_field(call: object, field: str) -> None:
@@ -65,8 +65,8 @@ def test_unreadable_wkt_is_a_rejection_not_a_swallowed_bug() -> None:
         active_regulation=Regulation(min_areas=()),
         max_rooms=20,
         max_rectangles=30,
-        tolerance_calage=0.1,
-        tolerance_recollage=0.1,
+        snap_tolerance=0.1,
+        stitch_tolerance=0.1,
     )
     assert rejected == "unreadable wkt"
 

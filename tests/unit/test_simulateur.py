@@ -26,8 +26,8 @@ def test_ase_est_l_oppose_du_sda() -> None:
     """ASE nie le score complet une fois, pas l'analytique puis le total."""
     x = np.array([0.0, 0.0, 6.0, 4.5, 6.0, 0.0, 6.0, 4.5])
     ctx = Orientation(deg=40.0)
-    sda = SplitFluxOracle(indicateur_vise="sDA").evaluate(x, ctx)
-    ase = SplitFluxOracle(indicateur_vise="ASE").evaluate(x, ctx)
+    sda = SplitFluxOracle(target_indicator="sDA").evaluate(x, ctx)
+    ase = SplitFluxOracle(target_indicator="ASE").evaluate(x, ctx)
     assert ase == pytest.approx(-sda)
 
 
@@ -71,4 +71,4 @@ def test_gradient_coherent_avec_le_split_flux() -> None:
         Orientation(deg=180.0),
         seed=17,
     )
-    assert rapport.conforme
+    assert rapport.passed

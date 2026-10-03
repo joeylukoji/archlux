@@ -40,7 +40,7 @@ class TestTangente:
         assert not area_cut(2.0, 2.0, 9.0).satisfied(2.0, 2.0)
 
     def test_origine_porte_la_piece(self) -> None:
-        assert "living_room" in area_cut(3.0, 3.0, 9.0, piece="living_room").origin
+        assert "living_room" in area_cut(3.0, 3.0, 9.0, room="living_room").origin
 
     def test_un_point_degenere_est_refuse(self) -> None:
         with pytest.raises(InvariantViolation, match="strictly positive"):

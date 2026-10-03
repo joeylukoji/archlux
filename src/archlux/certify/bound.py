@@ -61,7 +61,7 @@ def build_bound(
       :func:`archlux.uq.drift.check_drift` has almost no power. The certificate
       therefore says "drift not detected", never "no drift".
     """
-    if not drift.echangeable:
+    if not drift.exchangeable:
         return None
     return bound(value, calibration, uncertainty=uncertainty, regime=regime)
 

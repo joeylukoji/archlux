@@ -109,7 +109,7 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
 @given(scenario=realistic_scenarios())
 def test_daylight_objective_is_accepted_by_legalize(scenario: tuple[Plan, Context]) -> None:
     plan, ctx = scenario
-    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_hat=1.0)
     result = archlux.legalize(plan, ctx, objective=objective)
     assert _independent_violations(result, ctx) == []
 

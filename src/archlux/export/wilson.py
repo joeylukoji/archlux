@@ -61,10 +61,10 @@ def wilson_interval(successes: int, n: int, *, z: float = 1.96) -> tuple[float, 
     phat = successes / n
     z2 = z * z
     denom = 1.0 + z2 / n
-    centre = phat + z2 / (2.0 * n)
+    center = phat + z2 / (2.0 * n)
     margin = z * math.sqrt((phat * (1.0 - phat) + z2 / (4.0 * n)) / n)
-    lo = 0.0 if successes == 0 else max(0.0, (centre - margin) / denom)
-    hi = 1.0 if successes == n else min(1.0, (centre + margin) / denom)
+    lo = 0.0 if successes == 0 else max(0.0, (center - margin) / denom)
+    hi = 1.0 if successes == n else min(1.0, (center + margin) / denom)
     return lo, hi
 
 

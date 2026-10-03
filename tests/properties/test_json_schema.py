@@ -72,7 +72,7 @@ def _outputs(plan: Plan, ctx: Context) -> list[Plan]:
     for kwargs in (
         {},
         {
-            "objective": Daylight(AnalyticSurrogate(), q_chapeau=1.0),
+            "objective": Daylight(AnalyticSurrogate(), q_hat=1.0),
             "calibration": _calibration(),
         },
     ):

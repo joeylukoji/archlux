@@ -171,7 +171,7 @@ def _line_rooms(inter: BaseGeometry) -> list[LineString]:
 
 
 def _chord_through_pivot(
-    candidats: list[LineString], pivot: Point, *, axis: int
+    candidates: list[LineString], pivot: Point, *, axis: int
 ) -> tuple[float, float] | None:
     """Extent, on ``axis`` (0 for x, 1 for y), of the pieces joined through ``pivot``.
 
@@ -184,7 +184,7 @@ def _chord_through_pivot(
     are joined: sharing that point on one line, their union is a single segment.
     """
     extent_values: list[float] = []
-    for seg in candidats:
+    for seg in candidates:
         if seg.length <= _EPS or pivot.distance(seg) > 1e-6:
             continue
         extent_values.extend(c[axis] for c in seg.coords)
@@ -373,7 +373,8 @@ def decompose(
     return RectilinearRoom(id=id, rectangles=rectangles, merges=_detect_merges(rectangles))
 
 
-def recompose(piece: RectilinearRoom) -> Polygon:
+@renamed_parameters({"piece": "room"})
+def recompose(room: RectilinearRoom) -> Polygon:
     """Rebuild the original polygon from its rectangles.
 
     Returns
@@ -382,17 +383,18 @@ def recompose(piece: RectilinearRoom) -> Polygon:
         Union of the rectangles. For a partition without holes, equal to the input
         polygon of :func:`decompose`.
     """
-    if not piece.rectangles:
+    if not room.rectangles:
         raise InvariantViolation(("RectilinearRoom without rectangle",))
-    boxes = [box(r.x, r.y, r.x + r.w, r.y + r.h) for r in piece.rectangles]
+    boxes = [box(r.x, r.y, r.x + r.w, r.y + r.h) for r in room.rectangles]
     union = unary_union(boxes)
     if union.geom_type != "Polygon":
         raise InvariantViolation((f"disconnected recomposition: {union.geom_type}",))
     return union
 
 
+@renamed_parameters({"piece": "room"})
 def merge_constraints(
-    piece: RectilinearRoom, index: dict[str, int]
+    room: RectilinearRoom, index: dict[str, int]
 ) -> tuple[tuple[str, dict[str, float], float], ...]:
     """Translate the fusions into affine equalities ``Σ a_k v_k = b``.
 
@@ -400,8 +402,8 @@ def merge_constraints(
     ``partage_bord_haut``: ``y_i + h_i − y_j = 0``.
     """
     equality_rows: list[tuple[str, dict[str, float], float]] = []
-    for i, j, nature in piece.merges:
-        a, b = piece.rectangles[i], piece.rectangles[j]
+    for i, j, nature in room.merges:
+        a, b = room.rectangles[i], room.rectangles[j]
         if nature == MERGE_RIGHT:
             for var_name in (f"{a.id}.x", f"{a.id}.w", f"{b.id}.x"):
                 if var_name not in index:
@@ -468,14 +470,14 @@ def minimum_area_shares(
     """
     by_id = {room.id: room for room in rooms}
     shares: dict[str, float] = {}
-    for piece in merges:
-        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    for fused in merges:
+        members = [by_id[r.id] for r in fused.rectangles if r.id in by_id]
         if not members:
             continue
         minimum = max(regulation.min_area(member.type) for member in members)
         total = sum(member.w * member.h for member in members)
         if total <= 0.0:
-            raise UnsupportedInput(f"fused room {piece.id} has no area in the proposed plan")
+            raise UnsupportedInput(f"fused room {fused.id} has no area in the proposed plan")
         for member in members:
             # The solver accepts each rectangle up to AREA_PROOF_M2 below its share; the
             # proof accepts the union up to AREA_PROOF_M2 once. Adding that tolerance to
@@ -507,8 +509,9 @@ def _difference(left: dict[str, float], right: dict[str, float]) -> dict[str, fl
     return terms
 
 
+@renamed_parameters({"piece": "room"})
 def overlap_constraints(
-    piece: RectilinearRoom, index: dict[str, int], *, min_contact: float = 0.0
+    room: RectilinearRoom, index: dict[str, int], *, min_contact: float = 0.0
 ) -> tuple[tuple[_Row, ...], tuple[_Row, ...]]:
     """Keep the shape of a fused room on the axis orthogonal to each shared edge.
 
@@ -546,10 +549,10 @@ def overlap_constraints(
     """
     equalities: list[_Row] = []
     inequalities: list[_Row] = []
-    for i, j, kind in piece.merges:
+    for i, j, kind in room.merges:
         if kind not in (MERGE_RIGHT, MERGE_TOP):
             raise InvariantViolation((f"unknown fusion kind: {kind!r}",))
-        a, b = piece.rectangles[i], piece.rectangles[j]
+        a, b = room.rectangles[i], room.rectangles[j]
         axis = "y" if kind == MERGE_RIGHT else "x"
         a0, a1, a_low, a_high = _interval(a, axis)
         b0, b1, b_low, b_high = _interval(b, axis)
@@ -591,7 +594,8 @@ def _rows(rows: tuple[_Row, ...], index: dict[str, int]) -> tuple[sparse.csr_mat
     return matrix, np.asarray([rhs for _, _, rhs in rows], dtype=float)
 
 
-def extend_merges(poly: Polytope, piece: RectilinearRoom, *, min_contact: float = 0.0) -> Polytope:
+@renamed_parameters({"piece": "room"})
+def extend_merges(poly: Polytope, room: RectilinearRoom, *, min_contact: float = 0.0) -> Polytope:
     """Add the fusion equalities and the overlap constraints of a fused room.
 
     Parameters
@@ -613,10 +617,9 @@ def extend_merges(poly: Polytope, piece: RectilinearRoom, *, min_contact: float 
         ``origins``).
     """
     merges = tuple(
-        (f"fusion {label}", terms, rhs)
-        for label, terms, rhs in merge_constraints(piece, poly.index)
+        (f"fusion {label}", terms, rhs) for label, terms, rhs in merge_constraints(room, poly.index)
     )
-    aligned, ordered = overlap_constraints(piece, poly.index, min_contact=min_contact)
+    aligned, ordered = overlap_constraints(room, poly.index, min_contact=min_contact)
     equalities = merges + aligned
     if not equalities and not ordered:
         return poly

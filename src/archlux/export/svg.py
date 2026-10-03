@@ -101,7 +101,7 @@ def _extent(
 def _panel(
     plan: Plan,
     outline: tuple[Point, ...],
-    titre: str,
+    title: str,
     extent: tuple[float, float, float, float],
     offset_x: float,
     offset_y: float = 0.0,
@@ -133,7 +133,7 @@ def _panel(
         'fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>',
         f'<text x="{offset_x + _MARGIN:.1f}" y="{offset_y + 18:.1f}" '
         'font-family="system-ui,sans-serif" '  # lang-ok: CSS value, not French
-        f'font-size="13" font-weight="600" fill="#333">{_escape(titre)}</text>',
+        f'font-size="13" font-weight="600" fill="#333">{_escape(title)}</text>',
     ]
 
     if outline:
@@ -176,12 +176,12 @@ def _panel(
     return parts
 
 
-@renamed_parameters({"contour": "outline"})
+@renamed_parameters({"contour": "outline", "titre": "title"})
 def render(
     plan: Plan,
     *,
     outline: tuple[Point, ...] = (),
-    titre: str = "",
+    title: str = "",
     walls: tuple[Wall, ...] = (),
 ) -> str:
     """Render a plan as a standalone SVG.
@@ -215,18 +215,18 @@ def render(
     """
     target = outline or plan.outline
     extent = _extent((plan,), (target,) if target else ())
-    parts = _panel(plan, target, titre, extent, 0.0, walls=walls)
+    parts = _panel(plan, target, title, extent, 0.0, walls=walls)
     height = _height(extent)
     return _document(_PANEL_WIDTH, height, parts)
 
 
-@renamed_parameters({"contour": "outline"})
+@renamed_parameters({"contour": "outline", "avant": "before", "apres": "after", "titres": "titles"})
 def compare(
-    avant: Plan,
-    apres: Plan,
+    before: Plan,
+    after: Plan,
     *,
     outline: tuple[Point, ...] = (),
-    titres: tuple[str, str] = ("before", "after"),
+    titles: tuple[str, str] = ("before", "after"),
     walls: tuple[Wall, ...] = (),
 ) -> str:
     """Render two plans side by side, **at the same scale**.
@@ -263,15 +263,15 @@ def compare(
     >>> svg.count("<rect") >= 4        # two frames, two rooms
     True
     """
-    return sheet(((avant, titres[0]), (apres, titres[1])), outline=outline, walls=walls)
+    return sheet(((before, titles[0]), (after, titles[1])), outline=outline, walls=walls)
 
 
-@renamed_parameters({"contour": "outline"})
+@renamed_parameters({"contour": "outline", "volets": "panels", "colonnes": "columns"})
 def sheet(
-    volets: tuple[tuple[Plan, str], ...],
+    panels: tuple[tuple[Plan, str], ...],
     *,
     outline: tuple[Point, ...] = (),
-    colonnes: int = 4,
+    columns: int = 4,
     walls: tuple[Wall, ...] = (),
 ) -> str:
     """Render a **series** of variants as a grid, all at the same scale.
@@ -316,19 +316,19 @@ def sheet(
     >>> sheet(plans, colonnes=2).startswith("<svg")
     True
     """
-    if not volets:
-        raise InvalidInput("volets", "empty sheet: nothing to draw")
-    target = outline or volets[0][0].outline
-    extent = _extent(tuple(p for p, _ in volets), (target,) if target else ())
+    if not panels:
+        raise InvalidInput("panels", "empty sheet: nothing to draw")
+    target = outline or panels[0][0].outline
+    extent = _extent(tuple(p for p, _ in panels), (target,) if target else ())
     step_x = _PANEL_WIDTH + _SPACING
     step_y = _height(extent) + _SPACING
 
     parts: list[str] = []
-    for rank, (plan, titre) in enumerate(volets):
-        column, row = rank % colonnes, rank // colonnes
-        parts += _panel(plan, target, titre, extent, column * step_x, row * step_y, walls=walls)
-    n_columns = min(len(volets), colonnes)
-    n_rows = (len(volets) + colonnes - 1) // colonnes
+    for rank, (plan, title) in enumerate(panels):
+        column, row = rank % columns, rank // columns
+        parts += _panel(plan, target, title, extent, column * step_x, row * step_y, walls=walls)
+    n_columns = min(len(panels), columns)
+    n_rows = (len(panels) + columns - 1) // columns
     return _document(n_columns * step_x - _SPACING, n_rows * step_y - _SPACING, parts)
 
 
@@ -341,13 +341,13 @@ def _height(extent: tuple[float, float, float, float]) -> float:
     return height_m * min(useful / width_m, useful / height_m) + 2 * _MARGIN
 
 
-def _document(largeur: float, height: float, parts: list[str]) -> str:
+def _document(width: float, height: float, parts: list[str]) -> str:
     """Wrap the fragments in a standalone SVG document."""
     body = "\n  ".join(parts)
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{largeur:.0f}" '
-        f'height="{height:.0f}" viewBox="0 0 {largeur:.0f} {height:.0f}">\n'
-        f'  <rect width="{largeur:.0f}" height="{height:.0f}" fill="#f7f6f3"/>\n'
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" '
+        f'height="{height:.0f}" viewBox="0 0 {width:.0f} {height:.0f}">\n'
+        f'  <rect width="{width:.0f}" height="{height:.0f}" fill="#f7f6f3"/>\n'
         f"  {body}\n</svg>\n"
     )
 

@@ -34,11 +34,12 @@ _TYPES = ("living_room", "bedroom", "kitchen", "bathroom", "corridor", "toilet")
 _EPS = 1e-12
 
 
-def permute_rooms(plan: Plan, ordre: tuple[int, ...]) -> Plan:
+@renamed_parameters({"ordre": "order"})
+def permute_rooms(plan: Plan, order: tuple[int, ...]) -> Plan:
     """Réordonner les pièces sans changer la géométrie."""
-    if len(ordre) != len(plan.rooms):
-        raise InvalidInput("ordre", "the permutation must have one index per room")
-    rooms = tuple(plan.rooms[i] for i in ordre)
+    if len(order) != len(plan.rooms):
+        raise InvalidInput("order", "the permutation must have one index per room")
+    rooms = tuple(plan.rooms[i] for i in order)
     return replace(plan, rooms=rooms)
 
 
@@ -59,7 +60,7 @@ def _room_token(
     h: float,
     room_type: str,
     orientation: Orientation,
-    n_pieces: float,
+    n_rooms: float,
     total_area: float,
 ) -> np.ndarray:
     """Un jeton de pièce, continu en géométrie et périodique en azimut."""
@@ -73,13 +74,13 @@ def _room_token(
         type_oh[_TYPES.index(room_type)] = 1.0
     else:
         type_oh[-1] = 1.0
-    azimuth = encode_orientation(orientation, harmoniques=3)
+    azimuth = encode_orientation(orientation, harmonics=3)
     token = np.zeros(TOKEN_DIM, dtype=float)
     token[0:4] = (x, y, w, h)
     token[4:7] = (area, peri, compact)
     token[7:14] = type_oh
     token[14:20] = azimuth
-    token[20] = n_pieces
+    token[20] = n_rooms
     token[21] = total_area
     return token
 
@@ -87,19 +88,19 @@ def _room_token(
 def _opening_token(
     opening: Opening,
     wall: Wall,
-    n_pieces: float,
+    n_rooms: float,
     total_area: float,
     orientation: Orientation,
 ) -> np.ndarray:
     """Un jeton de baie : azimut du mur porteur, jamais recopié sur chaque pièce."""
     wall_azimuth = math.degrees(math.atan2(wall.b[1] - wall.a[1], wall.b[0] - wall.a[0]))
     token = np.zeros(TOKEN_DIM, dtype=float)
-    token[14:20] = encode_orientation(orientation, harmoniques=3)
-    token[20] = n_pieces
+    token[14:20] = encode_orientation(orientation, harmonics=3)
+    token[20] = n_rooms
     token[21] = total_area
     token[22:28] = np.concatenate(
         [
-            encode(wall_azimuth, harmoniques=1),
+            encode(wall_azimuth, harmonics=1),
             np.array([opening.s, opening.relative_width, opening.head_height, 1.0], dtype=float),
         ]
     )
@@ -119,13 +120,13 @@ def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     n = len(plan.rooms)
     total_area = sum(p.area for p in plan.rooms)
     tokens = np.zeros((n, TOKEN_DIM), dtype=float)
-    for i, piece in enumerate(plan.rooms):
+    for i, room in enumerate(plan.rooms):
         tokens[i] = _room_token(
-            piece.x,
-            piece.y,
-            piece.w,
-            piece.h,
-            piece.type,
+            room.x,
+            room.y,
+            room.w,
+            room.h,
+            room.type,
             ctx.orientation,
             float(n),
             total_area,

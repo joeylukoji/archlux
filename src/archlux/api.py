@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 from archlux._deprecation import renamed_parameters
-from archlux.arrays import VecteurF
+from archlux.arrays import FloatVector
 from archlux.certify.bound import bound_selected_plan, check_calibration
 from archlux.certify.dual import translate_duals
 from archlux.certify.farkas import verify_infeasibility
@@ -68,7 +68,7 @@ _DUAL_THRESHOLD = 1e-9
 
 
 @renamed_parameters({"x_propose": "x_proposed"})
-def gradient_distance(x_proposed: VecteurF) -> VecteurF:
+def gradient_distance(x_proposed: FloatVector) -> FloatVector:
     r"""Cost vector of the L1 epigraph: zeros on :math:`x`, ones on :math:`e`.
 
     .. math::
@@ -122,7 +122,7 @@ def _active_origins(sol: LPSolution, poly: Polytope) -> tuple[str, ...]:
 
 
 def _translated_duals(
-    duals: VecteurF | None, poly: Polytope, *, objective: str = "displacement"
+    duals: FloatVector | None, poly: Polytope, *, objective: str = "displacement"
 ) -> tuple[tuple[str, float], ...]:
     """Pair the duals of the rows of ``A`` with ``poly.origins``.
 
@@ -157,18 +157,18 @@ def budget_label(budget: float) -> str:
 
 
 def _scope(
-    ordre: RelativeOrder,
+    order: RelativeOrder,
     merges: tuple[RectilinearRoom, ...],
     grid: bool,
     budget: float | None,
 ) -> tuple[str, ...]:
     """Restrictions of the solver's domain beyond the relative order, as built."""
     scope: list[str] = []
-    if ordre.wall_sides:
+    if order.wall_sides:
         scope.append("load-bearing sides")
     if merges:
         scope.append("fused-room seams and area shares")
-    if ordre.shared_sides:
+    if order.shared_sides:
         scope.append("one shared side per fused room straddling a wall")
     if grid:
         scope.append(GRID_LABEL)
@@ -192,7 +192,7 @@ class _Problem:
     grid: Grid | None
     order: RelativeOrder
     base: Polytope
-    x_ref: VecteurF
+    x_ref: FloatVector
     minima: Mapping[str, float]  # read-only: the frozen problem shares it
 
     def domain(self, *, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
@@ -218,7 +218,7 @@ class _Problem:
             minima=self.minima,
         )
 
-    def decode(self, x: VecteurF, index: dict[str, int], template: Plan | None = None) -> Plan:
+    def decode(self, x: FloatVector, index: dict[str, int], template: Plan | None = None) -> Plan:
         """The plan of a decision vector, on the context's outline."""
         decoded = devectorize(x, template or self.plan, index)
         return replace(decoded, outline=self.ctx.outline)

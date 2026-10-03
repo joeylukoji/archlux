@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import INDICATOR_SENSE, REGIMES, Indicator, PerformanceBound, Regime
 
@@ -30,6 +30,7 @@ __all__ = [
 _SIGMA_MIN = 1e-12
 
 
+@renamed_attributes({"empreinte_jeu": "data_fingerprint"})
 @dataclass(frozen=True, slots=True)
 class Calibration:
     """Non-conformity scores from the calibration set, and nothing else.
@@ -47,7 +48,7 @@ class Calibration:
     scores: np.ndarray
     alpha: float
     indicator: str
-    empreinte_jeu: str
+    data_fingerprint: str
 
     @property
     def n(self) -> int:
@@ -147,8 +148,8 @@ def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
     rank = math.ceil((n + 1) * (1.0 - alpha))
     if rank > n:
         raise InvariantViolation((f"n={n} too small for alpha={alpha} (rank {rank} > n)",))
-    ordre = np.sort(vector)
-    return float(ordre[rank - 1])
+    order = np.sort(vector)
+    return float(order[rank - 1])
 
 
 def _indicator(indicator_name: str) -> Indicator:
@@ -267,8 +268,8 @@ def bound(
       maximize the prediction; the project measures and publishes the actual
       coverage under selection.
     """
-    q_chapeau = conformal_quantile(calibration.scores, calibration.alpha)
-    margin = q_chapeau * _scale(uncertainty)
+    q_hat = conformal_quantile(calibration.scores, calibration.alpha)
+    margin = q_hat * _scale(uncertainty)
     return _interval(
         value,
         margin,
@@ -279,6 +280,7 @@ def bound(
     )
 
 
+@renamed_attributes({"empreinte_jeu": "data_fingerprint", "borne": "bound"})
 @dataclass(slots=True)
 class ConformalCalibrator:
     """One calibrator per indicator: sDA and ASE errors are not on the same scale.
@@ -291,14 +293,15 @@ class ConformalCalibrator:
     q: float = 0.0
     n: int = 0
     alpha: float = 0.10
-    empreinte_jeu: str = ""
+    data_fingerprint: str = ""
     scores: np.ndarray | None = field(default=None, repr=False, compare=False)
 
+    @renamed_parameters({"verites": "truths", "incertitudes": "uncertainties"})
     def fit(
         self,
         predictions: np.ndarray,
-        verites: np.ndarray,
-        incertitudes: np.ndarray,
+        truths: np.ndarray,
+        uncertainties: np.ndarray,
         *,
         alpha: float = 0.10,
     ) -> None:
@@ -312,8 +315,8 @@ class ConformalCalibrator:
             Target level (default 0.10 -> 90 % coverage).
         """
         pred = np.asarray(predictions, dtype=float).ravel()
-        truth = np.asarray(verites, dtype=float).ravel()
-        raw = np.asarray(incertitudes, dtype=float).ravel()
+        truth = np.asarray(truths, dtype=float).ravel()
+        raw = np.asarray(uncertainties, dtype=float).ravel()
         if pred.size != truth.size or pred.size != raw.size:
             raise InvariantViolation(
                 ("predictions, truths and uncertainties have different lengths",)
@@ -328,14 +331,15 @@ class ConformalCalibrator:
         self.n = int(scores.size)
         self.alpha = float(alpha)
         # The data set as given, before the floor on sigma: anyone can recompute it.
-        self.empreinte_jeu = dataset_fingerprint(pred, truth, raw)
+        self.data_fingerprint = dataset_fingerprint(pred, truth, raw)
         self.scores = np.array(scores, dtype=float, copy=True)
 
-    def borne(
+    @renamed_parameters({"sens": "sense"})
+    def bound(
         self,
         prediction: float,
         uncertainty: float,
-        sens: str | None = None,
+        sense: str | None = None,
         *,
         regime: Regime,
     ) -> PerformanceBound:
@@ -361,13 +365,13 @@ class ConformalCalibrator:
         if self.n < 1:
             raise InvariantViolation(("calibrator not fitted",))
         expected = INDICATOR_SENSE[self.indicator]
-        if sens is None:
-            sens = expected
-        if sens not in (">=", "<="):
-            raise InvariantViolation((f"unknown sens: {sens!r}",))
-        if sens != expected:
+        if sense is None:
+            sense = expected
+        if sense not in (">=", "<="):
+            raise InvariantViolation((f"unknown sens: {sense!r}",))
+        if sense != expected:
             raise InvariantViolation(
-                (f"sens {sens!r} incompatible with indicator {self.indicator}",)
+                (f"sens {sense!r} incompatible with indicator {self.indicator}",)
             )
         margin = self.q * _scale(uncertainty)
         return _interval(
@@ -391,7 +395,7 @@ class ConformalCalibrator:
             scores=np.array(self.scores, dtype=float, copy=True),
             alpha=self.alpha,
             indicator=self.indicator,
-            empreinte_jeu=self.empreinte_jeu,
+            data_fingerprint=self.data_fingerprint,
         )
 
 

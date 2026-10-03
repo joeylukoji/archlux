@@ -41,7 +41,7 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.errors import CalibrationLocked, InvariantViolation, ModelModified
 
 __all__ = [
@@ -147,8 +147,8 @@ def issue_token(weights_fingerprint: str, freeze_timestamp: str) -> CalibrationT
     return CalibrationToken(weights_fingerprint, freeze_timestamp, signature)
 
 
-@renamed_parameters({"jeton": "token"})
-def open_calibration(racine: Path, token: CalibrationToken) -> Path:
+@renamed_parameters({"jeton": "token", "racine": "root"})
+def open_calibration(root: Path, token: CalibrationToken) -> Path:
     """Open the calibration directory; a valid token is required.
 
     Raises
@@ -157,28 +157,29 @@ def open_calibration(racine: Path, token: CalibrationToken) -> Path:
         Missing or invalid token, or missing directory.
     """
     token.verify()
-    directory = Path(racine) / "calibration"
+    directory = Path(root) / "calibration"
     if not directory.is_dir():
         raise CalibrationLocked(f"missing calibration directory: {directory}")
     return directory
 
 
+@renamed_attributes({"racine": "root"})
 @dataclass(frozen=True, slots=True)
 class DataManagement:
     """Three separate directories. Only ``for_calibration`` requires a token."""
 
-    racine: Path
+    root: Path
 
     def for_training(self) -> Path:
         """``train/`` directory — the only exposed path to fit the weights."""
-        directory = Path(self.racine) / "train"
+        directory = Path(self.root) / "train"
         if not directory.is_dir():
             raise InvariantViolation((f"missing training directory: {directory}",))
         return directory
 
     def for_test(self) -> Path:
         """``test/`` directory, opened only once for the final measurement."""
-        directory = Path(self.racine) / "test"
+        directory = Path(self.root) / "test"
         if not directory.is_dir():
             raise InvariantViolation((f"missing test directory: {directory}",))
         return directory
@@ -195,7 +196,7 @@ class DataManagement:
         """
         if model is not None and _model_fingerprint(model) != token.weights_fingerprint:
             raise ModelModified("model weights changed after the freeze")
-        return open_calibration(self.racine, token)
+        return open_calibration(self.root, token)
 
 
 __getattr__ = lazy_aliases(

@@ -51,7 +51,7 @@ def test_couverture_empirique() -> None:
     # Couverture d'intervalle (les deux côtés) : « la borne haute compte autant ».
     ok = []
     for pred, verite, sigma in zip(p_test, v_test, s_test, strict=True):
-        borne = calibrateur.borne(float(pred), float(sigma), ">=", regime="exchangeable")
+        borne = calibrateur.bound(float(pred), float(sigma), ">=", regime="exchangeable")
         ok.append(borne.lower <= verite <= borne.upper)
     couv = float(np.mean(ok))
     assert 0.86 <= couv <= 0.94, f"couverture test = {couv:.3f}"
@@ -76,7 +76,7 @@ def test_calibration_tient_par_orientation() -> None:
         idx = idx_rel + 800
         ok = []
         for i in idx:
-            borne = calibrateur.borne(float(mu[i]), float(sigma[i]), ">=", regime="exchangeable")
+            borne = calibrateur.bound(float(mu[i]), float(sigma[i]), ">=", regime="exchangeable")
             ok.append(borne.lower <= y[i] <= borne.upper)
         couv = float(np.mean(ok))
         assert 0.84 <= couv <= 0.96, f"secteur {sector} : {couv:.3f}"
@@ -93,5 +93,5 @@ def test_derive_bornee_sur_oracle_gelé() -> None:
     pred, verite, _sigma = _evaluer(model, oracle, xs, os_)
     rapport = measure_drift(pred, verite, seed=9)
     amplitude = float(np.std(verite) + 1e-9)
-    assert abs(rapport.derive_moyenne) < 3.0 * amplitude
-    assert rapport.tendance_pvalue > 0.05 or rapport.tendance_pente <= 0.0
+    assert abs(rapport.mean_drift) < 3.0 * amplitude
+    assert rapport.trend_pvalue > 0.05 or rapport.trend_slope <= 0.0

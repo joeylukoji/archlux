@@ -16,8 +16,8 @@ NORD = Orientation(deg=0.0)
 
 def test_analytique_est_coherent_avec_ses_differences_finies() -> None:
     rapport = validate_gradient(AnalyticSurrogate(), X, NORD, seed=17, epsilon=1e-5)
-    assert rapport.conforme
-    assert rapport.cosinus_moyen > 0.99
+    assert rapport.passed
+    assert rapport.mean_cosine > 0.99
 
 
 def test_gradient_faux_leve_substitut_invalide() -> None:
@@ -51,5 +51,5 @@ def test_a_failed_check_carries_its_report() -> None:
     with pytest.raises(InvalidSurrogate) as capture:
         validate_gradient(Negated(), X, NORD, seed=17, reference=AnalyticSurrogate())
     report = capture.value.report
-    assert report is not None and not report.conforme
-    assert report.accord_de_signe < 0.8
+    assert report is not None and not report.passed
+    assert report.sign_agreement < 0.8

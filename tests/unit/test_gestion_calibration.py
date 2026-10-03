@@ -73,6 +73,6 @@ def test_a_learned_surrogate_can_be_frozen(tmp_path: Path) -> None:
     while LearnedSurrogate exposes ``empreinte_poids``: freezing it raised."""
     from archlux.light.learned import LearnedSurrogate
 
-    model = LearnedSurrogate(tmp_path / "w.npz", "abc123", gele=True)
+    model = LearnedSurrogate(tmp_path / "w.npz", "abc123", frozen=True)
     token = freeze_and_issue(model, timestamp="2026-09-09T12:00:00Z")
     assert token.weights_fingerprint == "abc123"

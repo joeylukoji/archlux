@@ -27,14 +27,14 @@ def campaign(acquire: object, seed: int) -> float:
     reference = [np.array([0, 0, 6, 4.5, 6, 0, 6, 4.5]) + rng.normal(0, 0.05, 8) for _ in range(10)]
     net = DenseSurrogate()  # same six starting labels for both strategies
     ys = np.array([oracle.evaluate(x, o) for x, o in zip(pool[:6], pool_o[:6], strict=True)])
-    net.fit(pool[:6], ys, pool_o[:6], seed=derive(seed, "init"), epoques=25, lr=0.12)
+    net.fit(pool[:6], ys, pool_o[:6], seed=derive(seed, "init"), epochs=25, lr=0.12)
     loop = Loop(net, oracle, acquire, budget=24, batch=4, seed=seed)  # type: ignore[arg-type]
     kwargs = {"holdout": hold, "holdout_orientations": hold_o, "calibration": calib}
     report = loop.run(
-        pool, pool_o, reference_optimiseur=reference, calibration_orientations=calib_o, **kwargs
+        pool, pool_o, optimizer_reference=reference, calibration_orientations=calib_o, **kwargs
     )
-    assert report.calibration_independante
-    return report.largeur_intervalle_finale
+    assert report.independent_calibration
+    return report.final_interval_width
 
 
 seeds = [derive(17, f"campaign/{k}") for k in range(30)]

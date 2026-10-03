@@ -15,13 +15,30 @@ dependency of the whole core).
 
 from __future__ import annotations
 
+import warnings
 from typing import TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
 
-__all__ = ["VecteurF"]
+__all__ = ["FloatVector"]
 
-VecteurF: TypeAlias = NDArray[np.float64]
+FloatVector: TypeAlias = NDArray[np.float64]
 """A float64 array of any shape: a vector, or a matrix. numpy's typing does not track the
 number of dimensions, so one alias serves both."""
+
+
+def __getattr__(name: str) -> object:
+    """Serve the French name ``VecteurF`` until 1.0.0, with a ``DeprecationWarning``.
+
+    Written by hand rather than with :func:`archlux._deprecation.lazy_aliases`: this
+    module is a leaf and imports nothing from archlux.
+    """
+    if name == "VecteurF":  # lang-ok: deprecated French alias (ADR 0001, rule 6)
+        warnings.warn(
+            "archlux.arrays.VecteurF is deprecated, use archlux.arrays.FloatVector (ADR 0001)",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return FloatVector
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

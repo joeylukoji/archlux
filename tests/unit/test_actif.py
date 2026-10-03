@@ -20,15 +20,15 @@ def test_produit_nul_ecarte_le_candidat() -> None:
     inc = np.array([10.0, 1.0, 5.0])
     dens = np.array([0.0, 1.0, 0.5])
     # scores = (0, 1, 2.5) → ordre 2, 1, 0
-    idxs = UncertaintyTimesDensity().selectionner(inc, dens, n=3, seed=0)
+    idxs = UncertaintyTimesDensity().select(inc, dens, n=3, seed=0)
     assert list(idxs) == [2, 1, 0]
 
 
 def test_aleatoire_est_deterministe_avec_seed() -> None:
     inc = np.ones(20)
     dens = np.ones(20)
-    a = RandomStrategy().selectionner(inc, dens, n=5, seed=42)
-    b = RandomStrategy().selectionner(inc, dens, n=5, seed=42)
+    a = RandomStrategy().select(inc, dens, n=5, seed=42)
+    b = RandomStrategy().select(inc, dens, n=5, seed=42)
     assert np.array_equal(a, b)
 
 
@@ -107,10 +107,10 @@ class _ModeleLocal:
         orientations: tuple[Orientation, ...],
         *,
         seed: int,
-        epoques: int = 1,
+        epochs: int = 1,
         lr: float = 0.1,
     ) -> None:
-        del orientations, seed, epoques, lr
+        del orientations, seed, epochs, lr
         self.xs = [np.asarray(x, dtype=float).copy() for x in xs]
         self.ys = [float(y) for y in ys]
         preds = np.array([self.evaluate(x, Orientation(0.0)) for x in self.xs])
@@ -147,7 +147,7 @@ def test_actif_bat_l_aleatoire() -> None:
         model.fit(xs0, ys0, tuple(Orientation(0.0) for _ in xs0), seed=0)
         boucle = Loop(
             surrogate=model,
-            simulateur=_OracleRegion(),
+            simulator=_OracleRegion(),
             acquire=acquire,  # type: ignore[arg-type]
             budget=20,
             batch=4,
@@ -156,15 +156,15 @@ def test_actif_bat_l_aleatoire() -> None:
         rapport = boucle.run(
             pool,
             oris,
-            reference_optimiseur=ref,
+            optimizer_reference=ref,
             holdout=hold,
             holdout_orientations=hold_o,
             calibration=calib,
             calibration_orientations=calib_o,
         )
-        assert rapport.calibration_independante
+        assert rapport.independent_calibration
         assert rapport.n_calibration == len(calib)
-        return rapport.largeur_intervalle_finale
+        return rapport.final_interval_width
 
     largeur_aleatoire = _campagne(RandomStrategy())
     largeur_actif = _campagne(UncertaintyTimesDensity())
@@ -183,6 +183,7 @@ def test_a_surrogate_that_still_has_ajuster_is_retrained_with_a_warning() -> Non
 
         def ajuster(self, *args, **kwargs):  # type: ignore[no-untyped-def]
             calls.append(1)
+            kwargs["epochs"] = kwargs.pop("epoques")  # the keyword of a pre-English surrogate
             return _ModeleLocal.fit(self, *args, **kwargs)
 
     rng = np.random.default_rng(0)
@@ -191,7 +192,7 @@ def test_a_surrogate_that_still_has_ajuster_is_retrained_with_a_warning() -> Non
     calib = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=12)]
     loop = Loop(
         surrogate=Legacy(),
-        simulateur=_OracleRegion(),
+        simulator=_OracleRegion(),
         acquire=RandomStrategy(),
         budget=8,
         batch=4,
@@ -201,7 +202,7 @@ def test_a_surrogate_that_still_has_ajuster_is_retrained_with_a_warning() -> Non
         loop.run(
             pool,
             oris,
-            reference_optimiseur=pool[:4],
+            optimizer_reference=pool[:4],
             calibration=calib,
             calibration_orientations=[Orientation(0.0) for _ in calib],
         )
@@ -235,7 +236,7 @@ def _short_campaign(surrogate: object) -> None:
     calib = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=12)]
     loop = Loop(
         surrogate=surrogate,  # type: ignore[arg-type]
-        simulateur=_OracleRegion(),
+        simulator=_OracleRegion(),
         acquire=RandomStrategy(),
         budget=8,
         batch=4,
@@ -244,7 +245,7 @@ def _short_campaign(surrogate: object) -> None:
     loop.run(
         pool,
         [Orientation(0.0) for _ in pool],
-        reference_optimiseur=pool[:4],
+        optimizer_reference=pool[:4],
         calibration=calib,
         calibration_orientations=[Orientation(0.0) for _ in calib],
     )
@@ -258,6 +259,7 @@ def test_the_ajuster_deprecation_points_at_the_caller_of_run() -> None:
         fit = None  # type: ignore[assignment]
 
         def ajuster(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            kwargs["epochs"] = kwargs.pop("epoques")  # the keyword of a pre-English surrogate
             return _ModeleLocal.fit(self, *args, **kwargs)
 
     rng = np.random.default_rng(0)
@@ -265,7 +267,7 @@ def test_the_ajuster_deprecation_points_at_the_caller_of_run() -> None:
     calib = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=12)]
     loop = Loop(
         surrogate=Legacy(),
-        simulateur=_OracleRegion(),
+        simulator=_OracleRegion(),
         acquire=RandomStrategy(),
         budget=8,
         batch=4,
@@ -275,7 +277,7 @@ def test_the_ajuster_deprecation_points_at_the_caller_of_run() -> None:
         loop.run(
             pool,
             [Orientation(0.0) for _ in pool],
-            reference_optimiseur=pool[:4],
+            optimizer_reference=pool[:4],
             calibration=calib,
             calibration_orientations=[Orientation(0.0) for _ in calib],
         )

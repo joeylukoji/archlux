@@ -233,7 +233,7 @@ def deduce_order(
     >>> deduce_order(Plan((left, right), (), (), ())).horizontal
     (('A', 'B'),)
     """
-    by_id = {piece.id: piece for piece in plan.rooms}
+    by_id = {room.id: room for room in plan.rooms}
     identifiers = sorted(by_id)
     horizontal, vertical = _pairwise_order(by_id, identifiers)
 
@@ -524,8 +524,8 @@ def _axis_graph(edges: tuple[tuple[str, str], ...], nodes: Sequence[str], axis: 
     return graph
 
 
-@renamed_parameters({"pieces": "rooms"})
-def build_graph(ordre: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
+@renamed_parameters({"pieces": "rooms", "ordre": "order"})
+def build_graph(order: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
     """Assemble the two directed graphs and validate the order.
 
     Parameters
@@ -562,8 +562,8 @@ def build_graph(ordre: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
     check, which must examine all pairs.
     """
     graph = ConstraintGraph(
-        horizontal=_axis_graph(ordre.horizontal, rooms, "horizontal"),
-        vertical=_axis_graph(ordre.vertical, rooms, "vertical"),
+        horizontal=_axis_graph(order.horizontal, rooms, "horizontal"),
+        vertical=_axis_graph(order.vertical, rooms, "vertical"),
     )
     for a, b in itertools.combinations(sorted(rooms), 2):
         if not graph.has_separation(a, b):

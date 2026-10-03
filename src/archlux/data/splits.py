@@ -52,10 +52,10 @@ def load_split(path: Path) -> Split:
     InvariantViolation
         An identifier appears in two sets, or a file is missing.
     """
-    racine = Path(path)
-    train = _lines(racine / "train.txt")
-    calib = _lines(racine / "calibration.txt")
-    test = _lines(racine / "test.txt")
+    root = Path(path)
+    train = _lines(root / "train.txt")
+    calib = _lines(root / "calibration.txt")
+    test = _lines(root / "test.txt")
     s_train, s_calib, s_test = set(train), set(calib), set(test)
     conflicts: list[str] = []
     if s_train & s_calib:
@@ -69,7 +69,7 @@ def load_split(path: Path) -> Split:
     material = "\n".join((*train, "---", *calib, "---", *test)).encode()
     fingerprint = hashlib.blake2b(material, digest_size=16).hexdigest()
     return Split(
-        name=racine.name,
+        name=root.name,
         train=train,
         calibration=calib,
         test=test,

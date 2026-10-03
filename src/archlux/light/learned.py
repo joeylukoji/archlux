@@ -33,7 +33,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, NoReturn
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes
 from archlux.errors import InvariantViolation
 from archlux.light.base import DenseSurrogate
 from archlux.light.protocol import Glazing
@@ -44,21 +44,29 @@ if TYPE_CHECKING:
 
     from archlux.types import Indicator, Orientation
 
-__all__ = ["MAX_PARAMETRES", "LearnedSurrogate"]
+__all__ = ["MAX_PARAMETERS", "LearnedSurrogate"]
 
-MAX_PARAMETRES = 2_000_000
+MAX_PARAMETERS = 2_000_000
 """Plafond `MILESTONE-4.md` : au-delà, le modèle mémorise hors distribution."""
 
 
 @lru_cache(maxsize=8)
-def _dense_from_disk(chemin: str, fingerprint: str) -> DenseSurrogate:
+def _dense_from_disk(path: str, fingerprint: str) -> DenseSurrogate:
     """Charger un ``npz`` une fois par ``(chemin, empreinte)``, après contrôle SHA-256."""
-    current = hashlib.sha256(Path(chemin).read_bytes()).hexdigest()
+    current = hashlib.sha256(Path(path).read_bytes()).hexdigest()
     if current != fingerprint:
-        raise InvariantViolation((f"empreinte des poids divergente pour {chemin}",))
-    return DenseSurrogate.load(Path(chemin))
+        raise InvariantViolation((f"empreinte des poids divergente pour {path}",))
+    return DenseSurrogate.load(Path(path))
 
 
+@renamed_attributes(
+    {
+        "chemin_poids": "weights_path",
+        "empreinte_poids": "weights_fingerprint",
+        "gele": "frozen",
+        "indicateur_vise": "target_indicator",
+    }
+)
 @dataclass(frozen=True, slots=True)
 class LearnedSurrogate:
     """Tête publique du substitut entraîné.
@@ -73,21 +81,21 @@ class LearnedSurrogate:
         pas avant (voir :mod:`archlux.uq.registry`).
     """
 
-    chemin_poids: Path
-    empreinte_poids: str
-    gele: bool = False
-    indicateur_vise: Indicator = "sDA"
+    weights_path: Path
+    weights_fingerprint: str
+    frozen: bool = False
+    target_indicator: Indicator = "sDA"
 
     @property
     def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
-        return self.indicateur_vise
+        return self.target_indicator
 
     def _backend(self) -> DenseSurrogate:
-        chemin = Path(self.chemin_poids)
-        if chemin.suffix.lower() == ".pt":
+        path = Path(self.weights_path)
+        if path.suffix.lower() == ".pt":
             self._load_torch()
-        return _dense_from_disk(str(chemin.resolve()), self.empreinte_poids)
+        return _dense_from_disk(str(path.resolve()), self.weights_fingerprint)
 
     def _load_torch(self) -> NoReturn:
         """Refuser un ``.pt``. ``torch`` n'est importé qu'ici, et seulement alors.
@@ -99,10 +107,10 @@ class LearnedSurrogate:
         """
         import torch
 
-        state = torch.load(self.chemin_poids, map_location="cpu", weights_only=True)
+        state = torch.load(self.weights_path, map_location="cpu", weights_only=True)
         n_params = int(sum(p.numel() for p in state.values())) if isinstance(state, dict) else 0
-        if n_params >= MAX_PARAMETRES:
-            raise InvariantViolation((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETRES}",))
+        if n_params >= MAX_PARAMETERS:
+            raise InvariantViolation((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETERS}",))
         raise InvariantViolation(
             ("poids .pt : le transformeur n'est servi que hors CI ; utiliser un npz dense",)
         )
@@ -133,6 +141,7 @@ class LearnedSurrogate:
 __getattr__ = lazy_aliases(
     __name__,
     {
+        "MAX_PARAMETRES": Alias(MAX_PARAMETERS, "archlux.light.learned.MAX_PARAMETERS"),
         "SubstitutAppris": Alias(LearnedSurrogate, "archlux.light.learned.LearnedSurrogate"),
     },
 )

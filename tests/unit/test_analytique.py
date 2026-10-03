@@ -74,4 +74,4 @@ def test_incertitude_constante_documentee() -> None:
 
 
 def test_indicateur_suit_le_viseur() -> None:
-    assert AnalyticSurrogate(indicateur_vise="ASE").indicator == "ASE"
+    assert AnalyticSurrogate(target_indicator="ASE").indicator == "ASE"

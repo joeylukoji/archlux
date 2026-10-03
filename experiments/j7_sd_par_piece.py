@@ -115,7 +115,7 @@ sigma = float(np.abs(y_ca - pred_ca).std()) or 1.0
 cal = ConformalCalibrator(indicator="sDA")
 cal.fit(pred_ca, y_ca, np.full_like(pred_ca, sigma), alpha=0.10)
 bornes = [
-    cal.borne(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]
+    cal.bound(float(v), sigma, regime="exchangeable") for v in modeles["analytique par piece"]
 ]
 couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
 largeur = float(np.mean([b.upper - b.lower for b in bornes]))

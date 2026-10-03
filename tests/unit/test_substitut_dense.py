@@ -43,10 +43,10 @@ def _jeu(
 def _entraine(tmp_path: Path) -> LearnedSurrogate:
     xs, ys, oris = _jeu(seed=17, n=48)
     dense = DenseSurrogate()
-    dense.fit(xs, ys, oris, seed=17, epoques=40, lr=0.12)
+    dense.fit(xs, ys, oris, seed=17, epochs=40, lr=0.12)
     path = tmp_path / "dense.npz"
     fingerprint = dense.save(path)
-    return LearnedSurrogate(path, fingerprint, gele=True)
+    return LearnedSurrogate(path, fingerprint, frozen=True)
 
 
 def test_dense_respecte_le_protocole() -> None:
@@ -96,20 +96,20 @@ def test_accord_de_signe_point_de_controle(tmp_path: Path) -> None:
         sud,
         seed=17,
         reference=_SIM,
-        pas=0.10,
-        seuil_signe=0.80,
+        step=0.10,
+        sign_threshold=0.80,
     )
-    assert rapport.accord_de_signe > 0.80
-    assert rapport.conforme
+    assert rapport.sign_agreement > 0.80
+    assert rapport.passed
 
 
 def test_empreinte_divergente_leve(tmp_path: Path) -> None:
     xs, ys, oris = _jeu(seed=3, n=12)
     dense = DenseSurrogate()
-    dense.fit(xs, ys, oris, seed=3, epoques=8, lr=0.12)
+    dense.fit(xs, ys, oris, seed=3, epochs=8, lr=0.12)
     path = tmp_path / "dense.npz"
     dense.save(path)
-    reseau = LearnedSurrogate(path, "0" * 64, gele=True)
+    reseau = LearnedSurrogate(path, "0" * 64, frozen=True)
     with pytest.raises(InvariantViolation):
         reseau.n_parameters()
 
@@ -118,7 +118,7 @@ def test_dense_implements_fingerprintable() -> None:
     """PLAN.md phase 4, block 6, item 23: an explicit fingerprint, not attribute guessing."""
     xs, ys, oris = _jeu(seed=5, n=12)
     dense = DenseSurrogate()
-    dense.fit(xs, ys, oris, seed=5, epoques=8, lr=0.12)
+    dense.fit(xs, ys, oris, seed=5, epochs=8, lr=0.12)
     assert isinstance(dense, Fingerprintable)
     # Same bytes as the old guessing fallback in ``uq.registry._model_fingerprint``,
     # run on a plain object without ``weights_fingerprint``: tokens issued before the
@@ -135,7 +135,7 @@ def test_freezing_an_untrained_dense_model_raises(tmp_path: Path) -> None:
         freeze_and_issue(DenseSurrogate(), timestamp="2026-09-29T00:00:00Z")
     xs, ys, oris = _jeu(seed=7, n=12)
     dense = DenseSurrogate()
-    dense.fit(xs, ys, oris, seed=7, epoques=8, lr=0.12)
+    dense.fit(xs, ys, oris, seed=7, epochs=8, lr=0.12)
     token = freeze_and_issue(dense, timestamp="2026-09-29T00:00:00Z")
     with pytest.raises(InvariantViolation):
         DataManagement(tmp_path).for_calibration(token, DenseSurrogate())
@@ -150,6 +150,6 @@ def test_freeze_and_issue_uses_the_explicit_fingerprint(tmp_path: Path) -> None:
     """``uq.registry._model_fingerprint`` takes the ``weights_fingerprint`` fast path."""
     xs, ys, oris = _jeu(seed=7, n=12)
     dense = DenseSurrogate()
-    dense.fit(xs, ys, oris, seed=7, epoques=8, lr=0.12)
+    dense.fit(xs, ys, oris, seed=7, epochs=8, lr=0.12)
     token = freeze_and_issue(dense, timestamp="2026-09-29T00:00:00Z")
     assert token.weights_fingerprint == dense.weights_fingerprint

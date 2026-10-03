@@ -157,8 +157,8 @@ def deduce_grid(
         lines_y, borders_y, anchored_ys = _consolidate(lines_y, borders_y, anchored_ys, min_support)
 
     incidences = [
-        (piece.id, left, right, low, high)
-        for piece, (left, right), (low, high) in zip(plan.rooms, borders_x, borders_y, strict=True)
+        (room.id, left, right, low, high)
+        for room, (left, right), (low, high) in zip(plan.rooms, borders_x, borders_y, strict=True)
     ]
     incidences = _verify_partition(ctx, lines_x, lines_y, incidences, repair_budget)
 
@@ -252,10 +252,10 @@ def _room_bounds(
     borders_x = [(rank_x[p.x], rank_x[p.x + p.w]) for p in plan.rooms]
     borders_y = [(rank_y[p.y], rank_y[p.y + p.h]) for p in plan.rooms]
     for axis, borders in (("x", borders_x), ("y", borders_y)):
-        for (start, end), piece in zip(borders, plan.rooms, strict=True):
+        for (start, end), room in zip(borders, plan.rooms, strict=True):
             if start >= end:
                 raise UnsupportedInput(
-                    f"tiling grid: room {piece.id} is flat in {axis} (thinner than the "
+                    f"tiling grid: room {room.id} is flat in {axis} (thinner than the "
                     f"grouping tolerance {tolerance} m, or of negative size)"
                 )
     return borders_x, borders_y

@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 from archlux.types import Plan, Room
 
@@ -111,12 +111,13 @@ def _perturb(
     return replace(room, h=room.h - applied), applied
 
 
+@renamed_parameters({"n_pieces": "n_rooms"})
 def corrupt(
     plan: Plan,
     *,
     seed: int,
     amplitude: float = 0.50,
-    n_pieces: int = 1,
+    n_rooms: int = 1,
     modes: Sequence[Mode] = MODES,
 ) -> tuple[Plan, tuple[Corruption, ...]]:
     """Perturb ``n_pieces`` rooms of a valid plan, reproducibly.
@@ -169,8 +170,8 @@ def corrupt(
     """
     if not plan.rooms:
         raise InvariantViolation(("plan with no room: nothing to corrupt",))
-    if n_pieces < 1:
-        raise InvariantViolation((f"n_pieces must be >= 1: {n_pieces}",))
+    if n_rooms < 1:
+        raise InvariantViolation((f"n_pieces must be >= 1: {n_rooms}",))
     if amplitude <= 0.0:
         raise InvariantViolation((f"amplitude must be > 0: {amplitude}",))
     if not modes:
@@ -180,7 +181,7 @@ def corrupt(
     # Sort by identifier before drawing: the order of ``plan.rooms`` must not
     # influence the result, otherwise the seed alone would not suffice to replay it.
     ranks = sorted(range(len(plan.rooms)), key=lambda i: plan.rooms[i].id)
-    how_many = min(n_pieces, len(ranks))
+    how_many = min(n_rooms, len(ranks))
     chosen = [ranks[int(i)] for i in rng.choice(len(ranks), size=how_many, replace=False)]
 
     rooms = list(plan.rooms)

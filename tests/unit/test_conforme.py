@@ -63,7 +63,7 @@ def test_sens_ase_inverse() -> None:
     incertitudes = np.ones(n)
     calibrateur = ConformalCalibrator(indicator="ASE")
     calibrateur.fit(predictions, verites, incertitudes, alpha=0.10)
-    borne = calibrateur.borne(6.1, 1.0, "<=", regime="exchangeable")
+    borne = calibrateur.bound(6.1, 1.0, "<=", regime="exchangeable")
     assert borne.upper > borne.value
     assert borne.indicator == "ASE"
 
@@ -75,7 +75,7 @@ def test_borner_reproduit_le_quantile() -> None:
         scores=scores,
         alpha=0.10,
         indicator="sDA",
-        empreinte_jeu="test",
+        data_fingerprint="test",
     )
     borne = bound(50.0, calibration, uncertainty=1.0, regime="exchangeable")
     q = conformal_quantile(scores, 0.10)
@@ -99,7 +99,7 @@ def test_couverture_sur_donnees_synthetiques(alpha: float) -> None:
     sig = np.full(n_test, 1.5)
     ver = pred + sig * rng.normal(0.0, 1.0, n_test)
     couvert = [
-        v >= calibrateur.borne(float(p), float(s), ">=", regime="exchangeable").lower
+        v >= calibrateur.bound(float(p), float(s), ">=", regime="exchangeable").lower
         for p, v, s in zip(pred, ver, sig, strict=True)
     ]
     assert float(np.mean(couvert)) >= 1.0 - alpha - 0.03
