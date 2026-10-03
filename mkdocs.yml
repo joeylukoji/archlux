@@ -21,6 +21,76 @@ extra_javascript:
 
 plugins:
   - search
+  # Bilingual site: `page.md` is English (the reference version, ADR 0001), and
+  # `page.fr.md` next to it is the French translation. A page without a French file
+  # is served in English under /fr/ too, so the language switch never breaks.
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: fr
+          name: Français
+          build: true
+          nav_translations:
+            Home: Accueil
+            Installation: Installation
+            Gallery: Galerie
+            Repair a plan: Corriger un plan
+            Compare two methods: Comparer deux méthodes
+            Detect infeasibility: Détecter une infaisabilité
+            Read a certificate: Lire un certificat
+            Dual diagnostics: Diagnostic dual
+            Tutorials: Tutoriels
+            Getting started: Premiers pas
+            Performance legalization: Légalisation performantielle
+            Calibrate a surrogate: Calibrer un substitut
+            Train a surrogate: Entraîner un substitut
+            Concepts: Concepts
+            The two guarantees: Les deux garanties
+            The polytope: Le polytope
+            The shared oracle: L'oracle partagé
+            Why not an image: Pourquoi pas une image
+            Conformal prediction: Prédiction conforme
+            Formulas: Formules
+            Catalogue: Catalogue
+            Relative order: Ordre relatif
+            Polytope: Polytope
+            L1 epigraph: Épigraphe L1
+            Area cuts: Coupes de surface
+            Exact tiling: Pavage exact
+            Farkas and duals: Farkas et duaux
+            Exact proof: Preuve exacte
+            Pipeline: Pipeline
+            Circular statistics: Statistique circulaire
+            Analytic surrogate: Substitut analytique
+            Split-flux: Split-flux
+            Rectilinear (milestone 6): Rectilinéaire (jalon 6)
+            Active learning: Apprentissage actif
+            BIM export: Export BIM
+            Benchmark: Banc d'essai
+            Frank-Wolfe: Frank-Wolfe
+            Tokens: Jetons
+            Gradient validation: Validation du gradient
+            Statistics (milestone 5): Statistique (jalon 5)
+            Bibliography: Bibliographie
+            Reference: Référence
+            API: API
+            JSON schema: Schéma JSON
+            Data: Données
+            Corpora: Corpus
+            Ground truth: Vérité terrain
+            Synthetic: Synthétique
+            Milestone reviews: Revues des jalons
+            Release 1.0: Publication 1.0
+            Limitations: Limites
+            Contributing: Contribuer
+            Specification: Spécification
   - mkdocstrings:
       handlers: { python: { paths: [src] } }
 

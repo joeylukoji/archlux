@@ -1,0 +1,123 @@
+# Entraîner un substitut
+
+Le substitut appris n'entre dans `legalize` **que** s'il respecte le protocole
+vectoriel et si son gradient est validé contre l'oracle gelé (`SplitFluxOracle`,
+split-flux BRE ; (Radiance) hors chemin critique).
+
+Les blocs de cette page s'exécutent dans l'ordre, tels quels. Les tailles sont
+réduites pour tourner en quelques secondes (80 plans, 8 neurones, 30 époques) : la
+chaîne est complète, le modèle obtenu n'est qu'un jouet.
+
+## 1. Un plan, et des dispositions pour apprendre
+
+Le plan à corriger est celui des [premiers pas](getting-started.md) : trois pièces dans
+une enveloppe de 12 m × 9 m, un débord de 5 cm et un vide de 3 cm. Le substitut ne
+voit qu'un vecteur `[x, y, w, h]` par pièce ; `layout` tire des variantes valides
+des mêmes trois pièces.
+
+```python
+from pathlib import Path
+
+import numpy as np
+
+import archlux as ax
+
+outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+plan = ax.Plan(
+    rooms=(
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=6.05, h=9.0),
+        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=5.0),
+        ax.Room(id="bathroom", type="bathroom", x=6.0, y=5.03, w=6.0, h=3.97),
+    ),
+    walls=(),
+    openings=(),
+    outline=outline,
+)
+ctx = ax.Context(
+    structure=ax.Structure(load_bearing_walls=()),
+    orientation=ax.Orientation(deg=12.0),
+    outline=outline,
+    regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
+)
+
+
+def layout(rng: np.random.Generator) -> np.ndarray:
+    """Living room on the left, bedroom and bathroom stacked on the right."""
+    w, h = rng.uniform(4.0, 8.0), rng.uniform(3.0, 6.0)
+    return np.array([0, 0, w, 9, w, 0, 12 - w, h, w, h, 12 - w, 9 - h], dtype=float)
+```
+
+## 2. Entraîner, sauver, geler
+
+```python
+from archlux.light.base import DenseSurrogate
+from archlux.light.split_flux import SplitFluxOracle
+from archlux.uq.registry import issue_token
+
+sim = SplitFluxOracle()
+rng = np.random.default_rng(17)
+# xs, ys, orientations: training set only — never the calibration set
+xs = tuple(layout(rng) for _ in range(80))
+orientations = tuple(ax.Orientation(deg=float(d)) for d in rng.uniform(0.0, 360.0, len(xs)))
+ys = np.array([sim.evaluate(x, o) for x, o in zip(xs, orientations, strict=True)])
+
+dense = DenseSurrogate(largeur=8)
+dense.fit(xs, ys, orientations, seed=17, epoques=30)
+Path("weights").mkdir(exist_ok=True)
+path = Path("weights/dense.npz")
+fingerprint = dense.save(path)
+token = issue_token(fingerprint, "2026-09-09T10:00:00Z")  # after the freeze
+```
+
+`save` rend l'empreinte SHA-256 du fichier écrit ; le jeton la lie à l'instant du
+gel. C'est lui qui ouvrira le jeu de calibration au
+[tutoriel suivant](calibrate-a-surrogate.md).
+
+## 3. Valider le gradient, puis légaliser
+
+```python
+from archlux.light.learned import LearnedSurrogate
+from archlux.light.validation import validate_gradient
+
+network = LearnedSurrogate(path, fingerprint, gele=True)
+points = np.stack([layout(rng) for _ in range(8)])
+report = validate_gradient(network, points, ctx.orientation, seed=17, reference=sim)
+assert report.accord_de_signe > 0.80
+
+q = ax.legalize(plan, ctx, objective=network, budget=0.5, tiling=True)
+assert q.certificate is not None and q.certificate.geometry.valid
+```
+
+!!! danger "Point de contrôle rouvert (revue de phase 2)"
+    Cet exemple mesure l'accord de signe à **une** orientation. Rejoué sur 80 points à
+    quatre azimuts, le perceptron échoue à 0°, 90° et 270° (0,68 / 0,50 / 0,67), comme
+    le substitut analytique non entraîné : voir [la revue du jalon 4](../revues/j4.md).
+    Passer ce contrôle ici ne dit pas que le gradient est exploitable.
+
+`validate_gradient` lève `InvalidSurrogate` sous le seuil d'accord de signe (0,80) :
+l'`assert` ne fait que rendre le point de contrôle visible. `budget=0.5` borne le
+déplacement de chaque mur à 50 cm autour de la proposition ; sans lui, Frank-Wolfe
+suit le substitut aussi loin que le polytope le permet : dans cet exemple, il réduit
+le séjour à 1 m, la largeur minimale.
+
+`torch` n'est chargé que pour un fichier `.pt`. La CI entraîne le perceptron
+numpy (`light.base`).
+
+!!! warning "Le transformeur n'est pas implémenté"
+    `LearnedSurrogate._charger_torch` **lève systématiquement** : l'extra
+    `archlux[ml]` installe `torch`, mais aucun modèle `.pt` n'est servi. La seule
+    implémentation apprise du dépôt est le perceptron `numpy` ci-dessus.
+
+!!! danger "D'où viennent `xs`, `ys`, `orientations` ?"
+    Ici, comme dans le dépôt, `ys` vient de `SplitFluxOracle` — une **forme fermée**.
+    Le perceptron apprend alors le résidu entre deux formules analytiques : la chaîne
+    est exercée, la physique n'est pas mesurée. Pour des étiquettes réelles, lire
+    [vérité terrain](../data/ground-truth.md) : Swiss Dwellings (CC BY 4.0,
+    367 colonnes de simulation par pièce) ou une campagne Radiance.
+
+Le jeu de calibration n'est **pas** ouvert ici. Voir
+[calibrer un substitut](calibrate-a-surrogate.md) (jalon 5).
+
+Formules : [jetons](../formulas/tokens.md),
+[validation du gradient](../formulas/gradient-validation.md).
+[Pourquoi pas une image](../concepts/why-not-an-image.md).

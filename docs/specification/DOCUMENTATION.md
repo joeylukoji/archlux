@@ -57,6 +57,25 @@ numbers must say explicitly what it does not check.
 
 ---
 
+### Bilingual site
+
+The site is published in English (default) and French with `mkdocs-static-i18n`, suffix
+structure. **English is the reference**: `docs/x/page.md` is the page,
+`docs/x/page.fr.md` its French translation. Translated: home, installation, gallery,
+tutorials, concepts, formulas, data, release, limitations, contributing and the JSON
+schema; the API reference, glossary, specification, ADRs and reviews are English only
+(the French site falls back to them).
+
+- **Code is not translated.** Every fenced block of `page.fr.md` is the block of
+  `page.md`, verbatim and in the same order; `tests/docs/test_examples.py` enforces it,
+  and also fails if a page of the translated list loses its `.fr.md`.
+- **Links name the English file** (`../formulas/tiling.md`), never a `.fr.md`: the
+  plugin localizes them.
+- **Update both in the same commit.** A change to the facts, numbers or formulas of an
+  English page is carried into its `.fr.md` in the same commit.
+- `.fr.md` files are French by design: the language guard (`tests/test_language.py`)
+  never scans them.
+
 ## 3. Docstrings — the mandatory template
 
 **NumPy** style. Every public function must have the sections marked ✱.

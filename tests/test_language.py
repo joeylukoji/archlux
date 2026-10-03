@@ -385,7 +385,21 @@ def _french_markers(line: str) -> list[str]:
     return _ACCENTED.findall(prose) + _FRENCH_WORDS.findall(prose)
 
 
-@pytest.mark.parametrize("relative", MIGRATED)
+_FRENCH_TRANSLATION_SUFFIX = ".fr.md"
+"""The bilingual site puts the French translation of ``docs/x/page.md`` in
+``docs/x/page.fr.md`` (``docs/specification/DOCUMENTATION.md``). Those pages are French
+by design and are never checked, even if a broad entry of ``MIGRATED`` ever matches one."""
+
+
+def _is_french_translation(relative: str) -> bool:
+    return relative.endswith(_FRENCH_TRANSLATION_SUFFIX)
+
+
+CHECKED: tuple[str, ...] = tuple(p for p in MIGRATED if not _is_french_translation(p))
+"""``MIGRATED`` minus the French translations of the documentation site."""
+
+
+@pytest.mark.parametrize("relative", CHECKED)
 def test_migrated_files_contain_no_french(relative: str) -> None:
     path = ROOT / relative
     offending = [
@@ -399,6 +413,13 @@ def test_migrated_files_contain_no_french(relative: str) -> None:
 def test_every_migrated_path_exists() -> None:
     missing = [p for p in MIGRATED if not (ROOT / p).is_file()]
     assert not missing, f"MIGRATED lists files that do not exist: {missing}"
+
+
+def test_french_translations_are_not_checked() -> None:
+    """``page.fr.md`` is French by design; its English source ``page.md`` stays checked."""
+    assert _is_french_translation("docs/gallery/01-repair-a-plan.fr.md")
+    assert not _is_french_translation("docs/gallery/01-repair-a-plan.md")
+    assert not any(_is_french_translation(p) for p in CHECKED)
 
 
 def test_the_checker_detects_french() -> None:
