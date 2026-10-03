@@ -23,12 +23,13 @@ cc_visit = _radon_cc.cc_visit
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "archlux"
 
-MAX_VIOLATIONS = 25
+MAX_VIOLATIONS = 22
 """33 at the start of phase 4 (2026-09-27); block 3 brought `deduce_grid`,
 `deduce_order`, `freeze_contacts`, `_coupe_verticale` and `_coupe_horizontale` under
 CC 10; block 4 brought `solve` and `_solve_with_area_cuts` under CC 10; block 5 brought
-`frank_wolfe` under CC 10. Lower it in the same commit that brings a block under
-CC 10; never raise it."""
+`frank_wolfe` under CC 10; block 9 brought `verify_infeasibility`, `rational_tiling`
+and `verify_exactly` under CC 10. Lower it in the same commit that brings a block
+under CC 10; never raise it."""
 
 
 def _blocks() -> list[Any]:

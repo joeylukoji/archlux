@@ -381,25 +381,72 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     --strict` clean, `test_language.py`/`test_neutrality.py` green. No complexity
     change; ratchet stays at 25.
 
-### 8. `uq`
+### 8. `uq` — done
 
-25. Replace the `W1..b3` attribute reflection in `_model_fingerprint` with the
-    `Fingerprintable` protocol from block 6.
-26. Replace a silently-swallowed `nan` (if any is found — audit first) with an explicit
-    exception or a structured log event; do not guess which without re-reading the code
-    at that commit.
+25. **Already satisfied by block 6, item 23**: `DenseSurrogate` implements
+    `Fingerprintable` and `_model_fingerprint` already checked for that attribute
+    first, so it takes the explicit path with no change needed here. The `W1..b3`
+    guessing loop in `_model_fingerprint` is **not** removed — rereading this item
+    against the actual code: that loop is the documented fallback for third-party
+    models (a raw ``torch`` module, or anything else that cannot be asked to
+    implement an archlux protocol), named explicitly in `freeze_and_issue`'s own
+    docstring ("weights (numpy arrays `weights` / `W*`) are frozen. An already
+    computed `weights_fingerprint` attribute is used as is."). Removing it would
+    drop that documented support for no benefit to the one first-party caller, which
+    already takes the fast path. Nothing further to do.
+26. **Audited, one found and fixed.** Checked every `nan`/`isnan`/`isfinite`/`errstate`
+    site in `uq`, `certify` and `light`. **Found**: `fiabilite.reliability_diagram`
+    caught *every* `InvariantViolation` from `conformal_quantile` and wrote `nan`,
+    although its docstring documented only the "level too demanding for `n`" case: a
+    level outside `]0, 1[` or a single `nan` truth gave a silent `nan`. **Fixed**: both
+    now raise `InvariantViolation`; the `nan` sentinel is kept only for the documented
+    too-small-`n` case, detected by comparing the conformal rank with `n` rather than by
+    catching the exception. Explicit, documented sites left as they are: every other
+    `isfinite` check in `uq` (`conforme.py`, `derive.py`, `fiabilite.py`) raises
+    `InvariantViolation`; `certify/farkas.py` returns a `nan` margin with reason
+    "non-finite multiplier" (~l. 76) and a `-inf` margin with reason "unbounded variable"
+    (~l. 108), both with `valid=False`; `certify/borne.py` returns `None` (`NOT
+    EVALUABLE`) when `σ̂` is not positive and finite (~l. 113); `certify/proof.py`'s
+    displacement computation turns a `NaN` gap into `inf` with a comment explaining why
+    (`max()` would otherwise silently drop it).
 
-### 9. `certify`
+### 9. `certify` — item 27 skipped by the maintainer, item 28 done
 
-27. Turn `GeometricProof` into a tuple of named predicates (`Predicate(name, valid,
-    detail)`) instead of a fixed set of boolean fields, so a new regulatory rule adds a
-    predicate without changing the type or the JSON schema. This is the largest schema
-    change of phase 4: confirm the v2→v3 migration story (a new schema minor, or a v3)
-    with the maintainer before starting (Open Question below).
-28. Break `verify_infeasibility` (`farkas.py`, CC 20), `rational_tiling` and
-    `verify_exactly` (`proof.py`, CC 23 / 22) under CC 10, after the predicate type
-    lands (some of their branching is exactly the per-rule checks block 27 turns into
-    predicates).
+27. **Skipped, confirmed with the maintainer before starting.** Asked whether to do the
+    `GeometricProof` schema change: no schema work (additive minor or a v3), CC
+    reduction only. `GeometricProof` keeps its four fixed boolean fields; no change to
+    `io/json_io.py`'s migration machinery.
+28. Broke `verify_infeasibility` (`farkas.py`, was CC 20), `rational_tiling` and
+    `verify_exactly` (`proof.py`, were CC 23 / 22) under CC 10 by pure extraction, the
+    same method as blocks 3-5, with item 27 skipped: no predicate type to lean on, so
+    each function's existing branches were named and extracted as-is.
+    - `verify_infeasibility`: `_accumulate` (the inequality/equality row-weighting
+      loop, shared by both, previously duplicated almost verbatim) and
+      `_lowest_over_box` (the box-minimization loop, returning the name of the first
+      unbounded variable instead of raising, since the caller needs the name for its
+      message). Now exactly CC 10 (rank B).
+    - `rational_tiling`: `_identified_boxes` (the raw-rooms-to-`Fraction`-boxes and
+      edge-identification setup), `_box_violations` (thin-room / outside-outline),
+      `_pairwise_overlaps`, `_coverage_violation`. Now CC 5.
+    - `verify_exactly`: `_malformed_rooms` and `_overlap_and_gaps` (the
+      rational-vs-GEOS branch, including the overlap-triggers-a-GEOS-gap-fallback
+      case). Now CC 8.
+    One caller each for all three (`api.py`'s `_refusal`/`.prove()`, and
+    `rational_tiling`'s own caller `verify_exactly`), confirmed with `graphify explain`
+    before touching them.
+    **Caught by the test suite, not by review**: the first `verify_exactly` extraction
+    moved `@renamed_parameters({"fusions": "merges"})` so it decorated the newly
+    inserted `_malformed_rooms` instead of `verify_exactly` — an `Edit` whose anchor
+    text didn't include the decorator line. `test_parameter_aliases.py` failed
+    immediately (`KeyError: '__renamed_parameters__'`); fixed by moving the decorator
+    back. Left here as the reason every block in this phase re-runs the full suite
+    before committing, not just `mypy`/`ruff`/targeted tests.
+    `_areas` (CC 11) and `_interiors` (CC 12) in the same file are **not** named by
+    this item and were left alone — out of scope creep, not an oversight.
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 25 to 22 across the three named functions.
+Verified: full suite green, `mypy src` clean, coverage 89.41% (ratchet 88.8%),
+`mkdocs build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
 ### 10. `feasibility`
 

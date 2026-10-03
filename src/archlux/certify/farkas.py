@@ -28,6 +28,8 @@ from math import isfinite
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from scipy.sparse import csr_matrix
+
     from archlux.arrays import VecteurF
     from archlux.geom.polytope import Polytope
 
@@ -53,6 +55,51 @@ class FarkasCheck:
     reason: str = ""
 
 
+def _accumulate(
+    rows: csr_matrix,
+    b: VecteurF,
+    raw_weights: VecteurF,
+    r: list[Fraction],
+    beta: Fraction,
+    *,
+    clip_negative: bool,
+) -> Fraction:
+    """Add ``weight * row`` into ``r`` (in place) and ``weight * b`` into ``beta``.
+
+    Extracted from :func:`verify_infeasibility` (PLAN.md phase 4, block 9): the
+    inequality rows (``clip_negative=True``, negative solver noise clipped to zero)
+    and the equality rows (``clip_negative=False``, any sign) share this exact loop.
+    """
+    for i in range(rows.shape[0]):
+        raw = float(raw_weights[i])
+        weight = Fraction(max(raw, 0.0)) if clip_negative else Fraction(raw)
+        if weight == 0:
+            continue
+        beta += weight * Fraction(float(b[i]))
+        for k in range(rows.indptr[i], rows.indptr[i + 1]):
+            r[rows.indices[k]] += weight * Fraction(float(rows.data[k]))
+    return beta
+
+
+def _lowest_over_box(poly: Polytope, r: list[Fraction]) -> Fraction | str:
+    """Minimum of ``r @ x`` over the box of variable bounds.
+
+    Returns the name of the first unbounded variable whose bound the minimum would
+    need, instead, when one is encountered.
+    """
+    names = {column: name for name, column in poly.index.items()}
+    lowest = Fraction(0)
+    for j, coefficient in enumerate(r):
+        if coefficient == 0:
+            continue
+        low, high = poly.bounds[j]
+        bound = low if coefficient > 0 else high
+        if not isfinite(bound):
+            return names[j]
+        lowest += coefficient * Fraction(bound)
+    return lowest
+
+
 def verify_infeasibility(poly: Polytope, y: VecteurF, z: VecteurF | None) -> FarkasCheck:
     """Check exactly that ``(y, z)`` proves ``poly`` empty.
 
@@ -74,39 +121,14 @@ def verify_infeasibility(poly: Polytope, y: VecteurF, z: VecteurF | None) -> Far
     multipliers = [float(v) for v in y] + ([] if z is None else [float(v) for v in z])
     if not all(isfinite(v) for v in multipliers):
         return FarkasCheck(False, float("nan"), "non-finite multiplier")
-    n_var = len(poly.index)
-    r = [Fraction(0)] * n_var
-    beta = Fraction(0)
-
-    rows = poly.A.tocsr()
-    for i in range(rows.shape[0]):
-        weight = Fraction(max(float(y[i]), 0.0))
-        if weight == 0:
-            continue
-        beta += weight * Fraction(float(poly.b[i]))
-        for k in range(rows.indptr[i], rows.indptr[i + 1]):
-            r[rows.indices[k]] += weight * Fraction(float(rows.data[k]))
-
+    r = [Fraction(0)] * len(poly.index)
+    beta = _accumulate(poly.A.tocsr(), poly.b, y, r, Fraction(0), clip_negative=True)
     if z is not None and poly.A_eq.shape[0]:
-        equalities = poly.A_eq.tocsr()
-        for i in range(equalities.shape[0]):
-            weight = Fraction(float(z[i]))
-            if weight == 0:
-                continue
-            beta += weight * Fraction(float(poly.b_eq[i]))
-            for k in range(equalities.indptr[i], equalities.indptr[i + 1]):
-                r[equalities.indices[k]] += weight * Fraction(float(equalities.data[k]))
+        beta = _accumulate(poly.A_eq.tocsr(), poly.b_eq, z, r, beta, clip_negative=False)
 
-    names = {column: name for name, column in poly.index.items()}
-    lowest = Fraction(0)
-    for j, coefficient in enumerate(r):
-        if coefficient == 0:
-            continue
-        low, high = poly.bounds[j]
-        bound = low if coefficient > 0 else high
-        if not isfinite(bound):
-            return FarkasCheck(False, float("-inf"), f"unbounded variable {names[j]}")
-        lowest += coefficient * Fraction(bound)
+    lowest = _lowest_over_box(poly, r)
+    if isinstance(lowest, str):
+        return FarkasCheck(False, float("-inf"), f"unbounded variable {lowest}")
 
     margin = lowest - beta
     if margin > 0:

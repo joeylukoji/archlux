@@ -307,9 +307,12 @@ def _structure(
     return (not violations, tuple(violations))
 
 
+_Bounds = tuple[Fraction, Fraction, Fraction, Fraction]  # (x0, y0, x1, y1)
+
+
 def _rectangular_outline(
     outline: tuple[tuple[float, float], ...],
-) -> tuple[Fraction, Fraction, Fraction, Fraction] | None:
+) -> _Bounds | None:
     """Exact bounds of an axis-aligned rectangular outline, ``None`` for any other shape.
 
     Every vertex lies on the bounding box and the polygon fills it: collinear vertices
@@ -339,6 +342,83 @@ def _identify(values: list[Fraction], tolerance: Fraction) -> dict[Fraction, Fra
             anchor = value
         mapping[value] = anchor
     return mapping
+
+
+_Box = tuple[str, Fraction, Fraction, Fraction, Fraction]
+_OutlineBox = tuple[Fraction, Fraction, Fraction, Fraction]  # (x0, x1, y0, y1)
+
+
+def _box_violations(boxes: list[_Box], outline: _OutlineBox) -> list[str]:
+    """A room thinner than the identification tolerance, or lying outside the outline.
+
+    Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+    """
+    ox0, ox1, oy0, oy1 = outline
+    violations: list[str] = []
+    for rid, x0, x1, y0, y1 in boxes:
+        if x1 <= x0 or y1 <= y0:
+            violations.append(f"gap: room {rid} is thinner than the identification tolerance")
+        elif x0 < ox0 or x1 > ox1 or y0 < oy0 or y1 > oy1:
+            violations.append(f"gap: room {rid} lies partly outside the outline")
+    return violations
+
+
+def _pairwise_overlaps(boxes: list[_Box]) -> list[str]:
+    """Exact pairwise overlap area of every pair of boxes, ``O(n^2)``, accepted.
+
+    Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+    """
+    violations: list[str] = []
+    for i, (a, ax0, ax1, ay0, ay1) in enumerate(boxes):
+        for b, bx0, bx1, by0, by1 in boxes[i + 1 :]:
+            dx, dy = min(ax1, bx1) - max(ax0, bx0), min(ay1, by1) - max(ay0, by0)
+            if dx > 0 and dy > 0:
+                pair = "|".join(sorted((a, b)))
+                violations.append(f"overlap {pair}: {float(dx * dy):.6g} m² (exact)")
+    return violations
+
+
+def _identified_boxes(plan: Plan, bounds: _Bounds) -> tuple[list[_Box], list[_Box], _OutlineBox]:
+    """Rooms and outline as exact ``Fraction`` boxes, edges within ``SNAP_M`` identified.
+
+    Returns the identified boxes, the raw (pre-identification) boxes for
+    :func:`_raw_residuals`, and the identified outline box.
+
+    Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+    """
+    ox0, oy0, ox1, oy1 = bounds
+    raw: list[_Box] = [
+        (
+            room.id,
+            Fraction(room.x),
+            Fraction(room.x) + Fraction(room.w),
+            Fraction(room.y),
+            Fraction(room.y) + Fraction(room.h),
+        )
+        for room in plan.rooms
+    ]
+    tolerance = Fraction(SNAP_M)
+    same_x = _identify([ox0, ox1, *(v for r in raw for v in (r[1], r[2]))], tolerance)
+    same_y = _identify([oy0, oy1, *(v for r in raw for v in (r[3], r[4]))], tolerance)
+    outline_box: _OutlineBox = (same_x[ox0], same_x[ox1], same_y[oy0], same_y[oy1])
+    boxes: list[_Box] = [
+        (rid, same_x[a], same_x[b], same_y[c], same_y[d]) for rid, a, b, c, d in raw
+    ]
+    return boxes, raw, outline_box
+
+
+def _coverage_violation(boxes: list[_Box], outline: _OutlineBox) -> str | None:
+    """Uncovered area, if the rooms' area does not exactly equal the outline's.
+
+    Extracted from :func:`rational_tiling` (PLAN.md phase 4, block 9).
+    """
+    ox0, ox1, oy0, oy1 = outline
+    covered = sum(((x1 - x0) * (y1 - y0) for _, x0, x1, y0, y1 in boxes), Fraction(0))
+    outline_area = (ox1 - ox0) * (oy1 - oy0)
+    if covered == outline_area:
+        return None
+    missing = float(outline_area - covered)
+    return f"gap: uncovered area {missing:.6g} m² (exact)"
 
 
 def rational_tiling(plan: Plan, ctx: Context) -> tuple[str, ...] | None:
@@ -380,47 +460,17 @@ def rational_tiling(plan: Plan, ctx: Context) -> tuple[str, ...] | None:
     bounds = _rectangular_outline(ctx.outline)
     if bounds is None:
         return None
-    ox0, oy0, ox1, oy1 = bounds
-    raw = [
-        (
-            room.id,
-            Fraction(room.x),
-            Fraction(room.x) + Fraction(room.w),
-            Fraction(room.y),
-            Fraction(room.y) + Fraction(room.h),
-        )
-        for room in plan.rooms
-    ]
-    tolerance = Fraction(SNAP_M)
-    same_x = _identify([ox0, ox1, *(v for r in raw for v in (r[1], r[2]))], tolerance)
-    same_y = _identify([oy0, oy1, *(v for r in raw for v in (r[3], r[4]))], tolerance)
-    ox0, ox1, oy0, oy1 = same_x[ox0], same_x[ox1], same_y[oy0], same_y[oy1]
-    boxes = [(rid, same_x[a], same_x[b], same_y[c], same_y[d]) for rid, a, b, c, d in raw]
+    boxes, raw, outline_box = _identified_boxes(plan, bounds)
 
-    violations: list[str] = []
-    for rid, x0, x1, y0, y1 in boxes:
-        if x1 <= x0 or y1 <= y0:
-            violations.append(f"gap: room {rid} is thinner than the identification tolerance")
-        elif x0 < ox0 or x1 > ox1 or y0 < oy0 or y1 > oy1:
-            violations.append(f"gap: room {rid} lies partly outside the outline")
-    for i, (a, ax0, ax1, ay0, ay1) in enumerate(boxes):
-        for b, bx0, bx1, by0, by1 in boxes[i + 1 :]:
-            dx, dy = min(ax1, bx1) - max(ax0, bx0), min(ay1, by1) - max(ay0, by0)
-            if dx > 0 and dy > 0:
-                pair = "|".join(sorted((a, b)))
-                violations.append(f"overlap {pair}: {float(dx * dy):.6g} m² (exact)")
+    violations = _box_violations(boxes, outline_box)
+    violations += _pairwise_overlaps(boxes)
     if not violations:
-        covered = sum(((x1 - x0) * (y1 - y0) for _, x0, x1, y0, y1 in boxes), Fraction(0))
-        outline_area = (ox1 - ox0) * (oy1 - oy0)
-        if covered != outline_area:
-            missing = float(outline_area - covered)
-            violations.append(f"gap: uncovered area {missing:.6g} m² (exact)")
+        coverage = _coverage_violation(boxes, outline_box)
+        if coverage is not None:
+            violations.append(coverage)
     if not violations:
         violations.extend(_raw_residuals(raw, bounds))
     return tuple(violations)
-
-
-_Box = tuple[str, Fraction, Fraction, Fraction, Fraction]
 
 
 def _intersection(
@@ -441,9 +491,7 @@ def _area(box_: tuple[Fraction, Fraction, Fraction, Fraction] | None) -> Fractio
     return (box_[1] - box_[0]) * (box_[3] - box_[2])
 
 
-def _raw_residuals(
-    raw: list[_Box], bounds: tuple[Fraction, Fraction, Fraction, Fraction]
-) -> list[str]:
+def _raw_residuals(raw: list[_Box], bounds: _Bounds) -> list[str]:
     """Bound, on the raw coordinates, what the identification may have erased.
 
     With ``C`` the outline and ``R_i`` the raw rooms, Bonferroni's inequality
@@ -506,6 +554,47 @@ def max_displacement(plan: Plan, reference: Plan | None) -> float:
     return delta
 
 
+def _malformed_rooms(plan: Plan) -> tuple[str, ...]:
+    """Rooms whose dimensions are not finite and positive.
+
+    Extracted from :func:`verify_exactly` (PLAN.md phase 4, block 9).
+    """
+    return tuple(
+        f"room {room.id}: dimensions must be finite and positive "
+        f"(x={room.x}, y={room.y}, w={room.w}, h={room.h})"
+        for room in plan.rooms
+        if not all(isfinite(v) for v in (room.x, room.y, room.w, room.h))
+        or room.w <= 0.0
+        or room.h <= 0.0
+    )
+
+
+def _overlap_and_gaps(
+    plan: Plan, ctx: Context, rational: tuple[str, ...] | None
+) -> tuple[bool, tuple[str, ...], bool, tuple[str, ...]]:
+    """Overlap/gap verdicts and their violation messages.
+
+    From the exact rational check when the outline is a rectangle (``rational`` is not
+    ``None``), from GEOS otherwise. With overlapping rooms the sum of areas no longer
+    measures coverage, so the rational check cannot see a gap: the gap diagnosis then
+    falls back to GEOS too, keeping the report complete. The plan is invalid either way.
+
+    Extracted from :func:`verify_exactly` (PLAN.md phase 4, block 9).
+    """
+    if rational is None:
+        overlap, v_overlap = _overlaps(plan.rooms)
+        gaps, v_gaps = _gaps(plan.rooms, ctx.outline)
+        return overlap, v_overlap, gaps, v_gaps
+    v_overlap = tuple(v for v in rational if v.startswith("overlap"))
+    v_gaps = tuple(v for v in rational if v.startswith("gap"))
+    overlap, gaps = bool(v_overlap), bool(v_gaps)
+    if overlap:
+        geos_flag, geos_gaps = _gaps(plan.rooms, ctx.outline)
+        gaps = gaps or geos_flag
+        v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
+    return overlap, v_overlap, gaps, v_gaps
+
+
 @renamed_parameters({"fusions": "merges"})
 def verify_exactly(
     plan: Plan,
@@ -552,14 +641,7 @@ def verify_exactly(
     -----
     Formulas: ``docs/formules/preuve-exacte.md``.
     """
-    malformed = tuple(
-        f"room {room.id}: dimensions must be finite and positive "
-        f"(x={room.x}, y={room.y}, w={room.w}, h={room.h})"
-        for room in plan.rooms
-        if not all(isfinite(v) for v in (room.x, room.y, room.w, room.h))
-        or room.w <= 0.0
-        or room.h <= 0.0
-    )
+    malformed = _malformed_rooms(plan)
     if malformed:
         # Nothing is proved about a malformed plan: every predicate is reported as not
         # established, never as holding (final review of phase 1, M1).
@@ -573,20 +655,7 @@ def verify_exactly(
             violations=malformed,
         )
     rational = rational_tiling(plan, ctx)
-    if rational is None:  # not a rectangular outline: GEOS areas and their tolerances
-        overlap, v_overlap = _overlaps(plan.rooms)
-        gaps, v_gaps = _gaps(plan.rooms, ctx.outline)
-    else:
-        v_overlap = tuple(v for v in rational if v.startswith("overlap"))
-        v_gaps = tuple(v for v in rational if v.startswith("gap"))
-        overlap, gaps = bool(v_overlap), bool(v_gaps)
-        if overlap:
-            # With overlapping rooms the sum of areas no longer measures coverage, so the
-            # rational check cannot see a gap: take the gap diagnosis from GEOS. The plan
-            # is invalid either way; this keeps the report complete.
-            geos_flag, geos_gaps = _gaps(plan.rooms, ctx.outline)
-            gaps = gaps or geos_flag
-            v_gaps = v_gaps + tuple(v for v in geos_gaps if v not in v_gaps)
+    overlap, v_overlap, gaps, v_gaps = _overlap_and_gaps(plan, ctx, rational)
     areas_ok, v_areas = _areas(plan.rooms, ctx, merges)
     structure_ok, v_structure = _structure(plan, ctx, merges)
     moved = max_displacement(plan, reference)
