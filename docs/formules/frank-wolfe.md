@@ -18,7 +18,7 @@ s_k\in\arg\max_{s\in P}\langle\nabla f(x_k),s\rangle
 =\arg\min_{s\in P}\langle -\nabla f(x_k),s\rangle,
 \]
 
-that is `lmo.solveur.solve(poly, c=-gradient, depart=x_k)`. The standard step is
+that is `lmo.solver.solve(poly, c=-gradient, depart=x_k)`. The standard step is
 \(\gamma_k=\min\{2/(k+2),\gamma_{\max}\}\), halved while \(f\) decreases. The gap
 
 \[
@@ -91,7 +91,7 @@ vectors \(c\).
 
 | Do | Do not |
 |---|---|
-| Plug in any `Surrogate` | Import `light.analytique` from `solve` |
+| Plug in any `Surrogate` | Import `light.analytic` from `solve` |
 | Read `gap` with `status` as a stationarity diagnostic | Read `gap` as a bound on the optimum (no shipped surrogate is concave), or confuse it with a coverage \(1-\alpha\) |
 
 ## Source

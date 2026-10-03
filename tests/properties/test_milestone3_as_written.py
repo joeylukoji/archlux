@@ -18,9 +18,9 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, devectorize, vectorize
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
 from tests import checkers

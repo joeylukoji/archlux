@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.types import Orientation
-from archlux.uq.conforme import ConformalCalibrator
-from archlux.uq.fiabilite import stratify_by_orientation
+from archlux.uq.conformal import ConformalCalibrator
+from archlux.uq.reliability import stratify_by_orientation
 
 
 def _tirer(rng: np.random.Generator, n: int) -> tuple[list[np.ndarray], list[Orientation]]:
@@ -84,7 +84,7 @@ def test_calibration_tient_par_orientation() -> None:
 
 def test_derive_bornee_sur_oracle_gelé() -> None:
     """L'analytique ne dérive pas de façon explosive contre le split-flux i.i.d."""
-    from archlux.uq.derive import measure_drift
+    from archlux.uq.drift import measure_drift
 
     rng = np.random.default_rng(9)
     model = AnalyticSurrogate()

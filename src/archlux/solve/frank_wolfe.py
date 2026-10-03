@@ -5,7 +5,7 @@ The algorithm is chosen for a structural reason, not for convenience: its linear
 legalization, with another cost vector. There is therefore a single solver in the whole
 project, and every iterate is a valid plan: no projection, no illegal intermediate step.
 
-Dependencies: ``types``, ``geom``, ``lmo``, and the **protocol** ``light.protocole``.
+Dependencies: ``types``, ``geom``, ``lmo``, and the **protocol** ``light.protocol``.
 Never a concrete surrogate implementation.
 
 Formulas: ``docs/formules/frank-wolfe.md``.
@@ -22,12 +22,12 @@ import numpy as np
 from archlux.arrays import VecteurF
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.polytope import Polytope
-from archlux.lmo.solveur import solve
+from archlux.lmo.solver import solve
 from archlux.solve.trace import Iteration, StopStatus, Trace
 
 if TYPE_CHECKING:
-    from archlux.light.protocole import Glazing, Surrogate
-    from archlux.lmo.solveur import LPSolution
+    from archlux.light.protocol import Glazing, Surrogate
+    from archlux.lmo.solver import LPSolution
     from archlux.types import Orientation
 
 __all__ = [

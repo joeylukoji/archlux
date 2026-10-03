@@ -151,7 +151,7 @@ def two_room_plan(x: np.ndarray) -> Plan:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "generer_corpus": Alias(generate_corpus, "archlux.data.synthese.generate_corpus"),
-        "TAILLE_MAX": Alias(MAX_SIZE, "archlux.data.synthese.MAX_SIZE"),
+        "generer_corpus": Alias(generate_corpus, "archlux.data.synthetic.generate_corpus"),
+        "TAILLE_MAX": Alias(MAX_SIZE, "archlux.data.synthetic.MAX_SIZE"),
     },
 )

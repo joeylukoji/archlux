@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from archlux.errors import InvariantViolation
-from archlux.export.pathologie import diagnose
+from archlux.export.pathologies import diagnose
 from archlux.export.wilson import wilson_interval
 from archlux.types import Plan
 

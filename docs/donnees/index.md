@@ -19,4 +19,4 @@ dans `splits/v1/`. **Dédupliquer avant de découper**, jamais l'inverse.
     réellement les étiquettes et ce qu'on a le droit d'en conclure.
 
 Le jeu de calibration n'est lisible qu'avec un jeton émis **après** le gel des
-poids (`uq.gestion`).
+poids (`uq.registry`).

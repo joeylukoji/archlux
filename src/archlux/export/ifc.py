@@ -10,7 +10,7 @@ from pathlib import Path
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux._version import __version__
 from archlux.errors import ArchluxError
-from archlux.export.pathologie import diagnose
+from archlux.export.pathologies import diagnose
 from archlux.types import Plan
 
 __all__ = ["ExportReport", "to_ifc"]

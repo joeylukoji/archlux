@@ -16,7 +16,7 @@ import ifcopenshell.validate
 
 import archlux as ax
 from archlux.data.corruption import corrupt
-from archlux.data.synthese import MAX_SIZE, generate_corpus
+from archlux.data.synthetic import MAX_SIZE, generate_corpus
 from archlux.export import to_ifc
 from archlux.export.wilson import wilson_interval
 from archlux.seeds import derive

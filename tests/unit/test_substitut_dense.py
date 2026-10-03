@@ -9,14 +9,14 @@ import numpy as np
 import pytest
 
 from archlux.errors import InvariantViolation
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.appris import MAX_PARAMETRES, LearnedSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.base import DenseSurrogate
-from archlux.light.protocole import Surrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.learned import MAX_PARAMETRES, LearnedSurrogate
+from archlux.light.protocol import Surrogate
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.light.validation import validate_gradient
 from archlux.types import Fingerprintable, Orientation
-from archlux.uq.gestion import DataManagement, _model_fingerprint, freeze_and_issue
+from archlux.uq.registry import DataManagement, _model_fingerprint, freeze_and_issue
 
 _SIM = SplitFluxOracle()
 _ANA = AnalyticSurrogate()
@@ -120,7 +120,7 @@ def test_dense_implements_fingerprintable() -> None:
     dense = DenseSurrogate()
     dense.fit(xs, ys, oris, seed=5, epoques=8, lr=0.12)
     assert isinstance(dense, Fingerprintable)
-    # Same bytes as the old guessing fallback in ``uq.gestion._model_fingerprint``,
+    # Same bytes as the old guessing fallback in ``uq.registry._model_fingerprint``,
     # run on a plain object without ``weights_fingerprint``: tokens issued before the
     # protocol existed still verify.
     legacy = SimpleNamespace(
@@ -147,7 +147,7 @@ def test_an_untrained_model_refuses_to_fingerprint() -> None:
 
 
 def test_freeze_and_issue_uses_the_explicit_fingerprint(tmp_path: Path) -> None:
-    """``uq.gestion._model_fingerprint`` takes the ``weights_fingerprint`` fast path."""
+    """``uq.registry._model_fingerprint`` takes the ``weights_fingerprint`` fast path."""
     xs, ys, oris = _jeu(seed=7, n=12)
     dense = DenseSurrogate()
     dense.fit(xs, ys, oris, seed=7, epoques=8, lr=0.12)

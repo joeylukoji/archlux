@@ -20,10 +20,10 @@ from scipy import sparse
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.errors import Infeasible, InvariantViolation
-from archlux.geom.graphe import build_graph, transitive_reduction
+from archlux.geom.graph import build_graph, transitive_reduction
 
 if TYPE_CHECKING:
-    from archlux.geom.graphe import RelativeOrder
+    from archlux.geom.graph import RelativeOrder
     from archlux.types import Context, Plan
 
 __all__ = [
@@ -236,7 +236,7 @@ def _verifier_enveloppe_admissible(
     """Refuse an envelope too small for the regulatory minimum width.
 
     Without this check, ``bounds`` carries an **inverted** interval (``lo > hi``): GLOP
-    answers ``ABNORMAL``, which :func:`archlux.lmo.solveur._statut` translates to
+    answers ``ABNORMAL``, which :func:`archlux.lmo.solver._statut` translates to
     ``"limite"``, and ``api.legalize`` raises ``InvariantViolation`` ("internal bug") on
     what is actually an infeasible program. The Farkas certificate is also
     unusable in this case: the infeasibility comes from no row of ``A``, so
@@ -267,7 +267,7 @@ def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
     - horizontal separation ``x_a + w_a - x_b <= 0`` per edge of ``g.horizontal``;
     - vertical separation ``y_a + h_a - y_b <= 0``;
     - load-bearing walls: one row per room and wall, keeping the room on its side
-      (``ordre.wall_sides``, see :class:`archlux.geom.graphe.WallSide`);
+      (``ordre.wall_sides``, see :class:`archlux.geom.graph.WallSide`);
     - outline ``x_i + w_i <= x_max``, ``y_i + h_i <= y_max``;
     - bottom and left edges, and minimum widths ``w_i >= l_min``, **via ``bounds``**.
 
@@ -278,7 +278,7 @@ def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
     Parameters
     ----------
     ordre : RelativeOrder
-        Partial order, typically from :func:`archlux.geom.graphe.deduce_order`.
+        Partial order, typically from :func:`archlux.geom.graph.deduce_order`.
     ctx : Context
         Outline, load-bearing structure and regulation.
 
@@ -290,7 +290,7 @@ def build_polytope(ordre: RelativeOrder, ctx: Context) -> Polytope:
     Raises
     ------
     InconsistentOrder, MissingSeparation
-        Propagated from :func:`archlux.geom.graphe.build_graph`.
+        Propagated from :func:`archlux.geom.graph.build_graph`.
     InvariantViolation
         Empty or degenerate outline.
     Infeasible

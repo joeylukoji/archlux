@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.protocole import Surrogate
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.protocol import Surrogate
 from archlux.types import Orientation
 
 

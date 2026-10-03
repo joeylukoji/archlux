@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING, NoReturn
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.light.base import DenseSurrogate
-from archlux.light.protocole import Glazing
+from archlux.light.protocol import Glazing
 from archlux.types import Indicator
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class LearnedSurrogate:
         n'est pas reproductible.
     gele : bool
         Une fois les poids gelés, l'accès au jeu de calibration devient possible — et
-        pas avant (voir :mod:`archlux.uq.gestion`).
+        pas avant (voir :mod:`archlux.uq.registry`).
     """
 
     chemin_poids: Path
@@ -133,6 +133,6 @@ class LearnedSurrogate:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "SubstitutAppris": Alias(LearnedSurrogate, "archlux.light.appris.LearnedSurrogate"),
+        "SubstitutAppris": Alias(LearnedSurrogate, "archlux.light.learned.LearnedSurrogate"),
     },
 )

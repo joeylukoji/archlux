@@ -8,7 +8,7 @@ from hypothesis import strategies as st
 from shapely.geometry import Polygon, box
 
 from archlux.errors import InvariantViolation
-from archlux.geom.rectilineaire import (
+from archlux.geom.rectilinear import (
     MAX_RECTANGLES,
     MERGE_RIGHT,
     decompose,
@@ -84,9 +84,9 @@ def _plan_avec_L(*, chevauche: bool = False) -> tuple[Plan, object]:
 
 
 def test_etendre_fusions_impose_egalite() -> None:
-    from archlux.geom.graphe import deduce_order
+    from archlux.geom.graph import deduce_order
     from archlux.geom.polytope import build_polytope, vectorize
-    from archlux.geom.rectilineaire import extend_merges
+    from archlux.geom.rectilinear import extend_merges
 
     plan, piece = _plan_avec_L()
     poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)

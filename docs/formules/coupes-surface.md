@@ -85,7 +85,7 @@ Tangentes initiales : le carré et les intersections de l'hyperbole avec
 
 | Faire | Ne pas faire |
 |---|---|
-| Appeler `solve_with_areas` depuis `legalize` (le référentiel connaît \(a_{\min}\)) | Mettre la boucle dans `lmo.solveur.solve` — `lmo` ignore l'origine de \(c\) **et** le programme |
+| Appeler `solve_with_areas` depuis `legalize` (le référentiel connaît \(a_{\min}\)) | Mettre la boucle dans `lmo.solver.solve` — `lmo` ignore l'origine de \(c\) **et** le programme |
 | Projeter avant d'écrire la coupe | Passer \(wh\ge a\) à GLOP comme produit |
 | Laisser `a_min=0` sans coupe | Croire qu'après 10 coupes le sommet LP est *sur* l'hyperbole : d'où le resserrement de bornes |
 

@@ -25,15 +25,15 @@ from archlux.active.densite import kernel_density
 from archlux.active.selection import AcquisitionStrategy
 from archlux.errors import InvariantViolation
 from archlux.seeds import derive
-from archlux.uq.conforme import ConformalCalibrator, minimal_n_conformal
+from archlux.uq.conformal import ConformalCalibrator, minimal_n_conformal
 
 if TYPE_CHECKING:
-    from archlux.light.protocole import Surrogate
+    from archlux.light.protocol import Surrogate
     from archlux.types import Orientation
 
 __all__ = ["ActiveReport", "Loop"]
 
-_LOG = structlog.get_logger("archlux.active.boucle")
+_LOG = structlog.get_logger("archlux.active.loop")
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,7 +228,7 @@ class Loop:
         silently that could not be replayed.
     alpha : float, optional
         Target conformal level (default 0.10 -> 90% coverage). Also sets the
-        minimum calibration size, via :func:`~archlux.uq.conforme.minimal_n_conformal`.
+        minimum calibration size, via :func:`~archlux.uq.conformal.minimal_n_conformal`.
     part_calibration : float, optional
         Fraction of the acquired points set aside for calibration when no
         independent set is supplied. ``0.0`` disables the set-aside -- ``calibration=``
@@ -301,7 +301,7 @@ class Loop:
         """Retrain ``surrogate`` on the labeled set, if it is adjustable and large enough.
 
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
-        :class:`~archlux.light.protocole.Adjustable` (item 34) documents the contract,
+        :class:`~archlux.light.protocol.Adjustable` (item 34) documents the contract,
         but the runtime test stays a callable ``fit`` attribute: ``isinstance`` on the
         protocol would also demand ``gradient`` (never called here) and, on Python
         >= 3.12, ignore a wrapper's ``__getattr__`` -- silently skipping retraining.
@@ -520,6 +520,6 @@ class Loop:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "RapportActif": Alias(ActiveReport, "archlux.active.boucle.ActiveReport"),
+        "RapportActif": Alias(ActiveReport, "archlux.active.loop.ActiveReport"),
     },
 )

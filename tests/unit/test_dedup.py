@@ -6,9 +6,9 @@ from pathlib import Path
 
 from scipy.stats import ks_2samp
 
-from archlux.bench.protocole import load_split
+from archlux.bench.protocol import load_split
 from archlux.data.dedup import near_duplicate_pairs
-from archlux.data.synthese import generate_corpus
+from archlux.data.synthetic import generate_corpus
 
 SPLITS = Path(__file__).resolve().parents[2] / "splits" / "v1"
 

@@ -643,14 +643,14 @@ def extend_merges(poly: Polytope, piece: RectilinearRoom, *, min_contact: float 
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "PieceRectilineaire": Alias(RectilinearRoom, "archlux.geom.rectilineaire.RectilinearRoom"),
-        "decomposer": Alias(decompose, "archlux.geom.rectilineaire.decompose"),
-        "recomposer": Alias(recompose, "archlux.geom.rectilineaire.recompose"),
+        "PieceRectilineaire": Alias(RectilinearRoom, "archlux.geom.rectilinear.RectilinearRoom"),
+        "decomposer": Alias(decompose, "archlux.geom.rectilinear.decompose"),
+        "recomposer": Alias(recompose, "archlux.geom.rectilinear.recompose"),
         "contraintes_fusion": Alias(
-            merge_constraints, "archlux.geom.rectilineaire.merge_constraints"
+            merge_constraints, "archlux.geom.rectilinear.merge_constraints"
         ),
-        "etendre_fusions": Alias(extend_merges, "archlux.geom.rectilineaire.extend_merges"),
-        "FUSION_DROIT": Alias(MERGE_RIGHT, "archlux.geom.rectilineaire.MERGE_RIGHT"),
-        "FUSION_HAUT": Alias(MERGE_TOP, "archlux.geom.rectilineaire.MERGE_TOP"),
+        "etendre_fusions": Alias(extend_merges, "archlux.geom.rectilinear.extend_merges"),
+        "FUSION_DROIT": Alias(MERGE_RIGHT, "archlux.geom.rectilinear.MERGE_RIGHT"),
+        "FUSION_HAUT": Alias(MERGE_TOP, "archlux.geom.rectilinear.MERGE_TOP"),
     },
 )

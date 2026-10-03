@@ -10,7 +10,7 @@ harmoniques d'orientation). Frank-Wolfe réutilise l'oracle LP du jalon 2.
 
 ```python
 import archlux as ax
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(

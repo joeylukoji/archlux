@@ -8,9 +8,9 @@ from itertools import pairwise
 import numpy as np
 import pytest
 
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import build_polytope
-from archlux.lmo.solveur import solve
+from archlux.lmo.solver import solve
 from archlux.solve.frank_wolfe import AwayStepStrategy, frank_wolfe
 from archlux.types import Context, Orientation, Regulation, Structure
 

@@ -135,7 +135,7 @@ def tiling_constraints(
     -------
     tuple
         Triplets ``(label, terms, right_hand_side)``, same conventions as
-        :func:`~archlux.geom.rectilineaire.merge_constraints`.
+        :func:`~archlux.geom.rectilinear.merge_constraints`.
 
     Raises
     ------
@@ -236,9 +236,9 @@ def extend_tiling(poly: Polytope, grid: Grid) -> Polytope:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "Trame": Alias(Grid, "archlux.geom.pavage.Grid"),
-        "deduire_trame": Alias(deduce_grid, "archlux.geom.pavage.deduce_grid"),
-        "contraintes_pavage": Alias(tiling_constraints, "archlux.geom.pavage.tiling_constraints"),
-        "etendre_pavage": Alias(extend_tiling, "archlux.geom.pavage.extend_tiling"),
+        "Trame": Alias(Grid, "archlux.geom.tiling.Grid"),
+        "deduire_trame": Alias(deduce_grid, "archlux.geom.tiling.deduce_grid"),
+        "contraintes_pavage": Alias(tiling_constraints, "archlux.geom.tiling.tiling_constraints"),
+        "etendre_pavage": Alias(extend_tiling, "archlux.geom.tiling.extend_tiling"),
     },
 )

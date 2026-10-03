@@ -6,16 +6,16 @@ pas une métaphore : c'est le même appel, avec un autre vecteur de coûts.
 Le bloc ci-dessous s'exécute tel quel. Il reprend le plan de la
 [galerie 01](../galerie/01-corriger-un-plan.md) (deux pièces qui se recouvrent d'un
 mètre), construit le polytope des plans valides pour l'ordre lu sur la proposition,
-puis appelle deux fois `lmo.solveur.solve` : une fois pour la légalisation classique, une
+puis appelle deux fois `lmo.solver.solve` : une fois pour la légalisation classique, une
 fois pour le pas d'une itération Frank-Wolfe.
 
 ```python
 import archlux as ax
 from archlux.api import gradient_distance
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, extend_l1_slack, vectorize
 from archlux.light import AnalyticSurrogate
-from archlux.lmo import solveur as lmo
+from archlux.lmo import solver as lmo
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(

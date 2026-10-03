@@ -1,6 +1,6 @@
 # Apprentissage actif
 
-**Code :** `active.selection`, `active.densite`, `active.boucle.Loop`.
+**Code :** `active.selection`, `active.densite`, `active.loop.Loop`.
 
 ## Énoncé
 
@@ -72,7 +72,7 @@ facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
 | référence aléatoire | `active.selection.RandomStrategy` |
 | \(\hat f\) | `active.densite.kernel_density` |
 | \(h\) (Scott) | `kernel_density(..., bande=None)` |
-| boucle | `active.boucle.Loop.run` → `ActiveReport` |
+| boucle | `active.loop.Loop.run` → `ActiveReport` |
 
 ## Cas d'utilisation
 

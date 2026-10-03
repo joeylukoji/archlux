@@ -17,7 +17,7 @@ import pytest
 RACINE = Path(__file__).resolve().parents[1] / "src" / "archlux"
 
 # Ce que chaque paquet a le droit d'importer, à l'intérieur d'archlux.
-# `solve` dépend de `light.protocole` SEULEMENT, jamais d'une implémentation.
+# `solve` dépend de `light.protocol` SEULEMENT, jamais d'une implémentation.
 AUTORISE: dict[str, frozenset[str]] = {
     # `feasibility`, `light`: imported under TYPE_CHECKING only, so that type checkers see
     # the lazy packages (PLAN.md 3.8). `test_import_cost` proves that `import archlux`
@@ -41,12 +41,12 @@ AUTORISE: dict[str, frozenset[str]] = {
     "validation": frozenset({"types", "errors"}),
     "geom": frozenset({"types", "errors"}),
     "lmo": frozenset({"types", "errors", "geom"}),
-    "solve": frozenset({"types", "errors", "geom", "lmo", "light.protocole"}),
+    "solve": frozenset({"types", "errors", "geom", "lmo", "light.protocol"}),
     "light": frozenset({"types", "errors", "orient"}),
     "orient": frozenset({"types", "errors"}),
     "uq": frozenset({"types", "errors"}),
-    # `data.chargeurs` convertit un corpus reel (WKT) en `Plan` : il redresse via
-    # `orient.circulaire.direction_dominante` et decoupe via `geom.rectilineaire`.
+    # `data.loaders` convertit un corpus reel (WKT) en `Plan` : il redresse via
+    # `orient.circular.direction_dominante` et decoupe via `geom.rectilinear`.
     # Aretes ajoutees a `ARCHITECTURE.md` §5 : `geom` et `orient` sont purs et
     # n'importent pas `data`, donc aucun cycle. `data` ne touche ni `lmo`, ni
     # `solve`, ni `light` : il produit des entrees, il ne resout rien.
@@ -54,7 +54,7 @@ AUTORISE: dict[str, frozenset[str]] = {
     "certify": frozenset({"types", "errors", "geom", "uq"}),
     "io": frozenset({"types", "errors"}),
     # Apprentissage actif : orchestrateur feuille — protocole light + uq, pas torch.
-    "active": frozenset({"types", "errors", "light.protocole", "uq"}),
+    "active": frozenset({"types", "errors", "light.protocol", "uq"}),
     # Export BIM : feuille — types + erreurs ; ifcopenshell optionnel (hors archlux).
     "export": frozenset({"types", "errors"}),
     # Faisabilité : facade sur legalize / Farkas — exacte, sans lumière.
@@ -84,7 +84,7 @@ AUTORISE: dict[str, frozenset[str]] = {
             "geom",
             "lmo",
             "solve",
-            "light.protocole",
+            "light.protocol",
             "certify",
             "io",
         }
@@ -111,8 +111,8 @@ LEAVES: dict[str, frozenset[str]] = {
 }
 """Modules importable by every layer, with the only imports they may make themselves."""
 
-# torch n'est tolérable que dans light.appris, et en import paresseux.
-TORCH_TOLERE = frozenset({"light.appris"})
+# torch n'est tolérable que dans light.learned, et en import paresseux.
+TORCH_TOLERE = frozenset({"light.learned"})
 
 # Dérogations nominatives, chacune adossée à une décision écrite (ADR-5 du blueprint).
 # `Plan.from_json` et `Certificate.report()` sont l'API publique fixée par
@@ -122,7 +122,7 @@ TORCH_TOLERE = frozenset({"light.appris"})
 # depuis `types` échoue toujours.
 EXEMPTIONS: dict[str, frozenset[str]] = {
     # ADR-9: the export facades `Plan.to_dxf`, `to_ifc`, `to_svg` (PLAN.md 3.11).
-    "types": frozenset({"archlux.io.json_io", "archlux.certify.rapport", "archlux.export"}),
+    "types": frozenset({"archlux.io.json_io", "archlux.certify.report", "archlux.export"}),
 }
 
 
@@ -191,7 +191,7 @@ def test_les_couches_respectent_les_dependances(fichier: Path) -> None:
 
 @pytest.mark.parametrize("fichier", _modules(), ids=_chemin_module)
 def test_le_noyau_ne_reference_pas_torch(fichier: Path) -> None:
-    """Seul ``light.appris`` peut nommer ``torch``."""
+    """Seul ``light.learned`` peut nommer ``torch``."""
     module = _chemin_module(fichier)
     reference = any(c == "torch" or c.startswith("torch.") for c in _imports(fichier))
     assert not reference or module in TORCH_TOLERE, f"{module} référence torch"
@@ -214,9 +214,9 @@ def test_solve_ne_depend_que_du_protocole_light() -> None:
             continue
         for cible in _imports(fichier):
             if cible.startswith("archlux.light"):
-                assert cible == "archlux.light.protocole", (
+                assert cible == "archlux.light.protocol", (
                     f"{_chemin_module(fichier)} importe {cible} ; "
-                    "seul archlux.light.protocole est autorisé"
+                    "seul archlux.light.protocol est autorisé"
                 )
 
 
@@ -298,7 +298,7 @@ package = importlib.import_module("archlux." + sys.argv[1])
 # A lazy facade loads almost nothing on `import`: also load every submodule and resolve
 # every public name, so the check sees what the package can actually pull in.
 for info in pkgutil.walk_packages(getattr(package, "__path__", []), package.__name__ + "."):
-    if info.name != "archlux.light.appris":  # torch-only, optional (TORCH_TOLERE)
+    if info.name != "archlux.light.learned":  # torch-only, optional (TORCH_TOLERE)
         importlib.import_module(info.name)
 for name in getattr(package, "__all__", []):
     getattr(package, name)
@@ -316,29 +316,29 @@ def _fresh_import(paquet: str) -> frozenset[str]:
 
 
 _LIGHT_IMPLEMENTATIONS = ("archlux.light.",)
-"""Every ``light`` submodule; ``archlux.light.protocole`` is the one allowed exception."""
+"""Every ``light`` submodule; ``archlux.light.protocol`` is the one allowed exception."""
 
 FORBIDDEN: dict[str, tuple[tuple[str, ...], frozenset[str]]] = {
     # importer: (forbidden module prefixes, modules exempted from them) — ARCHITECTURE.md
     # §5 "FORBIDDEN", checked WITHOUT any transitive closure: what loads is what counts.
     "geom": (("torch",), frozenset()),
     "lmo": (("torch", "archlux.light"), frozenset()),
-    "solve": (("torch", *_LIGHT_IMPLEMENTATIONS), frozenset({"archlux.light.protocole"})),
+    "solve": (("torch", *_LIGHT_IMPLEMENTATIONS), frozenset({"archlux.light.protocol"})),
     "certify": (("torch",), frozenset()),
     "light": (("archlux.geom", "archlux.lmo", "archlux.solve"), frozenset()),
-    "active": (_LIGHT_IMPLEMENTATIONS, frozenset({"archlux.light.protocole"})),
+    "active": (_LIGHT_IMPLEMENTATIONS, frozenset({"archlux.light.protocol"})),
     "export": (("archlux.geom", "archlux.certify"), frozenset()),
     "data": (("archlux.lmo", "archlux.solve", "archlux.light"), frozenset()),
     # Justified exception (ARCHITECTURE.md §5): `is_feasible` calls `legalize`, so
-    # `feasibility` depends on `api` by design and reaches `light.protocole` and `uq`
-    # through it (api -> solve -> light.protocole, api -> certify -> uq). It never imports
+    # `feasibility` depends on `api` by design and reaches `light.protocol` and `uq`
+    # through it (api -> solve -> light.protocol, api -> certify -> uq). It never imports
     # them directly (the static AUTORISE walk forbids that) and loads no light
     # implementation; `test_feasibility_reaches_light_and_uq_only_through_api` proves it
     # loads nothing `api` does not load already.
-    "feasibility": (_LIGHT_IMPLEMENTATIONS, frozenset({"archlux.light.protocole"})),
+    "feasibility": (_LIGHT_IMPLEMENTATIONS, frozenset({"archlux.light.protocol"})),
 }
 """ARCHITECTURE.md §5 FORBIDDEN rules, by importer. "No module may import bench" and
-"no torch outside ``light.appris``" apply to every package and are checked separately."""
+"no torch outside ``light.learned``" apply to every package and are checked separately."""
 
 
 def _hits(module: str, prefix: str) -> bool:
@@ -361,7 +361,7 @@ def test_a_fresh_import_breaks_no_forbidden_rule(paquet: str) -> None:
 
 @pytest.mark.parametrize("paquet", sorted(p for p in AUTORISE if p != "__init__"))
 def test_a_fresh_import_loads_no_bench_and_no_torch(paquet: str) -> None:
-    """No package but ``bench`` loads ``bench``; none loads ``torch`` (``appris`` aside)."""
+    """No package but ``bench`` loads ``bench``; none loads ``torch`` (``learned`` aside)."""
     loaded = _fresh_import(paquet)
     assert "torch" not in loaded
     if paquet != "bench":

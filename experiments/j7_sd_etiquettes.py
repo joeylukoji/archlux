@@ -10,19 +10,19 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.data.chargeurs import (
+from archlux.data.loaders import (
     DEFAULT_SUN_COLUMN,
     label,
     load_msd,
     load_sd_labels,
     split_by_site,
 )
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.base import DenseSurrogate
-from archlux.light.protocole import Glazing
-from archlux.uq.conforme import ConformalCalibrator
+from archlux.light.protocol import Glazing
+from archlux.uq.conformal import ConformalCalibrator
 
 MSD = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/msd/mds_V2_5.372k.csv")
 SD = Path(

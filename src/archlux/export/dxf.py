@@ -6,7 +6,7 @@ from pathlib import Path
 
 from archlux._deprecation import renamed_parameters
 from archlux.errors import InvariantViolation
-from archlux.export.pathologie import diagnose
+from archlux.export.pathologies import diagnose
 from archlux.types import Plan
 
 __all__ = ["to_dxf"]

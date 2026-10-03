@@ -49,8 +49,8 @@ import archlux
 from archlux.data.corruption import corrupt
 from archlux.errors import ArchluxError, Infeasible, UnsupportedInput
 from archlux.export.svg import compare
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
 from archlux.types import Context, Plan
 
 HERE = Path(__file__).resolve().parent

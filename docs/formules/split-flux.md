@@ -1,6 +1,6 @@
 # Facteur de lumière du jour (split-flux)
 
-**Code :** `light.simulateur.daylight_factor`, `light.simulateur.SplitFluxOracle`.
+**Code :** `light.split_flux.daylight_factor`, `light.split_flux.SplitFluxOracle`.
 
 ## Énoncé
 

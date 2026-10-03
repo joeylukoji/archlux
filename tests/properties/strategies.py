@@ -17,7 +17,7 @@ from typing import Any
 import numpy as np
 from hypothesis import strategies as st
 
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.types import (
     REGIMES,
     Certificate,

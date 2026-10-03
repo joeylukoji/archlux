@@ -51,8 +51,8 @@ def disposition(rng: np.random.Generator) -> np.ndarray:
 
 ```python
 from archlux.light.base import DenseSurrogate
-from archlux.light.simulateur import SplitFluxOracle
-from archlux.uq.gestion import issue_token
+from archlux.light.split_flux import SplitFluxOracle
+from archlux.uq.registry import issue_token
 
 sim = SplitFluxOracle()
 rng = np.random.default_rng(17)
@@ -76,7 +76,7 @@ gel. C'est lui qui ouvrira le jeu de calibration au
 ## 3. Valider le gradient, puis légaliser
 
 ```python
-from archlux.light.appris import LearnedSurrogate
+from archlux.light.learned import LearnedSurrogate
 from archlux.light.validation import validate_gradient
 
 reseau = LearnedSurrogate(path, fingerprint, gele=True)

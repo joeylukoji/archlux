@@ -44,7 +44,7 @@ from benchmarks.guarantees.scenarios import Scenario, generate, perturb  # noqa:
 
 from archlux import ArchluxError, Plan, legalize  # noqa: E402
 from archlux.io.json_io import to_dict  # noqa: E402
-from archlux.light.analytique import SubstitutAnalytique  # noqa: E402
+from archlux.light.analytic import SubstitutAnalytique  # noqa: E402
 
 REFERENCE = ROOT / "tests" / "references" / "neutrality.json"
 N_SCENARIOS = 40

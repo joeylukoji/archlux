@@ -40,7 +40,7 @@ def derive(seed: int, name: str) -> int:
 
     Examples
     --------
-    >>> from archlux.bench.graines import derive
+    >>> from archlux.bench.seeds import derive
     >>> derive(17, "calibration") == derive(17, "calibration")
     True
     >>> derive(17, "calibration") == derive(17, "permutation")
@@ -52,6 +52,6 @@ def derive(seed: int, name: str) -> int:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "deriver": Alias(derive, "archlux.bench.graines.derive"),
+        "deriver": Alias(derive, "archlux.bench.seeds.derive"),
     },
 )

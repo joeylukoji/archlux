@@ -1,6 +1,6 @@
 # Substitut analytique
 
-**Code :** `light.analytique.AnalyticSurrogate`.
+**Code :** `light.analytic.AnalyticSurrogate`.
 
 ## Énoncé
 

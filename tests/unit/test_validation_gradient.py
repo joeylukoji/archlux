@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from archlux.errors import InvalidSurrogate
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 
@@ -42,7 +42,7 @@ def test_gradient_faux_leve_substitut_invalide() -> None:
 
 def test_a_failed_check_carries_its_report() -> None:
     """PLAN.md phase 2, J4: the failing value is read from the report, not the message."""
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
 
     class Negated(AnalyticSurrogate):
         def gradient(self, x, orientation, *, glazing=None):  # type: ignore[no-untyped-def]

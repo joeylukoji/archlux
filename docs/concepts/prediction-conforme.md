@@ -1,6 +1,6 @@
 # La prédiction conforme
 
-Quatre étapes, un piège, une hypothèse. Module : `archlux.uq.conforme`.
+Quatre étapes, un piège, une hypothèse. Module : `archlux.uq.conformal`.
 Source : Vovk, Gammerman & Shafer (2005), [bibliographie](../formules/sources.md) n° 12.
 
 ## Les quatre étapes
@@ -47,7 +47,7 @@ Un calibrateur par indicateur : les erreurs n'ont pas la même échelle.
 
 Frank-Wolfe maximise \(J = \hat\mu - q̂\,\hat\sigma\), pas \(\hat\mu\). Là où
 \(\hat\sigma\) s'ouvre, \(J\) chute, l'optimiseur revient. Classe :
-`light.objectif.Daylight`. Le flottant \(q̂\) est injecté : `light` n'importe
+`light.objective.Daylight`. Le flottant \(q̂\) est injecté : `light` n'importe
 pas `uq`.
 
 Formule : [statistique](../formules/statistique.md).

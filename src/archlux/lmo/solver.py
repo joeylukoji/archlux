@@ -539,8 +539,8 @@ def _solve_model(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "SolutionLP": Alias(LPSolution, "archlux.lmo.solveur.LPSolution"),
-        "resoudre": Alias(solve, "archlux.lmo.solveur.solve"),
-        "vider_cache": Alias(clear_cache, "archlux.lmo.solveur.clear_cache"),
+        "SolutionLP": Alias(LPSolution, "archlux.lmo.solver.LPSolution"),
+        "resoudre": Alias(solve, "archlux.lmo.solver.solve"),
+        "vider_cache": Alias(clear_cache, "archlux.lmo.solver.clear_cache"),
     },
 )

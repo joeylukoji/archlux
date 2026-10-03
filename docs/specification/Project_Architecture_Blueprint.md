@@ -23,7 +23,7 @@ quatre mécanismes indépendants, chacun capable d'attraper la faute seul.
 | Types disjoints | `GeometricProof` / `PerformanceBound` | Une probabilité glissée dans une preuve |
 | Test d'invariant | `tests/properties/test_invariants_types.py` | L'ajout d'un champ probabiliste à la preuve |
 | Section `Guarantees` | Toute docstring rendant un `Plan` ou `Certificate` | Une garantie affirmée sans sa nature |
-| Rendu séparé | `certify/rapport.py` | Un score composite agrégeant les deux |
+| Rendu séparé | `certify/report.py` | Un score composite agrégeant les deux |
 
 Un seul mécanisme suffirait à documenter la règle. Quatre sont nécessaires pour qu'elle
 survive à dix-huit mois de développement.
@@ -74,7 +74,7 @@ archlux/
 │   │   ├── frank_wolfe.py       #     away-steps, warm start, gap certifié
 │   │   └── trace.py             #     trace gelée = donnée de sortie, pas du log
 │   │
-│   ├── orient/circulaire.py     # encodage (cos θ, sin θ) + statistiques circulaires
+│   ├── orient/circular.py     # encodage (cos θ, sin θ) + statistiques circulaires
 │   │
 │   ├── uq/                      # quantification d'incertitude
 │   │   ├── conforme.py          #     quantile ceil((n+1)(1−α))/n
@@ -168,7 +168,7 @@ Plan légalisé classiquement ──► x₀
    └─────────┤
              │ gap < tol ou k = max_iter
              ▼
-        certify.verify_exactly  (identique)  +  certify.borne.bound_selected_plan
+        certify.verify_exactly  (identique)  +  certify.bound.bound_selected_plan
                                                 (seulement si calibration=...)
              │
              ▼
@@ -191,15 +191,15 @@ qu'il lui est **interdit** de savoir.
 |---|---|---|---|
 | `types` | Structures gelées | Immuabilité, position d'ouverture dérivée | Tout le reste |
 | `erreurs` | Exceptions typées | Aucune `Exception` nue dans le projet | Tout le reste |
-| `geom.graphe` | `ConstraintGraph` | Acyclique ; toute paire séparée | Dimensions, coûts |
+| `geom.graph` | `ConstraintGraph` | Acyclique ; toute paire séparée | Dimensions, coûts |
 | `geom.polytope` | `Polytope` | Tout point ⇒ plan sans chevauchement ; sans jour **seulement** avec `tiling=True` | Objectifs |
-| `lmo.solveur` | `LPSolution` | Optimalité LP, ou Farkas si infaisable | **L'origine de `c`** |
+| `lmo.solver` | `LPSolution` | Optimalité LP, ou Farkas si infaisable | **L'origine de `c`** |
 | `lmo.coupes` | `Cut` | Tangentes : approximation **extérieure**, aucun point admissible exclu, la preuve revérifie les surfaces ; cordes (`inner_area_constraints`) : approximation **intérieure**, aucun point sous une surface minimale | La lumière |
-| `light.protocole` | *(interface)* | Trois méthodes, entrée vectorielle | `geom`, `lmo`, `solve` |
-| `light.appris` | valeur, ∇, σ | Rien en soi — la garantie vient de `uq` | La géométrie |
+| `light.protocol` | *(interface)* | Trois méthodes, entrée vectorielle | `geom`, `lmo`, `solve` |
+| `light.learned` | valeur, ∇, σ | Rien en soi — la garantie vient de `uq` | La géométrie |
 | `solve` | `FrankWolfeResult` | Validité à chaque itéré ; `status` ; le gap est une mesure de stationnarité, pas une distance à l'optimum (aucun substitut livré n'est concave) | L'implémentation du substitut |
 | `orient` | Encodages, statistiques | Continuité en 0°/360° | Le reste du plan |
-| `uq.conforme` | `PerformanceBound` | Couverture ≥ 1−α **sous échangeabilité** | La géométrie |
+| `uq.conformal` | `PerformanceBound` | Couverture ≥ 1−α **sous échangeabilité** | La géométrie |
 | `certify.proof` | `GeometricProof` | Arithmétique rationnelle sur contour rectangulaire axé (seule tolérance `SNAP_M`), GEOS et tolérances déclarées sinon | Toute probabilité |
 | `certify.dual` | `(libellé, coût)` | Traduction fidèle via `origins` | — |
 | `bench` | Découpages, manifestes | Reproductibilité | — |
@@ -231,7 +231,7 @@ Chacune des règles contraignantes est donc doublée d'un mécanisme automatique
 | §5 — couches et dépendances | Analyse AST des imports, un test par module | `tests/test_dependances.py` |
 | §5 — noyau sans `torch` | Sous-processus + inspection de `sys.modules` | idem |
 | §5 — `lmo` ⇏ `light` | Test dédié | idem |
-| §5 — `solve` ⇒ `light.protocole` seul | Test dédié (l'implémentation est refusée) | idem |
+| §5 — `solve` ⇒ `light.protocol` seul | Test dédié (l'implémentation est refusée) | idem |
 | §5 — personne n'importe `bench` | Test dédié | idem |
 | §6 — types gelés | `is_dataclass` + `__dataclass_params__.frozen` | `tests/properties/test_invariants_types.py` |
 | §6 — preuve sans probabilité | Liste noire de noms de champs | idem |
@@ -271,7 +271,7 @@ Où étendre le système sans rien casser, et où **ne pas** l'étendre.
 | Nouvelle réglementation | Nouveau `Regulation` (une **donnée**) | Aucun code de `geom` ni `lmo` à toucher |
 | Nouveau type de contrainte géométrique | Lignes supplémentaires dans `build_polytope` + entrées dans `origins` | Le diagnostic dual reste lisible |
 | Nouveau corpus | Chargeur dans `bench`, `Split` figé | La règle des trois jeux reste tenue |
-| Pièces non rectangulaires | `geom` uniquement : pièces en L par fusion de rectangles (`geom.rectilineaire`) ; le non-Manhattan n'est pas livré | Le reste de la chaîne ne voit qu'un polytope |
+| Pièces non rectangulaires | `geom` uniquement : pièces en L par fusion de rectangles (`geom.rectilinear`) ; le non-Manhattan n'est pas livré | Le reste de la chaîne ne voit qu'un polytope |
 
 **À ne pas faire :** ajouter un argument à `solve` pour « passer un peu de contexte
 lumière ». C'est la manière dont l'ignorance de `lmo` se perd — non pas d'un coup, mais
@@ -295,7 +295,7 @@ sont typés `object`, et la traduction lisible est faite par l'appelant.
 **Alternative écartée :** exceptions dans chaque module. Rejetée — l'utilisateur devrait
 importer depuis quatre endroits pour écrire un `except`.
 
-### ADR-2 — `uq/gestion.py` : jeton d'accès à la calibration
+### ADR-2 — `uq/registry.py` : jeton d'accès à la calibration
 
 `ARCHITECTURE.md` §10 nomme « jeu de calibration lu à l'entraînement » comme la seule
 erreur **silencieuse** capable d'invalider une publication. Une règle d'équipe ne suffit
@@ -306,7 +306,7 @@ au jeu de calibration exige un jeton émis après le gel du modèle ») en code,
 ### ADR-3 — `bench/{manifeste,graines}.py`
 
 Le README exige un manifeste **à chaque exécution, sans exception**, et §7 une graine
-obligatoire sans défaut sur toute fonction qui échantillonne. `bench/graines.deriver`
+obligatoire sans défaut sur toute fonction qui échantillonne. `bench/seeds.deriver`
 donne un flux nommé par composante depuis une graine racine : deux composantes ne
 partagent jamais un flux, et une exécution se rejoue exactement. Sans ce point unique,
 chaque module invente sa convention.
@@ -445,10 +445,10 @@ dans `io`, la mise en forme dans `certify`. Le coût est réel et assumé : deux
 | Jalon | Modules | Livrable | État du squelette |
 |:--:|---|---|---|
 | 1 | `types`, `erreurs`, `io`, `bench.{graines,manifeste}` | Aller-retour JSON | **Terminé** — propriété d'aller-retour verte sur 200 cas |
-| **2** | `geom`, `lmo`, `certify.proof`, `api` | **Légalisation classique + preuve** | Étapes 1 à 3 faites (`geom.graphe`, `geom.polytope`, `lmo.solveur`) ; étapes 4 à 7 à venir |
-| 3 | `light.analytique`, `orient`, `solve` | Performantiel **sans apprentissage** | Contrats écrits |
-| 4 | `light.appris`, `light.validation`, `uq.gestion` | Substitut entraîné + gradient validé | Contrats écrits |
-| 5 | `uq.conforme`, `uq.derive`, `certify.{borne,dual,rapport}` | Certificat complet | Contrats écrits |
+| **2** | `geom`, `lmo`, `certify.proof`, `api` | **Légalisation classique + preuve** | Étapes 1 à 3 faites (`geom.graph`, `geom.polytope`, `lmo.solver`) ; étapes 4 à 7 à venir |
+| 3 | `light.analytic`, `orient`, `solve` | Performantiel **sans apprentissage** | Contrats écrits |
+| 4 | `light.learned`, `light.validation`, `uq.registry` | Substitut entraîné + gradient validé | Contrats écrits |
+| 5 | `uq.conformal`, `uq.drift`, `certify.{borne,dual,rapport}` | Certificat complet | Contrats écrits |
 | 6 | non-Manhattan, actif, IFC | v1.0 | — |
 
 > **État au lot 1.8 (PLAN.md).** Ce tableau décrit le squelette du jalon 1 et n'est
@@ -470,7 +470,7 @@ coupes et ceux de dérive. Écrite une fois ici, elle évite trois générateurs
 | Unités | mètres, m², degrés d'azimut | Docstrings ; revue |
 | Origine | coin bas-gauche, `y` vers le nord | `geom.polytope` |
 | Déterminisme | tri explicite des identifiants, jamais l'ordre d'un `set` | `Plan.ids_pieces`, `RelativeOrder.rooms` |
-| Graines | `seed: int` obligatoire, **sans défaut** | Signatures de `uq.derive`, `light.validation` |
+| Graines | `seed: int` obligatoire, **sans défaut** | Signatures de `uq.drift`, `light.validation` |
 | Métriques | valeur **+** intervalle, jamais un scalaire nu | `PerformanceBound` |
 | Journaux | `structlog`, structuré, jamais de texte libre | Revue |
 | Dictionnaires gelés | tuples de paires dans les types gelés | `Regulation`, `Manifest`, `Certificate` |

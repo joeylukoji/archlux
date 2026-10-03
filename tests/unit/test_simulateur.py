@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from archlux.light.protocole import Surrogate
-from archlux.light.simulateur import SplitFluxOracle, daylight_factor
+from archlux.light.protocol import Surrogate
+from archlux.light.split_flux import SplitFluxOracle, daylight_factor
 from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 

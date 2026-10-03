@@ -9,13 +9,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.data.decoupage import Split, load_split
+from archlux.data.splits import Split, load_split
 from archlux.errors import InvariantViolation
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from archlux.light.protocole import Surrogate
+    from archlux.light.protocol import Surrogate
     from archlux.types import Plan
 
 __all__ = ["Split", "compare", "load_split"]
@@ -34,12 +34,12 @@ def compare(
     **No default**: omitting the argument raises ``TypeError``.
 
     ``Surrogate`` is vectorial: the callback must turn the ``Plan`` into a vector
-    ``(x, y, w, h)`` (see :func:`archlux.light.jetons.plan_to_vector`) before
+    ``(x, y, w, h)`` (see :func:`archlux.light.tokens.plan_to_vector`) before
     calling ``evaluate``.
 
     **Known limitation**: the returned value is a **bare** mean, without an
     interval, which `ARCHITECTURE.md` §7 and §10 forbid for a published metric.
-    Use :func:`archlux.bench.rapport.report` (stratified, bootstrap) for any paper
+    Use :func:`archlux.bench.report.report` (stratified, bootstrap) for any paper
     table; ``compare`` only serves to roughly rank surrogates.
 
     Raises
@@ -60,7 +60,7 @@ def compare(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "Decoupage": Alias(Split, "archlux.bench.protocole.Split"),
-        "charger_decoupage": Alias(load_split, "archlux.bench.protocole.load_split"),
+        "Decoupage": Alias(Split, "archlux.bench.protocol.Split"),
+        "charger_decoupage": Alias(load_split, "archlux.bench.protocol.load_split"),
     },
 )

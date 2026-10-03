@@ -12,10 +12,10 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import build_polytope
 from archlux.lmo.cuts import Cut
-from archlux.lmo.solveur import solve
+from archlux.lmo.solver import solve
 from archlux.types import Context, Orientation, Regulation, Structure
 
 CTX = Context(

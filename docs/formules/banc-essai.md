@@ -1,6 +1,6 @@
 # Banc d'essai
 
-**Code :** `bench.run`, `bench.compare`, `bench.rapport`, `bench.stats`.
+**Code :** `bench.run`, `bench.compare`, `bench.report`, `bench.stats`.
 
 ## Énoncé
 
@@ -65,7 +65,7 @@ significatif (« power observée ») n'a pas de valeur inférentielle.
 
 - `evaluate_by` est un oracle **externe** — jamais le substitut qu'on optimise,
   sans quoi on mesure l'erreur du modèle contre lui-même.
-- Graine racine obligatoire ; sous-graines via `bench.graines.derive`.
+- Graine racine obligatoire ; sous-graines via `bench.seeds.derive`.
 - Le bootstrap suppose les \(d_i\) échangeables entre plans ; il ne corrige **pas**
   une dépendance entre plans issus d'un même bâtiment. Sur un corpus réel
   (plusieurs étages d'un même immeuble), rééchantillonner par **grappe**.
@@ -76,10 +76,10 @@ significatif (« power observée ») n'a pas de valeur inférentielle.
 
 | Symbole | Fonction |
 |---|---|
-| manifeste | `bench.manifeste.emit` / `ModelTrace` |
+| manifeste | `bench.manifest.emit` / `ModelTrace` |
 | orchestration | `bench.run` → `Result` |
 | comparaison | `bench.compare` |
-| rapport | `bench.rapport` |
+| rapport | `bench.report` |
 | \(\mathrm{IC}\) bootstrap | `bench.stats.paired_bootstrap` |
 | équivalence | `bench.stats.tost` |
 | multiplicité | `bench.stats.holm` |

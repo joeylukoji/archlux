@@ -11,9 +11,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.protocole import PerRoomSurrogate, Surrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.protocol import PerRoomSurrogate, Surrogate
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.types import Orientation
 
 IMPLEMENTATIONS = [AnalyticSurrogate, SplitFluxOracle]
@@ -115,7 +115,7 @@ def test_les_parts_ignorent_les_baies_pour_les_substituts_analytiques() -> None:
     C'est explicite, pas accidentel — et c'est ce qui leur vaut `R2 = -0,000` contre
     une irradiance simulee.
     """
-    from archlux.light.protocole import Glazing
+    from archlux.light.protocol import Glazing
     from archlux.types import Opening, Wall
 
     x = _plan(3)

@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
-from archlux.bench.manifeste import emit
+from archlux.bench.manifest import emit
 from archlux.errors import InvariantViolation
 from archlux.io.json_io import manifest_to_dict
-from archlux.light.protocole import Surrogate
+from archlux.light.protocol import Surrogate
 from archlux.types import Manifest, ModelTrace, Orientation, Plan
 
 __all__ = ["Manifest", "RawRow", "Result", "run"]

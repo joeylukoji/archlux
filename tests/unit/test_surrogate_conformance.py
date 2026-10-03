@@ -14,12 +14,12 @@ import numpy as np
 import pytest
 
 import archlux
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.appris import LearnedSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.base import DenseSurrogate
-from archlux.light.objectif import Daylight
-from archlux.light.protocole import Glazing, Surrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.learned import LearnedSurrogate
+from archlux.light.objective import Daylight
+from archlux.light.protocol import Glazing, Surrogate
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers
 

@@ -13,8 +13,8 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvalidInput
-from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode, encode_orientation
+from archlux.light.protocol import Glazing
+from archlux.orient.circular import encode, encode_orientation
 from archlux.types import Context, Opening, Orientation, Plan, Wall
 from archlux.types import vectorize as _vectorize
 
@@ -202,11 +202,11 @@ def vector_to_tokens(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "permuter_pieces": Alias(permute_rooms, "archlux.light.jetons.permute_rooms"),
-        "plan_vers_vecteur": Alias(plan_to_vector, "archlux.light.jetons.plan_to_vector"),
-        "plan_vers_jetons": Alias(plan_to_tokens, "archlux.light.jetons.plan_to_tokens"),
-        "vecteur_vers_jetons": Alias(vector_to_tokens, "archlux.light.jetons.vector_to_tokens"),
-        "DIM_JETON": Alias(TOKEN_DIM, "archlux.light.jetons.TOKEN_DIM"),
-        "CHAMPS_PAR_PIECE": Alias(FIELDS_PER_ROOM, "archlux.light.jetons.FIELDS_PER_ROOM"),
+        "permuter_pieces": Alias(permute_rooms, "archlux.light.tokens.permute_rooms"),
+        "plan_vers_vecteur": Alias(plan_to_vector, "archlux.light.tokens.plan_to_vector"),
+        "plan_vers_jetons": Alias(plan_to_tokens, "archlux.light.tokens.plan_to_tokens"),
+        "vecteur_vers_jetons": Alias(vector_to_tokens, "archlux.light.tokens.vector_to_tokens"),
+        "DIM_JETON": Alias(TOKEN_DIM, "archlux.light.tokens.TOKEN_DIM"),
+        "CHAMPS_PAR_PIECE": Alias(FIELDS_PER_ROOM, "archlux.light.tokens.FIELDS_PER_ROOM"),
     },
 )

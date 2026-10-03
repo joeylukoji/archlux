@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from archlux.bench.protocole import compare
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.bench.protocol import compare
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import Plan, Room
 
 

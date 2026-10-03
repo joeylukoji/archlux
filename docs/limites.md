@@ -31,7 +31,7 @@ pas le même :
 Un plan corrompu est un plan valide dont une cote a bougé : sa trame existe, il suffit
 de la retrouver. Une sortie de générateur n'a **pas de trame** — ses pièces ne partagent
 presque aucune ligne, l'union tombe en quatre morceaux, et la structure combinatoire
-que `geom.pavage` exploite n'est pas seulement violée, elle est absente.
+que `geom.tiling` exploite n'est pas seulement violée, elle est absente.
 
 Conséquences chiffrées, à budget de réparation 16 et `largeur_min = 0,50 m` :
 
@@ -111,12 +111,12 @@ Détail et protocole : `results/j7_variance.md`.
 ## Le substitut appris n'a jamais vu de mesure
 
 Les étiquettes **livrées dans ce dépôt** viennent de
-`light.simulateur.SplitFluxOracle`, une **forme fermée** (analytique CIBSE +
+`light.split_flux.SplitFluxOracle`, une **forme fermée** (analytique CIBSE +
 split-flux BRE). Le perceptron `light.base.DenseSurrogate` y apprend le *résidu* entre
 cette forme fermée et `AnalyticSurrogate` : deux formules connues, sur 90 pavages
 2×2 à deux degrés de liberté, sans murs ni ouvertures.
 
-Des étiquettes réelles sont désormais atteignables — `data.chargeurs` joint MSD aux
+Des étiquettes réelles sont désormais atteignables — `data.loaders` joint MSD aux
 simulations Swiss Dwellings, 18 263 appartements sur 18 270 — mais elles ne sont pas
 redistribuées, et la mesure faite contre elles est un **résultat négatif** : voir
 ci-dessus.

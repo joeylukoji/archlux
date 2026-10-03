@@ -8,8 +8,8 @@ the same stream, on every machine and version.
 The hash is **cryptographic and unsalted** (BLAKE2b truncated to 32 bits): Python's
 ``hash()`` is randomized per process, which would make the derivation irreproducible.
 
-This module imports only ``hashlib``, so every layer may depend on it; ``bench.graines``
-and ``data.synthese`` use it too.
+This module imports only ``hashlib``, so every layer may depend on it; ``bench.seeds``
+and ``data.synthetic`` use it too.
 """
 
 from __future__ import annotations

@@ -25,13 +25,12 @@ import numpy as np
 
 from archlux._deprecation import renamed_parameters
 from archlux.arrays import VecteurF
-from archlux.certify.borne import bound_selected_plan, check_calibration
+from archlux.certify.bound import bound_selected_plan, check_calibration
 from archlux.certify.dual import translate_duals
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
-from archlux.geom.graphe import RelativeOrder, deduce_order
-from archlux.geom.pavage import Grid, deduce_grid, extend_tiling, snap_to_grid
+from archlux.geom.graph import RelativeOrder, deduce_order
 from archlux.geom.polytope import (
     Polytope,
     build_polytope,
@@ -40,17 +39,18 @@ from archlux.geom.polytope import (
     freeze_contacts,
     vectorize,
 )
-from archlux.geom.rectilineaire import (
+from archlux.geom.rectilinear import (
     RectilinearRoom,
     extend_merges,
     minimum_area_shares,
 )
-from archlux.light.protocole import Glazing, Surrogate, point_prediction
+from archlux.geom.tiling import Grid, deduce_grid, extend_tiling, snap_to_grid
+from archlux.light.protocol import Glazing, Surrogate, point_prediction
 from archlux.lmo.cuts import (
     inner_area_constraints,
     solve_with_areas,
 )
-from archlux.lmo.solveur import LPSolution
+from archlux.lmo.solver import LPSolution
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.tolerances import SNAP_M
 from archlux.types import Certificate, Context, GeometricProof, Plan
@@ -59,7 +59,7 @@ from archlux.validation import resolve_outline, validate_inputs
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from archlux.certify.borne import Calibration
+    from archlux.certify.bound import Calibration
     from archlux.solve.trace import Trace
 
 __all__ = ["gradient_distance", "legalize", "legalize_trace"]
@@ -263,7 +263,7 @@ def _build_problem(
     repair_budget: int,
 ) -> _Problem:
     """Derive the relative order, the polytope and the reference vector of a plan."""
-    # Makes a gap unrepresentable: see ``geom.pavage``. Raises if the grid of the
+    # Makes a gap unrepresentable: see ``geom.tiling``. Raises if the grid of the
     # proposed plan cannot be recovered: an explicit failure, not a silent one.
     grid = deduce_grid(plan, ctx, repair_budget=repair_budget) if tiling else None
     # With a grid, the order is read from the plan snapped onto it: the order read from
@@ -383,7 +383,7 @@ def _optimize_light(
     # that pair with poly_fw.origins. Failing that, keep those of the L1 pass: they
     # describe another polytope, but are at least labelled correctly. Careful:
     # figer_contacts moved the saturated rows into A_eq, which is not dualized; this
-    # diagnostic is therefore often empty (see lmo.solveur.resoudre).
+    # diagnostic is therefore often empty (see lmo.solver.resoudre).
     duals = duals_l1
     if result.duals is not None:
         duals = _translated_duals(result.duals, poly_fw, objective=objective.indicator)
@@ -414,7 +414,7 @@ def _not_a_surrogate(objective: object) -> str:
     It names the members to rename when the object has the pre-rename French ones
     (review of the stack, #9).
     """
-    message = "objective must implement archlux.light.protocole.Surrogate"
+    message = "objective must implement archlux.light.protocol.Surrogate"
     legacy = [old for old in _RENAMED_MEMBERS if hasattr(objective, old)]
     if not legacy:
         return message
@@ -536,7 +536,7 @@ def legalize(
     ----------
     plan : Plan
         Proposed plan, possibly invalid. An L-shaped room must already be decomposed into
-        sub-rectangles (:func:`~archlux.geom.rectilineaire.decompose`).
+        sub-rectangles (:func:`~archlux.geom.rectilinear.decompose`).
     ctx : Contexte
         Load-bearing structure, orientation, outline, regulation.
     objective : Substitut or None, optional
@@ -563,7 +563,7 @@ def legalize(
         become equalities of ``A_eq``; on the orthogonal axis, the order of the
         sub-rectangle ends is kept and every shared edge keeps at least
         ``regulation.min_width`` of length, so an L cannot turn into a Z or split
-        (:func:`~archlux.geom.rectilineaire.overlap_constraints`).
+        (:func:`~archlux.geom.rectilinear.overlap_constraints`).
     tiling : bool, optional
         Require that the union of the rooms **tiles the outline exactly**. Without it,
         the separations of the polytope being inequalities, a plan with a gap remains the
@@ -578,14 +578,14 @@ def legalize(
         Figures measured before batch 1.1.
 
         Requires the grid of the proposed plan to be recoverable
-        (:func:`~archlux.geom.pavage.deduce_grid`); otherwise ``GridNotRecoverable``
+        (:func:`~archlux.geom.tiling.deduce_grid`); otherwise ``GridNotRecoverable``
         names the faulty cells. Default ``False``: the 1.x contract is unchanged.
         With a grid, the relative order and the load-bearing sides are read from
-        the plan snapped onto it (:func:`~archlux.geom.pavage.snap_to_grid`), so
+        the plan snapped onto it (:func:`~archlux.geom.tiling.snap_to_grid`), so
         that they never contradict the tiling equalities.
     repair_budget : int, optional
         Number of repair steps granted to the grid recovery, passed as is to
-        :func:`~archlux.geom.pavage.deduce_grid`. No effect if ``tiling`` is false.
+        :func:`~archlux.geom.tiling.deduce_grid`. No effect if ``tiling`` is false.
 
         The default ``4`` is tuned on **corrupted** plans, where the fault is a wrong
         dimension and is absorbed in one or two steps. The output of a generative model
@@ -631,7 +631,7 @@ def legalize(
         ``calibration`` without ``objective`` or for another indicator. Its ``field``
         names the argument (a ``ValueError`` subclass).
     TypeError
-        ``objective`` does not implement :class:`~archlux.light.protocole.Surrogate`.
+        ``objective`` does not implement :class:`~archlux.light.protocol.Surrogate`.
 
     Guarantees
     ----------

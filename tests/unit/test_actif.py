@@ -7,11 +7,11 @@ from dataclasses import dataclass, field
 import numpy as np
 import pytest
 
-from archlux.active.boucle import Batch, Loop
 from archlux.active.densite import kernel_density
+from archlux.active.loop import Batch, Loop
 from archlux.active.selection import RandomStrategy, UncertaintyTimesDensity
 from archlux.errors import InvariantViolation
-from archlux.light.protocole import Adjustable
+from archlux.light.protocol import Adjustable
 from archlux.types import Orientation
 
 
@@ -252,7 +252,7 @@ def _short_campaign(surrogate: object) -> None:
 
 def test_the_ajuster_deprecation_points_at_the_caller_of_run() -> None:
     """Review of block 12: the warning moved two frames deeper with the ``run`` split,
-    so it was attributed to ``boucle.py`` and hidden by Python's default filters."""
+    so it was attributed to ``loop.py`` and hidden by Python's default filters."""
 
     class Legacy(_ModeleLocal):
         fit = None  # type: ignore[assignment]

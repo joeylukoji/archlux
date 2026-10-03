@@ -1,6 +1,6 @@
 # Pavage exact
 
-**Code :** `geom.grid.deduce_grid` (re-exported by `geom.pavage`), `extend_tiling` ; `api.legalize(..., tiling=True)`.
+**Code :** `geom.grid.deduce_grid` (re-exported by `geom.tiling`), `extend_tiling` ; `api.legalize(..., tiling=True)`.
 
 ## Le problème
 

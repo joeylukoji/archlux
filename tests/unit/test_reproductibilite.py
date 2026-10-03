@@ -10,8 +10,8 @@ import datetime as dt
 
 import pytest
 
-from archlux.bench.graines import derive
-from archlux.bench.manifeste import emit
+from archlux.bench.manifest import emit
+from archlux.bench.seeds import derive
 
 
 class TestDeriver:

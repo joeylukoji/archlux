@@ -13,7 +13,7 @@ import pytest
 from scipy import sparse
 
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import (
     build_polytope,
     devectorize,
@@ -268,7 +268,7 @@ def test_un_contour_degenere_est_refuse() -> None:
 
 def test_figer_contacts_interdit_un_jour() -> None:
     """Un pavage saturé, figé, n'admet plus d'écartement des pièces."""
-    from archlux.geom.graphe import deduce_order
+    from archlux.geom.graph import deduce_order
 
     poly = build_polytope(deduce_order(PLAN_AB), CTX)
     x = vectorize(PLAN_AB, poly.index)

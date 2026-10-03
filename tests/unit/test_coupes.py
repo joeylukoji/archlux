@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import build_polytope
 from archlux.lmo.cuts import area_cut, violated_areas
 from archlux.types import Context, Orientation, Regulation, Room, Structure

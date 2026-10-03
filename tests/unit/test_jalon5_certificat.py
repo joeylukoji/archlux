@@ -8,12 +8,12 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-from archlux.certify.borne import build_bound
+from archlux.certify.bound import build_bound
 from archlux.certify.dual import translate_duals
 from archlux.errors import InvariantViolation
 from archlux.geom.polytope import Polytope
-from archlux.light.objectif import Daylight
-from archlux.light.protocole import Surrogate
+from archlux.light.objective import Daylight
+from archlux.light.protocol import Surrogate
 from archlux.types import (
     Certificate,
     GeometricProof,
@@ -21,9 +21,9 @@ from archlux.types import (
     Orientation,
     PerformanceBound,
 )
-from archlux.uq.conforme import Calibration
-from archlux.uq.derive import DriftDiagnostic, check_drift, measure_drift
-from archlux.uq.fiabilite import crps, reliability_diagram, stratify_by_orientation
+from archlux.uq.conformal import Calibration
+from archlux.uq.drift import DriftDiagnostic, check_drift, measure_drift
+from archlux.uq.reliability import crps, reliability_diagram, stratify_by_orientation
 
 
 def _poly() -> Polytope:

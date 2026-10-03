@@ -198,7 +198,7 @@ def deduce_order(
         the side it stays on (:class:`WallSide`), read from the plan like the order
         between two rooms. A room that crosses a wall gets the smallest correction.
     groups : tuple of tuple of str, optional
-        Sub-rectangles of one fused room (an L, see :mod:`archlux.geom.rectilineaire`).
+        Sub-rectangles of one fused room (an L, see :mod:`archlux.geom.rectilinear`).
         Each takes its own side of a wall, unless two of them take **opposite** sides
         on one axis (one left of it, one right of it): only then can a seam between
         them land on the wall, inside the room. The group then takes one side, read
@@ -226,7 +226,7 @@ def deduce_order(
 
     Examples
     --------
-    >>> from archlux.geom.graphe import deduce_order
+    >>> from archlux.geom.graph import deduce_order
     >>> from archlux.types import Room, Plan
     >>> left = Room(id="A", type="living_room", x=0.0, y=0.0, w=1.0, h=1.0)
     >>> right = Room(id="B", type="living_room", x=5.0, y=0.0, w=1.0, h=1.0)
@@ -614,12 +614,12 @@ def transitive_reduction(g: ConstraintGraph) -> ConstraintGraph:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "OrdreRelatif": Alias(RelativeOrder, "archlux.geom.graphe.RelativeOrder"),
-        "GrapheContraintes": Alias(ConstraintGraph, "archlux.geom.graphe.ConstraintGraph"),
-        "deduire_ordre": Alias(deduce_order, "archlux.geom.graphe.deduce_order"),
-        "construire_graphe": Alias(build_graph, "archlux.geom.graphe.build_graph"),
+        "OrdreRelatif": Alias(RelativeOrder, "archlux.geom.graph.RelativeOrder"),
+        "GrapheContraintes": Alias(ConstraintGraph, "archlux.geom.graph.ConstraintGraph"),
+        "deduire_ordre": Alias(deduce_order, "archlux.geom.graph.deduce_order"),
+        "construire_graphe": Alias(build_graph, "archlux.geom.graph.build_graph"),
         "reduction_transitive": Alias(
-            transitive_reduction, "archlux.geom.graphe.transitive_reduction"
+            transitive_reduction, "archlux.geom.graph.transitive_reduction"
         ),
     },
 )

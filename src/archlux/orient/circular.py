@@ -176,7 +176,7 @@ def dominant_direction(
 
     Examples
     --------
-    >>> from archlux.orient.circulaire import direction_dominante
+    >>> from archlux.orient.circular import direction_dominante
     >>> round(direction_dominante([10.0, 100.0, 190.0, 280.0]), 6)
     10.0
     >>> round(direction_dominante([0.0, 90.0], [1.0, 3.0]), 6)
@@ -306,7 +306,7 @@ def sector(
         ``True`` (default): sector 0 is centered on 0 degrees, i.e.
         ``[-w/2, w/2[`` where ``w = 360 / n_sectors`` (the compass-rose convention
         :func:`stratify` names). ``False``: sector 0 is ``[0, w[`` (edge-aligned).
-        No caller in ``src`` uses it: :func:`archlux.uq.fiabilite.stratify_by_orientation`
+        No caller in ``src`` uses it: :func:`archlux.uq.reliability.stratify_by_orientation`
         needs this convention but keeps its own copy (``uq`` may not import ``orient``,
         ARCHITECTURE.md §5); a test pins both to the same partition of ``[0, 360[``.
 
@@ -356,21 +356,21 @@ def stratify(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "ResultatRegression": Alias(RegressionResult, "archlux.orient.circulaire.RegressionResult"),
+        "ResultatRegression": Alias(RegressionResult, "archlux.orient.circular.RegressionResult"),
         "difference_angulaire": Alias(
-            angular_difference, "archlux.orient.circulaire.angular_difference"
+            angular_difference, "archlux.orient.circular.angular_difference"
         ),
         "direction_dominante": Alias(
-            dominant_direction, "archlux.orient.circulaire.dominant_direction"
+            dominant_direction, "archlux.orient.circular.dominant_direction"
         ),
-        "encoder": Alias(encode_orientation, "archlux.orient.circulaire.encode_orientation"),
-        "moyenne_circulaire": Alias(circular_mean, "archlux.orient.circulaire.circular_mean"),
+        "encoder": Alias(encode_orientation, "archlux.orient.circular.encode_orientation"),
+        "moyenne_circulaire": Alias(circular_mean, "archlux.orient.circular.circular_mean"),
         "regression_circulaire_lineaire": Alias(
-            circular_linear_regression, "archlux.orient.circulaire.circular_linear_regression"
+            circular_linear_regression, "archlux.orient.circular.circular_linear_regression"
         ),
-        "stratifier": Alias(stratify, "archlux.orient.circulaire.stratify"),
+        "stratifier": Alias(stratify, "archlux.orient.circular.stratify"),
         "variance_circulaire": Alias(
-            circular_variance, "archlux.orient.circulaire.circular_variance"
+            circular_variance, "archlux.orient.circular.circular_variance"
         ),
     },
 )

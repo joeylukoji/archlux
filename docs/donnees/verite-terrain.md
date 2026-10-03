@@ -10,9 +10,9 @@ silence invaliderait toute publication.
 
 | Élément | Ce qui est livré |
 |---|---|
-| Corpus | 90 pavages 2×2 synthétiques, enveloppe 12 m × 9 m figée (`data.synthese`) |
+| Corpus | 90 pavages 2×2 synthétiques, enveloppe 12 m × 9 m figée (`data.synthetic`) |
 | Découpage | 54 / 18 / 18 (`splits/v1/`) |
-| Étiquettes | `light.simulateur.SplitFluxOracle` — **une forme fermée** |
+| Étiquettes | `light.split_flux.SplitFluxOracle` — **une forme fermée** |
 | Modèle | `light.base.DenseSurrogate`, perceptron 3 couches, poids `numpy` |
 | Cible apprise | le **résidu** `SplitFluxOracle − AnalyticSurrogate` |
 
@@ -72,7 +72,7 @@ Le seul chemin vers un **vrai sDA₍₃₀₀/₅₀ %₎** au sens IES LM-83.
   existe pour éviter — et c'est ce qui rend l'apprentissage actif (`archlux.active`)
   pertinent plutôt que décoratif.
 - L'extra `sim` du `pyproject.toml` est **vide à dessein** : le moteur se branche
-  derrière `light.simulateur` sans toucher au protocole `Surrogate`.
+  derrière `light.split_flux` sans toucher au protocole `Surrogate`.
 
 Ordre de grandeur pour un article : 2 000 à 5 000 plans simulés suffisent à un
 découpage 60/20/20 honnête, avec **n ≥ 500 en calibration** — au niveau α = 0,10,
@@ -92,7 +92,7 @@ calibrer séparément sur le sous-jeu à baies observées et sur le jeu imputé,
 
 ## 3. Ce que le corpus synthétique peut et ne peut pas faire
 
-`data.synthese.generate_corpus` reste utile, et doit rester :
+`data.synthetic.generate_corpus` reste utile, et doit rester :
 
 - il fait tourner la CI sans télécharger des gigaoctets ;
 - il est déterministe, donc les certificats sont reproductibles ;
@@ -101,7 +101,7 @@ calibrer séparément sur le sous-jeu à baies observées et sur le jeu imputé,
 Il ne peut pas servir de corpus d'évaluation :
 
 - **aucun mur** (`murs=()`) et **aucune ouverture** (`ouvertures=()`) — les jetons
-  de baie de `light.jetons._jeton_ouverture` ne sont donc **jamais exercés** sur
+  de baie de `light.tokens._jeton_ouverture` ne sont donc **jamais exercés** sur
   le corpus livré, et le WWR de `SplitFluxOracle` reste à sa valeur par défaut
   quelle que soit la fenestration réelle ;
 - enveloppe unique, quatre pièces, deux degrés de liberté ;
@@ -122,14 +122,14 @@ calibration rend la couverture annoncée fausse — trop optimiste — et **rien
 signale** : ni les tests, ni la revue. C'est la seule erreur silencieuse du
 système capable d'invalider un chiffre publié (`ARCHITECTURE.md` §10).
 
-Le verrou d'implémentation est `uq.gestion.issue_token` : le jeton n'est
+Le verrou d'implémentation est `uq.registry.issue_token` : le jeton n'est
 émissible qu'après l'empreinte des poids gelés.
 
 ---
 
 ## 5. Ce que la jointure a donné, une fois faite
 
-Le chargeur existe désormais (`data.chargeurs.load_sd_labels`,
+Le chargeur existe désormais (`data.loaders.load_sd_labels`,
 `label`, `split_by_site`) et la jointure fonctionne :
 
 | | |
@@ -150,10 +150,10 @@ est le facteur limitant.
 
 | Manque | Où il devrait vivre |
 |---|---|
-| Chargeur WKT → `Plan` (Swiss Dwellings / MSD) | `data/chargeurs.py` (n'existe pas) |
+| Chargeur WKT → `Plan` (Swiss Dwellings / MSD) | `data/loaders.py` (n'existe pas) |
 | Projection ouverture WKT → `(mur_id, s, largeur_rel)` | idem |
 | Adaptateur Radiance derrière `Surrogate` | `light/radiance.py`, extra `sim` |
-| Transformeur sur jetons | `light/appris.py` — aujourd'hui `_charger_torch` lève toujours |
+| Transformeur sur jetons | `light/learned.py` — aujourd'hui `_charger_torch` lève toujours |
 | Résultats de couverture sur corpus réel | `results/` |
 
 **Voir aussi :** [Swiss Dwellings](swiss-dwellings.md), [MSD](msd.md),

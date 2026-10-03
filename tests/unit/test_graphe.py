@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 from archlux.errors import InconsistentOrder, MissingSeparation
-from archlux.geom.graphe import (
+from archlux.geom.graph import (
     RelativeOrder,
     build_graph,
     deduce_order,

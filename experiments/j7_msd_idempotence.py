@@ -12,7 +12,7 @@ import numpy as np
 
 import archlux as ax
 from archlux.certify import verify_exactly
-from archlux.data.chargeurs import LoadStatistics, load_msd
+from archlux.data.loaders import LoadStatistics, load_msd
 
 MSD, N = Path(sys.argv[1]), int(sys.argv[2]) if len(sys.argv) > 2 else 400
 OUT = Path(sys.argv[3] if len(sys.argv) > 3 else "results") / "j7_msd_idempotence.md"

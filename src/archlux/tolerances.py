@@ -11,12 +11,12 @@ may depend on it.
 
 Not registered yet (inventoried in phase 1.5): ``geom.diagnostic._AIRE_MIN``, the
 ``tol`` defaults of ``Polytope.contient`` and ``lmo.coupes.satisfait``, the pivot of
-``geom.rectilineaire``, ``lmo.coupes._TOLERANCE_BORNE``, ``api._DUAL_SEUIL``, the
-``seuil`` of ``certify.dual`` and ``geom.pavage._EPS``.
+``geom.rectilinear``, ``lmo.coupes._TOLERANCE_BORNE``, ``api._DUAL_SEUIL``, the
+``seuil`` of ``certify.dual`` and ``geom.tiling._EPS``.
 
 Known inconsistencies (to be resolved in phase 1.5)
 ----------------------------------------------------
-- Contact: rooms are adjacent below ``CONTACT_M`` in ``geom.graphe`` but contacts are
+- Contact: rooms are adjacent below ``CONTACT_M`` in ``geom.graph`` but contacts are
   frozen below ``SNAP_M`` in ``geom.polytope.freeze_contacts``.
 """
 
@@ -27,13 +27,13 @@ from typing import Final
 # --- Lengths (metres) ----------------------------------------------------------------
 
 CONTACT_M: Final = 1e-9
-"""Gap under which two rooms are adjacent (``geom.graphe.TOLERANCE_CONTACT``)."""
+"""Gap under which two rooms are adjacent (``geom.graph.TOLERANCE_CONTACT``)."""
 
 SNAP_M: Final = 1e-7
 """Gap under which a contact is frozen or a rectangle edge is snapped
-(``geom.polytope.freeze_contacts``, ``geom.rectilineaire._TOL_RECT``); also the tolerance
+(``geom.polytope.freeze_contacts``, ``geom.rectilinear._TOL_RECT``); also the tolerance
 under which a load-bearing wall counts as axis-aligned, or as a point to ignore
-(``geom.graphe``)."""
+(``geom.graph``)."""
 
 WALL_M: Final = 1e-7
 """Wall tolerance of the proof (``certify.proof``): two wall end points closer than this
@@ -47,7 +47,7 @@ CUTS_LENGTH_M: Final = 1e-6
 
 OVERLAP_M2: Final = 1e-9
 """Intersection area under which two rooms do not overlap (``certify.proof``,
-``export.pathologie``)."""
+``export.pathologies``)."""
 
 GAP_M2: Final = 1e-6
 """Uncovered area under which the outline counts as tiled (``certify.proof``)."""

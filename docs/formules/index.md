@@ -11,25 +11,25 @@ Les pages `formules/` expliquent *quelle égalité* est codée, et d'où elle vi
 
 | Étape | Module | Page | Garantie |
 |---|---|---|---|
-| Ordre relatif | `geom.graphe` | [Ordre et graphe](ordre-relatif.md) | exacte |
+| Ordre relatif | `geom.graph` | [Ordre et graphe](ordre-relatif.md) | exacte |
 | Polytope | `geom.polytope` | [Séparations linéaires](polytope-separe.md) | exacte |
 | Objectif L1 | `geom.polytope`, `api` | [Épigraphe L1](epigraphe-l1.md) | exacte (reformulation) |
 | Surfaces | `lmo.coupes` | [Coupes de surface](coupes-surface.md) | exacte (appui convexe) |
-| Oracle LP | `lmo.solveur` | [Simplexe, duaux, Farkas](farkas.md) | exacte (LP) |
+| Oracle LP | `lmo.solver` | [Simplexe, duaux, Farkas](farkas.md) | exacte (LP) |
 | Preuve | `certify.proof` | [Vérification exacte](preuve-exacte.md) | exacte (inspection) |
 | Chaîne | `api.legalize` | [Pipeline](pipeline.md) | exacte en sortie |
-| Orientation | `orient.circulaire` | [Statistiques circulaires](circulaire.md) | exacte (trigo) |
-| Substitut J3 | `light.analytique` | [Substitut analytique](substitut-analytique.md) | **sans garantie** |
-| Split-flux J4 | `light.simulateur` | [Facteur de lumière du jour](split-flux.md) | **sans garantie** (pas un sDA) |
-| Rectilinéaire J6 | `geom.rectilineaire` | [Décomposition L](rectilineaire.md) | exacte (partition + fusions) |
+| Orientation | `orient.circular` | [Statistiques circulaires](circulaire.md) | exacte (trigo) |
+| Substitut J3 | `light.analytic` | [Substitut analytique](substitut-analytique.md) | **sans garantie** |
+| Split-flux J4 | `light.split_flux` | [Facteur de lumière du jour](split-flux.md) | **sans garantie** (pas un sDA) |
+| Rectilinéaire J6 | `geom.rectilinear` | [Décomposition L](rectilineaire.md) | exacte (partition + fusions) |
 | Actif J6 | `active` | [Apprentissage actif](apprentissage-actif.md) | budget de sims |
 | Export J6 | `export` | [IFC / DXF / Wilson](export-bim.md) | exacte (pathologies) ; Wilson |
 | Banc J6 | `bench` | [Banc d'essai](banc-essai.md) | trace + stats |
-| Jetons J4 | `light.jetons` | [Jetons](jetons.md) | continu (anti-image) |
+| Jetons J4 | `light.tokens` | [Jetons](jetons.md) | continu (anti-image) |
 | Substitut appris J4 | `light.base` | — (perceptron `numpy`) | **sans garantie** ; cible = résidu analytique |
 | Gradient J4 | `light.validation` | [Validation du gradient](validation-gradient.md) | accord de signe |
 | Frank-Wolfe | `solve.frank_wolfe` | [Frank-Wolfe](frank-wolfe.md) | itérés exacts ; gap d'opt. |
-| Statistique J5 | `uq.conforme` | [Prédiction conforme](statistique.md) | probabiliste |
+| Statistique J5 | `uq.conformal` | [Prédiction conforme](statistique.md) | probabiliste |
 
 ## Comment lire une fiche
 

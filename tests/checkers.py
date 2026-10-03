@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
+from archlux.geom.rectilinear import MERGE_RIGHT, RectilinearRoom
 from archlux.types import Context, Plan, Room
 
 TOLERANCE = 1e-6

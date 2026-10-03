@@ -20,9 +20,9 @@ import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.data.corruption import corrupt
 from archlux.errors import InvariantViolation
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.lmo import solveur
-from archlux.lmo.solveur import solve
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.lmo import solver
+from archlux.lmo.solver import solve
 from archlux.solve import frank_wolfe as fw_module
 from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.types import Context, Orientation, Plan
@@ -80,7 +80,7 @@ def test_no_successful_lp_gives_an_infinite_gap(monkeypatch: pytest.MonkeyPatch)
     """A gap of 0 would read as 'optimum reached' (AUDIT.md §5.1)."""
     real = solve(POLY, np.zeros(4))
 
-    def failing(*args: object, **kwargs: object) -> solveur.LPSolution:
+    def failing(*args: object, **kwargs: object) -> solver.LPSolution:
         return replace(real, status="limite")
 
     monkeypatch.setattr(fw_module, "solve", failing)
@@ -159,7 +159,7 @@ def test_a_failing_lp_after_a_step_reports_an_unknown_gap(monkeypatch: pytest.Mo
     """Review M2: the gap of the previous point must not be reported for a moved x."""
     calls = {"n": 0}
 
-    def second_call_fails(*args: object, **kwargs: object) -> solveur.LPSolution:
+    def second_call_fails(*args: object, **kwargs: object) -> solver.LPSolution:
         calls["n"] += 1
         solution = solve(*args, **kwargs)  # type: ignore[arg-type]
         return solution if calls["n"] == 1 else replace(solution, status="limite")
@@ -175,7 +175,7 @@ def test_a_failing_final_lp_reports_an_unknown_gap(monkeypatch: pytest.MonkeyPat
     """Review M2: on a max_iter exit, a failing final LP must not leave a stale gap."""
     calls = {"n": 0}
 
-    def final_call_fails(*args: object, **kwargs: object) -> solveur.LPSolution:
+    def final_call_fails(*args: object, **kwargs: object) -> solver.LPSolution:
         calls["n"] += 1
         solution = solve(*args, **kwargs)  # type: ignore[arg-type]
         return solution if calls["n"] <= 1 else replace(solution, status="limite")

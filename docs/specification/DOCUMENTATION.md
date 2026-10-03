@@ -225,7 +225,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 - `solve.frank_wolfe` avec pas d'écartement.
 
 ### Modifié
-- `lmo.solveur.solve` accepte `depart=` pour le démarrage à chaud (×3 sur le temps).
+- `lmo.solver.solve` accepte `depart=` pour le démarrage à chaud (×3 sur le temps).
 
 ### Corrigé
 - Les coupes de surface pouvaient s'accumuler sans borne (#42).

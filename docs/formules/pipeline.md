@@ -46,7 +46,7 @@ Puis [Frank-Wolfe](frank-wolfe.md) maximise le substitut, **même oracle LP**,
 `depart=x` à chaque tour. La sortie est revérifiée exactement ; un itéré
 invalide lève `InvariantViolation` — pas de repli silencieux vers L1.
 With `legalize(..., calibration=...)`, the surrogate's prediction at the returned
-plan is bounded by `certify.borne.bound_selected_plan`, in the **selected** regime:
+plan is bounded by `certify.bound.bound_selected_plan`, in the **selected** regime:
 the optimizer chose the plan, so the nominal coverage is not guaranteed and the report
 says so. The calibration is checked before any solving. Sans calibration,
 `performance is None` et le rapport écrit `NOT EVALUABLE`.
@@ -57,7 +57,7 @@ says so. The calibration is checked before any solving. Sans calibration,
 |---|---|
 | `legalize(plan, ctx)` sur un pavage presque valide | Attendre 100 % de succès sur `plans_quelconques` × enveloppe petite : le programme peut ne pas tenir → `Infeasible` |
 | Lire `q.certificat.geometry.valid` | Agréger preuve et prédiction en un score |
-| Importer `light.protocole.Surrogate` seulement | Importer `bench` depuis `api` (interdit par `tests/test_dependances.py`) |
+| Importer `light.protocol.Surrogate` seulement | Importer `bench` depuis `api` (interdit par `tests/test_dependances.py`) |
 
 Budget `ARCHITECTURE.md` §9 : \(< 20\,\mathrm{ms}\) pour 15 pièces.
 

@@ -10,9 +10,9 @@ import numpy as np
 from scipy.stats import wilcoxon
 
 from archlux.active import Loop, RandomStrategy, UncertaintyTimesDensity
-from archlux.data.synthese import two_room_vectors
+from archlux.data.synthetic import two_room_vectors
 from archlux.light.base import DenseSurrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.seeds import derive
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j6_active.csv"

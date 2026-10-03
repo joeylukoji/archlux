@@ -10,7 +10,7 @@ import itertools
 
 from hypothesis import given, settings
 
-from archlux.geom.graphe import (
+from archlux.geom.graph import (
     RelativeOrder,
     build_graph,
     deduce_order,

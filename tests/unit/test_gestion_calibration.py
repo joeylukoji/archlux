@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from archlux.errors import CalibrationLocked, ModelModified
-from archlux.uq.gestion import (
+from archlux.uq.registry import (
     DataManagement,
     freeze_and_issue,
     issue_token,
@@ -71,7 +71,7 @@ def test_calibration_refuse_un_modele_modifie(tmp_path: Path) -> None:
 def test_a_learned_surrogate_can_be_frozen(tmp_path: Path) -> None:
     """Review of the stack (#14): the fingerprint looked up ``weights_fingerprint`` only,
     while LearnedSurrogate exposes ``empreinte_poids``: freezing it raised."""
-    from archlux.light.appris import LearnedSurrogate
+    from archlux.light.learned import LearnedSurrogate
 
     model = LearnedSurrogate(tmp_path / "w.npz", "abc123", gele=True)
     token = freeze_and_issue(model, timestamp="2026-09-09T12:00:00Z")

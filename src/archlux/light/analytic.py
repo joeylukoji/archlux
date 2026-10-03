@@ -4,9 +4,9 @@ Son intérêt n'est pas la précision : c'est de faire tourner la chaîne compl�
 troisième mois plutôt qu'au dix-huitième. Si l'architecture est fausse, elle est fausse
 ici, avant toute dépense de simulation ou d'entraînement.
 
-Implémente :class:`archlux.light.protocole.Surrogate`. Entrée vectorielle uniquement.
+Implémente :class:`archlux.light.protocol.Surrogate`. Entrée vectorielle uniquement.
 
-Le facteur d'orientation passe par :func:`archlux.orient.circulaire.encode_orientation` : jamais
+Le facteur d'orientation passe par :func:`archlux.orient.circular.encode_orientation` : jamais
 le degré brut. Formules : ``docs/formules/substitut-analytique.md``.
 
 Ce module n'importe ni ``geom`` ni ``lmo`` ni ``solve`` : uniquement un vecteur et un
@@ -22,8 +22,8 @@ from typing import ClassVar
 import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode_orientation, sector
+from archlux.light.protocol import Glazing
+from archlux.orient.circular import encode_orientation, sector
 from archlux.types import Indicator, Orientation, indicator_sign
 
 __all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
@@ -58,7 +58,7 @@ ou remplace par une simulation annuelle, jamais comme la regle citee.
 def sector_factor(orientation: Orientation) -> float:
     """Poids d'exposition du secteur de 45 degres contenant ``orientation``.
 
-    Passe par :func:`archlux.orient.circulaire.encode_orientation`, jamais par le degre brut :
+    Passe par :func:`archlux.orient.circular.encode_orientation`, jamais par le degre brut :
     l'azimut est reconstruit depuis ``(cos, sin)``, donc continu en 0 / 360.
 
     Parameters
@@ -126,7 +126,7 @@ class AnalyticSurrogate:
         Guarantees
         ----------
         - Performance : **aucune garantie en soi**. La valeur devient bornée seulement
-          après passage par :mod:`archlux.uq.conforme`.
+          après passage par :mod:`archlux.uq.conformal`.
         """
         del glazing
         return float(self._score_et_gradient(x, orientation, avec_gradient=False)[0])
@@ -158,7 +158,7 @@ class AnalyticSurrogate:
         """Contribution de chaque pièce, avant sommation.
 
         ``evaluate`` en est la somme, au signe d'ASE près. Voir
-        :class:`~archlux.light.protocole.SubstitutParPiece` : c'est à cette
+        :class:`~archlux.light.protocol.SubstitutParPiece` : c'est à cette
         granularité que vit 92 % de la variance de l'éclairement réel.
         """
         del glazing
@@ -257,9 +257,7 @@ class AnalyticSurrogate:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "facteur_secteur": Alias(sector_factor, "archlux.light.analytique.sector_factor"),
-        "SubstitutAnalytique": Alias(
-            AnalyticSurrogate, "archlux.light.analytique.AnalyticSurrogate"
-        ),
+        "facteur_secteur": Alias(sector_factor, "archlux.light.analytic.sector_factor"),
+        "SubstitutAnalytique": Alias(AnalyticSurrogate, "archlux.light.analytic.AnalyticSurrogate"),
     },
 )

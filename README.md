@@ -177,7 +177,7 @@ factor, not a simulation).
 import numpy as np
 
 from archlux.light import Daylight, SplitFluxOracle, AnalyticSurrogate
-from archlux.uq.conforme import ConformalCalibrator
+from archlux.uq.conformal import ConformalCalibrator
 
 surrogate, oracle = AnalyticSurrogate(), SplitFluxOracle()
 rng = np.random.default_rng(17)
@@ -276,7 +276,7 @@ the result is then wrong somewhere without any warning. archlux refuses and says
 "Room A is left of room B" means that A ends before B starts: `x_A + w_A <= x_B`. With
 one such separation per pair of rooms, overlap becomes impossible by construction, not
 discouraged by a penalty. The order is read from the proposed plan
-(`geom.graphe.deduce_order`), and each room is also kept on its side of every
+(`geom.graph.deduce_order`), and each room is also kept on its side of every
 load-bearing wall.
 
 Minimum areas (`w h >= a`) are not linear but define a convex set. The classic mode
@@ -324,7 +324,7 @@ azimuth, and the glazing (`baies`). Shipped implementations:
 | `AnalyticSurrogate` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
 | `SplitFluxOracle` | Analytic part + BRE split-flux daylight factor: the **frozen oracle** of the CI, used to test the chain end to end. A closed form, not a simulation and not ground truth |
 | `light.base.DenseSurrogate` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
-| `light.appris.LearnedSurrogate` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
+| `light.learned.LearnedSurrogate` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
 | `Daylight` | Wraps a surrogate and returns the pessimistic value `mu - q sigma` |
 
 The input is a set of numbers per room, not an image: moving a wall by 2 cm changes no
@@ -448,7 +448,7 @@ INPUT: proposed plan, load-bearing structure, orientation, program
 Every layer is deterministic: same inputs, same outputs. `lmo` is not pure in the
 strict sense: it keeps a small module-level cache of solver models (at most four) to
 warm-start Frank-Wolfe; the cache changes timing, never results
-(`lmo.solveur.clear_cache` empties it). `lmo` receives a cost vector and does not know
+(`lmo.solver.clear_cache` empties it). `lmo` receives a cost vector and does not know
 whether it comes from a distance or from a daylight gradient: this is what lets one
 solver serve both modes.
 
@@ -482,13 +482,13 @@ public data sets.
 | **[CubiCasa5K](docs/donnees/cubicasa.md)** | annotated doors and windows, vector SVG | research, non-commercial | [github.com/CubiCasa/CubiCasa5k](https://github.com/CubiCasa/CubiCasa5k) |
 | **RPLAN** | 80,000 plans, comparability with the vision literature | on request | [project page](http://staff.ustc.edu.cn/~fuxm/projects/DeepLayout/index.html) |
 
-The MSD loader (`data.chargeurs`) keeps only axis-aligned plans with a simple outline:
+The MSD loader (`data.loaders`) keeps only axis-aligned plans with a simple outline:
 in the J7 run, 143 apartments were rejected for oblique geometry and 240 for a
 non-simple outline.
 
 **Three splits, not two.** Training (60 %), calibration (20 %, never seen in training)
 and test (20 %, opened once). If the calibration set leaks into training, the coverage
-guarantee is silently wrong, and no test or review would notice. `uq.gestion` keeps
+guarantee is silently wrong, and no test or review would notice. `uq.registry` keeps
 three distinct directories and hands out the calibration set against a token issued
 after the model is frozen. This is a checkable discipline, not a lock: the token is an
 unkeyed checksum, and `ConformalCalibrator` calibrates from plain arrays without asking

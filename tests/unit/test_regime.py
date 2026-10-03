@@ -16,11 +16,11 @@ import pytest
 import archlux
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.io.json_io import from_dict, to_dict
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
-from archlux.light.protocole import point_prediction
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
+from archlux.light.protocol import point_prediction
 from archlux.types import Certificate, GeometricProof, PerformanceBound, Regulation
-from archlux.uq.conforme import Calibration, ConformalCalibrator, bound, dataset_fingerprint
+from archlux.uq.conformal import Calibration, ConformalCalibrator, bound, dataset_fingerprint
 from tests.properties.strategies import CONTEXTE_DEFAUT
 
 

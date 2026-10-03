@@ -1,6 +1,6 @@
 # Décomposition rectilinéaire
 
-**Code :** `geom.rectilineaire.decompose` / `recompose` / `extend_merges`.
+**Code :** `geom.rectilinear.decompose` / `recompose` / `extend_merges`.
 
 ## Énoncé
 

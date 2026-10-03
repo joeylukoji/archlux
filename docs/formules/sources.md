@@ -142,7 +142,7 @@ Uniquement des ouvrages et articles **consultables**, avec une localisation
     [doi:10.1080/01621459.2017.1307116](https://doi.org/10.1080/01621459.2017.1307116)
     — conforme **par découpage** (split conformal) et scores **normalisés**
     \(|y-\hat y|/\hat\sigma\) : c'est la variante réellement implémentée par
-    `uq.conforme`, plus précise que la référence n° 12 seule.
+    `uq.conformal`, plus précise que la référence n° 12 seule.
     Voir [statistique](statistique.md).
 
 28. Angelopoulos, A. N. & Bates, S. (2023). Conformal prediction: a gentle

@@ -40,10 +40,10 @@ raster, et un substitut à entrée raster a un gradient nul presque partout
 ## Ce que MSD apporte à `archlux`
 
 - **No load-bearing annotation.** MSD separators are only `WALL` or `COLUMN`, so
-  `Structure.load_bearing_walls` stays empty on this corpus (see `data/chargeurs.py`);
+  `Structure.load_bearing_walls` stays empty on this corpus (see `data/loaders.py`);
   the load-bearing guarantee is exercised by the synthetic benchmark instead
   (`benchmarks/guarantees`). Columns are loaded but not constrained (ADR-7).
-- **Géométrie non-Manhattan** → exerce `geom.rectilineaire.decompose` sur autre
+- **Géométrie non-Manhattan** → exerce `geom.rectilinear.decompose` sur autre
   chose qu'un cas de test.
 - **Orientation cardinale conservée** → `Orientation` cesse d'être tirée au sort.
 - **Complexes multi-logements** → des ordres relatifs autrement plus riches que

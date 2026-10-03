@@ -11,7 +11,7 @@ from hypothesis import strategies as st
 
 from archlux.errors import InvariantViolation
 from archlux.types import PerformanceBound
-from archlux.uq.conforme import Calibration, ConformalCalibrator, bound, conformal_quantile
+from archlux.uq.conformal import Calibration, ConformalCalibrator, bound, conformal_quantile
 
 
 def _scores(n: int, seed: int = 0) -> np.ndarray:

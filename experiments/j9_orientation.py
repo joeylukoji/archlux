@@ -36,9 +36,9 @@ from pathlib import Path
 
 import archlux as ax
 from archlux.export.svg import sheet
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import Orientation
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))

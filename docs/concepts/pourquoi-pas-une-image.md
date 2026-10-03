@@ -9,7 +9,7 @@ rapport aux variables de décision \(x,y,w,h\) est alors nul presque partout.
 L'oracle linéaire reçoit \(c=0\), et l'optimiseur est aveugle.
 
 L'entrée du substitut est donc un **ensemble de jetons** continus en géométrie
-(`light.jetons.plan_to_tokens`). Le test anti-image
+(`light.tokens.plan_to_tokens`). Le test anti-image
 (`test_jetons_continus`) échoue si un déplacement de 2 cm laisse les jetons
 invariants.
 

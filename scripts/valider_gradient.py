@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from archlux.light.base import SubstitutDense
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.light.validation import valider_gradient
 from archlux.types import Orientation
 

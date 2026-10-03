@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from hypothesis import given, settings
 
-from archlux.geom.graphe import RelativeOrder, deduce_order
+from archlux.geom.graph import RelativeOrder, deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
 from archlux.types import Context, Plan
 from tests.properties.strategies import (

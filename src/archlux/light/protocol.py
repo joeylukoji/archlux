@@ -4,7 +4,7 @@ Three methods, not one more. That narrowness is what allows three interchangeabl
 implementations (analytic with closed forms, learned with a transformer, and the
 split-flux oracle) without ``solve`` knowing which one it handles.
 
-`solve` depends on **this file**, never on :mod:`archlux.light.appris`. The dependency
+`solve` depends on **this file**, never on :mod:`archlux.light.learned`. The dependency
 test (`tests/test_dependances.py`) fails the CI if this rule is crossed.
 
 **Vector input only.** A surrogate taking an image as input has a gradient of zero almost
@@ -183,7 +183,7 @@ class Surrogate(Protocol):
     ) -> float:
         """Predictive standard deviation, in the unit of the indicator.
 
-        Serves as the non-conformity score of :mod:`archlux.uq.conforme` and as the
+        Serves as the non-conformity score of :mod:`archlux.uq.conformal` and as the
         sampling criterion of the active learning of milestone 6.
         """
         ...
@@ -194,7 +194,7 @@ class Adjustable(Surrogate, Protocol):
     """A :class:`Surrogate` that can also be retrained from labeled data.
 
     Not every surrogate is adjustable: the analytic and split-flux ones are frozen,
-    closed-form. This protocol documents the contract :class:`archlux.active.boucle.Loop`
+    closed-form. This protocol documents the contract :class:`archlux.active.loop.Loop`
     relies on (PLAN.md phase 4, block 12, item 34). At run time ``Loop`` still tests
     for a callable ``fit`` attribute rather than ``isinstance(surrogate, Adjustable)``:
     the protocol check would also demand ``gradient``, which ``Loop`` never calls, and
@@ -244,7 +244,7 @@ def point_prediction(
     is removed, so that ``Daylight(Daylight(s))`` does not keep one margin.
 
     Surrogates return ASE **negated**, so that Frank-Wolfe, which maximizes, reduces
-    glare (:class:`archlux.light.analytique.AnalyticSurrogate`). The prediction is
+    glare (:class:`archlux.light.analytic.AnalyticSurrogate`). The prediction is
     given back as a positive ASE, the quantity the calibration and the report read.
     """
     surrogate: Surrogate = objective
@@ -259,8 +259,8 @@ def point_prediction(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "Substitut": Alias(Surrogate, "archlux.light.protocole.Surrogate"),
-        "Baies": Alias(Glazing, "archlux.light.protocole.Glazing"),
-        "SubstitutParPiece": Alias(PerRoomSurrogate, "archlux.light.protocole.PerRoomSurrogate"),
+        "Substitut": Alias(Surrogate, "archlux.light.protocol.Surrogate"),
+        "Baies": Alias(Glazing, "archlux.light.protocol.Glazing"),
+        "SubstitutParPiece": Alias(PerRoomSurrogate, "archlux.light.protocol.PerRoomSurrogate"),
     },
 )

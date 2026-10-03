@@ -17,7 +17,7 @@ from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvalidSurrogate
 
 if TYPE_CHECKING:
-    from archlux.light.protocole import Surrogate
+    from archlux.light.protocol import Surrogate
     from archlux.types import Orientation
 
 __all__ = ["GradientReport", "validate_gradient"]

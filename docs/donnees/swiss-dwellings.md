@@ -52,12 +52,12 @@ tesselation hexagonale du sol, soleil direct **et** diffus.
 
 1. Télécharger depuis Zenodo (compte non requis, fichiers de l'ordre du Go).
 2. Reconstruire les `Plan` : WKT `POLYGON` des pièces → rectangles englobants ou
-   décomposition rectilinéaire (`geom.rectilineaire.decompose`) ; WKT des
+   décomposition rectilinéaire (`geom.rectilinear.decompose`) ; WKT des
    ouvertures → `Opening(mur_id=..., s=..., largeur_rel=...)` par projection sur le mur
    porteur le plus proche — **jamais de coordonnées absolues**
    (`ARCHITECTURE.md` §10).
 3. Dédupliquer : `data.dedup`, distance de Hausdorff \(0{,}02\,\mathrm{m}\).
-4. **Puis seulement** découper (`data.decoupage`). Jamais l'inverse : un doublon
+4. **Puis seulement** découper (`data.splits`). Jamais l'inverse : un doublon
    à cheval sur entraînement et calibration fausse silencieusement la couverture
    conforme.
 5. `scripts/preparer_donnees.py` écrit les trois répertoires.

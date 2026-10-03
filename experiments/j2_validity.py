@@ -9,7 +9,7 @@ from pathlib import Path
 import archlux as ax
 from archlux.certify import verify_exactly
 from archlux.data.corruption import corrupt
-from archlux.data.synthese import MAX_SIZE, generate_corpus
+from archlux.data.synthetic import MAX_SIZE, generate_corpus
 from archlux.seeds import derive
 
 SEED = 17

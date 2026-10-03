@@ -1,6 +1,6 @@
 # Statistiques circulaires
 
-**Code :** `orient.circulaire`.
+**Code :** `orient.circular`.
 
 ## Énoncé
 

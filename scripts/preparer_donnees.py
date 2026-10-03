@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from archlux.bench.protocole import charger_decoupage
-from archlux.data.synthese import generer_corpus
+from archlux.bench.protocol import charger_decoupage
+from archlux.data.synthetic import generer_corpus
 
 racine = Path("donnees/v1")
 for nom in ("train", "calibration", "test"):

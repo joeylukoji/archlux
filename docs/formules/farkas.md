@@ -1,6 +1,6 @@
 # Simplexe, duaux et Farkas
 
-**Code :** `lmo.solveur.solve`, `_certificat_farkas`, `_est_faisable`.
+**Code :** `lmo.solver.solve`, `_certificat_farkas`, `_est_faisable`.
 
 ## Énoncé — primal
 

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.active.boucle import ActiveReport, Loop
 from archlux.active.densite import kernel_density
+from archlux.active.loop import ActiveReport, Loop
 from archlux.active.selection import RandomStrategy, UncertaintyTimesDensity
 
 __all__ = [

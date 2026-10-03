@@ -14,7 +14,7 @@ and [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md)
    - `lmo` does not import `light`;
    - `light` does not import `geom` / `lmo` / `solve`;
    - nobody imports `bench` from the core;
-   - `active` imports only `light.protocole`, never an implementation.
+   - `active` imports only `light.protocol`, never an implementation.
 3. A **public** function without a NumPy docstring is not finished.
 4. A random seed **always** has an explicit parameter, with no default.
 5. **English-first.** All new code, docstrings, messages and documentation are

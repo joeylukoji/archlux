@@ -9,11 +9,11 @@ from dataclasses import dataclass
 import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
-from archlux.bench.graines import derive
 from archlux.bench.run import Result
+from archlux.bench.seeds import derive
 from archlux.bench.stats import Interval, paired_bootstrap
 from archlux.errors import InvariantViolation
-from archlux.orient.circulaire import stratify
+from archlux.orient.circular import stratify
 
 __all__ = ["N_REPLICATIONS", "BenchReport", "OrientationStratum", "report"]
 
@@ -115,7 +115,7 @@ def report(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "RapportBanc": Alias(BenchReport, "archlux.bench.rapport.BenchReport"),
-        "StrateOrientation": Alias(OrientationStratum, "archlux.bench.rapport.OrientationStratum"),
+        "RapportBanc": Alias(BenchReport, "archlux.bench.report.BenchReport"),
+        "StrateOrientation": Alias(OrientationStratum, "archlux.bench.report.OrientationStratum"),
     },
 )

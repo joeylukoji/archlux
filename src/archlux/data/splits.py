@@ -80,7 +80,7 @@ def load_split(path: Path) -> Split:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "Decoupage": Alias(Split, "archlux.data.decoupage.Split"),
-        "charger_decoupage": Alias(load_split, "archlux.data.decoupage.load_split"),
+        "Decoupage": Alias(Split, "archlux.data.splits.Split"),
+        "charger_decoupage": Alias(load_split, "archlux.data.splits.load_split"),
     },
 )

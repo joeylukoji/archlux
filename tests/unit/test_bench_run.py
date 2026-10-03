@@ -8,7 +8,7 @@ import pytest
 
 from archlux.bench import compare, report, run
 from archlux.bench.stats import paired_bootstrap, power, tost
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import ModelTrace, Orientation, Plan, Room
 
 

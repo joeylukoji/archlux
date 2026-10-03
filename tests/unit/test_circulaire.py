@@ -8,7 +8,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from archlux.errors import InvalidInput
-from archlux.orient.circulaire import (
+from archlux.orient.circular import (
     angular_difference,
     circular_linear_regression,
     circular_mean,
@@ -21,7 +21,7 @@ from archlux.orient.circulaire import (
     stratify,
 )
 from archlux.types import Orientation
-from archlux.uq.fiabilite import stratify_by_orientation
+from archlux.uq.reliability import stratify_by_orientation
 
 
 def test_moyenne_circulaire_franchit_zero() -> None:

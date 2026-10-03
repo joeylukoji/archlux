@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from archlux.errors import InvariantViolation
-from archlux.light.protocole import Glazing, Surrogate
+from archlux.light.protocol import Glazing, Surrogate
 from archlux.types import Indicator, Orientation
 
 __all__ = ["Daylight"]
@@ -27,7 +27,7 @@ _EPS_SIGMA = 1e-5
 class Daylight:
     """Substitut dont :meth:`evaluate` rend la borne pessimiste ``μ − q σ``.
 
-    Implémente :class:`~archlux.light.protocole.Surrogate` : Frank-Wolfe n'a pas à
+    Implémente :class:`~archlux.light.protocol.Surrogate` : Frank-Wolfe n'a pas à
     savoir que l'objectif est une borne plutôt qu'une prédiction.
     """
 

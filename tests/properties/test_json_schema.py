@@ -23,10 +23,10 @@ from hypothesis import given, settings
 import archlux
 from archlux.errors import ArchluxError, InvariantViolation
 from archlux.io.json_io import SCHEMA_VERSION, from_dict, to_dict
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
 from archlux.types import Context, Plan
-from archlux.uq.conforme import Calibration, ConformalCalibrator
+from archlux.uq.conformal import Calibration, ConformalCalibrator
 from tests.properties.strategies import plans_quelconques, realistic_scenarios
 
 

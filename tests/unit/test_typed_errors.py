@@ -12,11 +12,11 @@ from pathlib import Path
 import pytest
 
 from archlux import InvalidInput, Plan, Room
-from archlux.data.chargeurs import _convertir
+from archlux.data.loaders import _convertir
 from archlux.export.svg import sheet
 from archlux.geom.diagnostic import diagnose
-from archlux.light.jetons import permute_rooms
-from archlux.orient.circulaire import (
+from archlux.light.tokens import permute_rooms
+from archlux.orient.circular import (
     circular_linear_regression,
     circular_variance,
     encode,

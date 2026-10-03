@@ -7,17 +7,17 @@ the axes. Yet ``geom`` works on axis-aligned rectangles.
 The conversion holds in four steps, in this order:
 
 1. **Straighten.** The dominant direction of the walls, of period 90 degrees and
-   weighted by length (:func:`~archlux.orient.circulaire.dominant_direction`),
+   weighted by length (:func:`~archlux.orient.circular.dominant_direction`),
    gives the angle of the local frame. This angle **is** the ``Orientation`` of
    the plan: it is not discarded, it becomes the input of the daylight
    surrogate.
 2. **Snap.** After rotation, the edges sit within a few millimetres of an axis
    (measured median: 0 mm). Exact alignment is forced under ``tolerance_calage``,
-   without which ``geom.rectilineaire`` refuses the polygon for a "diagonal
+   without which ``geom.rectilinear`` refuses the polygon for a "diagonal
    edge".
 3. **Decompose.** Few real rooms are rectangles (0.1% of apartments); almost
    all are rectilinear. Each room becomes a
-   :class:`~archlux.geom.rectilineaire.RectilinearRoom`, and its bonding
+   :class:`~archlux.geom.rectilinear.RectilinearRoom`, and its bonding
    equalities are passed to ``legalize(..., merges=)``.
 4. **Attach openings.** A window is projected onto the nearest wall and stored
    as ``(wall_id, s, relative_width)`` — **never** in absolute coordinates
@@ -52,8 +52,8 @@ from shapely.ops import unary_union
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
-from archlux.geom.rectilineaire import RectilinearRoom, decompose
-from archlux.orient.circulaire import dominant_direction
+from archlux.geom.rectilinear import RectilinearRoom, decompose
+from archlux.orient.circular import dominant_direction
 from archlux.types import (
     Context,
     Opening,
@@ -459,7 +459,7 @@ def load_msd(
         15, the reference of the `ARCHITECTURE.md` §9 budgets.
     max_rectangles : int, optional
         Cap per room, passed to
-        :func:`~archlux.geom.rectilineaire.decompose`.
+        :func:`~archlux.geom.rectilinear.decompose`.
     tolerance_calage : float, optional
         Maximum gap, in metres, under which an edge is snapped onto an axis.
     tolerance_recollage : float, optional
@@ -847,15 +847,15 @@ def split_by_site(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "AppartementMSD": Alias(MSDApartment, "archlux.data.chargeurs.MSDApartment"),
-        "StatistiquesChargement": Alias(LoadStatistics, "archlux.data.chargeurs.LoadStatistics"),
-        "charger_msd": Alias(load_msd, "archlux.data.chargeurs.load_msd"),
-        "charger_etiquettes_sd": Alias(load_sd_labels, "archlux.data.chargeurs.load_sd_labels"),
-        "etiqueter": Alias(label, "archlux.data.chargeurs.label"),
-        "decouper_par_site": Alias(split_by_site, "archlux.data.chargeurs.split_by_site"),
+        "AppartementMSD": Alias(MSDApartment, "archlux.data.loaders.MSDApartment"),
+        "StatistiquesChargement": Alias(LoadStatistics, "archlux.data.loaders.LoadStatistics"),
+        "charger_msd": Alias(load_msd, "archlux.data.loaders.load_msd"),
+        "charger_etiquettes_sd": Alias(load_sd_labels, "archlux.data.loaders.load_sd_labels"),
+        "etiqueter": Alias(label, "archlux.data.loaders.label"),
+        "decouper_par_site": Alias(split_by_site, "archlux.data.loaders.split_by_site"),
         "COLONNE_SOLEIL_DEFAUT": Alias(
-            DEFAULT_SUN_COLUMN, "archlux.data.chargeurs.DEFAULT_SUN_COLUMN"
+            DEFAULT_SUN_COLUMN, "archlux.data.loaders.DEFAULT_SUN_COLUMN"
         ),
-        "TYPES_EXCLUS": Alias(EXCLUDED_TYPES, "archlux.data.chargeurs.EXCLUDED_TYPES"),
+        "TYPES_EXCLUS": Alias(EXCLUDED_TYPES, "archlux.data.loaders.EXCLUDED_TYPES"),
     },
 )

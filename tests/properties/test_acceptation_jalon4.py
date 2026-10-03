@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from archlux.errors import InvalidSurrogate
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.base import DenseSurrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 

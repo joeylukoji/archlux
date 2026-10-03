@@ -1,6 +1,6 @@
 # Ordre relatif et graphe de contraintes
 
-**Code :** `geom.graphe.deduce_order`, `build_graph`, `transitive_reduction`.
+**Code :** `geom.graph.deduce_order`, `build_graph`, `transitive_reduction`.
 
 ## Énoncé
 

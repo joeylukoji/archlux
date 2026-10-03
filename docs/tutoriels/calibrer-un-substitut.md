@@ -24,7 +24,7 @@ import numpy as np
 
 import archlux as ax
 from archlux.light.base import DenseSurrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.split_flux import SplitFluxOracle
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
@@ -65,7 +65,7 @@ for sous_dossier in ("train", "calibration", "test"):
 ## 1. Geler puis émettre le jeton
 
 ```python
-from archlux.uq.gestion import DataManagement, freeze_and_issue
+from archlux.uq.registry import DataManagement, freeze_and_issue
 
 token = freeze_and_issue(model, timestamp="2026-09-09T12:00:00Z")
 calibration = DataManagement("splits/v1").for_calibration(token, model)
@@ -77,7 +77,7 @@ Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
 ## 2. Ajuster un calibrateur par indicateur
 
 ```python
-from archlux.uq.conforme import ConformalCalibrator
+from archlux.uq.conformal import ConformalCalibrator
 
 plans_calibration = [disposition(rng) for _ in range(200)]  # jamais vus à l'entraînement
 predictions = np.array([model.evaluate(x, ctx.orientation) for x in plans_calibration])
@@ -103,7 +103,7 @@ optimiseur, dont la couverture n'est alors pas garantie.
 ## 3. Objectif pessimiste
 
 ```python
-from archlux.light.objectif import Daylight
+from archlux.light.objective import Daylight
 
 objectif = Daylight(model, q_chapeau=cal.q)  # pessimiste=True par défaut
 q = ax.legalize(
@@ -126,8 +126,8 @@ Les scores de production sont ceux de plans rendus après calibration, une fois 
 vraie valeur connue : \(|y - \hat{y}| / \hat{\sigma}\), comme à l'ajustement.
 
 ```python
-from archlux.certify.borne import build_bound
-from archlux.uq.derive import check_drift
+from archlux.certify.bound import build_bound
+from archlux.uq.drift import check_drift
 
 plans_production = [disposition(rng) for _ in range(50)]
 scores_production = np.array(

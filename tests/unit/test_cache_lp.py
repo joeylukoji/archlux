@@ -15,9 +15,9 @@ import threading
 import numpy as np
 import pytest
 
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import build_polytope
-from archlux.lmo.solveur import CacheLP, solve
+from archlux.lmo.solver import CacheLP, solve
 from archlux.types import Context, Orientation, Regulation, Structure
 
 CTX = Context(

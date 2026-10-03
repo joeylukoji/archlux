@@ -110,6 +110,6 @@ def emit(
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "emettre": Alias(emit, "archlux.bench.manifeste.emit"),
+        "emettre": Alias(emit, "archlux.bench.manifest.emit"),
     },
 )

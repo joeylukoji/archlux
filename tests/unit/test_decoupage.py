@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from archlux.bench.protocole import load_split
+from archlux.bench.protocol import load_split
 from archlux.errors import InvariantViolation
 
 SPLITS = Path(__file__).resolve().parents[2] / "splits" / "v1"

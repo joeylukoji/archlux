@@ -138,7 +138,7 @@ def test_performance_mode_prices_are_reported_in_indicator_points(
         return original(*args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr(api, "translate_duals", spy)
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
 
     outline = ((0.0, 0.0), (10.0, 0.0), (10.0, 7.0), (0.0, 7.0))
     plan = Plan(

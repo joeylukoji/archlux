@@ -57,7 +57,7 @@ The minimum applies to the union \(U = \bigcup_k R_k\) of the parts, never to ea
 part: \(\lambda(U) \ge a_{\min}\). Before the area, every seam recorded by the
 decomposition must still hold: the two parts touch along it (offset at most
 `SNAP_M`) over a length of at least `min_width` (minus `SNAP_M`), the contact the
-solver imposes (`geom.rectilineaire.overlap_constraints`). Connectivity alone would
+solver imposes (`geom.rectilinear.overlap_constraints`). Connectivity alone would
 accept a foot that slid to another edge, or a neck of \(10^{-7}\) m. Parts that do not
 form one polygon through edges (detached, or touching at a corner) are refused.
 

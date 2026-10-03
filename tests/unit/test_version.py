@@ -11,7 +11,7 @@ def test_root_exposes_the_single_version() -> None:
 
 
 def test_certificate_prints_the_source_version() -> None:
-    from archlux.certify.rapport import _version
+    from archlux.certify.report import _version
 
     assert _version() == __version__
 

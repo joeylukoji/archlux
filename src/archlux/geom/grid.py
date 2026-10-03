@@ -1,9 +1,9 @@
 """Grid inference: recover the combinatorial structure of a proposed plan.
 
-Split from :mod:`archlux.geom.pavage` (PLAN.md phase 4, block 3): :class:`Grid` and
+Split from :mod:`archlux.geom.tiling` (PLAN.md phase 4, block 3): :class:`Grid` and
 :func:`deduce_grid`, which groups edges into grid lines, consolidates and repairs them
 (:mod:`archlux.geom.grid_repair`) and **proves** the cells partition the outline. The
-public names stay importable from :mod:`archlux.geom.pavage`.
+public names stay importable from :mod:`archlux.geom.tiling`.
 """
 
 from __future__ import annotations

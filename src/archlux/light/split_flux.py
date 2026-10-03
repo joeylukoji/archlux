@@ -17,10 +17,10 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
-from archlux.light.analytique import AnalyticSurrogate, sector_factor
-from archlux.light.jetons import FIELDS_PER_ROOM
-from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode_orientation
+from archlux.light.analytic import AnalyticSurrogate, sector_factor
+from archlux.light.protocol import Glazing
+from archlux.light.tokens import FIELDS_PER_ROOM
+from archlux.orient.circular import encode_orientation
 from archlux.types import Indicator, Orientation, indicator_sign
 
 __all__ = ["SplitFluxOracle", "daylight_factor"]
@@ -198,7 +198,7 @@ class SplitFluxOracle:
         """Contribution de chaque piece : analytique + split-flux, avant sommation.
 
         ``evaluate`` en est la somme. Voir
-        :class:`~archlux.light.protocole.SubstitutParPiece`.
+        :class:`~archlux.light.protocol.SubstitutParPiece`.
         """
         del glazing
         base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
@@ -251,7 +251,7 @@ class SplitFluxOracle:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "facteur_lumiere_jour": Alias(daylight_factor, "archlux.light.simulateur.daylight_factor"),
+        "facteur_lumiere_jour": Alias(daylight_factor, "archlux.light.split_flux.daylight_factor"),
         "SimulateurExact": Alias(
             SplitFluxOracle,
             "SplitFluxOracle",

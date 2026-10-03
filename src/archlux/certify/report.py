@@ -128,6 +128,6 @@ def render(certificate: Certificate) -> str:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "rendre": Alias(render, "archlux.certify.rapport.render"),
+        "rendre": Alias(render, "archlux.certify.report.render"),
     },
 )

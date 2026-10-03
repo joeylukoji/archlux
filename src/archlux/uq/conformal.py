@@ -89,7 +89,7 @@ def minimal_n_conformal(alpha: float) -> int:
 
     Examples
     --------
-    >>> from archlux.uq.conforme import minimal_n_conformal
+    >>> from archlux.uq.conformal import minimal_n_conformal
     >>> minimal_n_conformal(0.10), minimal_n_conformal(0.05)
     (9, 19)
     """
@@ -399,10 +399,12 @@ __getattr__ = lazy_aliases(
     __name__,
     {
         "CalibrateurConforme": Alias(
-            ConformalCalibrator, "archlux.uq.conforme.ConformalCalibrator"
+            ConformalCalibrator, "archlux.uq.conformal.ConformalCalibrator"
         ),
-        "borner": Alias(bound, "archlux.uq.conforme.bound"),
-        "n_minimal_conforme": Alias(minimal_n_conformal, "archlux.uq.conforme.minimal_n_conformal"),
-        "quantile_conforme": Alias(conformal_quantile, "archlux.uq.conforme.conformal_quantile"),
+        "borner": Alias(bound, "archlux.uq.conformal.bound"),
+        "n_minimal_conforme": Alias(
+            minimal_n_conformal, "archlux.uq.conformal.minimal_n_conformal"
+        ),
+        "quantile_conforme": Alias(conformal_quantile, "archlux.uq.conformal.conformal_quantile"),
     },
 )

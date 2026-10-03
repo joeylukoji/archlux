@@ -75,7 +75,7 @@ def indicator_sign(indicator: Indicator) -> float:
 class Fingerprintable(Protocol):
     """A model that can name its own weights fingerprint.
 
-    :func:`archlux.uq.gestion._model_fingerprint` reads this attribute first, before
+    :func:`archlux.uq.registry._model_fingerprint` reads this attribute first, before
     falling back to guessing at hardcoded attribute names (``W1``, ``b1``, ...): a
     model implementing this protocol survives an internal rename that the guessing
     would silently miss. Third-party models (e.g. a raw ``torch`` module) are not
@@ -123,7 +123,7 @@ class Room:
 
     @property
     def center(self) -> Point:
-        """Geometric center, used by ``geom.graphe.deduce_order``."""
+        """Geometric center, used by ``geom.graph.deduce_order``."""
         return (self.x + self.w / 2.0, self.y + self.h / 2.0)
 
 
@@ -135,7 +135,7 @@ class Wall:
     ----------
     porteur : bool
         A load-bearing wall is fixed: ``geom`` keeps every room on its side (one
-        inequality per room, see :class:`archlux.geom.graphe.WallSide`), and
+        inequality per room, see :class:`archlux.geom.graph.WallSide`), and
         ``certify.proof`` checks that no room crosses it.
     """
 
@@ -380,7 +380,7 @@ class Orientation:
     """Azimuth of the plan, in degrees. A **circular** variable: see :mod:`archlux.orient`.
 
     Treating 359° and 1° as far apart gives wrong conclusions. Every statistic on this
-    field goes through :mod:`archlux.orient.circulaire`.
+    field goes through :mod:`archlux.orient.circular`.
     """
 
     deg: float
@@ -606,7 +606,7 @@ class Certificate:
     def report(self) -> str:
         """Render the certificate as text, ``[EXACT]`` and ``[PREDICTION]`` sections.
 
-        Facade over :func:`archlux.certify.rapport.render`, by local import: same pattern
+        Facade over :func:`archlux.certify.report.render`, by local import: same pattern
         as :meth:`Plan.from_json`, same nominal exemption (ADR-5). The rendering itself
         stays in ``certify``: this type does not know how to format, only whom to ask.
 
@@ -616,7 +616,7 @@ class Certificate:
             A readable report. The two kinds of guarantee are always visually separated
             and never aggregated into a single score.
         """
-        from archlux.certify.rapport import render
+        from archlux.certify.report import render
 
         return render(self)
 

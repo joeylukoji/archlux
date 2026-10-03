@@ -1,6 +1,6 @@
 """Unit tests of the helpers extracted in PLAN.md phase 4, block 3.
 
-``_chord_through_pivot`` and ``_line_pieces`` (``geom.rectilineaire``) and
+``_chord_through_pivot`` and ``_line_pieces`` (``geom.rectilinear``) and
 ``_verify_partition`` (``geom.grid``) were split out of larger functions; these tests
 pin their behaviour on their own.
 """
@@ -12,7 +12,7 @@ from shapely.geometry import GeometryCollection, LineString, Point
 
 from archlux.errors import GridNotRecoverable, UnsupportedInput
 from archlux.geom.grid import _verify_partition
-from archlux.geom.rectilineaire import _chord_through_pivot, _line_pieces
+from archlux.geom.rectilinear import _chord_through_pivot, _line_pieces
 from archlux.types import Context, Orientation, Regulation, Structure
 
 SQUARE = ((0.0, 0.0), (2.0, 0.0), (2.0, 2.0), (0.0, 2.0))

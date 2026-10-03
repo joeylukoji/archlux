@@ -63,12 +63,12 @@ from scipy import sparse
 from archlux._deprecation import renamed_parameters
 from archlux.arrays import VecteurF
 from archlux.errors import InvariantViolation
-from archlux.lmo.solveur import solve
+from archlux.lmo.solver import solve
 from archlux.tolerances import AREA_PROOF_M2, AREA_TARGET_MARGIN_M2, SNAP_M
 
 if TYPE_CHECKING:
     from archlux.geom.polytope import Polytope
-    from archlux.lmo.solveur import LPSolution
+    from archlux.lmo.solver import LPSolution
     from archlux.types import Context, Room
 
 __all__ = [
@@ -281,7 +281,7 @@ def violated_areas(
         Identifiers and types — the polytope does not carry the programme.
     minima : mapping of str to float, optional
         Minimum area per room id, overriding the type's (the sub-rectangles of a fused
-        room, :func:`archlux.geom.rectilineaire.minimum_area_shares`).
+        room, :func:`archlux.geom.rectilinear.minimum_area_shares`).
 
     Returns
     -------
@@ -455,7 +455,7 @@ def solve_with_areas(
     minima : mapping of str to float, optional
         Minimum area per room id, overriding the type's. The sub-rectangles of a fused
         room get their share of the room's minimum
-        (:func:`archlux.geom.rectilineaire.minimum_area_shares`).
+        (:func:`archlux.geom.rectilinear.minimum_area_shares`).
 
     Returns
     -------
@@ -639,7 +639,7 @@ def inner_area_constraints(
         Relative node widths.
     minima : mapping of str to float, optional
         Minimum area per room id, overriding the type's (the shares of a fused room,
-        :func:`archlux.geom.rectilineaire.minimum_area_shares`).
+        :func:`archlux.geom.rectilinear.minimum_area_shares`).
 
     Returns
     -------

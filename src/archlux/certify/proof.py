@@ -56,7 +56,7 @@ from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
 from archlux._deprecation import renamed_parameters
-from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
+from archlux.geom.rectilinear import MERGE_RIGHT, RectilinearRoom
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
 from archlux.types import Context, GeometricProof, Plan, Room, Wall
 
@@ -177,7 +177,7 @@ def _recorded_seams(
 ) -> tuple[str, ...]:
     """Every seam recorded in the decomposition still holds, at least ``min_contact`` long.
 
-    The solver keeps these seams (``geom.rectilineaire.overlap_constraints``); the proof
+    The solver keeps these seams (``geom.rectilinear.overlap_constraints``); the proof
     does not take its word for it. Connectivity alone would accept a foot that slid to
     another edge, or a neck of 1e-7 m.
     """

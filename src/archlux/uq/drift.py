@@ -17,7 +17,7 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
-from archlux.uq.conforme import Calibration
+from archlux.uq.conformal import Calibration
 
 __all__ = [
     "DriftDiagnostic",
@@ -90,7 +90,7 @@ def check_drift(
       (e-value, conformal martingale mixture) or at least a corrected threshold.
     - **Power not characterized.** No power analysis accompanies the threshold: for
       small ``n_observations``, ``echangeable=True`` means "drift not detected", not
-      "no drift". :func:`archlux.certify.borne.build_bound` nonetheless treats
+      "no drift". :func:`archlux.certify.bound.build_bound` nonetheless treats
       this boolean as authorization to publish.
     - **Poorly targeted statistic.** Kolmogorov-Smirnov is most sensitive to the
       center of the distribution, while conformal coverage depends only on the
@@ -186,9 +186,9 @@ def measure_drift(predictions: np.ndarray, verites: np.ndarray, *, seed: int) ->
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "DiagnosticDerive": Alias(DriftDiagnostic, "archlux.uq.derive.DriftDiagnostic"),
-        "RapportDerive": Alias(DriftReport, "archlux.uq.derive.DriftReport"),
-        "controler_derive": Alias(check_drift, "archlux.uq.derive.check_drift"),
-        "mesurer_derive": Alias(measure_drift, "archlux.uq.derive.measure_drift"),
+        "DiagnosticDerive": Alias(DriftDiagnostic, "archlux.uq.drift.DriftDiagnostic"),
+        "RapportDerive": Alias(DriftReport, "archlux.uq.drift.DriftReport"),
+        "controler_derive": Alias(check_drift, "archlux.uq.drift.check_drift"),
+        "mesurer_derive": Alias(measure_drift, "archlux.uq.drift.measure_drift"),
     },
 )

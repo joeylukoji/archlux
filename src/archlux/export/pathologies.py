@@ -151,9 +151,9 @@ def _sommets_dupliques(outline: tuple[tuple[float, float], ...]) -> bool:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "diagnostiquer": Alias(diagnose, "archlux.export.pathologie.diagnose"),
+        "diagnostiquer": Alias(diagnose, "archlux.export.pathologies.diagnose"),
         "DiagnosticPathologie": Alias(
-            PathologyDiagnostic, "archlux.export.pathologie.PathologyDiagnostic"
+            PathologyDiagnostic, "archlux.export.pathologies.PathologyDiagnostic"
         ),
     },
 )

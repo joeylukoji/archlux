@@ -1,6 +1,6 @@
 # Statistique — prédiction conforme
 
-**Code :** `uq.conforme.conformal_quantile`, `uq.conforme.ConformalCalibrator`.
+**Code :** `uq.conformal.conformal_quantile`, `uq.conformal.ConformalCalibrator`.
 
 Cette page est le formulaire du jalon 5. Les duaux, Farkas, \(\delta_\infty\)
 restent des **nombres exacts** : ils n'appartiennent pas ici.
@@ -42,7 +42,7 @@ Sous échangeabilité du point avec le jeu de calibration,
 - \(k\le n\) : sinon le noyau lève plutôt que de publier une borne infinie.
 
 Les plans produits par un maximiseur de \(\hat y\) violent l'échangeabilité.
-La couverture *sous sélection* se mesure (`uq.derive`) ; elle n'est pas
+La couverture *sous sélection* se mesure (`uq.drift`) ; elle n'est pas
 garantie par le théorème.
 
 ## Dérivation
@@ -61,8 +61,8 @@ de `np.quantile(s, 0.90)` seul.
 | \(s_{(k)}\) | `conformal_quantile` |
 | \(\hat q\) | `ConformalCalibrator.fit` / `.q` |
 | intervalle | `ConformalCalibrator.borne` → `PerformanceBound` |
-| CRPS | `uq.fiabilite.crps` |
-| \(J=\hat\mu-\hat q\,\hat\sigma\) | `light.objectif.Daylight` |
+| CRPS | `uq.reliability.crps` |
+| \(J=\hat\mu-\hat q\,\hat\sigma\) | `light.objective.Daylight` |
 
 ## Cas d'utilisation
 

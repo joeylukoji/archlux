@@ -21,8 +21,8 @@ from shapely.geometry import Polygon
 import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.errors import Infeasible
-from archlux.geom.graphe import deduce_order
-from archlux.geom.rectilineaire import decompose
+from archlux.geom.graph import deduce_order
+from archlux.geom.rectilinear import decompose
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 from tests.properties.strategies import CONTEXTE_DEFAUT
@@ -181,8 +181,8 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
 
     Frank-Wolfe meets the ends (the L degenerates into a rectangle): the non-strict order
     of ``overlap_constraints`` allows it, and every exact guarantee holds."""
-    from archlux.geom.rectilineaire import RectilinearRoom
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.geom.rectilinear import RectilinearRoom
+    from archlux.light.analytic import AnalyticSurrogate
 
     wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), load_bearing=True)
     bar = Room(id="f__0", type="living_room", x=0.0, y=1.0, w=1.0, h=1.0)

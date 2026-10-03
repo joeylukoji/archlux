@@ -7,14 +7,14 @@ import pytest
 from hypothesis import given, settings
 
 import archlux
-from archlux.data.synthese import two_room_plan, two_room_vectors
+from archlux.data.synthetic import two_room_plan, two_room_vectors
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, decision_vector, vectorize
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
-from archlux.uq.conforme import ConformalCalibrator
-from archlux.uq.fiabilite import measure_coverage
+from archlux.uq.conformal import ConformalCalibrator
+from archlux.uq.reliability import measure_coverage
 from tests.properties.strategies import CONTEXTE_DEFAUT, realistic_scenarios
 
 

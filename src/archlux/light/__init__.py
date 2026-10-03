@@ -3,8 +3,8 @@
 Never imports ``geom``, ``lmo`` or ``solve``: it sees only a vector and an azimuth.
 
 A lazy facade (PLAN.md phase 4, block 1): asking for one name imports only the module
-that defines it. ``import archlux.light`` still loads no ``torch``; ``appris`` stays an
-explicit import, ``archlux.light.appris``. ``dir()`` lists the public API (``__all__``)
+that defines it. ``import archlux.light`` still loads no ``torch``; ``learned`` stays an
+explicit import, ``archlux.light.learned``. ``dir()`` lists the public API (``__all__``)
 on purpose: submodules and dunders are left out.
 """
 
@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING
 from archlux._deprecation import LazyAlias, lazy_aliases, lazy_module_attributes
 
 if TYPE_CHECKING:
-    from archlux.light.analytique import AnalyticSurrogate as AnalyticSurrogate
-    from archlux.light.objectif import Daylight as Daylight
-    from archlux.light.protocole import Surrogate as Surrogate
-    from archlux.light.simulateur import SplitFluxOracle as SplitFluxOracle
+    from archlux.light.analytic import AnalyticSurrogate as AnalyticSurrogate
+    from archlux.light.objective import Daylight as Daylight
+    from archlux.light.protocol import Surrogate as Surrogate
+    from archlux.light.split_flux import SplitFluxOracle as SplitFluxOracle
 
 __all__ = [
     "AnalyticSurrogate",
@@ -28,10 +28,10 @@ __all__ = [
 ]
 
 _ATTRS = {
-    "AnalyticSurrogate": "archlux.light.analytique",
-    "Daylight": "archlux.light.objectif",
-    "Surrogate": "archlux.light.protocole",
-    "SplitFluxOracle": "archlux.light.simulateur",
+    "AnalyticSurrogate": "archlux.light.analytic",
+    "Daylight": "archlux.light.objective",
+    "Surrogate": "archlux.light.protocol",
+    "SplitFluxOracle": "archlux.light.split_flux",
 }
 
 _NOTE = "a frozen split-flux oracle, neither a simulation nor ground truth"
@@ -43,16 +43,16 @@ __getattr__ = lazy_aliases(
     {
         **{
             old: LazyAlias(
-                "archlux.light.simulateur",
+                "archlux.light.split_flux",
                 "SplitFluxOracle",
                 "archlux.light.SplitFluxOracle",
                 note=_NOTE,
             )
             for old in ("SimulateurExact", "ExactSimulator")
         },
-        "Substitut": LazyAlias("archlux.light.protocole", "Surrogate", "archlux.light.Surrogate"),
+        "Substitut": LazyAlias("archlux.light.protocol", "Surrogate", "archlux.light.Surrogate"),
         "SubstitutAnalytique": LazyAlias(
-            "archlux.light.analytique", "AnalyticSurrogate", "archlux.light.AnalyticSurrogate"
+            "archlux.light.analytic", "AnalyticSurrogate", "archlux.light.AnalyticSurrogate"
         ),
     },
     fallback=lazy_module_attributes(__name__, globals(), _ATTRS),

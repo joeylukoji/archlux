@@ -1,4 +1,4 @@
-"""Contraintes de pavage exact — `geom.pavage`.
+"""Contraintes de pavage exact — `geom.tiling`.
 
 La these du module : la condition de pavage est **combinatoire**. Elle ne porte
 que sur les incidences bord/ligne, jamais sur les coordonnees. Ces tests pinnent
@@ -13,7 +13,7 @@ import pytest
 import archlux as ax
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GridNotRecoverable, UnsupportedInput
-from archlux.geom.pavage import deduce_grid
+from archlux.geom.tiling import deduce_grid
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 
 _RECT = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))

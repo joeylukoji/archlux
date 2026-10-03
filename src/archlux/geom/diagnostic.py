@@ -26,7 +26,7 @@ The five measures returned here are the ones that decide whether
 - ``cells`` — size of the implicit grid, ``(|X| - 1) × (|Y| - 1)`` over the lines
   carried by the edges. In a real plan rooms share their walls and this number
   stays small; if it explodes, the combinatorial structure of the tiling **does
-  not exist** — see :mod:`archlux.geom.pavage`.
+  not exist** — see :mod:`archlux.geom.tiling`.
 
 None of these quantities is a guarantee: this module describes, it proves nothing.
 The proof stays in ``certify``.

@@ -17,10 +17,10 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.jetons import vector_to_tokens
-from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.protocol import Glazing
+from archlux.light.tokens import vector_to_tokens
+from archlux.orient.circular import encode
 from archlux.types import INDICATOR_SENSE, Indicator, Orientation
 
 __all__ = ["DenseSurrogate", "descriptors"]
@@ -151,7 +151,7 @@ class DenseSurrogate:
     def weights_fingerprint(self) -> str:
         """Implements :class:`archlux.types.Fingerprintable`.
 
-        ``uq.gestion._model_fingerprint`` reads this directly instead of guessing at
+        ``uq.registry._model_fingerprint`` reads this directly instead of guessing at
         ``W1``/``b1``/... by name, so it survives an internal rename here.
         """
         if (

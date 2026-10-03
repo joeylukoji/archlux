@@ -16,9 +16,9 @@ from typing import Generic, Protocol
 
 import pytest
 
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.appris import LearnedSurrogate
-from archlux.light.protocole import Surrogate
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.learned import LearnedSurrogate
+from archlux.light.protocol import Surrogate
 
 IMPLEMENTATIONS = [AnalyticSurrogate, LearnedSurrogate]
 

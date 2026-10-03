@@ -10,7 +10,7 @@ import pytest
 import archlux
 from archlux.api import gradient_distance
 from archlux.errors import Infeasible
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, extend_l1_slack, vectorize
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests.properties.strategies import CONTEXTE_DEFAUT
@@ -140,7 +140,7 @@ def test_objective_invalide_leve_typeerror() -> None:
 
 
 def test_objective_analytique_reste_valide() -> None:
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
 
     plan = Plan(
         rooms=(
@@ -158,7 +158,7 @@ def test_objective_analytique_reste_valide() -> None:
 
 
 def test_legalize_trace_remonte_les_iteres() -> None:
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
     from archlux.solve.trace import Trace
 
     plan = Plan(
@@ -197,7 +197,7 @@ def test_legalize_trace_positive_is_deprecated() -> None:
 
 
 def test_legalize_trace_returns_the_trace_instead_of_attaching_it() -> None:
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
     from archlux.solve.trace import Trace
 
     plan = Plan(
@@ -235,7 +235,7 @@ def test_legalize_trace_is_none_in_classic_mode() -> None:
 
 def test_budget_zero_reste_au_point_l1() -> None:
     """``budget=0`` interdit tout déplacement performantiel : on reste au L1."""
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
 
     plan = Plan(
         rooms=(

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from archlux.light.jetons import plan_to_vector
+from archlux.light.tokens import plan_to_vector
 from archlux.types import FIELDS_VECTOR, Plan, Room, vectorize
 
 

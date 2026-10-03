@@ -20,9 +20,9 @@ actually holds. The known bypasses, all one line each:
    opens the directory without going through :meth:`DataManagement.for_calibration`.
 4. ``model`` is **optional** in :meth:`DataManagement.for_calibration`; omitted, no
    fingerprint is compared and the token is no longer bound to anything.
-5. :class:`archlux.uq.conforme.ConformalCalibrator` calibrates from raw arrays: the
+5. :class:`archlux.uq.conformal.ConformalCalibrator` calibrates from raw arrays: the
    path that actually produces the guarantee requires no token at all, and neither
-   :class:`~archlux.uq.conforme.Calibration` nor
+   :class:`~archlux.uq.conformal.Calibration` nor
    :class:`archlux.types.PerformanceBound` carries it through to the certificate.
 
 What the mechanism does bring anyway: accidental access becomes noisy, and the
@@ -201,12 +201,12 @@ class DataManagement:
 __getattr__ = lazy_aliases(
     __name__,
     {
-        "GestionDonnees": Alias(DataManagement, "archlux.uq.gestion.DataManagement"),
-        "JetonCalibration": Alias(CalibrationToken, "archlux.uq.gestion.CalibrationToken"),
-        "emettre_jeton": Alias(issue_token, "archlux.uq.gestion.issue_token"),
+        "GestionDonnees": Alias(DataManagement, "archlux.uq.registry.DataManagement"),
+        "JetonCalibration": Alias(CalibrationToken, "archlux.uq.registry.CalibrationToken"),
+        "emettre_jeton": Alias(issue_token, "archlux.uq.registry.issue_token"),
         "geler_et_emettre": Alias(  # lang-ok: French alias name
-            freeze_and_issue, "archlux.uq.gestion.freeze_and_issue"
+            freeze_and_issue, "archlux.uq.registry.freeze_and_issue"
         ),
-        "ouvrir_calibration": Alias(open_calibration, "archlux.uq.gestion.open_calibration"),
+        "ouvrir_calibration": Alias(open_calibration, "archlux.uq.registry.open_calibration"),
     },
 )

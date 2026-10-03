@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.uq.conforme import Calibration, ConformalCalibrator, bound, conformal_quantile
-from archlux.uq.derive import DriftDiagnostic, DriftReport, check_drift, measure_drift
-from archlux.uq.fiabilite import crps, reliability_diagram, stratify_by_orientation
-from archlux.uq.gestion import (
+from archlux.uq.conformal import Calibration, ConformalCalibrator, bound, conformal_quantile
+from archlux.uq.drift import DriftDiagnostic, DriftReport, check_drift, measure_drift
+from archlux.uq.registry import (
     CalibrationToken,
     DataManagement,
     freeze_and_issue,
     issue_token,
     open_calibration,
 )
+from archlux.uq.reliability import crps, reliability_diagram, stratify_by_orientation
 
 __all__ = [
     "Calibration",

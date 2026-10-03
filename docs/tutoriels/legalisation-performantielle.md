@@ -13,7 +13,7 @@ du polytope.
 
 ```python
 import archlux as ax
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
@@ -34,7 +34,7 @@ ctx = ax.Context(
 
 q = ax.legalize(plan, ctx, objective=AnalyticSurrogate())
 assert q.certificate.geometry.valid
-assert q.certificate.performance is None  # borne via certify.borne, pas via api
+assert q.certificate.performance is None  # borne via certify.bound, pas via api
 ```
 
 Le substitut analytique n'apprend rien : profondeur utile, table à 8 secteurs,

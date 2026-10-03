@@ -7,7 +7,7 @@ from dataclasses import replace
 import numpy as np
 from hypothesis import given, settings
 
-from archlux.light.jetons import permute_rooms, plan_to_tokens
+from archlux.light.tokens import permute_rooms, plan_to_tokens
 from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
 
 

@@ -16,10 +16,10 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, devectorize
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
 from archlux.types import Context, Plan
 from tests import checkers
 from tests.properties.strategies import GATE_EXAMPLES, realistic_scenarios

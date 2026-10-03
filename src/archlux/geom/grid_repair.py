@@ -1,8 +1,8 @@
 """Repair of a recovered grid: orphan-line consolidation and bounded partition repair.
 
-Split from :mod:`archlux.geom.pavage` (PLAN.md phase 4, block 3). Both passes move
+Split from :mod:`archlux.geom.tiling` (PLAN.md phase 4, block 3). Both passes move
 **indices only**, never a coordinate; :func:`archlux.geom.grid.deduce_grid` calls them.
-See :mod:`archlux.geom.pavage` for the rationale (support of a line, repair budget).
+See :mod:`archlux.geom.tiling` for the rationale (support of a line, repair budget).
 """
 
 from __future__ import annotations

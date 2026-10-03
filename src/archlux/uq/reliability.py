@@ -14,7 +14,7 @@ import numpy as np
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.types import Regime
-from archlux.uq.conforme import ConformalCalibrator, conformal_quantile
+from archlux.uq.conformal import ConformalCalibrator, conformal_quantile
 
 __all__ = [
     "CoverageReport",
@@ -158,7 +158,7 @@ def stratify_by_orientation(
     Sectors are **edge-aligned**, not centered: sector 0 is ``[0deg, 45deg[`` and not
     the "N" compass rose ``[-22.5deg, 22.5deg[``. Two azimuths close to north (1deg
     and 359deg) therefore fall in different sectors.
-    :func:`archlux.orient.circulaire.stratify` centers its sectors instead and names
+    :func:`archlux.orient.circular.stratify` centers its sectors instead and names
     them ``N, NE, ...``: the two partitions are **not** interchangeable. Here only the
     partition matters (coverage by stratum), not the sector's name.
     """
@@ -266,10 +266,10 @@ __getattr__ = lazy_aliases(
     __name__,
     {
         "diagramme_fiabilite": Alias(
-            reliability_diagram, "archlux.uq.fiabilite.reliability_diagram"
+            reliability_diagram, "archlux.uq.reliability.reliability_diagram"
         ),
         "stratifier_par_orientation": Alias(
-            stratify_by_orientation, "archlux.uq.fiabilite.stratify_by_orientation"
+            stratify_by_orientation, "archlux.uq.reliability.stratify_by_orientation"
         ),
     },
 )

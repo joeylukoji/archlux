@@ -6,9 +6,9 @@ import csv
 import time
 from pathlib import Path
 
-from archlux.data.synthese import generer_corpus
-from archlux.light.jetons import plan_vers_vecteur
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.data.synthetic import generer_corpus
+from archlux.light.split_flux import SplitFluxOracle
+from archlux.light.tokens import plan_vers_vecteur
 from archlux.types import Orientation
 
 out = Path("results/j4_simulations.csv")

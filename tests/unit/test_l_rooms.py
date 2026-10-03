@@ -1,7 +1,7 @@
 """L-shaped rooms keep their shape and their area through legalization (PLAN.md 1.7).
 
 An L room is decomposed into sub-rectangles tied by fusion equalities
-(:mod:`archlux.geom.rectilineaire`). The equalities only glue one edge line: without
+(:mod:`archlux.geom.rectilinear`). The equalities only glue one edge line: without
 constraints on the orthogonal axis the sub-rectangles slide along it, and the L turns
 into a T, a Z, or two detached pieces (AUDIT.md §5.2).
 """
@@ -15,9 +15,9 @@ from shapely.geometry import Polygon
 
 import archlux
 from archlux.certify.proof import verify_exactly
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.geom.rectilineaire import RectilinearRoom, decompose, extend_merges
+from archlux.geom.rectilinear import RectilinearRoom, decompose, extend_merges
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 from tests.properties.strategies import CONTEXTE_DEFAUT
@@ -228,7 +228,7 @@ def test_the_proof_checks_every_recorded_seam_with_the_minimum_width() -> None:
 def test_a_fused_room_without_area_is_an_input_limit() -> None:
     """Review m3: a user input, not an internal fault."""
     from archlux.errors import UnsupportedInput
-    from archlux.geom.rectilineaire import minimum_area_shares
+    from archlux.geom.rectilinear import minimum_area_shares
 
     _, ctx, room = _l_in_tiling()
     flat = tuple(replace(r, w=0.0) for r in room.rectangles)
@@ -238,7 +238,7 @@ def test_a_fused_room_without_area_is_an_input_limit() -> None:
 
 def test_the_area_shares_keep_the_proof_tolerance_per_part() -> None:
     """Review m4: k parts each short by the solver tolerance must not miss the minimum."""
-    from archlux.geom.rectilineaire import minimum_area_shares
+    from archlux.geom.rectilinear import minimum_area_shares
     from archlux.tolerances import AREA_PROOF_M2
 
     plan, ctx, room = _l_in_tiling()
