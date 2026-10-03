@@ -593,8 +593,11 @@ build --strict` clean, `test_language.py`/`test_neutrality.py` green.
     `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. The
     rejection reasons and their order are unchanged. `_convert` is now CC 17 before the
     final assembly move and under CC 10 after it.
-43. **Not done, needs a decision.** `impute_openings` has no caller in the library, only
-    tests and a French alias. Removing it deletes a public name; kept until confirmed.
+43. Done, option A (agreed): `impute_openings` is wired into `load_msd` through a new
+    keyword-only parameter `impute_openings: bool = False`. Off by default, so every
+    existing load is unchanged; on, each wall without an opening gets a centred one.
+    Covered by `test_impute_openings_is_off_by_default_and_on_when_asked`. No public name
+    removed.
 
 ### 15. `bench` — done
 

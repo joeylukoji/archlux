@@ -8,6 +8,11 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 14 (`data`), item 43: `load_msd(impute_openings=)`
+
+- `load_msd` gains a keyword-only `impute_openings: bool = False`. When true, each wall without an opening gets a centred one, via the existing `archlux.data.imputation.impute_openings`, which was previously unused by the library. Off by default: loaded plans are unchanged.
+- New test in `tests/unit/test_loaders.py`.
+
 ### Tests — PLAN.md phase 4, block 15 (`bench`): `bench/stats.py` at 100 % branch coverage
 
 - New `tests/unit/test_stats_edges.py`: the refusal paths of `paired_bootstrap`, `tost`, `holm` and `power`, and the zero-variance branch of `tost`. `bench/stats.py` goes from 77 % to 100 %; total branch coverage 90.57 %.

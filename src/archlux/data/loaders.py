@@ -40,7 +40,7 @@ import io
 import math
 import zipfile
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -51,6 +51,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux.data.imputation import impute_openings as _impute_openings
 from archlux.errors import InvariantViolation
 from archlux.geom.rectilinear import RectilinearRoom, decompose
 from archlux.orient.circular import dominant_direction
@@ -434,6 +435,7 @@ def load_msd(
     excluded_types: frozenset[str] = EXCLUDED_TYPES,
     stats: LoadStatistics | None = None,
     limit: int | None = None,
+    impute_openings: bool = False,
 ) -> Iterator[MSDApartment]:
     """Convert the MSD CSV into apartments usable by ``archlux``.
 
@@ -475,6 +477,11 @@ def load_msd(
         and breakdown of rejection reasons.
     limit : int or None, optional
         Stop after this many **kept** apartments.
+    impute_openings : bool, optional
+        Give every wall without an opening a centred opening, via
+        :func:`archlux.data.imputation.impute_openings`. Off by default: the
+        loaded plans are then exactly the MSD geometry, and the calibration effect
+        of the imputation is measured separately (see ``docs/data/imputation.md``).
 
     Yields
     ------
@@ -517,6 +524,8 @@ def load_msd(
         if isinstance(result, str):
             stats.rejections[result] += 1
             continue
+        if impute_openings:
+            result = replace(result, plan=_impute_openings(result.plan))
         stats.kept += 1
         yield result
 
