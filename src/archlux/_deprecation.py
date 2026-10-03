@@ -23,6 +23,10 @@ until asked, and the package's own current names resolved the same way::
         fallback=lazy_module_attributes(__name__, globals(), _ATTRS),
     )
 
+A whole module renamed keeps its old path as a shim built by :func:`module_shim`::
+
+    __getattr__ = module_shim(__name__, "archlux.pkg.new_module")
+
 Renamed keyword parameters of a public function go through :func:`renamed_parameters`::
 
     @renamed_parameters({"chemin": "path"})
@@ -43,10 +47,23 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-__all__ = ["Alias", "LazyAlias", "lazy_aliases", "lazy_module_attributes", "renamed_parameters"]
+__all__ = [
+    "Alias",
+    "LazyAlias",
+    "lazy_aliases",
+    "lazy_module_attributes",
+    "module_shim",
+    "renamed_parameters",
+]
 
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
+
+_SERVED: dict[str, Mapping[str, Alias | LazyAlias]] = {}
+"""Deprecated names each module serves through :func:`lazy_aliases`, by module name.
+
+Read by :func:`module_shim`, so that a module kept under its old name forwards the old
+names the module itself still serves, without a second copy of that table."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,6 +137,7 @@ def lazy_aliases(
     callable
         A function to assign to ``__getattr__`` at module level.
     """
+    _SERVED[module_name] = aliases
 
     def __getattr__(name: str) -> object:
         alias = aliases.get(name)
@@ -190,6 +208,35 @@ def lazy_module_attributes(
         return value
 
     return _fallback
+
+
+def module_shim(module_name: str, new_module: str) -> Callable[[str], object]:
+    """Build the ``__getattr__`` of a module kept under its old name (ADR 0001).
+
+    The shim serves, with a ``DeprecationWarning`` naming the new path, every name of
+    ``new_module.__all__`` and every deprecated name ``new_module`` itself serves through
+    :func:`lazy_aliases` (the French names it carried before the rename). Old pickles
+    naming a class by its old module path load through it, with the same warning.
+
+    Parameters
+    ----------
+    module_name : str
+        ``__name__`` of the shim (the old module path).
+    new_module : str
+        Dotted path of the module that now holds the code.
+
+    Returns
+    -------
+    callable
+        A function to assign to ``__getattr__`` at module level.
+    """
+    target = importlib.import_module(new_module)
+    aliases: dict[str, Alias | LazyAlias] = {
+        name: LazyAlias(new_module, name, f"{new_module}.{name}")
+        for name in getattr(target, "__all__", ())
+    }
+    aliases.update(_SERVED.get(new_module, {}))
+    return lazy_aliases(module_name, aliases)
 
 
 def renamed_parameters(

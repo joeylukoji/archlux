@@ -298,7 +298,8 @@ package = importlib.import_module("archlux." + sys.argv[1])
 # A lazy facade loads almost nothing on `import`: also load every submodule and resolve
 # every public name, so the check sees what the package can actually pull in.
 for info in pkgutil.walk_packages(getattr(package, "__path__", []), package.__name__ + "."):
-    if info.name != "archlux.light.learned":  # torch-only, optional (TORCH_TOLERE)
+    # torch-only, optional (TORCH_TOLERE); `appris` is its deprecated module name (ADR 0001)
+    if info.name not in {"archlux.light.learned", "archlux.light.appris"}:
         importlib.import_module(info.name)
 for name in getattr(package, "__all__", []):
     getattr(package, name)
