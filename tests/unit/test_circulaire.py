@@ -7,6 +7,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from archlux.errors import InvalidInput
 from archlux.orient.circulaire import (
     angular_difference,
     circular_linear_regression,
@@ -16,9 +17,11 @@ from archlux.orient.circulaire import (
     encode,
     encode_orientation,
     rayleigh,
+    sector,
     stratify,
 )
 from archlux.types import Orientation
+from archlux.uq.fiabilite import stratify_by_orientation
 
 
 def test_moyenne_circulaire_franchit_zero() -> None:
@@ -87,3 +90,46 @@ def test_stratifier_huit_secteurs() -> None:
     assert groupes["N"].tolist() == pytest.approx([0.0, 10.0])
     assert groupes["E"].tolist() == pytest.approx([90.0])
     assert groupes["S"].tolist() == pytest.approx([180.0])
+
+
+def test_sector_centered_matches_stratify() -> None:
+    """PLAN.md phase 4, block 7, item 24: `stratify` names what `sector` indexes."""
+    degres = np.array([0.0, 10.0, 90.0, 180.0, 350.0])
+    groupes = stratify(degres, n_secteurs=8)
+    noms = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+    for angle in degres:
+        idx = int(sector(angle, 8))
+        assert angle in groupes[noms[idx]]
+
+
+def test_sector_edge_aligned_starts_at_zero() -> None:
+    assert sector(0.0, 4, center=False).item() == 0
+    assert sector(44.0, 4, center=False).item() == 0
+    assert sector(90.0, 4, center=False).item() == 1
+    assert sector(359.0, 4, center=False).item() == 3
+
+
+def test_sector_wraps_negative_and_over_360_degrees() -> None:
+    assert sector(-10.0, 8).item() == sector(350.0, 8).item()
+    assert sector(370.0, 8).item() == sector(10.0, 8).item()
+
+
+def test_sector_is_vectorized() -> None:
+    result = sector(np.array([0.0, 90.0, 180.0, 270.0]), 4, center=False)
+    assert result.tolist() == [0, 1, 2, 3]
+
+
+@pytest.mark.parametrize("n_sectors", [0, -1, 2.5, True])
+def test_sector_rejects_invalid_sector_count(n_sectors: object) -> None:
+    with pytest.raises(InvalidInput, match="n_sectors"):
+        sector(1.0, n_sectors)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("n_sectors", [2, 4, 8, 12, 16])
+def test_sector_edge_aligned_matches_uq_copy(n_sectors: int) -> None:
+    """`uq` keeps its own edge-aligned copy (layering); both must partition alike."""
+    degres = np.linspace(0.0, 360.0, 7201, endpoint=False)
+    attendu = np.empty(degres.size, dtype=int)
+    for k, idx in stratify_by_orientation(degres, n_secteurs=n_sectors).items():
+        attendu[idx] = k
+    assert sector(degres, n_sectors=n_sectors, center=False).tolist() == attendu.tolist()

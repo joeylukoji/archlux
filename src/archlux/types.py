@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from numbers import Real
 from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal
+from typing import TYPE_CHECKING, Final, Literal, Protocol, runtime_checkable
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvalidInput, InvariantViolation
@@ -30,8 +30,10 @@ if TYPE_CHECKING:
 
 __all__ = [
     "FIELDS_VECTOR",
+    "INDICATOR_SENSE",
     "Certificate",
     "Context",
+    "Fingerprintable",
     "GeometricProof",
     "Indicator",
     "Manifest",
@@ -45,6 +47,7 @@ __all__ = [
     "Room",
     "Structure",
     "Wall",
+    "indicator_sign",
     "vectorize",
 ]
 
@@ -54,6 +57,35 @@ Indicator = Literal["sDA", "ASE", "UDI", "vue"]
 """Daylight indicator modelled by a surrogate and bounded by a certificate. Written once:
 ``PerformanceBound``, the ``Surrogate`` protocol, the surrogates and the calibration all
 share it."""
+
+INDICATOR_SENSE: Final[MappingProxyType[Indicator, Literal["<=", ">="]]] = MappingProxyType(
+    {"sDA": ">=", "ASE": "<=", "UDI": ">=", "vue": ">="}
+)
+"""Comparison direction of each indicator: ``\"<=\"`` where lower is better (ASE, glare),
+``\">=\"`` otherwise. Single source for the sign flip and the report/calibration
+formatting that used to each spell out ``indicator == "ASE"`` (PLAN.md phase 4, block 6)."""
+
+
+def indicator_sign(indicator: Indicator) -> float:
+    """``-1.0`` where lower is better (ASE), ``1.0`` otherwise: the surrogates' sign flip."""
+    return -1.0 if INDICATOR_SENSE[indicator] == "<=" else 1.0
+
+
+@runtime_checkable
+class Fingerprintable(Protocol):
+    """A model that can name its own weights fingerprint.
+
+    :func:`archlux.uq.gestion._model_fingerprint` reads this attribute first, before
+    falling back to guessing at hardcoded attribute names (``W1``, ``b1``, ...): a
+    model implementing this protocol survives an internal rename that the guessing
+    would silently miss. Third-party models (e.g. a raw ``torch`` module) are not
+    expected to implement it; the guessing fallback stays for them.
+    """
+
+    @property
+    def weights_fingerprint(self) -> str:
+        """SHA-256 of the trained weights, stable for identical weights."""
+        ...
 
 
 # ======================================================================================

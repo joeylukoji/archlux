@@ -23,8 +23,8 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode_orientation
-from archlux.types import Indicator, Orientation
+from archlux.orient.circulaire import encode_orientation, sector
+from archlux.types import Indicator, Orientation, indicator_sign
 
 __all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
 
@@ -73,8 +73,7 @@ def sector_factor(orientation: Orientation) -> float:
     """
     features = encode_orientation(orientation, harmoniques=1)
     azimut = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
-    secteur = int((azimut + 22.5) // 45.0) % 8
-    return FACTEURS_SECTEUR[secteur]
+    return FACTEURS_SECTEUR[int(sector(azimut, 8))]
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,8 +162,7 @@ class AnalyticSurrogate:
         granularité que vit 92 % de la variance de l'éclairement réel.
         """
         del glazing
-        parts = self._parts(x, orientation)
-        return -parts if self.indicateur_vise == "ASE" else parts
+        return self._parts(x, orientation) * indicator_sign(self.indicateur_vise)
 
     def _parts(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
         """Score positif de chaque pièce, sans le signe de l'indicateur."""
@@ -252,9 +250,8 @@ class AnalyticSurrogate:
             gradient[base + 2] = du_dw * poids_sud
             gradient[base + 3] = du_dh * poids_sud
 
-        if self.indicateur_vise == "ASE":
-            return -total, -gradient
-        return total, gradient
+        sign = indicator_sign(self.indicateur_vise)
+        return total * sign, gradient * sign
 
 
 __getattr__ = lazy_aliases(

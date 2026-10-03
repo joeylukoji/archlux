@@ -21,7 +21,7 @@ from archlux.light.analytique import AnalyticSurrogate
 from archlux.light.jetons import vector_to_tokens
 from archlux.light.protocole import Glazing
 from archlux.orient.circulaire import encode
-from archlux.types import Indicator, Orientation
+from archlux.types import INDICATOR_SENSE, Indicator, Orientation
 
 __all__ = ["DenseSurrogate", "descriptors"]
 
@@ -45,7 +45,7 @@ SIGMA_PLANCHER = 0.02
 """
 
 
-@lru_cache(maxsize=len(("sDA", "ASE", "UDI", "vue")))
+@lru_cache(maxsize=len(INDICATOR_SENSE))
 def _analytique(indicator: Indicator) -> AnalyticSurrogate:
     """Instance analytique partagée : gelée, sans état, réutilisable sans copie.
 
@@ -146,6 +146,28 @@ class DenseSurrogate:
     def indicator(self) -> Indicator:
         """Nom de l'indicateur modélisé."""
         return self.indicateur_vise
+
+    @property
+    def weights_fingerprint(self) -> str:
+        """Implements :class:`archlux.types.Fingerprintable`.
+
+        ``uq.gestion._model_fingerprint`` reads this directly instead of guessing at
+        ``W1``/``b1``/... by name, so it survives an internal rename here.
+        """
+        if (
+            self.W1 is None
+            or self.b1 is None
+            or self.W2 is None
+            or self.b2 is None
+            or self.W3 is None
+        ):
+            raise InvariantViolation(("fingerprinting an untrained model",))
+        buffers = [
+            np.ascontiguousarray(w, dtype=float).tobytes()
+            for w in (self.W1, self.b1, self.W2, self.b2, self.W3)
+        ]
+        buffers.append(np.asarray(float(self.b3), dtype=float).tobytes())
+        return hashlib.sha256(b"".join(buffers)).hexdigest()
 
     def n_parameters(self) -> int:
         """Nombre de scalaires entraînés."""
@@ -358,16 +380,10 @@ class DenseSurrogate:
     @classmethod
     def load(cls, chemin: Path) -> DenseSurrogate:
         """Relire un ``npz`` produit par :meth:`save`."""
-        indicateurs: tuple[Indicator, ...] = (
-            "sDA",
-            "ASE",
-            "UDI",
-            "vue",
-        )
         with np.load(Path(chemin), allow_pickle=False) as archive:
             indicator = str(archive["indicateur"])
             # Matching by equality types the result on every mypy version, without a cast.
-            vise = next((known for known in indicateurs if known == indicator), None)
+            vise = next((known for known in INDICATOR_SENSE if known == indicator), None)
             if vise is None:
                 raise InvariantViolation((f"indicateur inconnu dans les poids : {indicator}",))
             modele = cls(indicateur_vise=vise)

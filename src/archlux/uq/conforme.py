@@ -16,7 +16,7 @@ import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
-from archlux.types import REGIMES, Indicator, PerformanceBound, Regime
+from archlux.types import INDICATOR_SENSE, REGIMES, Indicator, PerformanceBound, Regime
 
 __all__ = [
     "Calibration",
@@ -152,7 +152,7 @@ def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
 
 
 def _indicateur(nom: str) -> Indicator:
-    if nom not in ("sDA", "ASE", "UDI", "vue"):
+    if nom not in INDICATOR_SENSE:
         raise InvariantViolation((f"unknown indicator: {nom!r}",))
     return nom  # type: ignore[return-value]
 
@@ -360,7 +360,7 @@ class ConformalCalibrator:
         """
         if self.n < 1:
             raise InvariantViolation(("calibrator not fitted",))
-        attendu = "<=" if self.indicator == "ASE" else ">="
+        attendu = INDICATOR_SENSE[self.indicator]
         if sens is None:
             sens = attendu
         if sens not in (">=", "<="):

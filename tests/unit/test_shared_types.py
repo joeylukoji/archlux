@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from archlux.types import Indicator, PerformanceBound
+from archlux.types import INDICATOR_SENSE, Indicator, PerformanceBound, indicator_sign
 
 SRC = Path(__file__).resolve().parents[2] / "src" / "archlux"
 
@@ -31,6 +31,31 @@ def test_the_indicator_literal_is_written_once() -> None:
         if 'Literal["sDA", "ASE", "UDI", "vue"]' in path.read_text(encoding="utf-8")
     ]
     assert repeated == ["types.py"]
+
+
+def test_the_indicator_registry_covers_every_indicator() -> None:
+    assert set(INDICATOR_SENSE) == set(typing.get_args(Indicator))
+
+
+def test_ase_is_the_only_lower_is_better_indicator() -> None:
+    assert INDICATOR_SENSE["ASE"] == "<="
+    assert all(sense == ">=" for name, sense in INDICATOR_SENSE.items() if name != "ASE")
+
+
+def test_indicator_sign_matches_the_sense() -> None:
+    assert indicator_sign("ASE") == -1.0
+    assert indicator_sign("sDA") == 1.0
+
+
+def test_no_module_spells_out_the_ase_comparison_again() -> None:
+    """`indicator == "ASE"` was written six times (PLAN.md phase 4, block 6, item 21);
+    every one now reads the sense from `INDICATOR_SENSE` instead."""
+    repeated = [
+        path.relative_to(SRC).as_posix()
+        for path in sorted(SRC.rglob("*.py"))
+        if path.name != "types.py" and '== "ASE"' in path.read_text(encoding="utf-8")
+    ]
+    assert repeated == []
 
 
 def test_the_bound_and_the_protocol_share_the_alias() -> None:

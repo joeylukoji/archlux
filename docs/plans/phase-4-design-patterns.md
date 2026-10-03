@@ -307,21 +307,79 @@ suite green (no regressions), `mypy src` clean, `radon cc frank_wolfe.py -n C -s
 coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.py` and
 `test_neutrality.py` green.
 
-### 6. `light`
+### 6. `light` — done (21 done, 22 skipped, 23 done)
 
-21. Add an indicator **registry** (name, sense, unit, range) that replaces the
-    `if name == "ASE"` branches scattered across `light`, `certify` and `uq`.
-22. Split `DenseSurrogate` (`light/base.py`) into model (weights, `evaluate`,
-    `gradient`), trainer (`fit`) and serializer (`save`/`load`) — three collaborating
-    objects instead of one class doing all three.
-23. Add a `Fingerprintable` protocol (`archlux.uq.gestion._model_fingerprint`'s duck
-    type, made explicit) that a surrogate can implement instead of being introspected
-    by attribute name.
+21. Added `types.INDICATOR_SENSE` (`Indicator -> "<=" | ">="`, `"ASE"` the only `"<="`)
+    and `types.indicator_sign` (`-1.0`/`1.0`), next to the existing `REGIMES` registry —
+    same shape, same file, no new pattern. Replaces the five `indicator == "ASE"` sign
+    flips (`light/analytique.py` x2, `light/simulateur.py` x2, `light/protocole.py` x1)
+    and two comparison-direction branches (`certify/rapport.py`,
+    `uq/conforme.py`), plus two other spots that separately repeated the four-name list
+    (`light/base.py`'s `_analytique` cache size and `DenseSurrogate.load`'s validation).
+    **Scoped down from the plan's own wording**: no `unit`/`range` fields — nothing in
+    the codebase reads a unit or a numeric range for an indicator today (grepped first);
+    adding them now would be exactly the unrequested, unused abstraction
+    `python-design-patterns`/ponytail's `lite` check exists to catch. Add them if and
+    when a real caller needs one. Covered by `tests/unit/test_shared_types.py`:
+    `test_the_indicator_registry_covers_every_indicator`,
+    `test_ase_is_the_only_lower_is_better_indicator`, `test_indicator_sign_matches_the_sense`,
+    `test_no_module_spells_out_the_ase_comparison_again` (greps `src` for `== "ASE"`
+    outside `types.py`, the same style as the existing `test_the_indicator_literal_is_written_once`).
+    Verified: full suite green, `mypy src` clean, coverage 89.53% (ratchet 88.8%),
+    `mkdocs build --strict` clean. No complexity change (duplication removal, not a
+    CC reduction); ratchet stays at 25.
+22. **Skipped, found premature by design review (`python-design-patterns` +
+    ponytail-lite gut check, confirmed with the user before touching code)**:
+    splitting `DenseSurrogate` (`light/base.py`) into model/trainer/serializer objects.
+    It is a cohesive ~260-line class (weights + `evaluate`/`gradient`/`fit`/`save`/
+    `load`) with a single consumer (`LearnedSurrogate`) and no test or caller currently
+    blocked by the coupling — nothing wants a different trainer or a different
+    serializer for it, and the trainer would still need write access to the model's
+    weights either way, so the split moves coupling around rather than removing it.
+    Revisit if a second training strategy or a second serialization format is ever
+    actually needed.
+23. Added `types.Fingerprintable` (`@runtime_checkable Protocol`, one property:
+    `weights_fingerprint: str`) and implemented it on `DenseSurrogate`
+    (`light/base.py`), reusing the same SHA-256-over-weight-arrays computation
+    `uq.gestion._model_fingerprint`'s fallback already did by guessing at `W1`/`b1`/...
+    attribute names. `_model_fingerprint` already checked for a `weights_fingerprint`
+    attribute first (added for third-party models), so no change was needed there:
+    `DenseSurrogate` now takes that fast, explicit path instead of the by-name
+    guessing, and survives an internal rename that the guessing would silently miss.
+    The guessing fallback is kept for genuinely unknown third-party models (e.g. a raw
+    `torch` module) that cannot be asked to implement an archlux protocol. Lives in
+    `types.py` (not `light/protocole.py`) because `uq` may import `types` but not
+    `light` (`ARCHITECTURE.md` §5 layering). Covered by
+    `tests/unit/test_substitut_dense.py`:
+    `test_dense_implements_fingerprintable`,
+    `test_an_untrained_model_refuses_to_fingerprint`,
+    `test_freeze_and_issue_uses_the_explicit_fingerprint`.
+    Verified: full suite green, `mypy src` clean, coverage 89.38% (ratchet 88.8%),
+    `mkdocs build --strict` clean. No complexity change; ratchet stays at 25.
 
-### 7. `orient`
+### 7. `orient` — done
 
-24. Add one `sector(deg, n, *, center)` function and make `light`, `uq` and `bench`
-    call it instead of each keeping its own binning logic.
+24. Added `orient.circulaire.sector(deg, n_sectors, *, center=True)`: the centered
+    (compass-rose) or edge-aligned sector index of one or many azimuths, vectorized.
+    `stratify` now calls it instead of repeating the formula; `light/analytique.py`'s
+    `sector_factor` (was `int((azimut + 22.5) // 45.0) % 8`, hand-rolled,
+    scalar-only) now calls `sector(azimut, 8)` too — same result, now shared. `bench/rapport.py` already delegated
+    to `stratify`; nothing to change there.
+    **`uq` found infeasible, documented, not done, same class of problem as blocks 2/3's
+    skipped items**: `uq.fiabilite.stratify_by_orientation` keeps its own copy of the
+    edge-aligned half of the formula, because `uq` may only import `types` and `errors`
+    (`ARCHITECTURE.md` §5) — not `orient`, where `sector` lives — and the exemption this
+    would need is one more than the project's cap of 3, already fully spent. The two
+    functions were already documented as intentionally different partitions (centered
+    vs edge-aligned), so this is a real, pre-existing architectural boundary, not new
+    duplication created by this item.
+    Covered by `tests/unit/test_circulaire.py`:
+    `test_sector_centered_matches_stratify`, `test_sector_edge_aligned_starts_at_zero`,
+    `test_sector_wraps_negative_and_over_360_degrees`, `test_sector_is_vectorized`.
+    Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` green
+    (no new cross-layer import), coverage 89.41% (ratchet 88.8%), `mkdocs build
+    --strict` clean, `test_language.py`/`test_neutrality.py` green. No complexity
+    change; ratchet stays at 25.
 
 ### 8. `uq`
 

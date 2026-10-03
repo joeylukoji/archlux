@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux._version import __version__
-from archlux.types import Certificate, GeometricProof, Manifest, PerformanceBound
+from archlux.types import INDICATOR_SENSE, Certificate, GeometricProof, Manifest, PerformanceBound
 
 __all__ = ["render"]
 
@@ -59,7 +59,7 @@ def _section_performance(bound: PerformanceBound | None) -> str:
         else:
             # Batch 1.6: the optimizer chose this plan, the coverage is not guaranteed.
             banner = "[PREDICTION: selected plan, coverage NOT guaranteed]"
-        if bound.indicator == "ASE":
+        if INDICATOR_SENSE[bound.indicator] == "<=":
             line = (
                 f"  {bound.indicator}   <= {_fmt(bound.upper)}   "
                 f"(predicted {_fmt(bound.value)}, "
