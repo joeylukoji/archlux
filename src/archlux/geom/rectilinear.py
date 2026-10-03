@@ -89,7 +89,18 @@ class RectilinearRoom:
 
 
 def _open_coords(poly: Polygon) -> list[tuple[float, float]]:
-    """Vertices of the exterior ring, without repeating the first point."""
+    """Vertices of the exterior ring, without repeating the first point.
+
+    Parameters
+    ----------
+    poly
+        Polygon whose exterior ring is read.
+
+    Returns
+    -------
+    list of tuple of float
+        Vertices of the exterior ring, the first point not repeated.
+    """
     coords = list(poly.exterior.coords)
     if len(coords) >= 2 and coords[0] == coords[-1]:
         coords = coords[:-1]
@@ -97,7 +108,18 @@ def _open_coords(poly: Polygon) -> list[tuple[float, float]]:
 
 
 def _is_rectilinear(poly: Polygon) -> bool:
-    """Say whether every edge is parallel to an axis."""
+    """Say whether every edge is parallel to an axis.
+
+    Parameters
+    ----------
+    poly
+        Polygon to test.
+
+    Returns
+    -------
+    bool
+        ``True`` when every edge is parallel to an axis.
+    """
     coords = _open_coords(poly)
     if len(coords) < 4:
         return False
@@ -108,7 +130,18 @@ def _is_rectilinear(poly: Polygon) -> bool:
 
 
 def _is_rectangle(poly: Polygon) -> bool:
-    """Say whether the polygon is exactly its own bounding box."""
+    """Say whether the polygon is exactly its own bounding box.
+
+    Parameters
+    ----------
+    poly
+        Polygon to test.
+
+    Returns
+    -------
+    bool
+        ``True`` when the polygon is exactly its own bounding box.
+    """
     if not _is_rectilinear(poly):
         return False
     minx, miny, maxx, maxy = poly.bounds
@@ -117,7 +150,22 @@ def _is_rectangle(poly: Polygon) -> bool:
 
 
 def _to_room(poly: Polygon, *, id: str, room_type: str) -> Room:
-    """Convert a Shapely rectangle into a :class:`~archlux.types.Room`."""
+    """Convert a Shapely rectangle into a :class:`~archlux.types.Room`.
+
+    Parameters
+    ----------
+    poly
+        Rectangle to convert.
+    id
+        Identifier of the room.
+    room_type
+        Type of the room.
+
+    Returns
+    -------
+    Room
+        The room with the rectangle's lower-left corner and its width and height.
+    """
     minx, miny, maxx, maxy = poly.bounds
     return Room(
         id=id,
@@ -132,14 +180,40 @@ def _to_room(poly: Polygon, *, id: str, room_type: str) -> Room:
 def _signed_angle(
     prev: tuple[float, float], curr: tuple[float, float], nxt: tuple[float, float]
 ) -> float:
-    """Cross product (curr-prev)×(nxt-curr): >0 = left turn (CCW)."""
+    """Cross product (curr-prev)×(nxt-curr): >0 = left turn (CCW).
+
+    Parameters
+    ----------
+    prev
+        Previous vertex.
+    curr
+        Current vertex.
+    nxt
+        Next vertex.
+
+    Returns
+    -------
+    float
+        Cross product ``(curr - prev) × (nxt - curr)``: positive for a left turn.
+    """
     ax, ay = curr[0] - prev[0], curr[1] - prev[1]
     bx, by = nxt[0] - curr[0], nxt[1] - curr[1]
     return ax * by - ay * bx
 
 
 def _reflex_vertices(poly: Polygon) -> list[tuple[float, float]]:
-    """Vertices with interior angle > π for a CCW ring (right turn)."""
+    """Vertices with interior angle > π for a CCW ring (right turn).
+
+    Parameters
+    ----------
+    poly
+        Counter-clockwise polygon.
+
+    Returns
+    -------
+    list of tuple of float
+        Vertices whose interior angle exceeds π, that is the right turns.
+    """
     coords = _open_coords(poly)
     if poly.exterior.is_ccw is False:
         coords = list(reversed(coords))
@@ -160,6 +234,16 @@ def _line_rooms(inter: BaseGeometry) -> list[LineString]:
     Extracted from :func:`_coupe_verticale`/:func:`_coupe_horizontale` (PLAN.md phase
     4, block 3): GEOS returns a ``LineString``, a ``MultiLineString``, or (mixed with
     points, at a tangency) a ``GeometryCollection``, depending on the case.
+
+    Parameters
+    ----------
+    inter
+        Intersection geometry, of any shapely type.
+
+    Returns
+    -------
+    list of LineString
+        The ``LineString`` pieces of the intersection.
     """
     if inter.geom_type == "LineString":
         return [inter]
@@ -182,6 +266,21 @@ def _chord_through_pivot(
     reflex vertex. Keeping the first piece amounted to proposing an edge of the
     polygon as the cut — it separates nothing. So all the pieces touching the pivot
     are joined: sharing that point on one line, their union is a single segment.
+
+    Parameters
+    ----------
+    candidates
+        Line pieces to consider.
+    pivot
+        Vertex the chord must pass through.
+    axis
+        0 for x, 1 for y.
+
+    Returns
+    -------
+    tuple of float or None
+        Extent along ``axis`` of the pieces joined through ``pivot``, or ``None`` when they
+        collapse to a point.
     """
     extent_values: list[float] = []
     for seg in candidates:
@@ -194,7 +293,22 @@ def _chord_through_pivot(
 
 
 def _vertical_cut(poly: Polygon, x_cut: float, y_vertex: float) -> LineString | None:
-    """Interior vertical chord through ``(x_cut, y_vertex)``."""
+    """Interior vertical chord through ``(x_cut, y_vertex)``.
+
+    Parameters
+    ----------
+    poly
+        Polygon to cut.
+    x_cut
+        Abscissa of the cut.
+    y_vertex
+        Ordinate of the reflex vertex the cut passes through.
+
+    Returns
+    -------
+    LineString or None
+        The interior vertical chord, or ``None`` when there is none.
+    """
     minx, miny, maxx, maxy = poly.bounds
     if not (minx + _EPS < x_cut < maxx - _EPS):
         return None
@@ -212,6 +326,20 @@ def _horizontal_cut(poly: Polygon, y_cut: float, x_vertex: float) -> LineString 
     """Interior horizontal chord through ``(x_vertex, y_cut)``.
 
     Exact mirror of :func:`_coupe_verticale`, axes swapped.
+
+    Parameters
+    ----------
+    poly
+        Polygon to cut.
+    y_cut
+        Ordinate of the cut.
+    x_vertex
+        Abscissa of the reflex vertex the cut passes through.
+
+    Returns
+    -------
+    LineString or None
+        The interior horizontal chord, or ``None`` when there is none.
     """
     minx, miny, maxx, maxy = poly.bounds
     if not (miny + _EPS < y_cut < maxy - _EPS):
@@ -227,7 +355,18 @@ def _horizontal_cut(poly: Polygon, y_cut: float, x_vertex: float) -> LineString 
 
 
 def _best_vertical_cut(poly: Polygon) -> LineString | None:
-    """Vertical cut from a reflex vertex, smallest abscissa (left first)."""
+    """Vertical cut from a reflex vertex, smallest abscissa (left first).
+
+    Parameters
+    ----------
+    poly
+        Polygon to cut.
+
+    Returns
+    -------
+    LineString or None
+        The vertical cut from the reflex vertex with the smallest abscissa, or ``None``.
+    """
     best: list[tuple[float, float, LineString]] = []
     for x, y in _reflex_vertices(poly):
         seg = _vertical_cut(poly, x, y)
@@ -249,6 +388,16 @@ def _best_horizontal_cut(poly: Polygon) -> LineString | None:
     Consulted only if no vertical cut separates: the vertical convention of
     `MILESTONE-6.md` §2 keeps priority, so earlier decompositions are bit-for-bit
     unchanged.
+
+    Parameters
+    ----------
+    poly
+        Polygon to cut.
+
+    Returns
+    -------
+    LineString or None
+        The horizontal cut from the reflex vertex with the smallest ordinate, or ``None``.
     """
     best: list[tuple[float, float, LineString]] = []
     for x, y in _reflex_vertices(poly):
@@ -266,7 +415,18 @@ def _best_horizontal_cut(poly: Polygon) -> LineString | None:
 
 
 def _cut_up(poly: Polygon) -> list[Polygon]:
-    """Recursive guillotine partition: vertical on the left, then horizontal at the bottom."""
+    """Recursive guillotine partition: vertical on the left, then horizontal at the bottom.
+
+    Parameters
+    ----------
+    poly
+        Polygon to partition.
+
+    Returns
+    -------
+    list of Polygon
+        Rectangles of the recursive guillotine partition.
+    """
     poly = Polygon(poly.exterior)
     if not poly.is_valid or poly.area <= _EPS:
         raise InvariantViolation(("invalid or zero-area polygon",))
@@ -288,7 +448,18 @@ def _cut_up(poly: Polygon) -> list[Polygon]:
 
 
 def _detect_merges(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ...]:
-    """One fusion per shared edge, canonical orientation (left→right / bottom→top)."""
+    """One fusion per shared edge, canonical orientation (left→right / bottom→top).
+
+    Parameters
+    ----------
+    rects
+        Rectangles of one room.
+
+    Returns
+    -------
+    tuple of (int, int, str)
+        One fusion per shared edge, as the two rectangle indices and the orientation.
+    """
     clean: list[tuple[int, int, str]] = []
     for i, a in enumerate(rects):
         for j in range(i + 1, len(rects)):
@@ -382,6 +553,11 @@ def recompose(room: RectilinearRoom) -> Polygon:
     shapely.geometry.Polygon
         Union of the rectangles. For a partition without holes, equal to the input
         polygon of :func:`decompose`.
+
+    Parameters
+    ----------
+    room
+        Room made of rectangles.
     """
     if not room.rectangles:
         raise InvariantViolation(("RectilinearRoom without rectangle",))
@@ -400,6 +576,18 @@ def merge_constraints(
 
     ``partage_bord_droit``: ``x_i + w_i − x_j = 0``.
     ``partage_bord_haut``: ``y_i + h_i − y_j = 0``.
+
+    Parameters
+    ----------
+    room
+        Fused room.
+    index
+        Column index of each variable.
+
+    Returns
+    -------
+    tuple of (str, dict of str to float, float)
+        The affine equalities ``Σ a_k v_k = b`` that glue the sub-rectangles.
     """
     equality_rows: list[tuple[str, dict[str, float], float]] = []
     for i, j, nature in room.merges:
@@ -493,7 +681,20 @@ _Row = tuple[str, dict[str, float], float]
 
 
 def _interval(room: Room, axis: str) -> tuple[float, float, dict[str, float], dict[str, float]]:
-    """Proposed interval of ``room`` on ``axis`` and the affine forms of its two ends."""
+    """Proposed interval of ``room`` on ``axis`` and the affine forms of its two ends.
+
+    Parameters
+    ----------
+    room
+        Room whose interval is read.
+    axis
+        0 for x, 1 for y.
+
+    Returns
+    -------
+    tuple of float, float, dict, dict
+        The proposed interval of the room on the axis, and the affine forms of its two ends.
+    """
     position, size = ("y", "h") if axis == "y" else ("x", "w")
     low = float(getattr(room, position))
     high = low + float(getattr(room, size))
@@ -502,7 +703,20 @@ def _interval(room: Room, axis: str) -> tuple[float, float, dict[str, float], di
 
 
 def _difference(left: dict[str, float], right: dict[str, float]) -> dict[str, float]:
-    """Affine form ``left - right``."""
+    """Affine form ``left - right``.
+
+    Parameters
+    ----------
+    left
+        Affine form of the first term.
+    right
+        Affine form of the second term.
+
+    Returns
+    -------
+    dict of str to float
+        Affine form ``left - right``.
+    """
     terms = dict(left)
     for name, coefficient in right.items():
         terms[name] = terms.get(name, 0.0) - coefficient
@@ -580,7 +794,20 @@ def overlap_constraints(
 
 
 def _rows(rows: tuple[_Row, ...], index: dict[str, int]) -> tuple[sparse.csr_matrix, np.ndarray]:
-    """Sparse matrix and right-hand side of labelled rows."""
+    """Sparse matrix and right-hand side of labelled rows.
+
+    Parameters
+    ----------
+    rows
+        Labelled rows, each a mapping of variable to coefficient plus the right-hand side.
+    index
+        Column index of each variable.
+
+    Returns
+    -------
+    tuple of csr_matrix and ndarray
+        Sparse matrix and right-hand side of the rows.
+    """
     lines: list[int] = []
     columns: list[int] = []
     values: list[float] = []
