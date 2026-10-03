@@ -19,7 +19,7 @@ from hypothesis import given, settings
 from archlux import __version__, legalize
 from archlux.export import diagnose, to_ifc
 from archlux.types import Opening, Plan, Room, Wall
-from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import DEFAULT_CONTEXT, valid_plans
 
 _GUID = re.compile(r"^[0-3][0-9A-Za-z_$]{21}$")
 
@@ -36,7 +36,7 @@ def _plan() -> Plan:
         ),
         walls=walls,
         openings=(Opening(id="w1", wall_id="south", s=0.3, relative_width=0.2),),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
 
 
@@ -68,7 +68,7 @@ def test_ifcopenshell_accepts_a_plan_with_walls_and_an_opening(tmp_path: Path) -
     assert _errors(tmp_path / "plan.ifc") == []
 
 
-@given(plan=plans_valides())
+@given(plan=valid_plans())
 @settings(max_examples=20, deadline=None)
 def test_ifcopenshell_accepts_every_exported_plan(
     plan: Plan, tmp_path_factory: pytest.TempPathFactory
@@ -137,7 +137,7 @@ def test_the_export_of_a_certified_plan_is_byte_identical(tmp_path: Path) -> Non
     version (``IFCAPPLICATION`` and the certificate text), normalized before hashing so a
     release does not break the pin. Change the constant only on purpose.
     """
-    plan = legalize(_plan(), CONTEXTE_DEFAUT)
+    plan = legalize(_plan(), DEFAULT_CONTEXT)
     assert plan.certificate is not None and plan.openings
     assert to_ifc(plan, tmp_path / "plan.ifc", validate=True).valid
     data = (tmp_path / "plan.ifc").read_bytes().replace(__version__.encode(), b"<version>")

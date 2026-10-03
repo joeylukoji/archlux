@@ -1,1 +1,1 @@
-"""Paquet de tests — rend les stratégies partagées importables."""
+"""Test package: makes the shared strategies importable."""

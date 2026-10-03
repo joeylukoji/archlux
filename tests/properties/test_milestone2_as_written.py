@@ -21,8 +21,8 @@ from archlux.types import Context, Plan
 from tests import checkers
 from tests.properties.strategies import (
     GATE_EXAMPLES,
-    contextes,
-    plans_quelconques,
+    arbitrary_plans,
+    contexts,
     realistic_scenarios,
 )
 
@@ -36,7 +36,7 @@ def _returned_plans_are_valid(plan: Plan, ctx: Context, *, tiling: bool) -> None
     assert checkers.violations(result, ctx) == []
 
 
-@given(plan=plans_quelconques(), ctx=contextes())
+@given(plan=arbitrary_plans(), ctx=contexts())
 @settings(max_examples=500, deadline=None, derandomize=True)
 def test_every_returned_plan_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     """The criterion as written: arbitrary plans and contexts, 500 examples."""

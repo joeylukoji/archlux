@@ -75,7 +75,7 @@ RENAMED = [
         {
             "erreur_relative_max": "max_relative_error",
             "cosinus_moyen": "mean_cosine",
-            "accord_de_signe": "sign_agreement",
+            "accord_de_signe": "sign_agreement",  # lang-ok: old French name
             "graine": "seed",
             "conforme": "passed",
         },

@@ -1,8 +1,8 @@
-"""Contraintes de pavage exact — `geom.tiling`.
+"""Exact tiling constraints: `geom.tiling`.
 
-La these du module : la condition de pavage est **combinatoire**. Elle ne porte
-que sur les incidences bord/ligne, jamais sur les coordonnees. Ces tests pinnent
-cette propriete, et le fait qu'un jour devient non representable.
+The thesis of the module: the tiling condition is **combinatorial**. It only bears on
+the edge/line incidences, never on the coordinates. These tests pin that property, and
+the fact that a gap becomes unrepresentable.
 """
 
 from __future__ import annotations
@@ -19,20 +19,20 @@ from archlux.types import Context, Orientation, Plan, Regulation, Room, Structur
 _RECT = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 
 
-def _ctx(contour: tuple[tuple[float, float], ...] = _RECT) -> Context:
+def _ctx(outline: tuple[tuple[float, float], ...] = _RECT) -> Context:
     return Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
-        outline=contour,
+        outline=outline,
         regulation=Regulation(min_areas=(), min_width=0.0),
     )
 
 
-def _pavage_2x2(largeur_sw: float = 5.0) -> Plan:
-    """Pavage 2x2 ; `largeur_sw` < 5 ouvre un jour sous la piece nord-ouest."""
+def _tiling_2x2(sw_width: float = 5.0) -> Plan:
+    """2x2 tiling; `sw_width` < 5 opens a gap under the north-west room."""
     return Plan(
         rooms=(
-            Room(id="sw", type="living_room", x=0.0, y=0.0, w=largeur_sw, h=4.0),
+            Room(id="sw", type="living_room", x=0.0, y=0.0, w=sw_width, h=4.0),
             Room(id="se", type="bedroom", x=5.0, y=0.0, w=7.0, h=4.0),
             Room(id="nw", type="kitchen", x=0.0, y=4.0, w=5.0, h=5.0),
             Room(id="ne", type="bathroom", x=5.0, y=4.0, w=7.0, h=5.0),
@@ -43,9 +43,9 @@ def _pavage_2x2(largeur_sw: float = 5.0) -> Plan:
     )
 
 
-def _moulin() -> Plan:
-    """Moulin a vent : 5 rectangles, dissection **non tranchable**."""
-    contour = ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0), (0.0, 9.0))
+def _pinwheel() -> Plan:
+    """Pinwheel: 5 rectangles, a **non-sliceable** dissection."""
+    outline = ((0.0, 0.0), (9.0, 0.0), (9.0, 9.0), (0.0, 9.0))
     return Plan(
         rooms=(
             Room(id="A", type="living_room", x=0.0, y=6.0, w=6.0, h=3.0),
@@ -56,35 +56,35 @@ def _moulin() -> Plan:
         ),
         walls=(),
         openings=(),
-        outline=contour,
+        outline=outline,
     )
 
 
-def test_trame_d_un_pavage_sain() -> None:
-    """Les lignes sont les bords partages, pas un bord par piece."""
-    grid = deduce_grid(_pavage_2x2(), _ctx())
+def test_grid_of_a_sound_tiling() -> None:
+    """The lines are the shared edges, not one edge per room."""
+    grid = deduce_grid(_tiling_2x2(), _ctx())
     assert grid.x_lines == (0.0, 5.0, 12.0)
     assert grid.y_lines == (0.0, 4.0, 9.0)
     assert grid.n_cells == 4
 
 
-def test_dissection_non_tranchable_est_acceptee() -> None:
-    """Le moulin a vent n'est decoupable par aucune coupe guillotine.
+def test_a_non_sliceable_dissection_is_accepted() -> None:
+    """The pinwheel cannot be cut by any guillotine cut.
 
-    C'est le cas qui distingue une vraie condition de pavage d'une hypothese de
-    sliceabilite : les 9 cellules forment bien une partition.
+    It is the case that tells a real tiling condition from a sliceability
+    assumption: the 9 cells do form a partition.
     """
-    grid = deduce_grid(_moulin(), _ctx(((0.0, 0.0), (9.0, 0.0), (9.0, 9.0), (0.0, 9.0))))
+    grid = deduce_grid(_pinwheel(), _ctx(((0.0, 0.0), (9.0, 0.0), (9.0, 9.0), (0.0, 9.0))))
     assert grid.n_cells == 9
     assert len(grid.incidences) == 5
 
 
-def test_contour_rectilineaire_est_accepte() -> None:
-    """Un contour en L : les cellules hors contour doivent rester vides.
+def test_a_rectilinear_outline_is_accepted() -> None:
+    """An L-shaped outline: the cells outside the outline must stay empty.
 
-    Exiger le pavage de la **boite englobante** rejetterait tout appartement reel.
+    Requiring a tiling of the **bounding box** would reject every real apartment.
     """
-    contour = ((0.0, 0.0), (12.0, 0.0), (12.0, 4.0), (5.0, 4.0), (5.0, 9.0), (0.0, 9.0))
+    outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 4.0), (5.0, 4.0), (5.0, 9.0), (0.0, 9.0))
     plan = Plan(
         rooms=(
             Room(id="a", type="living_room", x=0.0, y=0.0, w=5.0, h=4.0),
@@ -93,27 +93,27 @@ def test_contour_rectilineaire_est_accepte() -> None:
         ),
         walls=(),
         openings=(),
-        outline=contour,
+        outline=outline,
     )
-    grid = deduce_grid(plan, _ctx(contour))
+    grid = deduce_grid(plan, _ctx(outline))
     assert grid.x_lines == (0.0, 5.0, 12.0)
-    # Toutes les lignes portent un sommet du contour : aucune ne peut glisser.
+    # Every line carries an outline vertex: none can slide.
     assert grid.anchored_x == frozenset({0, 1, 2})
 
 
-@pytest.mark.parametrize("jour", [0.05, 0.5, 2.0])
-def test_le_support_recupere_la_trame_quelle_que_soit_l_amplitude(jour: float) -> None:
-    """Une ligne orpheline est resorbee, sans aucun seuil en metres.
+@pytest.mark.parametrize("gap", [0.05, 0.5, 2.0])
+def test_the_support_recovers_the_grid_whatever_the_amplitude(gap: float) -> None:
+    """An orphan line is absorbed, without any threshold in metres.
 
-    C'est ce qui distingue le critere de support d'une tolerance metrique : un
-    jour de 2 m se rattrape aussi bien qu'un jour de 5 cm.
+    That is what tells the support criterion from a metric tolerance: a 2 m gap is
+    caught as well as a 5 cm gap.
     """
-    grid = deduce_grid(_pavage_2x2(largeur_sw=5.0 - jour), _ctx())
+    grid = deduce_grid(_tiling_2x2(sw_width=5.0 - gap), _ctx())
     assert grid.x_lines == (0.0, 5.0, 12.0)
 
 
-def test_une_cloison_etroite_n_est_pas_ecrasee() -> None:
-    """Le refus d'ecraser une piece borne la consolidation."""
+def test_a_narrow_partition_is_not_crushed() -> None:
+    """The refusal to crush a room bounds the consolidation."""
     plan = Plan(
         rooms=(
             Room(id="corridor", type="corridor", x=0.0, y=0.0, w=0.4, h=9.0),
@@ -126,8 +126,8 @@ def test_une_cloison_etroite_n_est_pas_ecrasee() -> None:
     assert deduce_grid(plan, _ctx()).x_lines == (0.0, 0.4, 12.0)
 
 
-def _trois_pieces_sur_quatre() -> Plan:
-    """Pavage 2x2 ampute de sa piece nord-est : une cellule reste vide."""
+def _three_rooms_out_of_four() -> Plan:
+    """2x2 tiling without its north-east room: one cell stays empty."""
     return Plan(
         rooms=(
             Room(id="sw", type="living_room", x=0.0, y=0.0, w=5.0, h=4.0),
@@ -140,35 +140,35 @@ def _trois_pieces_sur_quatre() -> Plan:
     )
 
 
-def test_jour_structurel_est_detecte_sans_budget() -> None:
-    """`repair_budget=0` : la partition est verifiee, jamais retouchee."""
+def test_a_structural_gap_is_detected_without_budget() -> None:
+    """`repair_budget=0`: the partition is checked, never touched up."""
     with pytest.raises(GridNotRecoverable, match="uncovered"):
-        deduce_grid(_trois_pieces_sur_quatre(), _ctx(), repair_budget=0)
+        deduce_grid(_three_rooms_out_of_four(), _ctx(), repair_budget=0)
 
 
-def test_une_piece_manquante_est_absorbee_par_sa_voisine() -> None:
-    """Conséquence semantique a connaitre : le programme change.
+def test_a_missing_room_is_absorbed_by_its_neighbour() -> None:
+    """A semantic consequence to know: the programme changes.
 
-    Avec le budget par defaut, la cellule vide est rendue a une piece voisine
-    plutot que refusee. C'est le comportement attendu d'un legaliseur — fermer un
-    jour, c'est agrandir quelqu'un — mais le plan sort avec **une piece de moins**
-    que ce que le generateur avait prevu. Un appelant qui doit preserver le
-    programme piece par piece passe `repair_budget=0`.
+    With the default budget, the empty cell is given to a neighbouring room rather
+    than refused. That is the expected behaviour of a legalizer (closing a gap means
+    enlarging someone), but the plan comes out with **one room fewer** than the
+    generator intended. A caller who must preserve the programme room by room passes
+    `repair_budget=0`.
     """
-    plan = _trois_pieces_sur_quatre()
+    plan = _three_rooms_out_of_four()
     grid = deduce_grid(plan, _ctx())
-    aires = {inc[0]: (inc[2] - inc[1]) * (inc[4] - inc[3]) for inc in grid.incidences}
-    assert sum(aires.values()) == grid.n_cells  # la grille est entierement couverte
+    areas = {inc[0]: (inc[2] - inc[1]) * (inc[4] - inc[3]) for inc in grid.incidences}
+    assert sum(areas.values()) == grid.n_cells  # the grid is entirely covered
     assert len(grid.incidences) == 3
 
-    corrige = ax.legalize(plan, _ctx(), tiling=True)
-    assert corrige.certificate is not None
-    assert corrige.certificate.geometry.valid
-    assert len(corrige.rooms) == 3
+    fixed = ax.legalize(plan, _ctx(), tiling=True)
+    assert fixed.certificate is not None
+    assert fixed.certificate.geometry.valid
+    assert len(fixed.rooms) == 3
 
 
-def test_le_budget_borne_la_reparation() -> None:
-    """Au-dela du budget, la faute n'est plus une cote fausse : on refuse."""
+def test_the_budget_bounds_the_repair() -> None:
+    """Beyond the budget, the fault is no longer a wrong dimension: it is refused."""
     plan = Plan(
         rooms=(
             Room(id="a", type="living_room", x=0.0, y=0.0, w=2.0, h=3.0),
@@ -183,40 +183,39 @@ def test_le_budget_borne_la_reparation() -> None:
 
 
 @pytest.mark.parametrize("budget", [0, 1, 2, 4, 8])
-@pytest.mark.parametrize("degat", [0.05, 0.5, 2.0, 6.0])
-def test_toute_trame_rendue_est_une_partition_valide(budget: int, degat: float) -> None:
-    """Propriete centrale : `deduire_trame` refuse, ou rend une partition exacte.
+@pytest.mark.parametrize("damage", [0.05, 0.5, 2.0, 6.0])
+def test_every_returned_grid_is_a_valid_partition(budget: int, damage: float) -> None:
+    """Central property: `deduce_grid` refuses, or returns an exact partition.
 
-    Elle ne doit **jamais** rendre une structure a demi reparee : ni cellule vide,
-    ni cellule doublement couverte, ni piece aux bords inverses. C'est cette
-    propriete qui autorise `etendre_pavage` a garantir le pavage sans verification
-    a l'execution.
+    It must **never** return a half-repaired structure: no empty cell, no doubly
+    covered cell, no room with inverted edges. That property is what allows
+    `extend_tiling` to guarantee the tiling without a check at run time.
     """
-    plan = _pavage_2x2(largeur_sw=max(0.5, 5.0 - degat))
+    plan = _tiling_2x2(sw_width=max(0.5, 5.0 - damage))
     try:
         grid = deduce_grid(plan, _ctx(), repair_budget=budget)
     except GridNotRecoverable:
-        return  # refus explicite : c'est l'autre branche du contrat
-    grille = np.zeros((len(grid.x_lines) - 1, len(grid.y_lines) - 1), dtype=int)
-    for name, gauche, droite, low, high in grid.incidences:
-        assert gauche < droite, f"{name} a ses bords inverses en x"
-        assert low < high, f"{name} a ses bords inverses en y"
-        grille[gauche:droite, low:high] += 1
-    assert np.all(grille == 1), "la trame rendue n'est pas une partition"
+        return  # explicit refusal: the other branch of the contract
+    cells = np.zeros((len(grid.x_lines) - 1, len(grid.y_lines) - 1), dtype=int)
+    for name, left, right, low, high in grid.incidences:
+        assert left < right, f"{name} has inverted edges in x"
+        assert low < high, f"{name} has inverted edges in y"
+        cells[left:right, low:high] += 1
+    assert np.all(cells == 1), "the returned grid is not a partition"
 
 
-def test_la_reparation_ne_change_pas_un_plan_sain() -> None:
-    """Sur une partition deja exacte, aucune retouche n'est appliquee."""
-    sain = deduce_grid(_pavage_2x2(), _ctx(), repair_budget=0)
-    avec = deduce_grid(_pavage_2x2(), _ctx(), repair_budget=8)
-    assert sain == avec
+def test_repair_does_not_change_a_sound_plan() -> None:
+    """On an already exact partition, no touch-up is applied."""
+    sound = deduce_grid(_tiling_2x2(), _ctx(), repair_budget=0)
+    with_repair = deduce_grid(_tiling_2x2(), _ctx(), repair_budget=8)
+    assert sound == with_repair
 
 
-def test_chevauchement_simple_est_resorbe_par_le_support() -> None:
-    """Deux bords orphelins qui se chevauchent fusionnent sur une ligne commune.
+def test_a_simple_overlap_is_absorbed_by_the_support() -> None:
+    """Two overlapping orphan edges merge on a common line.
 
-    C'est le comportement voulu : un chevauchement de 2 m entre deux pieces
-    voisines est une intention d'adjacence mal cotee, pas une incoherence d'ordre.
+    That is the intended behaviour: a 2 m overlap between two neighbouring rooms is a
+    badly dimensioned adjacency intent, not an order inconsistency.
     """
     plan = Plan(
         rooms=(
@@ -229,16 +228,16 @@ def test_chevauchement_simple_est_resorbe_par_le_support() -> None:
     )
     grid = deduce_grid(plan, _ctx())
     assert len(grid.x_lines) == 3
-    gauches = {inc[0]: inc[1:3] for inc in grid.incidences}
-    assert gauches["a"][1] == gauches["b"][0]  # a se termine ou b commence
+    spans = {inc[0]: inc[1:3] for inc in grid.incidences}
+    assert spans["a"][1] == spans["b"][0]  # a ends where b starts
 
 
-def test_chevauchement_structurel_est_refuse() -> None:
-    """Une piece **contenue** dans une autre : aucune fusion de lignes ne la sauve."""
+def test_a_structural_overlap_is_refused() -> None:
+    """A room **contained** in another: no line merge saves it."""
     plan = Plan(
         rooms=(
-            Room(id="englobante", type="living_room", x=0.0, y=0.0, w=12.0, h=9.0),
-            Room(id="incluse", type="bedroom", x=0.0, y=0.0, w=5.0, h=4.0),
+            Room(id="enclosing", type="living_room", x=0.0, y=0.0, w=12.0, h=9.0),
+            Room(id="enclosed", type="bedroom", x=0.0, y=0.0, w=5.0, h=4.0),
         ),
         walls=(),
         openings=(),
@@ -248,42 +247,42 @@ def test_chevauchement_structurel_est_refuse() -> None:
         deduce_grid(plan, _ctx())
 
 
-def test_legalize_avec_pavage_ferme_un_jour() -> None:
-    """Le cas que `legalize` seul ne sait pas corriger.
+def test_legalize_with_tiling_closes_a_gap() -> None:
+    """The case that `legalize` alone cannot fix.
 
-    Sans `tiling=True`, le plan troue est deja le plus proche de lui-meme :
-    l'optimum L1 le laisse tel quel et la verification exacte le rejette.
+    Without `tiling=True`, the plan with a hole is already the closest to itself: the
+    L1 optimum leaves it as is and the exact check rejects it.
     """
-    abime = _pavage_2x2(largeur_sw=4.5)
+    damaged = _tiling_2x2(sw_width=4.5)
     ctx = _ctx()
-    assert not verify_exactly(abime, ctx).valid
+    assert not verify_exactly(damaged, ctx).valid
 
     with pytest.raises(ax.GapNeedsTiling, match="tiling=True"):
-        ax.legalize(abime, ctx)
+        ax.legalize(damaged, ctx)
 
-    corrige = ax.legalize(abime, ctx, tiling=True)
-    assert corrige.certificate is not None
-    assert corrige.certificate.geometry.valid
-    assert not corrige.certificate.geometry.gaps
+    fixed = ax.legalize(damaged, ctx, tiling=True)
+    assert fixed.certificate is not None
+    assert fixed.certificate.geometry.valid
+    assert not fixed.certificate.geometry.gaps
 
 
-def test_pavage_preserve_l_idempotence() -> None:
-    """Sur un plan deja valide, `tiling=True` ne deplace rien."""
+def test_tiling_preserves_idempotence() -> None:
+    """On an already valid plan, `tiling=True` moves nothing."""
     ctx = _ctx()
-    corrige = ax.legalize(_pavage_2x2(), ctx, tiling=True)
-    assert corrige.certificate is not None
-    assert corrige.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-9)
+    fixed = ax.legalize(_tiling_2x2(), ctx, tiling=True)
+    assert fixed.certificate is not None
+    assert fixed.certificate.geometry.max_displacement == pytest.approx(0.0, abs=1e-9)
 
 
-def test_pavage_est_invariant_par_translation_des_lignes() -> None:
-    """La these du module : la condition ne porte que sur les incidences.
+def test_tiling_is_invariant_under_line_translation() -> None:
+    """The thesis of the module: the condition only bears on the incidences.
 
-    Deux plans de meme structure combinatoire mais de coordonnees differentes ont
-    la meme trame en indices, et les deux sont des pavages valides.
+    Two plans with the same combinatorial structure but different coordinates have the
+    same grid in indices, and both are valid tilings.
     """
     ctx = _ctx()
-    a = deduce_grid(_pavage_2x2(), ctx)
-    decale = Plan(
+    a = deduce_grid(_tiling_2x2(), ctx)
+    shifted = Plan(
         rooms=(
             Room(id="sw", type="living_room", x=0.0, y=0.0, w=3.0, h=6.0),
             Room(id="se", type="bedroom", x=3.0, y=0.0, w=9.0, h=6.0),
@@ -294,33 +293,33 @@ def test_pavage_est_invariant_par_translation_des_lignes() -> None:
         openings=(),
         outline=_RECT,
     )
-    b = deduce_grid(decale, ctx)
+    b = deduce_grid(shifted, ctx)
     assert [inc[1:] for inc in a.incidences] == [inc[1:] for inc in b.incidences]
     assert a.x_lines != b.x_lines
-    assert verify_exactly(decale, ctx).valid
+    assert verify_exactly(shifted, ctx).valid
 
 
-def test_egalites_de_pavage_ne_polluent_pas_le_diagnostic_dual() -> None:
-    """Les contraintes de pavage sont des egalites : elles ne sont pas dualisees."""
+def test_tiling_equalities_do_not_pollute_the_dual_diagnostic() -> None:
+    """Tiling constraints are equalities: they are not dualized."""
     ctx = _ctx()
-    sans = ax.legalize(_pavage_2x2(), ctx)
-    avec = ax.legalize(_pavage_2x2(), ctx, tiling=True)
-    assert sans.certificate is not None
-    assert avec.certificate is not None
-    libelles = {libelle for libelle, _ in avec.certificate.duals}
-    assert not any(name.startswith(("trame ", "contour ")) for name in libelles)
+    plain = ax.legalize(_tiling_2x2(), ctx)
+    tiled = ax.legalize(_tiling_2x2(), ctx, tiling=True)
+    assert plain.certificate is not None
+    assert tiled.certificate is not None
+    labels = {label for label, _ in tiled.certificate.duals}
+    assert not any(name.startswith(("trame ", "contour ")) for name in labels)
 
 
-def test_plan_sans_piece_est_refuse() -> None:
-    """Erreur typee, jamais un IndexError nu."""
-    vide = Plan(rooms=(), walls=(), openings=(), outline=_RECT)
+def test_a_plan_without_rooms_is_refused() -> None:
+    """A typed error, never a bare IndexError."""
+    empty = Plan(rooms=(), walls=(), openings=(), outline=_RECT)
     with pytest.raises(UnsupportedInput, match="no room"):
-        deduce_grid(vide, _ctx())
+        deduce_grid(empty, _ctx())
 
 
-def test_trame_est_deterministe() -> None:
-    """Deux appels sur le meme plan rendent exactement la meme trame."""
-    plan = _pavage_2x2(largeur_sw=4.7)
+def test_the_grid_is_deterministic() -> None:
+    """Two calls on the same plan return exactly the same grid."""
+    plan = _tiling_2x2(sw_width=4.7)
     a = deduce_grid(plan, _ctx())
     b = deduce_grid(plan, _ctx())
     assert a == b

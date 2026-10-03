@@ -13,7 +13,7 @@ from hypothesis import given, settings
 
 from archlux.certify.proof import rational_tiling, verify_exactly
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
-from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import DEFAULT_CONTEXT, valid_plans
 
 _OUTLINE = ((0.0, 0.0), (0.6, 0.0), (0.6, 1.0), (0.0, 1.0))
 
@@ -74,9 +74,9 @@ def test_a_non_rectangular_outline_is_not_handled_rationally() -> None:
 
 
 @settings(max_examples=300, deadline=None, derandomize=True)
-@given(plan=plans_valides())
+@given(plan=valid_plans())
 def test_every_guillotine_tiling_passes_the_rational_check(plan: Plan) -> None:
-    assert rational_tiling(plan, CONTEXTE_DEFAUT) == ()
+    assert rational_tiling(plan, DEFAULT_CONTEXT) == ()
 
 
 def test_the_proof_uses_the_rational_check_on_rectangular_outlines() -> None:

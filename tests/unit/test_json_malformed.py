@@ -1,7 +1,7 @@
-"""Entrées malformées : le format est refusé, jamais deviné.
+"""Malformed inputs: the format is refused, never guessed.
 
-Un plan mal relu produirait un certificat faux — c'est-à-dire une garantie affirmée sur
-une géométrie qui n'est pas celle du fichier. Chaque branche de refus a donc son test.
+A plan read back wrongly would produce a false certificate, that is, a guarantee claimed
+on a geometry that is not the one of the file. Each refusal branch therefore has its test.
 """
 
 from __future__ import annotations
@@ -22,34 +22,34 @@ PLAN = Plan(
 )
 
 
-class TestStructureInvalide:
-    """Refus au niveau de la structure."""
+class TestInvalidStructure:
+    """Refusals at the structure level."""
 
-    def test_un_point_mal_forme(self) -> None:
-        """Un contour dont un sommet n'est pas ``[x, y]``."""
-        donnees = to_dict(PLAN)
-        donnees["outline"] = [[0.0, 0.0], [1.0, 2.0, 3.0]]
+    def test_a_malformed_point(self) -> None:
+        """An outline with a vertex that is not ``[x, y]``."""
+        data = to_dict(PLAN)
+        data["outline"] = [[0.0, 0.0], [1.0, 2.0, 3.0]]
         with pytest.raises(InvariantViolation, match="expected a point"):
-            from_dict(donnees)
+            from_dict(data)
 
-    def test_un_champ_manquant(self) -> None:
-        """Une pièce sans hauteur ne peut pas être devinée."""
-        donnees = to_dict(PLAN)
-        del donnees["rooms"][0]["h"]
+    def test_a_missing_field(self) -> None:
+        """A room without a height cannot be guessed."""
+        data = to_dict(PLAN)
+        del data["rooms"][0]["h"]
         with pytest.raises(InvariantViolation, match="invalid JSON structure"):
-            from_dict(donnees)
+            from_dict(data)
 
-    def test_un_champ_non_numerique(self) -> None:
-        """Une largeur textuelle est refusée, pas convertie au petit bonheur."""
-        donnees = to_dict(PLAN)
-        donnees["rooms"][0]["w"] = "large"
+    def test_a_non_numeric_field(self) -> None:
+        """A textual width is refused, not converted haphazardly."""
+        data = to_dict(PLAN)
+        data["rooms"][0]["w"] = "large"
         with pytest.raises(InvariantViolation, match="invalid JSON structure"):
-            from_dict(donnees)
+            from_dict(data)
 
-    def test_un_indicateur_inconnu(self) -> None:
-        """Un indicateur hors des quatre connus invaliderait la borne conforme."""
-        donnees = to_dict(PLAN)
-        donnees["certificate"] = {
+    def test_an_unknown_indicator(self) -> None:
+        """An indicator outside the four known ones would invalidate the conformal bound."""
+        data = to_dict(PLAN)
+        data["certificate"] = {
             "geometry": {
                 "valid": True,
                 "overlap": False,
@@ -71,22 +71,22 @@ class TestStructureInvalide:
             "manifest": None,
         }
         with pytest.raises(InvariantViolation, match="unknown indicator"):
-            from_dict(donnees)
+            from_dict(data)
 
 
-class TestFichierInvalide:
-    """Refus au niveau du fichier."""
+class TestInvalidFile:
+    """Refusals at the file level."""
 
-    def test_du_texte_qui_n_est_pas_du_json(self, tmp_path: Path) -> None:
-        """Un fichier tronqué ou corrompu."""
-        path = tmp_path / "casse.json"
-        path.write_text("{ceci n'est pas du json", encoding="utf-8")
+    def test_text_that_is_not_json(self, tmp_path: Path) -> None:
+        """A truncated or corrupted file."""
+        path = tmp_path / "broken.json"
+        path.write_text("{this is not json", encoding="utf-8")
         with pytest.raises(InvariantViolation, match="not valid JSON"):
             load(path)
 
-    def test_du_json_qui_n_est_pas_un_objet(self, tmp_path: Path) -> None:
-        """Une liste de plans n'est pas un plan ; le dire plutôt que d'échouer plus loin."""
-        path = tmp_path / "liste.json"
+    def test_json_that_is_not_an_object(self, tmp_path: Path) -> None:
+        """A list of plans is not a plan; say so rather than fail further on."""
+        path = tmp_path / "list.json"
         path.write_text("[]", encoding="utf-8")
         with pytest.raises(InvariantViolation, match="JSON object"):
             load(path)

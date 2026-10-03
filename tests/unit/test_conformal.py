@@ -1,4 +1,4 @@
-"""Prédiction conforme — `MILESTONE-5.md` §3. Le quantile naïf à 0,90 est interdit."""
+"""Conformal prediction: `MILESTONE-5.md` §3. The naive 0.90 quantile is forbidden."""
 
 from __future__ import annotations
 
@@ -19,29 +19,29 @@ def _scores(n: int, seed: int = 0) -> np.ndarray:
     return np.abs(rng.normal(0.0, 1.0, size=n))
 
 
-def test_correction_echantillon_fini() -> None:
-    """``ceil((n+1)(1−α))`` est strictement plus large que le quantile empirique 0,90."""
+def test_finite_sample_correction() -> None:
+    """``ceil((n+1)(1−α))`` is strictly wider than the empirical 0.90 quantile."""
     n = 100
     rng = np.random.default_rng(7)
     predictions = rng.normal(50.0, 1.0, n)
-    verites = predictions + rng.normal(0.0, 1.0, n)
-    incertitudes = np.ones(n)
-    scores = np.abs(verites - predictions) / incertitudes
-    calibrateur = ConformalCalibrator()
-    calibrateur.fit(predictions, verites, incertitudes, alpha=0.10)
-    assert calibrateur.q > float(np.quantile(scores, 0.90))
-    rang = math.ceil((n + 1) * 0.90)
-    assert calibrateur.q == pytest.approx(float(np.sort(scores)[rang - 1]))
+    truths = predictions + rng.normal(0.0, 1.0, n)
+    uncertainties = np.ones(n)
+    scores = np.abs(truths - predictions) / uncertainties
+    calibrator = ConformalCalibrator()
+    calibrator.fit(predictions, truths, uncertainties, alpha=0.10)
+    assert calibrator.q > float(np.quantile(scores, 0.90))
+    rank = math.ceil((n + 1) * 0.90)
+    assert calibrator.q == pytest.approx(float(np.sort(scores)[rank - 1]))
 
 
-def test_quantile_refuse_un_jeu_trop_petit() -> None:
-    """n trop petit pour 1−α : échec explicite, pas une borne infinie."""
+def test_quantile_refuses_a_set_too_small() -> None:
+    """n too small for 1−α: an explicit failure, not an infinite bound."""
     with pytest.raises(InvariantViolation, match="too small"):
         conformal_quantile(_scores(8), alpha=0.10)
 
 
-def test_pas_de_borne_sans_calibration() -> None:
-    """Une borne sans jeu de calibration est invérifiable."""
+def test_no_bound_without_calibration() -> None:
+    """A bound without a calibration set cannot be checked."""
     with pytest.raises(InvariantViolation, match="n_calibration"):
         PerformanceBound(
             indicator="sDA",
@@ -54,22 +54,22 @@ def test_pas_de_borne_sans_calibration() -> None:
         )
 
 
-def test_sens_ase_inverse() -> None:
-    """ASE publie une borne supérieure : au-dessus de la prédiction."""
+def test_ase_direction_is_reversed() -> None:
+    """ASE publishes an upper bound: above the prediction."""
     n = 80
     rng = np.random.default_rng(3)
     predictions = rng.normal(6.0, 0.4, n)
-    verites = predictions + rng.normal(0.0, 0.5, n)
-    incertitudes = np.ones(n)
-    calibrateur = ConformalCalibrator(indicator="ASE")
-    calibrateur.fit(predictions, verites, incertitudes, alpha=0.10)
-    borne = calibrateur.bound(6.1, 1.0, "<=", regime="exchangeable")
-    assert borne.upper > borne.value
-    assert borne.indicator == "ASE"
+    truths = predictions + rng.normal(0.0, 0.5, n)
+    uncertainties = np.ones(n)
+    calibrator = ConformalCalibrator(indicator="ASE")
+    calibrator.fit(predictions, truths, uncertainties, alpha=0.10)
+    conformal_bound = calibrator.bound(6.1, 1.0, "<=", regime="exchangeable")
+    assert conformal_bound.upper > conformal_bound.value
+    assert conformal_bound.indicator == "ASE"
 
 
-def test_borner_reproduit_le_quantile() -> None:
-    """``borner`` s'appuie sur le même rang conforme, pas sur ``np.quantile``."""
+def test_bound_reproduces_the_quantile() -> None:
+    """``bound`` relies on the same conformal rank, not on ``np.quantile``."""
     scores = _scores(60, seed=11)
     calibration = Calibration(
         scores=scores,
@@ -77,29 +77,29 @@ def test_borner_reproduit_le_quantile() -> None:
         indicator="sDA",
         data_fingerprint="test",
     )
-    borne = bound(50.0, calibration, uncertainty=1.0, regime="exchangeable")
+    conformal_bound = bound(50.0, calibration, uncertainty=1.0, regime="exchangeable")
     q = conformal_quantile(scores, 0.10)
-    assert borne.lower == pytest.approx(50.0 - q)
-    assert borne.n_calibration == 60
-    assert borne.coverage == pytest.approx(0.90)
+    assert conformal_bound.lower == pytest.approx(50.0 - q)
+    assert conformal_bound.n_calibration == 60
+    assert conformal_bound.coverage == pytest.approx(0.90)
 
 
 @given(alpha=st.floats(min_value=0.05, max_value=0.20, allow_nan=False))
 @settings(max_examples=8, deadline=None)
-def test_couverture_sur_donnees_synthetiques(alpha: float) -> None:
-    """Sur des données i.i.d., la couverture unilatérale tient à 1−α près 3 points."""
+def test_coverage_on_synthetic_data(alpha: float) -> None:
+    """On i.i.d. data, the one-sided coverage holds at 1−α within 3 points."""
     rng = np.random.default_rng(17)
     n_cal, n_test = 250, 400
     pred_cal = rng.normal(40.0, 2.0, n_cal)
     sig_cal = np.full(n_cal, 1.5)
-    ver_cal = pred_cal + sig_cal * rng.normal(0.0, 1.0, n_cal)
-    calibrateur = ConformalCalibrator()
-    calibrateur.fit(pred_cal, ver_cal, sig_cal, alpha=alpha)
+    truth_cal = pred_cal + sig_cal * rng.normal(0.0, 1.0, n_cal)
+    calibrator = ConformalCalibrator()
+    calibrator.fit(pred_cal, truth_cal, sig_cal, alpha=alpha)
     pred = rng.normal(40.0, 2.0, n_test)
     sig = np.full(n_test, 1.5)
-    ver = pred + sig * rng.normal(0.0, 1.0, n_test)
-    couvert = [
-        v >= calibrateur.bound(float(p), float(s), ">=", regime="exchangeable").lower
-        for p, v, s in zip(pred, ver, sig, strict=True)
+    truth = pred + sig * rng.normal(0.0, 1.0, n_test)
+    covered = [
+        v >= calibrator.bound(float(p), float(s), ">=", regime="exchangeable").lower
+        for p, v, s in zip(pred, truth, sig, strict=True)
     ]
-    assert float(np.mean(couvert)) >= 1.0 - alpha - 0.03
+    assert float(np.mean(covered)) >= 1.0 - alpha - 0.03

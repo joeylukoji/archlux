@@ -26,8 +26,8 @@ from archlux.types import Context, Orientation, Plan
 from tests import checkers
 from tests.properties.strategies import (
     GATE_EXAMPLES,
-    contextes,
-    plans_quelconques,
+    arbitrary_plans,
+    contexts,
     realistic_scenarios,
 )
 
@@ -64,7 +64,7 @@ def _objective_is_monotone(plan: Plan, ctx: Context) -> None:
         assert after >= before - 1e-9
 
 
-@given(plan=plans_quelconques(), ctx=contextes())
+@given(plan=arbitrary_plans(), ctx=contexts())
 @_SETTINGS
 def test_every_iterate_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     _iterates_are_valid(plan, ctx)
@@ -78,7 +78,7 @@ def test_every_iterate_is_valid_with_walls_and_minimum_areas(
     _iterates_are_valid(*scenario)
 
 
-@given(plan=plans_quelconques(), ctx=contextes())
+@given(plan=arbitrary_plans(), ctx=contexts())
 @_SETTINGS
 def test_the_objective_is_monotone_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     _objective_is_monotone(plan, ctx)

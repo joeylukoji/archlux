@@ -21,7 +21,7 @@ from archlux.light.objective import Daylight
 from archlux.light.protocol import point_prediction
 from archlux.types import Certificate, GeometricProof, PerformanceBound, Regulation
 from archlux.uq.conformal import Calibration, ConformalCalibrator, bound, dataset_fingerprint
-from tests.properties.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import DEFAULT_CONTEXT
 
 
 def _bound(**changes: object) -> PerformanceBound:
@@ -152,7 +152,7 @@ def _plan() -> archlux.Plan:
         ),
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
 
 
@@ -161,7 +161,7 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     surrogate = AnalyticSurrogate()
     objective = Daylight(surrogate, q_hat=1.0)
     calibration = _calibration(surrogate.indicator)
-    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=objective, calibration=calibration)
+    result = archlux.legalize(plan, DEFAULT_CONTEXT, objective=objective, calibration=calibration)
     assert result.certificate is not None
     bound = result.certificate.performance
     assert bound is not None
@@ -169,21 +169,21 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     assert bound.n_calibration == calibration.n
     # Centred on the surrogate's prediction mu, not on the pessimistic mu - q sigma.
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
-    mu, _ = point_prediction(objective, x, CONTEXTE_DEFAUT.orientation)
+    mu, _ = point_prediction(objective, x, DEFAULT_CONTEXT.orientation)
     assert bound.value == pytest.approx(mu, rel=1e-6)
     assert "coverage NOT guaranteed" in result.certificate.report()
 
 
 def test_legalize_without_calibration_claims_no_performance() -> None:
     result = archlux.legalize(
-        _plan(), CONTEXTE_DEFAUT, objective=Daylight(AnalyticSurrogate(), q_hat=1.0)
+        _plan(), DEFAULT_CONTEXT, objective=Daylight(AnalyticSurrogate(), q_hat=1.0)
     )
     assert result.certificate is not None and result.certificate.performance is None
 
 
 def test_a_calibration_needs_an_objective() -> None:
     with pytest.raises(ValueError, match="objective"):
-        archlux.legalize(_plan(), CONTEXTE_DEFAUT, calibration=_calibration())
+        archlux.legalize(_plan(), DEFAULT_CONTEXT, calibration=_calibration())
 
 
 def test_a_calibration_of_another_indicator_is_refused() -> None:
@@ -191,7 +191,7 @@ def test_a_calibration_of_another_indicator_is_refused() -> None:
     other = "ASE" if objective.indicator != "ASE" else "sDA"
     with pytest.raises(ValueError, match="cannot bound"):
         archlux.legalize(
-            _plan(), CONTEXTE_DEFAUT, objective=objective, calibration=_calibration(other)
+            _plan(), DEFAULT_CONTEXT, objective=objective, calibration=_calibration(other)
         )
 
 
@@ -222,7 +222,7 @@ def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
     calibration = _calibration("ASE")
     result = archlux.legalize(
         _plan(),
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         objective=Daylight(surrogate, q_hat=1.0),
         calibration=calibration,
     )
@@ -230,7 +230,7 @@ def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
     bound = result.certificate.performance
     assert bound is not None and bound.indicator == "ASE"
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
-    raw = surrogate.evaluate(x, CONTEXTE_DEFAUT.orientation)
+    raw = surrogate.evaluate(x, DEFAULT_CONTEXT.orientation)
     assert raw < 0.0 < bound.value
     assert bound.value == pytest.approx(-raw, rel=1e-6)
     assert bound.lower <= bound.value <= bound.upper
@@ -240,7 +240,7 @@ def test_every_wrapping_layer_is_removed() -> None:
     """Review m2: Daylight(Daylight(s)) must not keep one pessimistic margin."""
     surrogate = AnalyticSurrogate()
     x = np.array([0.0, 0.0, 5.0, 9.0, 5.0, 0.0, 7.0, 9.0])
-    orientation = CONTEXTE_DEFAUT.orientation
+    orientation = DEFAULT_CONTEXT.orientation
     nested = Daylight(Daylight(surrogate, q_hat=1.0), q_hat=2.0)
     assert point_prediction(nested, x, orientation)[0] == pytest.approx(
         surrogate.evaluate(x, orientation)
@@ -255,7 +255,7 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     """
     small_outline = ((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0))
     tiny_ctx = replace(
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         outline=small_outline,
         regulation=Regulation(min_areas=(), min_width=2.0),
     )
@@ -275,7 +275,7 @@ def test_a_calibration_of_the_wrong_type_is_refused() -> None:
     with pytest.raises(InvariantViolation, match="Calibration"):
         archlux.legalize(
             _plan(),
-            CONTEXTE_DEFAUT,
+            DEFAULT_CONTEXT,
             objective=Daylight(AnalyticSurrogate(), q_hat=1.0),
             calibration=object(),  # type: ignore[arg-type]
         )
@@ -285,7 +285,7 @@ def test_no_uncertainty_at_the_plan_gives_no_bound_not_a_lost_plan() -> None:
     """Review m1: sigma = 0 is only known after solving; keep the proved plan."""
     result = archlux.legalize(
         _plan(),
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         objective=AnalyticSurrogate(sigma_nominal=0.0),
         calibration=_calibration(),
     )

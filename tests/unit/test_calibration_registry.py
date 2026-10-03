@@ -1,4 +1,4 @@
-"""Jeton de calibration — `MILESTONE-4.md` §2. Sans jeton, le jeu reste fermé."""
+"""Calibration token: `MILESTONE-4.md` §2. Without a token, the set stays closed."""
 
 from __future__ import annotations
 
@@ -16,51 +16,51 @@ from archlux.uq.registry import (
 )
 
 
-def test_emettre_jeton_est_deterministe() -> None:
+def test_issuing_a_token_is_deterministic() -> None:
     a = issue_token("abc", "2026-01-01T00:00:00Z")
     b = issue_token("abc", "2026-01-01T00:00:00Z")
     assert a == b
     assert a.signature != issue_token("abc", "2026-01-02T00:00:00Z").signature
 
 
-def test_ouvrir_calibration_sans_jeton_valide_leve(tmp_path: Path) -> None:
+def test_opening_calibration_without_a_valid_token_raises(tmp_path: Path) -> None:
     (tmp_path / "calibration").mkdir()
-    faux = issue_token("poids", "2026-01-01T00:00:00Z")
+    forged = issue_token("poids", "2026-01-01T00:00:00Z")
     from dataclasses import replace
 
     with pytest.raises(CalibrationLocked):
-        open_calibration(tmp_path, replace(faux, signature="0" * 16))
+        open_calibration(tmp_path, replace(forged, signature="0" * 16))
 
 
-def test_pour_entrainement_ne_voit_pas_la_calibration(tmp_path: Path) -> None:
+def test_for_training_does_not_see_the_calibration(tmp_path: Path) -> None:
     (tmp_path / "train").mkdir()
     (tmp_path / "train" / "a.json").write_text("{}", encoding="utf-8")
     (tmp_path / "calibration").mkdir()
     (tmp_path / "calibration" / "secret.json").write_text("{}", encoding="utf-8")
     (tmp_path / "test").mkdir()
-    gestion = DataManagement(tmp_path)
-    noms = {p.name for p in gestion.for_training().iterdir()}
-    assert noms == {"a.json"}
-    assert "secret.json" not in noms
+    management = DataManagement(tmp_path)
+    names = {p.name for p in management.for_training().iterdir()}
+    assert names == {"a.json"}
+    assert "secret.json" not in names
 
 
-def test_calibration_s_ouvre_apres_gel(tmp_path: Path) -> None:
+def test_calibration_opens_after_the_freeze(tmp_path: Path) -> None:
     (tmp_path / "calibration").mkdir()
     (tmp_path / "calibration" / "c.json").write_text("{}", encoding="utf-8")
     token = issue_token("sha256:poids", "2026-09-09T10:00:00Z")
-    dossier = DataManagement(tmp_path).for_calibration(token)
-    assert (dossier / "c.json").is_file()
+    folder = DataManagement(tmp_path).for_calibration(token)
+    assert (folder / "c.json").is_file()
 
 
-class _Boite:
+class _Box:
     def __init__(self, weights: np.ndarray) -> None:
         self.weights = weights
 
 
-def test_calibration_refuse_un_modele_modifie(tmp_path: Path) -> None:
-    """Après le gel, un poids touché invalide le jeton (`MILESTONE-5.md` §2)."""
+def test_calibration_refuses_a_modified_model(tmp_path: Path) -> None:
+    """After the freeze, a touched weight invalidates the token (`MILESTONE-5.md` §2)."""
     (tmp_path / "calibration").mkdir()
-    model = _Boite(np.array([1.0, 2.0, 3.0]))
+    model = _Box(np.array([1.0, 2.0, 3.0]))
     token = freeze_and_issue(model, timestamp="2026-09-09T12:00:00Z")
     DataManagement(tmp_path).for_calibration(token, model)
     model.weights = model.weights + 0.01

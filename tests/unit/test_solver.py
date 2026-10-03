@@ -1,7 +1,7 @@
-"""Oracle linéaire — `MILESTONE-2.md` §4.
+"""Linear oracle: `MILESTONE-2.md` §4.
 
-Le module sous test **ne sait pas d'où vient ``c``**. Ces tests non plus : ils lui
-passent des vecteurs de coûts arbitraires, jamais un « gradient de distance ».
+The module under test **does not know where ``c`` comes from**. Neither do these tests:
+they pass it arbitrary cost vectors, never a "distance gradient".
 """
 
 from __future__ import annotations
@@ -25,181 +25,181 @@ CTX = Context(
     regulation=Regulation(min_areas=(), min_width=1.5),
 )
 
-ORDRE_1 = RelativeOrder(horizontal=(), vertical=(), rooms=("A",))
-ORDRE_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
+ORDER_1 = RelativeOrder(horizontal=(), vertical=(), rooms=("A",))
+ORDER_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
 
-POLY_1 = build_polytope(ORDRE_1, CTX)
-POLY_AB = build_polytope(ORDRE_AB, CTX)
+POLY_1 = build_polytope(ORDER_1, CTX)
+POLY_AB = build_polytope(ORDER_AB, CTX)
 
 
-class TestResolutionSimple:
-    """Cas où l'optimum se lit à la main."""
+class TestSimpleSolve:
+    """Cases where the optimum can be read by hand."""
 
     def test_lp_trivial(self) -> None:
-        """Une seule pièce, minimiser ``x`` : la solution est la borne basse."""
+        """A single room, minimize ``x``: the solution is the lower bound."""
         sol = solve(POLY_1, c=np.array([1.0, 0.0, 0.0, 0.0]))
         assert sol.status == "optimal"
         assert sol.x[POLY_1.index["A.x"]] == pytest.approx(0.0)
 
-    def test_maximiser_revient_a_minimiser_l_oppose(self) -> None:
-        """``c = −e_x`` pousse ``x`` à sa borne haute, sans que le solveur sache pourquoi."""
+    def test_maximizing_is_minimizing_the_opposite(self) -> None:
+        """``c = −e_x`` pushes ``x`` to its upper bound, without the solver knowing why."""
         c = np.zeros(4)
         c[POLY_1.index["A.x"]] = -1.0
         sol = solve(POLY_1, c=c)
-        # x + w <= 10 et w >= 1,5 : le maximum de x vaut 8,5.
+        # x + w <= 10 and w >= 1.5: the maximum of x is 8.5.
         assert sol.x[POLY_1.index["A.x"]] == pytest.approx(8.5)
 
-    def test_la_solution_est_dans_le_polytope(self) -> None:
-        """Vérifié par ``Polytope.contient``, qui n'emprunte rien au solveur."""
+    def test_the_solution_is_in_the_polytope(self) -> None:
+        """Checked by ``Polytope.contains``, which borrows nothing from the solver."""
         c = np.array([1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0])
         sol = solve(POLY_AB, c=c)
         assert sol.status == "optimal"
         assert POLY_AB.contains(sol.x, tol=1e-7)
 
-    def test_les_diagnostics_sont_renseignes(self) -> None:
-        """``temps_ms`` et ``iterations`` ne sont pas décoratifs : le §9 les mesure."""
+    def test_the_diagnostics_are_filled_in(self) -> None:
+        """``time_ms`` and ``iterations`` are not decorative: §9 measures them."""
         sol = solve(POLY_AB, c=np.zeros(8))
         assert sol.time_ms > 0.0
         assert sol.iterations >= 0
 
 
-class TestDuaux:
-    """Les prix duaux ne sont extraits que si on les demande."""
+class TestDuals:
+    """Dual prices are extracted only when asked for."""
 
-    def test_absents_par_defaut(self) -> None:
-        """Les extraire coûte ; ne pas les demander doit vouloir dire ne pas les payer."""
+    def test_absent_by_default(self) -> None:
+        """Extracting them costs; not asking for them must mean not paying for them."""
         assert solve(POLY_AB, c=np.zeros(8)).duals is None
 
-    def test_presents_sur_demande(self) -> None:
-        """Un dual par ligne de ``A`` — l'appariement avec ``origines`` en dépend."""
+    def test_present_on_request(self) -> None:
+        """One dual per row of ``A``: the matching with ``origins`` depends on it."""
         c = np.zeros(8)
         c[POLY_AB.index["A.w"]] = -1.0
         sol = solve(POLY_AB, c=c, duals=True)
         assert sol.duals is not None
         assert sol.duals.shape == (POLY_AB.A.shape[0],)
 
-    def test_une_contrainte_active_a_un_prix_non_nul(self) -> None:
-        """Élargir ``A`` bute sur le contour : cette ligne-là doit coûter quelque chose."""
+    def test_an_active_constraint_has_a_non_zero_price(self) -> None:
+        """Widening ``A`` hits the outline: that row must cost something."""
         c = np.zeros(8)
         c[POLY_AB.index["A.w"]] = -1.0
         sol = solve(POLY_AB, c=c, duals=True)
         assert sol.duals is not None
-        actives = {POLY_AB.origins[i] for i, prix in enumerate(sol.duals) if abs(prix) > 1e-9}
-        assert actives, "aucune contrainte active alors que l'optimum est sur une face"
+        actives = {POLY_AB.origins[i] for i, price in enumerate(sol.duals) if abs(price) > 1e-9}
+        assert actives, "no active constraint although the optimum is on a face"
 
 
 class TestInfeasible:
-    """Une infaisabilité porte sa preuve, jamais un simple message."""
+    """An infeasibility carries its proof, never a mere message."""
 
     @staticmethod
-    def _polytope_surcontraint() -> object:
-        """Deux pièces de 2 m minimum côte à côte dans un contour de 3 m."""
+    def _overconstrained_polytope() -> object:
+        """Two rooms of at least 2 m side by side in a 3 m outline."""
         ctx = Context(
             structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
             outline=((0.0, 0.0), (3.0, 0.0), (3.0, 8.0), (0.0, 8.0)),
             regulation=Regulation(min_areas=(), min_width=2.0),
         )
-        return build_polytope(ORDRE_AB, ctx)
+        return build_polytope(ORDER_AB, ctx)
 
-    def test_infaisable_produit_un_certificat(self) -> None:
-        """Le programme ne tient pas dans l'enveloppe : il faut le prouver, pas l'affirmer."""
-        poly = self._polytope_surcontraint()
+    def test_infeasible_produces_a_certificate(self) -> None:
+        """The programme does not fit in the envelope: it must be proved, not claimed."""
+        poly = self._overconstrained_polytope()
         sol = solve(poly, c=np.zeros(8))  # type: ignore[arg-type]
         assert sol.status == "infaisable"
         assert sol.farkas_certificate is not None
         assert sol.farkas_certificate.shape == (poly.A.shape[0],)
 
-    def test_le_certificat_designe_des_contraintes_reelles(self) -> None:
-        """Un certificat de Farkas non nul, sinon il n'explique rien."""
-        poly = self._polytope_surcontraint()
+    def test_the_certificate_points_at_real_constraints(self) -> None:
+        """A non-zero Farkas certificate, otherwise it explains nothing."""
+        poly = self._overconstrained_polytope()
         sol = solve(poly, c=np.zeros(8))  # type: ignore[arg-type]
         assert sol.farkas_certificate is not None
         assert np.any(np.abs(sol.farkas_certificate) > 1e-9)
-        assert np.all(sol.farkas_certificate >= -1e-9), "les multiplicateurs sont positifs"
+        assert np.all(sol.farkas_certificate >= -1e-9), "the multipliers are non-negative"
 
 
-class TestDemarrageAChaud:
-    """`ARCHITECTURE.md` §10 : un LP sans ``depart=`` dans une boucle coûte ×3 à ×5."""
+class TestWarmStart:
+    """`ARCHITECTURE.md` §10: an LP without ``start=`` in a loop costs ×3 to ×5."""
 
-    def test_le_resultat_est_identique_a_froid_et_a_chaud(self) -> None:
-        """**La propriété qui compte.**
+    def test_the_result_is_identical_cold_and_warm(self) -> None:
+        """**The property that matters.**
 
-        Le démarrage à chaud est une optimisation de temps ; s'il changeait la solution,
-        il changerait le certificat, et deux exécutions du même plan divergeraient.
+        The warm start is a time optimization; if it changed the solution, it would
+        change the certificate, and two runs of the same plan would diverge.
         """
         c1 = np.array([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
         c2 = np.array([0.0, 1.0, -1.0, 0.0, 0.0, 1.0, 0.0, -1.0])
-        froid = solve(POLY_AB, c=c2)
-        chaud = solve(POLY_AB, c=c2, start=solve(POLY_AB, c=c1).x)
-        assert chaud.status == froid.status
-        assert np.allclose(chaud.x, froid.x, atol=1e-7)
+        cold = solve(POLY_AB, c=c2)
+        warm = solve(POLY_AB, c=c2, start=solve(POLY_AB, c=c1).x)
+        assert warm.status == cold.status
+        assert np.allclose(warm.x, cold.x, atol=1e-7)
 
-    def test_un_depart_de_mauvaise_dimension_est_refuse(self) -> None:
-        """Un vecteur mal apparié est un bogue d'appel, pas une donnée."""
+    def test_a_start_of_the_wrong_dimension_is_refused(self) -> None:
+        """A mismatched vector is a calling bug, not data."""
         from archlux.errors import InvariantViolation
 
         with pytest.raises(InvariantViolation, match="start has shape"):
             solve(POLY_AB, c=np.zeros(8), start=np.zeros(3))
 
 
-class TestStatutsRares:
-    """« Pas optimal » recouvre trois situations, pas une."""
+class TestRareStatuses:
+    """A status other than optimal covers three situations, not one."""
 
-    def test_un_domaine_non_borne_est_signale(self) -> None:
-        """Sans borne haute, minimiser ``x`` n'a pas de solution finie.
+    def test_an_unbounded_domain_is_reported(self) -> None:
+        """Without an upper bound, minimizing ``x`` has no finite solution.
 
-        Le polytope du projet est toujours borné par son contour ; ce statut existe pour
-        que ``solve`` puisse distinguer « domaine ouvert » de « programme impossible »
-        au lieu de confondre les deux sous un booléen.
+        The polytope of the project is always bounded by its outline; this status exists
+        so that ``solve`` can tell "open domain" from "impossible programme" instead of
+        merging both into a boolean.
         """
-        ouvert = replace(POLY_1, bounds=tuple((-np.inf, np.inf) for _ in POLY_1.bounds))
-        sol = solve(ouvert, c=np.array([1.0, 0.0, 0.0, 0.0]))
+        unbounded = replace(POLY_1, bounds=tuple((-np.inf, np.inf) for _ in POLY_1.bounds))
+        sol = solve(unbounded, c=np.array([1.0, 0.0, 0.0, 0.0]))
         assert sol.status in ("non_borne", "limite")
 
-    def test_les_egalites_sont_honorees(self) -> None:
-        """``A_eq`` est vide aujourd'hui, mais portera la structure porteuse (ADR-7).
+    def test_the_equalities_are_honoured(self) -> None:
+        """``A_eq`` is empty today, but will carry the load-bearing structure (ADR-7).
 
-        La laisser non testée jusque-là reviendrait à découvrir sa traduction vers GLOP
-        le jour où elle décidera de la position d'un mur porteur.
+        Leaving it untested until then would mean discovering its translation to GLOP
+        the day it decides the position of a load-bearing wall.
         """
-        avec_egalite = replace(
+        with_equality = replace(
             POLY_1,
             A_eq=sparse.csr_matrix(
                 ([1.0], ([0], [POLY_1.index["A.x"]])), shape=(1, len(POLY_1.index))
             ),
             b_eq=np.array([2.5]),
         )
-        sol = solve(avec_egalite, c=np.array([1.0, 0.0, 0.0, 0.0]))
+        sol = solve(with_equality, c=np.array([1.0, 0.0, 0.0, 0.0]))
         assert sol.status == "optimal"
         assert sol.x[POLY_1.index["A.x"]] == pytest.approx(2.5)
 
-    def test_un_objectif_de_mauvaise_dimension_est_refuse(self) -> None:
-        """Un vecteur de coûts mal apparié est un bogue d'appel."""
+    def test_an_objective_of_the_wrong_dimension_is_refused(self) -> None:
+        """A mismatched cost vector is a calling bug."""
         from archlux.errors import InvariantViolation
 
         with pytest.raises(InvariantViolation, match="objective has shape"):
             solve(POLY_1, c=np.zeros(99))
 
 
-class TestCoupes:
-    """Les coupes fournies sont ajoutées au système, avec leur origine."""
+class TestCuts:
+    """The cuts given are added to the system, with their origin."""
 
-    def test_une_coupe_contraint_la_solution(self) -> None:
-        """``w_A ≥ 4`` interdit la solution que le LP choisirait sans elle."""
+    def test_a_cut_constrains_the_solution(self) -> None:
+        """``w_A ≥ 4`` forbids the solution the LP would choose without it."""
         c = np.zeros(8)
-        c[POLY_AB.index["A.w"]] = 1.0  # minimiser w_A → il irait à 1,5
-        sans = solve(POLY_AB, c=c)
-        avec = solve(
+        c[POLY_AB.index["A.w"]] = 1.0  # minimize w_A → it would go to 1.5
+        without_cut = solve(POLY_AB, c=c)
+        with_cut = solve(
             POLY_AB,
             c=c,
-            cuts=[Cut(coefficients=(("A.w", 1.0),), lower_bound=4.0, origin="essai")],
+            cuts=[Cut(coefficients=(("A.w", 1.0),), lower_bound=4.0, origin="trial")],
         )
-        assert sans.x[POLY_AB.index["A.w"]] == pytest.approx(1.5)
-        assert avec.x[POLY_AB.index["A.w"]] == pytest.approx(4.0)
+        assert without_cut.x[POLY_AB.index["A.w"]] == pytest.approx(1.5)
+        assert with_cut.x[POLY_AB.index["A.w"]] == pytest.approx(4.0)
 
-    def test_une_coupe_infaisable_est_signalee(self) -> None:
-        """Une coupe impossible rend le système infaisable, pas silencieusement ignorée."""
-        coupe = Cut(coefficients=(("A.w", 1.0),), lower_bound=99.0, origin="impossible")
-        sol = solve(POLY_AB, c=np.zeros(8), cuts=[coupe])
+    def test_an_infeasible_cut_is_reported(self) -> None:
+        """An impossible cut makes the system infeasible; it is not silently ignored."""
+        cut = Cut(coefficients=(("A.w", 1.0),), lower_bound=99.0, origin="impossible")
+        sol = solve(POLY_AB, c=np.zeros(8), cuts=[cut])
         assert sol.status == "infaisable"

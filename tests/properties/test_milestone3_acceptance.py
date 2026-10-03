@@ -1,8 +1,8 @@
-"""Critères d'acceptation du jalon 3. Le jalon avance quand ces tests passent.
+"""Acceptance criteria of milestone 3. The milestone moves on when these tests pass.
 
-Le protocole reste **vectoriel** (`ARCHITECTURE.md`) : on n'élargit pas ``Surrogate``
-à ``Plan`` / ``Indicateurs``. La trace des itérés est celle de Frank-Wolfe, pas un
-champ nouveau de ``legalize``.
+The protocol stays **vector-based** (`ARCHITECTURE.md`): ``Surrogate`` is not widened to
+``Plan`` / indicators. The trace of the iterates is that of Frank-Wolfe, not a new field
+of ``legalize``.
 """
 
 from __future__ import annotations
@@ -19,51 +19,50 @@ from archlux.geom.polytope import build_polytope, freeze_contacts
 from archlux.light.analytic import AnalyticSurrogate
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
-from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
+from tests.properties.strategies import DEFAULT_CONTEXT, valid_plans
 
-ANALYTIQUE = AnalyticSurrogate()
+ANALYTIC = AnalyticSurrogate()
 
 
-@given(plan=plans_valides())
+@given(plan=valid_plans())
 @settings(max_examples=40, deadline=None)
-def test_sortie_performantielle_valide(plan: Plan) -> None:
-    """Toute sortie de ``legalize(..., objective=)`` reste géométriquement valide."""
-    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
+def test_performance_output_is_valid(plan: Plan) -> None:
+    """Every output of ``legalize(..., objective=)`` stays geometrically valid."""
+    result = archlux.legalize(plan, DEFAULT_CONTEXT, objective=ANALYTIC)
     assert result.certificate is not None
     assert result.certificate.geometry.valid
     assert result.certificate.performance is None
 
 
-@given(plan=plans_valides())
+@given(plan=valid_plans())
 @settings(max_examples=25, deadline=None)
-def test_tous_les_iteres_sont_valides(plan: Plan) -> None:
-    """Chaque itéré reste dans le domaine FW : ordre du *proposé* + contacts figés.
+def test_every_iterate_is_valid(plan: Plan) -> None:
+    """Every iterate stays in the FW domain: order of the *proposal* + frozen contacts.
 
-    Reconstruire le polytope depuis ``deduire_ordre(resultat)`` est trop strict :
-    Frank-Wolfe travaille sur ``figer_contacts``, pas sur le relaxé d'ordre du
-    point final.
+    Rebuilding the polytope from ``deduce_order(result)`` is too strict: Frank-Wolfe
+    works on ``freeze_contacts``, not on the order relaxation of the final point.
     """
-    _result, trace = archlux.legalize_trace(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
+    _result, trace = archlux.legalize_trace(plan, DEFAULT_CONTEXT, objective=ANALYTIC)
     assert isinstance(trace, Trace)
     assert trace.iterates
-    poly = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT)
+    poly = build_polytope(deduce_order(plan), DEFAULT_CONTEXT)
     poly_fw = freeze_contacts(poly, trace.iterates[0])
     assert all(poly_fw.contains(point, tol=1e-6) for point in trace.iterates)
 
 
-@given(plan=plans_valides())
+@given(plan=valid_plans())
 @settings(max_examples=20, deadline=None)
-def test_objectif_monotone(plan: Plan) -> None:
-    _result, trace = archlux.legalize_trace(plan, CONTEXTE_DEFAUT, objective=ANALYTIQUE)
+def test_monotone_objective(plan: Plan) -> None:
+    _result, trace = archlux.legalize_trace(plan, DEFAULT_CONTEXT, objective=ANALYTIC)
     assert isinstance(trace, Trace)
-    for avant, apres in pairwise(trace.values):
-        assert apres >= avant - 1e-9
+    for before, after in pairwise(trace.values):
+        assert after >= before - 1e-9
 
 
 @given(theta=st.floats(0.0, 360.0, allow_nan=False, allow_infinity=False))
 @settings(max_examples=15, deadline=None)
-def test_orientation_circulaire(theta: float) -> None:
-    """``θ`` et ``θ + 360`` produisent le même plan (encodage périodique)."""
+def test_circular_orientation(theta: float) -> None:
+    """``θ`` and ``θ + 360`` produce the same plan (periodic encoding)."""
     plan = archlux.Plan(
         rooms=(
             archlux.Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),
@@ -71,26 +70,26 @@ def test_orientation_circulaire(theta: float) -> None:
         ),
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
 
-    def _ctx(azimut: float) -> Context:
+    def _ctx(azimuth: float) -> Context:
         return Context(
-            structure=CONTEXTE_DEFAUT.structure,
-            orientation=Orientation(deg=azimut),
-            outline=CONTEXTE_DEFAUT.outline,
-            regulation=CONTEXTE_DEFAUT.regulation,
+            structure=DEFAULT_CONTEXT.structure,
+            orientation=Orientation(deg=azimuth),
+            outline=DEFAULT_CONTEXT.outline,
+            regulation=DEFAULT_CONTEXT.regulation,
         )
 
-    a = archlux.legalize(plan, _ctx(theta), objective=ANALYTIQUE)
-    b = archlux.legalize(plan, _ctx(theta + 360.0), objective=ANALYTIQUE)
+    a = archlux.legalize(plan, _ctx(theta), objective=ANALYTIC)
+    b = archlux.legalize(plan, _ctx(theta + 360.0), objective=ANALYTIC)
     xa = np.array([(p.x, p.y, p.w, p.h) for p in a.rooms])
     xb = np.array([(p.x, p.y, p.w, p.h) for p in b.rooms])
     assert np.allclose(xa, xb, atol=1e-6)
 
 
-def test_non_regression_jalon2() -> None:
-    """``objective=None`` reste la légalisation L1 du jalon 2."""
+def test_no_regression_of_milestone2() -> None:
+    """``objective=None`` stays the L1 legalization of milestone 2."""
     plan = archlux.Plan(
         rooms=(
             archlux.Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
@@ -98,18 +97,18 @@ def test_non_regression_jalon2() -> None:
         ),
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
-    classique = archlux.legalize(plan, CONTEXTE_DEFAUT)
-    explicite = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=None)
-    assert classique.rooms == explicite.rooms
-    assert classique.certificate is not None
-    assert classique.certificate.geometry.valid
-    assert classique.certificate.performance is None
+    classic = archlux.legalize(plan, DEFAULT_CONTEXT)
+    explicit = archlux.legalize(plan, DEFAULT_CONTEXT, objective=None)
+    assert classic.rooms == explicit.rooms
+    assert classic.certificate is not None
+    assert classic.certificate.geometry.valid
+    assert classic.certificate.performance is None
 
 
-def _plan_grille() -> archlux.Plan:
-    """Quatre pièces en 2×2, assez de liberté pour que le nord déplace les cotes."""
+def _grid_plan() -> archlux.Plan:
+    """Four rooms in 2×2, enough freedom for north to move the dimensions."""
     return archlux.Plan(
         rooms=(
             archlux.Room(id="sw", type="living_room", x=0.0, y=0.0, w=6.0, h=4.5),
@@ -119,29 +118,29 @@ def _plan_grille() -> archlux.Plan:
         ),
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
 
 
-def test_orientation_change_le_plan() -> None:
-    """Nord et sud ne rendent plus le même pavage — c'est le livrable du jalon 3."""
+def test_orientation_changes_the_plan() -> None:
+    """North and south no longer return the same tiling: the deliverable of milestone 3."""
 
     def _ctx(deg: float) -> Context:
         return Context(
-            structure=CONTEXTE_DEFAUT.structure,
+            structure=DEFAULT_CONTEXT.structure,
             orientation=Orientation(deg=deg),
-            outline=CONTEXTE_DEFAUT.outline,
-            regulation=CONTEXTE_DEFAUT.regulation,
+            outline=DEFAULT_CONTEXT.outline,
+            regulation=DEFAULT_CONTEXT.regulation,
         )
 
-    plan = _plan_grille()
-    nord = archlux.legalize(plan, _ctx(0.0), objective=ANALYTIQUE)
-    sud = archlux.legalize(plan, _ctx(180.0), objective=ANALYTIQUE)
-    xn = np.array([(p.x, p.y, p.w, p.h) for p in nord.rooms])
-    xs = np.array([(p.x, p.y, p.w, p.h) for p in sud.rooms])
+    plan = _grid_plan()
+    north = archlux.legalize(plan, _ctx(0.0), objective=ANALYTIC)
+    south = archlux.legalize(plan, _ctx(180.0), objective=ANALYTIC)
+    xn = np.array([(p.x, p.y, p.w, p.h) for p in north.rooms])
+    xs = np.array([(p.x, p.y, p.w, p.h) for p in south.rooms])
     assert not np.allclose(xn, xs, atol=1e-3)
-    assert nord.certificate is not None and nord.certificate.geometry.valid
-    assert sud.certificate is not None and sud.certificate.geometry.valid
+    assert north.certificate is not None and north.certificate.geometry.valid
+    assert south.certificate is not None and south.certificate.geometry.valid
     l1 = archlux.legalize(plan, _ctx(180.0))
     xl1 = np.array([(p.x, p.y, p.w, p.h) for p in l1.rooms])
     assert not np.allclose(xs, xl1, atol=1e-3)

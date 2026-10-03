@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — English test suite (chantier E, wave 2)
+
+- French test file names renamed to English (`test_acceptation_jalon*` → `test_milestone*_acceptance`, `test_dependances` → `test_dependencies`, `test_pavage` → `test_tiling`, `test_chargeurs` → `test_loaders`, ...); every reference follows.
+- Test names, helpers, docstrings, comments and assertion messages translated; the same 2701 tests are collected, assertions unchanged. French strings that are data under test (deprecated aliases, v1 JSON keys, recorded labels) stay.
+- 64 test files enrolled in the language guard (`tests/test_language.py`); `test_parameter_aliases.py` stays out, since it lists the deprecated French keywords on purpose.
+
 ### Changed — English prose and identifiers in src (chantier E, wave 1b)
 
 - **Prose**: the remaining French docstrings, comments and error messages of `src/archlux` (the `light` package and four package headers) are English, meaning unchanged. Messages that changed: `DenseSurrogate` ("empty plan vector: no token", "forward pass on an untrained model", "saving an untrained model", "unknown indicator in the weights: …", "xs, ys and orientations must have the same length"), `LearnedSurrogate` ("weights fingerprint mismatch for …", "model too large: …", ".pt weights: the transformer is only served outside CI; use a dense npz"), `Daylight` ("q_hat must be ≥ 0"), `daylight_factor` ("wwr outside ]0, 1]: …"), `validate_gradient` ("relative error … > …", "sign agreement … < … — do not move on to milestone 5"). The structlog event of the area-cut cap is now `cut.limit` on logger `archlux.lmo.cuts` (was `coupe.limite` on `archlux.lmo.coupes`). `InvalidInput.field` names the new parameter (`order`, `harmonics`, `degrees`, `n_sectors`, `panels`).

@@ -1,12 +1,12 @@
-"""Toute implémentation de ``Surrogate`` respecte réellement le protocole.
+"""Every implementation of ``Surrogate`` really respects the protocol.
 
-Un `Protocol` est structurel : rien ne signale qu'une implémentation a dérivé, jusqu'au
-jour où ``solve`` reçoit un objet auquel il manque ``incertitude``. Ce test transforme
-cette dérive silencieuse en échec de CI.
+A `Protocol` is structural: nothing signals that an implementation has drifted, until the
+day ``solve`` receives an object that lacks ``uncertainty``. This test turns that silent
+drift into a CI failure.
 
-Il vérifie aussi que les **signatures** correspondent, et pas seulement les noms : une
-méthode ``gradient(self, x)`` qui aurait perdu son paramètre ``orientation`` passerait
-un ``isinstance`` sans broncher.
+It also checks that the **signatures** match, not only the names: a method
+``gradient(self, x)`` that had lost its ``orientation`` parameter would pass an
+``isinstance`` without a murmur.
 """
 
 from __future__ import annotations
@@ -22,32 +22,32 @@ from archlux.light.protocol import Surrogate
 
 IMPLEMENTATIONS = [AnalyticSurrogate, LearnedSurrogate]
 
-# `baies` est arrive avec l'extension du protocole : le vecteur de decision ne porte
-# que (x, y, w, h) par piece, donc aucune information de fenestration. Mesure sur 369
-# appartements suisses, cible = irradiance simulee, decoupage par site : analytique
-# R2 = -0,000, perceptron R2 = -0,667 — au niveau ou sous la simple moyenne. C'est un
-# defaut d'entree, pas de capacite. Le parametre est **nomme et optionnel** : une
-# implementation qui l'ignore reste conforme.
-SIGNATURES_ATTENDUES = {
+# `glazing` came with the extension of the protocol: the decision vector only carries
+# (x, y, w, h) per room, hence no fenestration information. Measured on 369 Swiss
+# apartments, target = simulated irradiance, split by site: analytic R2 = -0.000,
+# perceptron R2 = -0.667, at or below the plain mean. It is an input defect, not a
+# capacity one. The parameter is **named and optional**: an implementation that
+# ignores it stays compliant.
+EXPECTED_SIGNATURES = {
     "evaluate": ("self", "x", "orientation", "glazing"),
     "gradient": ("self", "x", "orientation", "glazing"),
     "uncertainty": ("self", "x", "orientation", "glazing"),
 }
 
 
-@pytest.mark.parametrize("classe", IMPLEMENTATIONS, ids=lambda c: c.__name__)
-def test_implemente_le_protocole(classe: type) -> None:
-    """Les quatre membres du protocole sont présents."""
-    for membre in ("indicator", *SIGNATURES_ATTENDUES):
-        assert hasattr(classe, membre), f"{classe.__name__} n'a pas {membre}"
+@pytest.mark.parametrize("cls", IMPLEMENTATIONS, ids=lambda c: c.__name__)
+def test_implements_the_protocol(cls: type) -> None:
+    """The four members of the protocol are present."""
+    for member in ("indicator", *EXPECTED_SIGNATURES):
+        assert hasattr(cls, member), f"{cls.__name__} lacks {member}"
 
 
-@pytest.mark.parametrize("classe", IMPLEMENTATIONS, ids=lambda c: c.__name__)
-@pytest.mark.parametrize("method", sorted(SIGNATURES_ATTENDUES))
-def test_les_signatures_correspondent(classe: type, method: str) -> None:
-    """Les noms de paramètres sont identiques à ceux du protocole."""
-    obtenue = tuple(inspect.signature(getattr(classe, method)).parameters)
-    assert obtenue == SIGNATURES_ATTENDUES[method]
+@pytest.mark.parametrize("cls", IMPLEMENTATIONS, ids=lambda c: c.__name__)
+@pytest.mark.parametrize("method", sorted(EXPECTED_SIGNATURES))
+def test_the_signatures_match(cls: type, method: str) -> None:
+    """The parameter names are identical to those of the protocol."""
+    actual = tuple(inspect.signature(getattr(cls, method)).parameters)
+    assert actual == EXPECTED_SIGNATURES[method]
 
 
 def _protocol_members(protocol: type) -> set[str]:
@@ -64,11 +64,11 @@ def _protocol_members(protocol: type) -> set[str]:
     return members
 
 
-def test_le_protocole_a_exactement_quatre_membres() -> None:
-    """Trois méthodes et un attribut. Élargir le protocole élargit la surface apprise.
+def test_the_protocol_has_exactly_four_members() -> None:
+    """Three methods and one attribute. Widening the protocol widens the learned surface.
 
-    Chaque membre ajouté ici est une chose de plus que ``solve`` doit savoir du modèle
-    de lumière — donc un pas vers le couplage que l'architecture évite.
+    Each member added here is one more thing that ``solve`` must know about the light
+    model, hence a step towards the coupling the architecture avoids.
     """
-    membres = {m for m in _protocol_members(Surrogate) if not m.startswith("_")}
-    assert membres == {"indicator", "evaluate", "gradient", "uncertainty"}
+    members = {m for m in _protocol_members(Surrogate) if not m.startswith("_")}
+    assert members == {"indicator", "evaluate", "gradient", "uncertainty"}

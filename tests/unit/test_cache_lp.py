@@ -26,8 +26,8 @@ CTX = Context(
     outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
     regulation=Regulation(min_areas=(), min_width=1.5),
 )
-ORDRE_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
-POLY_AB = build_polytope(ORDRE_AB, CTX)
+ORDER_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
+POLY_AB = build_polytope(ORDER_AB, CTX)
 
 
 def test_a_fresh_cache_starts_empty() -> None:
@@ -50,7 +50,7 @@ def test_clear_empties_the_cache() -> None:
 
 def test_eviction_drops_the_oldest_beyond_maxsize() -> None:
     cache = CacheLP(maxsize=2)
-    polys = [build_polytope(ORDRE_AB, CTX) for _ in range(3)]  # distinct objects, distinct ids
+    polys = [build_polytope(ORDER_AB, CTX) for _ in range(3)]  # distinct objects, distinct ids
     for poly in polys:
         cache.put(poly, object(), [], [])
     assert cache.get(polys[0]) is None  # evicted first

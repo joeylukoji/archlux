@@ -1,4 +1,4 @@
-"""Certificat jalon 5 : borne, duaux lisibles, rapport à deux natures."""
+"""Milestone 5 certificate: bound, readable duals, two-kind report."""
 
 from __future__ import annotations
 
@@ -35,14 +35,14 @@ def _poly() -> Polytope:
         bounds=((0.0, 1.0),) * 3,
         index={"a.x": 0, "a.y": 1, "a.w": 2},
         origins=(
-            "mur porteur axe 3",
-            "surface minimale cuisine",
-            "largeur de passage",
+            "load-bearing wall axis 3",
+            "minimum kitchen area",
+            "passage width",
         ),
     )
 
 
-def _preuve() -> GeometricProof:
+def _proof() -> GeometricProof:
     return GeometricProof(
         valid=True,
         overlap=False,
@@ -53,28 +53,28 @@ def _preuve() -> GeometricProof:
     )
 
 
-def test_le_diagnostic_est_lisible() -> None:
-    duaux = np.array([-4.1, -1.7, 0.0])
-    phrases = translate_duals(duaux, _poly())
-    assert all(len(libelle) > 20 for libelle, _prix in phrases)
-    assert all("small changes" in libelle for libelle, _prix in phrases)
+def test_the_diagnostic_is_readable() -> None:
+    duals = np.array([-4.1, -1.7, 0.0])
+    phrases = translate_duals(duals, _poly())
+    assert all(len(label) > 20 for label, _price in phrases)
+    assert all("small changes" in label for label, _price in phrases)
 
 
-def test_prix_nul_pour_contrainte_non_active() -> None:
-    duaux = np.array([-4.1, 0.0, 1e-9])
-    phrases = translate_duals(duaux, _poly())
-    assert all(prix != 0.0 for _libelle, prix in phrases)
+def test_zero_price_for_an_inactive_constraint() -> None:
+    duals = np.array([-4.1, 0.0, 1e-9])
+    phrases = translate_duals(duals, _poly())
+    assert all(price != 0.0 for _label, price in phrases)
     assert len(phrases) == 1
 
 
-def test_duaux_tries_par_cout_absolu() -> None:
-    duaux = np.array([-1.0, 5.0, -3.0])
-    phrases = translate_duals(duaux, _poly())
+def test_duals_sorted_by_absolute_cost() -> None:
+    duals = np.array([-1.0, 5.0, -3.0])
+    phrases = translate_duals(duals, _poly())
     assert [abs(p) for _, p in phrases] == [5.0, 3.0, 1.0]
 
 
-def test_certificat_separe_les_natures() -> None:
-    borne = PerformanceBound(
+def test_the_certificate_separates_the_kinds() -> None:
+    performance_bound = PerformanceBound(
         indicator="sDA",
         value=56.2,
         lower=51.4,
@@ -83,84 +83,84 @@ def test_certificat_separe_les_natures() -> None:
         n_calibration=1284,
         regime="exchangeable",
     )
-    texte = Certificate(
-        geometry=_preuve(),
-        performance=borne,
-        duals=(("mur porteur axe 3 : relâchement", -4.1),),
+    text = Certificate(
+        geometry=_proof(),
+        performance=performance_bound,
+        duals=(("load-bearing wall axis 3: relaxation", -4.1),),
         manifest=Manifest(version="0.4.0", timestamp="2026-09-09T00:00:00Z", seed=17),
     ).report()
-    assert "[EXACT]" in texte and "[PREDICTION" in texte
-    assert "1284" in texte
-    assert "NOT EVALUABLE" in texte
+    assert "[EXACT]" in text and "[PREDICTION" in text
+    assert "1284" in text
+    assert "NOT EVALUABLE" in text
 
 
-def test_non_evaluable_toujours_present() -> None:
-    texte = Certificate(geometry=_preuve()).report()
-    assert "NOT EVALUABLE" in texte
-    assert "[PREDICTION" in texte
+def test_not_evaluable_always_present() -> None:
+    text = Certificate(geometry=_proof()).report()
+    assert "NOT EVALUABLE" in text
+    assert "[PREDICTION" in text
 
 
-def test_construire_borne_refuse_la_derive() -> None:
+def test_build_bound_refuses_drift() -> None:
     scores = np.abs(np.random.default_rng(0).normal(0.0, 1.0, 40))
     calibration = Calibration(scores, 0.10, "sDA", "abc")
-    derive = DriftDiagnostic(
+    drift = DriftDiagnostic(
         exchangeable=False,
         statistic=0.4,
         threshold=0.05,
         n_observations=20,
-        message="dérive",
+        message="drift",
     )
-    assert build_bound(50.0, calibration, derive, uncertainty=1.0, regime="exchangeable") is None
+    assert build_bound(50.0, calibration, drift, uncertainty=1.0, regime="exchangeable") is None
     ok = DriftDiagnostic(True, 0.05, 0.05, 20, "ok")
-    borne = build_bound(50.0, calibration, ok, uncertainty=1.0, regime="exchangeable")
-    assert borne is not None
-    assert borne.n_calibration == 40
+    performance_bound = build_bound(50.0, calibration, ok, uncertainty=1.0, regime="exchangeable")
+    assert performance_bound is not None
+    assert performance_bound.n_calibration == 40
 
 
-def test_controler_derive_detecte_un_decalage() -> None:
+def test_check_drift_detects_a_shift() -> None:
     rng = np.random.default_rng(4)
     cal = Calibration(np.abs(rng.normal(0.0, 1.0, 80)), 0.10, "sDA", "c")
-    memes = np.abs(rng.normal(0.0, 1.0, 80))
-    assert check_drift(memes, cal, seed=17).exchangeable
-    decales = np.abs(rng.normal(3.0, 1.0, 80))
-    assert not check_drift(decales, cal, seed=17).exchangeable
+    same = np.abs(rng.normal(0.0, 1.0, 80))
+    assert check_drift(same, cal, seed=17).exchangeable
+    shifted = np.abs(rng.normal(3.0, 1.0, 80))
+    assert not check_drift(shifted, cal, seed=17).exchangeable
 
 
-def test_mesurer_derive_positive_si_surestimation() -> None:
+def test_measure_drift_is_positive_on_overestimation() -> None:
     pred = np.array([10.0, 11.0, 12.0, 13.0])
-    verite = np.array([9.0, 10.0, 11.0, 12.0])
-    rapport = measure_drift(pred, verite, seed=1)
-    assert rapport.mean_drift == pytest.approx(1.0)
-    assert rapport.n_samples == 4
+    truth = np.array([9.0, 10.0, 11.0, 12.0])
+    report = measure_drift(pred, truth, seed=1)
+    assert report.mean_drift == pytest.approx(1.0)
+    assert report.n_samples == 4
 
 
-def test_crps_parfait_est_petit() -> None:
+def test_a_perfect_crps_is_small() -> None:
     y = np.array([0.0, 0.0, 0.0, 0.0])
     mu = y.copy()
     sigma = np.ones(4)
     assert crps(mu, y, sigma) < crps(mu + 2.0, y, sigma)
 
 
-def test_diagramme_fiabilite_est_un_tableau() -> None:
+def test_reliability_diagram_is_an_array() -> None:
     rng = np.random.default_rng(2)
     mu = rng.normal(0.0, 1.0, 80)
     y = mu + rng.normal(0.0, 1.0, 80)
     sigma = np.ones(80)
-    grille = reliability_diagram(mu, y, sigma, levels=np.array([0.80, 0.90]))
-    assert grille.shape == (2, 2)
-    assert grille[0, 0] == pytest.approx(0.80)
+    grid = reliability_diagram(mu, y, sigma, levels=np.array([0.80, 0.90]))
+    assert grid.shape == (2, 2)
+    assert grid[0, 0] == pytest.approx(0.80)
 
 
-def test_stratifier_huit_secteurs() -> None:
-    degres = np.array([0.0, 45.0, 90.0, 180.0, 359.0])
-    bacs = stratify_by_orientation(degres)
-    assert set(bacs) == set(range(8))
-    assert 0 in bacs[0]
-    assert 4 in bacs[7]
+def test_stratify_eight_sectors() -> None:
+    degrees = np.array([0.0, 45.0, 90.0, 180.0, 359.0])
+    bins = stratify_by_orientation(degrees)
+    assert set(bins) == set(range(8))
+    assert 0 in bins[0]
+    assert 4 in bins[7]
 
 
 @dataclass
-class _FauxSubstitut:
+class _FakeSurrogate:
     mu: float
     sigma: float
     indicator: str = "sDA"
@@ -179,20 +179,20 @@ class _FauxSubstitut:
         return self.sigma
 
 
-def test_pessimiste_penalise_l_incertitude() -> None:
-    """À prédiction égale, le plan le plus incertain a un objectif plus bas."""
+def test_pessimistic_penalizes_uncertainty() -> None:
+    """At equal prediction, the more uncertain plan has a lower objective."""
     orientation = Orientation(deg=180.0)
     x = np.ones(4)
-    certain = Daylight(_FauxSubstitut(50.0, 0.2), q_hat=1.64, pessimistic=True)
-    incertain = Daylight(_FauxSubstitut(50.0, 2.0), q_hat=1.64, pessimistic=True)
-    assert certain.evaluate(x, orientation) > incertain.evaluate(x, orientation)
+    certain = Daylight(_FakeSurrogate(50.0, 0.2), q_hat=1.64, pessimistic=True)
+    uncertain = Daylight(_FakeSurrogate(50.0, 2.0), q_hat=1.64, pessimistic=True)
+    assert certain.evaluate(x, orientation) > uncertain.evaluate(x, orientation)
     assert isinstance(certain, Surrogate)
 
 
-def test_daylight_sans_pessimisme_ignore_sigma() -> None:
+def test_daylight_without_pessimism_ignores_sigma() -> None:
     orientation = Orientation(deg=0.0)
     x = np.ones(2)
-    j = Daylight(_FauxSubstitut(40.0, 9.0), q_hat=2.0, pessimistic=False)
+    j = Daylight(_FakeSurrogate(40.0, 9.0), q_hat=2.0, pessimistic=False)
     assert j.evaluate(x, orientation) == pytest.approx(40.0)
 
 
@@ -214,6 +214,6 @@ def test_reliability_diagram_rejects_non_finite_truths() -> None:
 def test_reliability_diagram_keeps_nan_only_for_too_small_n() -> None:
     """The documented sentinel survives: a level too demanding for ``n`` gives ``nan``."""
     mu, y, sigma = np.zeros(5), np.linspace(-1.0, 1.0, 5), np.ones(5)
-    grille = reliability_diagram(mu, y, sigma, levels=np.array([0.5, 0.99]))
-    assert np.isfinite(grille[0, 1])
-    assert np.isnan(grille[1, 1])
+    grid = reliability_diagram(mu, y, sigma, levels=np.array([0.5, 0.99]))
+    assert np.isfinite(grid[0, 1])
+    assert np.isnan(grid[1, 1])

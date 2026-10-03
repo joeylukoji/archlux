@@ -120,7 +120,11 @@ RENAMED = [
     (
         "archlux.light.validation",
         "validate_gradient",
-        {"substitut": "surrogate", "pas": "step", "seuil_signe": "sign_threshold"},
+        {
+            "substitut": "surrogate",
+            "pas": "step",
+            "seuil_signe": "sign_threshold",
+        },  # lang-ok: old French names
     ),
     ("archlux.lmo.cuts", "area_cut", {"a_min": "min_area", "piece": "room"}),
     ("archlux.lmo.cuts", "violated_areas", {"pieces": "rooms"}),

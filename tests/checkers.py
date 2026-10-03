@@ -64,23 +64,23 @@ def _fused_area_violations(
     by_id = {room.id: room for room in rooms}
     members: set[str] = set()
     found: list[Violation] = []
-    for piece in merges:
-        parts = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    for merged in merges:
+        parts = [by_id[r.id] for r in merged.rectangles if r.id in by_id]
         if not parts:
             continue
         members.update(part.id for part in parts)
-        for i, j, kind in piece.merges:
-            a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
+        for i, j, kind in merged.merges:
+            a, b = by_id.get(merged.rectangles[i].id), by_id.get(merged.rectangles[j].id)
             if (
                 a is not None
                 and b is not None
                 and not _fusion_holds(a, b, kind, ctx.regulation.min_width)
             ):
-                found.append(Violation("area", f"{piece.id}: {a.id} and {b.id} are apart"))
+                found.append(Violation("area", f"{merged.id}: {a.id} and {b.id} are apart"))
         minimum = max(ctx.regulation.min_area(part.type) for part in parts)
         area = sum(part.w * part.h for part in parts)
         if area < minimum - TOLERANCE:
-            found.append(Violation("area", f"{piece.id}: area {area:.6f} < {minimum:.6f}"))
+            found.append(Violation("area", f"{merged.id}: area {area:.6f} < {minimum:.6f}"))
     return members, found
 
 
@@ -137,10 +137,10 @@ def violations(
                 found.append(Violation("wall", f"{room.id} crosses load-bearing wall {wall.id}"))
         # A seam of a fused room is inside the room: a wall along it cuts the room in two.
         by_id = {room.id: room for room in rooms}
-        for piece in merges:
-            for i, j, kind in piece.merges:
-                first = by_id.get(piece.rectangles[i].id)
-                second = by_id.get(piece.rectangles[j].id)
+        for merged in merges:
+            for i, j, kind in merged.merges:
+                first = by_id.get(merged.rectangles[i].id)
+                second = by_id.get(merged.rectangles[j].id)
                 if first is None or second is None:
                     continue
                 _, lo, hi, axis = _seam(first, second, kind)
@@ -151,7 +151,7 @@ def violations(
                 shared = min(hi, max(ends)) - max(lo, min(ends))
                 if on_line and abs(position - line) <= TOLERANCE and shared > TOLERANCE:
                     found.append(
-                        Violation("wall", f"{piece.id}: load-bearing wall {wall.id} on a seam")
+                        Violation("wall", f"{merged.id}: load-bearing wall {wall.id} on a seam")
                     )
     return found
 

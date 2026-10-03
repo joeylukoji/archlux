@@ -1,4 +1,4 @@
-"""Point de contrôle du gradient — `MILESTONE-4.md` §7."""
+"""Gradient checkpoint: `MILESTONE-4.md` §7."""
 
 from __future__ import annotations
 
@@ -11,17 +11,17 @@ from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 
 X = np.array([[1.0, 2.0, 4.0, 5.0, 5.0, 2.0, 3.0, 5.0]])
-NORD = Orientation(deg=0.0)
+NORTH = Orientation(deg=0.0)
 
 
-def test_analytique_est_coherent_avec_ses_differences_finies() -> None:
-    rapport = validate_gradient(AnalyticSurrogate(), X, NORD, seed=17, epsilon=1e-5)
-    assert rapport.passed
-    assert rapport.mean_cosine > 0.99
+def test_analytic_is_consistent_with_its_finite_differences() -> None:
+    report = validate_gradient(AnalyticSurrogate(), X, NORTH, seed=17, epsilon=1e-5)
+    assert report.passed
+    assert report.mean_cosine > 0.99
 
 
-def test_gradient_faux_leve_substitut_invalide() -> None:
-    class Faux:
+def test_a_wrong_gradient_raises_invalid_surrogate() -> None:
+    class Wrong:
         indicator = "sDA"
 
         def evaluate(self, x, orientation):
@@ -37,7 +37,7 @@ def test_gradient_faux_leve_substitut_invalide() -> None:
             return 0.08
 
     with pytest.raises(InvalidSurrogate):
-        validate_gradient(Faux(), X, NORD, seed=17)
+        validate_gradient(Wrong(), X, NORTH, seed=17)
 
 
 def test_a_failed_check_carries_its_report() -> None:
@@ -49,7 +49,7 @@ def test_a_failed_check_carries_its_report() -> None:
             return -super().gradient(x, orientation, glazing=glazing)
 
     with pytest.raises(InvalidSurrogate) as capture:
-        validate_gradient(Negated(), X, NORD, seed=17, reference=AnalyticSurrogate())
+        validate_gradient(Negated(), X, NORTH, seed=17, reference=AnalyticSurrogate())
     report = capture.value.report
     assert report is not None and not report.passed
     assert report.sign_agreement < 0.8

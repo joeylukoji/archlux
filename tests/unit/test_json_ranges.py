@@ -1,9 +1,9 @@
-"""Les plages documentées par `ARCHITECTURE.md` §6 sont vérifiées **à la frontière**.
+"""The ranges documented by `ARCHITECTURE.md` §6 are checked **at the boundary**.
 
-Décision d'architecture (ADR-6) : la validation a lieu en lecture JSON, pas dans les
-constructeurs. Les données venues de l'extérieur sont garanties saines ; l'objet en
-mémoire reste libre, de sorte que le solveur puisse traverser des états intermédiaires
-sans payer une validation à chaque construction.
+Architecture decision (ADR-6): validation happens when reading JSON, not in the
+constructors. Data coming from outside is guaranteed sound; the object in memory stays
+free, so that the solver can go through intermediate states without paying for a
+validation at every construction.
 """
 
 from __future__ import annotations
@@ -24,81 +24,81 @@ PLAN = Plan(
 )
 
 
-def _avec(path: list[str | int], value: object) -> dict:
-    """Copier le plan de référence en remplaçant un champ par une valeur fautive."""
-    donnees = to_dict(PLAN)
-    cible = donnees
-    for cle in path[:-1]:
-        cible = cible[cle]  # type: ignore[index]
-    cible[path[-1]] = value  # type: ignore[index]
-    return donnees
+def _with(path: list[str | int], value: object) -> dict:
+    """Copy the reference plan, replacing one field with a faulty value."""
+    data = to_dict(PLAN)
+    target = data
+    for key in path[:-1]:
+        target = target[key]  # type: ignore[index]
+    target[path[-1]] = value  # type: ignore[index]
+    return data
 
 
-class TestPlagesOuverture:
-    """`s ∈ [0, 1]` et `relative_width ∈ ]0, 1]`."""
+class TestOpeningRanges:
+    """`s ∈ [0, 1]` and `relative_width ∈ ]0, 1]`."""
 
     @pytest.mark.parametrize("s", [-0.01, 1.5])
-    def test_abscisse_hors_plage(self, s: float) -> None:
-        """Une baie hors de son mur n'a pas de position dérivable."""
+    def test_abscissa_out_of_range(self, s: float) -> None:
+        """An opening outside its wall has no derivable position."""
         with pytest.raises(InvariantViolation, match="s"):
-            from_dict(_avec(["openings", 0, "s"], s))
+            from_dict(_with(["openings", 0, "s"], s))
 
     @pytest.mark.parametrize("s", [0.0, 1.0])
-    def test_les_bornes_sont_incluses(self, s: float) -> None:
-        """Une baie en bout de mur est licite : l'intervalle est fermé."""
-        assert from_dict(_avec(["openings", 0, "s"], s)).openings[0].s == s
+    def test_the_bounds_are_included(self, s: float) -> None:
+        """An opening at the end of a wall is legal: the interval is closed."""
+        assert from_dict(_with(["openings", 0, "s"], s)).openings[0].s == s
 
-    @pytest.mark.parametrize("largeur", [0.0, -0.5, 1.01])
-    def test_largeur_relative_hors_plage(self, largeur: float) -> None:
-        """Une largeur nulle ou négative n'est pas une baie ; au-delà de 1, elle déborde."""
+    @pytest.mark.parametrize("width", [0.0, -0.5, 1.01])
+    def test_relative_width_out_of_range(self, width: float) -> None:
+        """A zero or negative width is not an opening; beyond 1, it overflows."""
         with pytest.raises(InvariantViolation, match="relative_width"):
-            from_dict(_avec(["openings", 0, "relative_width"], largeur))
+            from_dict(_with(["openings", 0, "relative_width"], width))
 
-    def test_une_baie_pleine_largeur_est_licite(self) -> None:
-        """``relative_width = 1`` est la borne haute, incluse."""
-        relu = from_dict(_avec(["openings", 0, "relative_width"], 1.0))
-        assert relu.openings[0].relative_width == 1.0
+    def test_a_full_width_opening_is_legal(self) -> None:
+        """``relative_width = 1`` is the upper bound, included."""
+        reread = from_dict(_with(["openings", 0, "relative_width"], 1.0))
+        assert reread.openings[0].relative_width == 1.0
 
 
-class TestPlagesPiece:
-    """Une pièce a des dimensions strictement positives."""
+class TestRoomRanges:
+    """A room has strictly positive dimensions."""
 
-    @pytest.mark.parametrize("champ", ["w", "h"])
+    @pytest.mark.parametrize("field", ["w", "h"])
     @pytest.mark.parametrize("value", [0.0, -2.0])
-    def test_dimension_non_positive(self, champ: str, value: float) -> None:
-        """Une pièce de largeur nulle ou négative casserait le polytope en silence."""
-        with pytest.raises(InvariantViolation, match=champ):
-            from_dict(_avec(["rooms", 0, champ], value))
+    def test_non_positive_dimension(self, field: str, value: float) -> None:
+        """A room of zero or negative width would break the polytope silently."""
+        with pytest.raises(InvariantViolation, match=field):
+            from_dict(_with(["rooms", 0, field], value))
 
 
-class TestPlagesMur:
-    """Un mur a une épaisseur strictement positive."""
+class TestWallRanges:
+    """A wall has a strictly positive thickness."""
 
-    def test_epaisseur_non_positive(self) -> None:
-        """Une épaisseur nulle rendrait la structure porteuse inexistante."""
+    def test_non_positive_thickness(self) -> None:
+        """A zero thickness would make the load-bearing structure nonexistent."""
         with pytest.raises(InvariantViolation, match="thickness"):
-            from_dict(_avec(["walls", 0, "thickness"], 0.0))
+            from_dict(_with(["walls", 0, "thickness"], 0.0))
 
 
-class TestValeursNonFinies:
-    """`ecrire` refuse d'écrire `NaN` ; `charger` doit refuser de le lire.
+class TestNonFiniteValues:
+    """`save` refuses to write `NaN`; `load` must refuse to read it.
 
-    ``json.loads`` accepte les littéraux ``NaN`` et ``Infinity`` par défaut. Sans cette
-    garde, un fichier non écrit par archlux introduirait des ``NaN`` dans le solveur.
+    ``json.loads`` accepts the ``NaN`` and ``Infinity`` literals by default. Without this
+    guard, a file not written by archlux would bring ``NaN`` into the solver.
     """
 
-    def test_nan_dans_un_champ(self) -> None:
-        """Une coordonnée ``NaN`` est refusée à la lecture."""
+    def test_nan_in_a_field(self) -> None:
+        """A ``NaN`` coordinate is refused when reading."""
         with pytest.raises(InvariantViolation, match="non-finite"):
-            from_dict(_avec(["rooms", 0, "x"], float("nan")))
+            from_dict(_with(["rooms", 0, "x"], float("nan")))
 
-    def test_infini_dans_un_point(self) -> None:
-        """Un sommet de contour infini également."""
+    def test_infinity_in_a_point(self) -> None:
+        """So is an infinite outline vertex."""
         with pytest.raises(InvariantViolation, match="non-finite"):
-            from_dict(_avec(["outline", 0], [float("inf"), 0.0]))
+            from_dict(_with(["outline", 0], [float("inf"), 0.0]))
 
-    def test_nan_lu_depuis_un_fichier(self, tmp_path: Path) -> None:
-        """Le cas réel : un fichier produit par un autre outil."""
+    def test_nan_read_from_a_file(self, tmp_path: Path) -> None:
+        """The real case: a file produced by another tool."""
         path = tmp_path / "nan.json"
         path.write_text(
             '{"schema": "1", "contour": [[NaN, 0.0]], "pieces": [], "murs": [],'
@@ -110,20 +110,20 @@ class TestValeursNonFinies:
 
 
 class TestDiagnostic:
-    """Le refus rapporte **toutes** les violations, pas seulement la première."""
+    """The refusal reports **every** violation, not only the first."""
 
-    def test_les_violations_sont_toutes_listees(self) -> None:
-        """Corriger un fichier une erreur à la fois est un supplice inutile."""
-        donnees = to_dict(PLAN)
-        donnees["rooms"][0]["w"] = -1.0
-        donnees["openings"][0]["s"] = 3.0
+    def test_every_violation_is_listed(self) -> None:
+        """Fixing a file one error at a time is a needless ordeal."""
+        data = to_dict(PLAN)
+        data["rooms"][0]["w"] = -1.0
+        data["openings"][0]["s"] = 3.0
         with pytest.raises(InvariantViolation) as capture:
-            from_dict(donnees)
+            from_dict(data)
         message = str(capture.value)
         assert "w" in message
         assert "s" in message
 
 
-def test_un_plan_valide_passe_toujours() -> None:
-    """La validation ne doit rien rejeter de licite."""
+def test_a_valid_plan_always_passes() -> None:
+    """Validation must reject nothing legal."""
     assert from_dict(to_dict(PLAN)) == PLAN

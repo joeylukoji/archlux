@@ -1,4 +1,4 @@
-"""Substitut analytique — `MILESTONE-3.md` §4. Entrée vectorielle uniquement."""
+"""Analytic surrogate: `MILESTONE-3.md` §4. Vector input only."""
 
 from __future__ import annotations
 
@@ -10,21 +10,21 @@ from archlux.light.protocol import Surrogate
 from archlux.types import Orientation
 
 
-def test_satisfait_le_protocole() -> None:
+def test_satisfies_the_protocol() -> None:
     assert isinstance(AnalyticSurrogate(), Surrogate)
 
 
-def test_piece_plus_au_sud_est_mieux_exposee() -> None:
-    """À orientation 0° (axe y vers le nord), une pièce de plus petit y est plus au sud."""
+def test_a_room_further_south_is_better_exposed() -> None:
+    """At orientation 0° (y axis towards north), a room of smaller y is further south."""
     surrogate = AnalyticSurrogate()
-    nord = Orientation(deg=0.0)
-    au_sud = np.array([0.0, 0.0, 4.0, 4.0])
-    au_nord = np.array([0.0, 6.0, 4.0, 4.0])
-    assert surrogate.evaluate(au_sud, nord) > surrogate.evaluate(au_nord, nord)
+    north = Orientation(deg=0.0)
+    to_south = np.array([0.0, 0.0, 4.0, 4.0])
+    to_north = np.array([0.0, 6.0, 4.0, 4.0])
+    assert surrogate.evaluate(to_south, north) > surrogate.evaluate(to_north, north)
 
 
-def test_sud_vaut_mieux_que_nord_a_geometrie_egale() -> None:
-    """La règle de profondeur utile est modulée par le secteur (8 pas de 45°)."""
+def test_south_beats_north_at_equal_geometry() -> None:
+    """The useful-depth rule is modulated by the sector (8 steps of 45°)."""
     surrogate = AnalyticSurrogate()
     x = np.array([0.0, 0.0, 4.0, 5.0])
     assert surrogate.evaluate(x, Orientation(deg=180.0)) > surrogate.evaluate(
@@ -32,46 +32,46 @@ def test_sud_vaut_mieux_que_nord_a_geometrie_egale() -> None:
     )
 
 
-def test_gradient_coherent_avec_differences_finies() -> None:
+def test_gradient_consistent_with_finite_differences() -> None:
     surrogate = AnalyticSurrogate()
     x = np.array([1.0, 2.0, 4.0, 5.0, 5.0, 2.0, 3.0, 5.0])
     orientation = Orientation(deg=135.0)
-    analytique = surrogate.gradient(x, orientation)
-    pas = 1e-6
-    numerique = np.empty_like(x)
+    analytic = surrogate.gradient(x, orientation)
+    step = 1e-6
+    numeric = np.empty_like(x)
     for i in range(x.size):
-        plus, moins = x.copy(), x.copy()
-        plus[i] += pas
-        moins[i] -= pas
-        numerique[i] = (
-            surrogate.evaluate(plus, orientation) - surrogate.evaluate(moins, orientation)
-        ) / (2.0 * pas)
-    assert np.allclose(analytique, numerique, rtol=1e-4, atol=1e-5)
+        plus, minus = x.copy(), x.copy()
+        plus[i] += step
+        minus[i] -= step
+        numeric[i] = (
+            surrogate.evaluate(plus, orientation) - surrogate.evaluate(minus, orientation)
+        ) / (2.0 * step)
+    assert np.allclose(analytic, numeric, rtol=1e-4, atol=1e-5)
 
 
-def test_facade_plus_large_donne_plus_de_lumiere() -> None:
-    """Analogie vectorielle de « plus de baie » : une façade sud plus large éclaire plus."""
+def test_a_wider_facade_gives_more_light() -> None:
+    """Vector analogue of "more glazing": a wider south facade gives more light."""
     surrogate = AnalyticSurrogate()
-    sud = Orientation(deg=180.0)
-    etroite = np.array([0.0, 0.0, 3.0, 4.0])
+    south = Orientation(deg=180.0)
+    narrow = np.array([0.0, 0.0, 3.0, 4.0])
     large = np.array([0.0, 0.0, 6.0, 4.0])
-    assert surrogate.evaluate(large, sud) > surrogate.evaluate(etroite, sud)
+    assert surrogate.evaluate(large, south) > surrogate.evaluate(narrow, south)
 
 
-def test_piece_profonde_sature() -> None:
-    """Au-delà de 2,5 fois le linteau au sud, approfondir n'ajoute plus de lumière."""
+def test_a_deep_room_saturates() -> None:
+    """Beyond 2.5 times the head height at south, more depth adds no more light."""
     surrogate = AnalyticSurrogate()
-    sud = Orientation(deg=180.0)
-    peu_profond = np.array([0.0, 0.0, 4.0, 6.0])
-    plus_profond = np.array([0.0, 0.0, 4.0, 9.0])
-    assert surrogate.evaluate(plus_profond, sud) <= surrogate.evaluate(peu_profond, sud) + 1e-9
+    south = Orientation(deg=180.0)
+    shallow = np.array([0.0, 0.0, 4.0, 6.0])
+    deeper = np.array([0.0, 0.0, 4.0, 9.0])
+    assert surrogate.evaluate(deeper, south) <= surrogate.evaluate(shallow, south) + 1e-9
 
 
-def test_incertitude_constante_documentee() -> None:
+def test_documented_constant_uncertainty() -> None:
     surrogate = AnalyticSurrogate(sigma_nominal=0.08)
     x = np.ones(4)
     assert surrogate.uncertainty(x, Orientation(deg=0.0)) == pytest.approx(0.08)
 
 
-def test_indicateur_suit_le_viseur() -> None:
+def test_the_indicator_follows_the_target() -> None:
     assert AnalyticSurrogate(target_indicator="ASE").indicator == "ASE"

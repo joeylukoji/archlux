@@ -1,7 +1,7 @@
-"""Seuils réglementaires : `Regulation` est une donnée, pas du code.
+"""Regulatory thresholds: `Regulation` is data, not code.
 
-Les valeurs attendues viennent du référentiel construit dans le test, jamais d'un calcul
-qui refait ce que fait l'implémentation.
+The expected values come from the regulation built in the test, never from a
+computation that redoes what the implementation does.
 """
 
 from __future__ import annotations
@@ -10,31 +10,31 @@ import pytest
 
 from archlux.types import Regulation
 
-REFERENTIEL_FR = Regulation(
+FRENCH_REGULATION = Regulation(
     min_areas=(("living_room", 9.0), ("bedroom", 9.0), ("bathroom", 5.0), ("kitchen", 6.0)),
     min_width=1.80,
 )
 
 
 @pytest.mark.parametrize(
-    ("room_type", "attendu"),
+    ("room_type", "expected"),
     [("living_room", 9.0), ("bedroom", 9.0), ("bathroom", 5.0), ("kitchen", 6.0)],
 )
-def test_rend_le_seuil_du_type(room_type: str, attendu: float) -> None:
-    """Chaque type réglementé rend son seuil."""
-    assert REFERENTIEL_FR.min_area(room_type) == attendu
+def test_returns_the_threshold_of_the_type(room_type: str, expected: float) -> None:
+    """Each regulated type returns its threshold."""
+    assert FRENCH_REGULATION.min_area(room_type) == expected
 
 
-def test_un_type_non_reglemente_ne_contraint_rien() -> None:
-    """Un couloir n'a pas de surface minimale : le seuil est nul, pas une exception.
+def test_an_unregulated_type_constrains_nothing() -> None:
+    """A corridor has no minimum area: the threshold is zero, not an exception.
 
-    Lever ici forcerait chaque appelant à distinguer « pas de seuil » de « seuil zéro »,
-    alors que les deux ont exactement le même effet sur le polytope.
+    Raising here would force every caller to tell "no threshold" from "zero threshold",
+    while both have exactly the same effect on the polytope.
     """
-    assert REFERENTIEL_FR.min_area("corridor") == 0.0
+    assert FRENCH_REGULATION.min_area("corridor") == 0.0
 
 
-def test_le_referentiel_est_gele() -> None:
-    """Changer de réglementation crée un nouveau référentiel, jamais une mutation."""
+def test_the_regulation_is_frozen() -> None:
+    """Changing regulation creates a new regulation object, never a mutation."""
     with pytest.raises(AttributeError):
-        REFERENTIEL_FR.min_width = 2.0  # type: ignore[misc]
+        FRENCH_REGULATION.min_width = 2.0  # type: ignore[misc]

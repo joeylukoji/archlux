@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from shapely.geometry import box
 
-from tests.unit.test_loaders import _ecrire_csv
+from tests.unit.test_loaders import _write_csv
 
 ROOT = Path(__file__).resolve().parents[1]
 SYNTHETIC = {
@@ -56,7 +56,7 @@ def _mini_msd(path: Path) -> None:
             (f"a{k}", "area", "BEDROOM", box(4.1, 0.0, 8.0 + k, 5.0)),
             (f"a{k}", "separator", "WALL", box(3.9, 0.0, 4.1, 5.0)),
         ]
-    _ecrire_csv(path, rows)
+    _write_csv(path, rows)
 
 
 def test_the_msd_experiments_run_on_a_mini_corpus(

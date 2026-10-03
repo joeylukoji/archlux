@@ -27,7 +27,7 @@ from archlux.solve import frank_wolfe as fw_module
 from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.types import Context, Orientation, Plan
 from tests.properties.strategies import realistic_scenarios
-from tests.unit.test_frank_wolfe import NORD, POLY, ObjectifLineaire, _depart_faisable
+from tests.unit.test_frank_wolfe import NORTH, POLY, LinearObjective, _feasible_start
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,19 +51,19 @@ class _Misleading:
         return 0.1
 
 
-def _objective() -> ObjectifLineaire:
-    return ObjectifLineaire(c=np.array([0.0, 0.0, 1.0, 0.5]))
+def _objective() -> LinearObjective:
+    return LinearObjective(c=np.array([0.0, 0.0, 1.0, 0.5]))
 
 
 def test_a_converged_run_says_so() -> None:
-    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=50)
+    result = frank_wolfe(POLY, _objective(), NORTH, _feasible_start(), max_iter=50)
     assert result.status == "converged"
     assert result.gap <= 1e-4
 
 
 def test_a_run_cut_short_says_so_and_reports_the_gap_at_the_returned_point() -> None:
     objective = _objective()
-    result = frank_wolfe(POLY, objective, NORD, _depart_faisable(), max_iter=1)
+    result = frank_wolfe(POLY, objective, NORTH, _feasible_start(), max_iter=1)
     assert result.status == "max_iter"
     vertex = solve(POLY, -objective.c).x
     assert result.gap == pytest.approx(float(objective.c @ (vertex - result.x)), abs=1e-9)
@@ -71,7 +71,7 @@ def test_a_run_cut_short_says_so_and_reports_the_gap_at_the_returned_point() -> 
 
 def test_a_failed_line_search_is_reported() -> None:
     result = frank_wolfe(
-        POLY, _Misleading(np.array([0.0, 0.0, 1.0, 0.5])), NORD, _depart_faisable()
+        POLY, _Misleading(np.array([0.0, 0.0, 1.0, 0.5])), NORTH, _feasible_start()
     )
     assert result.status == "line_search_failed"
 
@@ -84,18 +84,18 @@ def test_no_successful_lp_gives_an_infinite_gap(monkeypatch: pytest.MonkeyPatch)
         return replace(real, status="limite")
 
     monkeypatch.setattr(fw_module, "solve", failing)
-    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable())
+    result = frank_wolfe(POLY, _objective(), NORTH, _feasible_start())
     assert result.status == "lp_not_optimal"
     assert result.gap == float("inf")
 
 
 def test_iterations_count_steps_not_the_initial_entry() -> None:
-    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=3)
+    result = frank_wolfe(POLY, _objective(), NORTH, _feasible_start(), max_iter=3)
     assert result.iterations == len(result.trace.iterations) - 1
 
 
 def test_the_trace_carries_the_stop_status() -> None:
-    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=1)
+    result = frank_wolfe(POLY, _objective(), NORTH, _feasible_start(), max_iter=1)
     assert result.trace.status == result.status
 
 
@@ -165,7 +165,7 @@ def test_a_failing_lp_after_a_step_reports_an_unknown_gap(monkeypatch: pytest.Mo
         return solution if calls["n"] == 1 else replace(solution, status="limite")
 
     monkeypatch.setattr(fw_module, "solve", second_call_fails)
-    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=10)
+    result = frank_wolfe(POLY, _objective(), NORTH, _feasible_start(), max_iter=10)
     assert result.status == "lp_not_optimal"
     assert result.iterations >= 1
     assert result.gap == float("inf")
@@ -181,14 +181,14 @@ def test_a_failing_final_lp_reports_an_unknown_gap(monkeypatch: pytest.MonkeyPat
         return solution if calls["n"] <= 1 else replace(solution, status="limite")
 
     monkeypatch.setattr(fw_module, "solve", final_call_fails)
-    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=1)
+    result = frank_wolfe(POLY, _objective(), NORTH, _feasible_start(), max_iter=1)
     assert result.status == "max_iter"
     assert result.gap == float("inf")
 
 
 def test_the_trace_exposes_the_gap_at_the_returned_point() -> None:
     """Review m2: Plan.trace must show the final gap, not only per-iteration ones."""
-    result = frank_wolfe(POLY, _objective(), NORD, _depart_faisable(), max_iter=1)
+    result = frank_wolfe(POLY, _objective(), NORTH, _feasible_start(), max_iter=1)
     assert result.trace.final_gap == result.gap
 
 
@@ -208,8 +208,8 @@ def test_a_budget_too_small_for_the_bounds_is_an_honest_refusal() -> None:
     """A budget conflict is an input problem: Infeasible naming the variable, not a bug."""
     from archlux.solve.frank_wolfe import restrict_to_budget
 
-    centre = _depart_faisable().copy()
-    centre[POLY.index["A.w"]] = 0.5  # below the 1.5 m minimum width by 1 m
+    center = _feasible_start().copy()
+    center[POLY.index["A.w"]] = 0.5  # below the 1.5 m minimum width by 1 m
     with pytest.raises(archlux.Infeasible) as refusal:
-        restrict_to_budget(POLY, centre, 0.2)
+        restrict_to_budget(POLY, center, 0.2)
     assert "A.w" in str(refusal.value.origins)
