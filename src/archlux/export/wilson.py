@@ -25,7 +25,7 @@ def wilson_interval(successes: int, n: int, *, z: float = 1.96) -> tuple[float, 
     then did not contain its own point estimate:
     ``wilson_interval(0, 3)`` returned ``(4.9e-17, 0.561)`` for a zero rate,
     contradicting the ``0 <= lo <= rate <= hi <= 1`` contract of
-    :func:`~archlux.export.survie.survival_rate`. Symmetrically, ``p_hat = 1`` gave
+    :func:`~archlux.export.survival.survival_rate`. Symmetrically, ``p_hat = 1`` gave
     ``hi = 0.9999999999999999``.
 
     Parameters

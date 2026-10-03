@@ -1,4 +1,5 @@
-"""The 26 modules renamed in chantier E, wave 1a, stay importable under their old path.
+"""The 28 modules renamed in chantier E (26 in wave 1a, 2 in wave 1b) stay importable
+under their old path.
 
 ADR 0001, rule 6: an old module path is a deprecated shim until 1.0.0. Through it, every
 public name of the new module and every former French name the new module still serves
@@ -20,6 +21,7 @@ from tests.unit.test_function_aliases import ALIASES
 
 RENAMED: dict[str, str] = {
     "archlux.active.boucle": "archlux.active.loop",
+    "archlux.active.densite": "archlux.active.density",
     "archlux.bench.graines": "archlux.bench.seeds",
     "archlux.bench.manifeste": "archlux.bench.manifest",
     "archlux.bench.protocole": "archlux.bench.protocol",
@@ -30,6 +32,7 @@ RENAMED: dict[str, str] = {
     "archlux.data.decoupage": "archlux.data.splits",
     "archlux.data.synthese": "archlux.data.synthetic",
     "archlux.export.pathologie": "archlux.export.pathologies",
+    "archlux.export.survie": "archlux.export.survival",
     "archlux.geom.graphe": "archlux.geom.graph",
     "archlux.geom.pavage": "archlux.geom.tiling",
     "archlux.geom.rectilineaire": "archlux.geom.rectilinear",

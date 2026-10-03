@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pytest
 
-from archlux.active.densite import kernel_density
+from archlux.active.density import kernel_density
 from archlux.active.loop import Batch, Loop
 from archlux.active.selection import RandomStrategy, UncertaintyTimesDensity
 from archlux.errors import InvariantViolation

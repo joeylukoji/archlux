@@ -98,7 +98,7 @@ ALIASES = [
     ("archlux.active", "RapportActif", "ActiveReport"),
     ("archlux.active", "densite_noyau", "kernel_density"),
     ("archlux.active.loop", "RapportActif", "ActiveReport"),
-    ("archlux.active.densite", "densite_noyau", "kernel_density"),
+    ("archlux.active.density", "densite_noyau", "kernel_density"),
     ("archlux.active.selection", "Aleatoire", "RandomStrategy"),
     ("archlux.orient.circular", "ResultatRegression", "RegressionResult"),
     ("archlux.orient.circular", "encoder", "encode_orientation"),

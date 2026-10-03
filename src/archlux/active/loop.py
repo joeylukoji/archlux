@@ -21,7 +21,7 @@ import numpy as np
 import structlog
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.active.densite import kernel_density
+from archlux.active.density import kernel_density
 from archlux.active.selection import AcquisitionStrategy
 from archlux.errors import InvariantViolation
 from archlux.seeds import derive
