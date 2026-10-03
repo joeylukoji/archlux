@@ -105,7 +105,7 @@ def test_reduction_preserve_la_fermeture(ordre):
 ```
 
 - [ ] Les 4 tests passent
-- [ ] `pytest tests/unites/test_graphe.py -q` vert
+- [ ] `pytest tests/unit/test_graph.py -q` vert
 
 ---
 

@@ -1,7 +1,7 @@
 """``CacheLP``: an explicit, injectable LP model cache (PLAN.md phase 4, block 4).
 
 Replaces a module-global dict keyed by ``id()``. The default cache (used when
-``solve`` gets no explicit ``cache``) is still exercised by ``test_solveur.py`` and
+``solve`` gets no explicit ``cache``) is still exercised by ``test_solver.py`` and
 the warm-start benchmark; this file is about the object itself: isolation, eviction,
 concurrent warm solves on one shared cache,
 and that ``solve`` gives the identical result regardless of which cache serves it

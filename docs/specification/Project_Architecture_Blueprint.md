@@ -21,7 +21,7 @@ four independent mechanisms, each able to catch the mistake alone.
 | Mechanism | Where | What it catches |
 |---|---|---|
 | Disjoint types | `GeometricProof` / `PerformanceBound` | A probability slipped into a proof |
-| Invariant test | `tests/properties/test_invariants_types.py` | The addition of a probabilistic field to the proof |
+| Invariant test | `tests/properties/test_architecture_invariants.py` | The addition of a probabilistic field to the proof |
 | `Guarantees` section | Every docstring returning a `Plan` or `Certificate` | A guarantee asserted without its kind |
 | Separate rendering | `certify/report.py` | A composite score aggregating the two |
 
@@ -96,12 +96,12 @@ archlux/
 │
 ├── tests/
 │   ├── conftest.py              # single seed, never implicit
-│   ├── test_dependances.py      # ★★ the dependency rules are executable
+│   ├── test_dependencies.py      # ★★ the dependency rules are executable
 │   ├── unit/
 │   ├── properties/
 │   │   ├── strategies.py        #     Hypothesis strategies shared by all milestones
-│   │   ├── test_invariants_types.py
-│   │   └── test_acceptation_jalon2.py
+│   │   ├── test_architecture_invariants.py
+│   │   └── test_milestone2_acceptance.py
 │   └── references/              # frozen certificates, compared byte for byte
 │
 ├── benchmarks/test_budgets.py   # the §9 budgets are contracts, not measurements
@@ -228,12 +228,12 @@ Each of the binding rules is therefore doubled by an automatic mechanism.
 
 | Rule (`ARCHITECTURE.md`) | Mechanism | File |
 |---|---|---|
-| §5 — layers and dependencies | AST analysis of the imports, one test per module | `tests/test_dependances.py` |
+| §5 — layers and dependencies | AST analysis of the imports, one test per module | `tests/test_dependencies.py` |
 | §5 — core without `torch` | Subprocess + inspection of `sys.modules` | same |
 | §5 — `lmo` ⇏ `light` | Dedicated test | same |
 | §5 — `solve` ⇒ `light.protocol` only | Dedicated test (the implementation is refused) | same |
 | §5 — nobody imports `bench` | Dedicated test | same |
-| §6 — frozen types | `is_dataclass` + `__dataclass_params__.frozen` | `tests/properties/test_invariants_types.py` |
+| §6 — frozen types | `is_dataclass` + `__dataclass_params__.frozen` | `tests/properties/test_architecture_invariants.py` |
 | §6 — proof without probability | Blacklist of field names | same |
 | §6 — bound with coverage | Whitelist of mandatory fields | same |
 | §6 — opening without absolute position | Blacklist of field names | same |
@@ -242,7 +242,7 @@ Each of the binding rules is therefore doubled by an automatic mechanism.
 | `DOCUMENTATION.md` §6 — doctests | `pytest --doctest-modules src/archlux` | `ci.yml` |
 | `DOCUMENTATION.md` §6 — doc coverage | `interrogate -f 95` | `ci.yml` |
 
-**The "tests" job runs `test_dependances.py` in a separate, earlier step.**
+**The "tests" job runs `test_dependencies.py` in a separate, earlier step.**
 A layer violation must be readable in the name of the failing step, not drowned
 among three hundred tests.
 
@@ -312,7 +312,7 @@ gives a named stream per component from a root seed: two components never
 share a stream, and a run replays exactly. Without this single point,
 each module invents its own convention.
 
-### ADR-4 — `tests/test_dependances.py` written before any implementation
+### ADR-4 — `tests/test_dependencies.py` written before any implementation
 
 The test costs an hour today and a complete refactor at milestone 4. It is at the root
 of `tests/`, not in a subdirectory, because it tests no behaviour: it

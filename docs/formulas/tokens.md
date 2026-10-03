@@ -57,7 +57,7 @@ false; it only becomes useful in a batch of plans of different sizes.
   (`ARCHITECTURE.md` §10, first anti-pattern).
 - Every set statistic (mean, sum) is **permutation invariant** over
   the rooms: `permute_rooms` must not change the score. This is what
-  `tests/unit/test_jetons.py` tests.
+  `tests/unit/test_tokens.py` tests.
 - An opening whose `wall_id` matches no wall of the plan is
   **silently ignored** (`plan_to_tokens`). This is a choice: an incomplete corpus
   must not bring the encoding down. The flip side is that a wall/window

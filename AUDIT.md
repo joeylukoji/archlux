@@ -155,7 +155,7 @@ conventions sont dupliquées puis divergent.
   `archlux/__init__.py` importe `api` qui charge `solve`, `certify`, `light.protocole` ;
   `from archlux.light.protocole import …` exécute d'abord `light/__init__.py` qui importe
   toutes les implémentations ; `certify/__init__.py` importe `borne` qui charge `uq`.
-- **C2. Deux trous dans `tests/test_dependances.py`** : le filtre `startswith("archlux.")`
+- **C2. Deux trous dans `tests/test_dependencies.py`** : le filtre `startswith("archlux.")`
   laisse passer `from archlux import __version__` (`export/ifc.py:10`,
   `bench/manifeste.py:13`) ; le contrôle est purement statique. Déplacer `__version__`
   dans `archlux/_version.py` et ajouter un test dynamique.

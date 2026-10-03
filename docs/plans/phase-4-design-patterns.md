@@ -152,7 +152,7 @@ day count.
    in the codebase or its docs re-imports the whole package just for the version.
    Confirmed, no change needed.
 6. Added `test_a_fresh_import_loads_only_the_declared_layers` to
-   `tests/test_dependances.py`: for every top-level package, import it in a fresh
+   `tests/test_dependencies.py`: for every top-level package, import it in a fresh
    subprocess and read `sys.modules` back — a dynamic check the static AST walk cannot
    do (it cannot see a computed `importlib.import_module(...)` call, and it checks
    *declared* imports, not what actually loads transitively). `api` was in `AUTORISE`
@@ -180,7 +180,7 @@ day count.
    `ModelTrace`/`Manifest` instances at runtime when deserializing a manifest, and
    `certify.rapport` type-hints on `Manifest`, so moving the classes into `bench`
    would make both import `bench`. The first blocker is `test_personne_n_importe_bench`
-   (`tests/test_dependances.py`): it rejects any `archlux.bench` import from outside
+   (`tests/test_dependencies.py`): it rejects any `archlux.bench` import from outside
    `bench` and never reads `EXEMPTIONS`, so no exemption entry could allow it. The
    static AST walk also sees imports under `if TYPE_CHECKING:`, so a hint-only import
    in `certify.rapport` is caught as well; and the dynamic
@@ -350,7 +350,7 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     `torch` module) that cannot be asked to implement an archlux protocol. Lives in
     `types.py` (not `light/protocole.py`) because `uq` may import `types` but not
     `light` (`ARCHITECTURE.md` §5 layering). Covered by
-    `tests/unit/test_substitut_dense.py`:
+    `tests/unit/test_dense_surrogate.py`:
     `test_dense_implements_fingerprintable`,
     `test_an_untrained_model_refuses_to_fingerprint`,
     `test_freeze_and_issue_uses_the_explicit_fingerprint`.
@@ -373,10 +373,10 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
     functions were already documented as intentionally different partitions (centered
     vs edge-aligned), so this is a real, pre-existing architectural boundary, not new
     duplication created by this item.
-    Covered by `tests/unit/test_circulaire.py`:
+    Covered by `tests/unit/test_circular.py`:
     `test_sector_centered_matches_stratify`, `test_sector_edge_aligned_starts_at_zero`,
     `test_sector_wraps_negative_and_over_360_degrees`, `test_sector_is_vectorized`.
-    Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` green
+    Verified: full suite green, `mypy src` clean, `tests/test_dependencies.py` green
     (no new cross-layer import), coverage 89.41% (ratchet 88.8%), `mkdocs build
     --strict` clean, `test_language.py`/`test_neutrality.py` green. No complexity
     change; ratchet stays at 25.
@@ -467,7 +467,7 @@ Verified: full suite green, `mypy src` clean, coverage 89.41% (ratchet 88.8%),
     (written before PLAN.md 3.9's English rename, presumably) does not hold against
     the current code.
 
-Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
+Verified: full suite green, `mypy src` clean, `tests/test_dependencies.py` and
 `tests/unit/test_import_cost.py` green (no layering or import-cost change).
 
 ### 11. `api` — pipeline done, item 31 deferred
@@ -518,7 +518,7 @@ Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
     functions) and `_run_cycle`/`_fit_cycle`/`_recalibrate_cycle` (methods, since they
     need `self.surrogate`/`self.simulateur`/`self.seed`). `run` itself is now CC 6;
     `Loop`'s own class-aggregate complexity drops from 11 to 5. Covered by new tests in
-    `tests/unit/test_actif.py` (`Batch`'s length-mismatch guard and `__len__`, and that
+    `tests/unit/test_active.py` (`Batch`'s length-mismatch guard and `__len__`, and that
     a trainable vs. a frozen surrogate correctly (dis)satisfies `Adjustable`; after
     review, that a surrogate without `gradient` and a `__getattr__` wrapper are both
     retrained and that the `ajuster` warning names the caller's file), on top of
@@ -526,7 +526,7 @@ Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
 
 **Ratchet**: `MAX_VIOLATIONS` moved from 22 to 20 (`run` and `Loop`'s own
 class-aggregate entry both counted as violations).
-Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` green (no new
+Verified: full suite green, `mypy src` clean, `tests/test_dependencies.py` green (no new
 cross-layer import), coverage 89.51% (ratchet 88.8%), `mkdocs build --strict` clean.
 
 ### 13. `export` — done

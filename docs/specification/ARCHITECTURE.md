@@ -146,13 +146,13 @@ bench   ← everything
 - [ ] `data` may read `geom` and `orient` (corpus loaders **only**),
       never `lmo`, `solve` or `light`: it produces inputs, it solves nothing
 
-Every rule above is checked twice by `tests/test_dependances.py`: statically (the AST
+Every rule above is checked twice by `tests/test_dependencies.py`: statically (the AST
 of every module against `AUTORISE`) and dynamically (`FORBIDDEN`: a fresh subprocess
 imports the package, all its submodules and every name of its `__all__`, then reads
 `sys.modules`, with no transitive closure). The simplest of these tests:
 
 ```python
-def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/test_dependances.py
+def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/test_dependencies.py
     import subprocess, sys
     code = "import archlux, sys; assert 'torch' not in sys.modules"
     assert subprocess.run([sys.executable, "-c", code]).returncode == 0
@@ -295,7 +295,7 @@ archlux/
 │   ├── io/json_io.py
 │   └── …                    # French module names (`geom/pavage.py`, `lmo/coupes.py`,
 │                            #   `certify/preuve.py`, …): deprecated shims (ADR 0001)
-├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependances.py,
+├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependencies.py,
 │                                                #   test_hygiene.py, test_language.py
 ├── benchmarks/{test_budgets.py,guarantees/}
 ├── experiments/            # experiment scripts (milestones 2 to 9)

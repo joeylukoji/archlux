@@ -57,7 +57,7 @@ says so. The calibration is checked before any solving. Without calibration,
 |---|---|
 | `legalize(plan, ctx)` on an almost valid tiling | Expect 100 % success on `plans_quelconques` × a small envelope: the room program may not fit → `Infeasible` |
 | Read `q.certificate.geometry.valid` | Aggregate proof and prediction into one score |
-| Import only `light.protocol.Surrogate` | Import `bench` from `api` (forbidden by `tests/test_dependances.py`) |
+| Import only `light.protocol.Surrogate` | Import `bench` from `api` (forbidden by `tests/test_dependencies.py`) |
 
 Budget of `ARCHITECTURE.md` §9: \(< 20\,\mathrm{ms}\) for 15 rooms.
 

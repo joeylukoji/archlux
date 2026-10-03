@@ -1,7 +1,7 @@
 """Milestone 3 criteria replayed as written, then with walls and minimum areas (phase 2, J3).
 
 ``MILESTONE-3.md`` §0 draws ``plans_quelconques()`` for the first two criteria; the
-tests that closed the milestone (``test_acceptation_jalon3.py``) drew already-valid
+tests that closed the milestone (``test_milestone3_acceptance.py``) drew already-valid
 plans under a context without minimum areas, the case where Frank-Wolfe used to leave
 them (AUDIT.md §3 n°6). Each criterion is replayed here on arbitrary plans and contexts,
 and on plans with a load-bearing wall and minimum areas (``realistic_scenarios``).
