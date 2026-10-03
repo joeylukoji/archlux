@@ -1,4 +1,4 @@
-"""Point de contrôle du gradient — `MILESTONE-4.md` §7. Assert bloquant."""
+"""Gradient checkpoint — `MILESTONE-4.md` §7. Blocking assert."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux.light.base import SubstitutDense
+from archlux.light.base import DenseSurrogate
 from archlux.light.split_flux import SplitFluxOracle
-from archlux.light.validation import valider_gradient
+from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 
 SIM, rng = SplitFluxOracle(), np.random.default_rng(17)
@@ -20,15 +20,15 @@ for _ in range(36):
     xs.append(x)
     oris.append(o)
     ys.append(SIM.evaluate(x, o))
-dense = SubstitutDense()
-dense.ajuster(tuple(xs), np.array(ys), tuple(oris), seed=17, epochs=40, lr=0.12)
-sud = Orientation(deg=180.0)
+dense = DenseSurrogate()
+dense.fit(tuple(xs), np.array(ys), tuple(oris), seed=17, epochs=40, lr=0.12)
+south = Orientation(deg=180.0)
 pts = np.stack([np.array([0.0, 0.0, c, 4.5, c, 0.0, 12.0 - c, 4.5]) for c in (5.0, 6.0, 7.0, 7.5)])
-rapport = valider_gradient(dense, pts, sud, seed=17, reference=SIM)
-assert rapport.sign_agreement > 0.80, "NE PAS passer au jalon 5"
+report = validate_gradient(dense, pts, south, seed=17, reference=SIM)
+assert report.sign_agreement > 0.80, "do NOT go on to milestone 5"
 Path("results/j4_gradient.md").write_text(
-    f"# Point de contrôle gradient\n\naccord_de_signe = {rapport.sign_agreement:.3f}\n"
-    f"cosinus_moyen = {rapport.mean_cosine:.3f}\nconforme = {rapport.passed}\n",
+    f"# Gradient checkpoint\n\nsign_agreement = {report.sign_agreement:.3f}\n"
+    f"mean_cosine = {report.mean_cosine:.3f}\npassed = {report.passed}\n",
     encoding="utf-8",
 )
-print("accord_de_signe", rapport.sign_agreement)
+print("sign_agreement", report.sign_agreement)

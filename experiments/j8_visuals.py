@@ -1,18 +1,17 @@
-"""Jalon 8 — dossier de comparaison **avant / après**, un plan par fiche.
+"""Milestone 8: **before / after** comparison folder, one plan per sheet.
 
-Pourquoi ce script existe
--------------------------
-`j8_generation.py` rend des taux. Un taux ne dit pas à quoi ressemble une
-réparation, et deux chiffres justes du jalon 8 — « 60,9 % de plans valides » et
-« déplacement médian de 56 % du côté » — laissent croire à des choses opposées.
-Ce dossier permet de trancher en regardant.
+Why this script exists
+----------------------
+`j8_generation.py` returns rates. A rate does not say what a repair looks like, and two
+correct figures of milestone 8, "60.9 % of plans valid" and "median displacement of
+56 % of the side", suggest opposite things. This folder settles it by looking.
 
-Chaque fiche porte le SVG des deux états à la **même échelle**, et le fichier de
-métriques correspondant : diagnostic géométrique avant, verdict de certification
-après, déplacement. Les échecs sont inclus au même titre que les réussites — un
-dossier qui ne montrerait que ce qui marche ne servirait à rien.
+Each sheet carries the SVG of both states at the **same scale**, and the matching
+metrics file: geometric diagnostic before, certification verdict after, displacement.
+Failures are included just like successes: a folder that showed only what works
+would be useless.
 
-Usage : j8_visuals.py [plans.jsonl] [etiquette] [n_par_categorie]
+Usage: j8_visuals.py [plans.jsonl] [label] [n_per_category]
 """
 
 from __future__ import annotations
@@ -27,142 +26,146 @@ from archlux.errors import GridNotRecoverable
 from archlux.export.svg import compare, render
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from j8_generation import BUDGETS, _construire, _echelle
+from j8_generation import BUDGETS, _build, _scale
 
 PLANS = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/j8_plans.jsonl")
-ETIQUETTE = sys.argv[2] if len(sys.argv) > 2 else "etoile"
-PAR_CATEGORIE = int(sys.argv[3]) if len(sys.argv) > 3 else 8
+LABEL = sys.argv[2] if len(sys.argv) > 2 else "etoile"
+PER_CATEGORY = int(sys.argv[3]) if len(sys.argv) > 3 else 8
 BUDGET = BUDGETS[-1]
-RACINE = Path("results/visuals") / ETIQUETTE
+ROOT = Path("results/visuals") / LABEL
 
 
-def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: float) -> str:
-    """Métriques d'un plan, avant et après, en Markdown."""
+def _folder(status: str) -> str:
+    """Sub-folder of an outcome: `proven infeasible` -> `proven-infeasible`."""
+    return status.replace(" ", "-")
+
+
+def _sheet(plan_id: str, plan, diag, proof, fixed, status: str, scale: float) -> str:
+    """Metrics of a plan, before and after, in Markdown."""
     rows = [
         f"# {plan_id}",
         "",
-        f"Conditionnement `{ETIQUETTE}`, budget de réparation {BUDGET}, "
-        f"échelle {echelle:.3f} m/unité.",
+        f"Conditioning `{LABEL}`, repair budget {BUDGET}, scale {scale:.3f} m/unit.",
         "",
-        f"**Issue : {statut}**",
+        f"**Outcome: {status}**",
         "",
-        "## Avant — diagnostic géométrique",
+        "## Before: geometric diagnostic",
         "",
-        "| grandeur | valeur |",
+        "| quantity | value |",
         "|---|--:|",
-        f"| pièces | {len(plan.rooms)} |",
-        f"| pièces recouvertes par pièce | {diag.overlaps:.2f} |",
-        f"| part de jour dans l'enveloppe | {diag.gap_share:.1%} |",
-        f"| dont trous intérieurs | {diag.hole_share:.1%} |",
-        f"| morceaux disjoints | {diag.fragments} |",
-        f"| cellules de la trame implicite | {diag.cellules} |",
-        f"| côté caractéristique | {diag.size:.2f} m |",
+        f"| rooms | {len(plan.rooms)} |",
+        f"| rooms overlapped per room | {diag.overlaps:.2f} |",
+        f"| gap share of the envelope | {diag.gap_share:.1%} |",
+        f"| of which interior holes | {diag.hole_share:.1%} |",
+        f"| disjoint fragments | {diag.fragments} |",
+        f"| cells of the implicit grid | {diag.cells} |",
+        f"| characteristic side | {diag.size:.2f} m |",
         "",
-        "## Avant — vérification exacte",
+        "## Before: exact verification",
         "",
-        f"valide : **{preuve.valid}**",
+        f"valid: **{proof.valid}**",
         "",
     ]
-    rows += [f"- {v}" for v in preuve.violations] or ["*aucune violation*"]
-    rows += ["", "## Après — correction", ""]
-    if corrige is None:
+    rows += [f"- {v}" for v in proof.violations] or ["*no violation*"]
+    rows += ["", "## After: correction", ""]
+    if fixed is None:
         rows += [
-            f"Aucun plan produit : `{statut}`.",
+            f"No plan produced: `{status}`.",
             "",
-            "Ce n'est pas un plantage. Un refus de trame signifie que la "
-            "réparation bornée ne suffit pas à rendre la partition cohérente ; "
-            "une infaisabilité est **prouvée**, certificat de Farkas à l'appui.",
+            "This is not a crash. A grid refusal means that the bounded repair is not "
+            "enough to make the partition consistent; an infeasibility is **proven**, "
+            "with a Farkas certificate.",
         ]
     else:
-        geo = corrige.certificate.geometry
+        geo = fixed.certificate.geometry
         rows += [
-            "| grandeur | valeur |",
+            "| quantity | value |",
             "|---|--:|",
-            f"| valide | **{geo.valid}** |",
-            f"| déplacement max | {geo.max_displacement:.3f} m |",
-            f"| rapporté au côté | {geo.max_displacement / diag.size:.0%} |",
-            f"| pièces | {len(corrige.rooms)} |",
+            f"| valid | **{geo.valid}** |",
+            f"| max displacement | {geo.max_displacement:.3f} m |",
+            f"| relative to the side | {geo.max_displacement / diag.size:.0%} |",
+            f"| rooms | {len(fixed.rooms)} |",
         ]
     return "\n".join(rows) + "\n"
 
 
 def main() -> None:
     rows = [json.loads(x) for x in PLANS.read_text(encoding="utf-8").splitlines() if x.strip()]
-    echelle = _echelle(rows)
-    compte: dict[str, int] = {}
+    scale = _scale(rows)
+    count: dict[str, int] = {}
     index: list[tuple[str, str, str, str]] = []
 
     for plan_json in rows:
-        bati = _construire(plan_json, echelle)
-        if isinstance(bati, str):
+        built = _build(plan_json, scale)
+        if isinstance(built, str):
             continue
-        plan, context, diag = bati
-        preuve = verify_exactly(plan, context)
-        corrige, statut = None, "réparé"
+        plan, context, diag = built
+        proof = verify_exactly(plan, context)
+        fixed, status = None, "repaired"
         try:
-            corrige = ax.legalize(plan, context, tiling=True, repair_budget=BUDGET)
-            if not corrige.certificate.geometry.valid:
-                statut = "corrigé mais invalide"
+            fixed = ax.legalize(plan, context, tiling=True, repair_budget=BUDGET)
+            if not fixed.certificate.geometry.valid:
+                status = "corrected but invalid"
         except ax.Infeasible:
-            statut = "infaisable (prouvé)"
+            status = "proven infeasible"
         except GridNotRecoverable:
-            statut = "trame irrécupérable"
+            status = "unrecoverable grid"
         except ax.InvariantViolation:
-            statut = "invariant violé"
-        # Quota par issue : un dossier qui ne montrerait que les reussites
-        # donnerait une image fausse du jalon.
-        if compte.get(statut, 0) >= PAR_CATEGORIE:
+            status = "invariant violation"
+        # Quota per outcome: a folder showing only the successes would give a false
+        # picture of the milestone.
+        if count.get(status, 0) >= PER_CATEGORY:
             continue
-        compte[statut] = compte.get(statut, 0) + 1
+        count[status] = count.get(status, 0) + 1
 
-        dossier = RACINE / statut.replace(" ", "-").replace("(", "").replace(")", "")
-        dossier.mkdir(parents=True, exist_ok=True)
-        avant = f"{len(plan.rooms)} pièces, jour {diag.gap_share:.0%}, {diag.fragments} morceaux"
-        if corrige is None:
-            # Un seul panneau. Redessiner le plan d'entree a droite se lirait
-            # « rien n'a change », alors qu'aucun plan n'a ete produit du tout.
+        folder = ROOT / _folder(status)
+        folder.mkdir(parents=True, exist_ok=True)
+        before = f"{len(plan.rooms)} rooms, gap {diag.gap_share:.0%}, {diag.fragments} fragments"
+        if fixed is None:
+            # A single panel. Redrawing the input plan on the right would read as
+            # "nothing changed", whereas no plan was produced at all.
             svg = render(
                 plan,
-                contour=context.outline,
-                title=f"{statut} — {avant}",
+                outline=context.outline,
+                title=f"{status} — {before}",
             )
         else:
             svg = compare(
                 plan,
-                corrige,
-                contour=context.outline,
+                fixed,
+                outline=context.outline,
                 titles=(
-                    f"avant — {avant}",
-                    f"après — {statut}, déplacement "
-                    f"{corrige.certificate.geometry.max_displacement:.2f} m",
+                    f"before — {before}",
+                    f"after — {status}, displacement "
+                    f"{fixed.certificate.geometry.max_displacement:.2f} m",
                 ),
             )
         name = plan_json["id"]
-        (dossier / f"{name}.svg").write_text(svg, encoding="utf-8")
-        (dossier / f"{name}.md").write_text(
-            _fiche(name, plan, diag, preuve, corrige, statut, echelle),
+        (folder / f"{name}.svg").write_text(svg, encoding="utf-8")
+        (folder / f"{name}.md").write_text(
+            _sheet(name, plan, diag, proof, fixed, status, scale),
             encoding="utf-8",
         )
-        index.append((statut, name, f"{diag.gap_share:.0%}", str(diag.fragments)))
+        index.append((status, name, f"{diag.gap_share:.0%}", str(diag.fragments)))
 
-    RACINE.mkdir(parents=True, exist_ok=True)
+    ROOT.mkdir(parents=True, exist_ok=True)
     table = [
-        f"# Comparaisons avant / après — conditionnement `{ETIQUETTE}`",
+        f"# Before / after comparisons: conditioning `{LABEL}`",
         "",
-        f"Budget de réparation {BUDGET}. Au plus {PAR_CATEGORIE} plans par issue, échecs compris.",
+        f"Repair budget {BUDGET}. At most {PER_CATEGORY} plans per outcome, failures included.",
         "",
-        "| issue | plan | jour avant | morceaux avant | fiche |",
+        "| outcome | plan | gap before | fragments before | sheet |",
         "|---|---|--:|--:|---|",
     ]
-    for statut, name, jour, fragments in sorted(index):
-        rep = statut.replace(" ", "-").replace("(", "").replace(")", "")
+    for status, name, gap, fragments in sorted(index):
+        sub = _folder(status)
         table.append(
-            f"| {statut} | `{name}` | {jour} | {fragments} | "
-            f"[svg]({rep}/{name}.svg) · [métriques]({rep}/{name}.md) |"
+            f"| {status} | `{name}` | {gap} | {fragments} | "
+            f"[svg]({sub}/{name}.svg) · [metrics]({sub}/{name}.md) |"
         )
-    (RACINE / "index.md").write_text("\n".join(table) + "\n", encoding="utf-8")
-    print(f"{len(index)} fiches -> {RACINE}")
-    print("issues :", compte)
+    (ROOT / "index.md").write_text("\n".join(table) + "\n", encoding="utf-8")
+    print(f"{len(index)} sheets -> {ROOT}")
+    print("outcomes:", count)
 
 
 if __name__ == "__main__":

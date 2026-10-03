@@ -1,6 +1,6 @@
-"""Substitut d'eclairement contre de vraies simulations — jalon 7.
+"""Daylight surrogate against real simulations, milestone 7.
 
-Corpus non redistribue. Usage : j7_sd_labels.py <msd.csv> <sd.zip> [n].
+Corpus not redistributed. Usage: j7_sd_labels.py <msd.csv> <sd.zip> [n].
 """
 
 from __future__ import annotations
@@ -30,67 +30,67 @@ SD = Path(
     if len(sys.argv) > 2
     else "D:/archlux-donnees/swiss-dwellings/swiss-dwellings-v3.0.0.zip"
 )
-CIBLE = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
-GRAINE = 17
+TARGET = int(sys.argv[3]) if len(sys.argv) > 3 else 2000
+SEED = 17
 
 labels = load_sd_labels(SD, column=DEFAULT_SUN_COLUMN)
-print(f"simulations lues : {len(labels)} pieces")
+print(f"simulations read: {len(labels)} rooms")
 
 kept, ys = [], []
-for appart in load_msd(MSD, limit=CIBLE):
-    cible = label(appart, labels)
-    if cible is None or not appart.site_id:
+for apartment in load_msd(MSD, limit=TARGET):
+    target = label(apartment, labels)
+    if target is None or not apartment.site_id:
         continue
-    kept.append(appart)
-    ys.append(cible)
-print(f"appartements etiquetes : {len(kept)}  sites : {len({a.site_id for a in kept})}")
+    kept.append(apartment)
+    ys.append(target)
+print(f"labelled apartments: {len(kept)}  sites: {len({a.site_id for a in kept})}")
 
-train, calib, test = split_by_site(kept, seed=GRAINE)
+train, calib, test = split_by_site(kept, seed=SEED)
 index = {id(a): k for k, a in enumerate(kept)}
 
 
-def vecteurs(lot: list) -> tuple[tuple, np.ndarray, tuple, tuple]:
-    xs, cibles, oris, fen = [], [], [], []
-    for appart in lot:
-        poly = build_polytope(deduce_order(appart.plan), appart.context)
-        xs.append(vectorize(appart.plan, poly.index))
-        cibles.append(ys[index[id(appart)]])
-        oris.append(appart.context.orientation)
-        fen.append(Glazing(walls=appart.plan.walls, openings=appart.plan.openings))
-    return tuple(xs), np.asarray(cibles, dtype=float), tuple(oris), tuple(fen)
+def vectors(batch: list) -> tuple[tuple, np.ndarray, tuple, tuple]:
+    xs, targets, oris, windows = [], [], [], []
+    for apartment in batch:
+        poly = build_polytope(deduce_order(apartment.plan), apartment.context)
+        xs.append(vectorize(apartment.plan, poly.index))
+        targets.append(ys[index[id(apartment)]])
+        oris.append(apartment.context.orientation)
+        windows.append(Glazing(walls=apartment.plan.walls, openings=apartment.plan.openings))
+    return tuple(xs), np.asarray(targets, dtype=float), tuple(oris), tuple(windows)
 
 
-x_tr, y_tr, o_tr, b_tr = vecteurs(train)
-x_ca, y_ca, o_ca, b_ca = vecteurs(calib)
-x_te, y_te, o_te, b_te = vecteurs(test)
-print(f"baies par appartement : median {int(np.median([len(b.openings) for b in b_tr]))}")
-print(f"train {len(x_tr)} | calibration {len(x_ca)} | test {len(x_te)} (par site)")
+x_tr, y_tr, o_tr, b_tr = vectors(train)
+x_ca, y_ca, o_ca, b_ca = vectors(calib)
+x_te, y_te, o_te, b_te = vectors(test)
+print(f"windows per apartment: median {int(np.median([len(b.openings) for b in b_tr]))}")
+print(f"train {len(x_tr)} | calibration {len(x_ca)} | test {len(x_te)} (by site)")
 
 ana = AnalyticSurrogate()
-# L'analytique rend un score en unites arbitraires : sans recalage affine ajuste
-# sur le train, le comparer a une irradiance simulee n'a aucun sens.
-brut_tr = np.array([ana.evaluate(x, o) for x, o in zip(x_tr, o_tr, strict=True)])
-brut_te = np.array([ana.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)])
-pente, ordonnee = np.polyfit(brut_tr, y_tr, 1)
-pred_ana = pente * brut_te + ordonnee
-pred_nul = np.full_like(y_te, float(y_tr.mean()))
+# The analytic surrogate returns a score in arbitrary units: without an affine rescaling
+# fitted on the train set, comparing it with a simulated irradiance makes no sense.
+raw_tr = np.array([ana.evaluate(x, o) for x, o in zip(x_tr, o_tr, strict=True)])
+raw_te = np.array([ana.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)])
+slope, intercept = np.polyfit(raw_tr, y_tr, 1)
+pred_ana = slope * raw_te + intercept
+pred_null = np.full_like(y_te, float(y_tr.mean()))
 net = DenseSurrogate()
-net.fit(x_tr, y_tr, o_tr, seed=GRAINE, epochs=150)
+net.fit(x_tr, y_tr, o_tr, seed=SEED, epochs=150)
 pred_net = np.array([net.evaluate(x, o) for x, o in zip(x_te, o_te, strict=True)])
-# Meme modele, memes hyperparametres, meme graine : seule l'entree change.
+# Same model, same hyperparameters, same seed: only the input changes.
 net_b = DenseSurrogate()
-net_b.fit(x_tr, y_tr, o_tr, seed=GRAINE, epochs=150, glazing=b_tr)
+net_b.fit(x_tr, y_tr, o_tr, seed=SEED, epochs=150, glazing=b_tr)
 pred_netb = np.array(
     [net_b.evaluate(x, o, glazing=b) for x, o, b in zip(x_te, o_te, b_te, strict=True)]
 )
 
 
-def score(pred: np.ndarray, vrai: np.ndarray) -> str:
-    err = vrai - pred
+def score(pred: np.ndarray, true: np.ndarray) -> str:
+    err = true - pred
     mae = float(np.abs(err).mean())
     return (
-        f"MAE {mae:8.3f}   MAE rel {100 * mae / float(np.abs(vrai).mean()):6.1f} %   "
-        f"R2 {1 - err.var() / vrai.var():7.3f}"
+        f"MAE {mae:8.3f}   rel MAE {100 * mae / float(np.abs(true).mean()):6.1f} %   "
+        f"R2 {1 - err.var() / true.var():7.3f}"
     )
 
 
@@ -98,41 +98,42 @@ cal = ConformalCalibrator(indicator="sDA")
 p_ca = np.array([net.evaluate(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 s_ca = np.array([net.uncertainty(x, o) for x, o in zip(x_ca, o_ca, strict=True)])
 cal.fit(p_ca, y_ca, s_ca, alpha=0.10)
-bornes = [
+bounds = [
     cal.bound(float(p), float(net.uncertainty(x, o)), regime="exchangeable")
     for p, x, o in zip(pred_net, x_te, o_te, strict=True)
 ]
-couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, strict=True)]))
-largeur = float(np.mean([b.upper - b.lower for b in bornes]))
+cover = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bounds, y_te, strict=True)]))
+width = float(np.mean([b.upper - b.lower for b in bounds]))
 
-rapport = (
-    f"# Jalon 7 — substitut contre simulations Swiss Dwellings\n\n"
-    f"cible : `{DEFAULT_SUN_COLUMN}`, moyenne ponderee par surface\n"
-    f"decoupage **par site** (graine {GRAINE}) : "
+report = (
+    f"# Milestone 7: surrogate against Swiss Dwellings simulations\n\n"
+    f"target: `{DEFAULT_SUN_COLUMN}`, area-weighted mean\n"
+    f"split **by site** (seed {SEED}): "
     f"train {len(x_tr)} / calibration {len(x_ca)} / test {len(x_te)}\n"
-    f"sites : {len({a.site_id for a in train})} / {len({a.site_id for a in calib})} / "
+    f"sites: {len({a.site_id for a in train})} / {len({a.site_id for a in calib})} / "
     f"{len({a.site_id for a in test})}\n\n"
-    f"cible sur le test : moyenne {y_te.mean():.3f}, ecart-type {y_te.std():.3f}\n\n"
-    f"| modele | MAE | MAE relative | R2 |\n|---|--:|--:|--:|\n"
-    f"| constante (moyenne du train) | {np.abs(y_te - pred_nul).mean():.3f} | "
-    f"{100 * np.abs(y_te - pred_nul).mean() / np.abs(y_te).mean():.1f} % | "
-    f"{1 - (y_te - pred_nul).var() / y_te.var():.3f} |\n"
-    f"| analytique recale ({pente:.4f}f{ordonnee:+.2f}) | {np.abs(y_te - pred_ana).mean():.3f} | "
+    f"target on the test set: mean {y_te.mean():.3f}, standard deviation {y_te.std():.3f}\n\n"
+    f"| model | MAE | relative MAE | R2 |\n|---|--:|--:|--:|\n"
+    f"| constant (train mean) | {np.abs(y_te - pred_null).mean():.3f} | "
+    f"{100 * np.abs(y_te - pred_null).mean() / np.abs(y_te).mean():.1f} % | "
+    f"{1 - (y_te - pred_null).var() / y_te.var():.3f} |\n"
+    f"| rescaled analytic ({slope:.4f}f{intercept:+.2f}) | "
+    f"{np.abs(y_te - pred_ana).mean():.3f} | "
     f"{100 * np.abs(y_te - pred_ana).mean() / np.abs(y_te).mean():.1f} % | "
     f"{1 - (y_te - pred_ana).var() / y_te.var():.3f} |\n"
-    f"| perceptron (sans baies) | {np.abs(y_te - pred_net).mean():.3f} | "
+    f"| perceptron (no glazing) | {np.abs(y_te - pred_net).mean():.3f} | "
     f"{100 * np.abs(y_te - pred_net).mean() / np.abs(y_te).mean():.1f} % | "
     f"{1 - (y_te - pred_net).var() / y_te.var():.3f} |\n"
-    f"| perceptron **avec baies** | {np.abs(y_te - pred_netb).mean():.3f} | "
+    f"| perceptron **with glazing** | {np.abs(y_te - pred_netb).mean():.3f} | "
     f"{100 * np.abs(y_te - pred_netb).mean() / np.abs(y_te).mean():.1f} % | "
     f"{1 - (y_te - pred_netb).var() / y_te.var():.3f} |\n\n"
-    f"conforme alpha=0,10 : couverture mesuree **{100 * couv:.1f} %** "
-    f"(visee 90 %), largeur moyenne {largeur:.3f}, n_calibration {cal.n}\n"
+    f"conformal alpha=0.10: measured coverage **{100 * cover:.1f} %** "
+    f"(target 90 %), mean width {width:.3f}, n_calibration {cal.n}\n"
 )
 Path("results").mkdir(exist_ok=True)
-Path("results/j7_sd_labels.md").write_text(rapport, encoding="utf-8")
-print("\nconstante  :", score(pred_nul, y_te))
-print("analytique :", score(pred_ana, y_te), f"[recale {pente:.4f}f{ordonnee:+.3f}]")
+Path("results/j7_sd_labels.md").write_text(report, encoding="utf-8")
+print("\nconstant   :", score(pred_null, y_te))
+print("analytic   :", score(pred_ana, y_te), f"[rescaled {slope:.4f}f{intercept:+.3f}]")
 print("perceptron :", score(pred_net, y_te))
-print("+ baies    :", score(pred_netb, y_te))
-print(f"\nconforme : couverture {100 * couv:.1f} % (visee 90), largeur {largeur:.3f}")
+print("+ glazing  :", score(pred_netb, y_te))
+print(f"\nconformal: coverage {100 * cover:.1f} % (target 90), width {width:.3f}")

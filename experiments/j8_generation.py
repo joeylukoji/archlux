@@ -1,46 +1,46 @@
-"""Jalon 8 — legaliser des plans **reellement generes**, pas des plans corrompus.
+"""Milestone 8: legalize **actually generated** plans, not corrupted ones.
 
-Ce que ce jalon ajoute au jalon 7
----------------------------------
-`j7_msd_reparation.py` mesure la reparation de plans MSD **corrompus a la main**.
-La faute y est connue, ce qui est ideal pour attribuer un echec — mais les
-amplitudes ne sont calibrees sur aucun generateur reel (`data.corruption` le dit).
-Ici les entrees sortent d'un modele publie, jamais abimees par nous : c'est le
-controle de **validite externe** de la table du jalon 7.
+What this milestone adds to milestone 7
+---------------------------------------
+`j7_msd_repair.py` measures the repair of MSD plans **corrupted by hand**. The fault
+is known there, which is ideal to attribute a failure, but the amplitudes are
+calibrated on no real generator (`data.corruption` says so). Here the inputs come out
+of a published model and are never damaged by us: this is the **external validity**
+check of the milestone 7 table.
 
-Le generateur
+The generator
 -------------
-HouseDiffusion (Shabani, Hosseini, Furukawa, CVPR 2023), poids officiels
-`model250000.pt`, entraine sur RPLAN. Le modele rend des coordonnees vectorielles,
-donc aucune vectorisation d'image ne vient s'interposer entre lui et nous.
+HouseDiffusion (Shabani, Hosseini, Furukawa, CVPR 2023), official weights
+`model250000.pt`, trained on RPLAN. The model returns vector coordinates, so no image
+vectorization stands between it and us.
 
-**Il est echantillonne sur 1000 pas, sans reechantillonnage.** Ce n'est pas un
-detail de confort : `gaussian_diffusion.py:270` n'active la branche de debruitage
-**discret** — la contribution meme du papier, celle qui aligne les coins sur la
-grille — que pour ``t < 32``. Sous-echantillonner la trajectoire la court-circuite
-et fabrique un desalignement qui n'appartient pas au modele. Mesure de l'ecart
-median d'un coin a son rectangle axe, selon le nombre de pas :
+**It is sampled over 1000 steps, without respacing.** This is not a matter of
+comfort: `gaussian_diffusion.py:270` only enables the **discrete** denoising branch
+(the very contribution of the paper, the one that snaps corners to the grid) for
+``t < 32``. Subsampling the trajectory short-circuits it and creates a misalignment
+that does not belong to the model. Median distance from a corner to its axis-aligned
+rectangle, by number of steps:
 
 ===== ==========
-pas    ecart
+steps  distance
 ===== ==========
-20     0,750 m
-80     0,188 m
-200    0,000 m
-1000   0,000 m
+20     0.750 m
+80     0.188 m
+200    0.000 m
+1000   0.000 m
 ===== ==========
 
-A 1000 pas les pieces generees sont **exactement** axees : aucune approximation
-par boite englobante n'entre dans la mesure qui suit.
+At 1000 steps the generated rooms are **exactly** axis-aligned: no bounding-box
+approximation enters the measurement below.
 
-Frontiere de licence
---------------------
-HouseDiffusion est sous **GPL v3, usage commercial interdit**. archlux est sous
-Apache-2.0 et ne l'importe pas : l'echantillonnage vit dans un script separe
-(`vendor/j8_generer.py`, hors depot) et la frontiere entre les deux est le fichier
-JSONL lu ici.
+License boundary
+----------------
+HouseDiffusion is under **GPL v3, commercial use forbidden**. archlux is under
+Apache-2.0 and does not import it: sampling lives in a separate script
+(`vendor/j8_generer.py`, outside the repository) and the boundary between the two is
+the JSONL file read here.
 
-Usage : j8_generation.py [plans.jsonl] [n_max] [etiquette]
+Usage: j8_generation.py [plans.jsonl] [n_max] [label]
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ from shapely.ops import unary_union
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
-from archlux.errors import GridNotRecoverable
+from archlux.errors import GapNeedsTiling, GridNotRecoverable
 from archlux.export.wilson import wilson_interval
 from archlux.geom.diagnostic import Diagnostic, diagnose
 from archlux.types import (
@@ -70,373 +70,371 @@ from archlux.types import (
     Structure,
 )
 
-DEFAUT = Path("D:/archlux-donnees/j8_plans.jsonl")
+DEFAULT = Path("D:/archlux-donnees/j8_plans.jsonl")
 
-# Aire mediane d'un appartement MSD, mesuree sur 1200 appartements : 79,0 m2.
-# Les coordonnees RPLAN sont sans unite ; on fixe l'echelle pour que l'aire
-# mediane generee vaille celle de MSD, afin que les deplacements des jalons 7 et 8
-# soient comparables. Aucun taux de validite n'en depend : chevauchement et jour
-# sont invariants d'echelle.
-AIRE_CIBLE_M2 = 79.0
-COTE_MIN_M = 0.05  # sous ce seuil une piece est degeneree, pas etroite
+# Median area of an MSD apartment, measured on 1200 apartments: 79.0 m2.
+# RPLAN coordinates have no unit; the scale is set so that the median generated area
+# equals the MSD one, so that the displacements of milestones 7 and 8 are comparable.
+# No validity rate depends on it: overlap and gap are scale invariant.
+TARGET_AREA_M2 = 79.0
+MIN_SIDE_M = 0.05  # below this threshold a room is degenerate, not narrow
 
-# Budgets balayes. Le defaut d'`api.legalize` est 4, cale sur des plans corrompus.
-# Une sortie de generateur releve d'un autre regime : on mesure la courbe entiere
-# plutot que de reporter le seul point qui arrange.
+# Swept budgets. The default of `api.legalize` is 4, tuned on corrupted plans. A
+# generator output belongs to another regime: the whole curve is measured rather than
+# reporting the single convenient point.
 BUDGETS = (0, 4, 8, 16)
 
-# Largeur minimale d'une piece, en metres. Ce parametre n'est PAS un detail de
-# conformite ici : sans plancher strictement positif, le moyen le moins couteux de
-# fermer un jour est de reduire une piece a zero, et le plan sort « valide » avec
-# une piece annihilee. Mesure a `largeur_min = 0` : 61 % des plans reputes repares
-# contenaient au moins une piece de cote exactement nul.
+# Minimum width of a room, in metres. This parameter is NOT a compliance detail here:
+# without a strictly positive floor, the cheapest way to close a gap is to shrink a
+# room to zero, and the plan comes out "valid" with an annihilated room. Measured at
+# `min_width = 0`: 61 % of the plans reported as repaired contained at least one room
+# with a side of exactly zero.
 #
-# Le jalon 7 posait 0,0 pour une bonne raison — un seuil a 1,80 m cassait 52 plans
-# MSD **deja valides** sur 60. Cette prudence ne s'applique pas ici : 0 / 740 plans
-# generes sont valides au depart, donc le seuil ne peut rien casser.
-LARGEUR_DEFAUT = 0.50
-LARGEURS = (0.0, 0.25, 1.00, 1.80)
+# Milestone 7 set 0.0 for a good reason: a 1.80 m threshold broke 52 MSD plans out of
+# 60 that were **already valid**. That caution does not apply here: 0 / 740 generated
+# plans are valid to begin with, so the threshold cannot break anything.
+DEFAULT_WIDTH = 0.50
+WIDTHS = (0.0, 0.25, 1.00, 1.80)
 
-# Sous ce cote, ce n'est plus une piece mais un residu que le trace ne montre meme
-# pas. Sert a distinguer « valide » de « valide ET programme preserve ».
-COTE_INTACT_M = 0.50
+# Below this side, it is no longer a room but a residue that the drawing does not even
+# show. Used to tell "valid" from "valid AND program preserved".
+INTACT_SIDE_M = 0.50
 
 FIELDS = (
     "plan_id",
-    "programme",
-    "graphe",
-    "n_pieces",
+    "program",
+    "graph",
+    "n_rooms",
     "mode",
     "budget",
-    "largeur_min",
-    "valide_avant",
-    "valide_apres",
-    "n_pieces_apres",
-    "cote_min_apres",
+    "min_width",
+    "valid_before",
+    "valid_after",
+    "n_rooms_after",
+    "min_side_after",
     "intact",
-    "cellules",
-    "recouvrements_avant",
-    "part_jour_avant",
-    "part_trou_avant",
-    "morceaux_avant",
-    "cote_m",
-    "deplacement_max_m",
-    "deplacement_relatif",
-    "temps_ms",
-    "statut",
+    "cells",
+    "overlaps_before",
+    "gap_share_before",
+    "hole_share_before",
+    "fragments_before",
+    "size_m",
+    "max_displacement_m",
+    "relative_displacement",
+    "time_ms",
+    "status",
 )
 
 
-def _boites(plan_json: dict, echelle: float) -> list[tuple[str, tuple[float, ...]]]:
-    """(type, (x, y, w, h)) en metres, une entree par piece generee."""
+def _boxes(plan_json: dict, scale: float) -> list[tuple[str, tuple[float, ...]]]:
+    """(type, (x, y, w, h)) in metres, one entry per generated room."""
     out = []
-    for piece in plan_json["pieces"]:
-        coins = np.asarray(piece["coins"], dtype=float) * echelle
-        x0, y0 = float(coins[:, 0].min()), float(coins[:, 1].min())
-        x1, y1 = float(coins[:, 0].max()), float(coins[:, 1].max())
-        out.append((str(piece["type"]), (x0, y0, x1 - x0, y1 - y0)))
+    for room in plan_json["pieces"]:  # key of the vendor JSONL format
+        corners = np.asarray(room["coins"], dtype=float) * scale
+        x0, y0 = float(corners[:, 0].min()), float(corners[:, 1].min())
+        x1, y1 = float(corners[:, 0].max()), float(corners[:, 1].max())
+        out.append((str(room["type"]), (x0, y0, x1 - x0, y1 - y0)))
     return out
 
 
-def _echelle(rows: list[dict]) -> float:
-    """Facteur unite -> metre calant l'aire mediane generee sur celle de MSD."""
-    aires = []
+def _scale(rows: list[dict]) -> float:
+    """Unit -> metre factor matching the median generated area to the MSD one."""
+    areas = []
     for plan_json in rows:
-        formes = [box(x, y, x + w, y + h) for _, (x, y, w, h) in _boites(plan_json, 1.0)]
-        union = unary_union(formes)
+        shapes = [box(x, y, x + w, y + h) for _, (x, y, w, h) in _boxes(plan_json, 1.0)]
+        union = unary_union(shapes)
         if not union.is_empty:
-            aires.append(union.area)
-    return float(np.sqrt(AIRE_CIBLE_M2 / np.median(aires)))
+            areas.append(union.area)
+    return float(np.sqrt(TARGET_AREA_M2 / np.median(areas)))
 
 
-def _construire(plan_json: dict, echelle: float) -> tuple[Plan, Context, Diagnostic] | str:
-    """Plan archlux + diagnostic d'entree, ou le motif de rejet en clair."""
-    boites = _boites(plan_json, echelle)
-    if any(w < COTE_MIN_M or h < COTE_MIN_M for _, (_, _, w, h) in boites):
-        return "piece degeneree"
+def _build(plan_json: dict, scale: float) -> tuple[Plan, Context, Diagnostic] | str:
+    """archlux plan + input diagnostic, or the rejection reason in plain words."""
+    boxes = _boxes(plan_json, scale)
+    if any(w < MIN_SIDE_M or h < MIN_SIDE_M for _, (_, _, w, h) in boxes):
+        return "degenerate room"
 
-    pieces = tuple(
-        Room(id=f"p{rang:03d}", type=room_type, x=x, y=y, w=w, h=h)
-        for rang, (room_type, (x, y, w, h)) in enumerate(boites)
+    rooms = tuple(
+        Room(id=f"p{rank:03d}", type=room_type, x=x, y=y, w=w, h=h)
+        for rank, (room_type, (x, y, w, h)) in enumerate(boxes)
     )
-    formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in pieces]
-    union = unary_union(formes)
+    shapes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in rooms]
+    union = unary_union(shapes)
     if union.is_empty:
-        return "union vide"
+        return "empty union"
 
-    # Le contour vise est la **boite englobante** de l'union. HouseDiffusion ne
-    # recoit aucune enveloppe en condition : il invente son emprise. Imposer le
-    # pavage de cette boite, c'est donc aussi equarrir l'emprise — c'est assume,
-    # et le deplacement rapporte en donne le cout.
+    # The target outline is the **bounding box** of the union. HouseDiffusion receives
+    # no envelope as a condition: it invents its own footprint. Imposing the tiling of
+    # this box therefore also squares the footprint; this is deliberate, and the
+    # reported displacement gives its cost.
     x0, y0, x1, y1 = union.bounds
-    contour = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
+    outline = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
 
-    plan = Plan(rooms=pieces, walls=(), openings=(), outline=contour)
+    plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
     context = Context(
         structure=Structure(load_bearing_walls=(), columns=()),
         orientation=Orientation(deg=0.0),
-        outline=contour,
-        # Le referentiel est remplace essai par essai : voir LARGEUR_DEFAUT.
-        regulation=Regulation(min_areas=(), min_width=LARGEUR_DEFAUT),
+        outline=outline,
+        # The regulation is replaced run by run: see DEFAULT_WIDTH.
+        regulation=Regulation(min_areas=(), min_width=DEFAULT_WIDTH),
         program=tuple(sorted(set(plan_json["programme"]))),
     )
     return plan, context, diagnose(plan)
 
 
-def _resumer(brut: Path, echelle: float, rejections: dict[str, int]) -> str:
-    """Table de synthese, intervalles de Wilson compris."""
-    with brut.open(encoding="utf-8") as flux:
-        rangs = list(csvmod.DictReader(flux))
-    plans = {r["plan_id"] for r in rangs}
-    avant = sum(r["valide_avant"] == "True" for r in rangs if r["mode"] == "base")
-    # Les tables principales portent sur la largeur nominale ; le balayage des
-    # largeurs a sa propre table plus bas.
-    nominal = f"{LARGEUR_DEFAUT:.2f}"
-    a_nominal = [r for r in rangs if r["largeur_min"] == nominal]
-    diag = [r for r in a_nominal if r["mode"] == "base"]
-    cellules = np.asarray([float(r["cellules"]) for r in diag])
-    recouv = np.asarray([float(r["recouvrements_avant"]) for r in diag])
-    jour = np.asarray([float(r["part_jour_avant"]) for r in diag])
-    trou = np.asarray([float(r["part_trou_avant"]) for r in diag])
-    fragments = np.asarray([float(r["morceaux_avant"]) for r in diag])
+def _summarize(raw: Path, scale: float, rejections: dict[str, int]) -> str:
+    """Summary tables, Wilson intervals included."""
+    with raw.open(encoding="utf-8") as stream:
+        records = list(csvmod.DictReader(stream))
+    plans = {r["plan_id"] for r in records}
+    before = sum(r["valid_before"] == "True" for r in records if r["mode"] == "base")
+    # The main tables cover the nominal width; the width sweep has its own table below.
+    nominal = f"{DEFAULT_WIDTH:.2f}"
+    at_nominal = [r for r in records if r["min_width"] == nominal]
+    diag = [r for r in at_nominal if r["mode"] == "base"]
+    cells = np.asarray([float(r["cells"]) for r in diag])
+    overlaps = np.asarray([float(r["overlaps_before"]) for r in diag])
+    gap = np.asarray([float(r["gap_share_before"]) for r in diag])
+    hole = np.asarray([float(r["hole_share_before"]) for r in diag])
+    fragments = np.asarray([float(r["fragments_before"]) for r in diag])
 
     rows = [
-        "| mode | budget | n | réparés | IC 95 % | t médian | déplacement médian |",
+        "| mode | budget | n | repaired | 95 % CI | median t | median displacement |",
         "|---|--:|--:|--:|:--:|--:|--:|",
     ]
     for mode, budget in [("base", "")] + [("pavage", str(b)) for b in BUDGETS]:
-        lot = [r for r in a_nominal if r["mode"] == mode and r["budget"] == budget]
-        if not lot:
+        batch = [r for r in at_nominal if r["mode"] == mode and r["budget"] == budget]
+        if not batch:
             continue
-        ok = sum(r["valide_apres"] == "True" for r in lot)
-        low, high = wilson_interval(ok, len(lot))
-        temps = np.median([float(r["temps_ms"]) for r in lot])
-        depl = [float(r["deplacement_max_m"]) for r in lot if r["deplacement_max_m"]]
-        rel = [float(r["deplacement_relatif"]) for r in lot if r["deplacement_relatif"]]
-        med_depl = f"{np.median(depl):.2f} m ({np.median(rel):.0%} du côté)" if depl else "—"
-        etiquette = "`legalize` seul" if mode == "base" else "`pavage=True`"
+        ok = sum(r["valid_after"] == "True" for r in batch)
+        low, high = wilson_interval(ok, len(batch))
+        elapsed = np.median([float(r["time_ms"]) for r in batch])
+        moved = [float(r["max_displacement_m"]) for r in batch if r["max_displacement_m"]]
+        rel = [float(r["relative_displacement"]) for r in batch if r["relative_displacement"]]
+        median_moved = (
+            f"{np.median(moved):.2f} m ({np.median(rel):.0%} of the side)" if moved else "—"
+        )
+        name = "`legalize` alone" if mode == "base" else "`tiling=True`"
         rows.append(
-            f"| {etiquette} | {budget or '—'} | {len(lot)} | "
-            f"**{100 * ok / len(lot):.1f} %** | [{100 * low:.1f}, {100 * high:.1f}] | "
-            f"{temps:.1f} ms | {med_depl} |"
+            f"| {name} | {budget or '—'} | {len(batch)} | "
+            f"**{100 * ok / len(batch):.1f} %** | [{100 * low:.1f}, {100 * high:.1f}] | "
+            f"{elapsed:.1f} ms | {median_moved} |"
         )
 
-    # Coupe par nombre de pieces. C'est elle qui explique le taux, pas la
-    # connexite : a budget fixe la reparation bornee corrige un nombre borne de
-    # cellules, et la trame enfle en (2n-1)^2 quand aucun bord ne coincide.
-    dernier = str(BUDGETS[-1])
-    lot_final = [r for r in a_nominal if r["mode"] == "pavage" and r["budget"] == dernier]
+    # Breakdown by number of rooms. It explains the rate, not connectivity: at a fixed
+    # budget the bounded repair fixes a bounded number of cells, and the grid swells as
+    # (2n-1)^2 when no edges coincide.
+    last = str(BUDGETS[-1])
+    final_batch = [r for r in at_nominal if r["mode"] == "pavage" and r["budget"] == last]
 
-    # Balayage de la largeur minimale. C'est la table decisive : sans plancher
-    # strictement positif, fermer un jour en reduisant une piece a zero est la
-    # solution la moins couteuse, et le plan sort « valide » amoute d'une piece.
-    largeurs = [
-        "| `largeur_min` | n | valides | **dont aucune pièce écrasée** | "
-        "plus petit côté | déplacement médian |",
+    # Sweep of the minimum width. This is the decisive table: without a strictly
+    # positive floor, closing a gap by shrinking a room to zero is the cheapest
+    # solution, and the plan comes out "valid" minus one room.
+    widths = [
+        "| `min_width` | n | valid | **of which no room crushed** | "
+        "smallest side | median displacement |",
         "|--:|--:|--:|--:|--:|--:|",
     ]
-    for largeur in sorted({*LARGEURS, LARGEUR_DEFAUT}):
-        cle = f"{largeur:.2f}"
-        lot = [
+    for width in sorted({*WIDTHS, DEFAULT_WIDTH}):
+        key = f"{width:.2f}"
+        batch = [
             r
-            for r in rangs
-            if r["mode"] == "pavage" and r["budget"] == dernier and r["largeur_min"] == cle
+            for r in records
+            if r["mode"] == "pavage" and r["budget"] == last and r["min_width"] == key
         ]
-        if not lot:
+        if not batch:
             continue
-        ok = sum(r["valide_apres"] == "True" for r in lot)
-        sains = sum(r["intact"] == "True" for r in lot)
-        b1, h1 = wilson_interval(ok, len(lot))
-        b2, h2 = wilson_interval(sains, len(lot))
-        cotes = [float(r["cote_min_apres"]) for r in lot if r["cote_min_apres"]]
-        rel = [float(r["deplacement_relatif"]) for r in lot if r["deplacement_relatif"]]
-        marque = " *(nominal)*" if largeur == LARGEUR_DEFAUT else ""
-        largeurs.append(
-            f"| {largeur:.2f} m{marque} | {len(lot)} | "
-            f"{100 * ok / len(lot):.1f} % [{100 * b1:.1f}, {100 * h1:.1f}] | "
-            f"**{100 * sains / len(lot):.1f} %** [{100 * b2:.1f}, {100 * h2:.1f}] | "
-            f"{(f'{np.median(cotes):.3f} m' if cotes else '—')} | "
+        ok = sum(r["valid_after"] == "True" for r in batch)
+        sound = sum(r["intact"] == "True" for r in batch)
+        b1, h1 = wilson_interval(ok, len(batch))
+        b2, h2 = wilson_interval(sound, len(batch))
+        sides = [float(r["min_side_after"]) for r in batch if r["min_side_after"]]
+        rel = [float(r["relative_displacement"]) for r in batch if r["relative_displacement"]]
+        mark = " *(nominal)*" if width == DEFAULT_WIDTH else ""
+        widths.append(
+            f"| {width:.2f} m{mark} | {len(batch)} | "
+            f"{100 * ok / len(batch):.1f} % [{100 * b1:.1f}, {100 * h1:.1f}] | "
+            f"**{100 * sound / len(batch):.1f} %** [{100 * b2:.1f}, {100 * h2:.1f}] | "
+            f"{(f'{np.median(sides):.3f} m' if sides else '—')} | "
             f"{(f'{np.median(rel):.0%}' if rel else '—')} |"
         )
-    par_n: dict[int, list[dict[str, str]]] = {}
-    for r in lot_final:
-        par_n.setdefault(int(r["n_pieces"]), []).append(r)
-    coupe = [
-        f"| pièces | n | réparés (budget {dernier}) | cellules médianes |",
+    by_n: dict[int, list[dict[str, str]]] = {}
+    for r in final_batch:
+        by_n.setdefault(int(r["n_rooms"]), []).append(r)
+    by_size = [
+        f"| rooms | n | repaired (budget {last}) | median cells |",
         "|--:|--:|--:|--:|",
     ]
-    for k in sorted(par_n):
-        rangs_k = par_n[k]
-        ok = sum(x["valide_apres"] == "True" for x in rangs_k)
-        cel = np.median([float(x["cellules"]) for x in rangs_k])
-        coupe.append(f"| {k} | {len(rangs_k)} | {100 * ok / len(rangs_k):.1f} % | {cel:.0f} |")
-
-    # Coupe par topologie du graphe d'acces. Le `door_mask` de HouseDiffusion en
-    # derive : c'est une entree du modele, pas une mise en scene. Si le taux y
-    # etait sensible, aucun chiffre global ne serait interpretable.
-    par_topo: dict[str, list[dict[str, str]]] = {}
-    for r in lot_final:
-        par_topo.setdefault(r["graphe"], []).append(r)
-    topo = [
-        f"| topologie | n | réparés (budget {dernier}) | jour méd. | "
-        "recouvr. méd. | morceaux méd. |",
-        "|---|--:|--:|--:|--:|--:|",
-    ]
-    for cle in sorted(par_topo):
-        rangs_t = par_topo[cle]
-        ok = sum(x["valide_apres"] == "True" for x in rangs_t)
-        topo.append(
-            f"| `{cle}` | {len(rangs_t)} | {100 * ok / len(rangs_t):.1f} % | "
-            f"{np.median([float(x['part_jour_avant']) for x in rangs_t]):.1%} | "
-            f"{np.median([float(x['recouvrements_avant']) for x in rangs_t]):.2f} | "
-            f"{np.median([float(x['morceaux_avant']) for x in rangs_t]):.0f} |"
+    for k in sorted(by_n):
+        records_k = by_n[k]
+        ok = sum(x["valid_after"] == "True" for x in records_k)
+        cel = np.median([float(x["cells"]) for x in records_k])
+        by_size.append(
+            f"| {k} | {len(records_k)} | {100 * ok / len(records_k):.1f} % | {cel:.0f} |"
         )
 
-    motifs: dict[str, int] = {}
-    for r in rangs:
-        if r["statut"] != "ok":
-            cle = f"{r['mode']}{r['budget']}:{r['statut']}"
-            motifs[cle] = motifs.get(cle, 0) + 1
+    # Breakdown by topology of the access graph. HouseDiffusion's `door_mask` derives
+    # from it: it is an input of the model, not staging. If the rate were sensitive to
+    # it, no global figure would be interpretable.
+    by_topology: dict[str, list[dict[str, str]]] = {}
+    for r in final_batch:
+        by_topology.setdefault(r["graph"], []).append(r)
+    topology = [
+        f"| topology | n | repaired (budget {last}) | median gap | "
+        "median overlap | median fragments |",
+        "|---|--:|--:|--:|--:|--:|",
+    ]
+    for key in sorted(by_topology):
+        records_t = by_topology[key]
+        ok = sum(x["valid_after"] == "True" for x in records_t)
+        topology.append(
+            f"| `{key}` | {len(records_t)} | {100 * ok / len(records_t):.1f} % | "
+            f"{np.median([float(x['gap_share_before']) for x in records_t]):.1%} | "
+            f"{np.median([float(x['overlaps_before']) for x in records_t]):.2f} | "
+            f"{np.median([float(x['fragments_before']) for x in records_t]):.0f} |"
+        )
+
+    reasons: dict[str, int] = {}
+    for r in records:
+        if r["status"] != "ok":
+            key = f"{r['mode']}{r['budget']}:{r['status']}"
+            reasons[key] = reasons.get(key, 0) + 1
 
     return (
-        "# Jalon 8 — légaliser des plans **réellement générés**\n\n"
-        f"HouseDiffusion (CVPR 2023), poids officiels `model250000.pt`, RPLAN, "
-        f"**1000 pas** sans rééchantillonnage. {len(plans)} plans, "
-        f"{len(plans) and int(np.sum([float(r['n_pieces']) for r in diag]))} pièces. "
-        f"Échelle {echelle:.3f} m/unité, calée sur l'aire médiane MSD (79,0 m²).\n\n"
-        f"**{avant} plan(s) sur {len(plans)} sont valides avant correction.**\n\n"
-        "## État des sorties du générateur\n\n"
-        "| | médiane | moyenne | p95 |\n|---|--:|--:|--:|\n"
-        f"| pièces recouvertes par pièce | {np.median(recouv):.2f} | "
-        f"{recouv.mean():.2f} | {np.quantile(recouv, 0.95):.2f} |\n"
-        f"| part de jour dans l'enveloppe | {np.median(jour):.1%} | "
-        f"{jour.mean():.1%} | {np.quantile(jour, 0.95):.1%} |\n"
-        f"| dont trous **intérieurs** | {np.median(trou):.1%} | "
-        f"{trou.mean():.1%} | {np.quantile(trou, 0.95):.1%} |\n"
-        f"| morceaux disjoints de l'union | {np.median(fragments):.0f} | "
+        "# Milestone 8: legalizing **actually generated** plans\n\n"
+        f"HouseDiffusion (CVPR 2023), official weights `model250000.pt`, RPLAN, "
+        f"**1000 steps** without respacing. {len(plans)} plans, "
+        f"{len(plans) and int(np.sum([float(r['n_rooms']) for r in diag]))} rooms. "
+        f"Scale {scale:.3f} m/unit, matched to the MSD median area (79.0 m²).\n\n"
+        f"**{before} plan(s) out of {len(plans)} are valid before correction.**\n\n"
+        "## State of the generator outputs\n\n"
+        "| | median | mean | p95 |\n|---|--:|--:|--:|\n"
+        f"| rooms overlapped per room | {np.median(overlaps):.2f} | "
+        f"{overlaps.mean():.2f} | {np.quantile(overlaps, 0.95):.2f} |\n"
+        f"| gap share of the envelope | {np.median(gap):.1%} | "
+        f"{gap.mean():.1%} | {np.quantile(gap, 0.95):.1%} |\n"
+        f"| of which **interior** holes | {np.median(hole):.1%} | "
+        f"{hole.mean():.1%} | {np.quantile(hole, 0.95):.1%} |\n"
+        f"| disjoint fragments of the union | {np.median(fragments):.0f} | "
         f"{fragments.mean():.2f} | {np.quantile(fragments, 0.95):.0f} |\n"
-        f"| cellules de la trame implicite | {np.median(cellules):.0f} | "
-        f"{cellules.mean():.0f} | {np.quantile(cellules, 0.95):.0f} |\n\n"
-        "## Réparation\n\n"
-        f"Référentiel `largeur_min = {LARGEUR_DEFAUT:.2f} m`.\n\n" + "\n".join(rows) + "\n\n"
-        "## Ce que coûte — et rapporte — un plancher sur la largeur\n\n"
-        + "\n".join(largeurs)
-        + "\n\n"
-        "## Réparation par taille de programme\n\n" + "\n".join(coupe) + "\n\n"
-        "## Réparation par topologie du graphe d'accès\n\n" + "\n".join(topo) + "\n\n"
-        f"## Échecs\n\n{motifs}\n\n"
-        f"## Rejets à la construction\n\n{rejections or 'aucun'}\n"
+        f"| cells of the implicit grid | {np.median(cells):.0f} | "
+        f"{cells.mean():.0f} | {np.quantile(cells, 0.95):.0f} |\n\n"
+        "## Repair\n\n"
+        f"Regulation `min_width = {DEFAULT_WIDTH:.2f} m`.\n\n" + "\n".join(rows) + "\n\n"
+        "## What a floor on the width costs, and what it buys\n\n" + "\n".join(widths) + "\n\n"
+        "## Repair by program size\n\n" + "\n".join(by_size) + "\n\n"
+        "## Repair by access-graph topology\n\n" + "\n".join(topology) + "\n\n"
+        f"## Failures\n\n{reasons}\n\n"
+        f"## Rejections at construction\n\n{rejections or 'none'}\n"
     )
 
 
 def main() -> None:
-    # La ligne de commande est lue ICI et pas au niveau module : `j8_visuals`
-    # importe `_construire` et `_echelle`, et un parsing a l'import ferait
-    # echouer l'import sur ses propres arguments.
-    plans = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAUT
+    # The command line is read HERE and not at module level: `j8_visuals` imports
+    # `_build` and `_scale`, and parsing at import time would make the import fail on
+    # its own arguments.
+    plans = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT
     n_max = int(sys.argv[2]) if len(sys.argv) > 2 else 10**9
-    # Etiquette de sortie : deux conditionnements de graphe sont mesures, et
-    # leurs resultats ne doivent pas s'ecraser l'un l'autre.
-    etiquette = sys.argv[3] if len(sys.argv) > 3 else plans.stem
+    # Output label: two graph conditionings are measured, and their results must not
+    # overwrite each other.
+    label = sys.argv[3] if len(sys.argv) > 3 else plans.stem
     rows = [
-        json.loads(ligne)
-        for ligne in plans.read_text(encoding="utf-8").splitlines()[:n_max]
-        if ligne.strip()
+        json.loads(line)
+        for line in plans.read_text(encoding="utf-8").splitlines()[:n_max]
+        if line.strip()
     ]
     if not rows:
-        raise SystemExit(f"aucun plan dans {plans}")
-    echelle = _echelle(rows)
-    print(f"{len(rows)} plans generes, echelle {echelle:.4f} m/unite")
+        raise SystemExit(f"no plan in {plans}")
+    scale = _scale(rows)
+    print(f"{len(rows)} generated plans, scale {scale:.4f} m/unit")
 
     Path("results").mkdir(exist_ok=True)
-    sortie = Path(f"results/j8_{etiquette}_raw.csv")
+    output = Path(f"results/j8_{label}_raw.csv")
     rejections: dict[str, int] = {}
-    with sortie.open("w", newline="", encoding="utf-8") as flux:
-        ecrivain = csvmod.DictWriter(flux, fieldnames=FIELDS)
-        ecrivain.writeheader()
+    with output.open("w", newline="", encoding="utf-8") as stream:
+        writer = csvmod.DictWriter(stream, fieldnames=FIELDS)
+        writer.writeheader()
         for plan_json in rows:
-            bati = _construire(plan_json, echelle)
-            if isinstance(bati, str):
-                rejections[bati] = rejections.get(bati, 0) + 1
+            built = _build(plan_json, scale)
+            if isinstance(built, str):
+                rejections[built] = rejections.get(built, 0) + 1
                 continue
-            plan, context, diagnostic = bati
-            avant = verify_exactly(plan, context).valid
-            # Deux balayages, pas leur produit : les budgets a largeur nominale,
-            # puis les largeurs au meilleur budget. Le second existe parce que
-            # `largeur_min = 0` laisse le LP annihiler une piece pour fermer un
-            # jour — il faut pouvoir montrer ce que ce seuil coute et rapporte.
-            essais = [("base", 0, LARGEUR_DEFAUT)]
-            essais += [("pavage", b, LARGEUR_DEFAUT) for b in BUDGETS]
-            essais += [
-                ("pavage", BUDGETS[-1], largeur)
-                for largeur in LARGEURS
-                if largeur != LARGEUR_DEFAUT
-            ]
-            for mode, budget, largeur in essais:
-                debut = time.perf_counter()
-                statut, valid, deplacement, n_apres = "ok", False, "", ""
-                cote_min, intact = "", ""
-                contexte_essai = replace(
+            plan, context, diagnostic = built
+            before = verify_exactly(plan, context).valid
+            # Two sweeps, not their product: the budgets at nominal width, then the
+            # widths at the best budget. The second exists because `min_width = 0`
+            # lets the LP annihilate a room to close a gap: what this threshold costs
+            # and buys must be shown.
+            runs = [("base", 0, DEFAULT_WIDTH)]
+            runs += [("pavage", b, DEFAULT_WIDTH) for b in BUDGETS]
+            runs += [("pavage", BUDGETS[-1], width) for width in WIDTHS if width != DEFAULT_WIDTH]
+            for mode, budget, width in runs:
+                start = time.perf_counter()
+                # CSV values (`mode`, `status`) stay as published: the raw rows are data.
+                status, valid, moved, n_after = "ok", False, "", ""
+                min_side, intact = "", ""
+                run_context = replace(
                     context,
-                    regulation=Regulation(min_areas=(), min_width=largeur),
+                    regulation=Regulation(min_areas=(), min_width=width),
                 )
                 try:
-                    corrige = ax.legalize(
+                    fixed = ax.legalize(
                         plan,
-                        contexte_essai,
+                        run_context,
                         tiling=(mode == "pavage"),
                         repair_budget=budget,
                     )
-                    valid = corrige.certificate.geometry.valid
-                    deplacement = f"{corrige.certificate.geometry.max_displacement:.6f}"
-                    n_apres = str(len(corrige.rooms))
-                    petit = min(min(p.w, p.h) for p in corrige.rooms)
-                    cote_min = f"{petit:.4f}"
-                    # « Intact » = valide ET aucune piece reduite a un residu.
-                    # Compter les pieces ne suffit pas : une piece ecrasee a
-                    # 0 m reste dans le compte.
-                    intact = str(bool(valid and petit >= COTE_INTACT_M))
+                    valid = fixed.certificate.geometry.valid
+                    moved = f"{fixed.certificate.geometry.max_displacement:.6f}"
+                    n_after = str(len(fixed.rooms))
+                    smallest = min(min(p.w, p.h) for p in fixed.rooms)
+                    min_side = f"{smallest:.4f}"
+                    # "Intact" = valid AND no room shrunk to a residue. Counting rooms
+                    # is not enough: a room crushed to 0 m stays in the count.
+                    intact = str(bool(valid and smallest >= INTACT_SIDE_M))
                 except ax.Infeasible:
-                    statut = "infaisable"
+                    status = "infaisable"  # lang-ok: published CSV value
                 except GridNotRecoverable:
-                    statut = "trame"
-                except ax.InvariantViolation:
-                    statut = "invariant_viole"
-                ecrivain.writerow(
+                    status = "trame"  # lang-ok: published CSV value
+                except (ax.InvariantViolation, GapNeedsTiling):
+                    # `legalize` alone now refuses a gap up front (GapNeedsTiling) where
+                    # it used to return an invalid plan: same published value.
+                    status = "invariant_viole"  # lang-ok: published CSV value
+                writer.writerow(
                     {
                         "plan_id": plan_json["id"],
-                        "programme": "+".join(plan_json["programme"]),
-                        # Absent des premiers JSONL : le champ n'existait pas encore.
-                        "graphe": plan_json.get("graphe", "etoile"),
-                        "n_pieces": len(plan.rooms),
+                        "program": "+".join(plan_json["programme"]),
+                        # Missing from the first JSONL files: the field did not exist yet.
+                        "graph": plan_json.get("graphe", "etoile"),
+                        "n_rooms": len(plan.rooms),
                         "mode": mode,
                         "budget": budget if mode == "pavage" else "",
-                        "largeur_min": f"{largeur:.2f}",
-                        "valide_avant": avant,
-                        "valide_apres": valid,
-                        "n_pieces_apres": n_apres,
-                        "cote_min_apres": cote_min,
+                        "min_width": f"{width:.2f}",
+                        "valid_before": before,
+                        "valid_after": valid,
+                        "n_rooms_after": n_after,
+                        "min_side_after": min_side,
                         "intact": intact,
-                        "cellules": diagnostic.cells,
-                        "recouvrements_avant": f"{diagnostic.overlaps:.3f}",
-                        "part_jour_avant": f"{diagnostic.gap_share:.4f}",
-                        "part_trou_avant": f"{diagnostic.hole_share:.4f}",
-                        "morceaux_avant": diagnostic.fragments,
-                        "cote_m": f"{diagnostic.size:.3f}",
-                        "deplacement_max_m": deplacement,
-                        "deplacement_relatif": (
-                            f"{float(deplacement) / diagnostic.size:.4f}" if deplacement else ""
+                        "cells": diagnostic.cells,
+                        "overlaps_before": f"{diagnostic.overlaps:.3f}",
+                        "gap_share_before": f"{diagnostic.gap_share:.4f}",
+                        "hole_share_before": f"{diagnostic.hole_share:.4f}",
+                        "fragments_before": diagnostic.fragments,
+                        "size_m": f"{diagnostic.size:.3f}",
+                        "max_displacement_m": moved,
+                        "relative_displacement": (
+                            f"{float(moved) / diagnostic.size:.4f}" if moved else ""
                         ),
-                        "temps_ms": f"{(time.perf_counter() - debut) * 1000:.3f}",
-                        "statut": statut,
+                        "time_ms": f"{(time.perf_counter() - start) * 1000:.3f}",
+                        "status": status,
                     }
                 )
-    print("bruts ecrits :", sortie)
-    summary = Path(f"results/j8_{etiquette}.md")
-    summary.write_text(_resumer(sortie, echelle, rejections), encoding="utf-8")
-    print("resume ecrit :", summary)
+    print("raw rows written:", output)
+    summary = Path(f"results/j8_{label}.md")
+    summary.write_text(_summarize(output, scale, rejections), encoding="utf-8")
+    print("summary written:", summary)
     if rejections:
-        print("rejets :", rejections)
+        print("rejections:", rejections)
 
 
 if __name__ == "__main__":
