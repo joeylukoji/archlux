@@ -125,7 +125,7 @@ def test_the_global_ids_do_not_depend_on_class_or_field_names(tmp_path: Path) ->
     assert project.group(1) == "0Iie9ISb$ViPPopaAp6Tto"
 
 
-_GOLDEN_SHA256 = "230697e34fe521d96ed76cdc5188ac4dd2aaa2f543785d2bf90595d0364e913d"
+_GOLDEN_SHA256 = "13d2fa94afcef8deeb7c8ee7ec93975e41af5987e8cec406ff9d6eb5649fd73e"
 """SHA-256 of the golden export below, package version replaced by ``<version>``."""
 
 
