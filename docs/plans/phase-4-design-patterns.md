@@ -580,19 +580,21 @@ Verified: full suite green, `mypy src` clean, byte-identical IFC output (SHA-256
 comparison), coverage 89.51% (ratchet 88.8%, `export/svg.py` itself 100%), `mkdocs
 build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
-### 14. `data`
+### 14. `data` — partly done
 
-40. Split `chargeurs.py` into `msd.py` (`load_msd`, `MSDApartment`), `labels_sd.py`
-    (`load_sd_labels`, `label`), `decoupage.py` (already separate — confirm no overlap
-    remains after the split).
-41. Add an `MSDSettings` parameter object replacing `load_msd`'s eight keyword
-    parameters (`regulation`, `max_rooms`, `max_rectangles`, `snap_tolerance`,
-    `merge_tolerance`, `excluded_types`, `stats`, `limit`).
-42. Break `_convertir` (CC 38, the single worst function in the codebase) into its
-    four named stages, already described in its own docstring: straighten, snap,
-    decompose, attach openings. One stage per commit, each independently testable.
-43. Decide `imputation.py`'s fate: wire it into a loader path that uses it, or remove
-    it if it has no caller (confirm at the commit — PLAN.md flags this as open).
+40. **Not done, deferred.** `chargeurs.py` is already a deprecation shim pointing at
+    `loaders.py` (884 lines). Splitting `loaders.py` into `msd.py`, `labels_sd.py`,
+    `decoupage.py` is a file reorganization with its own import-path shims: a separate
+    decision, not a CC fix.
+41. **Not done, deferred.** `MSDSettings` would replace the eight keyword parameters of
+    `load_msd`: a public signature change, so it needs a deprecation path (ADR 0001)
+    and a go-ahead first.
+42. Done. `_convert` (`loaders.py`, was CC 36) split into `_parse_entities`,
+    `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. The
+    rejection reasons and their order are unchanged. `_convert` is now CC 17 before the
+    final assembly move and under CC 10 after it.
+43. **Not done, needs a decision.** `impute_openings` has no caller in the library, only
+    tests and a French alias. Removing it deletes a public name; kept until confirmed.
 
 ### 15. `bench`
 

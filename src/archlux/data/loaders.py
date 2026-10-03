@@ -42,7 +42,7 @@ import zipfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 from shapely import affinity, wkt
@@ -547,23 +547,22 @@ def _decomposition_rejection(failure: InvariantViolation) -> str:
     return "room not decomposable"
 
 
-def _convert(
-    id: str,
-    entities: list[tuple[str, str, str, str, str]],
-    *,
-    active_regulation: Regulation,
-    max_rooms: int,
-    max_rectangles: int,
-    snap_tolerance: float,
-    stitch_tolerance: float,
-) -> MSDApartment | str:
-    """Convert an apartment, or return the **rejection reason** in plain text."""
-    raw_rooms: list[tuple[str, Polygon]] = []
-    source_areas: list[str] = []
-    raw_walls: list[Polygon] = []
-    raw_columns: list[Polygon] = []
-    raw_windows: list[Polygon] = []
-    site = next((s for _, _, _, _, s in entities if s), "")
+class _Parsed(NamedTuple):
+    """Shapes of one apartment, bucketed by role (rooms keep their subtype and area id)."""
+
+    rooms: list[tuple[str, Polygon]]
+    source_areas: list[str]
+    walls: list[Polygon]
+    columns: list[Polygon]
+    windows: list[Polygon]
+
+
+def _parse_entities(entities: list[tuple[str, str, str, str, str]]) -> _Parsed | str:
+    """Read the WKT of every entity; a rejection reason if one is unreadable.
+
+    Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+    """
+    parsed = _Parsed([], [], [], [], [])
     for kind, subtype, text, area_id, _site in entities:
         try:
             shape = wkt.loads(text)
@@ -572,44 +571,70 @@ def _convert(
         if not isinstance(shape, Polygon) or shape.is_empty:
             continue
         if kind == "area":
-            raw_rooms.append((subtype, shape))
-            source_areas.append(area_id)
+            parsed.rooms.append((subtype, shape))
+            parsed.source_areas.append(area_id)
         elif subtype == "WALL":
-            raw_walls.append(shape)
+            parsed.walls.append(shape)
         elif subtype == "COLUMN":
-            raw_columns.append(shape)
+            parsed.columns.append(shape)
         else:
-            raw_windows.append(shape)
+            parsed.windows.append(shape)
+    return parsed
 
-    if not raw_rooms:
-        return "no habitable room"
-    if len(raw_rooms) > max_rooms:
-        return "too many rooms before decomposition"
 
+def _dominant_angle(parsed: _Parsed) -> float | str:
+    """Dominant wall direction in degrees, or a rejection reason.
+
+    Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+    """
     angles, lengths = _angles_and_lengths(  # lang-ok: kept private identifier
-        raw_walls or [shape for _, shape in raw_rooms]
+        parsed.walls or [shape for _, shape in parsed.rooms]
     )
     if not angles:
         return "no usable edge"
     try:
-        theta = dominant_direction(angles, lengths, period=90.0)
+        return dominant_direction(angles, lengths, period=90.0)
     except InvariantViolation:
         return "no dominant direction"
 
-    def straighten(shape: Polygon) -> Polygon:
-        return _snap(affinity.rotate(shape, -theta, origin=(0.0, 0.0)), snap_tolerance)
 
-    straightened = [straighten(shape) for _, shape in raw_rooms]
+def _stitched_rooms(
+    rooms: list[tuple[str, Polygon]],
+    theta: float,
+    snap_tolerance: float,
+    stitch_tolerance: float,
+) -> list[Polygon] | str:
+    """Straighten, snap and re-stitch the rooms, or a rejection reason.
+
+    Snapping back together happens **before** decomposing: decomposition assumes exact
+    edges, and it is the snapping step that makes neighbouring rooms contiguous.
+
+    Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+    """
+    straightened = [
+        _snap(affinity.rotate(shape, -theta, origin=(0.0, 0.0)), snap_tolerance)
+        for _, shape in rooms
+    ]
     if any(not d.is_valid or d.area <= _EPS for d in straightened):
         return "room degenerate after snapping to axes"
-    # Snap back together BEFORE decomposing: decomposition assumes exact edges, and
-    # it is the snapping step that makes neighbouring rooms contiguous.
     room_polygons = _stitch(straightened, stitch_tolerance)
     if not room_polygons:
         return "degenerate re-snapping"
     if any(not d.is_valid or d.area <= _EPS for d in room_polygons):
         return "room degenerate after re-snapping"
+    return room_polygons
 
+
+def _decompose_rooms(
+    raw_rooms: list[tuple[str, Polygon]],
+    room_polygons: list[Polygon],
+    max_rooms: int,
+    max_rectangles: int,
+) -> tuple[list[Room], list[RectilinearRoom]] | str:
+    """Split each room into axis rectangles; the fragments needing a merge, or a reason.
+
+    Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+    """
     rooms: list[Room] = []
     merges: list[RectilinearRoom] = []
     for rank, ((subtype, _), straight) in enumerate(zip(raw_rooms, room_polygons, strict=True)):
@@ -625,29 +650,46 @@ def _convert(
         rooms.extend(fragment.rectangles)
         if len(fragment.rectangles) > 1:
             merges.append(fragment)
-
     if len(rooms) > max_rooms:
         return "too many sub-rectangles after decomposition"
+    return rooms, merges
 
-    outline = _simple_outline(room_polygons)
-    if outline is None:
-        return "outline not simple"
+
+def _assemble(
+    *,
+    id: str,
+    site: str,
+    parsed: _Parsed,
+    rooms: list[Room],
+    merges: list[RectilinearRoom],
+    outline: tuple[tuple[float, float], ...],
+    theta: float,
+    snap_tolerance: float,
+    active_regulation: Regulation,
+) -> MSDApartment:
+    """Walls, openings, columns and the plan/context of an accepted apartment.
+
+    Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+    """
+
+    def straighten(shape: Polygon) -> Polygon:
+        return _snap(affinity.rotate(shape, -theta, origin=(0.0, 0.0)), snap_tolerance)
 
     walls = _walls_from_polygons(
-        [straighten(m) for m in raw_walls],
-        [float(m.minimum_rotated_rectangle.length / 4.0) for m in raw_walls],
+        [straighten(m) for m in parsed.walls],
+        [float(m.minimum_rotated_rectangle.length / 4.0) for m in parsed.walls],
     )
     openings = tuple(
         opening
         for opening in (
-            _opening_from_window(straighten(b), walls, rank) for rank, b in enumerate(raw_windows)
+            _opening_from_window(straighten(b), walls, rank)
+            for rank, b in enumerate(parsed.windows)
         )
         if opening is not None
     )
     columns = tuple(
-        (float(straighten(p).centroid.x), float(straighten(p).centroid.y)) for p in raw_columns
+        (float(straighten(p).centroid.x), float(straighten(p).centroid.y)) for p in parsed.columns
     )
-
     plan = Plan(rooms=tuple(rooms), walls=walls, openings=openings, outline=outline)
     context = Context(
         # MSD does not annotate load-bearing status: no wall is declared load-bearing.
@@ -655,16 +697,66 @@ def _convert(
         orientation=Orientation(deg=theta),
         outline=outline,
         regulation=active_regulation,
-        program=tuple(sorted({subtype.lower() for subtype, _ in raw_rooms})),
+        program=tuple(sorted({subtype.lower() for subtype, _ in parsed.rooms})),
     )
     return MSDApartment(
         id=id,
         plan=plan,
         context=context,
         site_id=site,
-        source_areas=tuple(source_areas),
+        source_areas=tuple(parsed.source_areas),
         merges=tuple(merges),
         straightening_angle=theta,
+    )
+
+
+def _convert(
+    id: str,
+    entities: list[tuple[str, str, str, str, str]],
+    *,
+    active_regulation: Regulation,
+    max_rooms: int,
+    max_rectangles: int,
+    snap_tolerance: float,
+    stitch_tolerance: float,
+) -> MSDApartment | str:
+    """Convert an apartment, or return the **rejection reason** in plain text.
+
+    The four stages (straighten, snap, decompose, attach openings) are the helpers above;
+    each returns either its result or the reason the apartment is rejected.
+    """
+    site = next((s for _, _, _, _, s in entities if s), "")
+    parsed = _parse_entities(entities)
+    if isinstance(parsed, str):
+        return parsed
+    if not parsed.rooms:
+        return "no habitable room"
+    if len(parsed.rooms) > max_rooms:
+        return "too many rooms before decomposition"
+    theta = _dominant_angle(parsed)
+    if isinstance(theta, str):
+        return theta
+    stitched = _stitched_rooms(parsed.rooms, theta, snap_tolerance, stitch_tolerance)
+    if isinstance(stitched, str):
+        return stitched
+    decomposed = _decompose_rooms(parsed.rooms, stitched, max_rooms, max_rectangles)
+    if isinstance(decomposed, str):
+        return decomposed
+    rooms, merges = decomposed
+    outline = _simple_outline(stitched)
+    if outline is None:
+        return "outline not simple"
+
+    return _assemble(
+        id=id,
+        site=site,
+        parsed=parsed,
+        rooms=rooms,
+        merges=merges,
+        outline=outline,
+        theta=theta,
+        snap_tolerance=snap_tolerance,
+        active_regulation=active_regulation,
     )
 
 

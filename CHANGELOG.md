@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 14 (`data`): `_convert` split into named stages
+
+- `_convert` (`data/loaders.py`, was CC 36) split into `_parse_entities`, `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. Rejection reasons and their order are unchanged.
+- Complexity ratchet moves from 18 to 17.
+- Deferred (see the plan): splitting `loaders.py` into modules, the `MSDSettings` parameter object, and removing the unused `impute_openings`.
+
 ### Added — bilingual documentation site (English / French)
 
 - The site is built in English (default) and French with `mkdocs-static-i18n` (suffix structure): 48 user pages get a `.fr.md` translation — home, installation, gallery, tutorials, concepts, formulas, data, release, limitations, contributing, JSON schema. The French text starts from the French originals and is brought in line with the English reference; code blocks are identical in both languages.
