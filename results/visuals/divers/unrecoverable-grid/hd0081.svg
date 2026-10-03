@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="380" height="221" viewBox="0 0 380 221">
   <rect width="380" height="221" fill="#f7f6f3"/>
   <rect x="1.0" y="1" width="378.0" height="219.3" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
-  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">trame irrécupérable — 8 pièces, jour 18%, 4 morceaux</text>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">unrecoverable grid — 8 rooms, gap 18%, 4 fragments</text>
   <polygon points="28.00,193.31 352.00,193.31 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
   <rect x="151.43" y="63.27" width="200.57" height="103.59" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
   <text x="251.71" y="115.06" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>

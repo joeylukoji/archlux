@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="380" height="335" viewBox="0 0 380 335">
   <rect width="380" height="335" fill="#f7f6f3"/>
   <rect x="1.0" y="1" width="378.0" height="332.9" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
-  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">infaisable (prouvé) — 4 pièces, jour 50%, 4 morceaux</text>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">proven infeasible — 4 rooms, gap 50%, 4 fragments</text>
   <polygon points="28.00,306.92 352.00,306.92 352.00,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
   <rect x="118.16" y="106.89" width="211.30" height="188.77" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
   <text x="223.81" y="201.27" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>

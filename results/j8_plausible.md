@@ -1,34 +1,34 @@
-# Jalon 8 — légaliser des plans **réellement générés**
+# Milestone 8: legalizing **actually generated** plans
 
-HouseDiffusion (CVPR 2023), poids officiels `model250000.pt`, RPLAN, **1000 pas** sans rééchantillonnage. 320 plans, 1960 pièces. Échelle 10.528 m/unité, calée sur l'aire médiane MSD (79,0 m²).
+HouseDiffusion (CVPR 2023), official weights `model250000.pt`, RPLAN, **1000 steps** without respacing. 320 plans, 1960 rooms. Scale 10.528 m/unit, matched to the MSD median area (79.0 m²).
 
-**0 plan(s) sur 320 sont valides avant correction.**
+**0 plan(s) out of 320 are valid before correction.**
 
-## État des sorties du générateur
+## State of the generator outputs
 
-| | médiane | moyenne | p95 |
+| | median | mean | p95 |
 |---|--:|--:|--:|
-| pièces recouvertes par pièce | 1.60 | 1.58 | 3.15 |
-| part de jour dans l'enveloppe | 24.7% | 25.1% | 46.6% |
-| dont trous **intérieurs** | 0.0% | 0.0% | 0.0% |
-| morceaux disjoints de l'union | 2 | 2.38 | 4 |
-| cellules de la trame implicite | 64 | 70 | 130 |
+| rooms overlapped per room | 1.60 | 1.58 | 3.15 |
+| gap share of the envelope | 24.7% | 25.1% | 46.6% |
+| of which **interior** holes | 0.0% | 0.0% | 0.0% |
+| disjoint fragments of the union | 2 | 2.38 | 4 |
+| cells of the implicit grid | 64 | 70 | 130 |
 
-## Réparation
+## Repair
 
-Référentiel `largeur_min = 0.50 m`.
+Regulation `min_width = 0.50 m`.
 
-| mode | budget | n | réparés | IC 95 % | t médian | déplacement médian |
+| mode | budget | n | repaired | 95 % CI | median t | median displacement |
 |---|--:|--:|--:|:--:|--:|--:|
-| `legalize` seul | — | 320 | **0.0 %** | [0.0, 1.2] | 2.9 ms | — |
-| `pavage=True` | 0 | 320 | **0.6 %** | [0.2, 2.2] | 0.8 ms | 1.52 m (18% du côté) |
-| `pavage=True` | 4 | 320 | **10.6 %** | [7.7, 14.5] | 1.4 ms | 3.82 m (41% du côté) |
-| `pavage=True` | 8 | 320 | **16.6 %** | [12.9, 21.0] | 2.9 ms | 3.95 m (38% du côté) |
-| `pavage=True` | 16 | 320 | **17.8 %** | [14.0, 22.4] | 3.3 ms | 3.95 m (38% du côté) |
+| `legalize` alone | — | 320 | **0.0 %** | [0.0, 1.2] | 2.9 ms | — |
+| `tiling=True` | 0 | 320 | **0.6 %** | [0.2, 2.2] | 0.8 ms | 1.52 m (18% of the side) |
+| `tiling=True` | 4 | 320 | **10.6 %** | [7.7, 14.5] | 1.4 ms | 3.82 m (41% of the side) |
+| `tiling=True` | 8 | 320 | **16.6 %** | [12.9, 21.0] | 2.9 ms | 3.95 m (38% of the side) |
+| `tiling=True` | 16 | 320 | **17.8 %** | [14.0, 22.4] | 3.3 ms | 3.95 m (38% of the side) |
 
-## Ce que coûte — et rapporte — un plancher sur la largeur
+## What a floor on the width costs, and what it buys
 
-| `largeur_min` | n | valides | **dont aucune pièce écrasée** | plus petit côté | déplacement médian |
+| `min_width` | n | valid | **of which no room crushed** | smallest side | median displacement |
 |--:|--:|--:|--:|--:|--:|
 | 0.00 m | 320 | 59.7 % [54.2, 64.9] | **13.8 %** [10.4, 18.0] | 0.000 m | 48% |
 | 0.25 m | 320 | 17.8 % [14.0, 22.4] | **13.8 %** [10.4, 18.0] | 0.740 m | 38% |
@@ -36,9 +36,9 @@ Référentiel `largeur_min = 0.50 m`.
 | 1.00 m | 320 | 17.8 % [14.0, 22.4] | **17.8 %** [14.0, 22.4] | 1.000 m | 38% |
 | 1.80 m | 320 | 17.8 % [14.0, 22.4] | **17.8 %** [14.0, 22.4] | 1.800 m | 38% |
 
-## Réparation par taille de programme
+## Repair by program size
 
-| pièces | n | réparés (budget 16) | cellules médianes |
+| rooms | n | repaired (budget 16) | median cells |
 |--:|--:|--:|--:|
 | 4 | 40 | 25.0 % | 30 |
 | 5 | 80 | 28.8 % | 49 |
@@ -46,16 +46,16 @@ Référentiel `largeur_min = 0.50 m`.
 | 7 | 120 | 11.7 % | 81 |
 | 8 | 40 | 5.0 % | 109 |
 
-## Réparation par topologie du graphe d'accès
+## Repair by access-graph topology
 
-| topologie | n | réparés (budget 16) | jour méd. | recouvr. méd. | morceaux méd. |
+| topology | n | repaired (budget 16) | median gap | median overlap | median fragments |
 |---|--:|--:|--:|--:|--:|
 | `plausible` | 320 | 17.8 % | 24.7% | 1.60 | 2 |
 
-## Échecs
+## Failures
 
 {'base:invariant_viole': 320, 'pavage0:trame': 318, 'pavage4:infaisable': 57, 'pavage8:infaisable': 121, 'pavage16:infaisable': 601, 'pavage4:trame': 229, 'pavage8:trame': 146, 'pavage16:trame': 580}
 
-## Rejets à la construction
+## Rejections at construction
 
-aucun
+none

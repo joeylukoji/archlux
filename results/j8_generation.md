@@ -1,260 +1,255 @@
-# Jalon 8 — synthèse : légaliser des plans **réellement générés**
+# Milestone 8: summary, legalizing **actually generated** plans
 
-Synthèse des trois exécutions de `experiments/j8_generation.py`. Les tables détaillées
-sont dans `j8_etoile.md`, `j8_plausible.md` et `j8_divers.md`, les mesures individuelles
-dans les CSV de même préfixe. Les comparaisons **avant / après**, plan par plan, sont
-dans [`visuals/`](visuals/index.md).
+Summary of the three runs of `experiments/j8_generation.py`. The detailed tables are
+in `j8_etoile.md`, `j8_plausible.md` and `j8_divers.md`, the individual measurements
+in the CSV files with the same prefix. The **before / after** comparisons, plan by plan,
+are in [`visuals/`](visuals/index.md).
 
-## Protocole
+## Protocol
 
-**Générateur.** HouseDiffusion (Shabani, Hosseini, Furukawa, *CVPR 2023*), poids
-officiels `model250000.pt`, entraîné sur RPLAN. Sortie **vectorielle** : aucune
-vectorisation d'image ne s'interpose entre le modèle et la mesure.
+**Generator.** HouseDiffusion (Shabani, Hosseini, Furukawa, *CVPR 2023*), official
+weights `model250000.pt`, trained on RPLAN. **Vector** output: no image vectorization
+stands between the model and the measurement.
 
-**Échantillonnage à 1000 pas, sans rééchantillonnage.** `gaussian_diffusion.py:270`
-n'active la branche de débruitage **discret** — celle qui aligne les coins sur la
-grille, et la contribution centrale du papier — que pour `t < 32`. Sous-échantillonner
-la trajectoire la court-circuite et fabrique un désalignement qui n'appartient pas au
-modèle :
+**Sampling at 1000 steps, without respacing.** `gaussian_diffusion.py:270` only
+enables the **discrete** denoising branch (the one that snaps corners to the grid, and
+the central contribution of the paper) for `t < 32`. Subsampling the trajectory
+short-circuits it and creates a misalignment that does not belong to the model:
 
-| pas | écart médian d'un coin à son rectangle axé |
+| steps | median distance from a corner to its axis-aligned rectangle |
 |--:|--:|
-| 20 | 0,750 m |
-| 80 | 0,188 m |
-| 200 | **0,000 m** |
-| 1000 | **0,000 m** |
+| 20 | 0.750 m |
+| 80 | 0.188 m |
+| 200 | **0.000 m** |
+| 1000 | **0.000 m** |
 
-À 1000 pas les pièces générées sont **exactement** axées : aucune approximation par
-boîte englobante n'entre dans ce qui suit.
+At 1000 steps the generated rooms are **exactly** axis-aligned: no bounding-box
+approximation enters what follows.
 
-**Trois jeux, deux axes de diversité.** HouseDiffusion lit un graphe d'accès, dont
-dérive le `door_mask` : deux pièces non reliées ne s'attirent aucune attention. Ni le
-programme ni la topologie ne sont donc neutres, et un seul choix ne prouverait rien.
+**Three sets, two axes of diversity.** HouseDiffusion reads an access graph, from which
+the `door_mask` derives: two unconnected rooms pay no attention to each other. Neither
+the program nor the topology is therefore neutral, and a single choice would prove
+nothing.
 
-| jeu | plans | programmes | topologies |
+| set | plans | programs | topologies |
 |---|--:|---|---|
-| *étoile* | 320 | 8, de 4 à 8 pièces | étoile : tout se rattache au séjour |
-| *plausible* | 320 | les mêmes 8 | dégagement distributeur s'il existe, séjour sinon |
-| *divers* | 100 | **25, de 3 à 10 pièces** | **les 4**, en tourniquet |
+| *etoile* | 320 | 8, from 4 to 8 rooms | star: everything attaches to the living room |
+| *plausible* | 320 | the same 8 | distribution corridor if there is one, living room otherwise |
+| *divers* | 100 | **25, from 3 to 10 rooms** | **all 4**, in rotation |
 
-Le catalogue *divers* couvre ce que les deux premiers n'atteignent pas : le studio à
-trois pièces, les programmes sans séjour ou sans cuisine, le bureau, les rangements,
-les doubles salles de bains, et jusqu'à dix pièces. Ses quatre topologies sont
-l'étoile, le graphe plausible, la **chaîne** (enfilade, le moins d'arêtes possible) et
-l'**anneau** (la chaîne refermée, seule à porter un cycle). La topologie tourne en
-tourniquet sur les programmes triés par taille, si bien qu'elle ne colle à aucune
-taille : 5,50 à 6,17 pièces en moyenne selon la topologie.
+The *divers* catalogue covers what the first two do not reach: the three-room studio,
+programs without a living room or without a kitchen, the study, storage rooms, double
+bathrooms, and up to ten rooms. Its four topologies are the star, the plausible graph,
+the **chain** (enfilade, the fewest possible edges) and the **ring** (the closed chain,
+the only one carrying a cycle). The topology rotates over the programs sorted by size,
+so that it is tied to no size: 5.50 to 6.17 rooms on average depending on the topology.
 
-Aucune n'est un graphe du jeu de test RPLAN, qui n'est pas librement
-accessible. Ces chiffres décrivent donc le modèle **sous conditionnement synthétique**
-— c'est-à-dire le régime de déploiement réel, celui où un utilisateur demande « deux
-chambres, cuisine ouverte », et non le régime du benchmark.
+None of them is a graph of the RPLAN test set, which is not freely available. These
+figures therefore describe the model **under synthetic conditioning**, that is, the
+real deployment regime, where a user asks for "two bedrooms, open kitchen", and not the
+benchmark regime.
 
-**Échelle.** Les coordonnées RPLAN sont sans unité. Le facteur est calé pour que l'aire
-médiane générée vaille celle d'un appartement MSD (79,0 m², mesurée sur 1 200
-appartements), afin que les déplacements des jalons 7 et 8 soient comparables. Aucun
-taux de validité n'en dépend : chevauchement et jour sont invariants d'échelle.
+**Scale.** RPLAN coordinates have no unit. The factor is set so that the median
+generated area equals that of an MSD apartment (79.0 m², measured on 1,200
+apartments), so that the displacements of milestones 7 and 8 are comparable. No
+validity rate depends on it: overlap and gap are scale invariant.
 
-740 plans en tout, graine racine 17.
+740 plans in all, root seed 17.
 
-## Ce que le générateur produit
+## What the generator produces
 
-| | étoile | plausible | divers |
+| | etoile | plausible | divers |
 |---|--:|--:|--:|
-| plans valides avant correction | **0 / 320** | **0 / 320** | **0 / 100** |
-| pièces recouvertes par pièce | 0,80 | 1,60 | 1,00 |
-| part de jour dans l'enveloppe | 28,6 % | 24,7 % | 28,7 % |
-| dont trous **intérieurs** | 0,0 % | 0,0 % | 0,0 % |
-| morceaux disjoints de l'union | **4** | **2** | **3** |
-| cellules de la trame implicite | **80** | 64 | 64 |
+| plans valid before correction | **0 / 320** | **0 / 320** | **0 / 100** |
+| rooms overlapped per room | 0.80 | 1.60 | 1.00 |
+| gap share of the envelope | 28.6 % | 24.7 % | 28.7 % |
+| of which **interior** holes | 0.0 % | 0.0 % | 0.0 % |
+| disjoint fragments of the union | **4** | **2** | **3** |
+| cells of the implicit grid | **80** | 64 | 64 |
 
-Le graphe d'accès échange des jours contre des chevauchements — il recolle une partie
-de l'archipel au prix de recouvrements deux fois plus nombreux — mais **aucun des
-740 plans générés n'est valide**, sous aucun des trois conditionnements.
+The access graph trades gaps for overlaps (it glues part of the archipelago back
+together at the price of twice as many overlaps), but **none of the 740 generated plans
+is valid**, under any of the three conditionings.
 
-Les trous strictement intérieurs sont nuls : le « jour » n'est pas un percement, c'est
-de l'espace **entre** des îlots de pièces. C'est ce que confirme le nombre de morceaux.
+Strictly interior holes are zero: the "gap" is not a perforation, it is space
+**between** islands of rooms. The number of fragments confirms it.
 
-Le chiffre décisif est celui des cellules : 64 à 80 cellules de trame pour 6 pièces.
-Dans un plan réel les pièces partagent leurs murs et ce nombre reste petit. Ici presque
-aucune coordonnée ne coïncide — la structure combinatoire dont dépend `geom.pavage`
-n'est pas seulement violée, elle est **absente**.
+The decisive figure is the number of cells: 64 to 80 grid cells for 6 rooms. In a real
+plan the rooms share their walls and this number stays small. Here almost no
+coordinates coincide: the combinatorial structure that `geom.tiling` relies on is not
+merely violated, it is **absent**.
 
-Pour situer : les auteurs de MSD rapportent que leur propre baseline produit des pièces
-qui en recouvrent **4,11 ± 2,25** autres, et que « overall, the floor plans often look
-infeasible ». Le mode de défaillance mesuré ici n'est donc pas un accident de ce
-modèle-là.
+For context: the MSD authors report that their own baseline produces rooms that
+overlap **4.11 ± 2.25** others, and that "overall, the floor plans often look
+infeasible". The failure mode measured here is therefore not an accident of this
+particular model.
 
-## Réparation
+## Repair
 
-Taux de plans **certifiés valides** après correction, intervalles de Wilson à 95 %.
+Rate of plans **certified valid** after correction, 95 % Wilson intervals.
 
-Référentiel `largeur_min = 0,50 m` — voir la section suivante, ce choix est décisif.
+Regulation `min_width = 0.50 m`; see the next section, this choice is decisive.
 
-| mode | budget | étoile (n=320) | plausible (n=320) | divers (n=100) |
+| mode | budget | etoile (n=320) | plausible (n=320) | divers (n=100) |
 |---|--:|--:|--:|--:|
-| `legalize` seul | — | **0,0 %** [0,0–1,2] | **0,0 %** [0,0–1,2] | **0,0 %** [0,0–3,7] |
-| `pavage=True` | 0 | 0,6 % [0,2–2,2] | 0,6 % [0,2–2,2] | 3,0 % [1,0–8,5] |
-| `pavage=True` | 4 | 10,9 % [8,0–14,8] | 10,6 % [7,7–14,5] | 17,0 % [10,9–25,5] |
-| `pavage=True` | 8 | 18,4 % [14,6–23,1] | 16,6 % [12,9–21,0] | 23,0 % [15,8–32,2] |
-| `pavage=True` | 16 | **20,3 %** [16,3–25,1] | **17,8 %** [14,0–22,4] | **23,0 %** [15,8–32,2] |
+| `legalize` alone | — | **0.0 %** [0.0–1.2] | **0.0 %** [0.0–1.2] | **0.0 %** [0.0–3.7] |
+| `tiling=True` | 0 | 0.6 % [0.2–2.2] | 0.6 % [0.2–2.2] | 3.0 % [1.0–8.5] |
+| `tiling=True` | 4 | 10.9 % [8.0–14.8] | 10.6 % [7.7–14.5] | 17.0 % [10.9–25.5] |
+| `tiling=True` | 8 | 18.4 % [14.6–23.1] | 16.6 % [12.9–21.0] | 23.0 % [15.8–32.2] |
+| `tiling=True` | 16 | **20.3 %** [16.3–25.1] | **17.8 %** [14.0–22.4] | **23.0 %** [15.8–32.2] |
 
-Déplacement médian à budget 16 : 43 %, 38 % et 43 % du côté du plan. Médiane de 0,8 à
-3,6 ms par correction dans tous les cas.
+Median displacement at budget 16: 43 %, 38 % and 43 % of the side of the plan. Median
+of 0.8 to 3.6 ms per correction in every case.
 
-**Les trois jeux donnent le même ordre de grandeur** — 20,3 %, 17,8 %, 23,0 % — alors
-qu'ils ne produisent pas les mêmes défauts et que le troisième couvre trois fois plus
-de programmes et quatre topologies. C'est ce qui autorise à lire ces taux comme une
-propriété du couple générateur / légaliseur, et non du conditionnement qu'on lui a
-donné.
+**The three sets give the same order of magnitude** (20.3 %, 17.8 %, 23.0 %) although
+they do not produce the same defects and the third one covers three times as many
+programs and four topologies. This is what allows these rates to be read as a property
+of the generator / legalizer pair, and not of the conditioning it was given.
 
-## Le plancher sur la largeur n'est pas un détail de conformité
+## The floor on the width is not a compliance detail
 
-Sans plancher strictement positif, **le moyen le moins coûteux de fermer un jour est de
-réduire une pièce à zéro**. Le plan sort alors « valide » et certifié — il pave
-exactement son contour — amputé d'une pièce que le tracé ne montre même plus. Compter
-les pièces ne le détecte pas : une pièce écrasée à 0 m reste dans le compte.
+Without a strictly positive floor, **the cheapest way to close a gap is to shrink a
+room to zero**. The plan then comes out "valid" and certified (it exactly tiles its
+outline) minus a room that the drawing no longer even shows. Counting rooms does not
+detect it: a room crushed to 0 m stays in the count.
 
-À budget 16, selon le seuil :
+At budget 16, by threshold:
 
-| `largeur_min` | étoile : valides / **intacts** | plausible | divers | plus petit côté (étoile) |
+| `min_width` | etoile: valid / **intact** | plausible | divers | smallest side (etoile) |
 |--:|--:|--:|--:|--:|
-| **0,00 m** | 60,9 % / **19,1 %** | 59,7 % / **13,8 %** | 59,0 % / **20,0 %** | **0,000 m** |
-| 0,25 m | 20,3 % / 19,1 % | 17,8 % / 13,8 % | 23,0 % / 20,0 % | 1,360 m |
-| **0,50 m** *(nominal)* | 20,3 % / **20,3 %** | 17,8 % / **17,8 %** | 23,0 % / **23,0 %** | 1,360 m |
-| 1,00 m | 20,3 % / 20,3 % | 17,8 % / 17,8 % | 23,0 % / 23,0 % | 1,360 m |
-| 1,80 m *(réglementaire)* | 20,3 % / 20,3 % | 17,8 % / 17,8 % | 22,0 % / 22,0 % | 1,800 m |
+| **0.00 m** | 60.9 % / **19.1 %** | 59.7 % / **13.8 %** | 59.0 % / **20.0 %** | **0.000 m** |
+| 0.25 m | 20.3 % / 19.1 % | 17.8 % / 13.8 % | 23.0 % / 20.0 % | 1.360 m |
+| **0.50 m** *(nominal)* | 20.3 % / **20.3 %** | 17.8 % / **17.8 %** | 23.0 % / **23.0 %** | 1.360 m |
+| 1.00 m | 20.3 % / 20.3 % | 17.8 % / 17.8 % | 23.0 % / 23.0 % | 1.360 m |
+| 1.80 m *(regulatory)* | 20.3 % / 20.3 % | 17.8 % / 17.8 % | 22.0 % / 22.0 % | 1.800 m |
 
-« Intact » = certifié valide **et** aucune pièce sous 50 cm.
+"Intact" = certified valid **and** no room under 50 cm.
 
-Deux lectures s'imposent.
+Two readings follow.
 
-**Le taux est plat de 0,25 m à 1,80 m.** Ce n'est donc pas une affaire de calibrage de
-seuil : c'est binaire. Soit on autorise l'annihilation et on obtient ~60 % de plans dont
-les deux tiers sont mutilés, soit on l'interdit et on obtient ~20 % de plans entiers.
-Exiger la largeur réglementaire de 1,80 m ne coûte rien de plus que d'exiger 25 cm.
+**The rate is flat from 0.25 m to 1.80 m.** So this is not a matter of tuning a
+threshold: it is binary. Either annihilation is allowed and one gets ~60 % of plans, two
+thirds of them mutilated, or it is forbidden and one gets ~20 % of whole plans. Requiring
+the regulatory width of 1.80 m costs nothing more than requiring 25 cm.
 
-**Le jalon 7 avait raison de poser `largeur_min = 0`, le jalon 8 avait tort de le
-recopier.** Sur MSD, un seuil à 1,80 m cassait 52 plans **déjà valides** sur 60 : la
-prudence était fondée. Ici, 0 / 740 plans générés sont valides au départ — le seuil ne
-peut donc rien casser, et son absence ne fait qu'ouvrir une porte de sortie dégénérée
-au solveur.
+**Milestone 7 was right to set `min_width = 0`, milestone 8 was wrong to copy it.** On
+MSD, a 1.80 m threshold broke 52 plans out of 60 that were **already valid**: the caution
+was justified. Here, 0 / 740 generated plans are valid to begin with, so the threshold
+cannot break anything, and its absence only opens a degenerate way out for the solver.
 
-### `legalize` seul répare exactement zéro plan
+### `legalize` alone repairs exactly zero plans
 
-Ce n'est pas une contre-performance, c'est la prédiction de `geom.pavage` vérifiée sur
-données réelles. Les séparations du polytope sont des **inégalités** : un plan troué est
-déjà le point le plus proche de lui-même, l'optimum L1 le laisse tel quel, et la
-vérification exacte le rejette. Là où le jalon 7 laissait 35,9 % de réussite au mode de
-base — parce qu'un plan corrompu couvre encore son contour — une sortie de générateur
-n'en laisse aucune.
+This is not a poor performance, it is the prediction of `geom.tiling` verified on real
+data. The separations of the polytope are **inequalities**: a plan with a gap is already
+the closest point to itself, the L1 optimum leaves it as is, and the exact verification
+rejects it. Where milestone 7 left 35.9 % success to the base mode (because a corrupted
+plan still covers its outline), a generator output leaves none.
 
-### Le budget par défaut est calé sur le mauvais régime
+### The default budget is tuned on the wrong regime
 
-`legalize` figeait `budget_reparation` à 4, valeur ajustée sur des plans corrompus où la
-faute est une cote fausse et se résorbe en un cran. Ici le taux triple entre 4 et 16,
-puis sature. Le paramètre est désormais exposé.
+`legalize` fixed `repair_budget` at 4, a value tuned on corrupted plans where the fault
+is a wrong dimension and is absorbed in one step. Here the rate triples between 4 and
+16, then saturates. The parameter is now exposed.
 
-### Ce qui gouverne le taux : la taille de la trame
+### What governs the rate: the size of the grid
 
-Ce n'est **pas** la connexité — les plans d'un seul tenant ne se réparent pas mieux
-(16,7 % à 1 morceau contre 70,7 % à 4, sur des effectifs déséquilibrés). C'est le nombre
-de pièces, via la taille de la trame :
+It is **not** connectivity: plans in one piece are not repaired better (16.7 % at 1
+fragment against 70.7 % at 4, on unbalanced counts). It is the number of rooms, through
+the size of the grid:
 
-| pièces | étoile | plausible | divers | cellules médianes |
+| rooms | etoile | plausible | divers | median cells |
 |--:|--:|--:|--:|--:|
-| 3 | — | — | 66,7 % | 16 |
-| 4 | 75,0 % | 75,0 % | 68,8 % | 30 |
-| 5 | 77,5 % | 80,0 % | 65,0 % | 48 |
-| 6 | 65,0 % | 60,0 % | 81,2 % | 72 |
-| 7 | 48,3 % | 49,2 % | 50,0 % | 84 |
-| 8 | 47,5 % | 35,0 % | 33,3 % | 118 |
-| 9 | — | — | 25,0 % | 131 |
-| 10 | — | — | *50,0 %* (n=4) | 181 |
+| 3 | — | — | 66.7 % | 16 |
+| 4 | 75.0 % | 75.0 % | 68.8 % | 30 |
+| 5 | 77.5 % | 80.0 % | 65.0 % | 48 |
+| 6 | 65.0 % | 60.0 % | 81.2 % | 72 |
+| 7 | 48.3 % | 49.2 % | 50.0 % | 84 |
+| 8 | 47.5 % | 35.0 % | 33.3 % | 118 |
+| 9 | — | — | 25.0 % | 131 |
+| 10 | — | — | *50.0 %* (n=4) | 181 |
 
-La relation est monotone et s'explique : quand aucun bord ne coïncide, la trame enfle en
-\\((2n-1)^2\\), alors que la réparation bornée ne corrige qu'un nombre borné de cellules.
+The relation is monotone and has an explanation: when no edges coincide, the grid swells
+as \\((2n-1)^2\\), whereas the bounded repair only fixes a bounded number of cells.
 
-Le catalogue *divers* étend la courbe aux deux bouts — le studio à trois pièces monte à
-66,7 %, le neuf-pièces tombe à 25 %. La case à dix pièces ne compte que quatre plans :
-elle est affichée pour ne rien cacher, pas pour être lue.
+The *divers* catalogue extends the curve at both ends: the three-room studio rises to
+66.7 %, the nine-room plan falls to 25 %. The ten-room cell holds only four plans: it is
+shown so as to hide nothing, not to be read.
 
-### La topologie du graphe pèse aussi, mais ce n'est pas encore établi
+### The graph topology matters too, but this is not yet established
 
-Sur le seul jeu où les quatre topologies coexistent :
+On the only set where the four topologies coexist:
 
-| topologie | n | réparés | IC 95 % | recouvr. méd. | morceaux méd. |
+| topology | n | repaired | 95 % CI | median overlap | median fragments |
 |---|--:|--:|:--:|--:|--:|
-| `plausible` | 24 | 75,0 % | [55,1–88,0] | 0,93 | 3 |
-| `etoile` | 28 | 64,3 % | [45,8–79,3] | 0,93 | 4 |
-| `anneau` | 24 | 54,2 % | [35,1–72,1] | 1,00 | 3 |
-| `chaine` | 24 | 41,7 % | [24,5–61,2] | **1,42** | 2 |
+| `plausible` | 24 | 75.0 % | [55.1–88.0] | 0.93 | 3 |
+| `etoile` | 28 | 64.3 % | [45.8–79.3] | 0.93 | 4 |
+| `anneau` | 24 | 54.2 % | [35.1–72.1] | 1.00 | 3 |
+| `chaine` | 24 | 41.7 % | [24.5–61.2] | **1.42** | 2 |
 
-L'ordre suit le nombre d'arêtes du graphe, et le mécanisme est clair : seules les pièces
-reliées s'attirent de l'attention, donc plus le graphe est pauvre, plus les pièces se
-superposent — la chaîne, qui a le minimum d'arêtes, a bien le pire taux de recouvrement
-(1,42 contre 0,93).
+The order follows the number of edges of the graph, and the mechanism is clear: only
+connected rooms attract each other's attention, so the poorer the graph, the more the
+rooms overlap; the chain, which has the fewest edges, does have the worst overlap rate
+(1.42 against 0.93).
 
-**Ce n'est pas concluant** : à n = 24 par cellule, les intervalles de `chaine` et
-`plausible` se frôlent sans se séparer nettement. Ce n'est en revanche pas un effet de
-taille : `chaine` porte les programmes les **plus petits** (5,67 pièces en moyenne
-contre 6,17 pour `anneau`) et obtient le **pire** taux.
+**This is not conclusive**: at n = 24 per cell, the intervals of `chaine` and
+`plausible` nearly touch without clearly separating. It is however not a size effect:
+`chaine` carries the **smallest** programs (5.67 rooms on average against 6.17 for
+`anneau`) and gets the **worst** rate.
 
-### Les échecs restants sont nommés, et 13 sont prouvés
+### The remaining failures are named, and 13 are proven
 
-À budget 16, il reste 112 à 116 refus de trame — la réparation bornée n'y suffit pas —
-et **13 infaisabilités certifiées**. Ce ne sont pas des plantages : le certificat de
-Farkas est un vecteur creux de 2 à 3 composantes non nulles sur 45, et les origines
-nomment le conflit minimal, par exemple `separation horizontale p000|p003 ; contour
-droit p000`. À grand budget, la trame réparée finit par contredire les séparations
-issues de `deduire_ordre` — ce qui explique aussi la saturation observée.
+At budget 16, 112 to 116 grid refusals remain (the bounded repair is not enough) and
+**13 certified infeasibilities**. These are not crashes: the Farkas certificate is a
+sparse vector with 2 to 3 non-zero components out of 45, and the origins name the
+minimal conflict, for example `separation horizontale p000|p003 ; contour
+droit p000`. At a large budget, the repaired grid ends up contradicting the
+separations derived from `deduce_order`, which also explains the observed saturation.
 
-## Ce que ce jalon établit, et ce qu'il ne prétend pas
+## What this milestone establishes, and what it does not claim
 
-Il établit que la contrainte de pavage est **nécessaire** : sur 740 plans générés sous
-trois conditionnements, **aucun** n'est récupérable sans elle, environ un sur cinq l'est
-avec. L'écart n'est pas un effet de réglage.
+It establishes that the tiling constraint is **necessary**: out of 740 plans generated
+under three conditionings, **none** is recoverable without it, about one in five is
+with it. The gap is not a tuning effect.
 
-Il établit aussi qu'elle n'est **pas suffisante**, et de deux façons.
+It also establishes that it is **not sufficient**, in two ways.
 
-D'abord, le déplacement médian atteint 38 à 43 % du côté du plan : ce qui sort est un
-plan valide *au voisinage* du plan généré, pas le plan généré corrigé. Quand l'entrée
-est aussi loin de tout pavage exact, « le plan valide le plus proche » n'est pas proche
-— la projection L1 fait son travail, c'est l'entrée qui est pathologique. Le point de
-comparaison est le budget 0, où les rares plans déjà presque cohérents ne se déplacent
-que de 18 %.
+First, the median displacement reaches 38 to 43 % of the side of the plan: what comes
+out is a valid plan *in the neighbourhood* of the generated plan, not the generated plan
+corrected. When the input is this far from any exact tiling, "the closest valid plan" is
+not close; the L1 projection does its job, it is the input that is pathological. The
+point of comparison is budget 0, where the rare plans that are already almost consistent
+move by only 18 %.
 
-Ensuite, **quatre plans sur cinq ne sont pas réparables du tout** en préservant le
-programme. Le chiffre de ~60 % qu'on obtient sans plancher sur la largeur n'en est pas
-un : il compte comme succès des plans amputés d'une pièce.
+Second, **four plans out of five cannot be repaired at all** while preserving the
+program. The ~60 % figure obtained without a floor on the width is not one: it counts as
+successes plans that lost a room.
 
-La conclusion utile n'est donc pas « on répare 61 % », ni même « on répare 20 % », mais :
-**la légalisation a posteriori ne remplace pas un générateur qui respecte la condition
-de pavage**. Elle garantit la validité et la prouve ; elle ne garantit ni la
-ressemblance ni la survie du programme, et il faut le lui demander explicitement. La
-contrainte a sa place *dans* le générateur — ce que ce dépôt permet de chiffrer, pas ce
-qu'il fournit.
+The useful conclusion is therefore not "61 % are repaired", nor even "20 % are
+repaired", but: **after-the-fact legalization does not replace a generator that respects
+the tiling condition**. It guarantees validity and proves it; it guarantees neither
+resemblance nor the survival of the program, and it has to be asked for them explicitly.
+The constraint belongs *inside* the generator: something this repository makes it
+possible to quantify, not something it provides.
 
-Cela confirme le jalon 7 comme table principale : c'est lui qui isole la capacité de
-réparation dans le régime où réparer a un sens, avec une faute connue et attribuable.
+This confirms milestone 7 as the main table: it is the one that isolates the repair
+capacity in the regime where repairing makes sense, with a known, attributable fault.
 
-## Reproduire
+## Reproduce
 
-L'échantillonnage vit **hors du dépôt** : HouseDiffusion est sous GPL v3 et interdit
-d'usage commercial, archlux est sous Apache-2.0 et ne l'importe pas. La frontière entre
-les deux est le fichier JSONL.
+Sampling lives **outside the repository**: HouseDiffusion is under GPL v3 and forbids
+commercial use, archlux is under Apache-2.0 and does not import it. The boundary
+between the two is the JSONL file.
 
 ```bash
-# etage 1, hors depot (GPL)
+# stage 1, outside the repository (GPL)
 python vendor/j8_generer.py plans.jsonl --n 40 --pas 1000 --graphe plausible
 python vendor/j8_generer.py divers.jsonl --n 4  --pas 1000 --catalogue divers
 
-# etage 2, dans le depot (Apache-2.0) : tables, puis fiches avant/apres
+# stage 2, in the repository (Apache-2.0): tables, then before/after sheets
 python experiments/j8_generation.py plans.jsonl 999 plausible
 python experiments/j8_visuals.py    plans.jsonl plausible 8
 ```
 
-Le lot d'echantillonnage est **heterogene** — un programme par element — parce que le
-cout est domine par les 1000 pas sequentiels et non par la taille du lot : tout le
-catalogue *divers* tient en un passage de quatre minutes plutot que vingt-cinq de
-trois.
+The sampling batch is **heterogeneous** (one program per element) because the cost is
+dominated by the 1000 sequential steps and not by the batch size: the whole *divers*
+catalogue fits in one four-minute pass rather than twenty-five passes of three.

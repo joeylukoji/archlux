@@ -1,4 +1,4 @@
-plan_id,mode,amplitude_m,pavage,n_pieces,valide_avant,valide_apres,deplacement_max_m,temps_ms,statut,seed
+plan_id,fault,amplitude_m,pavage,n_rooms,valid_before,valid_after,max_displacement_m,time_ms,status,seed
 3c3b1d6ca8b4b9092480b8c75f9eaa81,deplacer,0.1,False,8,False,True,0.100000,8.824,ok,3931919789
 3c3b1d6ca8b4b9092480b8c75f9eaa81,deplacer,0.1,True,8,False,True,0.100000,4.682,ok,3931919789
 3c3b1d6ca8b4b9092480b8c75f9eaa81,deplacer,0.25,False,8,False,False,,5.201,invariant_viole,3998781761

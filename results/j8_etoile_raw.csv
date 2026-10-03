@@ -1,4 +1,4 @@
-plan_id,programme,graphe,n_pieces,mode,budget,largeur_min,valide_avant,valide_apres,n_pieces_apres,cote_min_apres,intact,cellules,recouvrements_avant,part_jour_avant,part_trou_avant,morceaux_avant,cote_m,deplacement_max_m,deplacement_relatif,temps_ms,statut
+plan_id,program,graph,n_rooms,mode,budget,min_width,valid_before,valid_after,n_rooms_after,min_side_after,intact,cells,overlaps_before,gap_share_before,hole_share_before,fragments_before,size_m,max_displacement_m,relative_displacement,time_ms,status
 hd00_000,living+kitchen+bedroom+bathroom,etoile,4,base,,0.50,False,False,,,,30,0.500,0.1759,0.0000,3,10.932,,,7.277,invariant_viole
 hd00_000,living+kitchen+bedroom+bathroom,etoile,4,pavage,0,0.50,False,False,,,,30,0.500,0.1759,0.0000,3,10.932,,,1.090,trame
 hd00_000,living+kitchen+bedroom+bathroom,etoile,4,pavage,4,0.50,False,False,,,,30,0.500,0.1759,0.0000,3,10.932,,,3.694,infaisable

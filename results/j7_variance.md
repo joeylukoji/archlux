@@ -1,42 +1,42 @@
-# Jalon 7 — ou est la variance de l'irradiance ?
+# Milestone 7: where is the variance of the irradiance?
 
-Corpus Swiss Dwellings v3.0.0, 367 466 pieces, cible `sun_201803211200_mean`.
-Variance totale 17,89.
+Swiss Dwellings v3.0.0 corpus, 367,466 rooms, target `sun_201803211200_mean`.
+Total variance 17.89.
 
-| effet fixe | groupes | R2 |
+| fixed effect | groups | R2 |
 |---|--:|--:|
-| identite du batiment | 3 171 | **0,026** |
-| batiment x etage | 13 688 | 0,068 |
-| identite de l appartement | 44 888 | **0,077** |
-| numero d etage seul | — | 0,004 |
+| building identity | 3,171 | **0.026** |
+| building x floor | 13,688 | 0.068 |
+| apartment identity | 44,888 | **0.077** |
+| floor number alone | — | 0.004 |
 
-## Lecture
+## Reading
 
-**92 % de la variance est intra-appartement**, c'est-a-dire entre pieces. L'identite
-du batiment — qui porte le masque urbain, le climat et la position solaire — n'explique
-que **2,6 %**.
+**92 % of the variance lies within apartments**, that is, between rooms. The identity of
+the building, which carries the urban mask, the climate and the sun position, explains
+only **2.6 %**.
 
-Deux consequences, et la seconde est structurelle.
+Two consequences, and the second one is structural.
 
-**Le masque urbain n'est pas le facteur manquant.** L'hypothese etait naturelle et elle
-est fausse : un effet de batiment plafonne a 2,6 %. Les normales climatiques le
-confirment par un autre chemin — `climate_snorm_year` correle a r = -0,06 avec la
-cible, `climate_snorm_march` a r = +0,05. `sun_*` est un lancer de rayons geometrique
-a position solaire donnee, pas une grandeur meteo.
+**The urban mask is not the missing factor.** The hypothesis was natural and it is
+wrong: a building effect caps at 2.6 %. The climate normals confirm it another way:
+`climate_snorm_year` correlates at r = -0.06 with the target, `climate_snorm_march` at
+r = +0.05. `sun_*` is a geometric ray tracing for a given sun position, not a weather
+quantity.
 
-**Agreger par appartement detruit le signal.** Le protocole `Substitut` rend **un
-scalaire par plan** ; l'eclairement est une grandeur **par piece**. Predire une moyenne
-d'appartement revient a predire une quantite dont la variance ne represente que 7,7 %
-de celle du phenomene, le reste etant lisse par l'agregation. C'est ce qui explique les
-`R2 ~ 0` de `j7_sd_labels.md` bien plus que la pauvrete des entrees.
+**Aggregating by apartment destroys the signal.** The `Surrogate` protocol returns **one
+scalar per plan**; daylight is a **per-room** quantity. Predicting an apartment mean
+amounts to predicting a quantity whose variance is only 7.7 % of that of the phenomenon,
+the rest being smoothed out by the aggregation. This explains the `R2 ~ 0` of
+`j7_sd_labels.md` far more than the poverty of the inputs.
 
-## Ce que cela implique
+## What it implies
 
-La granularite du protocole est en cause, pas seulement son vocabulaire. Un substitut
-utile rendrait un **vecteur** — une valeur par piece — et Frank-Wolfe optimiserait une
-scalarisation explicite de ces valeurs (moyenne ponderee, minimum, part au-dessus d'un
-seuil). C'est aussi ce qui rendrait un indicateur de type sDA representable : il se
-definit par piece, pas par logement.
+The granularity of the protocol is at stake, not only its vocabulary. A useful surrogate
+would return a **vector** (one value per room) and Frank-Wolfe would optimize an explicit
+scalarization of those values (weighted mean, minimum, share above a threshold). This is
+also what would make an sDA-type indicator representable: it is defined per room, not
+per dwelling.
 
-C'est un changement de contrat plus profond que l'ajout des `Baies`, et il touche
-`solve` autant que `light`.
+It is a deeper contract change than adding `Glazing`, and it touches `solve` as much as
+`light`.

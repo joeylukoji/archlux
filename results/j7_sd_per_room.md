@@ -1,51 +1,51 @@
-# Jalon 7 — prediction par piece contre simulations reelles
+# Milestone 7: per-room prediction against real simulations
 
-Cible `sun_201803211200_mean` (Swiss Dwellings v3.0.0). Corpus MSD joint aux
-simulations, granularite **piece**.
+Target `sun_201803211200_mean` (Swiss Dwellings v3.0.0). MSD corpus joined to the
+simulations, **room** granularity.
 
-## A. Correlations sur l'ensemble apparie (4 239 pieces)
+## A. Correlations on the matched set (4,239 rooms)
 
-| predicteur | Pearson | Spearman |
+| predictor | Pearson | Spearman |
 |---|--:|--:|
-| **aire au sol seule** | **+0,387** | **+0,590** |
-| analytique par piece (extensive) | +0,151 | +0,403 |
-| analytique / aire (intensive) | +0,076 | **+0,085** |
-| 1 / aire | -0,318 | -0,590 |
+| **floor area alone** | **+0.387** | **+0.590** |
+| analytic per room (extensive) | +0.151 | +0.403 |
+| analytic / area (intensive) | +0.076 | **+0.085** |
+| 1 / area | -0.318 | -0.590 |
 
-## B. Generalisation, decoupage **par site** (test 2 346 pieces)
+## B. Generalization, split **by site** (test 2,346 rooms)
 
-| modele | MAE | MAE relative | R2 | Spearman |
+| model | MAE | relative MAE | R2 | Spearman |
 |---|--:|--:|--:|--:|
-| constante (moyenne du train) | 0,448 | 91,5 % | -0,000 | — |
-| **aire au sol seule** | **0,403** | 82,3 % | **+0,150** | **+0,572** |
-| analytique par piece | 0,448 | 91,5 % | -0,000 | **-0,342** |
+| constant (train mean) | 0.448 | 91.5 % | -0.000 | — |
+| **floor area alone** | **0.403** | 82.3 % | **+0.150** | **+0.572** |
+| analytic per room | 0.448 | 91.5 % | -0.000 | **-0.342** |
 
-Conforme a alpha = 0,10 sur l'analytique : couverture **88,5 %** pour 90 % vises,
-largeur 1,554, n_calibration 2 708.
+Conformal at alpha = 0.10 on the analytic surrogate: coverage **88.5 %** for a 90 %
+target, width 1.554, n_calibration 2,708.
 
-## Lecture
+## Reading
 
-**Le substitut analytique ne predit que la taille des pieces.** Normalise par l'aire,
-son rang tombe a `rho = +0,085` : il ne reste presque rien. Tout son pouvoir predictif
-vient de ce qu'il croit avec la surface, pas de sa physique — ni la regle de profondeur
-CIBSE, ni la table a huit secteurs n'apportent de signal.
+**The analytic surrogate predicts only the size of the rooms.** Normalized by area, its
+rank drops to `rho = +0.085`: almost nothing is left. All its predictive power comes from
+growing with the area, not from its physics: neither the CIBSE depth rule nor the
+eight-sector table brings any signal.
 
-**L'aire au sol seule le bat.** `rho = +0,590` contre `+0,403`, et `R2 = +0,150` contre
-`-0,000` en generalisation. Une variable triviale, disponible sans aucun modele, predit
-mieux que le substitut du depot.
+**Floor area alone beats it.** `rho = +0.590` against `+0.403`, and `R2 = +0.150` against
+`-0.000` in generalization. A trivial variable, available without any model, predicts
+better than the surrogate of the repository.
 
-**Le peu de signal ne survit pas au changement de site.** Sur l'ensemble apparie
-l'analytique correle positivement (`rho = +0,403`) ; sur des sites **disjoints** de
-l'entrainement, le rang s'inverse (`rho = -0,342`). C'est exactement ce que le
-decoupage par site sert a reveler, et ce qu'un decoupage par appartement aurait cache.
+**What little signal there is does not survive a change of site.** On the matched set
+the analytic surrogate correlates positively (`rho = +0.403`); on sites **disjoint** from
+training, the rank reverses (`rho = -0.342`). This is exactly what the split by site is
+meant to reveal, and what a split by apartment would have hidden.
 
-**La couverture conforme flechit legerement** — 88,5 % pour 90 % vises. Le theoreme
-suppose l'echangeabilite ; des sites disjoints ne le sont pas. L'ecart est faible et va
-dans le sens attendu : c'est une illustration mesuree de la limite documentee dans
-`limites.md`, pas un defaut d'implementation.
+**The conformal coverage dips slightly**: 88.5 % for a 90 % target. The theorem assumes
+exchangeability; disjoint sites are not exchangeable. The gap is small and goes in the
+expected direction: it is a measured illustration of the limit documented in
+`limitations.md`, not an implementation defect.
 
-## Portee
+## Scope
 
-Une colonne sur 126, 2 000 appartements parcourus, une irradiance a instant fixe qui
-n'est pas un sDA. Ces chiffres disent ce que vaut **ce** substitut sur **cette** cible,
-pas ce que vaudrait un modele entraine sur les baies et l'environnement.
+One column out of 126, 2,000 apartments read, an irradiance at a fixed instant that is
+not an sDA. These figures say what **this** surrogate is worth on **this** target, not
+what a model trained on the glazing and the surroundings would be worth.

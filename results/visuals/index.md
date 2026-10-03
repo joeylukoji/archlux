@@ -1,62 +1,61 @@
-# Comparaisons avant / après — jalon 8
+# Before / after comparisons: milestone 8
 
-Ce dossier existe parce qu'un taux ne dit pas à quoi ressemble une réparation. Les
-deux chiffres du jalon 8 — **plans rendus valides** et **déplacement médian de 43 % du
-côté du plan** — sont tous les deux justes et laissent croire à des choses opposées.
-Ici on regarde.
+This folder exists because a rate does not say what a repair looks like. The two
+figures of milestone 8, **plans made valid** and **median displacement of 43 % of the
+side of the plan**, are both correct and suggest opposite things. Here we look.
 
-> **Ce dossier a déjà servi.** C'est en regardant ces fiches qu'on a vu des pièces
-> réduites à une épaisseur nulle par la correction — un plan « réparé », certifié
-> valide, amputé d'une pièce. Aucune table ne le montrait : le compte de pièces restait
-> juste. Le référentiel pose désormais `largeur_min = 0,50 m`, et le taux de réparation
-> annoncé est passé de ~60 % à ~20 %. Voir
-> [`../j8_generation.md`](../j8_generation.md), section sur le plancher de largeur.
+> **This folder has already served.** Looking at these sheets is how rooms shrunk to
+> zero thickness by the correction were spotted: a "repaired" plan, certified valid,
+> minus a room. No table showed it: the room count stayed right. The regulation now
+> sets `min_width = 0.50 m`, and the announced repair rate went from ~60 % to ~20 %. See
+> [`../j8_generation.md`](../j8_generation.md), section on the width floor.
 
-## Comment lire une fiche
+## How to read a sheet
 
-Chaque plan a deux fichiers dans le sous-dossier de son **issue** :
+Each plan has two files in the sub-folder of its **outcome**:
 
-- `<plan>.svg` — les deux états **à la même échelle**. Une échelle par panneau
-  donnerait à un plan rétréci l'air d'un plan intact ; c'est interdit par
-  construction dans `export.svg.comparer`.
-- `<plan>.md` — les métriques : diagnostic géométrique avant
-  (`geom.diagnostic`), violations relevées par la vérification exacte
-  (`certify.preuve`), puis verdict et déplacement après correction.
+- `<plan>.svg`: both states **at the same scale**. One scale per panel would give a
+  shrunk plan the look of an intact one; `export.svg.compare` forbids it by
+  construction.
+- `<plan>.md`: the metrics: geometric diagnostic before (`geom.diagnostic`),
+  violations found by the exact verification (`certify.proof`), then verdict and
+  displacement after correction.
 
-Conventions du tracé :
+Drawing conventions:
 
-| élément | lecture |
+| element | reading |
 |---|---|
-| tirets rouges | le **contour visé**, tracé même si aucune pièce ne l'atteint |
-| aplats semi-transparents | les pièces — un **chevauchement** se voit comme une zone plus dense |
-| fond clair à l'intérieur des tirets | un **jour** : de la surface non couverte |
-| un seul panneau | aucun plan n'a été produit ; redessiner l'entrée à droite se lirait « rien n'a changé » |
+| red dashes | the **target outline**, drawn even if no room reaches it |
+| semi-transparent fills | the rooms: an **overlap** shows as a denser area |
+| light background inside the dashes | a **gap**: uncovered area |
+| a single panel | no plan was produced; redrawing the input on the right would read as "nothing changed" |
 
-## Les trois issues
+## The three outcomes
 
-Huit plans par issue et par conditionnement, **échecs compris** : un dossier qui ne
-montrerait que ce qui marche ne servirait à rien.
+Eight plans per outcome and per conditioning, **failures included**: a folder that
+showed only what works would be useless.
 
-| issue | ce que ça veut dire |
+| outcome | what it means |
 |---|---|
-| `réparé` | plan certifié valide — regarder le déplacement avant de conclure |
-| `trame irrécupérable` | la réparation bornée ne rend pas la partition cohérente ; `deduire_trame` refuse et nomme les cellules fautives |
-| `infaisable (prouvé)` | le système est **prouvé** sans solution, certificat de Farkas à l'appui — 2 à 3 contraintes en conflit sur 45 |
+| `repaired` | plan certified valid: look at the displacement before concluding |
+| `unrecoverable grid` | the bounded repair does not make the partition consistent; `deduce_grid` refuses and names the faulty cells |
+| `proven infeasible` | the system is **proven** to have no solution, with a Farkas certificate: 2 to 3 conflicting constraints out of 45 |
 
-## Les trois jeux
+## The three sets
 
-HouseDiffusion lit un graphe d'accès dont dérive son `door_mask` : ni le programme ni
-la topologie ne sont neutres, et mesurer sur un seul choix ne prouverait rien.
+HouseDiffusion reads an access graph from which its `door_mask` derives: neither the
+program nor the topology is neutral, and measuring on a single choice would prove
+nothing.
 
-| jeu | plans | programmes | topologies |
+| set | plans | programs | topologies |
 |---|--:|---|---|
-| [`etoile/`](etoile/index.md) | 320 | 8 programmes, 4 à 8 pièces | étoile — tout se rattache au séjour, le conditionnement repris tel quel de `A-AI/services/ai/app/housediff.py` |
-| [`plausible/`](plausible/index.md) | 320 | les mêmes 8 | dégagement distributeur s'il existe, cuisine et salle à manger attenantes au séjour |
-| [`divers/`](divers/index.md) | 100 | **25 programmes, 3 à 10 pièces** — studio, sans séjour, bureau, rangements, plusieurs bains | **les 4** : étoile, plausible, chaîne, anneau, en tourniquet |
+| [`etoile/`](etoile/index.md) | 320 | 8 programs, 4 to 8 rooms | star: everything attaches to the living room, the conditioning taken as is from `A-AI/services/ai/app/housediff.py` |
+| [`plausible/`](plausible/index.md) | 320 | the same 8 | distribution corridor if there is one, kitchen and dining room next to the living room |
+| [`divers/`](divers/index.md) | 100 | **25 programs, 3 to 10 rooms**: studio, no living room, study, storage, several bathrooms | **all 4**: star, plausible, chain, ring, in rotation |
 
-Les 100 fiches de `divers/` y sont **toutes**, pas un échantillon : 23 réparés,
-38 trames irrécupérables, 39 infaisabilités prouvées.
+The 100 sheets of `divers/` are **all** there, not a sample: 23 repaired,
+38 unrecoverable grids, 39 proven infeasibilities.
 
-Les trois jeux donnent le même ordre de grandeur — 20,3 %, 17,8 %, 23,0 % — à défauts
-pourtant différents : l'étoile fragmente, la chaîne fait se chevaucher. Voir
-[`../j8_generation.md`](../j8_generation.md) pour les tables et le protocole.
+The three sets give the same order of magnitude (20.3 %, 17.8 %, 23.0 %) with different
+defects: the star fragments, the chain overlaps. See
+[`../j8_generation.md`](../j8_generation.md) for the tables and the protocol.

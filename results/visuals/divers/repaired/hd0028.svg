@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="772" height="380" viewBox="0 0 772 380">
   <rect width="772" height="380" fill="#f7f6f3"/>
   <rect x="1.0" y="1" width="378.0" height="378.0" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
-  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">avant — 5 pièces, jour 46%, 3 morceaux</text>
+  <text x="28.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">before — 5 rooms, gap 46%, 3 fragments</text>
   <polygon points="28.00,352.00 243.40,352.00 243.40,28.00 28.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
   <rect x="28.00" y="172.80" width="157.47" height="179.20" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
   <text x="106.74" y="262.40" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
@@ -14,7 +14,7 @@
   <rect x="129.36" y="158.32" width="34.39" height="12.67" fill="#d5dfe6" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
   <text x="146.56" y="164.66" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">bathroom</text>
   <rect x="393.0" y="1" width="378.0" height="378.0" fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>
-  <text x="420.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">après — réparé, déplacement 7.41 m</text>
+  <text x="420.0" y="18" font-family="system-ui,sans-serif" font-size="13" font-weight="600" fill="#333">after — repaired, displacement 7.41 m</text>
   <polygon points="420.00,352.00 635.40,352.00 635.40,28.00 420.00,28.00" fill="none" stroke="#b04a4a" stroke-width="1.4" stroke-dasharray="6 4"/>
   <rect x="420.00" y="176.42" width="159.28" height="175.58" fill="#c8d9ec" fill-opacity="0.55" stroke="#4a4a4a" stroke-width="1"/>
   <text x="499.64" y="264.21" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">living</text>
