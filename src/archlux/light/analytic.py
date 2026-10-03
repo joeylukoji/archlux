@@ -29,7 +29,7 @@ from archlux.types import Indicator, Orientation, indicator_sign
 __all__ = ["FACTEURS_SECTEUR", "AnalyticSurrogate", "sector_factor"]
 
 _EPS = 1e-12
-_N_CHAMPS = 4
+_N_FIELDS = 4
 """Même contrat que ``geom.polytope.FIELDS`` : ``(x, y, w, h)`` par pièce. Dupliqué
 ici pour que ``light`` n'importe pas ``geom``.
 """
@@ -72,8 +72,8 @@ def sector_factor(orientation: Orientation) -> float:
         Un element de :data:`FACTEURS_SECTEUR`, dans ``[0.45, 1.00]``.
     """
     features = encode_orientation(orientation, harmoniques=1)
-    azimut = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
-    return FACTEURS_SECTEUR[int(sector(azimut, 8))]
+    azimuth = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
+    return FACTEURS_SECTEUR[int(sector(azimuth, 8))]
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,7 +129,7 @@ class AnalyticSurrogate:
           après passage par :mod:`archlux.uq.conformal`.
         """
         del glazing
-        return float(self._score_et_gradient(x, orientation, avec_gradient=False)[0])
+        return float(self._score_and_gradient(x, orientation, with_gradient=False)[0])
 
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
@@ -143,7 +143,7 @@ class AnalyticSurrogate:
         symbolique donne l'égalité stricte avec ``∂ evaluer / ∂ x``.
         """
         del glazing
-        return self._score_et_gradient(x, orientation, avec_gradient=True)[1]
+        return self._score_and_gradient(x, orientation, with_gradient=True)[1]
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
@@ -166,89 +166,89 @@ class AnalyticSurrogate:
 
     def _parts(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
         """Score positif de chaque pièce, sans le signe de l'indicateur."""
-        vecteur = np.asarray(x, dtype=float).ravel()
-        n_pieces = vecteur.size // _N_CHAMPS
+        vector = np.asarray(x, dtype=float).ravel()
+        n_pieces = vector.size // _N_FIELDS
         features = encode_orientation(orientation, harmoniques=1)
         cos_t, sin_t = float(features[0]), float(features[1])
         cos2, sin2 = cos_t * cos_t, sin_t * sin_t
-        profondeur_utile = (
-            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._facteur_orientation(orientation)
+        useful_depth = (
+            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._orientation_factor(orientation)
         )
         parts = np.zeros(n_pieces, dtype=float)
         for i in range(n_pieces):
-            base = i * _N_CHAMPS
-            pos_x, pos_y = float(vecteur[base]), float(vecteur[base + 1])
-            largeur = max(float(vecteur[base + 2]), _EPS)
-            hauteur = max(float(vecteur[base + 3]), _EPS)
-            facade_sud = largeur * cos2 + hauteur * sin2
-            profondeur = largeur * sin2 + hauteur * cos2
-            penetration = min(profondeur, profondeur_utile)
+            base = i * _N_FIELDS
+            pos_x, pos_y = float(vector[base]), float(vector[base + 1])
+            largeur = max(float(vector[base + 2]), _EPS)
+            height = max(float(vector[base + 3]), _EPS)
+            south_facade = largeur * cos2 + height * sin2
+            depth = largeur * sin2 + height * cos2
+            penetration = min(depth, useful_depth)
             sudness = -pos_x * sin_t - pos_y * cos_t
-            parts[i] = facade_sud * penetration * math.exp(self.KAPPA_SUD * sudness)
+            parts[i] = south_facade * penetration * math.exp(self.KAPPA_SUD * sudness)
         return parts
 
-    def _facteur_orientation(self, orientation: Orientation) -> float:
+    def _orientation_factor(self, orientation: Orientation) -> float:
         """Table à 8 secteurs. Délègue à :func:`sector_factor`, sans état."""
         return sector_factor(orientation)
 
-    def _score_et_gradient(
-        self, x: np.ndarray, orientation: Orientation, *, avec_gradient: bool
+    def _score_and_gradient(
+        self, x: np.ndarray, orientation: Orientation, *, with_gradient: bool
     ) -> tuple[float, np.ndarray]:
         """Score scalaire et, si demandé, ∇x du même scalaire."""
-        vecteur = np.asarray(x, dtype=float).ravel()
-        n_pieces = vecteur.size // _N_CHAMPS
-        gradient = np.zeros_like(vecteur, dtype=float)
+        vector = np.asarray(x, dtype=float).ravel()
+        n_pieces = vector.size // _N_FIELDS
+        gradient = np.zeros_like(vector, dtype=float)
 
         features = encode_orientation(orientation, harmoniques=1)
         cos_t = float(features[0])
         sin_t = float(features[1])
         cos2 = cos_t * cos_t
         sin2 = sin_t * sin_t
-        profondeur_utile = (
-            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._facteur_orientation(orientation)
+        useful_depth = (
+            self.FACTEUR_PROFONDEUR * self.HAUTEUR_LINTEAU * self._orientation_factor(orientation)
         )
 
         total = 0.0
         for i in range(n_pieces):
-            base = i * _N_CHAMPS
-            pos_x, pos_y = float(vecteur[base]), float(vecteur[base + 1])
-            largeur, hauteur = float(vecteur[base + 2]), float(vecteur[base + 3])
+            base = i * _N_FIELDS
+            pos_x, pos_y = float(vector[base]), float(vector[base + 1])
+            largeur, height = float(vector[base + 2]), float(vector[base + 3])
             largeur = max(largeur, _EPS)
-            hauteur = max(hauteur, _EPS)
+            height = max(height, _EPS)
 
-            facade_sud = largeur * cos2 + hauteur * sin2
-            profondeur = largeur * sin2 + hauteur * cos2
+            south_facade = largeur * cos2 + height * sin2
+            depth = largeur * sin2 + height * cos2
             # min(profondeur, profondeur_utile) : la penetration est continue mais
             # **non differentiable** en profondeur == profondeur_utile. La convention
             # retenue est la derivee a GAUCHE (d_pen_d_p = 1) ; a droite elle vaut 0.
             # Au coude exact, aucune difference finie centree ne peut retrouver la
             # valeur declaree : valider_gradient y verifie des signes, pas une egalite.
-            if profondeur <= profondeur_utile:
-                penetration = profondeur
+            if depth <= useful_depth:
+                penetration = depth
                 d_pen_d_p = 1.0
             else:
-                penetration = profondeur_utile
+                penetration = useful_depth
                 d_pen_d_p = 0.0
-            utile = facade_sud * penetration
+            useful = south_facade * penetration
 
             sudness = -pos_x * sin_t - pos_y * cos_t
-            poids_sud = math.exp(self.KAPPA_SUD * sudness)
-            score = utile * poids_sud
+            south_weight = math.exp(self.KAPPA_SUD * sudness)
+            score = useful * south_weight
             total += score
 
-            if not avec_gradient:
+            if not with_gradient:
                 continue
 
             d_u_d_l = penetration
-            d_u_d_p = facade_sud * d_pen_d_p
+            d_u_d_p = south_facade * d_pen_d_p
             du_dw = d_u_d_l * cos2 + d_u_d_p * sin2
             du_dh = d_u_d_l * sin2 + d_u_d_p * cos2
 
             kappa = self.KAPPA_SUD
             gradient[base] = score * kappa * (-sin_t)
             gradient[base + 1] = score * kappa * (-cos_t)
-            gradient[base + 2] = du_dw * poids_sud
-            gradient[base + 3] = du_dh * poids_sud
+            gradient[base + 2] = du_dw * south_weight
+            gradient[base + 3] = du_dh * south_weight
 
         sign = indicator_sign(self.indicateur_vise)
         return total * sign, gradient * sign

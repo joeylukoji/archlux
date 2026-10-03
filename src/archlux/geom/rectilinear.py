@@ -88,7 +88,7 @@ class RectilinearRoom:
     merges: tuple[tuple[int, int, str], ...]
 
 
-def _coords_ouverts(poly: Polygon) -> list[tuple[float, float]]:
+def _open_coords(poly: Polygon) -> list[tuple[float, float]]:
     """Vertices of the exterior ring, without repeating the first point."""
     coords = list(poly.exterior.coords)
     if len(coords) >= 2 and coords[0] == coords[-1]:
@@ -98,7 +98,7 @@ def _coords_ouverts(poly: Polygon) -> list[tuple[float, float]]:
 
 def _is_rectilinear(poly: Polygon) -> bool:
     """Say whether every edge is parallel to an axis."""
-    coords = _coords_ouverts(poly)
+    coords = _open_coords(poly)
     if len(coords) < 4:
         return False
     for (x0, y0), (x1, y1) in zip(coords, coords[1:] + coords[:1], strict=True):
@@ -112,11 +112,11 @@ def _is_rectangle(poly: Polygon) -> bool:
     if not _is_rectilinear(poly):
         return False
     minx, miny, maxx, maxy = poly.bounds
-    candidat = box(minx, miny, maxx, maxy)
-    return bool(abs(poly.area - candidat.area) <= _TOL_RECT and poly.equals(candidat))
+    candidate = box(minx, miny, maxx, maxy)
+    return bool(abs(poly.area - candidate.area) <= _TOL_RECT and poly.equals(candidate))
 
 
-def _vers_piece(poly: Polygon, *, id: str, room_type: str) -> Room:
+def _to_room(poly: Polygon, *, id: str, room_type: str) -> Room:
     """Convert a Shapely rectangle into a :class:`~archlux.types.Room`."""
     minx, miny, maxx, maxy = poly.bounds
     return Room(
@@ -129,7 +129,7 @@ def _vers_piece(poly: Polygon, *, id: str, room_type: str) -> Room:
     )
 
 
-def _angle_signe(
+def _signed_angle(
     prev: tuple[float, float], curr: tuple[float, float], nxt: tuple[float, float]
 ) -> float:
     """Cross product (curr-prev)×(nxt-curr): >0 = left turn (CCW)."""
@@ -138,9 +138,9 @@ def _angle_signe(
     return ax * by - ay * bx
 
 
-def _sommets_reflexe(poly: Polygon) -> list[tuple[float, float]]:
+def _reflex_vertices(poly: Polygon) -> list[tuple[float, float]]:
     """Vertices with interior angle > π for a CCW ring (right turn)."""
-    coords = _coords_ouverts(poly)
+    coords = _open_coords(poly)
     if poly.exterior.is_ccw is False:
         coords = list(reversed(coords))
     n = len(coords)
@@ -149,12 +149,12 @@ def _sommets_reflexe(poly: Polygon) -> list[tuple[float, float]]:
         prev = coords[(i - 1) % n]
         curr = coords[i]
         nxt = coords[(i + 1) % n]
-        if _angle_signe(prev, curr, nxt) < -_EPS:
+        if _signed_angle(prev, curr, nxt) < -_EPS:
             reflex.append(curr)
     return reflex
 
 
-def _line_pieces(inter: BaseGeometry) -> list[LineString]:
+def _line_rooms(inter: BaseGeometry) -> list[LineString]:
     """Flatten a shapely intersection into its ``LineString`` pieces.
 
     Extracted from :func:`_coupe_verticale`/:func:`_coupe_horizontale` (PLAN.md phase
@@ -183,113 +183,113 @@ def _chord_through_pivot(
     polygon as the cut — it separates nothing. So all the pieces touching the pivot
     are joined: sharing that point on one line, their union is a single segment.
     """
-    valeurs: list[float] = []
+    extent_values: list[float] = []
     for seg in candidats:
         if seg.length <= _EPS or pivot.distance(seg) > 1e-6:
             continue
-        valeurs.extend(c[axis] for c in seg.coords)
-    if not valeurs or max(valeurs) - min(valeurs) <= _EPS:
+        extent_values.extend(c[axis] for c in seg.coords)
+    if not extent_values or max(extent_values) - min(extent_values) <= _EPS:
         return None
-    return min(valeurs), max(valeurs)
+    return min(extent_values), max(extent_values)
 
 
-def _coupe_verticale(poly: Polygon, x_coupe: float, y_sommet: float) -> LineString | None:
+def _vertical_cut(poly: Polygon, x_cut: float, y_vertex: float) -> LineString | None:
     """Interior vertical chord through ``(x_coupe, y_sommet)``."""
     minx, miny, maxx, maxy = poly.bounds
-    if not (minx + _EPS < x_coupe < maxx - _EPS):
+    if not (minx + _EPS < x_cut < maxx - _EPS):
         return None
-    ligne = LineString([(x_coupe, miny - 1.0), (x_coupe, maxy + 1.0)])
-    inter = ligne.intersection(poly)
+    row = LineString([(x_cut, miny - 1.0), (x_cut, maxy + 1.0)])
+    inter = row.intersection(poly)
     if inter.is_empty:
         return None
-    extent = _chord_through_pivot(_line_pieces(inter), Point(x_coupe, y_sommet), axis=1)
+    extent = _chord_through_pivot(_line_rooms(inter), Point(x_cut, y_vertex), axis=1)
     if extent is None:
         return None
-    return LineString([(x_coupe, extent[0]), (x_coupe, extent[1])])
+    return LineString([(x_cut, extent[0]), (x_cut, extent[1])])
 
 
-def _coupe_horizontale(poly: Polygon, y_coupe: float, x_sommet: float) -> LineString | None:
+def _horizontal_cut(poly: Polygon, y_cut: float, x_vertex: float) -> LineString | None:
     """Interior horizontal chord through ``(x_sommet, y_coupe)``.
 
     Exact mirror of :func:`_coupe_verticale`, axes swapped.
     """
     minx, miny, maxx, maxy = poly.bounds
-    if not (miny + _EPS < y_coupe < maxy - _EPS):
+    if not (miny + _EPS < y_cut < maxy - _EPS):
         return None
-    ligne = LineString([(minx - 1.0, y_coupe), (maxx + 1.0, y_coupe)])
-    inter = ligne.intersection(poly)
+    row = LineString([(minx - 1.0, y_cut), (maxx + 1.0, y_cut)])
+    inter = row.intersection(poly)
     if inter.is_empty:
         return None
-    extent = _chord_through_pivot(_line_pieces(inter), Point(x_sommet, y_coupe), axis=0)
+    extent = _chord_through_pivot(_line_rooms(inter), Point(x_vertex, y_cut), axis=0)
     if extent is None:
         return None
-    return LineString([(extent[0], y_coupe), (extent[1], y_coupe)])
+    return LineString([(extent[0], y_cut), (extent[1], y_cut)])
 
 
-def _meilleure_coupe_verticale(poly: Polygon) -> LineString | None:
+def _best_vertical_cut(poly: Polygon) -> LineString | None:
     """Vertical cut from a reflex vertex, smallest abscissa (left first)."""
-    meilleures: list[tuple[float, float, LineString]] = []
-    for x, y in _sommets_reflexe(poly):
-        seg = _coupe_verticale(poly, x, y)
+    best: list[tuple[float, float, LineString]] = []
+    for x, y in _reflex_vertices(poly):
+        seg = _vertical_cut(poly, x, y)
         if seg is None:
             continue
-        parties = [g for g in split(poly, seg).geoms if g.geom_type == "Polygon"]
-        if len(parties) < 2:
+        parts = [g for g in split(poly, seg).geoms if g.geom_type == "Polygon"]
+        if len(parts) < 2:
             continue
-        meilleures.append((x, y, seg))
-    if not meilleures:
+        best.append((x, y, seg))
+    if not best:
         return None
-    meilleures.sort(key=lambda t: (t[0], t[1]))
-    return meilleures[0][2]
+    best.sort(key=lambda t: (t[0], t[1]))
+    return best[0][2]
 
 
-def _meilleure_coupe_horizontale(poly: Polygon) -> LineString | None:
+def _best_horizontal_cut(poly: Polygon) -> LineString | None:
     """Horizontal cut from a reflex vertex, smallest ordinate (bottom first).
 
     Consulted only if no vertical cut separates: the vertical convention of
     `MILESTONE-6.md` §2 keeps priority, so earlier decompositions are bit-for-bit
     unchanged.
     """
-    meilleures: list[tuple[float, float, LineString]] = []
-    for x, y in _sommets_reflexe(poly):
-        seg = _coupe_horizontale(poly, y, x)
+    best: list[tuple[float, float, LineString]] = []
+    for x, y in _reflex_vertices(poly):
+        seg = _horizontal_cut(poly, y, x)
         if seg is None:
             continue
-        parties = [g for g in split(poly, seg).geoms if g.geom_type == "Polygon"]
-        if len(parties) < 2:
+        parts = [g for g in split(poly, seg).geoms if g.geom_type == "Polygon"]
+        if len(parts) < 2:
             continue
-        meilleures.append((y, x, seg))
-    if not meilleures:
+        best.append((y, x, seg))
+    if not best:
         return None
-    meilleures.sort(key=lambda t: (t[0], t[1]))
-    return meilleures[0][2]
+    best.sort(key=lambda t: (t[0], t[1]))
+    return best[0][2]
 
 
-def _decouper(poly: Polygon) -> list[Polygon]:
+def _cut_up(poly: Polygon) -> list[Polygon]:
     """Recursive guillotine partition: vertical on the left, then horizontal at the bottom."""
     poly = Polygon(poly.exterior)
     if not poly.is_valid or poly.area <= _EPS:
         raise InvariantViolation(("invalid or zero-area polygon",))
     if _is_rectangle(poly):
         return [poly]
-    coupe = _meilleure_coupe_verticale(poly)
-    if coupe is None:
-        coupe = _meilleure_coupe_horizontale(poly)
-    if coupe is None:
+    cut = _best_vertical_cut(poly)
+    if cut is None:
+        cut = _best_horizontal_cut(poly)
+    if cut is None:
         raise InvariantViolation(("no reproducible guillotine cut found",))
-    parties = [g for g in split(poly, coupe).geoms if g.geom_type == "Polygon" and g.area > _EPS]
-    if len(parties) < 2:
+    parts = [g for g in split(poly, cut).geoms if g.geom_type == "Polygon" and g.area > _EPS]
+    if len(parts) < 2:
         raise InvariantViolation(("the cut did not split the polygon",))
-    parties.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
-    resultat: list[Polygon] = []
-    for partie in parties:
-        resultat.extend(_decouper(partie))
-    return resultat
+    parts.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
+    result: list[Polygon] = []
+    for part in parts:
+        result.extend(_cut_up(part))
+    return result
 
 
-def _detecter_fusions(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ...]:
+def _detect_merges(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ...]:
     """One fusion per shared edge, canonical orientation (left→right / bottom→top)."""
-    propres: list[tuple[int, int, str]] = []
+    clean: list[tuple[int, int, str]] = []
     for i, a in enumerate(rects):
         for j in range(i + 1, len(rects)):
             b = rects[j]
@@ -297,24 +297,24 @@ def _detecter_fusions(rects: tuple[Room, ...]) -> tuple[tuple[int, int, str], ..
                 y0 = max(a.y, b.y)
                 y1 = min(a.y + a.h, b.y + b.h)
                 if y1 - y0 > _TOL_RECT:
-                    propres.append((i, j, MERGE_RIGHT))
+                    clean.append((i, j, MERGE_RIGHT))
             elif abs((b.x + b.w) - a.x) <= _TOL_RECT:
                 y0 = max(a.y, b.y)
                 y1 = min(a.y + a.h, b.y + b.h)
                 if y1 - y0 > _TOL_RECT:
-                    propres.append((j, i, MERGE_RIGHT))
+                    clean.append((j, i, MERGE_RIGHT))
             if abs((a.y + a.h) - b.y) <= _TOL_RECT:
                 x0 = max(a.x, b.x)
                 x1 = min(a.x + a.w, b.x + b.w)
                 if x1 - x0 > _TOL_RECT:
-                    propres.append((i, j, MERGE_TOP))
+                    clean.append((i, j, MERGE_TOP))
             elif abs((b.y + b.h) - a.y) <= _TOL_RECT:
                 x0 = max(a.x, b.x)
                 x1 = min(a.x + a.w, b.x + b.w)
                 if x1 - x0 > _TOL_RECT:
-                    propres.append((j, i, MERGE_TOP))
-    propres.sort()
-    return tuple(propres)
+                    clean.append((j, i, MERGE_TOP))
+    clean.sort()
+    return tuple(clean)
 
 
 @renamed_parameters({"polygone": "polygon", "type_piece": "room_type"})
@@ -363,14 +363,14 @@ def decompose(
         raise InvariantViolation((f"max_rectangles must be ≥ 1: {max_rectangles}",))
     if not _is_rectilinear(polygon):
         raise InvariantViolation(("non-rectilinear polygon: diagonal edge",))
-    parties = _decouper(polygon)
-    if len(parties) > max_rectangles:
-        raise InvariantViolation((f"too many rectangles ({len(parties)}): max {max_rectangles}",))
-    parties.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
+    parts = _cut_up(polygon)
+    if len(parts) > max_rectangles:
+        raise InvariantViolation((f"too many rectangles ({len(parts)}): max {max_rectangles}",))
+    parts.sort(key=lambda g: (round(g.bounds[0], 9), round(g.bounds[1], 9)))
     rectangles = tuple(
-        _vers_piece(p, id=f"{id}__{k}", room_type=room_type) for k, p in enumerate(parties)
+        _to_room(p, id=f"{id}__{k}", room_type=room_type) for k, p in enumerate(parts)
     )
-    return RectilinearRoom(id=id, rectangles=rectangles, merges=_detecter_fusions(rectangles))
+    return RectilinearRoom(id=id, rectangles=rectangles, merges=_detect_merges(rectangles))
 
 
 def recompose(piece: RectilinearRoom) -> Polygon:
@@ -384,8 +384,8 @@ def recompose(piece: RectilinearRoom) -> Polygon:
     """
     if not piece.rectangles:
         raise InvariantViolation(("RectilinearRoom without rectangle",))
-    boites = [box(r.x, r.y, r.x + r.w, r.y + r.h) for r in piece.rectangles]
-    union = unary_union(boites)
+    boxes = [box(r.x, r.y, r.x + r.w, r.y + r.h) for r in piece.rectangles]
+    union = unary_union(boxes)
     if union.geom_type != "Polygon":
         raise InvariantViolation((f"disconnected recomposition: {union.geom_type}",))
     return union
@@ -399,14 +399,14 @@ def merge_constraints(
     ``partage_bord_droit``: ``x_i + w_i − x_j = 0``.
     ``partage_bord_haut``: ``y_i + h_i − y_j = 0``.
     """
-    egalites: list[tuple[str, dict[str, float], float]] = []
+    equality_rows: list[tuple[str, dict[str, float], float]] = []
     for i, j, nature in piece.merges:
         a, b = piece.rectangles[i], piece.rectangles[j]
         if nature == MERGE_RIGHT:
-            for nom in (f"{a.id}.x", f"{a.id}.w", f"{b.id}.x"):
-                if nom not in index:
-                    raise InvariantViolation((f"variable missing from the index: {nom}",))
-            egalites.append(
+            for var_name in (f"{a.id}.x", f"{a.id}.w", f"{b.id}.x"):
+                if var_name not in index:
+                    raise InvariantViolation((f"variable missing from the index: {var_name}",))
+            equality_rows.append(
                 (
                     f"fusion verticale {a.id}|{b.id}",
                     {f"{a.id}.x": 1.0, f"{a.id}.w": 1.0, f"{b.id}.x": -1.0},
@@ -414,10 +414,10 @@ def merge_constraints(
                 )
             )
         elif nature == MERGE_TOP:
-            for nom in (f"{a.id}.y", f"{a.id}.h", f"{b.id}.y"):
-                if nom not in index:
-                    raise InvariantViolation((f"variable missing from the index: {nom}",))
-            egalites.append(
+            for var_name in (f"{a.id}.y", f"{a.id}.h", f"{b.id}.y"):
+                if var_name not in index:
+                    raise InvariantViolation((f"variable missing from the index: {var_name}",))
+            equality_rows.append(
                 (
                     f"fusion horizontale {a.id}|{b.id}",
                     {f"{a.id}.y": 1.0, f"{a.id}.h": 1.0, f"{b.id}.y": -1.0},
@@ -426,7 +426,7 @@ def merge_constraints(
             )
         else:
             raise InvariantViolation((f"unknown fusion kind: {nature!r}",))
-    return tuple(egalites)
+    return tuple(equality_rows)
 
 
 @renamed_parameters({"fusions": "merges", "referentiel": "regulation"})

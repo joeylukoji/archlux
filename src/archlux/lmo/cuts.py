@@ -84,7 +84,7 @@ __all__ = [
 MAX_CUTS_PER_ROOM = 10
 """Beyond it, ``log.warning("coupe.limite", piece=...)`` and stop for that room."""
 
-_TOLERANCE_AIRE = AREA_PROOF_M2
+_AREA_TOLERANCE = AREA_PROOF_M2
 """Acceptance: a room is short of its minimum area when ``w h + tol < a_min``. Equal to
 the proof tolerance, so that the loop never stops on a plan the proof then rejects
 (the "10.35 m² < 10.35 m²" refusals). For a room found in deficit, the cuts and the
@@ -97,9 +97,9 @@ def _target(min_area: float, margin: float = AREA_TARGET_MARGIN_M2) -> float:
     return min_area + margin
 
 
-_TOLERANCE_BORNE = 1e-12
+_BOUND_TOLERANCE = 1e-12
 """Tolerance for membership in the bounds box, in metres."""
-_TOLERANCE_LONGUEUR = 1e-6
+_LENGTH_TOLERANCE = 1e-6
 """Tolerance for comparing a length to a bound, in metres.
 
 Distinct from :data:`_TOLERANCE_AIRE`: one is in square metres, the other in metres.
@@ -107,7 +107,7 @@ Conflating them would make any revision of one silently dependent on the other.
 """
 
 
-def _points_appui_hyperbole(
+def _hyperbola_support_points(
     min_area: float, w_min: float, w_max: float, h_min: float, h_max: float
 ) -> tuple[tuple[float, float], ...]:
     """Points of the hyperbola ``wh = a_min`` within the bounds box.
@@ -116,29 +116,29 @@ def _points_appui_hyperbole(
     the ends of the feasible arc and the square, if it fits.
     """
     points: list[tuple[float, float]] = []
-    cote = sqrt(min_area)
+    side = sqrt(min_area)
 
-    def _in_box(largeur: float, hauteur: float) -> bool:
+    def _in_box(largeur: float, height: float) -> bool:
         """Say whether the pair ``(largeur, hauteur)`` fits within the LP bounds."""
         return (
-            w_min - _TOLERANCE_BORNE <= largeur <= w_max + _TOLERANCE_BORNE
-            and h_min - _TOLERANCE_BORNE <= hauteur <= h_max + _TOLERANCE_BORNE
+            w_min - _BOUND_TOLERANCE <= largeur <= w_max + _BOUND_TOLERANCE
+            and h_min - _BOUND_TOLERANCE <= height <= h_max + _BOUND_TOLERANCE
         )
 
-    if _in_box(cote, cote):
-        points.append((cote, cote))
+    if _in_box(side, side):
+        points.append((side, side))
     if w_min > 0.0 and _in_box(w_min, min_area / w_min):
         points.append((w_min, min_area / w_min))
     if h_min > 0.0 and _in_box(min_area / h_min, h_min):
         points.append((min_area / h_min, h_min))
     uniques: list[tuple[float, float]] = []
-    for candidat in points:
+    for candidate in points:
         if not any(
-            abs(candidat[0] - vu[0]) < _TOLERANCE_BORNE
-            and abs(candidat[1] - vu[1]) < _TOLERANCE_BORNE
-            for vu in uniques
+            abs(candidate[0] - seen[0]) < _BOUND_TOLERANCE
+            and abs(candidate[1] - seen[1]) < _BOUND_TOLERANCE
+            for seen in uniques
         ):
-            uniques.append(candidat)
+            uniques.append(candidate)
     return tuple(uniques)
 
 
@@ -152,21 +152,19 @@ def _minimum_areas(
     }
 
 
-def _coupes_initiales(
-    poly: Polytope, need: Mapping[str, float], rooms: tuple[Room, ...]
-) -> list[Cut]:
+def _initial_cuts(poly: Polytope, need: Mapping[str, float], rooms: tuple[Room, ...]) -> list[Cut]:
     """Envelope tangents, before the first solve."""
     cuts: list[Cut] = []
     for piece in rooms:
-        seuil = need[piece.id]
-        if seuil <= 0.0:
+        threshold = need[piece.id]
+        if threshold <= 0.0:
             continue
         w_min, w_max = poly.bounds[poly.index[f"{piece.id}.w"]]
         h_min, h_max = poly.bounds[poly.index[f"{piece.id}.h"]]
         # Exact minimum here, no margin: these outer tangents are satisfied by any valid
         # plan, and a margin would force rooms that sit exactly at their minimum to grow.
-        for largeur, hauteur in _points_appui_hyperbole(seuil, w_min, w_max, h_min, h_max):
-            cuts.append(area_cut(largeur, hauteur, seuil, piece=piece.id))
+        for largeur, height in _hyperbola_support_points(threshold, w_min, w_max, h_min, h_max):
+            cuts.append(area_cut(largeur, height, threshold, piece=piece.id))
     return cuts
 
 
@@ -204,11 +202,11 @@ class Cut:
             ``True`` if ``Σ coef·variable ≥ lower_bound - tol``.
         """
         total = 0.0
-        for nom, coefficient in self.coefficients:
-            champ = nom.rsplit(".", 1)[-1]
-            if champ == "w":
+        for name, coefficient in self.coefficients:
+            field = name.rsplit(".", 1)[-1]
+            if field == "w":
                 total += coefficient * w
-            elif champ == "h":
+            elif field == "h":
                 total += coefficient * h
         return bool(total + tol >= self.lower_bound)
 
@@ -248,12 +246,12 @@ def area_cut(w0: float, h0: float, min_area: float, *, piece: str = "") -> Cut:
         raise InvariantViolation((f"linearisation point not strictly positive: {(w0, h0)}",))
     if min_area <= 0.0:
         raise InvariantViolation((f"minimum area not strictly positive: {min_area}",))
-    produit = w0 * h0
-    scale = sqrt(min_area / produit)
+    product = w0 * h0
+    scale = sqrt(min_area / product)
     w_star, h_star = w0 * scale, h0 * scale
-    nom_w = f"{piece}.w" if piece else "w"
-    nom_h = f"{piece}.h" if piece else "h"
-    coefficients = tuple(sorted(((nom_w, h_star), (nom_h, w_star))))
+    name_w = f"{piece}.w" if piece else "w"
+    name_h = f"{piece}.h" if piece else "h"
+    coefficients = tuple(sorted(((name_w, h_star), (name_h, w_star))))
     origin = f"surface {piece}" if piece else "surface"
     return Cut(coefficients=coefficients, lower_bound=2.0 * min_area, origin=origin)
 
@@ -298,22 +296,22 @@ def _short_of_area(
     rooms: tuple[Room, ...],
 ) -> tuple[str, ...]:
     """Rooms whose ``w h`` is strictly below ``need``, sorted."""
-    vecteur = np.asarray(x, dtype=float)
+    vector = np.asarray(x, dtype=float)
     violees: list[str] = []
     for piece in rooms:
-        seuil = need[piece.id]
-        if seuil <= 0.0:
+        threshold = need[piece.id]
+        if threshold <= 0.0:
             continue
-        largeur = float(vecteur[poly.index[f"{piece.id}.w"]])
-        hauteur = float(vecteur[poly.index[f"{piece.id}.h"]])
-        if largeur * hauteur + _TOLERANCE_AIRE < seuil:
+        largeur = float(vector[poly.index[f"{piece.id}.w"]])
+        height = float(vector[poly.index[f"{piece.id}.h"]])
+        if largeur * height + _AREA_TOLERANCE < threshold:
             violees.append(piece.id)
     return tuple(sorted(violees))
 
 
 def _target_on_hyperbola(
     largeur: float,
-    hauteur: float,
+    height: float,
     min_area: float,
     w_min: float,
     w_max: float,
@@ -325,24 +323,24 @@ def _target_on_hyperbola(
     If the ray leaves through an edge, slide along the arc to the hyperbola–box
     intersection (a real vertex of ``K``, reachable by the simplex).
     """
-    if largeur <= 0.0 or hauteur <= 0.0 or min_area <= 0.0:
+    if largeur <= 0.0 or height <= 0.0 or min_area <= 0.0:
         return None
-    if largeur * hauteur + _TOLERANCE_AIRE >= min_area:
+    if largeur * height + _AREA_TOLERANCE >= min_area:
         return None
-    facteur = sqrt(min_area / (largeur * hauteur))
-    w_star, h_star = largeur * facteur, hauteur * facteur
+    scale_factor = sqrt(min_area / (largeur * height))
+    w_star, h_star = largeur * scale_factor, height * scale_factor
     w_star = min(max(w_star, w_min), w_max)
     h_star = min_area / w_star if w_star > 0.0 else h_max
-    if h_min - _TOLERANCE_LONGUEUR <= h_star <= h_max + _TOLERANCE_LONGUEUR:
+    if h_min - _LENGTH_TOLERANCE <= h_star <= h_max + _LENGTH_TOLERANCE:
         return w_star, min(max(h_star, h_min), h_max)
-    h_star = min(max(hauteur * facteur, h_min), h_max)
+    h_star = min(max(height * scale_factor, h_min), h_max)
     w_star = min_area / h_star if h_star > 0.0 else w_max
-    if w_min - _TOLERANCE_LONGUEUR <= w_star <= w_max + _TOLERANCE_LONGUEUR:
+    if w_min - _LENGTH_TOLERANCE <= w_star <= w_max + _LENGTH_TOLERANCE:
         return min(max(w_star, w_min), w_max), h_star
     return None
 
 
-def _resserrer_bornes(
+def _tighten_bounds(
     poly: Polytope,
     x: VecteurF,
     need: Mapping[str, float],
@@ -358,71 +356,69 @@ def _resserrer_bornes(
     ``w ≥ w★``, ``h ≥ h★`` forces the next vertex to respect the area, and lets GLOP
     readjust ``x, y`` (Kelley, 1960, plus bound tightening).
     """
-    bornes = list(poly.bounds)
+    bounds = list(poly.bounds)
     change = False
     for piece in rooms:
-        seuil = need[piece.id]
-        if seuil <= 0.0:
+        threshold = need[piece.id]
+        if threshold <= 0.0:
             continue
         idx_w = poly.index[f"{piece.id}.w"]
         idx_h = poly.index[f"{piece.id}.h"]
-        if float(x[idx_w]) * float(x[idx_h]) + _TOLERANCE_AIRE >= seuil:
+        if float(x[idx_w]) * float(x[idx_h]) + _AREA_TOLERANCE >= threshold:
             continue  # not short of its minimum: the margin only serves rooms in deficit
-        w_min, w_max = bornes[idx_w]
-        h_min, h_max = bornes[idx_h]
-        cible = _target_on_hyperbola(
-            float(x[idx_w]), float(x[idx_h]), _target(seuil, margin), w_min, w_max, h_min, h_max
+        w_min, w_max = bounds[idx_w]
+        h_min, h_max = bounds[idx_h]
+        target = _target_on_hyperbola(
+            float(x[idx_w]), float(x[idx_h]), _target(threshold, margin), w_min, w_max, h_min, h_max
         )
-        if cible is None:
+        if target is None:
             continue
-        w_star, h_star = cible
-        if w_star > w_min + _TOLERANCE_LONGUEUR:
-            bornes[idx_w] = (w_star, w_max)
+        w_star, h_star = target
+        if w_star > w_min + _LENGTH_TOLERANCE:
+            bounds[idx_w] = (w_star, w_max)
             change = True
-        if h_star > h_min + _TOLERANCE_LONGUEUR:
-            bornes[idx_h] = (h_star, h_max)
+        if h_star > h_min + _LENGTH_TOLERANCE:
+            bounds[idx_h] = (h_star, h_max)
             change = True
-    return replace(poly, bounds=tuple(bornes)) if change else poly
+    return replace(poly, bounds=tuple(bounds)) if change else poly
 
 
-def _identifiants_a_couper(
+def _ids_to_cut(
     x: VecteurF,
     poly: Polytope,
     need: Mapping[str, float],
     rooms: tuple[Room, ...],
-    comptes: Counter[str],
+    counts: Counter[str],
 ) -> list[str]:
     """Rooms still below ``min_area`` and under the cut cap."""
-    restantes: list[str] = []
-    for identifiant in _short_of_area(x, poly, need, rooms):
-        if comptes[identifiant] >= MAX_CUTS_PER_ROOM:
+    remaining: list[str] = []
+    for identifier in _short_of_area(x, poly, need, rooms):
+        if counts[identifier] >= MAX_CUTS_PER_ROOM:
             # Lazy: structlog costs up to 0.4 s at import and this path is rare.
             import structlog
 
-            structlog.get_logger("archlux.lmo.coupes").warning("coupe.limite", piece=identifiant)
+            structlog.get_logger("archlux.lmo.coupes").warning("coupe.limite", piece=identifier)
             continue
-        restantes.append(identifiant)
-    return restantes
+        remaining.append(identifier)
+    return remaining
 
 
-def _empiler_tangentes(
-    restantes: list[str],
+def _stack_tangents(
+    remaining: list[str],
     x: VecteurF,
     poly: Polytope,
     need: Mapping[str, float],
     cuts: list[Cut],
-    comptes: Counter[str],
+    counts: Counter[str],
     *,
     margin: float = AREA_TARGET_MARGIN_M2,
 ) -> None:
     """Add one Kelley tangent per remaining room (Kelley, 1960)."""
-    for identifiant in restantes:
-        largeur = float(x[poly.index[f"{identifiant}.w"]])
-        hauteur = float(x[poly.index[f"{identifiant}.h"]])
-        cuts.append(
-            area_cut(largeur, hauteur, _target(need[identifiant], margin), piece=identifiant)
-        )
-        comptes[identifiant] += 1
+    for identifier in remaining:
+        largeur = float(x[poly.index[f"{identifier}.w"]])
+        height = float(x[poly.index[f"{identifier}.h"]])
+        cuts.append(area_cut(largeur, height, _target(need[identifier], margin), piece=identifier))
+        counts[identifier] += 1
 
 
 @renamed_parameters({"pieces": "rooms", "depart": "start", "duaux": "duals"})
@@ -505,7 +501,7 @@ def _meets_areas(
 
 
 def _tighten_if_short(
-    domaine: Polytope,
+    domain: Polytope,
     solution: LPSolution,
     c: VecteurF,
     need: Mapping[str, float],
@@ -525,13 +521,13 @@ def _tighten_if_short(
         are already the final answer (``True``: the caller returns ``solution``
         immediately, without a tangent cut).
     """
-    resserre = _resserrer_bornes(domaine, solution.x, need, rooms, margin=margin)
-    if resserre is domaine:
-        return domaine, solution, False
-    affine = solve(resserre, c, start=solution.x, cuts=cuts or None, duals=duals)
+    tightened = _tighten_bounds(domain, solution.x, need, rooms, margin=margin)
+    if tightened is domain:
+        return domain, solution, False
+    affine = solve(tightened, c, start=solution.x, cuts=cuts or None, duals=duals)
     if affine.status != "optimal":
-        return domaine, solution, False
-    return resserre, affine, not _short_of_area(affine.x, resserre, need, rooms)
+        return domain, solution, False
+    return tightened, affine, not _short_of_area(affine.x, tightened, need, rooms)
 
 
 def _solve_with_area_cuts(
@@ -544,32 +540,32 @@ def _solve_with_area_cuts(
     margin: float,
 ) -> LPSolution:
     """The Kelley loop of :func:`solve_with_areas`, aiming ``margin`` above minima."""
-    domaine = poly
-    cuts: list[Cut] = _coupes_initiales(domaine, need, rooms)
-    comptes: Counter[str] = Counter()
-    courant = start
+    domain = poly
+    cuts: list[Cut] = _initial_cuts(domain, need, rooms)
+    counts: Counter[str] = Counter()
+    current = start
     while True:
-        solution = solve(domaine, c, start=courant, cuts=cuts or None, duals=duals)
+        solution = solve(domain, c, start=current, cuts=cuts or None, duals=duals)
         if solution.status != "optimal":
-            if domaine is not poly:
+            if domain is not poly:
                 # Tightened bounds are not an outer approximation: an infeasible verdict
                 # on them says nothing about the original problem (AUDIT.md §5.2). Solve
                 # the original domain, so that an infeasibility certificate, if any, is
                 # about the real system; a feasible answer goes on to the exact proof.
-                return solve(poly, c, start=courant, cuts=cuts or None, duals=duals)
+                return solve(poly, c, start=current, cuts=cuts or None, duals=duals)
             return solution
-        if not _short_of_area(solution.x, domaine, need, rooms):
+        if not _short_of_area(solution.x, domain, need, rooms):
             return solution
-        domaine, solution, resolved = _tighten_if_short(
-            domaine, solution, c, need, rooms, cuts, duals, margin
+        domain, solution, resolved = _tighten_if_short(
+            domain, solution, c, need, rooms, cuts, duals, margin
         )
         if resolved:
             return solution
-        restantes = _identifiants_a_couper(solution.x, domaine, need, rooms, comptes)
-        if not restantes:
+        remaining = _ids_to_cut(solution.x, domain, need, rooms, counts)
+        if not remaining:
             return solution
-        _empiler_tangentes(restantes, solution.x, domaine, need, cuts, comptes, margin=margin)
-        courant = solution.x
+        _stack_tangents(remaining, solution.x, domain, need, cuts, counts, margin=margin)
+        current = solution.x
 
 
 INNER_AREA_SPREAD: tuple[float, ...] = tuple(1.1**k for k in range(-24, 25))
@@ -653,7 +649,7 @@ def inner_area_constraints(
         The start is below a minimum area by more than the proof tolerance: it is not
         a valid legalized plan.
     """
-    bornes = list(poly.bounds)
+    bounds = list(poly.bounds)
     rows: list[int] = []
     cols: list[int] = []
     vals: list[float] = []
@@ -672,12 +668,12 @@ def inner_area_constraints(
             )
         # A start within the proof tolerance below a_min keeps its own area as target.
         area = min(min_area, w0 * h0)
-        (w_lo, w_hi), (h_lo, h_hi) = bornes[iw], bornes[ih]
+        (w_lo, w_hi), (h_lo, h_hi) = bounds[iw], bounds[ih]
         # Nodes are not filtered by the bounds: the region is intersected with them
         # anyway, and filtering froze rooms whose height is fixed by a contact.
         nodes = sorted({w0} | {w0 * factor for factor in spread if factor > 0.0})
-        bornes[iw] = (max(w_lo, nodes[0]), w_hi)
-        bornes[ih] = (max(h_lo, area / nodes[-1]), h_hi)
+        bounds[iw] = (max(w_lo, nodes[0]), w_hi)
+        bounds[ih] = (max(h_lo, area / nodes[-1]), h_hi)
         for k, (w_left, w_right) in enumerate(pairwise(nodes)):
             h_left, h_right = area / w_left, area / w_right
             slope = (h_right - h_left) / (w_right - w_left)
@@ -693,6 +689,6 @@ def inner_area_constraints(
         poly,
         A=sparse.vstack([poly.A, extra], format="csr"),
         b=np.concatenate([poly.b, np.asarray(rhs, dtype=float)]),
-        bounds=tuple(bornes),
+        bounds=tuple(bounds),
         origins=(*poly.origins, *labels),
     )

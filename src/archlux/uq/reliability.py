@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 _SIGMA_MIN = 1e-12
-_N_SECTEURS = 8
+_N_SECTORS = 8
 
 
 def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray) -> float:
@@ -51,13 +51,13 @@ def crps(predictions: np.ndarray, verites: np.ndarray, incertitudes: np.ndarray)
     z = (y - mu) / sigma
     pdf = np.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
     cdf = 0.5 * (1.0 + erf(z / math.sqrt(2.0)))
-    termes = sigma * (z * (2.0 * cdf - 1.0) + 2.0 * pdf - 1.0 / math.sqrt(math.pi))
-    return float(np.mean(termes))
+    terms = sigma * (z * (2.0 * cdf - 1.0) + 2.0 * pdf - 1.0 / math.sqrt(math.pi))
+    return float(np.mean(terms))
 
 
-def _check_diagram_inputs(cibles: np.ndarray, reference: np.ndarray) -> None:
+def _check_diagram_inputs(targets: np.ndarray, reference: np.ndarray) -> None:
     """Raise on caller errors, so that ``nan`` only ever means "n too small"."""
-    if not bool(np.all((cibles > 0.0) & (cibles < 1.0))):
+    if not bool(np.all((targets > 0.0) & (targets < 1.0))):
         raise InvariantViolation(("nominal levels outside ]0, 1[",))
     if reference.size == 0 or not bool(np.all(np.isfinite(reference))):
         raise InvariantViolation(("reference scores empty or non-finite",))
@@ -108,36 +108,36 @@ def reliability_diagram(
     published figure must pass a disjoint calibration set.
     """
     pred = np.asarray(predictions, dtype=float).ravel()
-    verite = np.asarray(verites, dtype=float).ravel()
+    truth = np.asarray(verites, dtype=float).ravel()
     sigma = np.maximum(np.asarray(incertitudes, dtype=float).ravel(), _SIGMA_MIN)
-    if pred.size != verite.size or pred.size != sigma.size or pred.size == 0:
+    if pred.size != truth.size or pred.size != sigma.size or pred.size == 0:
         raise InvariantViolation(("diagram arrays have incompatible lengths",))
     if niveaux is None:
-        cibles = np.linspace(0.50, 0.99, 20)
+        targets = np.linspace(0.50, 0.99, 20)
     else:
-        cibles = np.asarray(niveaux, dtype=float).ravel()
-    scores = np.abs(verite - pred) / sigma
+        targets = np.asarray(niveaux, dtype=float).ravel()
+    scores = np.abs(truth - pred) / sigma
     reference = (
         scores
         if scores_calibration is None
         else np.asarray(scores_calibration, dtype=float).ravel()
     )
-    _check_diagram_inputs(cibles, reference)
+    _check_diagram_inputs(targets, reference)
     n_reference = int(reference.size)
-    lignes: list[list[float]] = []
-    for gamma in cibles:
+    lines: list[list[float]] = []
+    for gamma in targets:
         alpha = 1.0 - float(gamma)
         if math.ceil((n_reference + 1) * (1.0 - alpha)) > n_reference:
-            lignes.append([float(gamma), float("nan")])  # documented: n too small
+            lines.append([float(gamma), float("nan")])  # documented: n too small
             continue
         q_chapeau = conformal_quantile(reference, alpha)
         empirique = float(np.mean(scores <= q_chapeau))
-        lignes.append([float(gamma), empirique])
-    return np.asarray(lignes, dtype=float)
+        lines.append([float(gamma), empirique])
+    return np.asarray(lines, dtype=float)
 
 
 def stratify_by_orientation(
-    degres: np.ndarray, *, n_secteurs: int = _N_SECTEURS
+    degres: np.ndarray, *, n_secteurs: int = _N_SECTORS
 ) -> dict[int, np.ndarray]:
     """Indices per azimuth sector, for stratified coverage.
 
@@ -166,9 +166,9 @@ def stratify_by_orientation(
         raise InvariantViolation(("n_secteurs must be >= 2",))
     angles = np.asarray(degres, dtype=float).ravel() % 360.0
     largeur = 360.0 / float(n_secteurs)
-    bacs = np.floor(angles / largeur).astype(int)
-    bacs = np.clip(bacs, 0, n_secteurs - 1)
-    return {k: np.flatnonzero(bacs == k) for k in range(n_secteurs)}
+    bins = np.floor(angles / largeur).astype(int)
+    bins = np.clip(bins, 0, n_secteurs - 1)
+    return {k: np.flatnonzero(bins == k) for k in range(n_secteurs)}
 
 
 @dataclass(frozen=True, slots=True)

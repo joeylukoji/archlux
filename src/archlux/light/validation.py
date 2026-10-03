@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 __all__ = ["GradientReport", "validate_gradient"]
 
-_NUIT = 1e-8
+_NIGHT = 1e-8
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,19 +44,19 @@ class GradientReport:
     conforme: bool
 
 
-def _differences_finies(
+def _finite_differences(
     surrogate: Surrogate, x: np.ndarray, orientation: Orientation, pas: float
 ) -> np.ndarray:
     """Pente centrée de ``evaluate`` le long de chaque coordonnée de ``x``."""
     x0 = np.asarray(x, dtype=float).ravel()
     g = np.empty_like(x0)
     for i in range(x0.size):
-        plus, moins = x0.copy(), x0.copy()
+        plus, minus = x0.copy(), x0.copy()
         plus[i] += pas
-        moins[i] -= pas
+        minus[i] -= pas
         g[i] = (
             float(surrogate.evaluate(plus, orientation))
-            - float(surrogate.evaluate(moins, orientation))
+            - float(surrogate.evaluate(minus, orientation))
         ) / (2.0 * pas)
     return g
 
@@ -125,67 +125,67 @@ def validate_gradient(
       **même** objet : il détecte une dérivée fausse, jamais un modèle faux. Seul le
       mode ``reference`` confronte à l'oracle gelé.
     """
-    matrice = np.asarray(points, dtype=float)
-    if matrice.ndim == 1:
-        matrice = matrice.reshape(1, -1)
+    matrix = np.asarray(points, dtype=float)
+    if matrix.ndim == 1:
+        matrix = matrix.reshape(1, -1)
     rng = np.random.default_rng(seed)
-    matrice = matrice[rng.permutation(matrice.shape[0])]
+    matrix = matrix[rng.permutation(matrix.shape[0])]
     oracle = reference
-    pas_fd = pas if oracle is not None else epsilon
+    step_fd = pas if oracle is not None else epsilon
     errors: list[float] = []
-    cosinus: list[float] = []
-    signes: list[bool] = []
-    for x in matrice:
+    cosine: list[float] = []
+    signs: list[bool] = []
+    for x in matrix:
         declare = np.asarray(surrogate.gradient(x, orientation), dtype=float).ravel()
-        cible = (
-            _differences_finies(oracle, x, orientation, pas_fd)
+        target = (
+            _finite_differences(oracle, x, orientation, step_fd)
             if oracle is not None
-            else _differences_finies(surrogate, x, orientation, pas_fd)
+            else _finite_differences(surrogate, x, orientation, step_fd)
         )
-        norme_c = float(np.linalg.norm(cible))
-        norme_d = float(np.linalg.norm(declare))
-        if norme_c < _NUIT and norme_d < _NUIT:
+        norm_c = float(np.linalg.norm(target))
+        norm_d = float(np.linalg.norm(declare))
+        if norm_c < _NIGHT and norm_d < _NIGHT:
             errors.append(0.0)
-            cosinus.append(1.0)
-            signes.extend([True] * declare.size)
+            cosine.append(1.0)
+            signs.extend([True] * declare.size)
             continue
-        denom = max(norme_c, _NUIT)
-        errors.append(float(np.linalg.norm(declare - cible) / denom))
-        if norme_c > _NUIT and norme_d > _NUIT:
-            cosinus.append(float(np.dot(declare, cible) / (norme_d * norme_c)))
+        denom = max(norm_c, _NIGHT)
+        errors.append(float(np.linalg.norm(declare - target) / denom))
+        if norm_c > _NIGHT and norm_d > _NIGHT:
+            cosine.append(float(np.dot(declare, target) / (norm_d * norm_c)))
         else:
-            cosinus.append(0.0)
-        for a, b in zip(declare, cible, strict=True):
+            cosine.append(0.0)
+        for a, b in zip(declare, target, strict=True):
             if abs(b) < 1e-3:
                 continue
-            if abs(a) < _NUIT:
-                signes.append(False)
+            if abs(a) < _NIGHT:
+                signs.append(False)
             else:
-                signes.append((a >= 0.0) == (b >= 0.0))
-    rapport = GradientReport(
+                signs.append((a >= 0.0) == (b >= 0.0))
+    report = GradientReport(
         erreur_relative_max=max(errors) if errors else 0.0,
-        cosinus_moyen=float(np.mean(cosinus)) if cosinus else 1.0,
-        accord_de_signe=float(np.mean(signes)) if signes else 1.0,
-        n_points=int(matrice.shape[0]),
+        cosinus_moyen=float(np.mean(cosine)) if cosine else 1.0,
+        accord_de_signe=float(np.mean(signs)) if signs else 1.0,
+        n_points=int(matrix.shape[0]),
         graine=seed,
         conforme=False,
     )
     if oracle is None:
-        conforme = rapport.erreur_relative_max <= tolerance
+        conforme = report.erreur_relative_max <= tolerance
         if not conforme:
             raise InvalidSurrogate(
-                f"erreur relative {rapport.erreur_relative_max:.3g} > {tolerance}",
-                report=rapport,
+                f"erreur relative {report.erreur_relative_max:.3g} > {tolerance}",
+                report=report,
             )
     else:
-        conforme = rapport.accord_de_signe >= seuil_signe
+        conforme = report.accord_de_signe >= seuil_signe
         if not conforme:
             raise InvalidSurrogate(
-                f"accord de signe {rapport.accord_de_signe:.3f} < {seuil_signe} "
+                f"accord de signe {report.accord_de_signe:.3f} < {seuil_signe} "
                 "— ne pas passer au jalon 5",
-                report=rapport,
+                report=report,
             )
-    return replace(rapport, conforme=True)
+    return replace(report, conforme=True)
 
 
 __getattr__ = lazy_aliases(

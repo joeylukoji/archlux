@@ -104,7 +104,7 @@ nothing canonical about it and must be **cited as such** in any publication.
 """
 
 _EPS = 1e-9
-_LARGEUR_MUR_MAX = 1.0
+_MAX_WALL_WIDTH = 1.0
 """Beyond this, the "wall" is a solid mass, not a partition: its long axis has no meaning."""
 
 
@@ -158,42 +158,42 @@ class LoadStatistics:
     def summary(self) -> str:
         """Render a readable summary, reasons sorted by decreasing frequency."""
         rows = [f"lus {self.read}, retenus {self.kept} ({100.0 * self.retention_rate:.1f} %)"]
-        rows.extend(f"  rejet {motif} : {n}" for motif, n in self.rejections.most_common())
+        rows.extend(f"  rejet {reason} : {n}" for reason, n in self.rejections.most_common())
         return "\n".join(rows)
 
 
-def _identifiant(value: str) -> str:
+def _identifier(value: str) -> str:
     """Normalize a numeric identifier.
 
     MSD writes ``area_id`` as a float (``484803.0``), Swiss Dwellings as an
     integer (``484803``). Without this normalization the join yields **0%**
     instead of 99%.
     """
-    texte = str(value).strip()
+    text = str(value).strip()
     try:
-        return str(int(float(texte)))
+        return str(int(float(text)))
     except ValueError:
-        return texte
+        return text
 
 
-def _angles_et_longueurs(  # lang-ok: kept private identifier
+def _angles_and_lengths(  # lang-ok: kept private identifier
     polygones: list[Polygon],
 ) -> tuple[list[float], list[float]]:
     """Angle and length of each edge, to estimate the grid direction."""
     angles: list[float] = []
-    longueurs: list[float] = []
+    lengths: list[float] = []
     for poly in polygones:
         coords = list(poly.exterior.coords)[:-1]
         for (x0, y0), (x1, y1) in zip(coords, coords[1:] + coords[:1], strict=True):
-            longueur = math.hypot(x1 - x0, y1 - y0)
-            if longueur <= _EPS:
+            length = math.hypot(x1 - x0, y1 - y0)
+            if length <= _EPS:
                 continue
             angles.append(math.degrees(math.atan2(y1 - y0, x1 - x0)))
-            longueurs.append(longueur)
-    return angles, longueurs
+            lengths.append(length)
+    return angles, lengths
 
 
-def _caler(poly: Polygon, tolerance: float) -> Polygon:
+def _snap(poly: Polygon, tolerance: float) -> Polygon:
     """Force each near-axial edge to be exactly axial.
 
     The snap propagates the coordinate of the previous vertex: it closes the
@@ -213,7 +213,7 @@ def _caler(poly: Polygon, tolerance: float) -> Polygon:
     return Polygon([(float(x), float(y)) for x, y in coords])
 
 
-def _trame(valeurs: list[float], tolerance: float) -> dict[float, float]:
+def _grid(values: list[float], tolerance: float) -> dict[float, float]:
     """Group nearby coordinates and return the representative of each group.
 
     Increasing sweep: a group is opened, values are aggregated into it as long
@@ -223,24 +223,24 @@ def _trame(valeurs: list[float], tolerance: float) -> dict[float, float]:
     end up together if a chain links them, which is the intended behaviour for
     a run of partitions.
     """
-    if not valeurs:
+    if not values:
         return {}
-    triees = sorted(valeurs)
-    groupes: list[list[float]] = [[triees[0]]]
-    for value in triees[1:]:
-        if value - groupes[-1][-1] <= tolerance:
-            groupes[-1].append(value)
+    sorted_lines = sorted(values)
+    groups: list[list[float]] = [[sorted_lines[0]]]
+    for value in sorted_lines[1:]:
+        if value - groups[-1][-1] <= tolerance:
+            groups[-1].append(value)
         else:
-            groupes.append([value])
-    correspondance: dict[float, float] = {}
-    for groupe in groupes:
-        representant = sum(groupe) / len(groupe)
-        for value in groupe:
-            correspondance[value] = representant
-    return correspondance
+            groups.append([value])
+    mapping: dict[float, float] = {}
+    for group in groups:
+        representative = sum(group) / len(group)
+        for value in group:
+            mapping[value] = representative
+    return mapping
 
 
-def _recoller(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
+def _stitch(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
     r"""Snap rooms back together onto a common grid, so they tile exactly.
 
     In MSD an ``area`` is the **interior** surface of a room: neighbouring
@@ -265,28 +265,26 @@ def _recoller(polygones: list[Polygon], tolerance: float) -> list[Polygon]:
         for x, y in list(poly.exterior.coords)[:-1]:
             xs.append(float(x))
             ys.append(float(y))
-    trame_x = _trame(xs, tolerance)
-    trame_y = _trame(ys, tolerance)
-    recolles: list[Polygon] = []
+    grid_x = _grid(xs, tolerance)
+    grid_y = _grid(ys, tolerance)
+    stitched: list[Polygon] = []
     for poly in polygones:
-        coords = [
-            (trame_x[float(x)], trame_y[float(y)]) for x, y in list(poly.exterior.coords)[:-1]
-        ]
+        coords = [(grid_x[float(x)], grid_y[float(y)]) for x, y in list(poly.exterior.coords)[:-1]]
         # Snapping can flatten an edge: remove consecutive vertices that became
         # identical, otherwise shapely returns an invalid polygon.
-        propres: list[tuple[float, float]] = []
+        clean: list[tuple[float, float]] = []
         for point in coords:
-            if not propres or point != propres[-1]:
-                propres.append(point)
-        if len(propres) >= 2 and propres[0] == propres[-1]:
-            propres.pop()
-        if len(propres) < 4:
+            if not clean or point != clean[-1]:
+                clean.append(point)
+        if len(clean) >= 2 and clean[0] == clean[-1]:
+            clean.pop()
+        if len(clean) < 4:
             return []
-        recolles.append(Polygon(propres))
-    return recolles
+        stitched.append(Polygon(clean))
+    return stitched
 
 
-def _segment_du_mur(poly: Polygon) -> LineString | None:  # lang-ok: kept private identifier
+def _wall_segment(poly: Polygon) -> LineString | None:  # lang-ok: kept private identifier
     """Long axis of a partition, from its minimum rotated bounding rectangle."""
     rect = poly.minimum_rotated_rectangle
     if not isinstance(rect, Polygon) or rect.is_empty:
@@ -294,38 +292,38 @@ def _segment_du_mur(poly: Polygon) -> LineString | None:  # lang-ok: kept privat
     coords = list(rect.exterior.coords)[:-1]
     if len(coords) != 4:
         return None
-    cotes = [
+    sides = [
         (math.dist(coords[i], coords[(i + 1) % 4]), coords[i], coords[(i + 1) % 4])
         for i in range(4)
     ]
-    cotes.sort(key=lambda c: c[0])
-    thickness = cotes[0][0]
-    if thickness > _LARGEUR_MUR_MAX:
+    sides.sort(key=lambda c: c[0])
+    thickness = sides[0][0]
+    if thickness > _MAX_WALL_WIDTH:
         return None
-    _, a, b = cotes[-1]
+    _, a, b = sides[-1]
     centre = poly.centroid
     ux = (b[0] - a[0]) / max(math.dist(a, b), _EPS)
     uy = (b[1] - a[1]) / max(math.dist(a, b), _EPS)
-    demi = math.dist(a, b) / 2.0
+    half = math.dist(a, b) / 2.0
     return LineString(
         [
-            (centre.x - demi * ux, centre.y - demi * uy),
-            (centre.x + demi * ux, centre.y + demi * uy),
+            (centre.x - half * ux, centre.y - half * uy),
+            (centre.x + half * ux, centre.y + half * uy),
         ]
     )
 
 
-def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) -> tuple[Wall, ...]:
+def _walls_from_polygons(polygones: list[Polygon], thicknesses: list[float]) -> tuple[Wall, ...]:
     """Convert solid partitions into axis segments, with stable identifiers."""
     walls: list[Wall] = []
-    for rang, (poly, thickness) in enumerate(zip(polygones, epaisseurs, strict=True)):
-        segment = _segment_du_mur(poly)  # lang-ok: kept private identifier
+    for rank, (poly, thickness) in enumerate(zip(polygones, thicknesses, strict=True)):
+        segment = _wall_segment(poly)  # lang-ok: kept private identifier
         if segment is None or segment.length <= _EPS:
             continue
         (ax, ay), (bx, by) = list(segment.coords)
         walls.append(
             Wall(
-                id=f"m{rang:04d}",
+                id=f"m{rank:04d}",
                 a=(float(ax), float(ay)),
                 b=(float(bx), float(by)),
                 load_bearing=False,
@@ -335,33 +333,33 @@ def _murs_depuis_polygones(polygones: list[Polygon], epaisseurs: list[float]) ->
     return tuple(walls)
 
 
-def _ouverture_depuis_baie(baie: Polygon, walls: tuple[Wall, ...], rang: int) -> Opening | None:
+def _opening_from_window(window: Polygon, walls: tuple[Wall, ...], rank: int) -> Opening | None:
     """Project an opening onto the nearest wall, in **relative** coordinates."""
     if not walls:
         return None
-    centre = baie.centroid
-    meilleur: tuple[float, Wall] | None = None
+    centre = window.centroid
+    best: tuple[float, Wall] | None = None
     for wall in walls:
         distance = LineString([wall.a, wall.b]).distance(centre)
-        if meilleur is None or distance < meilleur[0]:
-            meilleur = (distance, wall)
-    if meilleur is None:
+        if best is None or distance < best[0]:
+            best = (distance, wall)
+    if best is None:
         return None
-    _, wall = meilleur
+    _, wall = best
     axis = LineString([wall.a, wall.b])
-    longueur = axis.length
-    if longueur <= _EPS:
+    length = axis.length
+    if length <= _EPS:
         return None
-    s = float(axis.project(Point(centre.x, centre.y)) / longueur)
-    largeur = float(baie.minimum_rotated_rectangle.length / 4.0) if baie.area > 0 else 0.0
+    s = float(axis.project(Point(centre.x, centre.y)) / length)
+    largeur = float(window.minimum_rotated_rectangle.length / 4.0) if window.area > 0 else 0.0
     # Opening length = longer side of its minimum rotated bounding rectangle.
-    coords = list(baie.minimum_rotated_rectangle.exterior.coords)[:-1]
+    coords = list(window.minimum_rotated_rectangle.exterior.coords)[:-1]
     if len(coords) == 4:
         largeur = max(math.dist(coords[i], coords[(i + 1) % 4]) for i in range(4))
-    relative_width = largeur / longueur
+    relative_width = largeur / length
     if not 0.0 < relative_width <= 1.0 or not 0.0 <= s <= 1.0:
         return None
-    return Opening(id=f"b{rang:04d}", wall_id=wall.id, s=s, relative_width=relative_width)
+    return Opening(id=f"b{rank:04d}", wall_id=wall.id, s=s, relative_width=relative_width)
 
 
 def _simple_outline(rooms: list[Polygon]) -> tuple[tuple[float, float], ...] | None:
@@ -381,7 +379,7 @@ def _simple_outline(rooms: list[Polygon]) -> tuple[tuple[float, float], ...] | N
     return tuple((float(x), float(y)) for x, y in list(union.exterior.coords)[:-1])
 
 
-def _lire_groupes(
+def _read_groups(
     path: Path, excluded_types: frozenset[str]
 ) -> dict[str, list[tuple[str, str, str, str, str]]]:
     """Group the CSV by apartment, keeping only the useful entities.
@@ -390,27 +388,27 @@ def _lire_groupes(
     are not used for the geometry: they carry the join to the Swiss Dwellings
     simulations and the splitting unit.
     """
-    garde = {("separator", "WALL"), ("separator", "COLUMN"), ("opening", "WINDOW")}
-    groupes: dict[str, list[tuple[str, str, str, str, str]]] = defaultdict(list)
+    kept_kinds = {("separator", "WALL"), ("separator", "COLUMN"), ("opening", "WINDOW")}
+    groups: dict[str, list[tuple[str, str, str, str, str]]] = defaultdict(list)
     with path.open(encoding="utf-8", errors="replace", newline="") as flux:
-        for ligne in csv.DictReader(flux):
-            genre = ligne["entity_type"]
-            sous_type = ligne["entity_subtype"]
-            if genre == "area":
-                if sous_type in excluded_types:
+        for row in csv.DictReader(flux):
+            kind = row["entity_type"]
+            subtype = row["entity_subtype"]
+            if kind == "area":
+                if subtype in excluded_types:
                     continue
-            elif (genre, sous_type) not in garde:
+            elif (kind, subtype) not in kept_kinds:
                 continue
-            groupes[ligne["apartment_id"]].append(
+            groups[row["apartment_id"]].append(
                 (
-                    genre,
-                    sous_type,
-                    ligne["geom"],
-                    _identifiant(ligne.get("area_id", "")),
-                    _identifiant(ligne.get("site_id", "")),
+                    kind,
+                    subtype,
+                    row["geom"],
+                    _identifier(row.get("area_id", "")),
+                    _identifier(row.get("site_id", "")),
                 )
             )
-    return groupes
+    return groups
 
 
 @renamed_parameters(
@@ -496,17 +494,19 @@ def load_msd(
     if not path.is_file():
         raise InvariantViolation((f"MSD corpus not found: {path}",))
     stats = stats if stats is not None else LoadStatistics()
-    reglement = regulation if regulation is not None else Regulation(min_areas=(), min_width=0.0)
-    groupes = _lire_groupes(path, excluded_types)
+    active_regulation = (
+        regulation if regulation is not None else Regulation(min_areas=(), min_width=0.0)
+    )
+    groups = _read_groups(path, excluded_types)
 
-    for id, entites in groupes.items():
+    for id, entities in groups.items():
         stats.read += 1
         if limit is not None and stats.kept >= limit:
             return
-        result = _convertir(
+        result = _convert(
             id,
-            entites,
-            reglement=reglement,
+            entities,
+            active_regulation=active_regulation,
             max_rooms=max_rooms,
             max_rectangles=max_rectangles,
             tolerance_calage=tolerance_calage,
@@ -519,112 +519,110 @@ def load_msd(
         yield result
 
 
-def _convertir(
+def _convert(
     id: str,
-    entites: list[tuple[str, str, str, str, str]],
+    entities: list[tuple[str, str, str, str, str]],
     *,
-    reglement: Regulation,
+    active_regulation: Regulation,
     max_rooms: int,
     max_rectangles: int,
     tolerance_calage: float,
     tolerance_recollage: float,
 ) -> MSDApartment | str:
     """Convert an apartment, or return the **rejection reason** in plain text."""
-    pieces_brutes: list[tuple[str, Polygon]] = []
+    raw_rooms: list[tuple[str, Polygon]] = []
     source_areas: list[str] = []
-    murs_bruts: list[Polygon] = []
-    poteaux_bruts: list[Polygon] = []
-    baies_brutes: list[Polygon] = []
-    site = next((s for _, _, _, _, s in entites if s), "")
-    for genre, sous_type, texte, aire_id, _site in entites:
+    raw_walls: list[Polygon] = []
+    raw_columns: list[Polygon] = []
+    raw_windows: list[Polygon] = []
+    site = next((s for _, _, _, _, s in entities if s), "")
+    for kind, subtype, text, area_id, _site in entities:
         try:
-            forme = wkt.loads(texte)
+            shape = wkt.loads(text)
         except (ShapelyError, TypeError):  # unreadable third-party WKT: a rejection, not a bug
             return "unreadable wkt"
-        if not isinstance(forme, Polygon) or forme.is_empty:
+        if not isinstance(shape, Polygon) or shape.is_empty:
             continue
-        if genre == "area":
-            pieces_brutes.append((sous_type, forme))
-            source_areas.append(aire_id)
-        elif sous_type == "WALL":
-            murs_bruts.append(forme)
-        elif sous_type == "COLUMN":
-            poteaux_bruts.append(forme)
+        if kind == "area":
+            raw_rooms.append((subtype, shape))
+            source_areas.append(area_id)
+        elif subtype == "WALL":
+            raw_walls.append(shape)
+        elif subtype == "COLUMN":
+            raw_columns.append(shape)
         else:
-            baies_brutes.append(forme)
+            raw_windows.append(shape)
 
-    if not pieces_brutes:
+    if not raw_rooms:
         return "no habitable room"
-    if len(pieces_brutes) > max_rooms:
+    if len(raw_rooms) > max_rooms:
         return "too many rooms before decomposition"
 
-    angles, longueurs = _angles_et_longueurs(  # lang-ok: kept private identifier
-        murs_bruts or [forme for _, forme in pieces_brutes]
+    angles, lengths = _angles_and_lengths(  # lang-ok: kept private identifier
+        raw_walls or [shape for _, shape in raw_rooms]
     )
     if not angles:
         return "no usable edge"
     try:
-        theta = dominant_direction(angles, longueurs, periode=90.0)
+        theta = dominant_direction(angles, lengths, periode=90.0)
     except InvariantViolation:
         return "no dominant direction"
 
-    def redresser(forme: Polygon) -> Polygon:
-        return _caler(affinity.rotate(forme, -theta, origin=(0.0, 0.0)), tolerance_calage)
+    def straighten(shape: Polygon) -> Polygon:
+        return _snap(affinity.rotate(shape, -theta, origin=(0.0, 0.0)), tolerance_calage)
 
-    redressees = [redresser(forme) for _, forme in pieces_brutes]
-    if any(not d.is_valid or d.area <= _EPS for d in redressees):
+    straightened = [straighten(shape) for _, shape in raw_rooms]
+    if any(not d.is_valid or d.area <= _EPS for d in straightened):
         return "room degenerate after snapping to axes"
     # Snap back together BEFORE decomposing: decomposition assumes exact edges, and
     # it is the snapping step that makes neighbouring rooms contiguous.
-    polygones_pieces = _recoller(redressees, tolerance_recollage)
-    if not polygones_pieces:
+    room_polygons = _stitch(straightened, tolerance_recollage)
+    if not room_polygons:
         return "degenerate re-snapping"
-    if any(not d.is_valid or d.area <= _EPS for d in polygones_pieces):
+    if any(not d.is_valid or d.area <= _EPS for d in room_polygons):
         return "room degenerate after re-snapping"
 
     rooms: list[Room] = []
     merges: list[RectilinearRoom] = []
-    for rang, ((sous_type, _), droit) in enumerate(
-        zip(pieces_brutes, polygones_pieces, strict=True)
-    ):
+    for rank, ((subtype, _), straight) in enumerate(zip(raw_rooms, room_polygons, strict=True)):
         try:
-            morceau = decompose(
-                droit,
-                id=f"p{rang:03d}",
-                room_type=sous_type.lower(),
+            fragment = decompose(
+                straight,
+                id=f"p{rank:03d}",
+                room_type=subtype.lower(),
                 max_rectangles=max_rectangles,
             )
-        except InvariantViolation as echec:
-            motif = str(echec.violations[0])
-            if "diagonale" in motif:
+        except InvariantViolation as failure:
+            reason = str(failure.violations[0])
+            if "diagonale" in reason:
                 return "room not axis-aligned"
-            if "trop de rectangles" in motif:  # lang-ok: pre-existing match, out of scope here
+            if "trop de rectangles" in reason:  # lang-ok: pre-existing match, out of scope here
                 return "room over-fragmented"
             return "room not decomposable"
-        rooms.extend(morceau.rectangles)
-        if len(morceau.rectangles) > 1:
-            merges.append(morceau)
+        rooms.extend(fragment.rectangles)
+        if len(fragment.rectangles) > 1:
+            merges.append(fragment)
 
     if len(rooms) > max_rooms:
         return "too many sub-rectangles after decomposition"
 
-    outline = _simple_outline(polygones_pieces)
+    outline = _simple_outline(room_polygons)
     if outline is None:
         return "outline not simple"
 
-    walls = _murs_depuis_polygones(
-        [redresser(m) for m in murs_bruts],
-        [float(m.minimum_rotated_rectangle.length / 4.0) for m in murs_bruts],
+    walls = _walls_from_polygons(
+        [straighten(m) for m in raw_walls],
+        [float(m.minimum_rotated_rectangle.length / 4.0) for m in raw_walls],
     )
     openings = tuple(
-        ouv
-        for ouv in (
-            _ouverture_depuis_baie(redresser(b), walls, rang) for rang, b in enumerate(baies_brutes)
+        opening
+        for opening in (
+            _opening_from_window(straighten(b), walls, rank) for rank, b in enumerate(raw_windows)
         )
-        if ouv is not None
+        if opening is not None
     )
     columns = tuple(
-        (float(redresser(p).centroid.x), float(redresser(p).centroid.y)) for p in poteaux_bruts
+        (float(straighten(p).centroid.x), float(straighten(p).centroid.y)) for p in raw_columns
     )
 
     plan = Plan(rooms=tuple(rooms), walls=walls, openings=openings, outline=outline)
@@ -633,8 +631,8 @@ def _convertir(
         structure=Structure(load_bearing_walls=(), columns=columns),
         orientation=Orientation(deg=theta),
         outline=outline,
-        regulation=reglement,
-        program=tuple(sorted({sous_type.lower() for sous_type, _ in pieces_brutes})),
+        regulation=active_regulation,
+        program=tuple(sorted({subtype.lower() for subtype, _ in raw_rooms})),
     )
     return MSDApartment(
         id=id,
@@ -656,15 +654,17 @@ def _flux_simulations(path: Path) -> Iterator[dict[str, str]]:
     """Read ``simulations.csv``, from the Zenodo zip or from the bare CSV."""
     if path.suffix.lower() == ".zip":
         with zipfile.ZipFile(path) as archive:
-            noms = [name for name in archive.namelist() if name.lower().endswith("simulations.csv")]
-            if not noms:
+            names = [
+                name for name in archive.namelist() if name.lower().endswith("simulations.csv")
+            ]
+            if not names:
                 raise InvariantViolation((f"no simulations.csv in {path}",))
-            with archive.open(noms[0]) as brut:
-                enveloppe = io.TextIOWrapper(brut, encoding="utf-8", errors="replace", newline="")
-                yield from csv.DictReader(enveloppe)
+            with archive.open(names[0]) as raw:
+                envelope = io.TextIOWrapper(raw, encoding="utf-8", errors="replace", newline="")
+                yield from csv.DictReader(envelope)
         return
-    with path.open(encoding="utf-8", errors="replace", newline="") as fichier:
-        yield from csv.DictReader(fichier)
+    with path.open(encoding="utf-8", errors="replace", newline="") as file:
+        yield from csv.DictReader(file)
 
 
 @renamed_parameters({"chemin": "path", "colonne": "column"})
@@ -702,18 +702,18 @@ def load_sd_labels(
     if not path.is_file():
         raise InvariantViolation((f"simulations not found: {path}",))
     table: dict[tuple[str, str], tuple[float, float]] = {}
-    connue = False
-    for ligne in _flux_simulations(path):
-        if not connue:
-            if column not in ligne:
+    known = False
+    for row in _flux_simulations(path):
+        if not known:
+            if column not in row:
                 raise InvariantViolation((f"column {column!r} missing from the simulations",))
-            connue = True
+            known = True
         try:
-            value = float(ligne[column])
-            surface = float(ligne.get("layout_area") or 0.0)
+            value = float(row[column])
+            surface = float(row.get("layout_area") or 0.0)
         except (TypeError, ValueError):
             continue
-        table[(ligne["apartment_id"], _identifiant(ligne["area_id"]))] = (
+        table[(row["apartment_id"], _identifier(row["area_id"]))] = (
             value,
             surface,
         )
@@ -761,19 +761,19 @@ def label(
     """
     if not apartment.source_areas:
         return None
-    trouvees = [
-        labels[(apartment.id, aire)]
-        for aire in apartment.source_areas
-        if (apartment.id, aire) in labels
+    found = [
+        labels[(apartment.id, area)]
+        for area in apartment.source_areas
+        if (apartment.id, area) in labels
     ]
-    coverage = len(trouvees) / len(apartment.source_areas)
-    if coverage < min_coverage or not trouvees:
+    coverage = len(found) / len(apartment.source_areas)
+    if coverage < min_coverage or not found:
         return None
-    weights = np.array([surface for _, surface in trouvees], dtype=float)
-    valeurs = np.array([value for value, _ in trouvees], dtype=float)
+    weights = np.array([surface for _, surface in found], dtype=float)
+    values = np.array([value for value, _ in found], dtype=float)
     if float(weights.sum()) <= 0.0:
         return None
-    return float(np.average(valeurs, weights=weights))
+    return float(np.average(values, weights=weights))
 
 
 @renamed_parameters({"appartements": "apartments"})
@@ -826,22 +826,22 @@ def split_by_site(
         raise InvariantViolation((f"{len(sites)} site(s): three-way split impossible",))
     rng = np.random.default_rng(seed)
     ordre = rng.permutation(len(sites))
-    melanges = [sites[int(i)] for i in ordre]
-    n_train = max(1, round(parts[0] * len(melanges)))
-    n_cal = max(1, round(parts[1] * len(melanges)))
-    n_cal = min(n_cal, len(melanges) - n_train - 1)
-    attribution = {s: 0 for s in melanges[:n_train]}
-    debut_test = n_train + n_cal
-    attribution.update({s: 1 for s in melanges[n_train:debut_test]})
-    attribution.update({s: 2 for s in melanges[debut_test:]})
-    lots: tuple[list[MSDApartment], list[MSDApartment], list[MSDApartment]] = (
+    shuffled = [sites[int(i)] for i in ordre]
+    n_train = max(1, round(parts[0] * len(shuffled)))
+    n_cal = max(1, round(parts[1] * len(shuffled)))
+    n_cal = min(n_cal, len(shuffled) - n_train - 1)
+    attribution = {s: 0 for s in shuffled[:n_train]}
+    test_start = n_train + n_cal
+    attribution.update({s: 1 for s in shuffled[n_train:test_start]})
+    attribution.update({s: 2 for s in shuffled[test_start:]})
+    batches: tuple[list[MSDApartment], list[MSDApartment], list[MSDApartment]] = (
         [],
         [],
         [],
     )
     for apartment in apartments:
-        lots[attribution[apartment.site_id]].append(apartment)
-    return lots
+        batches[attribution[apartment.site_id]].append(apartment)
+    return batches
 
 
 __getattr__ = lazy_aliases(

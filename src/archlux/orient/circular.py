@@ -37,10 +37,10 @@ __all__ = [
     "stratify",
 ]
 
-_NOMS_HUIT = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+_EIGHT_NAMES = ("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 _EPS_ANGLE = 1e-9
 """Tolerance for realigning an angle onto the edge of its period."""
-_EPS_RESULTANTE = 1e-12
+_EPS_RESULTANT = 1e-12
 """Below this resultant magnitude, no direction is dominant."""
 
 
@@ -72,11 +72,11 @@ def encode(deg: float, *, harmoniques: int = 3) -> np.ndarray:
     if harmoniques < 1:
         raise InvalidInput("harmoniques", f"must be >= 1, got {harmoniques}")
     theta = math.radians(deg)
-    composantes = np.empty(2 * harmoniques, dtype=float)
-    for rang in range(1, harmoniques + 1):
-        composantes[2 * (rang - 1)] = math.cos(rang * theta)
-        composantes[2 * (rang - 1) + 1] = math.sin(rang * theta)
-    return composantes
+    components = np.empty(2 * harmoniques, dtype=float)
+    for rank in range(1, harmoniques + 1):
+        components[2 * (rank - 1)] = math.cos(rank * theta)
+        components[2 * (rank - 1) + 1] = math.sin(rank * theta)
+    return components
 
 
 def encode_orientation(orientation: Orientation, *, harmoniques: int = 2) -> np.ndarray:
@@ -99,13 +99,13 @@ def encode_orientation(orientation: Orientation, *, harmoniques: int = 2) -> np.
 
 def _radians(degres: np.ndarray | Sequence[float]) -> np.ndarray:
     """Convert a sequence of azimuths to radians, raveled."""
-    valeurs = np.ravel(np.asarray(degres, dtype=float))
-    if valeurs.size == 0:
+    samples = np.ravel(np.asarray(degres, dtype=float))
+    if samples.size == 0:
         raise InvalidInput("degres", "at least one orientation is required")
-    return np.asarray(np.radians(valeurs), dtype=float)
+    return np.asarray(np.radians(samples), dtype=float)
 
 
-def _resultante(degres: np.ndarray | Sequence[float]) -> tuple[float, float, int]:
+def _resultant(degres: np.ndarray | Sequence[float]) -> tuple[float, float, int]:
     """Sum of the unit vectors ``(C, S)`` and count ``n``."""
     theta = _radians(degres)
     return float(np.cos(theta).sum()), float(np.sin(theta).sum()), int(theta.size)
@@ -119,8 +119,8 @@ def circular_mean(degres: np.ndarray | Sequence[float]) -> float:
     float
         Mean azimuth in degrees, in ``[0, 360)``. ``360°`` is identified with ``0°``.
     """
-    cosinus, sinus, _n = _resultante(degres)
-    deg = float(np.degrees(np.arctan2(sinus, cosinus))) % 360.0
+    cosine, sine, _n = _resultant(degres)
+    deg = float(np.degrees(np.arctan2(sine, cosine))) % 360.0
     return 0.0 if deg > 360.0 - 1e-9 else deg
 
 
@@ -188,20 +188,20 @@ def dominant_direction(
     if not 0.0 < periode <= 360.0:
         raise InvariantViolation((f"periode out of ]0, 360]: {periode}",))
     if weights is None:
-        longueurs = np.ones_like(angles)
+        lengths = np.ones_like(angles)
     else:
-        longueurs = np.asarray(weights, dtype=float).ravel()
-        if longueurs.size != angles.size:
+        lengths = np.asarray(weights, dtype=float).ravel()
+        if lengths.size != angles.size:
             raise InvariantViolation(("degres and poids have distinct lengths",))
-        if bool(np.any(longueurs < 0.0)):
+        if bool(np.any(lengths < 0.0)):
             raise InvariantViolation(("negative weight",))
     m = 360.0 / periode
     phases = np.radians(m * angles)
-    cosinus = float(np.sum(longueurs * np.cos(phases)))
-    sinus = float(np.sum(longueurs * np.sin(phases)))
-    if math.hypot(cosinus, sinus) <= _EPS_RESULTANTE:
+    cosine = float(np.sum(lengths * np.cos(phases)))
+    sine = float(np.sum(lengths * np.sin(phases)))
+    if math.hypot(cosine, sine) <= _EPS_RESULTANT:
         raise InvariantViolation(("null resultant: no dominant direction",))
-    deg = float(np.degrees(math.atan2(sinus, cosinus)) / m) % periode
+    deg = float(np.degrees(math.atan2(sine, cosine)) / m) % periode
     # A direction just below ``periode`` is the same as ``0``: without this
     # realignment, a grid perfectly aligned with the x-axis comes out at
     # 89.999999° instead of 0°, because ``atan2`` returns an infinitesimally
@@ -218,8 +218,8 @@ def concentration(degres: np.ndarray | Sequence[float]) -> float:
         ``0`` = uniform orientations, ``1`` = all identical. This is the circular
         analogue of the inverse of a variance, and it has no angular unit.
     """
-    cosinus, sinus, effectif = _resultante(degres)
-    return math.hypot(cosinus, sinus) / effectif
+    cosine, sine, effective = _resultant(degres)
+    return math.hypot(cosine, sine) / effective
 
 
 def circular_variance(degres: np.ndarray | Sequence[float]) -> float:
@@ -246,18 +246,18 @@ def rayleigh(degres: np.ndarray | Sequence[float]) -> tuple[float, float]:
     usual correction :math:`p \approx e^{-Z}\,[1 + (2Z - Z^2)/(4n)]` is not applied
     here. Below about fifty observations, do not publish this ``p`` uncorrected.
     """
-    resultante = concentration(degres)
-    effectif = _radians(degres).size
-    p_valeur = math.exp(-effectif * resultante * resultante)
-    return resultante, p_valeur
+    resultant = concentration(degres)
+    effective = _radians(degres).size
+    p_value = math.exp(-effective * resultant * resultant)
+    return resultant, p_value
 
 
 def angular_difference(a: float, b: float) -> float:
     """Shortest signed difference between two azimuths, in ``]-180, 180]``."""
-    ecart = (a - b + 180.0) % 360.0 - 180.0
-    if ecart <= -180.0:
+    gap = (a - b + 180.0) % 360.0 - 180.0
+    if gap <= -180.0:
         return 180.0
-    return float(ecart)
+    return float(gap)
 
 
 def circular_linear_regression(theta: np.ndarray, y: np.ndarray) -> RegressionResult:
@@ -270,16 +270,16 @@ def circular_linear_regression(theta: np.ndarray, y: np.ndarray) -> RegressionRe
     y : numpy.ndarray
         Linear response (indicator, gain, ...).
     """
-    azimut = np.ravel(np.asarray(theta, dtype=float))
-    reponse = np.ravel(np.asarray(y, dtype=float))
-    if azimut.size != reponse.size:
+    azimuth = np.ravel(np.asarray(theta, dtype=float))
+    response = np.ravel(np.asarray(y, dtype=float))
+    if azimuth.size != response.size:
         raise InvalidInput("theta", "theta and y must have the same length")
-    if azimut.size < 3:
+    if azimuth.size < 3:
         raise InvalidInput("theta", "at least three observations are required")
-    radians = np.radians(azimut)
-    dessin = np.column_stack((np.cos(radians), np.sin(radians), np.ones(azimut.size)))
-    coefficients, *_reste = np.linalg.lstsq(dessin, reponse, rcond=None)
-    residus = reponse - dessin @ coefficients
+    radians = np.radians(azimuth)
+    drawing = np.column_stack((np.cos(radians), np.sin(radians), np.ones(azimuth.size)))
+    coefficients, *_remainder = np.linalg.lstsq(drawing, response, rcond=None)
+    residus = response - drawing @ coefficients
     return RegressionResult(
         a=float(coefficients[0]),
         b=float(coefficients[1]),
@@ -347,10 +347,10 @@ def stratify(
     """
     if n_secteurs < 1:
         raise InvalidInput("n_secteurs", f"must be >= 1, got {n_secteurs}")
-    valeurs = np.ravel(np.asarray(degres, dtype=float))
-    indices = sector(valeurs, n_secteurs)
-    noms = _NOMS_HUIT if n_secteurs == 8 else tuple(str(i) for i in range(n_secteurs))
-    return {nom: valeurs[indices == rang] for rang, nom in enumerate(noms)}
+    samples = np.ravel(np.asarray(degres, dtype=float))
+    indices = sector(samples, n_secteurs)
+    names = _EIGHT_NAMES if n_secteurs == 8 else tuple(str(i) for i in range(n_secteurs))
+    return {name: samples[indices == rank] for rank, name in enumerate(names)}
 
 
 __getattr__ = lazy_aliases(

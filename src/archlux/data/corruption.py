@@ -57,7 +57,7 @@ roughly in the right spot, which opens a gap on one side and an overlap on
 the other.
 """
 
-_TAILLE_MIN = 0.30
+_MIN_SIZE = 0.30
 """Floor, in metres, below which a corrupted room would be degenerate.
 
 A room with zero thickness is not an invalid plan: it is a plan with no
@@ -85,7 +85,7 @@ class Corruption:
     axis: Literal["x", "y"]
 
 
-def _perturber(
+def _perturb(
     room: Room, mode: Mode, amplitude: float, axis: Literal["x", "y"]
 ) -> tuple[Room, float]:
     """Apply a perturbation, and return the amplitude actually applied."""
@@ -99,16 +99,16 @@ def _perturber(
         return replace(room, h=room.h + amplitude), amplitude
     if mode == "retrecir":
         if axis == "x":
-            applique = min(amplitude, max(0.0, room.w - _TAILLE_MIN))
-            return replace(room, w=room.w - applique), applique
-        applique = min(amplitude, max(0.0, room.h - _TAILLE_MIN))
-        return replace(room, h=room.h - applique), applique
+            applied = min(amplitude, max(0.0, room.w - _MIN_SIZE))
+            return replace(room, w=room.w - applied), applied
+        applied = min(amplitude, max(0.0, room.h - _MIN_SIZE))
+        return replace(room, h=room.h - applied), applied
     # aplatir: crush the larger dimension, to target the area.
     if room.w >= room.h:
-        applique = min(amplitude, max(0.0, room.w - _TAILLE_MIN))
-        return replace(room, w=room.w - applique), applique
-    applique = min(amplitude, max(0.0, room.h - _TAILLE_MIN))
-    return replace(room, h=room.h - applique), applique
+        applied = min(amplitude, max(0.0, room.w - _MIN_SIZE))
+        return replace(room, w=room.w - applied), applied
+    applied = min(amplitude, max(0.0, room.h - _MIN_SIZE))
+    return replace(room, h=room.h - applied), applied
 
 
 def corrupt(
@@ -179,22 +179,22 @@ def corrupt(
     rng = np.random.default_rng(seed)
     # Sort by identifier before drawing: the order of ``plan.rooms`` must not
     # influence the result, otherwise the seed alone would not suffice to replay it.
-    rangs = sorted(range(len(plan.rooms)), key=lambda i: plan.rooms[i].id)
-    combien = min(n_pieces, len(rangs))
-    choisis = [rangs[int(i)] for i in rng.choice(len(rangs), size=combien, replace=False)]
+    ranks = sorted(range(len(plan.rooms)), key=lambda i: plan.rooms[i].id)
+    how_many = min(n_pieces, len(ranks))
+    chosen = [ranks[int(i)] for i in rng.choice(len(ranks), size=how_many, replace=False)]
 
     rooms = list(plan.rooms)
-    fautes: list[Corruption] = []
-    for rang in sorted(choisis):
+    faults: list[Corruption] = []
+    for rank in sorted(chosen):
         mode = modes[int(rng.integers(len(modes)))]
         axis: Literal["x", "y"] = "x" if bool(rng.integers(2)) else "y"
-        signe = 1.0 if mode != "deplacer" else float(rng.choice([-1.0, 1.0]))
-        room, applique = _perturber(rooms[rang], mode, amplitude * signe, axis)
-        if applique == 0.0:
+        sign = 1.0 if mode != "deplacer" else float(rng.choice([-1.0, 1.0]))
+        room, applied = _perturb(rooms[rank], mode, amplitude * sign, axis)
+        if applied == 0.0:
             continue
-        rooms[rang] = room
-        fautes.append(Corruption(mode=mode, room_id=room.id, amplitude=float(applique), axis=axis))
-    return replace(plan, rooms=tuple(rooms), certificate=None), tuple(fautes)
+        rooms[rank] = room
+        faults.append(Corruption(mode=mode, room_id=room.id, amplitude=float(applied), axis=axis))
+    return replace(plan, rooms=tuple(rooms), certificate=None), tuple(faults)
 
 
 __getattr__ = lazy_aliases(

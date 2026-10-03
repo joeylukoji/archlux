@@ -17,7 +17,7 @@ from shapely.geometry import Polygon
 
 from archlux._deprecation import renamed_parameters
 from archlux.errors import GridNotRecoverable, InvariantViolation, UnsupportedInput
-from archlux.geom.grid_repair import _consolider, _couverture, _reparer_partition
+from archlux.geom.grid_repair import _consolidate, _coverage, _repair_partition
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -56,7 +56,7 @@ class Grid:
         return (len(self.x_lines) - 1) * (len(self.y_lines) - 1)
 
 
-def _regrouper(valeurs: Sequence[float], tolerance: float) -> tuple[list[float], dict[float, int]]:
+def _cluster(values: Sequence[float], tolerance: float) -> tuple[list[float], dict[float, int]]:
     """Group close coordinates into increasing grid lines.
 
     Increasing sweep: values are aggregated as long as the gap to the **previous** one
@@ -64,21 +64,21 @@ def _regrouper(valeurs: Sequence[float], tolerance: float) -> tuple[list[float],
     is intended: a string of edges offset step by step describes a single
     alignment intent.
     """
-    triees = sorted(set(valeurs))
-    if not triees:
+    sorted_lines = sorted(set(values))
+    if not sorted_lines:
         return [], {}
-    groupes: list[list[float]] = [[triees[0]]]
-    for value in triees[1:]:
-        if value - groupes[-1][-1] <= tolerance:
-            groupes[-1].append(value)
+    groups: list[list[float]] = [[sorted_lines[0]]]
+    for value in sorted_lines[1:]:
+        if value - groups[-1][-1] <= tolerance:
+            groups[-1].append(value)
         else:
-            groupes.append([value])
-    lignes = [sum(g) / len(g) for g in groupes]
-    rang: dict[float, int] = {}
-    for indice, groupe in enumerate(groupes):
-        for value in groupe:
-            rang[value] = indice
-    return lignes, rang
+            groups.append([value])
+    lines = [sum(g) / len(g) for g in groups]
+    rank: dict[float, int] = {}
+    for index, group in enumerate(groups):
+        for value in group:
+            rank[value] = index
+    return lines, rank
 
 
 @renamed_parameters({"support_min": "min_support", "budget_reparation": "repair_budget"})
@@ -144,36 +144,36 @@ def deduce_grid(
     if not ctx.outline:
         raise UnsupportedInput("tiling grid: the outline is empty, the grid has no anchor")
 
-    lignes_x, rang_x, lignes_y, rang_y = _deduce_lines(plan, ctx, tolerance)
-    bords_x, bords_y = _room_bounds(plan, rang_x, rang_y, tolerance)
+    lines_x, rank_x, lines_y, rank_y = _deduce_lines(plan, ctx, tolerance)
+    borders_x, borders_y = _room_bounds(plan, rank_x, rank_y, tolerance)
 
     # Lines that carry an outline vertex are frozen: the envelope is an
     # input, it does not move. They therefore escape consolidation.
-    ancrees_x = {rang_x[point[0]] for point in ctx.outline}
-    ancrees_y = {rang_y[point[1]] for point in ctx.outline}
+    anchored_xs = {rank_x[point[0]] for point in ctx.outline}
+    anchored_ys = {rank_y[point[1]] for point in ctx.outline}
 
     if min_support > 1:
-        lignes_x, bords_x, ancrees_x = _consolider(lignes_x, bords_x, ancrees_x, min_support)
-        lignes_y, bords_y, ancrees_y = _consolider(lignes_y, bords_y, ancrees_y, min_support)
+        lines_x, borders_x, anchored_xs = _consolidate(lines_x, borders_x, anchored_xs, min_support)
+        lines_y, borders_y, anchored_ys = _consolidate(lines_y, borders_y, anchored_ys, min_support)
 
     incidences = [
-        (piece.id, gauche, droite, bas, haut)
-        for piece, (gauche, droite), (bas, haut) in zip(plan.rooms, bords_x, bords_y, strict=True)
+        (piece.id, left, right, low, high)
+        for piece, (left, right), (low, high) in zip(plan.rooms, borders_x, borders_y, strict=True)
     ]
-    incidences = _verify_partition(ctx, lignes_x, lignes_y, incidences, repair_budget)
+    incidences = _verify_partition(ctx, lines_x, lines_y, incidences, repair_budget)
 
     # Last safety net: repair and consolidation only handle indices, and a
     # room with reversed edges would silently pass into the LP.
-    for nom, gauche, droite, bas, haut in incidences:
-        if gauche >= droite or bas >= haut:
-            raise InvariantViolation((f"room {nom} degenerate in the grid",))
+    for name, left, right, low, high in incidences:
+        if left >= right or low >= high:
+            raise InvariantViolation((f"room {name} degenerate in the grid",))
 
     return Grid(
-        x_lines=tuple(lignes_x),
-        y_lines=tuple(lignes_y),
+        x_lines=tuple(lines_x),
+        y_lines=tuple(lines_y),
         incidences=tuple(incidences),
-        anchored_x=frozenset(ancrees_x),
-        anchored_y=frozenset(ancrees_y),
+        anchored_x=frozenset(anchored_xs),
+        anchored_y=frozenset(anchored_ys),
     )
 
 
@@ -194,22 +194,22 @@ def _deduce_lines(
     """
     xs = [p.x for p in plan.rooms] + [p.x + p.w for p in plan.rooms]
     ys = [p.y for p in plan.rooms] + [p.y + p.h for p in plan.rooms]
-    xs_contour = [point[0] for point in ctx.outline]
-    ys_contour = [point[1] for point in ctx.outline]
+    xs_outline = [point[0] for point in ctx.outline]
+    ys_outline = [point[1] for point in ctx.outline]
     # All the outline coordinates enter the grid, not only the
     # extremes: on a rectilinear outline, each cell must be entirely
     # inside or entirely outside, otherwise the mask below is meaningless.
-    lignes_x, rang_x = _regrouper([*xs, *xs_contour], tolerance)
-    lignes_y, rang_y = _regrouper([*ys, *ys_contour], tolerance)
-    _anchor_outline_vertices("x", lignes_x, rang_x, xs_contour, tolerance)
-    _anchor_outline_vertices("y", lignes_y, rang_y, ys_contour, tolerance)
-    if len(lignes_x) < 2 or len(lignes_y) < 2:
+    lines_x, rank_x = _cluster([*xs, *xs_outline], tolerance)
+    lines_y, rank_y = _cluster([*ys, *ys_outline], tolerance)
+    _anchor_outline_vertices("x", lines_x, rank_x, xs_outline, tolerance)
+    _anchor_outline_vertices("y", lines_y, rank_y, ys_outline, tolerance)
+    if len(lines_x) < 2 or len(lines_y) < 2:
         raise UnsupportedInput("tiling grid: fewer than two grid lines on an axis")
-    return lignes_x, rang_x, lignes_y, rang_y
+    return lines_x, rank_x, lines_y, rank_y
 
 
 def _anchor_outline_vertices(
-    axe: str, lignes: list[float], rang: dict[float, int], valeurs: list[float], tolerance: float
+    axis: str, lines: list[float], rank: dict[float, int], values: list[float], tolerance: float
 ) -> None:
     """Pin the grid lines that carry an outline vertex to that exact coordinate.
 
@@ -224,20 +224,20 @@ def _anchor_outline_vertices(
         Two outline edges fall in the same grid line through room edges within the
         grouping tolerance.
     """
-    portees: dict[int, float] = {}
-    for value in valeurs:
-        ligne = rang[value]
-        if portees.setdefault(ligne, value) != value:
+    spans: dict[int, float] = {}
+    for value in values:
+        row = rank[value]
+        if spans.setdefault(row, value) != value:
             raise UnsupportedInput(
-                f"tiling grid: outline edges {portees[ligne]} and {value} in {axe} "
+                f"tiling grid: outline edges {spans[row]} and {value} in {axis} "
                 f"fall in one grid line, joined through room edges within the grouping "
                 f"tolerance {tolerance} m"
             )
-        lignes[ligne] = value
+        lines[row] = value
 
 
 def _room_bounds(
-    plan: Plan, rang_x: dict[float, int], rang_y: dict[float, int], tolerance: float
+    plan: Plan, rank_x: dict[float, int], rank_y: dict[float, int], tolerance: float
 ) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
     """Room bounds as grid-line indices, checked non-degenerate.
 
@@ -249,22 +249,22 @@ def _room_bounds(
         A room is flat in one axis after grouping (thinner than ``tolerance``, or of
         negative size).
     """
-    bords_x = [(rang_x[p.x], rang_x[p.x + p.w]) for p in plan.rooms]
-    bords_y = [(rang_y[p.y], rang_y[p.y + p.h]) for p in plan.rooms]
-    for axe, bords in (("x", bords_x), ("y", bords_y)):
-        for (debut, fin), piece in zip(bords, plan.rooms, strict=True):
-            if debut >= fin:
+    borders_x = [(rank_x[p.x], rank_x[p.x + p.w]) for p in plan.rooms]
+    borders_y = [(rank_y[p.y], rank_y[p.y + p.h]) for p in plan.rooms]
+    for axis, borders in (("x", borders_x), ("y", borders_y)):
+        for (start, end), piece in zip(borders, plan.rooms, strict=True):
+            if start >= end:
                 raise UnsupportedInput(
-                    f"tiling grid: room {piece.id} is flat in {axe} (thinner than the "
+                    f"tiling grid: room {piece.id} is flat in {axis} (thinner than the "
                     f"grouping tolerance {tolerance} m, or of negative size)"
                 )
-    return bords_x, bords_y
+    return borders_x, borders_y
 
 
 def _verify_partition(
     ctx: Context,
-    lignes_x: list[float],
-    lignes_y: list[float],
+    lines_x: list[float],
+    lines_y: list[float],
     incidences: list[tuple[str, int, int, int, int]],
     repair_budget: int,
 ) -> list[tuple[str, int, int, int, int]]:
@@ -281,22 +281,22 @@ def _verify_partition(
     GridNotRecoverable
         The cells do not form a partition and no bounded repair recovers one.
     """
-    enveloppe = Polygon(ctx.outline)
-    if not enveloppe.is_valid:
+    envelope = Polygon(ctx.outline)
+    if not envelope.is_valid:
         raise UnsupportedInput("tiling grid: the outline is not a valid polygon")
-    centres_x = 0.5 * (np.asarray(lignes_x[:-1]) + np.asarray(lignes_x[1:]))
-    centres_y = 0.5 * (np.asarray(lignes_y[:-1]) + np.asarray(lignes_y[1:]))
-    maille_x, maille_y = np.meshgrid(centres_x, centres_y, indexing="ij")
-    dedans = np.asarray(contains_xy(enveloppe, maille_x, maille_y))
-    forme = (len(lignes_x) - 1, len(lignes_y) - 1)
-    grille = _couverture(incidences, forme)
-    trop = int(np.sum(grille[dedans] > 1) + np.sum(grille[~dedans] > 0))
-    manque = int(np.sum(grille[dedans] < 1))
-    if not (trop or manque):
+    centers_x = 0.5 * (np.asarray(lines_x[:-1]) + np.asarray(lines_x[1:]))
+    centers_y = 0.5 * (np.asarray(lines_y[:-1]) + np.asarray(lines_y[1:]))
+    mesh_x, mesh_y = np.meshgrid(centers_x, centers_y, indexing="ij")
+    inside = np.asarray(contains_xy(envelope, mesh_x, mesh_y))
+    shape = (len(lines_x) - 1, len(lines_y) - 1)
+    grid = _coverage(incidences, shape)
+    excess_cells = int(np.sum(grid[inside] > 1) + np.sum(grid[~inside] > 0))
+    lacking = int(np.sum(grid[inside] < 1))
+    if not (excess_cells or lacking):
         return incidences
     # Local defect of a few cells: try a bounded index adjustment
     # before refusing. Beyond the budget, it is no longer a wrong dimension.
-    repare = _reparer_partition(incidences, dedans, repair_budget) if repair_budget > 0 else None
-    if repare is None:
-        raise GridNotRecoverable(excess=trop, missing=manque)
-    return repare
+    repaired = _repair_partition(incidences, inside, repair_budget) if repair_budget > 0 else None
+    if repaired is None:
+        raise GridNotRecoverable(excess=excess_cells, missing=lacking)
+    return repaired

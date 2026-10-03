@@ -52,7 +52,7 @@ def plan_to_vector(plan: Plan) -> np.ndarray:
     return _vectorize(plan)
 
 
-def _jeton_piece(
+def _room_token(
     x: float,
     y: float,
     w: float,
@@ -60,50 +60,50 @@ def _jeton_piece(
     room_type: str,
     orientation: Orientation,
     n_pieces: float,
-    aire_totale: float,
+    total_area: float,
 ) -> np.ndarray:
     """Un jeton de pièce, continu en géométrie et périodique en azimut."""
     w = max(w, _EPS)
     h = max(h, _EPS)
-    aire = w * h
+    area = w * h
     peri = 2.0 * (w + h)
-    compact = 4.0 * aire / (peri * peri)
+    compact = 4.0 * area / (peri * peri)
     type_oh = np.zeros(len(_TYPES) + 1, dtype=float)
     if room_type in _TYPES:
         type_oh[_TYPES.index(room_type)] = 1.0
     else:
         type_oh[-1] = 1.0
-    azimut = encode_orientation(orientation, harmoniques=3)
+    azimuth = encode_orientation(orientation, harmoniques=3)
     token = np.zeros(TOKEN_DIM, dtype=float)
     token[0:4] = (x, y, w, h)
-    token[4:7] = (aire, peri, compact)
+    token[4:7] = (area, peri, compact)
     token[7:14] = type_oh
-    token[14:20] = azimut
+    token[14:20] = azimuth
     token[20] = n_pieces
-    token[21] = aire_totale
+    token[21] = total_area
     return token
 
 
-def _jeton_ouverture(
-    ouv: Opening,
-    mur: Wall,
+def _opening_token(
+    opening: Opening,
+    wall: Wall,
     n_pieces: float,
-    aire_totale: float,
+    total_area: float,
     orientation: Orientation,
 ) -> np.ndarray:
     """Un jeton de baie : azimut du mur porteur, jamais recopié sur chaque pièce."""
-    azimut_mur = math.degrees(math.atan2(mur.b[1] - mur.a[1], mur.b[0] - mur.a[0]))
+    wall_azimuth = math.degrees(math.atan2(wall.b[1] - wall.a[1], wall.b[0] - wall.a[0]))
     token = np.zeros(TOKEN_DIM, dtype=float)
     token[14:20] = encode_orientation(orientation, harmoniques=3)
     token[20] = n_pieces
-    token[21] = aire_totale
+    token[21] = total_area
     token[22:28] = np.concatenate(
         [
-            encode(azimut_mur, harmoniques=1),
-            np.array([ouv.s, ouv.relative_width, ouv.head_height, 1.0], dtype=float),
+            encode(wall_azimuth, harmoniques=1),
+            np.array([opening.s, opening.relative_width, opening.head_height, 1.0], dtype=float),
         ]
     )
-    token[28] = ouv.sill_height
+    token[28] = opening.sill_height
     return token
 
 
@@ -117,10 +117,10 @@ def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
     (convention PyTorch ``src_key_padding_mask``).
     """
     n = len(plan.rooms)
-    aire_totale = sum(p.area for p in plan.rooms)
-    jetons = np.zeros((n, TOKEN_DIM), dtype=float)
+    total_area = sum(p.area for p in plan.rooms)
+    tokens = np.zeros((n, TOKEN_DIM), dtype=float)
     for i, piece in enumerate(plan.rooms):
-        jetons[i] = _jeton_piece(
+        tokens[i] = _room_token(
             piece.x,
             piece.y,
             piece.w,
@@ -128,19 +128,19 @@ def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
             piece.type,
             ctx.orientation,
             float(n),
-            aire_totale,
+            total_area,
         )
-    murs_par_id = {mur.id: mur for mur in plan.walls}
+    walls_by_id = {wall.id: wall for wall in plan.walls}
     extra: list[np.ndarray] = []
-    for ouv in plan.openings:
-        mur = murs_par_id.get(ouv.wall_id)
-        if mur is None:
+    for opening in plan.openings:
+        wall = walls_by_id.get(opening.wall_id)
+        if wall is None:
             continue
-        extra.append(_jeton_ouverture(ouv, mur, float(n), aire_totale, ctx.orientation))
+        extra.append(_opening_token(opening, wall, float(n), total_area, ctx.orientation))
     if extra:
-        jetons = np.vstack((jetons, np.stack(extra)))
-    masque = np.zeros(jetons.shape[0], dtype=bool)
-    return jetons, masque
+        tokens = np.vstack((tokens, np.stack(extra)))
+    mask = np.zeros(tokens.shape[0], dtype=bool)
+    return tokens, mask
 
 
 @renamed_parameters({"baies": "glazing"})
@@ -171,13 +171,13 @@ def vector_to_tokens(
     donc ``"living_room"``. C'est une perte assumée — le vecteur de décision ne
     transporte pas le programme.
     """
-    vecteur = np.asarray(x, dtype=float).ravel()
-    n = vecteur.size // FIELDS_PER_ROOM
-    rooms = vecteur[: n * FIELDS_PER_ROOM].reshape(n, FIELDS_PER_ROOM)
-    aire_totale = float(np.sum(rooms[:, 2] * rooms[:, 3]))
-    jetons = np.zeros((n, TOKEN_DIM), dtype=float)
+    vector = np.asarray(x, dtype=float).ravel()
+    n = vector.size // FIELDS_PER_ROOM
+    rooms = vector[: n * FIELDS_PER_ROOM].reshape(n, FIELDS_PER_ROOM)
+    total_area = float(np.sum(rooms[:, 2] * rooms[:, 3]))
+    tokens = np.zeros((n, TOKEN_DIM), dtype=float)
     for i in range(n):
-        jetons[i] = _jeton_piece(
+        tokens[i] = _room_token(
             float(rooms[i, 0]),
             float(rooms[i, 1]),
             float(rooms[i, 2]),
@@ -185,18 +185,18 @@ def vector_to_tokens(
             "living_room",
             orientation,
             float(n),
-            aire_totale,
+            total_area,
         )
     if glazing is not None and not glazing.empty:
-        murs_par_id = {mur.id: mur for mur in glazing.walls}
+        walls_by_id = {wall.id: wall for wall in glazing.walls}
         extra = [
-            _jeton_ouverture(ouv, murs_par_id[ouv.wall_id], float(n), aire_totale, orientation)
-            for ouv in glazing.openings
-            if ouv.wall_id in murs_par_id
+            _opening_token(opening, walls_by_id[opening.wall_id], float(n), total_area, orientation)
+            for opening in glazing.openings
+            if opening.wall_id in walls_by_id
         ]
         if extra:
-            jetons = np.vstack((jetons, np.stack(extra)))
-    return jetons, np.zeros(jetons.shape[0], dtype=bool)
+            tokens = np.vstack((tokens, np.stack(extra)))
+    return tokens, np.zeros(tokens.shape[0], dtype=bool)
 
 
 __getattr__ = lazy_aliases(

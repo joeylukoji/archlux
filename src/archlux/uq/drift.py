@@ -26,7 +26,7 @@ __all__ = [
     "measure_drift",
 ]
 
-_SEUIL_P = 0.05
+_P_THRESHOLD = 0.05
 _N_PERMUTATIONS = 199
 
 
@@ -113,14 +113,14 @@ def check_drift(
     rng = np.random.default_rng(seed)
     pooled = np.concatenate([obs, cal])
     n_obs = int(obs.size)
-    depassements = 0
+    exceedances = 0
     for _ in range(_N_PERMUTATIONS):
         rng.shuffle(pooled)
         permute = float(ks_2samp(pooled[:n_obs], pooled[n_obs:]).statistic)
         if permute >= statistique:
-            depassements += 1
-    p_valeur = (depassements + 1) / (_N_PERMUTATIONS + 1)
-    echangeable = p_valeur > _SEUIL_P
+            exceedances += 1
+    p_value = (exceedances + 1) / (_N_PERMUTATIONS + 1)
+    echangeable = p_value > _P_THRESHOLD
     if echangeable:
         message = "exchangeability holds: the conformal bound remains interpretable"
     else:
@@ -131,7 +131,7 @@ def check_drift(
     return DriftDiagnostic(
         echangeable=echangeable,
         statistique=statistique,
-        threshold=_SEUIL_P,
+        threshold=_P_THRESHOLD,
         n_observations=n_obs,
         message=message,
     )
@@ -161,24 +161,24 @@ def measure_drift(predictions: np.ndarray, verites: np.ndarray, *, seed: int) ->
     formal test.
     """
     pred = np.asarray(predictions, dtype=float).ravel()
-    verite = np.asarray(verites, dtype=float).ravel()
-    if pred.size != verite.size or pred.size == 0:
+    truth = np.asarray(verites, dtype=float).ravel()
+    if pred.size != truth.size or pred.size == 0:
         raise InvariantViolation(("predictions and truths have incompatible lengths",))
     _ = int(seed)
-    slacks = pred - verite
+    slacks = pred - truth
     n = int(slacks.size)
     if n >= 3:
         from scipy.stats import linregress  # lazy, see controler_derive
 
-        tendance = linregress(np.arange(n, dtype=float), slacks)
-        pente = float(tendance.slope)
-        p_valeur = float(tendance.pvalue)
+        trend = linregress(np.arange(n, dtype=float), slacks)
+        slope = float(trend.slope)
+        p_value = float(trend.pvalue)
     else:
-        pente, p_valeur = 0.0, 1.0
+        slope, p_value = 0.0, 1.0
     return DriftReport(
         derive_moyenne=float(slacks.mean()),
-        tendance_pente=pente,
-        tendance_pvalue=p_valeur,
+        tendance_pente=slope,
+        tendance_pvalue=p_value,
         n_echantillons=n,
     )
 

@@ -12,7 +12,7 @@ from shapely.geometry import GeometryCollection, LineString, Point
 
 from archlux.errors import GridNotRecoverable, UnsupportedInput
 from archlux.geom.grid import _verify_partition
-from archlux.geom.rectilinear import _chord_through_pivot, _line_pieces
+from archlux.geom.rectilinear import _chord_through_pivot, _line_rooms
 from archlux.types import Context, Orientation, Regulation, Structure
 
 SQUARE = ((0.0, 0.0), (2.0, 0.0), (2.0, 2.0), (0.0, 2.0))
@@ -44,7 +44,7 @@ def test_chord_through_pivot_none_when_nothing_touches_the_pivot() -> None:
 
 def test_line_pieces_keeps_only_lines_of_a_geometry_collection() -> None:
     segment = LineString([(0.0, 0.0), (1.0, 0.0)])
-    pieces = _line_pieces(GeometryCollection([Point(5.0, 5.0), segment]))
+    pieces = _line_rooms(GeometryCollection([Point(5.0, 5.0), segment]))
     assert len(pieces) == 1
     assert pieces[0].equals(segment)
 

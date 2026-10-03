@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from archlux import InvalidInput, Plan, Room
-from archlux.data.loaders import _convertir
+from archlux.data.loaders import _convert
 from archlux.export.svg import sheet
 from archlux.geom.diagnostic import diagnose
 from archlux.light.tokens import permute_rooms
@@ -59,10 +59,10 @@ def test_bad_argument_raises_invalid_input_naming_the_field(call: object, field:
 
 def test_unreadable_wkt_is_a_rejection_not_a_swallowed_bug() -> None:
     """A malformed WKT rejects the apartment; any other error is a bug and propagates."""
-    rejected = _convertir(
+    rejected = _convert(
         "x",
         [("area", "Bedroom", "not a wkt", "1", "site")],
-        reglement=Regulation(min_areas=()),
+        active_regulation=Regulation(min_areas=()),
         max_rooms=20,
         max_rectangles=30,
         tolerance_calage=0.1,

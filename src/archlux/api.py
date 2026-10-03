@@ -94,9 +94,9 @@ def gradient_distance(x_proposed: VecteurF) -> VecteurF:
     Epigraph: ``docs/formules/epigraphe-l1.md``.
     """
     n_var = int(x_proposed.shape[0])
-    couts = np.zeros(2 * n_var, dtype=float)
-    couts[n_var:] = 1.0
-    return couts
+    costs = np.zeros(2 * n_var, dtype=float)
+    costs[n_var:] = 1.0
+    return costs
 
 
 def _active_origins(sol: LPSolution, poly: Polytope) -> tuple[str, ...]:
@@ -136,14 +136,14 @@ def _translated_duals(
     return translate_duals(duals, poly, threshold=_DUAL_THRESHOLD, objective=objective)
 
 
-def _only_a_gap(preuve: GeometricProof, budget: float | None) -> bool:
+def _only_a_gap(geometric_proof: GeometricProof, budget: float | None) -> bool:
     """The proof fails on a gap and on nothing else, read from its flags, never its text."""
     return (
-        preuve.gaps
-        and not preuve.overlap
-        and preuve.areas_ok
-        and preuve.structure_kept
-        and (budget is None or preuve.max_displacement <= budget + SNAP_M)
+        geometric_proof.gaps
+        and not geometric_proof.overlap
+        and geometric_proof.areas_ok
+        and geometric_proof.structure_kept
+        and (budget is None or geometric_proof.max_displacement <= budget + SNAP_M)
     )
 
 
@@ -273,11 +273,11 @@ def _build_problem(
         plan if grid is None else snap_to_grid(plan, grid),
         structure=ctx.structure,
         # A fused room keeps one side of every wall: never a wall on its seam.
-        groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in merges),
+        groups=tuple(tuple(r.id for r in room_l.rectangles) for room_l in merges),
     )
     base = build_polytope(order, ctx)
-    for piece_l in merges:
-        base = extend_merges(base, piece_l, min_contact=ctx.regulation.min_width)
+    for room_l in merges:
+        base = extend_merges(base, room_l, min_contact=ctx.regulation.min_width)
     return _Problem(
         plan=plan,
         ctx=ctx,
@@ -375,8 +375,8 @@ def _optimize_light(
     # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
     glazing = Glazing(walls=corrected.walls, openings=corrected.openings)
     result = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
-    performant = problem.decode(result.x, poly.index, template=corrected)
-    proof = problem.prove(performant)
+    best_plan = problem.decode(result.x, poly.index, template=corrected)
+    proof = problem.prove(best_plan)
     if not proof.valid:
         raise InvariantViolation(proof.violations)
     # The last Frank-Wolfe LP is on poly_fw, not on poly_l1: its duals are the only ones
@@ -393,7 +393,7 @@ def _optimize_light(
         mu, sigma = point_prediction(objective, result.x, ctx.orientation, glazing=glazing)
         performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
-        performant,
+        best_plan,
         certificate=Certificate(geometry=proof, performance=performance, duals=duals),
         trace=result.trace if trace else None,
     )

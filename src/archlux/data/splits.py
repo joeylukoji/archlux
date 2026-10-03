@@ -23,21 +23,21 @@ class Split:
     fingerprint: str
 
 
-def _lignes(path: Path) -> tuple[str, ...]:
+def _lines(path: Path) -> tuple[str, ...]:
     """Read identifiers, one per line, without duplicates or comments."""
     if not path.is_file():
         raise InvariantViolation((f"missing split file: {path}",))
-    vus: list[str] = []
-    deja: set[str] = set()
-    for brute in path.read_text(encoding="utf-8").splitlines():
-        id = brute.strip()
+    seen: list[str] = []
+    already: set[str] = set()
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        id = raw.strip()
         if not id or id.startswith("#"):
             continue
-        if id in deja:
+        if id in already:
             raise InvariantViolation((f"repeated identifier in {path.name}: {id}",))
-        deja.add(id)
-        vus.append(id)
-    return tuple(vus)
+        already.add(id)
+        seen.append(id)
+    return tuple(seen)
 
 
 @renamed_parameters({"chemin": "path"})
@@ -53,21 +53,21 @@ def load_split(path: Path) -> Split:
         An identifier appears in two sets, or a file is missing.
     """
     racine = Path(path)
-    train = _lignes(racine / "train.txt")
-    calib = _lignes(racine / "calibration.txt")
-    test = _lignes(racine / "test.txt")
+    train = _lines(racine / "train.txt")
+    calib = _lines(racine / "calibration.txt")
+    test = _lines(racine / "test.txt")
     s_train, s_calib, s_test = set(train), set(calib), set(test)
-    conflits: list[str] = []
+    conflicts: list[str] = []
     if s_train & s_calib:
-        conflits.append("train ∩ calibration")
+        conflicts.append("train ∩ calibration")
     if s_train & s_test:
-        conflits.append("train ∩ test")
+        conflicts.append("train ∩ test")
     if s_calib & s_test:
-        conflits.append("calibration ∩ test")
-    if conflits:
-        raise InvariantViolation((f"identifiers shared between sets: {', '.join(conflits)}",))
-    materiau = "\n".join((*train, "---", *calib, "---", *test)).encode()
-    fingerprint = hashlib.blake2b(materiau, digest_size=16).hexdigest()
+        conflicts.append("calibration ∩ test")
+    if conflicts:
+        raise InvariantViolation((f"identifiers shared between sets: {', '.join(conflicts)}",))
+    material = "\n".join((*train, "---", *calib, "---", *test)).encode()
+    fingerprint = hashlib.blake2b(material, digest_size=16).hexdigest()
     return Split(
         name=racine.name,
         train=train,

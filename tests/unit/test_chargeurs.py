@@ -18,8 +18,8 @@ import archlux as ax
 from archlux.certify.proof import verify_exactly
 from archlux.data.loaders import (
     LoadStatistics,
-    _recoller,
-    _trame,
+    _grid,
+    _stitch,
     load_msd,
 )
 from archlux.types import Regulation
@@ -57,7 +57,7 @@ def _appartement_deux_pieces() -> list[tuple[str, str, str, Polygon]]:
 
 def test_trame_regroupe_les_coordonnees_voisines() -> None:
     """Deux bords distants de moins que la tolerance deviennent le meme bord."""
-    correspondance = _trame([0.0, 0.05, 3.90, 4.10, 8.0], tolerance=0.30)
+    correspondance = _grid([0.0, 0.05, 3.90, 4.10, 8.0], tolerance=0.30)
     assert correspondance[0.0] == correspondance[0.05]
     assert correspondance[3.90] == correspondance[4.10] == pytest.approx(4.0)
     assert correspondance[8.0] != correspondance[4.10]
@@ -65,7 +65,7 @@ def test_trame_regroupe_les_coordonnees_voisines() -> None:
 
 def test_trame_est_transitive_le_long_d_une_enfilade() -> None:
     """Une chaine de pas courts fusionne, meme si les extremes sont eloignes."""
-    correspondance = _trame([0.0, 0.2, 0.4, 0.6], tolerance=0.30)
+    correspondance = _grid([0.0, 0.2, 0.4, 0.6], tolerance=0.30)
     assert len(set(correspondance.values())) == 1
 
 
@@ -74,7 +74,7 @@ def test_recollage_rend_les_pieces_jointives() -> None:
     gauche = box(0.0, 0.0, 3.9, 5.0)
     droite = box(4.1, 0.0, 8.0, 5.0)
     assert gauche.distance(droite) == pytest.approx(0.2)
-    recolles = _recoller([gauche, droite], tolerance=0.30)
+    recolles = _stitch([gauche, droite], tolerance=0.30)
     assert len(recolles) == 2
     assert recolles[0].distance(recolles[1]) == pytest.approx(0.0)
 

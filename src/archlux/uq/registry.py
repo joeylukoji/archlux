@@ -157,10 +157,10 @@ def open_calibration(racine: Path, token: CalibrationToken) -> Path:
         Missing or invalid token, or missing directory.
     """
     token.verify()
-    dossier = Path(racine) / "calibration"
-    if not dossier.is_dir():
-        raise CalibrationLocked(f"missing calibration directory: {dossier}")
-    return dossier
+    directory = Path(racine) / "calibration"
+    if not directory.is_dir():
+        raise CalibrationLocked(f"missing calibration directory: {directory}")
+    return directory
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,17 +171,17 @@ class DataManagement:
 
     def for_training(self) -> Path:
         """``train/`` directory — the only exposed path to fit the weights."""
-        dossier = Path(self.racine) / "train"
-        if not dossier.is_dir():
-            raise InvariantViolation((f"missing training directory: {dossier}",))
-        return dossier
+        directory = Path(self.racine) / "train"
+        if not directory.is_dir():
+            raise InvariantViolation((f"missing training directory: {directory}",))
+        return directory
 
     def for_test(self) -> Path:
         """``test/`` directory, opened only once for the final measurement."""
-        dossier = Path(self.racine) / "test"
-        if not dossier.is_dir():
-            raise InvariantViolation((f"missing test directory: {dossier}",))
-        return dossier
+        directory = Path(self.racine) / "test"
+        if not directory.is_dir():
+            raise InvariantViolation((f"missing test directory: {directory}",))
+        return directory
 
     def for_calibration(self, token: CalibrationToken, model: object | None = None) -> Path:
         """``calibration/`` directory, only after the model is frozen.

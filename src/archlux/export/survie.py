@@ -31,5 +31,5 @@ def survival_rate(plans: Sequence[Plan], *, z: float = 1.96) -> tuple[float, tup
     if n < 1:
         raise InvariantViolation(("plans must be non-empty",))
     successes = sum(1 for plan in plans if diagnose(plan).exportable)
-    taux = successes / n
-    return taux, wilson_interval(successes, n, z=z)
+    rate = successes / n
+    return rate, wilson_interval(successes, n, z=z)

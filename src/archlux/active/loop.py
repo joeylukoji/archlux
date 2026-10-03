@@ -98,12 +98,12 @@ class _CampaignState:
     exclus: list[int] = field(default_factory=list)
 
 
-def _empiler(xs: list[np.ndarray]) -> np.ndarray:
+def _stack(xs: list[np.ndarray]) -> np.ndarray:
     """Stack plan vectors into a ``(n, d)`` matrix."""
     return np.stack([np.asarray(x, dtype=float).ravel() for x in xs])
 
 
-def _incertitudes_acquisition(
+def _acquisition_uncertainties(
     surrogate: Surrogate,
     pool: Batch,
     xs_labeled: list[np.ndarray],
@@ -122,28 +122,28 @@ def _incertitudes_acquisition(
     )
     if not xs_labeled:
         return np.asarray(np.maximum(base, 1e-12), dtype=float)
-    ref = _empiler(xs_labeled)
-    cand = _empiler(list(pool.x))
+    ref = _stack(xs_labeled)
+    cand = _stack(list(pool.x))
     dist2 = np.sum((cand[:, None, :] - ref[None, :, :]) ** 2, axis=2)
     dist = np.sqrt(np.min(dist2, axis=1))
-    echelle = float(np.median(dist) + 1e-9)
-    return np.asarray(np.maximum(base, 1e-12) * (1.0 + dist / echelle), dtype=float)
+    scale = float(np.median(dist) + 1e-9)
+    return np.asarray(np.maximum(base, 1e-12) * (1.0 + dist / scale), dtype=float)
 
 
-def _largeur_moyenne(
-    calibrateur: ConformalCalibrator,
+def _mean_width(
+    calibrator: ConformalCalibrator,
     surrogate: Surrogate,
     holdout: Batch,
 ) -> float:
     """Mean width of the conformal intervals on the held-out set."""
-    largeurs: list[float] = []
+    widths: list[float] = []
     for x, o in zip(holdout.x, holdout.orientations, strict=True):
         pred = float(surrogate.evaluate(x, o))
         sigma = float(surrogate.uncertainty(x, o))
         # Held-out plans, never chosen by an optimizer: exchangeable by construction.
-        borne = calibrateur.borne(pred, sigma, regime="exchangeable")
-        largeurs.append(float(borne.upper - borne.lower))
-    return float(np.mean(largeurs))
+        borne = calibrator.borne(pred, sigma, regime="exchangeable")
+        widths.append(float(borne.upper - borne.lower))
+    return float(np.mean(widths))
 
 
 def _validate_run_inputs(
@@ -184,7 +184,7 @@ def _seed_calibration(
 
     Extracted from :meth:`Loop.run` (PLAN.md phase 4, block 12, item 36).
     """
-    independante = calibration is not None
+    independent = calibration is not None
     xs_cal: list[np.ndarray] = []
     os_cal: list[Orientation] = []
     if calibration is not None:
@@ -201,7 +201,7 @@ def _seed_calibration(
     ys_cal: list[float] = [
         float(simulateur.evaluate(x, o)) for x, o in zip(xs_cal, os_cal, strict=True)
     ]
-    return xs_cal, ys_cal, os_cal, independante
+    return xs_cal, ys_cal, os_cal, independent
 
 
 @dataclass(slots=True)
@@ -264,9 +264,9 @@ class Loop:
         if not 0.0 <= self.part_calibration < 1.0:
             raise InvariantViolation((f"part_calibration out of [0, 1[: {self.part_calibration}",))
 
-    def _calibrer(
+    def _calibrate(
         self,
-        calibrateur: ConformalCalibrator,
+        calibrator: ConformalCalibrator,
         xs: list[np.ndarray],
         ys: list[float],
         orientations: list[Orientation],
@@ -278,18 +278,20 @@ class Loop:
         sigmas = np.array(
             [float(self.surrogate.uncertainty(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
-        calibrateur.fit(preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha)
+        calibrator.fit(preds, np.asarray(ys, dtype=float), sigmas, alpha=self.alpha)
 
-    def _repartir(self, n_acquis: int, rng: np.random.Generator, *, independante: bool) -> set[int]:
+    def _split_acquired(
+        self, n_acquired: int, rng: np.random.Generator, *, independent: bool
+    ) -> set[int]:
         """Ranks of the current batch to divert to calibration rather than training.
 
         The draw is **internal to the batch**: it therefore does not depend on the
         acquisition order, which goes from most exploratory to most exploitative.
         """
-        if independante or self.part_calibration <= 0.0 or n_acquis < 1:
+        if independent or self.part_calibration <= 0.0 or n_acquired < 1:
             return set()
-        n_cal = min(n_acquis, max(1, round(self.part_calibration * n_acquis)))
-        return {int(j) for j in rng.permutation(n_acquis)[:n_cal]}
+        n_cal = min(n_acquired, max(1, round(self.part_calibration * n_acquired)))
+        return {int(j) for j in rng.permutation(n_acquired)[:n_cal]}
 
     def _fit_cycle(
         self,
@@ -336,10 +338,10 @@ class Loop:
         pool: Batch,
         dens: np.ndarray,
         rng: np.random.Generator,
-        n_prendre: int,
+        n_take: int,
         state: _CampaignState,
         *,
-        independante: bool,
+        independent: bool,
     ) -> list[int]:
         """Select, simulate, split and (re)fit for one acquisition cycle.
 
@@ -348,23 +350,23 @@ class Loop:
 
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
         """
-        inc = _incertitudes_acquisition(self.surrogate, pool, state.xs_lab)
+        inc = _acquisition_uncertainties(self.surrogate, pool, state.xs_lab)
         idxs = self.acquire.selectionner(
             inc,
             dens,
-            n=n_prendre,
+            n=n_take,
             seed=derive(self.seed, f"selection/{cycle}"),
             exclus=np.asarray(state.exclus, dtype=int) if state.exclus else None,
         )
-        acquis = [int(i) for i in idxs]
+        acquired = [int(i) for i in idxs]
         # Split BEFORE any fitting: this is what physically prevents ``fit``
         # from ever seeing a calibration point.
-        vers_calibration = self._repartir(len(acquis), rng, independante=independante)
-        for rang, i in enumerate(acquis):
+        to_calibration = self._split_acquired(len(acquired), rng, independent=independent)
+        for rank, i in enumerate(acquired):
             x = np.asarray(pool.x[i], dtype=float).copy()
             o = pool.orientations[i]
             y = float(self.simulateur.evaluate(x, o))
-            if rang in vers_calibration:
+            if rank in to_calibration:
                 state.xs_cal.append(x)
                 state.ys_cal.append(y)
                 state.os_cal.append(o)
@@ -374,18 +376,18 @@ class Loop:
                 state.os_lab.append(o)
             state.exclus.append(i)
         self._fit_cycle(cycle, state.xs_lab, state.ys_lab, state.os_lab)
-        return acquis
+        return acquired
 
     def _recalibrate_cycle(
         self,
         cycle: int,
-        calibrateur: ConformalCalibrator,
+        calibrator: ConformalCalibrator,
         xs_cal: list[np.ndarray],
         ys_cal: list[float],
         os_cal: list[Orientation],
         n_min: int,
         holdout: Batch,
-        historique: list[float],
+        history: list[float],
     ) -> None:
         """Recalibrate and measure the held-out interval width, if enough points exist.
 
@@ -401,14 +403,14 @@ class Loop:
         if len(xs_cal) < n_min:
             return
         try:
-            self._calibrer(calibrateur, xs_cal, ys_cal, os_cal)
-            historique.append(_largeur_moyenne(calibrateur, self.surrogate, holdout))
-        except InvariantViolation as echec:
+            self._calibrate(calibrator, xs_cal, ys_cal, os_cal)
+            history.append(_mean_width(calibrator, self.surrogate, holdout))
+        except InvariantViolation as failure:
             _LOG.warning(
                 "calibration_cycle_ignoree",
                 cycle=cycle,
                 n_calibration=len(xs_cal),
-                violations=echec.violations,
+                violations=failure.violations,
             )
 
     def run(
@@ -459,42 +461,42 @@ class Loop:
             holdout_orientations,
         )
         n_min = minimal_n_conformal(self.alpha)
-        xs_cal, ys_cal, os_cal, independante = _seed_calibration(
+        xs_cal, ys_cal, os_cal, independent = _seed_calibration(
             self.simulateur, calibration, calibration_orientations, n_min, self.alpha
         )
         state = _CampaignState(xs_cal, ys_cal, os_cal)
 
         pool = Batch(tuple(propositions), tuple(orientations))
-        dens = kernel_density(_empiler(propositions), _empiler(reference_optimiseur))
-        historique: list[float] = []
-        restantes = self.budget
+        dens = kernel_density(_stack(propositions), _stack(reference_optimiseur))
+        history: list[float] = []
+        remaining = self.budget
         cycle = 0
-        calibrateur = ConformalCalibrator(indicator="sDA")
+        calibrator = ConformalCalibrator(indicator="sDA")
         # Named sub-streams (AUDIT.md Q-M5): with ``seed + cycle`` the campaign of seed 17
         # at cycle 1 replayed the selection of the campaign of seed 18 at cycle 0.
         rng = np.random.default_rng(derive(self.seed, "split"))
 
-        while restantes > 0:
-            n_prendre = min(self.batch, restantes, len(pool) - len(state.exclus))
-            if n_prendre < 1:
+        while remaining > 0:
+            n_take = min(self.batch, remaining, len(pool) - len(state.exclus))
+            if n_take < 1:
                 break
-            acquis = self._run_cycle(
-                cycle, pool, dens, rng, n_prendre, state, independante=independante
+            acquired = self._run_cycle(
+                cycle, pool, dens, rng, n_take, state, independent=independent
             )
-            restantes -= len(acquis)
+            remaining -= len(acquired)
             self._recalibrate_cycle(
                 cycle,
-                calibrateur,
+                calibrator,
                 state.xs_cal,
                 state.ys_cal,
                 state.os_cal,
                 n_min,
                 hold,
-                historique,
+                history,
             )
             cycle += 1
 
-        if calibrateur.n < 1:
+        if calibrator.n < 1:
             if len(state.xs_cal) < n_min:
                 raise InvariantViolation(
                     (
@@ -503,17 +505,17 @@ class Loop:
                         f"or pass an independent calibration= set",
                     )
                 )
-            self._calibrer(calibrateur, state.xs_cal, state.ys_cal, state.os_cal)
-            historique.append(_largeur_moyenne(calibrateur, self.surrogate, hold))
+            self._calibrate(calibrator, state.xs_cal, state.ys_cal, state.os_cal)
+            history.append(_mean_width(calibrator, self.surrogate, hold))
 
-        largeur = historique[-1] if historique else float("nan")
+        largeur = history[-1] if history else float("nan")
         return ActiveReport(
             n_simulations=len(state.xs_lab) + len(state.xs_cal),
             largeur_intervalle_finale=largeur,
-            q_final=float(calibrateur.q),
-            n_calibration=int(calibrateur.n),
-            historique_largeur=tuple(historique),
-            calibration_independante=independante,
+            q_final=float(calibrator.q),
+            n_calibration=int(calibrator.n),
+            historique_largeur=tuple(history),
+            calibration_independante=independent,
         )
 
 

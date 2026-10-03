@@ -51,10 +51,10 @@ MAX_PARAMETRES = 2_000_000
 
 
 @lru_cache(maxsize=8)
-def _dense_depuis_disque(chemin: str, empreinte: str) -> DenseSurrogate:
+def _dense_from_disk(chemin: str, fingerprint: str) -> DenseSurrogate:
     """Charger un ``npz`` une fois par ``(chemin, empreinte)``, après contrôle SHA-256."""
-    actuel = hashlib.sha256(Path(chemin).read_bytes()).hexdigest()
-    if actuel != empreinte:
+    current = hashlib.sha256(Path(chemin).read_bytes()).hexdigest()
+    if current != fingerprint:
         raise InvariantViolation((f"empreinte des poids divergente pour {chemin}",))
     return DenseSurrogate.load(Path(chemin))
 
@@ -86,10 +86,10 @@ class LearnedSurrogate:
     def _backend(self) -> DenseSurrogate:
         chemin = Path(self.chemin_poids)
         if chemin.suffix.lower() == ".pt":
-            self._charger_torch()
-        return _dense_depuis_disque(str(chemin.resolve()), self.empreinte_poids)
+            self._load_torch()
+        return _dense_from_disk(str(chemin.resolve()), self.empreinte_poids)
 
-    def _charger_torch(self) -> NoReturn:
+    def _load_torch(self) -> NoReturn:
         """Refuser un ``.pt``. ``torch`` n'est importé qu'ici, et seulement alors.
 
         Lève **inconditionnellement** : le transformeur n'existe pas (voir l'en-tête du
@@ -99,8 +99,8 @@ class LearnedSurrogate:
         """
         import torch
 
-        etat = torch.load(self.chemin_poids, map_location="cpu", weights_only=True)
-        n_params = int(sum(p.numel() for p in etat.values())) if isinstance(etat, dict) else 0
+        state = torch.load(self.chemin_poids, map_location="cpu", weights_only=True)
+        n_params = int(sum(p.numel() for p in state.values())) if isinstance(state, dict) else 0
         if n_params >= MAX_PARAMETRES:
             raise InvariantViolation((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETRES}",))
         raise InvariantViolation(

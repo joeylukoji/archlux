@@ -52,8 +52,8 @@ def kernel_density(
     # To avoid underflow: work with nearest-neighbor distance + local mean.
     diff = cand[:, None, :] - ref[None, :, :]
     dist2 = np.sum(diff * diff, axis=2)
-    noyaux = np.exp(-0.5 * dist2 / (bande * bande))
-    return np.asarray(np.maximum(np.mean(noyaux, axis=1), _EPS), dtype=float)
+    kernels = np.exp(-0.5 * dist2 / (bande * bande))
+    return np.asarray(np.maximum(np.mean(kernels, axis=1), _EPS), dtype=float)
 
 
 __getattr__ = lazy_aliases(

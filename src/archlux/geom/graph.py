@@ -39,9 +39,9 @@ __all__ = [
     "transitive_reduction",
 ]
 
-Axe = Literal["horizontal", "vertical"]
+Axis = Literal["horizontal", "vertical"]
 Side = Literal["left", "right", "below", "above"]
-_AXES: tuple[Axe, ...] = ("horizontal", "vertical")
+_AXES: tuple[Axis, ...] = ("horizontal", "vertical")
 
 TOLERANCE_CONTACT = CONTACT_M
 """Gap below which two rooms are considered touching, in meters (1 nanometer).
@@ -140,8 +140,8 @@ class ConstraintGraph:
         O(1) amortized.
         """
         return any(
-            graphe.has_edge(a, b) or graphe.has_edge(b, a)
-            for graphe in (self.horizontal, self.vertical)
+            graph.has_edge(a, b) or graph.has_edge(b, a)
+            for graph in (self.horizontal, self.vertical)
         )
 
     def closure(self) -> frozenset[tuple[str, str, str]]:
@@ -160,9 +160,9 @@ class ConstraintGraph:
         import networkx as nx  # lazy: 0.6 s at import, needed only by a first legalize
 
         triplets: set[tuple[str, str, str]] = set()
-        for axe in _AXES:
-            cloture = nx.transitive_closure_dag(getattr(self, axe))
-            triplets.update((axe, a, b) for a, b in cloture.edges)
+        for axis in _AXES:
+            closed = nx.transitive_closure_dag(getattr(self, axis))
+            triplets.update((axis, a, b) for a, b in closed.edges)
         return frozenset(triplets)
 
 
@@ -233,28 +233,28 @@ def deduce_order(
     >>> deduce_order(Plan((left, right), (), (), ())).horizontal
     (('A', 'B'),)
     """
-    par_id = {piece.id: piece for piece in plan.rooms}
-    identifiants = sorted(par_id)
-    horizontal, vertical = _pairwise_order(par_id, identifiants)
+    by_id = {piece.id: piece for piece in plan.rooms}
+    identifiers = sorted(by_id)
+    horizontal, vertical = _pairwise_order(by_id, identifiers)
 
     envelope = _outline_envelope(plan)
     wall_sides: tuple[WallSide, ...] = ()
     shared_sides: tuple[tuple[str, tuple[str, ...]], ...] = ()
     if structure is not None:
         wall_sides, shared_sides = _wall_sides_and_groups(
-            structure, groups, par_id, identifiants, envelope
+            structure, groups, by_id, identifiers, envelope
         )
     return RelativeOrder(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
-        rooms=tuple(identifiants),
+        rooms=tuple(identifiers),
         wall_sides=wall_sides,
         shared_sides=shared_sides,
     )
 
 
 def _pairwise_order(
-    par_id: dict[str, Room], identifiants: list[str]
+    by_id: dict[str, Room], identifiers: list[str]
 ) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     """Horizontal and vertical edges for every pair, by comparing centers.
 
@@ -264,17 +264,17 @@ def _pairwise_order(
     """
     horizontal: list[tuple[str, str]] = []
     vertical: list[tuple[str, str]] = []
-    for id_a, id_b in itertools.combinations(identifiants, 2):
-        a, b = par_id[id_a], par_id[id_b]
+    for id_a, id_b in itertools.combinations(identifiers, 2):
+        a, b = by_id[id_a], by_id[id_b]
         (xa, ya), (xb, yb) = a.center, b.center
         # Gap between the two rooms on each axis: positive if they are disjoint.
-        jeu_x = max(b.x - (a.x + a.w), a.x - (b.x + b.w))
-        jeu_y = max(b.y - (a.y + a.h), a.y - (b.y + b.h))
-        if jeu_x >= -TOLERANCE_CONTACT or jeu_y >= -TOLERANCE_CONTACT:
-            horizontale = jeu_x >= jeu_y
+        gap_x = max(b.x - (a.x + a.w), a.x - (b.x + b.w))
+        gap_y = max(b.y - (a.y + a.h), a.y - (b.y + b.h))
+        if gap_x >= -TOLERANCE_CONTACT or gap_y >= -TOLERANCE_CONTACT:
+            is_horizontal = gap_x >= gap_y
         else:
-            horizontale = abs(xb - xa) >= abs(yb - ya)
-        if horizontale:
+            is_horizontal = abs(xb - xa) >= abs(yb - ya)
+        if is_horizontal:
             # Key (center, id): a total order, so no cycle is possible on this axis.
             horizontal.append((id_a, id_b) if (xa, id_a) < (xb, id_b) else (id_b, id_a))
         else:
@@ -297,8 +297,8 @@ def _outline_envelope(plan: Plan) -> Envelope | None:
 def _wall_sides_and_groups(
     structure: Structure,
     groups: tuple[tuple[str, ...], ...],
-    par_id: dict[str, Room],
-    identifiants: list[str],
+    by_id: dict[str, Room],
+    identifiers: list[str],
     envelope: Envelope | None,
 ) -> tuple[tuple[WallSide, ...], tuple[tuple[str, tuple[str, ...]], ...]]:
     """The wall side of every room, and the groups that had to share one.
@@ -313,23 +313,23 @@ def _wall_sides_and_groups(
     for wall in walls:
         _check_axis_aligned(wall)
     sides = {
-        (wall.id, room_id): _wall_side(par_id[room_id], wall, envelope)
+        (wall.id, room_id): _wall_side(by_id[room_id], wall, envelope)
         for wall in walls  # a point has no side; the proof ignores it too
-        for room_id in identifiants
+        for room_id in identifiers
     }
     shared_sides: list[tuple[str, tuple[str, ...]]] = []
     for group in groups:
-        shared_sides.extend(_assign_group_sides(group, walls, par_id, envelope, sides))
-    wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiants)
+        shared_sides.extend(_assign_group_sides(group, walls, by_id, envelope, sides))
+    wall_sides = tuple(sides[wall.id, room_id] for wall in walls for room_id in identifiers)
     return wall_sides, tuple(shared_sides)
 
 
-def _group_members(group: tuple[str, ...], par_id: dict[str, Room]) -> list[Room] | None:
+def _group_members(group: tuple[str, ...], by_id: dict[str, Room]) -> list[Room] | None:
     """The rooms of ``group`` that exist in this plan, or ``None`` if fewer than two do.
 
     Extracted from :func:`_assign_group_sides` (PLAN.md phase 4, block 3).
     """
-    members = [par_id[room_id] for room_id in group if room_id in par_id]
+    members = [by_id[room_id] for room_id in group if room_id in by_id]
     return members if len(members) >= 2 else None
 
 
@@ -343,7 +343,7 @@ def _bounding_hull(members: list[Room]) -> Room:
 def _assign_group_sides(
     group: tuple[str, ...],
     walls: list[Wall],
-    par_id: dict[str, Room],
+    by_id: dict[str, Room],
     envelope: Envelope | None,
     sides: dict[tuple[str, str], WallSide],
 ) -> list[tuple[str, tuple[str, ...]]]:
@@ -361,7 +361,7 @@ def _assign_group_sides(
         empty if the group has fewer than two members, or every wall left it
         compatible.
     """
-    members = _group_members(group, par_id)
+    members = _group_members(group, by_id)
     if members is None:
         return []
     hull = _bounding_hull(members)
@@ -508,20 +508,20 @@ def _wall_sides_by_penetration(room: Room, wall: Wall, envelope: Envelope | None
     ]
 
 
-def _graphe_axe(aretes: tuple[tuple[str, str], ...], noeuds: Sequence[str], axe: Axe) -> nx.DiGraph:
+def _axis_graph(edges: tuple[tuple[str, str], ...], nodes: Sequence[str], axis: Axis) -> nx.DiGraph:
     """Assemble a directed acyclic graph for one axis, or raise."""
     import networkx as nx
 
-    graphe = nx.DiGraph()
-    graphe.add_nodes_from(sorted(noeuds))
-    for a, b in aretes:
-        if a not in graphe or b not in graphe:
-            raise InconsistentOrder(cycle=(a, b), axis=axe)
-        graphe.add_edge(a, b)
-    if not nx.is_directed_acyclic_graph(graphe):
-        cycle = nx.find_cycle(graphe)
-        raise InconsistentOrder(cycle=tuple(a for a, _ in cycle), axis=axe)
-    return graphe
+    graph = nx.DiGraph()
+    graph.add_nodes_from(sorted(nodes))
+    for a, b in edges:
+        if a not in graph or b not in graph:
+            raise InconsistentOrder(cycle=(a, b), axis=axis)
+        graph.add_edge(a, b)
+    if not nx.is_directed_acyclic_graph(graph):
+        cycle = nx.find_cycle(graph)
+        raise InconsistentOrder(cycle=tuple(a for a, _ in cycle), axis=axis)
+    return graph
 
 
 @renamed_parameters({"pieces": "rooms"})
@@ -561,14 +561,14 @@ def build_graph(ordre: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
     O(n² + m), m = number of edges. The quadratic term comes from the separation
     check, which must examine all pairs.
     """
-    graphe = ConstraintGraph(
-        horizontal=_graphe_axe(ordre.horizontal, rooms, "horizontal"),
-        vertical=_graphe_axe(ordre.vertical, rooms, "vertical"),
+    graph = ConstraintGraph(
+        horizontal=_axis_graph(ordre.horizontal, rooms, "horizontal"),
+        vertical=_axis_graph(ordre.vertical, rooms, "vertical"),
     )
     for a, b in itertools.combinations(sorted(rooms), 2):
-        if not graphe.has_separation(a, b):
+        if not graph.has_separation(a, b):
             raise MissingSeparation(pair=(a, b))
-    return graphe
+    return graph
 
 
 def transitive_reduction(g: ConstraintGraph) -> ConstraintGraph:
@@ -599,16 +599,18 @@ def transitive_reduction(g: ConstraintGraph) -> ConstraintGraph:
     """
     import networkx as nx
 
-    reduits: dict[str, nx.DiGraph] = {}
-    for axe in _AXES:
-        origin: nx.DiGraph = getattr(g, axe)
-        reduit = nx.transitive_reduction(origin)
+    reduced_edges: dict[str, nx.DiGraph] = {}
+    for axis in _AXES:
+        origin: nx.DiGraph = getattr(g, axis)
+        reduced = nx.transitive_reduction(origin)
         # `transitive_reduction` does not carry over isolated nodes: a room separated on
         # the other axis only would vanish from the graph, and the polytope would lose
         # its bounds.
-        reduit.add_nodes_from(origin.nodes)
-        reduits[axe] = reduit
-    return ConstraintGraph(horizontal=reduits["horizontal"], vertical=reduits["vertical"])
+        reduced.add_nodes_from(origin.nodes)
+        reduced_edges[axis] = reduced
+    return ConstraintGraph(
+        horizontal=reduced_edges["horizontal"], vertical=reduced_edges["vertical"]
+    )
 
 
 __getattr__ = lazy_aliases(

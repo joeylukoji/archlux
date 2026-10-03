@@ -21,14 +21,14 @@ __all__ = [
     "two_room_vectors",
 ]
 
-_CONTOUR = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+_OUTLINE = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 _TYPES = ("living_room", "bedroom", "kitchen", "bathroom")
-_RANG_JUMEAU_DEDUPLICATION = 53
-_ID_SOURCE_JUMEAU = "syn-0000"
-_N_COUPES_X = 10
-_N_COUPES_Y = 9
+_DEDUPLICATION_TWIN_RANK = 53
+_TWIN_SOURCE_ID = "syn-0000"
+_N_CUTS_X = 10
+_N_CUTS_Y = 9
 
-MAX_SIZE = _N_COUPES_X * _N_COUPES_Y
+MAX_SIZE = _N_CUTS_X * _N_CUTS_Y
 """Number of distinct cuts of the grid: beyond this, the corpus would repeat."""
 
 
@@ -59,34 +59,30 @@ def generate_corpus(n: int, *, seed: int) -> dict[str, Plan]:
     if n > MAX_SIZE:
         raise InvariantViolation((f"n={n} > {MAX_SIZE} distinct cuts available",))
     rng = _rng(seed, "corpus")
-    grilles_x = np.linspace(4.05, 7.95, _N_COUPES_X)
-    grilles_y = np.linspace(3.05, 5.95, _N_COUPES_Y)
-    paires = [(float(x), float(y)) for x in grilles_x for y in grilles_y]
-    rng.shuffle(paires)
+    grids_x = np.linspace(4.05, 7.95, _N_CUTS_X)
+    grids_y = np.linspace(3.05, 5.95, _N_CUTS_Y)
+    pairs = [(float(x), float(y)) for x in grids_x for y in grids_y]
+    rng.shuffle(pairs)
     corpus: dict[str, Plan] = {}
-    for rang in range(n):
-        coupe_x, coupe_y = paires[rang]
+    for rank in range(n):
+        cut_x, cut_y = pairs[rank]
         rooms: tuple[Room, ...] = (
-            Room(id="sw", type=_TYPES[rang % 4], x=0.0, y=0.0, w=coupe_x, h=coupe_y),
-            Room(
-                id="se", type=_TYPES[(rang + 1) % 4], x=coupe_x, y=0.0, w=12.0 - coupe_x, h=coupe_y
-            ),
-            Room(
-                id="nw", type=_TYPES[(rang + 2) % 4], x=0.0, y=coupe_y, w=coupe_x, h=9.0 - coupe_y
-            ),
+            Room(id="sw", type=_TYPES[rank % 4], x=0.0, y=0.0, w=cut_x, h=cut_y),
+            Room(id="se", type=_TYPES[(rank + 1) % 4], x=cut_x, y=0.0, w=12.0 - cut_x, h=cut_y),
+            Room(id="nw", type=_TYPES[(rank + 2) % 4], x=0.0, y=cut_y, w=cut_x, h=9.0 - cut_y),
             Room(
                 id="ne",
-                type=_TYPES[(rang + 3) % 4],
-                x=coupe_x,
-                y=coupe_y,
-                w=12.0 - coupe_x,
-                h=9.0 - coupe_y,
+                type=_TYPES[(rank + 3) % 4],
+                x=cut_x,
+                y=cut_y,
+                w=12.0 - cut_x,
+                h=9.0 - cut_y,
             ),
         )
-        id = f"syn-{rang:04d}"
-        if rang == _RANG_JUMEAU_DEDUPLICATION:
-            rooms = corpus[_ID_SOURCE_JUMEAU].rooms
-        corpus[id] = Plan(rooms, (), (), _CONTOUR)
+        id = f"syn-{rank:04d}"
+        if rank == _DEDUPLICATION_TWIN_RANK:
+            rooms = corpus[_TWIN_SOURCE_ID].rooms
+        corpus[id] = Plan(rooms, (), (), _OUTLINE)
     return corpus
 
 

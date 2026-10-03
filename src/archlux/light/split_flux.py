@@ -28,14 +28,14 @@ __all__ = ["SplitFluxOracle", "daylight_factor"]
 _EPS = 1e-12
 _TRANSMITTANCE = 0.70
 _REFLECTANCE = 0.50
-_THETA_CIEL_DEG = 65.0
-_HAUTEUR_PLAFOND = 2.70
-_HAUTEUR_VITRAGE = 1.15
-_WWR_DEFAUT = 0.30
-_DENOM_REFLET = 1.0 - _REFLECTANCE * _REFLECTANCE
+_SKY_THETA_DEG = 65.0
+_CEILING_HEIGHT = 2.70
+_GLAZING_HEIGHT = 1.15
+_DEFAULT_WWR = 0.30
+_REFLECTION_DENOM = 1.0 - _REFLECTANCE * _REFLECTANCE
 
 
-def _facade_sud(w: float, h: float, orientation: Orientation) -> float:
+def _south_facade(w: float, h: float, orientation: Orientation) -> float:
     """Longueur de façade au sud géographique, même convention que l'analytique."""
     features = encode_orientation(orientation, harmoniques=1)
     cos2 = float(features[0]) ** 2
@@ -43,7 +43,7 @@ def _facade_sud(w: float, h: float, orientation: Orientation) -> float:
     return w * cos2 + h * sin2
 
 
-def _derivees_facade(orientation: Orientation) -> tuple[float, float]:
+def _facade_derivatives(orientation: Orientation) -> tuple[float, float]:
     """∂L/∂w et ∂L/∂h pour la façade sud."""
     features = encode_orientation(orientation, harmoniques=1)
     cos2 = float(features[0]) ** 2
@@ -56,7 +56,7 @@ def daylight_factor(
     h: float,
     orientation: Orientation,
     *,
-    wwr: float = _WWR_DEFAUT,
+    wwr: float = _DEFAULT_WWR,
 ) -> float:
     """Facteur de lumière du jour moyen (fraction, pas un sDA LM-83).
 
@@ -95,7 +95,7 @@ def daylight_factor(
        ``wwr = 0,30`` sur un étage de 2,70 m est ``0,30 × 1,15 / 2,70 ≈ 0,13``.
        Le paramètre est un coefficient de bandeau, et devrait être renommé.
     """
-    return _split_flux(w, h, orientation, wwr, avec_gradient=False)[0]
+    return _split_flux(w, h, orientation, wwr, with_gradient=False)[0]
 
 
 def _split_flux(
@@ -104,34 +104,34 @@ def _split_flux(
     orientation: Orientation,
     wwr: float,
     *,
-    avec_gradient: bool,
+    with_gradient: bool,
 ) -> tuple[float, float, float]:
     """DF fractionnaire et, si demandé, ∂DF/∂w et ∂DF/∂h."""
     if wwr <= 0.0 or wwr > 1.0:
         raise InvariantViolation((f"wwr hors ]0, 1] : {wwr}",))
     w = max(float(w), _EPS)
     h = max(float(h), _EPS)
-    theta = _THETA_CIEL_DEG * sector_factor(orientation)
-    facade = max(_facade_sud(w, h, orientation), _EPS)
-    aire_baie = wwr * _HAUTEUR_VITRAGE * facade
-    aire_surf = 2.0 * w * h + 2.0 * (w + h) * _HAUTEUR_PLAFOND
-    numerateur = _TRANSMITTANCE * aire_baie * theta
-    denominateur = max(aire_surf * _DENOM_REFLET, _EPS)
-    df_pct = numerateur / denominateur
+    theta = _SKY_THETA_DEG * sector_factor(orientation)
+    facade = max(_south_facade(w, h, orientation), _EPS)
+    window_area = wwr * _GLAZING_HEIGHT * facade
+    surface_area = 2.0 * w * h + 2.0 * (w + h) * _CEILING_HEIGHT
+    numerator = _TRANSMITTANCE * window_area * theta
+    denominator = max(surface_area * _REFLECTION_DENOM, _EPS)
+    df_pct = numerator / denominator
     df = df_pct / 100.0
-    if not avec_gradient:
+    if not with_gradient:
         return df, 0.0, 0.0
-    dL_dw, dL_dh = _derivees_facade(orientation)
-    dAw_dw = wwr * _HAUTEUR_VITRAGE * dL_dw
-    dAw_dh = wwr * _HAUTEUR_VITRAGE * dL_dh
-    dAs_dw = 2.0 * h + 2.0 * _HAUTEUR_PLAFOND
-    dAs_dh = 2.0 * w + 2.0 * _HAUTEUR_PLAFOND
+    dL_dw, dL_dh = _facade_derivatives(orientation)
+    dAw_dw = wwr * _GLAZING_HEIGHT * dL_dw
+    dAw_dh = wwr * _GLAZING_HEIGHT * dL_dh
+    dAs_dw = 2.0 * h + 2.0 * _CEILING_HEIGHT
+    dAs_dh = 2.0 * w + 2.0 * _CEILING_HEIGHT
     dnum_dw = _TRANSMITTANCE * theta * dAw_dw
     dnum_dh = _TRANSMITTANCE * theta * dAw_dh
-    dden_dw = _DENOM_REFLET * dAs_dw
-    dden_dh = _DENOM_REFLET * dAs_dh
-    d_pct_dw = (dnum_dw * denominateur - numerateur * dden_dw) / (denominateur * denominateur)
-    d_pct_dh = (dnum_dh * denominateur - numerateur * dden_dh) / (denominateur * denominateur)
+    dden_dw = _REFLECTION_DENOM * dAs_dw
+    dden_dh = _REFLECTION_DENOM * dAs_dh
+    d_pct_dw = (dnum_dw * denominator - numerator * dden_dw) / (denominator * denominator)
+    d_pct_dh = (dnum_dh * denominator - numerator * dden_dh) / (denominator * denominator)
     return df, d_pct_dw / 100.0, d_pct_dh / 100.0
 
 
@@ -150,7 +150,7 @@ class SplitFluxOracle:
 
     indicateur_vise: Indicator = "sDA"
     sigma_nominal: float = 0.04
-    wwr: float = _WWR_DEFAUT
+    wwr: float = _DEFAULT_WWR
     ECHELLE_DF: ClassVar[float] = 100.0
     """Poids m²·% : ``100 * DF * aire`` pour rester à l'échelle de l'analytique.
 
@@ -176,14 +176,14 @@ class SplitFluxOracle:
         lecture de la fenestration réelle.
         """
         del glazing
-        return float(self._score_et_gradient(x, orientation, avec_gradient=False)[0])
+        return float(self._score_and_gradient(x, orientation, with_gradient=False)[0])
 
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
         """Gradient analytique du même score (CIBSE + split-flux)."""
         del glazing
-        return self._score_et_gradient(x, orientation, avec_gradient=True)[1]
+        return self._score_and_gradient(x, orientation, with_gradient=True)[1]
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
@@ -203,49 +203,49 @@ class SplitFluxOracle:
         del glazing
         base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
         parts = np.asarray(base.evaluate_rooms(x, orientation), dtype=float).copy()
-        vecteur = np.asarray(x, dtype=float).ravel()
-        signe = indicator_sign(self.indicateur_vise)
-        for i in range(vecteur.size // FIELDS_PER_ROOM):
-            largeur = float(vecteur[i * FIELDS_PER_ROOM + 2])
-            hauteur = float(vecteur[i * FIELDS_PER_ROOM + 3])
-            df, _, _ = _split_flux(largeur, hauteur, orientation, self.wwr, avec_gradient=False)
-            aire = max(largeur, _EPS) * max(hauteur, _EPS)
-            parts[i] += signe * self.ECHELLE_DF * df * aire
+        vector = np.asarray(x, dtype=float).ravel()
+        sign = indicator_sign(self.indicateur_vise)
+        for i in range(vector.size // FIELDS_PER_ROOM):
+            largeur = float(vector[i * FIELDS_PER_ROOM + 2])
+            height = float(vector[i * FIELDS_PER_ROOM + 3])
+            df, _, _ = _split_flux(largeur, height, orientation, self.wwr, with_gradient=False)
+            area = max(largeur, _EPS) * max(height, _EPS)
+            parts[i] += sign * self.ECHELLE_DF * df * area
         return parts
 
-    def _score_et_gradient(
-        self, x: np.ndarray, orientation: Orientation, *, avec_gradient: bool
+    def _score_and_gradient(
+        self, x: np.ndarray, orientation: Orientation, *, with_gradient: bool
     ) -> tuple[float, np.ndarray]:
         base = AnalyticSurrogate(indicateur_vise=self.indicateur_vise)
-        valeur = float(base.evaluate(x, orientation))
+        value = float(base.evaluate(x, orientation))
         gradient = (
             np.asarray(base.gradient(x, orientation), dtype=float).copy()
-            if avec_gradient
+            if with_gradient
             else np.zeros_like(np.asarray(x, dtype=float).ravel())
         )
-        vecteur = np.asarray(x, dtype=float).ravel()
-        n_pieces = vecteur.size // FIELDS_PER_ROOM
-        signe_extra = indicator_sign(self.indicateur_vise)
+        vector = np.asarray(x, dtype=float).ravel()
+        n_pieces = vector.size // FIELDS_PER_ROOM
+        extra_sign = indicator_sign(self.indicateur_vise)
         extra = 0.0
         for i in range(n_pieces):
-            largeur = float(vecteur[i * FIELDS_PER_ROOM + 2])
-            hauteur = float(vecteur[i * FIELDS_PER_ROOM + 3])
+            largeur = float(vector[i * FIELDS_PER_ROOM + 2])
+            height = float(vector[i * FIELDS_PER_ROOM + 3])
             df, d_df_dw, d_df_dh = _split_flux(
-                largeur, hauteur, orientation, self.wwr, avec_gradient=avec_gradient
+                largeur, height, orientation, self.wwr, with_gradient=with_gradient
             )
-            aire = max(largeur, _EPS) * max(hauteur, _EPS)
-            extra += df * aire
-            if avec_gradient:
-                d_aire_dw = max(hauteur, _EPS)
-                d_aire_dh = max(largeur, _EPS)
+            area = max(largeur, _EPS) * max(height, _EPS)
+            extra += df * area
+            if with_gradient:
+                d_area_dw = max(height, _EPS)
+                d_area_dh = max(largeur, _EPS)
                 gradient[i * FIELDS_PER_ROOM + 2] += (
-                    signe_extra * self.ECHELLE_DF * (d_df_dw * aire + df * d_aire_dw)
+                    extra_sign * self.ECHELLE_DF * (d_df_dw * area + df * d_area_dw)
                 )
                 gradient[i * FIELDS_PER_ROOM + 3] += (
-                    signe_extra * self.ECHELLE_DF * (d_df_dh * aire + df * d_aire_dh)
+                    extra_sign * self.ECHELLE_DF * (d_df_dh * area + df * d_area_dh)
                 )
-        valeur += signe_extra * self.ECHELLE_DF * extra
-        return valeur, gradient
+        value += extra_sign * self.ECHELLE_DF * extra
+        return value, gradient
 
 
 __getattr__ = lazy_aliases(

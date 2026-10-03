@@ -17,15 +17,15 @@ def test_registry_documents_the_values_used_today() -> None:
     assert tolerances.GAP_M2 == proof.GAP_TOLERANCE_M2
     assert tolerances.WALL_M == proof._WALL_TOLERANCE_M
     assert tolerances.AREA_PROOF_M2 == proof._AREA_TOLERANCE_M2
-    assert cuts._TOLERANCE_AIRE == tolerances.AREA_PROOF_M2
-    assert tolerances.CUTS_LENGTH_M == cuts._TOLERANCE_LONGUEUR
+    assert cuts._AREA_TOLERANCE == tolerances.AREA_PROOF_M2
+    assert tolerances.CUTS_LENGTH_M == cuts._LENGTH_TOLERANCE
     assert tolerances.SNAP_M == rectilinear._TOL_RECT
     snap_default = inspect.signature(polytope.freeze_contacts).parameters["tol"].default
     assert snap_default == tolerances.SNAP_M
-    assert tolerances.OVERLAP_M2 == pathologies._TOL_AIRE
+    assert tolerances.OVERLAP_M2 == pathologies._AREA_TOL
 
 
 def test_the_solver_is_never_looser_than_the_proof() -> None:
     """A plan the solver accepts must never be rejected by the proof on tolerance alone."""
-    assert cuts._TOLERANCE_AIRE <= tolerances.AREA_PROOF_M2
+    assert cuts._AREA_TOLERANCE <= tolerances.AREA_PROOF_M2
     assert tolerances.AREA_TARGET_MARGIN_M2 > tolerances.AREA_PROOF_M2

@@ -223,7 +223,7 @@ CONTEXTE_DEFAUT = Context(
 """Contexte de référence des tests, accordé à :func:`plans_valides`."""
 
 
-def _decouper(
+def _cut_up(
     draw: st.DrawFn,
     x: int,
     y: int,
@@ -247,11 +247,11 @@ def _decouper(
     axis = draw(st.sampled_from(axes))
     if axis == "v":
         coupe = draw(st.integers(min_value=minimum, max_value=w - minimum))
-        gauche = _decouper(draw, x, y, coupe, h, profondeur - 1, minimum)
-        return gauche + _decouper(draw, x + coupe, y, w - coupe, h, profondeur - 1, minimum)
+        gauche = _cut_up(draw, x, y, coupe, h, profondeur - 1, minimum)
+        return gauche + _cut_up(draw, x + coupe, y, w - coupe, h, profondeur - 1, minimum)
     coupe = draw(st.integers(min_value=minimum, max_value=h - minimum))
-    low = _decouper(draw, x, y, w, coupe, profondeur - 1, minimum)
-    return low + _decouper(draw, x, y + coupe, w, h - coupe, profondeur - 1, minimum)
+    low = _cut_up(draw, x, y, w, coupe, profondeur - 1, minimum)
+    return low + _cut_up(draw, x, y + coupe, w, h - coupe, profondeur - 1, minimum)
 
 
 @st.composite
@@ -274,9 +274,7 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
     """
     largeur, hauteur = CONTOUR_DEFAUT_CM
     minimum = int(LARGEUR_MIN_DEFAUT * 100)
-    rectangles = _decouper(
-        draw, 0, 0, largeur, hauteur, profondeur, minimum, force_split=force_split
-    )
+    rectangles = _cut_up(draw, 0, 0, largeur, hauteur, profondeur, minimum, force_split=force_split)
     rooms = tuple(
         Room(
             id=f"p{i}",

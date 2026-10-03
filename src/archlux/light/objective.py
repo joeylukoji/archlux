@@ -84,7 +84,7 @@ class Daylight:
         grad_mu = np.asarray(self.surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
         if not self.pessimiste:
             return grad_mu
-        return grad_mu - self.q_chapeau * self._gradient_incertitude(x, orientation, glazing)
+        return grad_mu - self.q_chapeau * self._uncertainty_gradient(x, orientation, glazing)
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
@@ -100,17 +100,17 @@ class Daylight:
             x, orientation, glazing=glazing
         )
 
-    def _gradient_incertitude(
+    def _uncertainty_gradient(
         self, x: np.ndarray, orientation: Orientation, glazing: Glazing | None
     ) -> np.ndarray:
         x0 = np.asarray(x, dtype=float).ravel()
         grad = np.empty_like(x0)
         for i in range(x0.size):
             plus = x0.copy()
-            moins = x0.copy()
+            minus = x0.copy()
             plus[i] += _EPS_SIGMA
-            moins[i] -= _EPS_SIGMA
-            haut = float(self.surrogate.uncertainty(plus, orientation, glazing=glazing))
-            bas = float(self.surrogate.uncertainty(moins, orientation, glazing=glazing))
-            grad[i] = (haut - bas) / (2.0 * _EPS_SIGMA)
+            minus[i] -= _EPS_SIGMA
+            high = float(self.surrogate.uncertainty(plus, orientation, glazing=glazing))
+            low = float(self.surrogate.uncertainty(minus, orientation, glazing=glazing))
+            grad[i] = (high - low) / (2.0 * _EPS_SIGMA)
         return grad

@@ -46,7 +46,7 @@ SIGMA_PLANCHER = 0.02
 
 
 @lru_cache(maxsize=len(INDICATOR_SENSE))
-def _analytique(indicator: Indicator) -> AnalyticSurrogate:
+def _analytic(indicator: Indicator) -> AnalyticSurrogate:
     """Instance analytique partagée : gelée, sans état, réutilisable sans copie.
 
     :meth:`SubstitutDense.gradient` évalue ``2 n`` fois par gradient ; reconstruire le
@@ -66,61 +66,61 @@ def descriptors(
     synthétique et absent de l'analytique — sans lui le perceptron ne peut pas
     gagner.
     """
-    jetons, masque = vector_to_tokens(x, orientation, glazing)
-    valides = jetons[~masque]
+    tokens, mask = vector_to_tokens(x, orientation, glazing)
+    valid = tokens[~mask]
     # Les jetons de baie portent leur drapeau en colonne 27 ; les separer evite de
     # moyenner des pieces et des fenetres dans un meme vecteur, ce qui n'a pas de
     # sens dimensionnel.
-    est_baie = valides[:, 27] > 0.5
-    pieces_seules = valides[~est_baie]
-    fenetres = valides[est_baie]
-    if pieces_seules.size:
-        valides = pieces_seules
-    if valides.size == 0:
+    is_window = valid[:, 27] > 0.5
+    rooms_only = valid[~is_window]
+    windows = valid[is_window]
+    if rooms_only.size:
+        valid = rooms_only
+    if valid.size == 0:
         raise InvariantViolation(("vecteur de plan vide : aucun jeton",))
-    moyen = valides.mean(axis=0)
-    aires = valides[:, 4]
+    mean = valid.mean(axis=0)
+    areas = valid[:, 4]
     enc = encode(orientation.deg, harmoniques=3)
     stats = np.array(
         [
-            float(valides.shape[0]),
-            float(aires.sum()),
-            float(valides[:, 2].mean()),
-            float(valides[:, 3].mean()),
-            float(valides[:, 0].mean()),
-            float(valides[:, 1].mean()),
+            float(valid.shape[0]),
+            float(areas.sum()),
+            float(valid[:, 2].mean()),
+            float(valid[:, 3].mean()),
+            float(valid[:, 0].mean()),
+            float(valid[:, 1].mean()),
         ],
         dtype=float,
     )
     interaction = np.outer(enc, stats).ravel()
     sin2 = enc[3]
-    extra = np.array([float(aires.sum()) * sin2, float(aires.sum()) * enc[2]], dtype=float)
+    extra = np.array([float(areas.sum()) * sin2, float(areas.sum()) * enc[2]], dtype=float)
     # Six descripteurs de fenestration, nuls quand aucune baie n'est fournie : le
     # vecteur garde donc la meme dimension, et un modele entraine sans baies reste
     # lisible par un modele qui en recoit.
-    if fenetres.size:
-        largeurs = fenetres[:, 25]
-        baies_stats = np.array(
+    if windows.size:
+        widths = windows[:, 25]
+        window_stats = np.array(
             [
-                float(fenetres.shape[0]),
-                float(largeurs.sum()),
-                float(largeurs.mean()),
-                float(fenetres[:, 26].mean()),
-                float(np.mean(fenetres[:, 22])),
-                float(np.mean(fenetres[:, 23])),
+                float(windows.shape[0]),
+                float(widths.sum()),
+                float(widths.mean()),
+                float(windows[:, 26].mean()),
+                float(np.mean(windows[:, 22])),
+                float(np.mean(windows[:, 23])),
             ],
             dtype=float,
         )
     else:
-        baies_stats = np.zeros(6, dtype=float)
-    return np.concatenate([moyen, enc, stats, interaction, extra, baies_stats])
+        window_stats = np.zeros(6, dtype=float)
+    return np.concatenate([mean, enc, stats, interaction, extra, window_stats])
 
 
-def _huber_derivee(residu: float, delta: float = 1.0) -> float:
+def _huber_derivative(residual: float, delta: float = 1.0) -> float:
     """Dérivée de la perte de Huber, bornée hors de ``[-delta, delta]``."""
-    if abs(residu) <= delta:
-        return residu
-    return delta * (1.0 if residu > 0.0 else -1.0)
+    if abs(residual) <= delta:
+        return residual
+    return delta * (1.0 if residual > 0.0 else -1.0)
 
 
 @dataclass
@@ -181,7 +181,7 @@ class DenseSurrogate:
             return 0
         return int(self.W1.size + self.b1.size + self.W2.size + self.b2.size + self.W3.size + 1)
 
-    def _normaliser(self, feat: np.ndarray) -> np.ndarray:
+    def _normalize(self, feat: np.ndarray) -> np.ndarray:
         if self.mu is None or self.sigma is None:
             return feat
         return np.asarray((feat - self.mu) / np.maximum(self.sigma, _EPS), dtype=float)
@@ -208,12 +208,12 @@ class DenseSurrogate:
     ) -> float:
         """Analytique recalée + résidu appris. Sans poids : l'analytique seule."""
         base = (
-            self.echelle_base * float(_analytique(self.indicateur_vise).evaluate(x, orientation))
+            self.echelle_base * float(_analytic(self.indicateur_vise).evaluate(x, orientation))
             + self.decalage_base
         )
         if self.W1 is None:
             return base
-        feat = self._normaliser(descriptors(x, orientation, glazing))
+        feat = self._normalize(descriptors(x, orientation, glazing))
         y_hat, _, _ = self._forward(feat)
         return base + y_hat * self.sigma_y + self.mu_y
 
@@ -235,12 +235,12 @@ class DenseSurrogate:
         g = np.empty_like(x0)
         pas = 1e-4
         for i in range(x0.size):
-            plus, moins = x0.copy(), x0.copy()
+            plus, minus = x0.copy(), x0.copy()
             plus[i] += pas
-            moins[i] -= pas
+            minus[i] -= pas
             g[i] = (
                 self.evaluate(plus, orientation, glazing=glazing)
-                - self.evaluate(moins, orientation, glazing=glazing)
+                - self.evaluate(minus, orientation, glazing=glazing)
             ) / (2.0 * pas)
         return g
 
@@ -284,20 +284,20 @@ class DenseSurrogate:
         """
         if len(xs) != len(ys) or len(xs) != len(orientations):
             raise InvariantViolation(("xs, ys et orientations doivent avoir la même longueur",))
-        analytique = _analytique(self.indicateur_vise)
-        brut = np.array(
-            [float(analytique.evaluate(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
+        analytic = _analytic(self.indicateur_vise)
+        raw = np.array(
+            [float(analytic.evaluate(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
         )
-        cible_brute = np.asarray(ys, dtype=float).ravel()
-        variance = float(np.var(brut))
+        raw_target = np.asarray(ys, dtype=float).ravel()
+        variance = float(np.var(raw))
         if variance > _EPS:
-            pente, ordonnee = np.polyfit(brut, cible_brute, 1)
-            self.echelle_base = float(pente)
-            self.decalage_base = float(ordonnee)
+            slope, intercept = np.polyfit(raw, raw_target, 1)
+            self.echelle_base = float(slope)
+            self.decalage_base = float(intercept)
         else:
             self.echelle_base = 0.0
-            self.decalage_base = float(np.mean(cible_brute))
-        residus = cible_brute - (self.echelle_base * brut + self.decalage_base)
+            self.decalage_base = float(np.mean(raw_target))
+        residus = raw_target - (self.echelle_base * raw + self.decalage_base)
         fenestration = glazing if glazing is not None else (None,) * len(xs)
         feats = np.stack(
             [descriptors(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
@@ -308,7 +308,7 @@ class DenseSurrogate:
         feats = (feats - self.mu) / self.sigma
         self.mu_y = float(np.mean(residus))
         self.sigma_y = max(float(np.std(residus)), _EPS)
-        cibles = (residus - self.mu_y) / self.sigma_y
+        targets = (residus - self.mu_y) / self.sigma_y
         rng = np.random.default_rng(seed)
         dim = int(feats.shape[1])
         k = self.largeur
@@ -321,11 +321,11 @@ class DenseSurrogate:
         n = feats.shape[0]
         for _ in range(epoques):
             ordre = rng.permutation(n)
-            for indice in ordre:
-                feat = feats[indice]
+            for index in ordre:
+                feat = feats[index]
                 y_hat, h1, h2 = self._forward(feat)
-                residu = y_hat - float(cibles[indice])
-                d_y = _huber_derivee(residu)
+                residual = y_hat - float(targets[index])
+                d_y = _huber_derivative(residual)
                 d_h2 = d_y * self.W3 * (1.0 - h2 * h2)
                 d_h1 = (d_h2 @ self.W2.T) * (1.0 - h1 * h1)
                 self.W3 -= lr * d_y * h2
@@ -383,10 +383,10 @@ class DenseSurrogate:
         with np.load(Path(chemin), allow_pickle=False) as archive:
             indicator = str(archive["indicateur"])
             # Matching by equality types the result on every mypy version, without a cast.
-            vise = next((known for known in INDICATOR_SENSE if known == indicator), None)
-            if vise is None:
+            target = next((known for known in INDICATOR_SENSE if known == indicator), None)
+            if target is None:
                 raise InvariantViolation((f"indicateur inconnu dans les poids : {indicator}",))
-            modele = cls(indicateur_vise=vise)
+            modele = cls(indicateur_vise=target)
             modele.W1 = np.array(archive["W1"], dtype=float, copy=True)
             modele.b1 = np.array(archive["b1"], dtype=float, copy=True)
             modele.W2 = np.array(archive["W2"], dtype=float, copy=True)

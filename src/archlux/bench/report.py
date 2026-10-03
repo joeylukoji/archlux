@@ -42,18 +42,18 @@ class BenchReport:
     strata: tuple[OrientationStratum, ...]
 
 
-def _secteur_par_degre(degres: Iterable[float], *, n_secteurs: int) -> dict[float, str]:
+def _sector_by_degree(degres: Iterable[float], *, n_secteurs: int) -> dict[float, str]:
     """Map each distinct azimuth to its sector, via ``orient.stratify``.
 
     ``stratify`` returns grouped values, not indices, so it is queried distinct
     azimuth by distinct azimuth. Two equal azimuths always fall in the same sector,
     so ``O(distinct)`` calls suffice.
     """
-    correspondance: dict[float, str] = {}
+    mapping: dict[float, str] = {}
     for deg in degres:
-        groupes = stratify([deg], n_secteurs=n_secteurs)
-        correspondance[deg] = next(name for name, valeurs in groupes.items() if valeurs.size)
-    return correspondance
+        groups = stratify([deg], n_secteurs=n_secteurs)
+        mapping[deg] = next(name for name, values in groups.items() if values.size)
+    return mapping
 
 
 @renamed_parameters({"resultat": "result"})
@@ -77,23 +77,23 @@ def report(
 
     # The binning comes from ``stratify`` alone: reimplementing it here would let two
     # sector conventions silently diverge at the slightest tweak to ``orient``.
-    noms = tuple(stratify([0.0], n_secteurs=n_secteurs).keys())
-    sector_of = _secteur_par_degre(
-        {ligne.orientation_deg for ligne in result.rows}, n_secteurs=n_secteurs
+    names = tuple(stratify([0.0], n_secteurs=n_secteurs).keys())
+    sector_of = _sector_by_degree(
+        {row.orientation_deg for row in result.rows}, n_secteurs=n_secteurs
     )
 
-    par_secteur: dict[str, dict[str, list[float]]] = {name: defaultdict(list) for name in noms}
-    for ligne in result.rows:
-        par_secteur[sector_of[ligne.orientation_deg]][ligne.method].append(ligne.score)
+    by_sector: dict[str, dict[str, list[float]]] = {name: defaultdict(list) for name in names}
+    for row in result.rows:
+        by_sector[sector_of[row.orientation_deg]][row.method].append(row.score)
 
     strata: list[OrientationStratum] = []
-    for name in noms:
+    for name in names:
         scores: dict[str, Interval] = {}
-        for method, valeurs in sorted(par_secteur[name].items()):
-            if len(valeurs) >= 2:
-                zeros = [0.0] * len(valeurs)
+        for method, values in sorted(by_sector[name].items()):
+            if len(values) >= 2:
+                zeros = [0.0] * len(values)
                 ic = paired_bootstrap(
-                    valeurs,
+                    values,
                     zeros,
                     # Named sub-seed rather than ``seed + i``: two neighboring strata
                     # do not end up with adjacent seeds.
@@ -101,13 +101,13 @@ def report(
                     n_replications=N_REPLICATIONS,
                     alpha=0.05,
                 )
-                scores[method] = Interval(value=float(np.mean(valeurs)), low=ic.low, high=ic.high)
-            elif len(valeurs) == 1:
+                scores[method] = Interval(value=float(np.mean(values)), low=ic.low, high=ic.high)
+            elif len(values) == 1:
                 # **Degenerate** interval: a single observation bounds nothing. It is
                 # returned with zero width and must be read as "not estimable".
-                v = float(valeurs[0])
+                v = float(values[0])
                 scores[method] = Interval(value=v, low=v, high=v)
-        n_plans = max((len(v) for v in par_secteur[name].values()), default=0)
+        n_plans = max((len(v) for v in by_sector[name].values()), default=0)
         strata.append(OrientationStratum(sector=name, n=n_plans, scores_by_method=scores))
     return BenchReport(strata=tuple(strata))
 

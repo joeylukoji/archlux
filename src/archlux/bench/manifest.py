@@ -16,7 +16,7 @@ from archlux.types import Manifest, ModelTrace
 
 __all__ = ["emit"]
 
-_PAQUETS_SUIVIS = ("numpy", "scipy", "networkx", "shapely", "ortools", "torch")
+_TRACKED_PACKAGES = ("numpy", "scipy", "networkx", "shapely", "ortools", "torch")
 """Packages whose version changes the numerical results, and thus the conclusions.
 
 ``torch`` appears here without being imported: only its version is recorded, and only
@@ -24,7 +24,7 @@ if it is already installed. Recording a version is not loading a library.
 """
 
 
-def _version_installee(name: str) -> str | None:
+def _installed_version(name: str) -> str | None:
     """Installed version of a package, or ``None`` if it is absent."""
     try:
         return version(name)
@@ -32,18 +32,18 @@ def _version_installee(name: str) -> str | None:
         return None
 
 
-def _environnement() -> tuple[tuple[str, str], ...]:
+def _environment() -> tuple[tuple[str, str], ...]:
     """Versions of Python and the present packages, sorted.
 
     An absent optional package is **omitted**, never noted as ``"absent"``: the
     manifest describes what was used, not what was missing.
     """
-    releve = {"python": sys.version.split()[0]}
-    for name in _PAQUETS_SUIVIS:
-        version = _version_installee(name)
+    snapshot = {"python": sys.version.split()[0]}
+    for name in _TRACKED_PACKAGES:
+        version = _installed_version(name)
         if version is not None:
-            releve[name] = version
-    return tuple(sorted(releve.items()))
+            snapshot[name] = version
+    return tuple(sorted(snapshot.items()))
 
 
 @renamed_parameters(
@@ -101,7 +101,7 @@ def emit(
         seed=seed,
         data_fingerprint=data_fingerprint,
         split=split,
-        environment=_environnement(),
+        environment=_environment(),
         parameters=tuple(sorted((parameters or {}).items())),
         model=model,
     )

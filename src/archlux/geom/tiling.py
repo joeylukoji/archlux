@@ -105,14 +105,12 @@ def snap_to_grid(plan: Plan, grid: Grid) -> Plan:
     Plan
         New plan, rooms in the same order, only their coordinates changed.
     """
-    lignes = {
-        nom: (gauche, droite, bas, haut) for nom, gauche, droite, bas, haut in grid.incidences
-    }
+    lines = {name: (left, right, low, high) for name, left, right, low, high in grid.incidences}
     rooms = []
     for piece in plan.rooms:
-        gauche, droite, bas, haut = lignes[piece.id]
-        x, y = grid.x_lines[gauche], grid.y_lines[bas]
-        rooms.append(replace(piece, x=x, y=y, w=grid.x_lines[droite] - x, h=grid.y_lines[haut] - y))
+        left, right, low, high = lines[piece.id]
+        x, y = grid.x_lines[left], grid.y_lines[low]
+        rooms.append(replace(piece, x=x, y=y, w=grid.x_lines[right] - x, h=grid.y_lines[high] - y))
     return replace(plan, rooms=tuple(rooms))
 
 
@@ -142,51 +140,51 @@ def tiling_constraints(
     InvariantViolation
         An expected variable is missing from ``index``.
     """
-    egalites: list[tuple[str, dict[str, float], float]] = []
+    equalities: list[tuple[str, dict[str, float], float]] = []
     # An edge is described by the terms that express it: left edge = x,
     # right edge = x + w. Same in y.
-    bords_x: dict[int, list[tuple[str, dict[str, float]]]] = {}
-    bords_y: dict[int, list[tuple[str, dict[str, float]]]] = {}
-    for piece_id, gauche, droite, bas, haut in grid.incidences:
-        for nom in (f"{piece_id}.x", f"{piece_id}.w", f"{piece_id}.y", f"{piece_id}.h"):
-            if nom not in index:
-                raise InvariantViolation((f"variable missing from the index: {nom}",))
-        bords_x.setdefault(gauche, []).append((piece_id, {f"{piece_id}.x": 1.0}))
-        bords_x.setdefault(droite, []).append(
-            (piece_id, {f"{piece_id}.x": 1.0, f"{piece_id}.w": 1.0})
+    borders_x: dict[int, list[tuple[str, dict[str, float]]]] = {}
+    borders_y: dict[int, list[tuple[str, dict[str, float]]]] = {}
+    for room_id, left, right, low, high in grid.incidences:
+        for name in (f"{room_id}.x", f"{room_id}.w", f"{room_id}.y", f"{room_id}.h"):
+            if name not in index:
+                raise InvariantViolation((f"variable missing from the index: {name}",))
+        borders_x.setdefault(left, []).append((room_id, {f"{room_id}.x": 1.0}))
+        borders_x.setdefault(right, []).append(
+            (room_id, {f"{room_id}.x": 1.0, f"{room_id}.w": 1.0})
         )
-        bords_y.setdefault(bas, []).append((piece_id, {f"{piece_id}.y": 1.0}))
-        bords_y.setdefault(haut, []).append(
-            (piece_id, {f"{piece_id}.y": 1.0, f"{piece_id}.h": 1.0})
-        )
+        borders_y.setdefault(low, []).append((room_id, {f"{room_id}.y": 1.0}))
+        borders_y.setdefault(high, []).append((room_id, {f"{room_id}.y": 1.0, f"{room_id}.h": 1.0}))
 
-    for axe, bords, lignes, ancrees in (
-        ("x", bords_x, grid.x_lines, grid.anchored_x),
-        ("y", bords_y, grid.y_lines, grid.anchored_y),
+    for axis, borders, lines, anchored in (
+        ("x", borders_x, grid.x_lines, grid.anchored_x),
+        ("y", borders_y, grid.y_lines, grid.anchored_y),
     ):
-        for ligne, membres in sorted(bords.items()):
-            if ligne in ancrees:
+        for row, members in sorted(borders.items()):
+            if row in anchored:
                 # Anchoring: each edge of the line is fixed on the outline.
-                cible = lignes[ligne]
-                for piece_id, termes in membres:
-                    egalites.append((f"contour {axe}={cible:.4f} {piece_id}", dict(termes), cible))
+                target = lines[row]
+                for room_id, terms in members:
+                    equalities.append(
+                        (f"contour {axis}={target:.4f} {room_id}", dict(terms), target)
+                    )
                 continue
-            reference_id, reference = membres[0]
-            for piece_id, termes in membres[1:]:
+            reference_id, reference = members[0]
+            for room_id, terms in members[1:]:
                 combines = dict(reference)
-                for nom, coef in termes.items():
-                    combines[nom] = combines.get(nom, 0.0) - coef
+                for name, coef in terms.items():
+                    combines[name] = combines.get(name, 0.0) - coef
                 combines = {n: c for n, c in combines.items() if abs(c) > _EPS}
                 if not combines:
                     continue
-                egalites.append(
+                equalities.append(
                     (
-                        f"trame {axe}#{ligne} {reference_id}|{piece_id}",
+                        f"trame {axis}#{row} {reference_id}|{room_id}",
                         combines,
                         0.0,
                     )
                 )
-    return tuple(egalites)
+    return tuple(equalities)
 
 
 @renamed_parameters({"trame": "grid"})
@@ -207,23 +205,23 @@ def extend_tiling(poly: Polytope, grid: Grid) -> Polytope:
         dualized inequalities, so they do **not** appear in the
         dual diagnostic of the certificate.
     """
-    egalites = tiling_constraints(grid, poly.index)
-    if not egalites:
+    equalities = tiling_constraints(grid, poly.index)
+    if not equalities:
         return poly
     n_var = len(poly.index)
-    lignes: list[int] = []
+    lines: list[int] = []
     colonnes: list[int] = []
-    valeurs: list[float] = []
+    values: list[float] = []
     seconds: list[float] = []
     labels: list[str] = []
-    for rang, (libelle, termes, borne) in enumerate(egalites):
-        for nom, coef in termes.items():
-            lignes.append(rang)
-            colonnes.append(poly.index[nom])
-            valeurs.append(coef)
+    for rank, (label, terms, borne) in enumerate(equalities):
+        for name, coef in terms.items():
+            lines.append(rank)
+            colonnes.append(poly.index[name])
+            values.append(coef)
         seconds.append(borne)
-        labels.append(f"tiling {libelle}")
-    a_extra = sparse.coo_matrix((valeurs, (lignes, colonnes)), shape=(len(egalites), n_var)).tocsr()
+        labels.append(f"tiling {label}")
+    a_extra = sparse.coo_matrix((values, (lines, colonnes)), shape=(len(equalities), n_var)).tocsr()
     if poly.A_eq.shape[0]:
         a_eq = sparse.vstack([poly.A_eq, a_extra], format="csr")
         b_eq = np.concatenate([poly.b_eq, np.asarray(seconds, dtype=float)])

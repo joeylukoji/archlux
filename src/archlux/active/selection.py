@@ -28,7 +28,7 @@ class AcquisitionStrategy(Protocol):
         ...
 
 
-def _valider(
+def _validate(
     incertitudes: np.ndarray, densites: np.ndarray, *, n: int
 ) -> tuple[np.ndarray, np.ndarray]:
     """Check the sizes and bounds of the selection inputs; return the raveled vectors."""
@@ -43,18 +43,18 @@ def _valider(
     return inc, dens
 
 
-def _masque_disponibles(n_candidats: int, exclus: np.ndarray | None) -> np.ndarray:
+def _available_mask(n_candidates: int, exclus: np.ndarray | None) -> np.ndarray:
     """Boolean mask of the free indices; reject ``exclus`` entries outside ``[0, N)``."""
-    masque = np.ones(n_candidats, dtype=bool)
+    mask = np.ones(n_candidates, dtype=bool)
     if exclus is None:
-        return masque
-    exclus_i = np.asarray(exclus, dtype=int).ravel()
-    if exclus_i.size == 0:
-        return masque
-    if np.any(exclus_i < 0) or np.any(exclus_i >= n_candidats):
+        return mask
+    excluded_i = np.asarray(exclus, dtype=int).ravel()
+    if excluded_i.size == 0:
+        return mask
+    if np.any(excluded_i < 0) or np.any(excluded_i >= n_candidates):
         raise InvariantViolation(("excluded indices out of bounds",))
-    masque[exclus_i] = False
-    return masque
+    mask[excluded_i] = False
+    return mask
 
 
 class UncertaintyTimesDensity:
@@ -71,12 +71,12 @@ class UncertaintyTimesDensity:
     ) -> np.ndarray:
         """Take the ``n`` highest scores, skipping ``exclus``."""
         del seed  # deterministic once the scores are fixed
-        inc, dens = _valider(incertitudes, densites, n=n)
+        inc, dens = _validate(incertitudes, densites, n=n)
         scores = inc * dens
-        disponibles = np.flatnonzero(_masque_disponibles(inc.size, exclus))
-        if disponibles.size < n:
-            raise InvariantViolation((f"too few free candidates ({disponibles.size}) for n={n}",))
-        ordre = disponibles[np.argsort(-scores[disponibles], kind="stable")]
+        available = np.flatnonzero(_available_mask(inc.size, exclus))
+        if available.size < n:
+            raise InvariantViolation((f"too few free candidates ({available.size}) for n={n}",))
+        ordre = available[np.argsort(-scores[available], kind="stable")]
         return np.asarray(ordre[:n], dtype=int)
 
 
@@ -93,13 +93,13 @@ class RandomStrategy:
         exclus: np.ndarray | None = None,
     ) -> np.ndarray:
         """Sample ``n`` indices with the given seed."""
-        inc, _dens = _valider(incertitudes, densites, n=n)
-        disponibles = np.flatnonzero(_masque_disponibles(inc.size, exclus))
-        if disponibles.size < n:
-            raise InvariantViolation((f"too few free candidates ({disponibles.size}) for n={n}",))
+        inc, _dens = _validate(incertitudes, densites, n=n)
+        available = np.flatnonzero(_available_mask(inc.size, exclus))
+        if available.size < n:
+            raise InvariantViolation((f"too few free candidates ({available.size}) for n={n}",))
         rng = np.random.default_rng(seed)
-        choix = rng.choice(disponibles, size=n, replace=False)
-        return np.asarray(np.sort(choix), dtype=int)
+        choice = rng.choice(available, size=n, replace=False)
+        return np.asarray(np.sort(choice), dtype=int)
 
 
 __getattr__ = lazy_aliases(

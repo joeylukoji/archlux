@@ -136,25 +136,25 @@ def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
     upper bound ``+ 1/(n + 1)`` stops holding, and the interval becomes conservative.
     No random tie-breaking is applied.
     """
-    vecteur = np.asarray(scores, dtype=float).ravel()
-    n = int(vecteur.size)
+    vector = np.asarray(scores, dtype=float).ravel()
+    n = int(vector.size)
     if n == 0:
         raise InvariantViolation(("empty calibration set",))
-    if not bool(np.all(np.isfinite(vecteur))):
+    if not bool(np.all(np.isfinite(vector))):
         raise InvariantViolation(("non-finite calibration scores",))
     if not 0.0 < alpha < 1.0:
         raise InvariantViolation((f"alpha outside ]0, 1[: {alpha}",))
-    rang = math.ceil((n + 1) * (1.0 - alpha))
-    if rang > n:
-        raise InvariantViolation((f"n={n} too small for alpha={alpha} (rank {rang} > n)",))
-    ordre = np.sort(vecteur)
-    return float(ordre[rang - 1])
+    rank = math.ceil((n + 1) * (1.0 - alpha))
+    if rank > n:
+        raise InvariantViolation((f"n={n} too small for alpha={alpha} (rank {rank} > n)",))
+    ordre = np.sort(vector)
+    return float(ordre[rank - 1])
 
 
-def _indicateur(nom: str) -> Indicator:
-    if nom not in INDICATOR_SENSE:
-        raise InvariantViolation((f"unknown indicator: {nom!r}",))
-    return nom  # type: ignore[return-value]
+def _indicator(indicator_name: str) -> Indicator:
+    if indicator_name not in INDICATOR_SENSE:
+        raise InvariantViolation((f"unknown indicator: {indicator_name!r}",))
+    return indicator_name  # type: ignore[return-value]
 
 
 def dataset_fingerprint(
@@ -185,7 +185,7 @@ def _regime(regime: str) -> Regime:
     raise InvariantViolation((f"unknown regime {regime!r}, expected {REGIMES}",))
 
 
-def _echelle(uncertainty: float) -> float:
+def _scale(uncertainty: float) -> float:
     """Validate ``sigma_hat`` before turning it into a conformal margin.
 
     Scores are normalized (``|y - y_hat| / sigma``): the published margin only makes
@@ -199,19 +199,19 @@ def _echelle(uncertainty: float) -> float:
     InvariantViolation
         If ``uncertainty`` is not finite or is not ``> 0``.
     """
-    echelle = float(uncertainty)
-    if not math.isfinite(echelle):
+    scale = float(uncertainty)
+    if not math.isfinite(scale):
         raise InvariantViolation((f"non-finite uncertainty: {uncertainty}",))
-    if echelle <= 0.0:
+    if scale <= 0.0:
         raise InvariantViolation(
-            (f"uncertainty must be > 0 to publish a conformal margin: {echelle}",)
+            (f"uncertainty must be > 0 to publish a conformal margin: {scale}",)
         )
-    return max(echelle, _SIGMA_MIN)
+    return max(scale, _SIGMA_MIN)
 
 
-def _intervalle(
+def _interval(
     prediction: float,
-    marge: float,
+    margin: float,
     *,
     indicator: Indicator,
     coverage: float,
@@ -222,8 +222,8 @@ def _intervalle(
     return PerformanceBound(
         indicator=indicator,
         value=float(prediction),
-        lower=float(prediction) - marge,
-        upper=float(prediction) + marge,
+        lower=float(prediction) - margin,
+        upper=float(prediction) + margin,
         coverage=coverage,
         n_calibration=n_calibration,
         regime=_regime(regime),
@@ -268,11 +268,11 @@ def bound(
       coverage under selection.
     """
     q_chapeau = conformal_quantile(calibration.scores, calibration.alpha)
-    marge = q_chapeau * _echelle(uncertainty)
-    return _intervalle(
+    margin = q_chapeau * _scale(uncertainty)
+    return _interval(
         value,
-        marge,
-        indicator=_indicateur(calibration.indicator),
+        margin,
+        indicator=_indicator(calibration.indicator),
         coverage=1.0 - calibration.alpha,
         n_calibration=calibration.n,
         regime=regime,
@@ -312,23 +312,23 @@ class ConformalCalibrator:
             Target level (default 0.10 -> 90 % coverage).
         """
         pred = np.asarray(predictions, dtype=float).ravel()
-        verite = np.asarray(verites, dtype=float).ravel()
-        brut = np.asarray(incertitudes, dtype=float).ravel()
-        if pred.size != verite.size or pred.size != brut.size:
+        truth = np.asarray(verites, dtype=float).ravel()
+        raw = np.asarray(incertitudes, dtype=float).ravel()
+        if pred.size != truth.size or pred.size != raw.size:
             raise InvariantViolation(
                 ("predictions, truths and uncertainties have different lengths",)
             )
         if pred.size == 0:
             raise InvariantViolation(("empty calibration set",))
-        if not bool(np.all(np.isfinite(brut))) or bool(np.any(brut < 0.0)):
+        if not bool(np.all(np.isfinite(raw))) or bool(np.any(raw < 0.0)):
             raise InvariantViolation(("uncertainties must be finite and non-negative",))
-        sigma = np.maximum(brut, _SIGMA_MIN)
-        scores = np.abs(verite - pred) / sigma
+        sigma = np.maximum(raw, _SIGMA_MIN)
+        scores = np.abs(truth - pred) / sigma
         self.q = conformal_quantile(scores, alpha)
         self.n = int(scores.size)
         self.alpha = float(alpha)
         # The data set as given, before the floor on sigma: anyone can recompute it.
-        self.empreinte_jeu = dataset_fingerprint(pred, verite, brut)
+        self.empreinte_jeu = dataset_fingerprint(pred, truth, raw)
         self.scores = np.array(scores, dtype=float, copy=True)
 
     def borne(
@@ -360,19 +360,19 @@ class ConformalCalibrator:
         """
         if self.n < 1:
             raise InvariantViolation(("calibrator not fitted",))
-        attendu = INDICATOR_SENSE[self.indicator]
+        expected = INDICATOR_SENSE[self.indicator]
         if sens is None:
-            sens = attendu
+            sens = expected
         if sens not in (">=", "<="):
             raise InvariantViolation((f"unknown sens: {sens!r}",))
-        if sens != attendu:
+        if sens != expected:
             raise InvariantViolation(
                 (f"sens {sens!r} incompatible with indicator {self.indicator}",)
             )
-        marge = self.q * _echelle(uncertainty)
-        return _intervalle(
+        margin = self.q * _scale(uncertainty)
+        return _interval(
             prediction,
-            marge,
+            margin,
             indicator=self.indicator,
             coverage=1.0 - self.alpha,
             n_calibration=self.n,
