@@ -195,3 +195,23 @@ def test_the_straightening_angle_is_consistent_with_the_geometry(tmp_path: Path)
     coords = list(apartment.plan.outline)
     for (x0, y0), (x1, y1) in zip(coords, coords[1:] + coords[:1], strict=True):
         assert math.isclose(x0, x1, abs_tol=1e-6) or math.isclose(y0, y1, abs_tol=1e-6)
+
+
+@pytest.mark.parametrize(
+    ("polygon", "max_rectangles", "expected"),
+    [
+        (Polygon([(0, 0), (4, 0), (4, 3), (1, 3)]), 4, "room not axis-aligned"),
+        (Polygon([(0, 0), (6, 0), (6, 1), (3, 1), (3, 2), (0, 2)]), 1, "room over-fragmented"),
+    ],
+)
+def test_a_refused_decomposition_is_classified_by_its_cause(
+    polygon: Polygon, max_rectangles: int, expected: str
+) -> None:
+    """The loading statistics name why a room was refused, not a catch-all."""
+    from archlux.data.loaders import _decomposition_rejection
+    from archlux.errors import InvariantViolation
+    from archlux.geom.rectilinear import decompose
+
+    with pytest.raises(InvariantViolation) as refusal:
+        decompose(polygon, id="p", room_type="room", max_rectangles=max_rectangles)
+    assert _decomposition_rejection(refusal.value) == expected

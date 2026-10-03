@@ -521,6 +521,32 @@ def load_msd(
         yield result
 
 
+def _decomposition_rejection(failure: InvariantViolation) -> str:
+    """The loading-statistics reason for a room :func:`decompose` refused.
+
+    Matches the messages ``decompose`` raises today. The match used to look for the
+    French messages of before the English rename, so every refusal fell through to
+    "room not decomposable".
+
+    Parameters
+    ----------
+    failure : InvariantViolation
+        The refusal raised by :func:`archlux.geom.rectilinear.decompose`.
+
+    Returns
+    -------
+    str
+        ``"room not axis-aligned"``, ``"room over-fragmented"`` or
+        ``"room not decomposable"``.
+    """
+    reason = str(failure.violations[0])
+    if "diagonal edge" in reason:
+        return "room not axis-aligned"
+    if "too many rectangles" in reason:
+        return "room over-fragmented"
+    return "room not decomposable"
+
+
 def _convert(
     id: str,
     entities: list[tuple[str, str, str, str, str]],
@@ -595,12 +621,7 @@ def _convert(
                 max_rectangles=max_rectangles,
             )
         except InvariantViolation as failure:
-            reason = str(failure.violations[0])
-            if "diagonale" in reason:
-                return "room not axis-aligned"
-            if "trop de rectangles" in reason:  # lang-ok: pre-existing match, out of scope here
-                return "room over-fragmented"
-            return "room not decomposable"
+            return _decomposition_rejection(failure)
         rooms.extend(fragment.rectangles)
         if len(fragment.rectangles) > 1:
             merges.append(fragment)

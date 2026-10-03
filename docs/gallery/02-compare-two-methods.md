@@ -5,7 +5,7 @@ one facing north, the other south, receive the same L1 repair. We want a
 repair that *prefers* daylight, without training a network yet.
 
 **Solution.** Same function, one parameter: `objective=AnalyticSurrogate()`.
-The surrogate is a closed-form model (useful depth \(2{,}5\times\) head height,
+The surrogate is a closed-form model (useful depth \(2.5\times\) head height,
 orientation harmonics). Frank-Wolfe reuses the LP oracle of milestone 2.
 
 ```python
@@ -15,8 +15,8 @@ from archlux.light.analytic import AnalyticSurrogate
 outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
 plan = ax.Plan(
     rooms=(
-        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
-        ax.Room(id="bedroom", type="bedroom", x=6.0, y=0.0, w=6.0, h=9.0),
+        ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=12.0, h=5.0),
+        ax.Room(id="bedroom", type="bedroom", x=0.0, y=4.0, w=12.0, h=5.0),
     ),
     walls=(),
     openings=(),
@@ -39,6 +39,8 @@ q_n = ax.legalize(plan, ctx_n, objective=AnalyticSurrogate())
 q_s = ax.legalize(plan, ctx_s, objective=AnalyticSurrogate())
 print(q_l1.certificate.geometry.valid)
 print(q_n.rooms == q_s.rooms)
+assert q_l1.certificate.geometry.valid
+assert q_n.rooms != q_s.rooms  # north and south move the shared wall differently
 ```
 
 **Result.**
@@ -49,7 +51,11 @@ False
 ```
 
 The geometric proof stays **exact** in all three cases. The two performance
-plans differ: north is no longer a dummy coordinate. The surrogate's score is
+plans differ: north is no longer a dummy coordinate. The two rooms are stacked
+along the north–south axis, so moving the wall between them trades daylight
+between the two façades, and the optimum depends on which façade faces south.
+Side by side (a wall running north–south), both rooms would keep the same
+share of each façade, and north and south would give the same plan. The surrogate's score is
 **not** a measured sDA; no conformal coverage is claimed (milestone 5).
 
 **What to remember.** `objective=None` reproduces milestone 2. A surrogate

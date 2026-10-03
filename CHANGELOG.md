@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Fixed — three defects found during the English translation (chantier E)
+
+- `data/loaders.py`: the MSD loader classified a room `decompose` refused by matching the French messages of before the rename, so every refusal was counted as "room not decomposable". `_decomposition_rejection` matches the current messages again ("room not axis-aligned", "room over-fragmented"); tested with real `decompose` refusals. **Behaviour change**: the rejection breakdown of a fresh MSD load differs from a run made after the rename and before this fix; the published j7 figures predate the rename and are unaffected.
+- `active.Loop`: a third-party surrogate whose `fit` still takes the pre-rename epoch keyword got a `TypeError` once `Loop` passed `epochs=`. It is now retrained with a `DeprecationWarning` attributed to the caller of `run`.
+- `docs/gallery/02`: the page printed `False` for "the north and south plans differ" while the code printed `True`. With two rooms side by side (a wall running north–south), both rooms keep the same share of each façade, so the optimum does not depend on orientation. The example now stacks the rooms along the north–south axis, where the plans do differ, and asserts it, so the documentation test checks the claim.
+
 ### Changed — English test suite (chantier E, wave 2)
 
 - French test file names renamed to English (`test_acceptation_jalon*` → `test_milestone*_acceptance`, `test_dependances` → `test_dependencies`, `test_pavage` → `test_tiling`, `test_chargeurs` → `test_loaders`, ...); every reference follows.

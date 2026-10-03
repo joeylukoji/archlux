@@ -13,6 +13,7 @@ silent error capable of invalidating a publication. Two modes follow from this:
 
 from __future__ import annotations
 
+import inspect
 import warnings
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -62,6 +63,41 @@ class ActiveReport:
     n_calibration: int
     width_history: tuple[float, ...]
     independent_calibration: bool = False
+
+
+_LEGACY_EPOCHS = "epoques"  # lang-ok: epoch-count keyword before the English rename
+
+
+def _epochs_keyword(fit: object) -> str:
+    """The keyword ``fit`` takes for the epoch count: ``epochs``, or the old French one.
+
+    A third-party surrogate whose ``fit`` still takes the pre-rename keyword keeps
+    being retrained, with a ``DeprecationWarning``, instead of failing with a
+    ``TypeError`` once :class:`Loop` passes ``epochs=``.
+
+    Parameters
+    ----------
+    fit : callable
+        The surrogate's bound ``fit`` method.
+
+    Returns
+    -------
+    str
+        ``"epochs"``, unless ``fit`` accepts only the old keyword.
+    """
+    try:
+        parameters = inspect.signature(fit).parameters  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return "epochs"
+    accepts_any = any(p.kind is p.VAR_KEYWORD for p in parameters.values())
+    if "epochs" in parameters or accepts_any or _LEGACY_EPOCHS not in parameters:
+        return "epochs"
+    warnings.warn(
+        f"fit({_LEGACY_EPOCHS}=) is deprecated, rename the keyword epochs (ADR 0001)",
+        DeprecationWarning,
+        stacklevel=6,
+    )
+    return _LEGACY_EPOCHS
 
 
 @dataclass(frozen=True, slots=True)
@@ -334,7 +370,7 @@ class Loop:
             # Such a surrogate also predates the English keyword of the epoch count.
             epochs_keyword = "epoques"  # lang-ok: keyword of the deprecated ajuster
         else:
-            epochs_keyword = "epochs"
+            epochs_keyword = _epochs_keyword(fit)
         if fit is not None and len(xs_lab) >= 2:
             fit(
                 tuple(xs_lab),
