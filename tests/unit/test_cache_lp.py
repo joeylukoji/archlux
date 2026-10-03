@@ -1,7 +1,7 @@
 """``CacheLP``: an explicit, injectable LP model cache (PLAN.md phase 4, block 4).
 
 Replaces a module-global dict keyed by ``id()``. The default cache (used when
-``solve`` gets no explicit ``cache``) is still exercised by ``test_solveur.py`` and
+``solve`` gets no explicit ``cache``) is still exercised by ``test_solver.py`` and
 the warm-start benchmark; this file is about the object itself: isolation, eviction,
 concurrent warm solves on one shared cache,
 and that ``solve`` gives the identical result regardless of which cache serves it
@@ -15,9 +15,9 @@ import threading
 import numpy as np
 import pytest
 
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import build_polytope
-from archlux.lmo.solveur import CacheLP, solve
+from archlux.lmo.solver import CacheLP, solve
 from archlux.types import Context, Orientation, Regulation, Structure
 
 CTX = Context(
@@ -26,8 +26,8 @@ CTX = Context(
     outline=((0.0, 0.0), (10.0, 0.0), (10.0, 8.0), (0.0, 8.0)),
     regulation=Regulation(min_areas=(), min_width=1.5),
 )
-ORDRE_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
-POLY_AB = build_polytope(ORDRE_AB, CTX)
+ORDER_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
+POLY_AB = build_polytope(ORDER_AB, CTX)
 
 
 def test_a_fresh_cache_starts_empty() -> None:
@@ -50,7 +50,7 @@ def test_clear_empties_the_cache() -> None:
 
 def test_eviction_drops_the_oldest_beyond_maxsize() -> None:
     cache = CacheLP(maxsize=2)
-    polys = [build_polytope(ORDRE_AB, CTX) for _ in range(3)]  # distinct objects, distinct ids
+    polys = [build_polytope(ORDER_AB, CTX) for _ in range(3)]  # distinct objects, distinct ids
     for poly in polys:
         cache.put(poly, object(), [], [])
     assert cache.get(polys[0]) is None  # evicted first

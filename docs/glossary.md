@@ -191,25 +191,28 @@ public function (`archlux._deprecation.renamed_parameters`).
 
 | French | English | | French | English |
 |---|---|---|---|---|
-| `erreurs.py` | `errors.py` | | `graphe.py` | `graph.py` |
-| `pavage.py` | `tiling.py` | | `rectilineaire.py` | `rectilinear.py` |
-| `solveur.py` | `solver.py` | | `coupes.py` | `cuts.py` |
-| `analytique.py` | `analytic.py` | | `simulateur.py` | `split_flux.py` |
-| `jetons.py` | `tokens.py` | | `objectif.py` | `objective.py` |
-| `appris.py` | `learned.py` | | `protocole.py` | `protocol.py` |
-| `circulaire.py` | `circular.py` | | `conforme.py` | `conformal.py` |
-| `derive.py` | `drift.py` | | `fiabilite.py` | `reliability.py` |
-| `gestion.py` | `registry.py` | | `boucle.py` | `loop.py` |
-| `densite.py` | `density.py` | | `selection.py` | `selection.py` |
-| `preuve.py` | `proof.py` (done: batch E10, old module kept as a deprecated shim) | | `borne.py` | `bound.py` |
-| `rapport.py` | `report.py` | | `dual.py` | `dual.py` |
-| `chargeurs.py` | `loaders.py` | | `decoupage.py` | `splits.py` |
-| `synthese.py` | `synthetic.py` | | `corruption.py` | `corruption.py` |
-| `pathologie.py` | `pathologies.py` | | `survie.py` | `survival.py` |
-| `graines.py` | `seeds.py` | | `manifeste.py` | `manifest.py` |
-| `protocole.py` (bench) | `protocol.py` | | `json_io.py` | `json_io.py` |
+| `erreurs.py` | `errors.py` | | `graphe.py` | `graph.py` (done: wave 1a) |
+| `pavage.py` | `tiling.py` (done: wave 1a) | | `rectilineaire.py` | `rectilinear.py` (done: wave 1a) |
+| `solveur.py` | `solver.py` (done: wave 1a) | | `coupes.py` | `cuts.py` |
+| `analytique.py` | `analytic.py` (done: wave 1a) | | `simulateur.py` | `split_flux.py` (done: wave 1a) |
+| `jetons.py` | `tokens.py` (done: wave 1a) | | `objectif.py` | `objective.py` (done: wave 1a) |
+| `appris.py` | `learned.py` (done: wave 1a) | | `protocole.py` | `protocol.py` (done: wave 1a) |
+| `circulaire.py` | `circular.py` (done: wave 1a) | | `conforme.py` | `conformal.py` (done: wave 1a) |
+| `derive.py` | `drift.py` (done: wave 1a) | | `fiabilite.py` | `reliability.py` (done: wave 1a) |
+| `gestion.py` | `registry.py` (done: wave 1a) | | `boucle.py` | `loop.py` (done: wave 1a) |
+| `densite.py` | `density.py` (done: wave 1b) | | `selection.py` | `selection.py` |
+| `preuve.py` | `proof.py` (done: batch E10, old module kept as a deprecated shim) | | `borne.py` | `bound.py` (done: wave 1a) |
+| `rapport.py` (bench, certify) | `report.py` (done: wave 1a) | | `dual.py` | `dual.py` |
+| `chargeurs.py` | `loaders.py` (done: wave 1a) | | `decoupage.py` | `splits.py` (done: wave 1a) |
+| `synthese.py` | `synthetic.py` (done: wave 1a) | | `corruption.py` | `corruption.py` |
+| `pathologie.py` | `pathologies.py` (done: wave 1a) | | `survie.py` | `survival.py` (done: wave 1b) |
+| `graines.py` | `seeds.py` (done: wave 1a) | | `manifeste.py` | `manifest.py` (done: wave 1a) |
+| `protocole.py` (bench) | `protocol.py` (done: wave 1a) | | `json_io.py` | `json_io.py` |
 | `tests/unites` | `tests/unit` (done) | | `tests/proprietes` | `tests/properties` (done) |
 | `experiences/` | `experiments/` (done) | | `resultats/` | `results/` (done) |
+
+Every module marked "done: wave 1a" or "done: wave 1b" keeps its old path as a deprecated shim until 1.0.0:
+importing from it still works and warns with the new path (ADR 0001, rule 6).
 
 ## Light modules (rename wave 5, batch 5)
 
@@ -227,12 +230,12 @@ public function (`archlux._deprecation.renamed_parameters`).
 
 | French (current) | English (target) | Notes |
 |---|---|---|
-| `CalibrateurConforme`, `borner`, `n_minimal_conforme`, `quantile_conforme` | `ConformalCalibrator`, `bound`, `minimal_n_conformal`, `conformal_quantile` | `archlux.uq.conforme` |
-| `DiagnosticDerive`, `RapportDerive`, `controler_derive`, `mesurer_derive` | `DriftDiagnostic`, `DriftReport`, `check_drift`, `measure_drift` | `archlux.uq.derive` |
-| `diagramme_fiabilite`, `stratifier_par_orientation` | `reliability_diagram`, `stratify_by_orientation` | `archlux.uq.fiabilite` |
-| `GestionDonnees`, `JetonCalibration`, `emettre_jeton`, `geler_et_emettre`, `ouvrir_calibration` | `DataManagement`, `CalibrationToken`, `issue_token`, `freeze_and_issue`, `open_calibration` | `archlux.uq.gestion`; fields `empreinte_poids`, `horodatage_gel` become `weights_fingerprint`, `freeze_timestamp`; method `verifier` becomes `verify`; methods `pour_entrainement`, `pour_test`, `pour_calibration` become `for_training`, `for_test`, `for_calibration` (no alias) |
+| `CalibrateurConforme`, `borner`, `n_minimal_conforme`, `quantile_conforme` | `ConformalCalibrator`, `bound`, `minimal_n_conformal`, `conformal_quantile` | `archlux.uq.conformal` |
+| `DiagnosticDerive`, `RapportDerive`, `controler_derive`, `mesurer_derive` | `DriftDiagnostic`, `DriftReport`, `check_drift`, `measure_drift` | `archlux.uq.drift` |
+| `diagramme_fiabilite`, `stratifier_par_orientation` | `reliability_diagram`, `stratify_by_orientation` | `archlux.uq.reliability` |
+| `GestionDonnees`, `JetonCalibration`, `emettre_jeton`, `geler_et_emettre`, `ouvrir_calibration` | `DataManagement`, `CalibrationToken`, `issue_token`, `freeze_and_issue`, `open_calibration` | `archlux.uq.registry`; fields `empreinte_poids`, `horodatage_gel` become `weights_fingerprint`, `freeze_timestamp`; method `verifier` becomes `verify`; methods `pour_entrainement`, `pour_test`, `pour_calibration` become `for_training`, `for_test`, `for_calibration` (no alias) |
 | `RapportActif`, `Aleatoire`, `StrategieAcquisition`, `densite_noyau` | `ActiveReport`, `RandomStrategy`, `AcquisitionStrategy`, `kernel_density` | `archlux.active` |
-| `ResultatRegression`, `difference_angulaire`, `direction_dominante`, `encoder`, `moyenne_circulaire`, `regression_circulaire_lineaire`, `stratifier`, `variance_circulaire` | `RegressionResult`, `angular_difference`, `dominant_direction`, `encode_orientation`, `circular_mean`, `circular_linear_regression`, `stratify`, `circular_variance` | `archlux.orient.circulaire` |
+| `ResultatRegression`, `difference_angulaire`, `direction_dominante`, `encoder`, `moyenne_circulaire`, `regression_circulaire_lineaire`, `stratifier`, `variance_circulaire` | `RegressionResult`, `angular_difference`, `dominant_direction`, `encode_orientation`, `circular_mean`, `circular_linear_regression`, `stratify`, `circular_variance` | `archlux.orient.circular` |
 | parameters/fields `valeur`, `couverture`, `horodatage`, `modele`, `poids`, `jeton` | `value`, `coverage`, `timestamp`, `model`, `weights`, `token` | across `uq` and `orient`, no alias (not public class names) |
 
 ## Export, data and bench modules (rename wave 5, batch 7)
@@ -241,12 +244,47 @@ public function (`archlux._deprecation.renamed_parameters`).
 |---|---|---|
 | `RapportExport`, `DiagnosticPathologie`, `intervalle_wilson` | `ExportReport`, `PathologyDiagnostic`, `wilson_interval` | `archlux.export` |
 | `comparer`, `planche` | `compare`, `sheet` | `archlux.export.svg` |
-| `AppartementMSD`, `StatistiquesChargement`, `charger_msd`, `charger_etiquettes_sd`, `etiqueter`, `decouper_par_site` | `MSDApartment`, `LoadStatistics`, `load_msd`, `load_sd_labels`, `label`, `split_by_site` | `archlux.data.chargeurs`; constants `COLONNE_SOLEIL_DEFAUT`, `TYPES_EXCLUS` become `DEFAULT_SUN_COLUMN`, `EXCLUDED_TYPES` |
+| `AppartementMSD`, `StatistiquesChargement`, `charger_msd`, `charger_etiquettes_sd`, `etiqueter`, `decouper_par_site` | `MSDApartment`, `LoadStatistics`, `load_msd`, `load_sd_labels`, `label`, `split_by_site` | `archlux.data.loaders`; constants `COLONNE_SOLEIL_DEFAUT`, `TYPES_EXCLUS` become `DEFAULT_SUN_COLUMN`, `EXCLUDED_TYPES` |
 | `corrompre` | `corrupt` | `archlux.data.corruption`; field `piece_id`/`axe` become `room_id`/`axis`; Mode values `deplacer`/`elargir`/`retrecir`/`aplatir` become `move`/`widen`/`narrow`/`flatten` |
-| `Decoupage`, `charger_decoupage` | `Split`, `load_split` | `archlux.data.decoupage`; fields `nom`/`entrainement`/`empreinte` become `name`/`train`/`fingerprint` |
+| `Decoupage`, `charger_decoupage` | `Split`, `load_split` | `archlux.data.splits`; fields `nom`/`entrainement`/`empreinte` become `name`/`train`/`fingerprint` |
 | `empreinte_geometrique`, `distance_cotes`, `paires_quasi_identiques`, `SEUIL_HAUSDORFF_M` | `geometric_fingerprint`, `side_distance`, `near_duplicate_pairs`, `HAUSDORFF_THRESHOLD_M` | `archlux.data.dedup` |
 | `imputer_ouvertures`, `RATIO_BAIE_DEFAUT` | `impute_openings`, `DEFAULT_OPENING_RATIO` | `archlux.data.imputation` |
-| `generer_corpus`, `TAILLE_MAX` | `generate_corpus`, `MAX_SIZE` | `archlux.data.synthese` |
-| `deriver`, `emettre` | `derive`, `emit` | `archlux.bench.graines`, `archlux.bench.manifeste` |
-| `RapportBanc`, `StrateOrientation`, `LigneBrute`, `Resultat`, `Intervalle`, `bootstrap_apparie`, `puissance` | `BenchReport`, `OrientationStratum`, `RawRow`, `Result`, `Interval`, `paired_bootstrap`, `power` | `archlux.bench.{rapport,run,stats}` |
+| `generer_corpus`, `TAILLE_MAX` | `generate_corpus`, `MAX_SIZE` | `archlux.data.synthetic` |
+| `deriver`, `emettre` | `derive`, `emit` | `archlux.bench.seeds`, `archlux.bench.manifest` |
+| `RapportBanc`, `StrateOrientation`, `LigneBrute`, `Resultat`, `Intervalle`, `bootstrap_apparie`, `puissance` | `BenchReport`, `OrientationStratum`, `RawRow`, `Result`, `Interval`, `paired_bootstrap`, `power` | `archlux.bench.{report,run,stats}` |
 | identifiers `contour`, `murs`, `ouvertures`, `pieces`, `poids`, `couverture`, `manifeste` (local names, not Plan or Manifest fields) | `outline`, `walls`, `openings`, `rooms`, `weights`, `coverage`, `manifest` | across `export` and `data`, no alias (locals, not public fields) |
+
+## Parameters, fields and constants (chantier E, wave 1b)
+
+Old keywords of functions and methods stay accepted through `renamed_parameters`; old
+fields, class constants and methods stay readable (and accepted as constructor keywords)
+through `renamed_attributes`; old module constants stay importable through
+`lazy_aliases`. All emit a `DeprecationWarning` until 1.0.0.
+
+| French (current) | English (target) | Notes |
+|---|---|---|
+| `ordre`, `piece`, `n_pieces` | `order`, `room`, `n_rooms` | `build_graph`, `build_polytope`, `permute_rooms`; `area_cut`, `recompose`, `merge_constraints`, `overlap_constraints`, `extend_merges`; `corrupt` |
+| `titre`, `titres`, `avant`, `apres`, `volets`, `colonnes` | `title`, `titles`, `before`, `after`, `panels`, `columns` | `export.svg.render`, `compare`, `sheet` |
+| `harmoniques`, `degres`, `periode`, `n_secteurs` | `harmonics`, `degrees`, `period`, `n_sectors` | `orient.circular`, `bench.report.report`, `uq.reliability.stratify_by_orientation` |
+| `verites`, `incertitudes`, `niveaux`, `sens` | `truths`, `uncertainties`, `levels`, `sense` | `uq.conformal`, `uq.drift.measure_drift`, `uq.reliability` |
+| `racine`, `centre`, `candidats`, `bande` | `root`, `center`, `candidates`, `bandwidth` | `open_calibration`, `DataManagement`; `restrict_to_budget`; `kernel_density` |
+| `pas`, `seuil_signe`, `epoques`, `chemin` | `step`, `sign_threshold`, `epochs`, `path` | `validate_gradient`; `DenseSurrogate.fit`, `save`, `load`, `Adjustable.fit` |
+| `tolerance_calage`, `tolerance_recollage` | `snap_tolerance`, `stitch_tolerance` | `load_msd` |
+| `propositions`, `reference_optimiseur` | `proposals`, `optimizer_reference` | `Loop.run` |
+| `simulateur`, `part_calibration` | `simulator`, `calibration_share` | `Loop` fields |
+| `largeur_intervalle_finale`, `historique_largeur`, `calibration_independante` | `final_interval_width`, `width_history`, `independent_calibration` | `ActiveReport` |
+| `selectionner` | `select` | method of the acquisition strategies |
+| `indicateur_vise` | `target_indicator` | every surrogate |
+| `largeur`, `echelle_base`, `decalage_base` | `width`, `base_scale`, `base_offset` | `DenseSurrogate` (the npz keys are unchanged) |
+| `chemin_poids`, `empreinte_poids`, `gele` | `weights_path`, `weights_fingerprint`, `frozen` | `LearnedSurrogate` |
+| `q_chapeau`, `pessimiste` | `q_hat`, `pessimistic` | `Daylight` |
+| `erreur_relative_max`, `cosinus_moyen`, `accord_de_signe`, `graine`, `conforme` | `max_relative_error`, `mean_cosine`, `sign_agreement`, `seed`, `passed` | `GradientReport` |
+| `residus` | `residuals` | `RegressionResult` |
+| `empreinte_jeu`, `borne` | `data_fingerprint`, `bound` | `Calibration`, `ConformalCalibrator` (method `borne` becomes `bound`) |
+| `echangeable`, `statistique` | `exchangeable`, `statistic` | `DriftDiagnostic` |
+| `derive_moyenne`, `tendance_pente`, `tendance_pvalue`, `n_echantillons` | `mean_drift`, `trend_slope`, `trend_pvalue`, `n_samples` | `DriftReport` |
+| `FACTEURS_SECTEUR`, `FACTEUR_PROFONDEUR`, `HAUTEUR_LINTEAU`, `KAPPA_SUD` | `SECTOR_FACTORS`, `DEPTH_FACTOR`, `HEAD_HEIGHT`, `KAPPA_SOUTH` | `light.analytic` |
+| `ECHELLE_DF` | `DF_SCALE` | `SplitFluxOracle` |
+| `FRACTION_SIGMA_RESIDUEL`, `SIGMA_PLANCHER`, `MAX_PARAMETRES` | `RESIDUAL_SIGMA_FRACTION`, `SIGMA_FLOOR`, `MAX_PARAMETERS` | `light.base`, `light.learned` |
+| `VecteurF` | `FloatVector` | `archlux.arrays` |
+| `solveur`, `contraintes` | `solver`, `constraints` | `CacheLP.put` |

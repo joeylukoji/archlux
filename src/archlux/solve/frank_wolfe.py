@@ -5,10 +5,10 @@ The algorithm is chosen for a structural reason, not for convenience: its linear
 legalization, with another cost vector. There is therefore a single solver in the whole
 project, and every iterate is a valid plan: no projection, no illegal intermediate step.
 
-Dependencies: ``types``, ``geom``, ``lmo``, and the **protocol** ``light.protocole``.
+Dependencies: ``types``, ``geom``, ``lmo``, and the **protocol** ``light.protocol``.
 Never a concrete surrogate implementation.
 
-Formulas: ``docs/formules/frank-wolfe.md``.
+Formulas: ``docs/formulas/frank-wolfe.md``.
 """
 
 from __future__ import annotations
@@ -19,15 +19,16 @@ from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 
-from archlux.arrays import VecteurF
+from archlux._deprecation import renamed_parameters
+from archlux.arrays import FloatVector
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.polytope import Polytope
-from archlux.lmo.solveur import solve
+from archlux.lmo.solver import solve
 from archlux.solve.trace import Iteration, StopStatus, Trace
 
 if TYPE_CHECKING:
-    from archlux.light.protocole import Glazing, Surrogate
-    from archlux.lmo.solveur import LPSolution
+    from archlux.light.protocol import Glazing, Surrogate
+    from archlux.lmo.solver import LPSolution
     from archlux.types import Orientation
 
 __all__ = [
@@ -63,21 +64,22 @@ class FrankWolfeResult:
         diagnosis of a performance run is often empty.
     """
 
-    x: VecteurF
+    x: FloatVector
     value: float
     gap: float
     status: StopStatus
     iterations: int
     trace: Trace
-    duals: VecteurF | None = None
+    duals: FloatVector | None = None
 
 
+@renamed_parameters({"centre": "center"})
 def restrict_to_budget(
-    poly: Polytope, centre: VecteurF, radius: float, *, keep: VecteurF | None = None
+    poly: Polytope, center: FloatVector, radius: float, *, keep: FloatVector | None = None
 ) -> Polytope:
-    """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``.
+    """Intersection of the polytope with the box ``‖x − center‖_∞ ≤ radius``.
 
-    ``centre`` must be the **proposed** plan, so that the budget is spent once over the
+    ``center`` must be the **proposed** plan, so that the budget is spent once over the
     whole legalization, not once per pass.
 
     ``keep`` is a point the box must contain even if it exceeds the radius by a solver
@@ -94,8 +96,8 @@ def restrict_to_budget(
     names = {column: name for name, column in poly.index.items()}
     bounds: list[tuple[float, float]] = []
     for i, (lo, hi) in enumerate(poly.bounds):
-        low = max(lo, float(centre[i]) - radius)
-        high = min(hi, float(centre[i]) + radius)
+        low = max(lo, float(center[i]) - radius)
+        high = min(hi, float(center[i]) + radius)
         if keep is not None:
             low, high = min(low, float(keep[i])), max(high, float(keep[i]))
         if low > high + 1e-12:
@@ -108,7 +110,7 @@ def restrict_to_budget(
     return replace(poly, bounds=tuple(bounds))
 
 
-def _vertex_index(vertices: list[VecteurF], candidate: VecteurF) -> int | None:
+def _vertex_index(vertices: list[FloatVector], candidate: FloatVector) -> int | None:
     """Index of an already stored vertex, up to tolerance."""
     for rank, vertex in enumerate(vertices):
         if np.allclose(vertex, candidate, atol=1e-9, rtol=0.0):
@@ -139,23 +141,23 @@ class StepStrategy(Protocol):
 
     def propose(
         self,
-        gradient: VecteurF,
-        x: VecteurF,
-        fw_vertex: VecteurF,
-        vertices: list[VecteurF],
+        gradient: FloatVector,
+        x: FloatVector,
+        fw_vertex: FloatVector,
+        vertices: list[FloatVector],
         weights: list[float],
-    ) -> tuple[VecteurF, float, bool, int | None]:
+    ) -> tuple[FloatVector, float, bool, int | None]:
         """Direction, its ``gamma_max``, whether it is an away step, and the away index."""
         ...
 
 
 def _step_away(
-    gradient: VecteurF,
-    x: VecteurF,
-    fw_direction: VecteurF,
-    vertices: list[VecteurF],
+    gradient: FloatVector,
+    x: FloatVector,
+    fw_direction: FloatVector,
+    vertices: list[FloatVector],
     weights: list[float],
-) -> tuple[VecteurF, float, bool, int | None]:
+) -> tuple[FloatVector, float, bool, int | None]:
     """Away-step direction (Lacoste-Julien & Jaggi 2015), or the plain one.
 
     Away is taken when it improves on the plain Frank-Wolfe direction and the worst
@@ -183,12 +185,12 @@ class AwayStepStrategy:
 
     def propose(
         self,
-        gradient: VecteurF,
-        x: VecteurF,
-        fw_vertex: VecteurF,
-        vertices: list[VecteurF],
+        gradient: FloatVector,
+        x: FloatVector,
+        fw_vertex: FloatVector,
+        vertices: list[FloatVector],
         weights: list[float],
-    ) -> tuple[VecteurF, float, bool, int | None]:
+    ) -> tuple[FloatVector, float, bool, int | None]:
         """See :class:`StepStrategy`."""
         fw_direction = fw_vertex - x
         if not self.enabled:
@@ -214,13 +216,13 @@ def _final_diagnostics(
     surrogate: Surrogate,
     orientation: Orientation,
     domain: Polytope,
-    x: VecteurF,
+    x: FloatVector,
     status: StopStatus,
     last_oracle: LPSolution | None,
     gap: float,
     *,
     glazing: Glazing | None,
-) -> tuple[float, VecteurF | None]:
+) -> tuple[float, FloatVector | None]:
     """The gap and duals at the returned ``x``: one extra, warm LP.
 
     On ``max_iter``, the last step moved ``x`` after its LP, so that LP's gap and duals
@@ -243,14 +245,14 @@ def _final_diagnostics(
 def _line_search(
     surrogate: Surrogate,
     orientation: Orientation,
-    x: VecteurF,
+    x: FloatVector,
     value: float,
-    direction: VecteurF,
+    direction: FloatVector,
     gamma_max: float,
     k: int,
     *,
     glazing: Glazing | None,
-) -> tuple[VecteurF, float, float] | None:
+) -> tuple[FloatVector, float, float] | None:
     """Backtrack from ``2/(k+2)`` (halved while the surrogate would decrease).
 
     Returns ``(candidate, new_value, gamma)``, or ``None`` if no step in 12 tries
@@ -267,14 +269,14 @@ def _line_search(
 
 
 def _update_weights(
-    vertices: list[VecteurF],
+    vertices: list[FloatVector],
     weights: list[float],
-    fw_vertex: VecteurF,
+    fw_vertex: FloatVector,
     gamma: float,
     *,
     away: bool,
     away_index: int | None,
-) -> tuple[list[VecteurF], list[float]]:
+) -> tuple[list[FloatVector], list[float]]:
     """Move ``gamma`` of mass onto ``fw_vertex`` (or off ``away_index``).
 
     Also drops the vertices left with near-zero weight, and renormalizes.
@@ -293,7 +295,7 @@ def _update_weights(
         else:
             weights[existing] += gamma
 
-    kept_vertices: list[VecteurF] = []
+    kept_vertices: list[FloatVector] = []
     kept_weights: list[float] = []
     for vertex, mass in zip(vertices, weights, strict=True):
         if mass > _MIN_WEIGHT:
@@ -307,7 +309,7 @@ def frank_wolfe(
     poly: Polytope,
     surrogate: Surrogate,
     orientation: Orientation,
-    start: VecteurF,
+    start: FloatVector,
     *,
     max_iter: int = 50,
     tol: float = 1e-4,
@@ -322,7 +324,7 @@ def frank_wolfe(
     ----------
     poly : Polytope
         Admissible domain; every iterate stays in it.
-    surrogate : Substitut
+    surrogate : Surrogate
         Objective. The solver does not know whether it is analytic, learned or simulated.
     orientation : Orientation
         Azimuth of the plan.
@@ -344,7 +346,7 @@ def frank_wolfe(
         How the direction and its maximum step are computed each iteration. ``None``
         uses the built-in :class:`AwayStepStrategy` (``away_steps`` above). Inject a
         different one to try a new step rule without editing this function.
-    glazing : Baies or None, optional
+    glazing : Glazing or None, optional
         Windows, constant during optimization; passed to the surrogate as ``baies``.
 
     Returns

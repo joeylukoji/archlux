@@ -1,8 +1,8 @@
-"""Perceptron sur descripteurs — valide la chaîne d'apprentissage sans ``torch``.
+"""Perceptron on descriptors — validates the learning chain without ``torch``.
 
-Un réseau dense à trois couches se code en une journée et **exerce** chargeurs,
-normalisation, journalisation. Si le gradient est déjà faux ici, c'est la
-tokenisation qui est en cause, pas le transformeur (`MILESTONE-4.md` §4).
+A three-layer dense network is written in a day and **exercises** the loaders,
+normalization and logging. If the gradient is already wrong here, the tokenization is
+to blame, not the transformer (`MILESTONE-4.md` §4).
 """
 
 from __future__ import annotations
@@ -15,120 +15,126 @@ from pathlib import Path
 
 import numpy as np
 
-from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
 from archlux.errors import InvariantViolation
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.jetons import vector_to_tokens
-from archlux.light.protocole import Glazing
-from archlux.orient.circulaire import encode
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.protocol import Glazing
+from archlux.light.tokens import vector_to_tokens
+from archlux.orient.circular import encode
 from archlux.types import INDICATOR_SENSE, Indicator, Orientation
 
 __all__ = ["DenseSurrogate", "descriptors"]
 
 _EPS = 1e-8
 
-FRACTION_SIGMA_RESIDUEL = 0.15
-"""Part de ``sigma_y`` retenue comme sigma predictif apres entrainement.
+RESIDUAL_SIGMA_FRACTION = 0.15
+"""Share of ``sigma_y`` kept as the predictive sigma after training.
 
-**Constante non justifiee par une mesure.** Elle postule que le reseau absorbe 85 %
-de l'ecart-type du residu a l'analytique, ce qui n'est verifie nulle part. Elle ne peut
-ni casser ni fonder la couverture conforme : celle-ci reste au moins 1 moins alpha pour
-*n'importe quel* sigma strictement positif, puisque la calibration divise par le meme
-sigma. Elle n'agit que sur l'**adaptativite** de la largeur d'intervalle. Avant
-publication, la remplacer par un sigma estime sur un jeu de validation disjoint (residu
-absolu regresse sur les descripteurs, ou regression quantile), pas par un scalaire
-choisi a la main.
+**A constant not justified by any measurement.** It assumes that the network absorbs
+85 % of the standard deviation of the residual to the analytic surrogate, which is
+checked nowhere. It can neither break nor establish conformal coverage: coverage stays
+at least 1 minus alpha for *any* strictly positive sigma, since calibration divides by
+the same sigma. It only acts on the **adaptivity** of the interval width. Before
+publication, replace it by a sigma estimated on a disjoint validation set (absolute
+residual regressed on the descriptors, or quantile regression), not by a hand-picked
+scalar.
 """
 
-SIGMA_PLANCHER = 0.02
-"""Plancher du sigma predictif, en unite de l'indicateur. Meme statut : valeur d'atelier.
+SIGMA_FLOOR = 0.02
+"""Floor of the predictive sigma, in the unit of the indicator. Same status: workshop value.
 """
 
 
 @lru_cache(maxsize=len(INDICATOR_SENSE))
-def _analytique(indicator: Indicator) -> AnalyticSurrogate:
-    """Instance analytique partagée : gelée, sans état, réutilisable sans copie.
+def _analytic(indicator: Indicator) -> AnalyticSurrogate:
+    """Shared analytic instance: frozen, stateless, reusable without a copy.
 
-    :meth:`SubstitutDense.gradient` évalue ``2 n`` fois par gradient ; reconstruire le
-    substitut à chaque évaluation était du travail pur perte sur le chemin critique du
-    §9 d'``ARCHITECTURE.md``.
+    :meth:`DenseSurrogate.gradient` evaluates ``2 n`` times per gradient; rebuilding the
+    surrogate at each evaluation was pure waste on the critical path of
+    ``ARCHITECTURE.md`` §9.
     """
-    return AnalyticSurrogate(indicateur_vise=indicator)
+    return AnalyticSurrogate(target_indicator=indicator)
 
 
 @renamed_parameters({"baies": "glazing"})
 def descriptors(
     x: np.ndarray, orientation: Orientation, glazing: Glazing | None = None
 ) -> np.ndarray:
-    """Descripteurs continus : statistiques de pièces × harmoniques d'orientation.
+    """Continuous descriptors: room statistics × orientation harmonics.
 
-    Inclut explicitement ``aire × sin 2θ``, terme présent dans le simulateur
-    synthétique et absent de l'analytique — sans lui le perceptron ne peut pas
-    gagner.
+    Explicitly includes ``area × sin 2θ``, a term present in the synthetic simulator and
+    absent from the analytic surrogate — without it the perceptron cannot win.
     """
-    jetons, masque = vector_to_tokens(x, orientation, glazing)
-    valides = jetons[~masque]
-    # Les jetons de baie portent leur drapeau en colonne 27 ; les separer evite de
-    # moyenner des pieces et des fenetres dans un meme vecteur, ce qui n'a pas de
-    # sens dimensionnel.
-    est_baie = valides[:, 27] > 0.5
-    pieces_seules = valides[~est_baie]
-    fenetres = valides[est_baie]
-    if pieces_seules.size:
-        valides = pieces_seules
-    if valides.size == 0:
-        raise InvariantViolation(("vecteur de plan vide : aucun jeton",))
-    moyen = valides.mean(axis=0)
-    aires = valides[:, 4]
-    enc = encode(orientation.deg, harmoniques=3)
+    tokens, mask = vector_to_tokens(x, orientation, glazing)
+    valid = tokens[~mask]
+    # Window tokens carry their flag in column 27; separating them avoids averaging
+    # rooms and windows into one vector, which makes no dimensional sense.
+    is_window = valid[:, 27] > 0.5
+    rooms_only = valid[~is_window]
+    windows = valid[is_window]
+    if rooms_only.size:
+        valid = rooms_only
+    if valid.size == 0:
+        raise InvariantViolation(("empty plan vector: no token",))
+    mean = valid.mean(axis=0)
+    areas = valid[:, 4]
+    enc = encode(orientation.deg, harmonics=3)
     stats = np.array(
         [
-            float(valides.shape[0]),
-            float(aires.sum()),
-            float(valides[:, 2].mean()),
-            float(valides[:, 3].mean()),
-            float(valides[:, 0].mean()),
-            float(valides[:, 1].mean()),
+            float(valid.shape[0]),
+            float(areas.sum()),
+            float(valid[:, 2].mean()),
+            float(valid[:, 3].mean()),
+            float(valid[:, 0].mean()),
+            float(valid[:, 1].mean()),
         ],
         dtype=float,
     )
     interaction = np.outer(enc, stats).ravel()
     sin2 = enc[3]
-    extra = np.array([float(aires.sum()) * sin2, float(aires.sum()) * enc[2]], dtype=float)
-    # Six descripteurs de fenestration, nuls quand aucune baie n'est fournie : le
-    # vecteur garde donc la meme dimension, et un modele entraine sans baies reste
-    # lisible par un modele qui en recoit.
-    if fenetres.size:
-        largeurs = fenetres[:, 25]
-        baies_stats = np.array(
+    extra = np.array([float(areas.sum()) * sin2, float(areas.sum()) * enc[2]], dtype=float)
+    # Six fenestration descriptors, zero when no glazing is given: the vector therefore
+    # keeps the same dimension, and a model trained without glazing stays readable by a
+    # model that receives some.
+    if windows.size:
+        widths = windows[:, 25]
+        window_stats = np.array(
             [
-                float(fenetres.shape[0]),
-                float(largeurs.sum()),
-                float(largeurs.mean()),
-                float(fenetres[:, 26].mean()),
-                float(np.mean(fenetres[:, 22])),
-                float(np.mean(fenetres[:, 23])),
+                float(windows.shape[0]),
+                float(widths.sum()),
+                float(widths.mean()),
+                float(windows[:, 26].mean()),
+                float(np.mean(windows[:, 22])),
+                float(np.mean(windows[:, 23])),
             ],
             dtype=float,
         )
     else:
-        baies_stats = np.zeros(6, dtype=float)
-    return np.concatenate([moyen, enc, stats, interaction, extra, baies_stats])
+        window_stats = np.zeros(6, dtype=float)
+    return np.concatenate([mean, enc, stats, interaction, extra, window_stats])
 
 
-def _huber_derivee(residu: float, delta: float = 1.0) -> float:
-    """Dérivée de la perte de Huber, bornée hors de ``[-delta, delta]``."""
-    if abs(residu) <= delta:
-        return residu
-    return delta * (1.0 if residu > 0.0 else -1.0)
+def _huber_derivative(residual: float, delta: float = 1.0) -> float:
+    """Derivative of the Huber loss, bounded outside ``[-delta, delta]``."""
+    if abs(residual) <= delta:
+        return residual
+    return delta * (1.0 if residual > 0.0 else -1.0)
 
 
+@renamed_attributes(
+    {
+        "indicateur_vise": "target_indicator",
+        "largeur": "width",
+        "echelle_base": "base_scale",
+        "decalage_base": "base_offset",
+    }
+)
 @dataclass
 class DenseSurrogate:
-    """Réseau dense 3 couches, poids numpy. Entrée vectorielle uniquement."""
+    """Three-layer dense network, numpy weights. Vector input only."""
 
-    indicateur_vise: Indicator = "sDA"
-    largeur: int = 32
+    target_indicator: Indicator = "sDA"
+    width: int = 32
     W1: np.ndarray | None = None
     b1: np.ndarray | None = None
     W2: np.ndarray | None = None
@@ -139,19 +145,19 @@ class DenseSurrogate:
     sigma: np.ndarray | None = None
     mu_y: float = 0.0
     sigma_y: float = 1.0
-    echelle_base: float = 1.0
-    decalage_base: float = 0.0
+    base_scale: float = 1.0
+    base_offset: float = 0.0
 
     @property
     def indicator(self) -> Indicator:
-        """Nom de l'indicateur modélisé."""
-        return self.indicateur_vise
+        """Name of the modelled indicator."""
+        return self.target_indicator
 
     @property
     def weights_fingerprint(self) -> str:
         """Implements :class:`archlux.types.Fingerprintable`.
 
-        ``uq.gestion._model_fingerprint`` reads this directly instead of guessing at
+        ``uq.registry._model_fingerprint`` reads this directly instead of guessing at
         ``W1``/``b1``/... by name, so it survives an internal rename here.
         """
         if (
@@ -170,7 +176,7 @@ class DenseSurrogate:
         return hashlib.sha256(b"".join(buffers)).hexdigest()
 
     def n_parameters(self) -> int:
-        """Nombre de scalaires entraînés."""
+        """Number of trained scalars."""
         if (
             self.W1 is None
             or self.b1 is None
@@ -181,13 +187,13 @@ class DenseSurrogate:
             return 0
         return int(self.W1.size + self.b1.size + self.W2.size + self.b2.size + self.W3.size + 1)
 
-    def _normaliser(self, feat: np.ndarray) -> np.ndarray:
+    def _normalize(self, feat: np.ndarray) -> np.ndarray:
         if self.mu is None or self.sigma is None:
             return feat
         return np.asarray((feat - self.mu) / np.maximum(self.sigma, _EPS), dtype=float)
 
     def _forward(self, feat: np.ndarray) -> tuple[float, np.ndarray, np.ndarray]:
-        """Passe avant. Garde explicite : ``assert`` disparaît sous ``python -O``."""
+        """Forward pass. Explicit guard: ``assert`` disappears under ``python -O``."""
         if (
             self.W1 is None
             or self.b1 is None
@@ -195,7 +201,7 @@ class DenseSurrogate:
             or self.b2 is None
             or self.W3 is None
         ):
-            raise InvariantViolation(("passe avant sur un modèle non entraîné",))
+            raise InvariantViolation(("forward pass on an untrained model",))
         z1 = feat @ self.W1 + self.b1
         h1 = np.tanh(z1)
         z2 = h1 @ self.W2 + self.b2
@@ -206,57 +212,57 @@ class DenseSurrogate:
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Analytique recalée + résidu appris. Sans poids : l'analytique seule."""
+        """Rescaled analytic surrogate + learned residual; untrained, the analytic alone."""
         base = (
-            self.echelle_base * float(_analytique(self.indicateur_vise).evaluate(x, orientation))
-            + self.decalage_base
+            self.base_scale * float(_analytic(self.target_indicator).evaluate(x, orientation))
+            + self.base_offset
         )
         if self.W1 is None:
             return base
-        feat = self._normaliser(descriptors(x, orientation, glazing))
+        feat = self._normalize(descriptors(x, orientation, glazing))
         y_hat, _, _ = self._forward(feat)
         return base + y_hat * self.sigma_y + self.mu_y
 
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Différences finies centrées sur le vecteur de plan.
+        """Centred finite differences on the plan vector.
 
-        Coût : ``2 n`` appels à :meth:`evaluate` (``n = 4 × pièces``), soit 120 passes
-        complètes pour 15 pièces. Sur 50 itérations Frank-Wolfe, c'est l'essentiel du
-        budget « légalisation performantielle < 500 ms » (``ARCHITECTURE.md`` §9), et
-        cela ne tiendra pas pour un modèle plus lourd. La rétropropagation exacte est
-        possible — le réseau est différentiable et l'analytique a un gradient fermé —
-        mais elle change les valeurs rendues près du coude
-        ``profondeur == profondeur_utile`` : la substituer exige de repasser
-        :func:`archlux.light.validation.validate_gradient`.
+        Cost: ``2 n`` calls to :meth:`evaluate` (``n = 4 × rooms``), i.e. 120 full passes
+        for 15 rooms. Over 50 Frank-Wolfe iterations, that is most of the "performance
+        legalization < 500 ms" budget (``ARCHITECTURE.md`` §9), and it will not hold for
+        a heavier model. Exact backpropagation is possible — the network is
+        differentiable and the analytic surrogate has a closed-form gradient — but it
+        changes the values returned near the kink ``depth == useful_depth``: substituting
+        it requires running :func:`archlux.light.validation.validate_gradient` again.
         """
         x0 = np.asarray(x, dtype=float).ravel().copy()
         g = np.empty_like(x0)
-        pas = 1e-4
+        step = 1e-4
         for i in range(x0.size):
-            plus, moins = x0.copy(), x0.copy()
-            plus[i] += pas
-            moins[i] -= pas
+            plus, minus = x0.copy(), x0.copy()
+            plus[i] += step
+            minus[i] -= step
             g[i] = (
                 self.evaluate(plus, orientation, glazing=glazing)
-                - self.evaluate(moins, orientation, glazing=glazing)
-            ) / (2.0 * pas)
+                - self.evaluate(minus, orientation, glazing=glazing)
+            ) / (2.0 * step)
         return g
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """``σ̂`` **constant**, dérivé de ``sigma_y`` par une fraction d'atelier.
+        """**Constant** ``σ̂``, derived from ``sigma_y`` by a workshop fraction.
 
-        Ne dépend ni de ``x`` ni de l'orientation : ce n'est donc pas une incertitude
-        prédictive, seulement une échelle. La couverture conforme reste valide (voir
-        :data:`FRACTION_SIGMA_RESIDUEL`), mais l'intervalle a partout la même largeur :
-        aucun gain d'adaptativité, et le chiffre ``0,15`` n'est adossé à aucune mesure.
+        Depends neither on ``x`` nor on the orientation: it is therefore not a predictive
+        uncertainty, only a scale. Conformal coverage stays valid (see
+        :data:`RESIDUAL_SIGMA_FRACTION`), but the interval has the same width everywhere:
+        no gain in adaptivity, and the figure ``0.15`` is backed by no measurement.
         """
         del x, orientation, glazing
-        return float(max(self.sigma_y * FRACTION_SIGMA_RESIDUEL, SIGMA_PLANCHER))
+        return float(max(self.sigma_y * RESIDUAL_SIGMA_FRACTION, SIGMA_FLOOR))
 
+    @renamed_parameters({"epoques": "epochs"})
     def fit(
         self,
         xs: tuple[np.ndarray, ...],
@@ -264,40 +270,40 @@ class DenseSurrogate:
         orientations: tuple[Orientation, ...],
         *,
         seed: int,
-        epoques: int = 120,
+        epochs: int = 120,
         lr: float = 0.08,
         glazing: tuple[Glazing | None, ...] | None = None,
     ) -> None:
-        """Recaler l'analytique, puis descente de gradient Huber sur le **résidu**.
+        """Rescale the analytic surrogate, then Huber gradient descent on the **residual**.
 
-        Le recalage affine n'est pas cosmétique. ``AnalyticSurrogate`` rend un
-        score en **unités arbitraires** — une somme de façades pondérées, de l'ordre
-        de la centaine — sans aucune échelle physique. Contre ``SplitFluxOracle``,
-        construit sur la même base, les deux coïncident et le résidu est petit.
-        Contre une simulation réelle (Swiss Dwellings, irradiance de l'ordre de 1),
-        le résidu vaudrait l'opposé du score : le réseau passerait sa capacité à
-        annuler une constante d'échelle au lieu d'apprendre la physique.
+        The affine rescaling is not cosmetic. ``AnalyticSurrogate`` returns a score in
+        **arbitrary units** — a sum of weighted facades, of the order of a hundred —
+        with no physical scale at all. Against ``SplitFluxOracle``, built on the same
+        base, the two coincide and the residual is small. Against a real simulation
+        (Swiss Dwellings, irradiance of the order of 1), the residual would be the
+        opposite of the score: the network would spend its capacity cancelling a scale
+        constant instead of learning the physics.
 
-        On ajuste donc d'abord ``y ≈ a·f(x) + b`` par moindres carrés sur le jeu
-        d'entraînement, puis le réseau apprend le résidu à cette base **recalée**.
-        ``a = 1``, ``b = 0`` restaure exactement le comportement antérieur.
+        So ``y ≈ a·f(x) + b`` is first fitted by least squares on the training set, then
+        the network learns the residual to this **rescaled** base. ``a = 1``, ``b = 0``
+        restores exactly the earlier behaviour.
         """
         if len(xs) != len(ys) or len(xs) != len(orientations):
-            raise InvariantViolation(("xs, ys et orientations doivent avoir la même longueur",))
-        analytique = _analytique(self.indicateur_vise)
-        brut = np.array(
-            [float(analytique.evaluate(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
+            raise InvariantViolation(("xs, ys and orientations must have the same length",))
+        analytic = _analytic(self.target_indicator)
+        raw = np.array(
+            [float(analytic.evaluate(x, ori)) for x, ori in zip(xs, orientations, strict=True)]
         )
-        cible_brute = np.asarray(ys, dtype=float).ravel()
-        variance = float(np.var(brut))
+        raw_target = np.asarray(ys, dtype=float).ravel()
+        variance = float(np.var(raw))
         if variance > _EPS:
-            pente, ordonnee = np.polyfit(brut, cible_brute, 1)
-            self.echelle_base = float(pente)
-            self.decalage_base = float(ordonnee)
+            slope, intercept = np.polyfit(raw, raw_target, 1)
+            self.base_scale = float(slope)
+            self.base_offset = float(intercept)
         else:
-            self.echelle_base = 0.0
-            self.decalage_base = float(np.mean(cible_brute))
-        residus = cible_brute - (self.echelle_base * brut + self.decalage_base)
+            self.base_scale = 0.0
+            self.base_offset = float(np.mean(raw_target))
+        residuals = raw_target - (self.base_scale * raw + self.base_offset)
         fenestration = glazing if glazing is not None else (None,) * len(xs)
         feats = np.stack(
             [descriptors(x, o, b) for x, o, b in zip(xs, orientations, fenestration, strict=True)]
@@ -306,12 +312,12 @@ class DenseSurrogate:
         self.sigma = feats.std(axis=0)
         self.sigma[self.sigma < _EPS] = 1.0
         feats = (feats - self.mu) / self.sigma
-        self.mu_y = float(np.mean(residus))
-        self.sigma_y = max(float(np.std(residus)), _EPS)
-        cibles = (residus - self.mu_y) / self.sigma_y
+        self.mu_y = float(np.mean(residuals))
+        self.sigma_y = max(float(np.std(residuals)), _EPS)
+        targets = (residuals - self.mu_y) / self.sigma_y
         rng = np.random.default_rng(seed)
         dim = int(feats.shape[1])
-        k = self.largeur
+        k = self.width
         self.W1 = rng.normal(0.0, 1.0 / math.sqrt(dim), size=(dim, k))
         self.b1 = np.zeros(k)
         self.W2 = rng.normal(0.0, 1.0 / math.sqrt(k), size=(k, k))
@@ -319,13 +325,13 @@ class DenseSurrogate:
         self.W3 = rng.normal(0.0, 1.0 / math.sqrt(k), size=(k,))
         self.b3 = 0.0
         n = feats.shape[0]
-        for _ in range(epoques):
-            ordre = rng.permutation(n)
-            for indice in ordre:
-                feat = feats[indice]
+        for _ in range(epochs):
+            order = rng.permutation(n)
+            for index in order:
+                feat = feats[index]
                 y_hat, h1, h2 = self._forward(feat)
-                residu = y_hat - float(cibles[indice])
-                d_y = _huber_derivee(residu)
+                residual = y_hat - float(targets[index])
+                d_y = _huber_derivative(residual)
                 d_h2 = d_y * self.W3 * (1.0 - h2 * h2)
                 d_h1 = (d_h2 @ self.W2.T) * (1.0 - h1 * h1)
                 self.W3 -= lr * d_y * h2
@@ -335,13 +341,14 @@ class DenseSurrogate:
                 self.W1 -= lr * np.outer(feat, d_h1)
                 self.b1 -= lr * d_h1
 
-    def save(self, chemin: Path) -> str:
-        """Écrire les poids en ``npz``. Rend l'empreinte SHA-256 du fichier **écrit**.
+    @renamed_parameters({"chemin": "path"})
+    def save(self, path: Path) -> str:
+        """Write the weights as ``npz``. Returns the SHA-256 of the file **written**.
 
-        ``numpy.savez`` ajoute lui-même ``.npz`` quand le chemin n'en porte pas ; le
-        suffixe est donc normalisé ici, sinon l'empreinte serait calculée sur un
-        fichier inexistant. Rendre le chemin réellement écrit n'est pas nécessaire :
-        il se déduit par la même règle.
+        ``numpy.savez`` itself appends ``.npz`` when the path does not carry it; the
+        suffix is therefore normalized here, otherwise the fingerprint would be computed
+        on a file that does not exist. Returning the path actually written is not
+        needed: it follows from the same rule.
         """
         if (
             self.W1 is None
@@ -352,12 +359,12 @@ class DenseSurrogate:
             or self.mu is None
             or self.sigma is None
         ):
-            raise InvariantViolation(("sauver un modèle non entraîné",))
-        chemin = Path(chemin)
-        if chemin.suffix != ".npz":
-            chemin = chemin.with_name(chemin.name + ".npz")
+            raise InvariantViolation(("saving an untrained model",))
+        path = Path(path)
+        if path.suffix != ".npz":
+            path = path.with_name(path.name + ".npz")
         np.savez(
-            chemin,
+            path,
             W1=self.W1,
             b1=self.b1,
             W2=self.W2,
@@ -368,45 +375,52 @@ class DenseSurrogate:
             sigma=self.sigma,
             mu_y=np.array(self.mu_y),
             sigma_y=np.array(self.sigma_y),
-            echelle_base=np.array(self.echelle_base),
-            decalage_base=np.array(self.decalage_base),
-            # The key of the saved archive is part of the file format: it stays
-            # ``indicator`` so that models saved before the English API still load.
+            # The keys of the saved archive are part of the file format: they keep their
+            # original spelling so that models saved before the English API still load.
             # mypy matches the ``**`` mapping against ``allow_pickle: bool``
-            **{"indicateur": np.array(self.indicateur_vise)},  # type: ignore[arg-type]
+            **{  # type: ignore[arg-type]
+                "echelle_base": np.array(self.base_scale),
+                "decalage_base": np.array(self.base_offset),
+                "indicateur": np.array(self.target_indicator),
+            },
         )
-        return hashlib.sha256(chemin.read_bytes()).hexdigest()
+        return hashlib.sha256(path.read_bytes()).hexdigest()
 
     @classmethod
-    def load(cls, chemin: Path) -> DenseSurrogate:
-        """Relire un ``npz`` produit par :meth:`save`."""
-        with np.load(Path(chemin), allow_pickle=False) as archive:
+    @renamed_parameters({"chemin": "path"})
+    def load(cls, path: Path) -> DenseSurrogate:
+        """Read back an ``npz`` written by :meth:`save`."""
+        with np.load(Path(path), allow_pickle=False) as archive:
             indicator = str(archive["indicateur"])
             # Matching by equality types the result on every mypy version, without a cast.
-            vise = next((known for known in INDICATOR_SENSE if known == indicator), None)
-            if vise is None:
-                raise InvariantViolation((f"indicateur inconnu dans les poids : {indicator}",))
-            modele = cls(indicateur_vise=vise)
-            modele.W1 = np.array(archive["W1"], dtype=float, copy=True)
-            modele.b1 = np.array(archive["b1"], dtype=float, copy=True)
-            modele.W2 = np.array(archive["W2"], dtype=float, copy=True)
-            modele.b2 = np.array(archive["b2"], dtype=float, copy=True)
-            modele.W3 = np.array(archive["W3"], dtype=float, copy=True)
-            modele.b3 = float(archive["b3"])
-            modele.mu = np.array(archive["mu"], dtype=float, copy=True)
-            modele.sigma = np.array(archive["sigma"], dtype=float, copy=True)
-            modele.mu_y = float(archive["mu_y"])
-            modele.sigma_y = float(archive["sigma_y"])
-            # Poids anterieurs au recalage affine : identite, comportement inchange.
+            target = next((known for known in INDICATOR_SENSE if known == indicator), None)
+            if target is None:
+                raise InvariantViolation((f"unknown indicator in the weights: {indicator}",))
+            model = cls(target_indicator=target)
+            model.W1 = np.array(archive["W1"], dtype=float, copy=True)
+            model.b1 = np.array(archive["b1"], dtype=float, copy=True)
+            model.W2 = np.array(archive["W2"], dtype=float, copy=True)
+            model.b2 = np.array(archive["b2"], dtype=float, copy=True)
+            model.W3 = np.array(archive["W3"], dtype=float, copy=True)
+            model.b3 = float(archive["b3"])
+            model.mu = np.array(archive["mu"], dtype=float, copy=True)
+            model.sigma = np.array(archive["sigma"], dtype=float, copy=True)
+            model.mu_y = float(archive["mu_y"])
+            model.sigma_y = float(archive["sigma_y"])
+            # Weights older than the affine rescaling: identity, unchanged behaviour.
             if "echelle_base" in archive:
-                modele.echelle_base = float(archive["echelle_base"])
-                modele.decalage_base = float(archive["decalage_base"])
-        return modele
+                model.base_scale = float(archive["echelle_base"])
+                model.base_offset = float(archive["decalage_base"])
+        return model
 
 
 __getattr__ = lazy_aliases(
     __name__,
     {
+        "FRACTION_SIGMA_RESIDUEL": Alias(
+            RESIDUAL_SIGMA_FRACTION, "archlux.light.base.RESIDUAL_SIGMA_FRACTION"
+        ),
+        "SIGMA_PLANCHER": Alias(SIGMA_FLOOR, "archlux.light.base.SIGMA_FLOOR"),
         "SubstitutDense": Alias(DenseSurrogate, "archlux.light.base.DenseSurrogate"),
         "descripteurs": Alias(descriptors, "archlux.light.base.descriptors"),
     },

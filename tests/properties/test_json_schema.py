@@ -23,11 +23,11 @@ from hypothesis import given, settings
 import archlux
 from archlux.errors import ArchluxError, InvariantViolation
 from archlux.io.json_io import SCHEMA_VERSION, from_dict, to_dict
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
 from archlux.types import Context, Plan
-from archlux.uq.conforme import Calibration, ConformalCalibrator
-from tests.properties.strategies import plans_quelconques, realistic_scenarios
+from archlux.uq.conformal import Calibration, ConformalCalibrator
+from tests.properties.strategies import arbitrary_plans, realistic_scenarios
 
 
 def _schema() -> dict[str, Any]:
@@ -52,7 +52,7 @@ def test_the_schema_is_shipped_with_the_package() -> None:
     assert resources.files("archlux.io").joinpath("plan-v2.schema.json").is_file()
 
 
-@given(plan=plans_quelconques())
+@given(plan=arbitrary_plans())
 @settings(max_examples=200, deadline=None)
 def test_every_written_plan_matches_the_schema(plan: Plan) -> None:
     assert _errors(to_dict(plan)) == []
@@ -72,7 +72,7 @@ def _outputs(plan: Plan, ctx: Context) -> list[Plan]:
     for kwargs in (
         {},
         {
-            "objective": Daylight(AnalyticSurrogate(), q_chapeau=1.0),
+            "objective": Daylight(AnalyticSurrogate(), q_hat=1.0),
             "calibration": _calibration(),
         },
     ):
@@ -117,11 +117,11 @@ def _a_scenario() -> tuple[Plan, Context]:
     from dataclasses import replace
 
     from archlux.types import Regulation, Room, Structure, Wall
-    from tests.properties.strategies import CONTEXTE_DEFAUT
+    from tests.properties.strategies import DEFAULT_CONTEXT
 
     wall = Wall(id="lb", a=(6.0, 0.0), b=(6.0, 9.0), load_bearing=True)
     ctx = replace(
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         structure=Structure(load_bearing_walls=(wall,)),
         regulation=Regulation(min_areas=(("bedroom", 20.0),), min_width=1.0),
     )

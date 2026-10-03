@@ -1,7 +1,7 @@
-"""Assemblage du polytope — `MILESTONE-2.md` §3, cas déterministes.
+"""Polytope assembly: `MILESTONE-2.md` §3, deterministic cases.
 
-Les lignes attendues sont écrites à la main : `x_A + w_A − x_B ≤ 0` pour « A à gauche de
-B ». Comparer à un calcul refait comme le code serait tautologique.
+The expected rows are written by hand: `x_A + w_A − x_B ≤ 0` for "A left of B".
+Comparing with a computation redone like the code would be tautological.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import pytest
 from scipy import sparse
 
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import (
     build_polytope,
     devectorize,
@@ -36,7 +36,7 @@ CTX = Context(
     regulation=Regulation(min_areas=(("bathroom", 5.0),), min_width=1.5),
 )
 
-ORDRE_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
+ORDER_AB = RelativeOrder(horizontal=(("A", "B"),), vertical=(), rooms=("A", "B"))
 
 PLAN_AB = Plan(
     rooms=(
@@ -50,200 +50,198 @@ PLAN_AB = Plan(
 
 
 class TestVariables:
-    """Quatre variables par pièce, indexées de façon déterministe."""
+    """Four variables per room, indexed deterministically."""
 
-    def test_quatre_variables_par_piece(self) -> None:
-        """``x``, ``y``, ``w``, ``h`` — et rien d'autre."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_four_variables_per_room(self) -> None:
+        """``x``, ``y``, ``w``, ``h``, and nothing else."""
+        poly = build_polytope(ORDER_AB, CTX)
         assert len(poly.index) == 8
         assert set(poly.index) == {
-            f"{piece}.{champ}" for piece in ("A", "B") for champ in ("x", "y", "w", "h")
+            f"{room}.{field}" for room in ("A", "B") for field in ("x", "y", "w", "h")
         }
 
-    def test_les_colonnes_sont_contigues(self) -> None:
-        """Les indices couvrent ``0..4n-1`` sans trou : c'est ce que suppose ``lmo``."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_the_columns_are_contiguous(self) -> None:
+        """The indices cover ``0..4n-1`` without a hole: that is what ``lmo`` assumes."""
+        poly = build_polytope(ORDER_AB, CTX)
         assert sorted(poly.index.values()) == list(range(8))
 
 
-class TestContraintes:
-    """Le contenu des lignes, pas seulement leur nombre."""
+class TestConstraints:
+    """The content of the rows, not only their number."""
 
-    def test_ligne_de_separation_horizontale(self) -> None:
-        """« A à gauche de B » s'écrit ``x_A + w_A − x_B ≤ 0``."""
-        poly = build_polytope(ORDRE_AB, CTX)
-        ligne = next(
-            i for i, o in enumerate(poly.origins) if o.startswith("separation horizontale")
-        )
-        attendu = np.zeros(8)
-        attendu[poly.index["A.x"]] = 1.0
-        attendu[poly.index["A.w"]] = 1.0
-        attendu[poly.index["B.x"]] = -1.0
-        assert np.allclose(poly.A.toarray()[ligne], attendu)
-        assert poly.b[ligne] == 0.0
+    def test_horizontal_separation_row(self) -> None:
+        """The relation "A left of B" is written ``x_A + w_A − x_B ≤ 0``."""
+        poly = build_polytope(ORDER_AB, CTX)
+        row = next(i for i, o in enumerate(poly.origins) if o.startswith("separation horizontale"))
+        expected = np.zeros(8)
+        expected[poly.index["A.x"]] = 1.0
+        expected[poly.index["A.w"]] = 1.0
+        expected[poly.index["B.x"]] = -1.0
+        assert np.allclose(poly.A.toarray()[row], expected)
+        assert poly.b[row] == 0.0
 
-    def test_ligne_de_contour(self) -> None:
-        """``x_i + w_i ≤ W`` borne la pièce dans l'enveloppe."""
-        poly = build_polytope(ORDRE_AB, CTX)
-        ligne = poly.origins.index("contour droit A")
-        attendu = np.zeros(8)
-        attendu[poly.index["A.x"]] = 1.0
-        attendu[poly.index["A.w"]] = 1.0
-        assert np.allclose(poly.A.toarray()[ligne], attendu)
-        assert poly.b[ligne] == pytest.approx(10.0)
+    def test_outline_row(self) -> None:
+        """``x_i + w_i ≤ W`` bounds the room inside the envelope."""
+        poly = build_polytope(ORDER_AB, CTX)
+        row = poly.origins.index("contour droit A")
+        expected = np.zeros(8)
+        expected[poly.index["A.x"]] = 1.0
+        expected[poly.index["A.w"]] = 1.0
+        assert np.allclose(poly.A.toarray()[row], expected)
+        assert poly.b[row] == pytest.approx(10.0)
 
-    def test_les_largeurs_minimales_sont_dans_les_bornes(self) -> None:
-        """`MILESTONE-2.md` §3 : ``w_i ≥ ℓ_min`` passe par ``bornes``, pas par ``A``."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_the_minimum_widths_are_in_the_bounds(self) -> None:
+        """`MILESTONE-2.md` §3: ``w_i ≥ ℓ_min`` goes through ``bounds``, not through ``A``."""
+        poly = build_polytope(ORDER_AB, CTX)
         assert poly.bounds[poly.index["A.w"]] == (1.5, 10.0)
         assert poly.bounds[poly.index["A.h"]] == (1.5, 8.0)
         assert poly.bounds[poly.index["A.x"]] == (0.0, 10.0)
 
-    def test_aucune_contrainte_de_surface(self) -> None:
-        """``w·h ≥ a`` est non linéaire : reporté aux coupes de l'étape 4."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_no_area_constraint(self) -> None:
+        """``w·h ≥ a`` is non-linear: deferred to the cuts of step 4."""
+        poly = build_polytope(ORDER_AB, CTX)
         assert not any("surface" in o for o in poly.origins)
 
 
-class TestOrigines:
-    """`origines` est obligatoire dès la première version."""
+class TestOrigins:
+    """`origins` is mandatory from the first version."""
 
-    def test_une_origine_par_ligne(self) -> None:
-        """Sans cette correspondance, un prix dual est « le nombre de la ligne 47 »."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_one_origin_per_row(self) -> None:
+        """Without this mapping, a dual price is "the number of row 47"."""
+        poly = build_polytope(ORDER_AB, CTX)
         assert poly.A.shape[0] == len(poly.origins)
 
-    def test_les_origines_sont_lisibles(self) -> None:
-        """Un libellé doit se lire en revue de projet, pas seulement en débogage."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_the_origins_are_readable(self) -> None:
+        """A label must read in a project review, not only while debugging."""
+        poly = build_polytope(ORDER_AB, CTX)
         assert all(isinstance(o, str) and len(o) > 3 for o in poly.origins)
         assert "separation horizontale A|B" in poly.origins
 
 
-class TestContient:
-    """Vérification d'appartenance, naïve et indépendante de tout solveur."""
+class TestContains:
+    """Membership check, naive and independent of any solver."""
 
-    def test_un_plan_conforme_est_dedans(self) -> None:
-        """Le plan de référence satisfait toutes les lignes."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_a_compliant_plan_is_inside(self) -> None:
+        """The reference plan satisfies every row."""
+        poly = build_polytope(ORDER_AB, CTX)
         assert poly.contains(vectorize(PLAN_AB, poly.index))
 
-    def test_un_chevauchement_est_dehors(self) -> None:
-        """Reculer B de deux mètres viole la séparation."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_an_overlap_is_outside(self) -> None:
+        """Moving B back two metres violates the separation."""
+        poly = build_polytope(ORDER_AB, CTX)
         point = vectorize(PLAN_AB, poly.index)
         point[poly.index["B.x"]] = 2.0
         assert not poly.contains(point)
 
-    def test_un_debordement_du_contour_est_dehors(self) -> None:
-        """Élargir B au-delà de l'enveloppe viole la ligne de contour."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_overflowing_the_outline_is_outside(self) -> None:
+        """Widening B beyond the envelope violates the outline row."""
+        poly = build_polytope(ORDER_AB, CTX)
         point = vectorize(PLAN_AB, poly.index)
         point[poly.index["B.w"]] = 20.0
         assert not poly.contains(point)
 
-    def test_une_piece_trop_etroite_est_dehors(self) -> None:
-        """La largeur minimale est une borne, elle compte aussi."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_a_room_too_narrow_is_outside(self) -> None:
+        """The minimum width is a bound, it counts too."""
+        poly = build_polytope(ORDER_AB, CTX)
         point = vectorize(PLAN_AB, poly.index)
         point[poly.index["A.w"]] = 0.1
         assert not poly.contains(point)
 
 
-class TestVectorisation:
-    """Aller-retour entre plan et vecteur de décision."""
+class TestVectorization:
+    """Round trip between plan and decision vector."""
 
-    def test_aller_retour(self) -> None:
-        """``devectoriser(vectoriser(p))`` rend le plan d'origine."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_round_trip(self) -> None:
+        """``devectorize(vectorize(p))`` returns the original plan."""
+        poly = build_polytope(ORDER_AB, CTX)
         point = vectorize(PLAN_AB, poly.index)
         assert devectorize(point, PLAN_AB, poly.index) == PLAN_AB
 
-    def test_les_ouvertures_suivent_sans_retouche(self) -> None:
-        """**La raison d'être de l'invariant du §6.**
+    def test_the_openings_follow_without_touch_up(self) -> None:
+        """**The reason for the invariant of §6.**
 
-        Le vecteur ne porte que les pièces. Les baies étant relatives à leur mur, elles
-        traversent la dévectorisation intactes — aucune resynchronisation à écrire.
+        The vector carries only the rooms. Openings being relative to their wall, they
+        go through devectorization intact: no resynchronization to write.
         """
-        poly = build_polytope(ORDRE_AB, CTX)
+        poly = build_polytope(ORDER_AB, CTX)
         point = vectorize(PLAN_AB, poly.index)
         point[poly.index["A.w"]] = 3.0
         result = devectorize(point, PLAN_AB, poly.index)
         assert result.openings == PLAN_AB.openings
         assert result.walls == PLAN_AB.walls
 
-    def test_une_piece_absente_est_signalee(self) -> None:
-        """Vectoriser un plan qui n'a pas les pièces de l'ordre est un bogue interne."""
-        poly = build_polytope(ORDRE_AB, CTX)
-        autre = Plan(
+    def test_a_missing_room_is_reported(self) -> None:
+        """Vectorizing a plan that lacks the rooms of the order is an internal bug."""
+        poly = build_polytope(ORDER_AB, CTX)
+        other = Plan(
             rooms=(Room(id="Z", type="living_room", x=0.0, y=0.0, w=1.0, h=1.0),),
             walls=(),
             openings=(),
             outline=CTX.outline,
         )
         with pytest.raises(InvariantViolation):
-            vectorize(autre, poly.index)
+            vectorize(other, poly.index)
 
 
-class TestStructurePorteuse:
+class TestLoadBearingStructure:
     """`A_eq` shape — see ADR-7 and tests/unit/test_load_bearing.py."""
 
-    def test_a_eq_est_vide_mais_bien_dimensionnee(self) -> None:
-        """Load-bearing walls are inequality rows (``OrdreRelatif.wall_sides``), not
+    def test_a_eq_is_empty_but_well_shaped(self) -> None:
+        """Load-bearing walls are inequality rows (``RelativeOrder.wall_sides``), not
         equalities: ``A_eq`` stays empty but correctly shaped (ADR-7)."""
-        poly = build_polytope(ORDRE_AB, CTX)
+        poly = build_polytope(ORDER_AB, CTX)
         assert poly.A_eq.shape == (0, len(poly.index))
         assert poly.b_eq.shape == (0,)
 
 
-class TestRefus:
-    """Aucune dimension incohérente ne passe en silence."""
+class TestRefusals:
+    """No inconsistent dimension passes silently."""
 
-    def test_contient_refuse_une_dimension_incoherente(self) -> None:
-        """Un vecteur de mauvaise taille est un bogue d'appariement, pas un point hors domaine."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_contains_refuses_an_inconsistent_dimension(self) -> None:
+        """A vector of the wrong size is a matching bug, not a point outside the domain."""
+        poly = build_polytope(ORDER_AB, CTX)
         with pytest.raises(InvariantViolation, match="shape"):
             poly.contains(np.zeros(3))
 
-    def test_devectoriser_refuse_une_dimension_incoherente(self) -> None:
-        """Même règle en sortie de solveur."""
-        poly = build_polytope(ORDRE_AB, CTX)
+    def test_devectorize_refuses_an_inconsistent_dimension(self) -> None:
+        """Same rule at the solver output."""
+        poly = build_polytope(ORDER_AB, CTX)
         with pytest.raises(InvariantViolation, match="shape"):
             devectorize(np.zeros(3), PLAN_AB, poly.index)
 
-    def test_devectoriser_refuse_une_piece_hors_polytope(self) -> None:
-        """Laisser une pièce non mise à jour produirait un plan faux.
+    def test_devectorize_refuses_a_room_outside_the_polytope(self) -> None:
+        """Leaving a room not updated would produce a false plan.
 
-        Le défaut serait attrapé plus loin par ``certify``, mais avec un diagnostic sans
-        rapport avec sa cause — le pire des deux mondes.
+        The defect would be caught further on by ``certify``, but with a diagnostic
+        unrelated to its cause: the worst of both worlds.
         """
-        poly = build_polytope(ORDRE_AB, CTX)
-        etranger = Plan(
+        poly = build_polytope(ORDER_AB, CTX)
+        foreign = Plan(
             rooms=(*PLAN_AB.rooms, Room(id="Z", type="toilet", x=0.0, y=0.0, w=1.0, h=1.0)),
             walls=(),
             openings=(),
             outline=CTX.outline,
         )
         with pytest.raises(InvariantViolation, match="Z"):
-            devectorize(vectorize(PLAN_AB, poly.index), etranger, poly.index)
+            devectorize(vectorize(PLAN_AB, poly.index), foreign, poly.index)
 
-    def test_contient_verifie_aussi_les_egalites(self) -> None:
-        """``A_eq`` est vide aujourd'hui, mais ``contient`` doit savoir la traiter.
+    def test_contains_also_checks_the_equalities(self) -> None:
+        """``A_eq`` is empty today, but ``contains`` must know how to handle it.
 
-        Le jour où ADR-7 sera tranchée, cette branche portera la structure porteuse ;
-        la laisser non testée jusque-là reviendrait à la découvrir en production.
+        The day ADR-7 is settled, this branch will carry the load-bearing structure;
+        leaving it untested until then would mean discovering it in production.
         """
-        poly = build_polytope(ORDRE_AB, CTX)
-        ligne = sparse.csr_matrix(([1.0], ([0], [poly.index["A.x"]])), shape=(1, len(poly.index)))
-        point = vectorize(PLAN_AB, poly.index)  # A.x vaut 0
+        poly = build_polytope(ORDER_AB, CTX)
+        row = sparse.csr_matrix(([1.0], ([0], [poly.index["A.x"]])), shape=(1, len(poly.index)))
+        point = vectorize(PLAN_AB, poly.index)  # A.x is 0
 
-        # Deux variantes du même polytope : seul le second membre change, de sorte que
-        # les deux branches soient comparables toutes choses égales par ailleurs.
-        assert replace(poly, A_eq=ligne, b_eq=np.array([0.0])).contains(point)
-        assert not replace(poly, A_eq=ligne, b_eq=np.array([3.0])).contains(point)
+        # Two variants of the same polytope: only the right-hand side changes, so that
+        # both branches are comparable, all else being equal.
+        assert replace(poly, A_eq=row, b_eq=np.array([0.0])).contains(point)
+        assert not replace(poly, A_eq=row, b_eq=np.array([3.0])).contains(point)
 
-    def test_un_contour_plat_est_refuse(self) -> None:
-        """Un contour d'aire nulle donnerait des bornes vides sans le dire."""
+    def test_a_flat_outline_is_refused(self) -> None:
+        """An outline of zero area would give empty bounds without saying so."""
         ctx = Context(
             structure=Structure(load_bearing_walls=()),
             orientation=Orientation(deg=0.0),
@@ -251,11 +249,11 @@ class TestRefus:
             regulation=Regulation(min_areas=()),
         )
         with pytest.raises(InvariantViolation, match="degenerate"):
-            build_polytope(ORDRE_AB, ctx)
+            build_polytope(ORDER_AB, ctx)
 
 
-def test_un_contour_degenere_est_refuse() -> None:
-    """Un contour vide n'a pas d'enveloppe : le dire plutôt que produire des bornes nulles."""
+def test_a_degenerate_outline_is_refused() -> None:
+    """An empty outline has no envelope: say so rather than produce zero bounds."""
     ctx = Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=0.0),
@@ -263,25 +261,25 @@ def test_un_contour_degenere_est_refuse() -> None:
         regulation=Regulation(min_areas=()),
     )
     with pytest.raises(InvariantViolation):
-        build_polytope(ORDRE_AB, ctx)
+        build_polytope(ORDER_AB, ctx)
 
 
-def test_figer_contacts_interdit_un_jour() -> None:
-    """Un pavage saturé, figé, n'admet plus d'écartement des pièces."""
-    from archlux.geom.graphe import deduce_order
+def test_freeze_contacts_forbids_a_gap() -> None:
+    """A saturated tiling, once frozen, no longer allows rooms to move apart."""
+    from archlux.geom.graph import deduce_order
 
     poly = build_polytope(deduce_order(PLAN_AB), CTX)
     x = vectorize(PLAN_AB, poly.index)
-    serre = freeze_contacts(poly, x)
-    assert serre.A_eq.shape[0] > poly.A_eq.shape[0]
-    assert serre.contains(x)
-    ecarte = x.copy()
-    ecarte[poly.index["B.x"]] += 0.5
-    ecarte[poly.index["B.w"]] -= 0.5
-    assert poly.contains(ecarte)
-    assert not serre.contains(ecarte)
-    jour_gauche = x.copy()
-    jour_gauche[poly.index["A.x"]] += 0.2
-    jour_gauche[poly.index["A.w"]] -= 0.2
-    assert poly.contains(jour_gauche)
-    assert not serre.contains(jour_gauche)
+    tight = freeze_contacts(poly, x)
+    assert tight.A_eq.shape[0] > poly.A_eq.shape[0]
+    assert tight.contains(x)
+    apart = x.copy()
+    apart[poly.index["B.x"]] += 0.5
+    apart[poly.index["B.w"]] -= 0.5
+    assert poly.contains(apart)
+    assert not tight.contains(apart)
+    left_gap = x.copy()
+    left_gap[poly.index["A.x"]] += 0.2
+    left_gap[poly.index["A.w"]] -= 0.2
+    assert poly.contains(left_gap)
+    assert not tight.contains(left_gap)

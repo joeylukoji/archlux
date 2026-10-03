@@ -41,13 +41,13 @@ if TYPE_CHECKING:
 
 __all__ = ["compare", "render", "sheet"]
 
-_MARGE = 28.0
-_LARGEUR_PANNEAU = 380.0
-_ESPACE = 12.0
+_MARGIN = 28.0
+_PANEL_WIDTH = 380.0
+_SPACING = 12.0
 
 # Hues by room type. An unknown type falls back to grey: inventing a color by
 # hashing would make two corpora incomparable from one rendering to the next.
-_TEINTES = {
+_TINTS = {
     "living": "#c8d9ec",
     "living_room": "#c8d9ec",
     "living_dining": "#c3d6ea",
@@ -64,24 +64,24 @@ _TEINTES = {
     "storage": "#e0dcd6",
     "storeroom": "#e0dcd6",
 }
-_GRIS = "#dcdcdc"
+_GREY = "#dcdcdc"
 
 
-def _echapper(texte: str) -> str:
+def _escape(text: str) -> str:
     """Neutralize the five characters XML does not tolerate in a text node."""
-    for brut, entite in (
+    for raw, entity in (
         ("&", "&amp;"),
         ("<", "&lt;"),
         (">", "&gt;"),
         ('"', "&quot;"),
         ("'", "&apos;"),
     ):
-        texte = texte.replace(brut, entite)
-    return texte
+        text = text.replace(raw, entity)
+    return text
 
 
-def _etendue(
-    plans: tuple[Plan, ...], contours: tuple[tuple[Point, ...], ...]
+def _extent(
+    plans: tuple[Plan, ...], outlines: tuple[tuple[Point, ...], ...]
 ) -> tuple[float, float, float, float]:
     """Common bounding box, in meters. Empty if nothing is drawable."""
     xs: list[float] = []
@@ -90,7 +90,7 @@ def _etendue(
         for room in plan.rooms:
             xs.extend((room.x, room.x + room.w))
             ys.extend((room.y, room.y + room.h))
-    for outline in contours:
+    for outline in outlines:
         xs.extend(point[0] for point in outline)
         ys.extend(point[1] for point in outline)
     if not xs:
@@ -98,13 +98,13 @@ def _etendue(
     return (min(xs), min(ys), max(xs), max(ys))
 
 
-def _panneau(
+def _panel(
     plan: Plan,
     outline: tuple[Point, ...],
-    titre: str,
-    etendue: tuple[float, float, float, float],
-    decalage_x: float,
-    decalage_y: float = 0.0,
+    title: str,
+    extent: tuple[float, float, float, float],
+    offset_x: float,
+    offset_y: float = 0.0,
     walls: tuple[Wall, ...] = (),
 ) -> list[str]:
     """A panel: frame, dashed outline, rooms, walls, title. SVG coordinates.
@@ -112,76 +112,76 @@ def _panneau(
     Load-bearing walls are drawn thick and dark (class ``wall-load-bearing``), other
     walls thin and grey (class ``wall``).
     """
-    x0, y0, x1, y1 = etendue
-    largeur_m = max(x1 - x0, 1e-9)
-    hauteur_m = max(y1 - y0, 1e-9)
-    utile = _LARGEUR_PANNEAU - 2 * _MARGE
-    echelle = min(utile / largeur_m, utile / hauteur_m)
-    hauteur_px = hauteur_m * echelle + 2 * _MARGE
+    x0, y0, x1, y1 = extent
+    width_m = max(x1 - x0, 1e-9)
+    height_m = max(y1 - y0, 1e-9)
+    useful = _PANEL_WIDTH - 2 * _MARGIN
+    scale = min(useful / width_m, useful / height_m)
+    height_px = height_m * scale + 2 * _MARGIN
 
-    def vers_svg(x: float, y: float) -> tuple[float, float]:
+    def to_canvas(x: float, y: float) -> tuple[float, float]:
         # The SVG y axis points down; a plan's points up. Without this flip the
         # rendering would be the mirror of the certified plan.
         return (
-            decalage_x + _MARGE + (x - x0) * echelle,
-            decalage_y + _MARGE + (y1 - y) * echelle,
+            offset_x + _MARGIN + (x - x0) * scale,
+            offset_y + _MARGIN + (y1 - y) * scale,
         )
 
-    parties = [
-        f'<rect x="{decalage_x + 1:.1f}" y="{decalage_y + 1:.1f}" '
-        f'width="{_LARGEUR_PANNEAU - 2:.1f}" height="{hauteur_px - 2:.1f}" '
+    parts = [
+        f'<rect x="{offset_x + 1:.1f}" y="{offset_y + 1:.1f}" '
+        f'width="{_PANEL_WIDTH - 2:.1f}" height="{height_px - 2:.1f}" '
         'fill="#ffffff" stroke="#c9c9c9" stroke-width="1"/>',
-        f'<text x="{decalage_x + _MARGE:.1f}" y="{decalage_y + 18:.1f}" '
+        f'<text x="{offset_x + _MARGIN:.1f}" y="{offset_y + 18:.1f}" '
         'font-family="system-ui,sans-serif" '  # lang-ok: CSS value, not French
-        f'font-size="13" font-weight="600" fill="#333">{_echapper(titre)}</text>',
+        f'font-size="13" font-weight="600" fill="#333">{_escape(title)}</text>',
     ]
 
     if outline:
         points = " ".join(
-            f"{x:.2f},{y:.2f}" for x, y in map(lambda p: vers_svg(p[0], p[1]), outline)
+            f"{x:.2f},{y:.2f}" for x, y in map(lambda p: to_canvas(p[0], p[1]), outline)
         )
-        parties.append(
+        parts.append(
             f'<polygon points="{points}" fill="none" stroke="#b04a4a" '
             'stroke-width="1.4" stroke-dasharray="6 4"/>'
         )
 
     for room in plan.rooms:
-        coin_x, coin_y = vers_svg(room.x, room.y + room.h)
-        teinte = _TEINTES.get(room.type.lower(), _GRIS)
-        parties.append(
-            f'<rect x="{coin_x:.2f}" y="{coin_y:.2f}" '
-            f'width="{room.w * echelle:.2f}" height="{room.h * echelle:.2f}" '
-            f'fill="{teinte}" fill-opacity="0.55" stroke="#4a4a4a" '
+        corner_x, corner_y = to_canvas(room.x, room.y + room.h)
+        tint = _TINTS.get(room.type.lower(), _GREY)
+        parts.append(
+            f'<rect x="{corner_x:.2f}" y="{corner_y:.2f}" '
+            f'width="{room.w * scale:.2f}" height="{room.h * scale:.2f}" '
+            f'fill="{tint}" fill-opacity="0.55" stroke="#4a4a4a" '
             'stroke-width="1"/>'
         )
-        centre_x, centre_y = vers_svg(room.x + room.w / 2, room.y + room.h / 2)
-        parties.append(
-            f'<text x="{centre_x:.2f}" y="{centre_y:.2f}" text-anchor="middle" '
+        center_x, center_y = to_canvas(room.x + room.w / 2, room.y + room.h / 2)
+        parts.append(
+            f'<text x="{center_x:.2f}" y="{center_y:.2f}" text-anchor="middle" '
             'font-family="system-ui,sans-serif" font-size="9" fill="#2a2a2a">'  # lang-ok: CSS value
-            f"{_echapper(room.type[:12])}</text>"
+            f"{_escape(room.type[:12])}</text>"
         )
 
     # Walls last, on top of rooms: a load-bearing wall crossed by a room must be visible.
     declared = {wall.id for wall in plan.walls}
     for wall in plan.walls + tuple(w for w in walls if w.id not in declared):
-        (xa, ya), (xb, yb) = vers_svg(*wall.a), vers_svg(*wall.b)
+        (xa, ya), (xb, yb) = to_canvas(*wall.a), to_canvas(*wall.b)
         css_class, colour, width = (
             ("wall-load-bearing", "#1f1f1f", 4.0) if wall.load_bearing else ("wall", "#6b6b6b", 1.5)
         )
-        parties.append(
+        parts.append(
             f'<line class="{css_class}" x1="{xa:.2f}" y1="{ya:.2f}" x2="{xb:.2f}" '
             f'y2="{yb:.2f}" stroke="{colour}" stroke-width="{width}" '
             'stroke-linecap="square"/>'
         )
-    return parties
+    return parts
 
 
-@renamed_parameters({"contour": "outline"})
+@renamed_parameters({"contour": "outline", "titre": "title"})
 def render(
     plan: Plan,
     *,
     outline: tuple[Point, ...] = (),
-    titre: str = "",
+    title: str = "",
     walls: tuple[Wall, ...] = (),
 ) -> str:
     """Render a plan as a standalone SVG.
@@ -192,9 +192,9 @@ def render(
         Plan to draw. May be invalid — that is the use case.
     outline : tuple of Point, optional
         Target outline, drawn dashed. Default: the plan's own.
-    titre : str, optional
+    title : str, optional
         Label shown at the top of the panel.
-    walls : tuple of Mur, optional
+    walls : tuple of Wall, optional
         Extra walls to draw, typically ``ctx.structure.load_bearing_walls``: a plan does not
         have to repeat its load-bearing structure, but a drawing should show it.
 
@@ -210,36 +210,36 @@ def render(
     ...     rooms=(Room(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),),
     ...     walls=(), openings=(), outline=(),
     ... )
-    >>> render(plan, titre="essai").startswith("<svg")
+    >>> render(plan, title="demo").startswith("<svg")
     True
     """
-    vise = outline or plan.outline
-    etendue = _etendue((plan,), (vise,) if vise else ())
-    parties = _panneau(plan, vise, titre, etendue, 0.0, walls=walls)
-    hauteur = _hauteur(etendue)
-    return _document(_LARGEUR_PANNEAU, hauteur, parties)
+    target = outline or plan.outline
+    extent = _extent((plan,), (target,) if target else ())
+    parts = _panel(plan, target, title, extent, 0.0, walls=walls)
+    height = _height(extent)
+    return _document(_PANEL_WIDTH, height, parts)
 
 
-@renamed_parameters({"contour": "outline"})
+@renamed_parameters({"contour": "outline", "avant": "before", "apres": "after", "titres": "titles"})
 def compare(
-    avant: Plan,
-    apres: Plan,
+    before: Plan,
+    after: Plan,
     *,
     outline: tuple[Point, ...] = (),
-    titres: tuple[str, str] = ("before", "after"),
+    titles: tuple[str, str] = ("before", "after"),
     walls: tuple[Wall, ...] = (),
 ) -> str:
     """Render two plans side by side, **at the same scale**.
 
     Parameters
     ----------
-    avant, apres : Plan
+    before, after : Plan
         The two states to compare.
     outline : tuple of Point, optional
-        Target outline, common to both panels. Default: ``avant``'s own.
-    titres : tuple of str, optional
+        Target outline, common to both panels. Default: ``before``'s own.
+    titles : tuple of str, optional
         Labels of the two panels.
-    walls : tuple of Mur, optional
+    walls : tuple of Wall, optional
         Extra walls drawn in both panels (see :func:`render`).
 
     Returns
@@ -263,28 +263,28 @@ def compare(
     >>> svg.count("<rect") >= 4        # two frames, two rooms
     True
     """
-    return sheet(((avant, titres[0]), (apres, titres[1])), outline=outline, walls=walls)
+    return sheet(((before, titles[0]), (after, titles[1])), outline=outline, walls=walls)
 
 
-@renamed_parameters({"contour": "outline"})
+@renamed_parameters({"contour": "outline", "volets": "panels", "colonnes": "columns"})
 def sheet(
-    volets: tuple[tuple[Plan, str], ...],
+    panels: tuple[tuple[Plan, str], ...],
     *,
     outline: tuple[Point, ...] = (),
-    colonnes: int = 4,
+    columns: int = 4,
     walls: tuple[Wall, ...] = (),
 ) -> str:
     """Render a **series** of variants as a grid, all at the same scale.
 
     Parameters
     ----------
-    volets : tuple of (Plan, str)
+    panels : tuple of (Plan, str)
         The variants and their caption, in display order.
     outline : tuple of Point, optional
         Target outline, common to all panels. Default: the first plan's own.
-    colonnes : int, optional
+    columns : int, optional
         Panels per row.
-    walls : tuple of Mur, optional
+    walls : tuple of Wall, optional
         Extra walls drawn in every panel (see :func:`render`).
 
     Returns
@@ -313,44 +313,42 @@ def sheet(
     ...           walls=(), openings=(), outline=()), f"{k}°")
     ...     for k in range(3)
     ... )
-    >>> sheet(plans, colonnes=2).startswith("<svg")
+    >>> sheet(plans, columns=2).startswith("<svg")
     True
     """
-    if not volets:
-        raise InvalidInput("volets", "empty sheet: nothing to draw")
-    vise = outline or volets[0][0].outline
-    etendue = _etendue(tuple(p for p, _ in volets), (vise,) if vise else ())
-    step_x = _LARGEUR_PANNEAU + _ESPACE
-    step_y = _hauteur(etendue) + _ESPACE
+    if not panels:
+        raise InvalidInput("panels", "empty sheet: nothing to draw")
+    target = outline or panels[0][0].outline
+    extent = _extent(tuple(p for p, _ in panels), (target,) if target else ())
+    step_x = _PANEL_WIDTH + _SPACING
+    step_y = _height(extent) + _SPACING
 
-    parties: list[str] = []
-    for rang, (plan, titre) in enumerate(volets):
-        column, rangee = rang % colonnes, rang // colonnes
-        parties += _panneau(
-            plan, vise, titre, etendue, column * step_x, rangee * step_y, walls=walls
-        )
-    n_colonnes = min(len(volets), colonnes)
-    n_rangees = (len(volets) + colonnes - 1) // colonnes
-    return _document(n_colonnes * step_x - _ESPACE, n_rangees * step_y - _ESPACE, parties)
+    parts: list[str] = []
+    for rank, (plan, title) in enumerate(panels):
+        column, row = rank % columns, rank // columns
+        parts += _panel(plan, target, title, extent, column * step_x, row * step_y, walls=walls)
+    n_columns = min(len(panels), columns)
+    n_rows = (len(panels) + columns - 1) // columns
+    return _document(n_columns * step_x - _SPACING, n_rows * step_y - _SPACING, parts)
 
 
-def _hauteur(etendue: tuple[float, float, float, float]) -> float:
+def _height(extent: tuple[float, float, float, float]) -> float:
     """Document height, in pixels, for a given metric extent."""
-    x0, y0, x1, y1 = etendue
-    largeur_m = max(x1 - x0, 1e-9)
-    hauteur_m = max(y1 - y0, 1e-9)
-    utile = _LARGEUR_PANNEAU - 2 * _MARGE
-    return hauteur_m * min(utile / largeur_m, utile / hauteur_m) + 2 * _MARGE
+    x0, y0, x1, y1 = extent
+    width_m = max(x1 - x0, 1e-9)
+    height_m = max(y1 - y0, 1e-9)
+    useful = _PANEL_WIDTH - 2 * _MARGIN
+    return height_m * min(useful / width_m, useful / height_m) + 2 * _MARGIN
 
 
-def _document(largeur: float, hauteur: float, parties: list[str]) -> str:
+def _document(width: float, height: float, parts: list[str]) -> str:
     """Wrap the fragments in a standalone SVG document."""
-    corps = "\n  ".join(parties)
+    body = "\n  ".join(parts)
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{largeur:.0f}" '
-        f'height="{hauteur:.0f}" viewBox="0 0 {largeur:.0f} {hauteur:.0f}">\n'
-        f'  <rect width="{largeur:.0f}" height="{hauteur:.0f}" fill="#f7f6f3"/>\n'
-        f"  {corps}\n</svg>\n"
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" '
+        f'height="{height:.0f}" viewBox="0 0 {width:.0f} {height:.0f}">\n'
+        f'  <rect width="{width:.0f}" height="{height:.0f}" fill="#f7f6f3"/>\n'
+        f"  {body}\n</svg>\n"
     )
 
 

@@ -1,7 +1,7 @@
 """Milestone 2 criterion replayed as written, then with load-bearing walls (phase 2, J2).
 
 ``MILESTONE-2.md`` §0 draws ``plans_quelconques()`` and ``contextes()``: any plan, any
-context. The test that closed the milestone (``test_acceptation_jalon2.py``) drew
+context. The test that closed the milestone (``test_milestone2_acceptance.py``) drew
 ``plans_valides()`` under one fixed context, inputs that are already valid, so it could
 not see a wrong output. Replayed as written, ``legalize`` refuses most arbitrary plans
 (a gap cannot be filled without ``tiling``): the criterion "every output is valid"
@@ -21,8 +21,8 @@ from archlux.types import Context, Plan
 from tests import checkers
 from tests.properties.strategies import (
     GATE_EXAMPLES,
-    contextes,
-    plans_quelconques,
+    arbitrary_plans,
+    contexts,
     realistic_scenarios,
 )
 
@@ -36,7 +36,7 @@ def _returned_plans_are_valid(plan: Plan, ctx: Context, *, tiling: bool) -> None
     assert checkers.violations(result, ctx) == []
 
 
-@given(plan=plans_quelconques(), ctx=contextes())
+@given(plan=arbitrary_plans(), ctx=contexts())
 @settings(max_examples=500, deadline=None, derandomize=True)
 def test_every_returned_plan_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     """The criterion as written: arbitrary plans and contexts, 500 examples."""

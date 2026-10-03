@@ -9,8 +9,8 @@ from __future__ import annotations
 import pytest
 
 from archlux import light
-from archlux.light import simulateur
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light import split_flux
+from archlux.light.split_flux import SplitFluxOracle
 
 
 @pytest.mark.parametrize("old", ["SimulateurExact", "ExactSimulator"])
@@ -21,8 +21,8 @@ def test_package_aliases_warn_and_return_the_same_class(old: str) -> None:
 
 
 def test_module_alias_warns_and_returns_the_same_class() -> None:
-    with pytest.warns(DeprecationWarning, match="simulateur.SimulateurExact is deprecated"):
-        legacy = simulateur.SimulateurExact  # type: ignore[attr-defined]
+    with pytest.warns(DeprecationWarning, match="split_flux.SimulateurExact is deprecated"):
+        legacy = split_flux.SimulateurExact  # type: ignore[attr-defined]
     assert legacy is SplitFluxOracle
 
 

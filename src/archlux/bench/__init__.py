@@ -1,11 +1,11 @@
 """Evaluation protocol. Leaf of the tree: nothing imports this package."""
 
 from archlux._deprecation import Alias, lazy_aliases
-from archlux.bench.graines import derive
-from archlux.bench.manifeste import emit
-from archlux.bench.protocole import Split, compare, load_split
-from archlux.bench.rapport import BenchReport, OrientationStratum, report
+from archlux.bench.manifest import emit
+from archlux.bench.protocol import Split, compare, load_split
+from archlux.bench.report import BenchReport, OrientationStratum, report
 from archlux.bench.run import Manifest, RawRow, Result, run
+from archlux.bench.seeds import derive
 from archlux.bench.stats import Interval, holm, paired_bootstrap, power, tost
 from archlux.types import ModelTrace
 

@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from scipy.sparse import csr_matrix
 
-    from archlux.arrays import VecteurF
+    from archlux.arrays import FloatVector
     from archlux.geom.polytope import Polytope
 
 __all__ = ["FarkasCheck", "verify_infeasibility"]
@@ -57,8 +57,8 @@ class FarkasCheck:
 
 def _accumulate(
     rows: csr_matrix,
-    b: VecteurF,
-    raw_weights: VecteurF,
+    b: FloatVector,
+    raw_weights: FloatVector,
     r: list[Fraction],
     beta: Fraction,
     *,
@@ -100,7 +100,7 @@ def _lowest_over_box(poly: Polytope, r: list[Fraction]) -> Fraction | str:
     return lowest
 
 
-def verify_infeasibility(poly: Polytope, y: VecteurF, z: VecteurF | None) -> FarkasCheck:
+def verify_infeasibility(poly: Polytope, y: FloatVector, z: FloatVector | None) -> FarkasCheck:
     """Check exactly that ``(y, z)`` proves ``poly`` empty.
 
     Parameters

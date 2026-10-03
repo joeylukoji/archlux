@@ -1,7 +1,7 @@
 """Milestone 3 criteria replayed as written, then with walls and minimum areas (phase 2, J3).
 
 ``MILESTONE-3.md`` §0 draws ``plans_quelconques()`` for the first two criteria; the
-tests that closed the milestone (``test_acceptation_jalon3.py``) drew already-valid
+tests that closed the milestone (``test_milestone3_acceptance.py``) drew already-valid
 plans under a context without minimum areas, the case where Frank-Wolfe used to leave
 them (AUDIT.md §3 n°6). Each criterion is replayed here on arbitrary plans and contexts,
 and on plans with a load-bearing wall and minimum areas (``realistic_scenarios``).
@@ -18,16 +18,16 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, devectorize, vectorize
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.solve.trace import Trace
 from archlux.types import Context, Orientation, Plan
 from tests import checkers
 from tests.properties.strategies import (
     GATE_EXAMPLES,
-    contextes,
-    plans_quelconques,
+    arbitrary_plans,
+    contexts,
     realistic_scenarios,
 )
 
@@ -64,7 +64,7 @@ def _objective_is_monotone(plan: Plan, ctx: Context) -> None:
         assert after >= before - 1e-9
 
 
-@given(plan=plans_quelconques(), ctx=contextes())
+@given(plan=arbitrary_plans(), ctx=contexts())
 @_SETTINGS
 def test_every_iterate_is_valid_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     _iterates_are_valid(plan, ctx)
@@ -78,7 +78,7 @@ def test_every_iterate_is_valid_with_walls_and_minimum_areas(
     _iterates_are_valid(*scenario)
 
 
-@given(plan=plans_quelconques(), ctx=contextes())
+@given(plan=arbitrary_plans(), ctx=contexts())
 @_SETTINGS
 def test_the_objective_is_monotone_on_arbitrary_inputs(plan: Plan, ctx: Context) -> None:
     _objective_is_monotone(plan, ctx)

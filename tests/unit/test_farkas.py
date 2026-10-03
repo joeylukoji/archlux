@@ -15,9 +15,9 @@ from benchmarks.guarantees.scenarios import generate
 import archlux
 from archlux.certify.farkas import verify_infeasibility
 from archlux.errors import Infeasible
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.geom.polytope import build_polytope
-from archlux.lmo.solveur import solve
+from archlux.lmo.solver import solve
 from archlux.types import Context, Orientation, Regulation, Structure
 
 _CTX = Context(

@@ -18,9 +18,9 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import Polytope, build_polytope, vectorize
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.lmo.cuts import inner_area_constraints
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure
 from tests import checkers

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from archlux._deprecation import renamed_parameters
 from archlux.errors import InvariantViolation
-from archlux.export.pathologie import diagnose
+from archlux.export.pathologies import diagnose
 from archlux.types import Plan
 
 __all__ = ["to_dxf"]
@@ -45,38 +45,38 @@ def to_dxf(plan: Plan, path: Path | str) -> None:
         "2",
         "ENTITIES",
     ]
-    for piece in plan.rooms:
-        x0, y0, x1, y1 = piece.x, piece.y, piece.x + piece.w, piece.y + piece.h
-        coins = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
+    for room in plan.rooms:
+        x0, y0, x1, y1 = room.x, room.y, room.x + room.w, room.y + room.h
+        corners = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
         rows.extend(
             [
                 "0",
                 "LWPOLYLINE",
                 "8",
-                piece.id,
+                room.id,
                 "90",
                 "4",
                 "70",
                 "1",
             ]
         )
-        for x, y in coins:
+        for x, y in corners:
             rows.extend(["10", f"{x:.6f}", "20", f"{y:.6f}"])
-    for mur in plan.walls:
+    for wall in plan.walls:
         rows.extend(
             [
                 "0",
                 "LINE",
                 "8",
-                mur.id,
+                wall.id,
                 "10",
-                f"{mur.a[0]:.6f}",
+                f"{wall.a[0]:.6f}",
                 "20",
-                f"{mur.a[1]:.6f}",
+                f"{wall.a[1]:.6f}",
                 "11",
-                f"{mur.b[0]:.6f}",
+                f"{wall.b[0]:.6f}",
                 "21",
-                f"{mur.b[1]:.6f}",
+                f"{wall.b[1]:.6f}",
             ]
         )
     rows.extend(["0", "ENDSEC", "0", "EOF"])

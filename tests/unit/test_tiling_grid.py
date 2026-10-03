@@ -14,7 +14,7 @@ import pytest
 
 import archlux
 from archlux.errors import UnsupportedInput
-from archlux.geom.pavage import deduce_grid
+from archlux.geom.tiling import deduce_grid
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 

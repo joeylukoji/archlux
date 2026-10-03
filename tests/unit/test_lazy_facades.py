@@ -25,8 +25,8 @@ def test_light_daylight_does_not_load_the_other_surrogates() -> None:
         "from archlux import light\n"
         "_ = light.Daylight\n"
         "loaded = [m for m in sys.modules if m.startswith('archlux.light.')]\n"
-        "assert 'archlux.light.analytique' not in loaded, loaded\n"
-        "assert 'archlux.light.simulateur' not in loaded, loaded\n"
+        "assert 'archlux.light.analytic' not in loaded, loaded\n"
+        "assert 'archlux.light.split_flux' not in loaded, loaded\n"
     )
     result = run(code)
     assert result.returncode == 0, result.stderr
@@ -35,7 +35,7 @@ def test_light_daylight_does_not_load_the_other_surrogates() -> None:
 def test_light_analytic_surrogate_is_still_reachable() -> None:
     code = (
         "from archlux import light\n"
-        "from archlux.light.analytique import AnalyticSurrogate\n"
+        "from archlux.light.analytic import AnalyticSurrogate\n"
         "assert light.AnalyticSurrogate is AnalyticSurrogate\n"
     )
     result = run(code)
@@ -49,7 +49,7 @@ def test_certify_render_does_not_load_the_proof_or_the_bound() -> None:
         "_ = certify.render\n"
         "loaded = [m for m in sys.modules if m.startswith('archlux.certify.')]\n"
         "assert 'archlux.certify.proof' not in loaded, loaded\n"
-        "assert 'archlux.certify.borne' not in loaded, loaded\n"
+        "assert 'archlux.certify.bound' not in loaded, loaded\n"
     )
     result = run(code)
     assert result.returncode == 0, result.stderr

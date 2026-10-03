@@ -1,4 +1,4 @@
-"""The Frank-Wolfe helpers against ``docs/formules/frank-wolfe.md`` (away steps, weights).
+"""The Frank-Wolfe helpers against ``docs/formulas/frank-wolfe.md`` (away steps, weights).
 
 Expectations are derived by hand from the formulas (Lacoste-Julien & Jaggi 2015), not
 from running the code.
@@ -14,7 +14,7 @@ import pytest
 from archlux.solve.frank_wolfe import _line_search, _step_away, _update_weights
 from archlux.types import Orientation
 
-NORD = Orientation(deg=0.0)
+NORTH = Orientation(deg=0.0)
 
 
 # --- _step_away -------------------------------------------------------------------
@@ -77,7 +77,7 @@ def test_line_search_starts_at_two_over_k_plus_two_and_halves() -> None:
     x = np.zeros(1)
     result = _line_search(
         surrogate,
-        NORD,
+        NORTH,
         x,
         1.0,
         np.array([1.0]),
@@ -98,7 +98,7 @@ def test_line_search_caps_the_first_step_at_gamma_max() -> None:
     surrogate = ScriptedSurrogate(values=[1.0])
     result = _line_search(
         surrogate,
-        NORD,
+        NORTH,
         np.zeros(1),
         1.0,
         np.array([1.0]),
@@ -114,7 +114,7 @@ def test_line_search_gives_up_after_twelve_tries() -> None:
     surrogate = ScriptedSurrogate(values=[0.0] * 20)
     result = _line_search(
         surrogate,
-        NORD,
+        NORTH,
         np.zeros(1),
         1.0,
         np.array([1.0]),

@@ -2,7 +2,7 @@
 
 A valid plan must come out unchanged (the L1 optimum is then e = 0). Usage:
 python experiments/j7_msd_idempotence.py MSD_CSV [N_APARTMENTS] [OUT_DIR]. MSD is not
-redistributed (docs/donnees/msd.md). Byte-stable: no timing (§9 budgets).
+redistributed (docs/data/msd.md). Byte-stable: no timing (§9 budgets).
 """
 
 import sys
@@ -12,7 +12,7 @@ import numpy as np
 
 import archlux as ax
 from archlux.certify import verify_exactly
-from archlux.data.chargeurs import LoadStatistics, load_msd
+from archlux.data.loaders import LoadStatistics, load_msd
 
 MSD, N = Path(sys.argv[1]), int(sys.argv[2]) if len(sys.argv) > 2 else 400
 OUT = Path(sys.argv[3] if len(sys.argv) > 3 else "results") / "j7_msd_idempotence.md"

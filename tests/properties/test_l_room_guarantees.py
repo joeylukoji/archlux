@@ -15,8 +15,8 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.rectilineaire import MERGE_RIGHT, MERGE_TOP, RectilinearRoom
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.geom.rectilinear import MERGE_RIGHT, MERGE_TOP, RectilinearRoom
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import Context, Plan, Room
 from tests import checkers
 from tests.properties.strategies import GATE_EXAMPLES, realistic_scenarios

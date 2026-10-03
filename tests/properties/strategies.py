@@ -1,11 +1,11 @@
-"""Stratégies Hypothesis partagées par tous les jalons.
+"""Hypothesis strategies shared by every milestone.
 
-Ce module est le livrable caché du jalon 1 : le test d'acceptation du jalon 2, les tests
-de coupes et ceux de dérive le réutiliseront tous. Écrit une fois, correctement, il évite
-trois générateurs de plans divergents.
+This module is the hidden deliverable of milestone 1: the acceptance test of milestone 2,
+the cut tests and the drift tests all reuse it. Written once, correctly, it avoids three
+diverging plan generators.
 
-Les stratégies non encore nécessaires lèvent ``NotImplementedError`` avec leur jalon :
-les écrire d'avance produirait des générateurs jamais exécutés, donc jamais corrects.
+Strategies that are not needed yet raise ``NotImplementedError`` with their milestone:
+writing them ahead of time would produce generators never run, hence never correct.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from typing import Any
 import numpy as np
 from hypothesis import strategies as st
 
-from archlux.geom.graphe import RelativeOrder
+from archlux.geom.graph import RelativeOrder
 from archlux.types import (
     REGIMES,
     Certificate,
@@ -36,31 +36,31 @@ from archlux.types import (
 )
 
 __all__ = [
-    "CONTEXTE_DEFAUT",
-    "contextes",
-    "murs",
-    "ordres_valides",
-    "plans_quelconques",
-    "plans_valides",
+    "DEFAULT_CONTEXT",
+    "arbitrary_plans",
+    "contexts",
+    "objective_vectors",
     "realistic_scenarios",
     "rooms",
-    "vecteurs_objectifs",
+    "valid_orders",
+    "valid_plans",
+    "walls",
 ]
 
 _COORD = st.floats(min_value=-1e4, max_value=1e4, allow_nan=False, allow_infinity=False)
-_TAILLE = st.floats(min_value=0.1, max_value=1e3, allow_nan=False, allow_infinity=False)
-_UNITE = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
+_SIZE = st.floats(min_value=0.1, max_value=1e3, allow_nan=False, allow_infinity=False)
+_UNIT = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
 _IDS = st.text(alphabet="abcdefghijklmnopqrstuvwxyz_0123456789", min_size=1, max_size=8)
 _TYPES = st.sampled_from(["living_room", "bedroom", "kitchen", "bathroom", "corridor", "toilet"])
 
 
 def rooms() -> st.SearchStrategy[Room]:
-    """Pièces rectangulaires quelconques, dimensions strictement positives."""
-    return st.builds(Room, id=_IDS, type=_TYPES, x=_COORD, y=_COORD, w=_TAILLE, h=_TAILLE)
+    """Arbitrary rectangular rooms, with strictly positive dimensions."""
+    return st.builds(Room, id=_IDS, type=_TYPES, x=_COORD, y=_COORD, w=_SIZE, h=_SIZE)
 
 
-def murs() -> st.SearchStrategy[Wall]:
-    """Murs quelconques, porteurs ou non."""
+def walls() -> st.SearchStrategy[Wall]:
+    """Arbitrary walls, load-bearing or not."""
     return st.builds(
         Wall,
         id=_IDS,
@@ -71,12 +71,12 @@ def murs() -> st.SearchStrategy[Wall]:
     )
 
 
-def _ouvertures(ids_murs: list[str]) -> st.SearchStrategy[Opening]:
+def _openings(wall_ids: list[str]) -> st.SearchStrategy[Opening]:
     return st.builds(
         Opening,
         id=_IDS,
-        wall_id=st.sampled_from(ids_murs),
-        s=_UNITE,
+        wall_id=st.sampled_from(wall_ids),
+        s=_UNIT,
         relative_width=st.floats(
             min_value=0.01, max_value=1.0, allow_nan=False, allow_infinity=False
         ),
@@ -85,12 +85,12 @@ def _ouvertures(ids_murs: list[str]) -> st.SearchStrategy[Opening]:
     )
 
 
-def _preuves() -> st.SearchStrategy[GeometricProof]:
-    """Preuves géométriques, **avec** des violations parfois non vides.
+def _proofs() -> st.SearchStrategy[GeometricProof]:
+    """Geometric proofs, **with** violations that are sometimes non-empty.
 
-    Un générateur qui ne produirait que ``violations=()`` rendrait la sérialisation de
-    ce champ inatteignable : le test paraîtrait exhaustif tout en n'exécutant jamais la
-    branche.
+    A generator that only produced ``violations=()`` would make the serialization of
+    this field unreachable: the test would look exhaustive while never running the
+    branch.
     """
     return st.builds(
         _proof,
@@ -105,7 +105,7 @@ def _preuves() -> st.SearchStrategy[GeometricProof]:
 
 
 def _proof(*, valid: bool, **fields: Any) -> GeometricProof:
-    """Une preuve ``valide`` ne rapporte aucune faute (invariant de ``types``, phase 3.2)."""
+    """A ``valid`` proof reports no fault (invariant of ``types``, phase 3.2)."""
     if valid:
         fields |= {
             "overlap": False,
@@ -117,15 +117,15 @@ def _proof(*, valid: bool, **fields: Any) -> GeometricProof:
     return GeometricProof(valid=valid, **fields)
 
 
-def _bornes() -> st.SearchStrategy[PerformanceBound]:
-    """Bornes conformes, toujours munies de leur couverture et de ``n_calibration``."""
-    reels = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
-    # An interval is ordered (batch 1.6 refuses borne_inf > borne_sup).
-    return st.tuples(reels, reels).flatmap(
+def _bounds() -> st.SearchStrategy[PerformanceBound]:
+    """Conformal bounds, always with their coverage and ``n_calibration``."""
+    reals = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
+    # An interval is ordered (batch 1.6 refuses lower > upper).
+    return st.tuples(reals, reals).flatmap(
         lambda pair: st.builds(
             PerformanceBound,
             indicator=st.sampled_from(["sDA", "ASE", "UDI", "vue"]),
-            value=reels,
+            value=reals,
             lower=st.just(min(pair)),
             upper=st.just(max(pair)),
             coverage=st.floats(min_value=0.5, max_value=1.0, allow_nan=False),
@@ -135,10 +135,10 @@ def _bornes() -> st.SearchStrategy[PerformanceBound]:
     )
 
 
-def _manifestes() -> st.SearchStrategy[Manifest]:
-    """Manifestes de reproductibilité, champs optionnels parfois renseignés."""
-    paires = st.lists(st.tuples(st.text(max_size=12), st.text(max_size=12)), max_size=3).map(tuple)
-    modeles = st.one_of(
+def _manifests() -> st.SearchStrategy[Manifest]:
+    """Reproducibility manifests, optional fields sometimes filled in."""
+    pairs = st.lists(st.tuples(st.text(max_size=12), st.text(max_size=12)), max_size=3).map(tuple)
+    models = st.one_of(
         st.none(),
         st.builds(
             ModelTrace,
@@ -154,23 +154,22 @@ def _manifestes() -> st.SearchStrategy[Manifest]:
         seed=st.integers(min_value=0, max_value=2**32 - 1),
         data_fingerprint=st.one_of(st.none(), st.text(max_size=20)),
         split=st.one_of(st.none(), st.text(max_size=20)),
-        environment=paires,
-        parameters=paires,
-        model=modeles,
+        environment=pairs,
+        parameters=pairs,
+        model=models,
     )
 
 
-def _certificats() -> st.SearchStrategy[Certificate]:
-    """Certificats complets : les deux garanties, le diagnostic dual et la trace.
+def _certificates() -> st.SearchStrategy[Certificate]:
+    """Complete certificates: both guarantees, the dual diagnostic and the trace.
 
-    ``performance`` est ``None`` **une fois sur deux** et non systématiquement : les
-    deux modes — classique sans borne, performantiel avec borne — doivent tous deux
-    traverser la sérialisation.
+    ``performance`` is ``None`` **half of the time**, not always: both modes (classic
+    without a bound, performance with a bound) must go through serialization.
     """
     return st.builds(
         Certificate,
-        geometry=_preuves(),
-        performance=st.one_of(st.none(), _bornes()),
+        geometry=_proofs(),
+        performance=st.one_of(st.none(), _bounds()),
         duals=st.lists(
             st.tuples(
                 st.text(max_size=20),
@@ -178,105 +177,102 @@ def _certificats() -> st.SearchStrategy[Certificate]:
             ),
             max_size=3,
         ).map(tuple),
-        manifest=st.one_of(st.none(), _manifestes()),
+        manifest=st.one_of(st.none(), _manifests()),
     )
 
 
 @st.composite
-def plans_quelconques(draw: st.DrawFn) -> Plan:
-    """Plans arbitraires, valides ou non — l'entrée réelle du système.
+def arbitrary_plans(draw: st.DrawFn) -> Plan:
+    """Arbitrary plans, valid or not: the real input of the system.
 
-    C'est délibérément permissif : ``legalize`` doit rendre un plan valide *y compris*
-    sur une entrée absurde, et un générateur qui ne produirait que du plausible ne
-    testerait pas cette promesse.
+    This is deliberately permissive: ``legalize`` must return a valid plan *even* on an
+    absurd input, and a generator that only produced plausible plans would not test
+    that promise.
     """
-    liste_murs = draw(st.lists(murs(), min_size=1, max_size=6, unique_by=lambda m: m.id))
-    ids_murs = [m.id for m in liste_murs]
-    liste_pieces = draw(st.lists(rooms(), min_size=1, max_size=6, unique_by=lambda p: p.id))
-    liste_ouv = draw(st.lists(_ouvertures(ids_murs), max_size=5, unique_by=lambda o: o.id))
-    contour = draw(st.lists(st.tuples(_COORD, _COORD), min_size=3, max_size=8))
-    certificat = draw(st.one_of(st.none(), _certificats()))
+    wall_list = draw(st.lists(walls(), min_size=1, max_size=6, unique_by=lambda m: m.id))
+    wall_ids = [m.id for m in wall_list]
+    room_list = draw(st.lists(rooms(), min_size=1, max_size=6, unique_by=lambda p: p.id))
+    opening_list = draw(st.lists(_openings(wall_ids), max_size=5, unique_by=lambda o: o.id))
+    outline = draw(st.lists(st.tuples(_COORD, _COORD), min_size=3, max_size=8))
+    certificate = draw(st.one_of(st.none(), _certificates()))
     return Plan(
-        rooms=tuple(liste_pieces),
-        walls=tuple(liste_murs),
-        openings=tuple(liste_ouv),
-        outline=tuple(contour),
-        certificate=certificat,
+        rooms=tuple(room_list),
+        walls=tuple(wall_list),
+        openings=tuple(opening_list),
+        outline=tuple(outline),
+        certificate=certificate,
     )
 
 
 GATE_EXAMPLES = int(os.environ.get("ARCHLUX_GATE_EXAMPLES", "60"))
 """Examples per guarantee property: 60 in CI, 2000 for the phase 1 exit gate (PLAN.md)."""
 
-LARGEUR_MIN_DEFAUT = 1.0
-"""Largeur minimale du contexte de référence, en mètres."""
+DEFAULT_MIN_WIDTH = 1.0
+"""Minimum width of the reference context, in metres."""
 
-CONTOUR_DEFAUT_CM = (1200, 900)
-"""Contour de référence, en **centimètres** : 12 m x 9 m."""
+DEFAULT_OUTLINE_CM = (1200, 900)
+"""Reference outline, in **centimetres**: 12 m x 9 m."""
 
-CONTEXTE_DEFAUT = Context(
+DEFAULT_CONTEXT = Context(
     structure=Structure(load_bearing_walls=()),
     orientation=Orientation(deg=0.0),
     outline=((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0)),
-    regulation=Regulation(min_areas=(), min_width=LARGEUR_MIN_DEFAUT),
+    regulation=Regulation(min_areas=(), min_width=DEFAULT_MIN_WIDTH),
 )
-"""Contexte de référence des tests, accordé à :func:`plans_valides`."""
+"""Reference context of the tests, matched to :func:`valid_plans`."""
 
 
-def _decouper(
+def _cut_up(
     draw: st.DrawFn,
     x: int,
     y: int,
     w: int,
     h: int,
-    profondeur: int,
+    depth: int,
     minimum: int,
     force_split: bool = False,
 ) -> list[tuple[int, int, int, int]]:
-    """Découper récursivement un rectangle en guillotine, en centimètres.
+    """Cut a rectangle up recursively into a guillotine tiling, in centimetres.
 
-    Les coupes sont entières : additionner des centimètres reste exact, là où des coupes
-    flottantes laisseraient des jours de l'ordre de 1e-16 entre pièces voisines.
+    The cuts are integers: adding centimetres stays exact, where floating cuts would
+    leave gaps of the order of 1e-16 between neighbouring rooms.
 
     ``force_split`` makes the first cut mandatory (when the rectangle allows one), so
     that the plan has at least two rooms.
     """
-    axes = [axis for axis, taille in (("v", w), ("h", h)) if taille >= 2 * minimum]
-    if profondeur == 0 or not axes or (not force_split and not draw(st.booleans())):
+    axes = [axis for axis, size in (("v", w), ("h", h)) if size >= 2 * minimum]
+    if depth == 0 or not axes or (not force_split and not draw(st.booleans())):
         return [(x, y, w, h)]
     axis = draw(st.sampled_from(axes))
     if axis == "v":
-        coupe = draw(st.integers(min_value=minimum, max_value=w - minimum))
-        gauche = _decouper(draw, x, y, coupe, h, profondeur - 1, minimum)
-        return gauche + _decouper(draw, x + coupe, y, w - coupe, h, profondeur - 1, minimum)
-    coupe = draw(st.integers(min_value=minimum, max_value=h - minimum))
-    low = _decouper(draw, x, y, w, coupe, profondeur - 1, minimum)
-    return low + _decouper(draw, x, y + coupe, w, h - coupe, profondeur - 1, minimum)
+        cut = draw(st.integers(min_value=minimum, max_value=w - minimum))
+        left = _cut_up(draw, x, y, cut, h, depth - 1, minimum)
+        return left + _cut_up(draw, x + cut, y, w - cut, h, depth - 1, minimum)
+    cut = draw(st.integers(min_value=minimum, max_value=h - minimum))
+    low = _cut_up(draw, x, y, w, cut, depth - 1, minimum)
+    return low + _cut_up(draw, x, y + cut, w, h - cut, depth - 1, minimum)
 
 
 @st.composite
-def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = False) -> Plan:
-    """Plans géométriquement valides, accordés à :data:`CONTEXTE_DEFAUT`.
+def valid_plans(draw: st.DrawFn, depth: int = 3, force_split: bool = False) -> Plan:
+    """Geometrically valid plans, matched to :data:`DEFAULT_CONTEXT`.
 
-    Construits par **découpes en guillotine** : le contour est coupé récursivement en
-    deux, et les feuilles deviennent les pièces. Le pavage est alors exact par
-    construction — aucun chevauchement, aucun jour — sans qu'aucune vérification
-    géométrique ne soit nécessaire côté générateur.
+    Built by **guillotine cuts**: the outline is cut recursively in two, and the leaves
+    become the rooms. The tiling is then exact by construction (no overlap, no gap)
+    without any geometric check on the generator side.
 
-    C'est le point important : un générateur qui appellerait ``verify_exactly`` pour
-    filtrer ses sorties rendrait tautologique tout test de validité.
+    That is the important point: a generator that called ``verify_exactly`` to filter
+    its outputs would make every validity test tautological.
 
     Notes
     -----
-    Les plans produits sont des pavages en guillotine, qui ne couvrent pas tous les
-    plans valides — un pavage « en moulin » n'est pas atteignable. C'est une limite
-    connue et acceptée : elle restreint la couverture, elle ne fausse aucun test.
+    The plans produced are guillotine tilings, which do not cover every valid plan: a
+    "pinwheel" tiling is not reachable. This is a known and accepted limit: it narrows
+    the coverage, it does not distort any test.
     """
-    largeur, hauteur = CONTOUR_DEFAUT_CM
-    minimum = int(LARGEUR_MIN_DEFAUT * 100)
-    rectangles = _decouper(
-        draw, 0, 0, largeur, hauteur, profondeur, minimum, force_split=force_split
-    )
+    width, height = DEFAULT_OUTLINE_CM
+    minimum = int(DEFAULT_MIN_WIDTH * 100)
+    rectangles = _cut_up(draw, 0, 0, width, height, depth, minimum, force_split=force_split)
     rooms = tuple(
         Room(
             id=f"p{i}",
@@ -292,61 +288,61 @@ def plans_valides(draw: st.DrawFn, profondeur: int = 3, force_split: bool = Fals
         rooms=rooms,
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
 
 
 @st.composite
-def ordres_valides(draw: st.DrawFn, max_rooms: int = 6) -> RelativeOrder:
-    """Ordres relatifs acycliques dont toute paire est séparée.
+def valid_orders(draw: st.DrawFn, max_rooms: int = 6) -> RelativeOrder:
+    """Acyclic relative orders in which every pair is separated.
 
-    Construit **sans réutiliser ``deduire_ordre``** : deux rangs totaux tirés au hasard,
-    un par axe, puis un axe choisi à pile ou face pour chaque paire. L'arête suit le rang
-    de l'axe retenu.
+    Built **without reusing ``deduce_order``**: two total ranks drawn at random, one per
+    axis, then an axis chosen by a coin flip for each pair. The edge follows the rank of
+    the chosen axis.
 
-    Les deux propriétés attendues tombent alors par construction, et pour des raisons
-    indépendantes du code testé :
+    Both expected properties then hold by construction, for reasons independent of the
+    code under test:
 
-    - **acyclique**, car les arêtes d'un axe suivent un ordre total ;
-    - **toute paire séparée**, car chaque paire reçoit exactement une arête.
+    - **acyclic**, because the edges of an axis follow a total order;
+    - **every pair separated**, because each pair receives exactly one edge.
 
-    Dériver ces ordres du code de production rendrait les tests tautologiques : ils
-    passeraient quelle que soit l'erreur commise des deux côtés.
+    Deriving these orders from the production code would make the tests tautological:
+    they would pass whatever the error made on both sides.
     """
-    nombre = draw(st.integers(min_value=2, max_value=max_rooms))
-    identifiants = [f"p{i}" for i in range(nombre)]
-    rang_x = {name: i for i, name in enumerate(draw(st.permutations(identifiants)))}
-    rang_y = {name: i for i, name in enumerate(draw(st.permutations(identifiants)))}
+    count = draw(st.integers(min_value=2, max_value=max_rooms))
+    names = [f"p{i}" for i in range(count)]
+    rank_x = {name: i for i, name in enumerate(draw(st.permutations(names)))}
+    rank_y = {name: i for i, name in enumerate(draw(st.permutations(names)))}
 
     horizontal: list[tuple[str, str]] = []
     vertical: list[tuple[str, str]] = []
-    for a, b in itertools.combinations(sorted(identifiants), 2):
+    for a, b in itertools.combinations(sorted(names), 2):
         if draw(st.booleans()):
-            horizontal.append((a, b) if rang_x[a] < rang_x[b] else (b, a))
+            horizontal.append((a, b) if rank_x[a] < rank_x[b] else (b, a))
         else:
-            vertical.append((a, b) if rang_y[a] < rang_y[b] else (b, a))
+            vertical.append((a, b) if rank_y[a] < rank_y[b] else (b, a))
 
     return RelativeOrder(
         horizontal=tuple(horizontal),
         vertical=tuple(vertical),
-        rooms=tuple(sorted(identifiants)),
+        rooms=tuple(sorted(names)),
     )
 
 
 @st.composite
-def contextes(draw: st.DrawFn) -> Context:
-    """Contextes cohérents : contour rectangulaire, orientation, référentiel.
+def contexts(draw: st.DrawFn) -> Context:
+    """Consistent contexts: rectangular outline, orientation, regulation.
 
-    La structure porteuse est vide : lier une pièce à un mur porteur demande une
-    incidence que ``construire_polytope(ordre, ctx)`` n'a pas les moyens de calculer
-    (voir la note d'ADR-7 dans le blueprint).
+    The load-bearing structure is empty: tying a room to a load-bearing wall needs an
+    incidence that ``build_polytope(order, ctx)`` has no means to compute (see the
+    ADR-7 note in the blueprint).
     """
-    largeur = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
-    hauteur = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
+    width = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
+    height = draw(st.floats(min_value=5.0, max_value=30.0, allow_nan=False))
     return Context(
         structure=Structure(load_bearing_walls=()),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
-        outline=((0.0, 0.0), (largeur, 0.0), (largeur, hauteur), (0.0, hauteur)),
+        outline=((0.0, 0.0), (width, 0.0), (width, height), (0.0, height)),
         regulation=Regulation(
             min_areas=(),
             min_width=draw(st.floats(min_value=0.5, max_value=2.0, allow_nan=False)),
@@ -354,18 +350,18 @@ def contextes(draw: st.DrawFn) -> Context:
     )
 
 
-def vecteurs_objectifs(dimension: int) -> st.SearchStrategy[np.ndarray]:
-    """Vecteurs de coûts bornés, **d'origine indifférente** — comme les voit ``lmo``.
+def objective_vectors(dimension: int) -> st.SearchStrategy[np.ndarray]:
+    """Bounded cost vectors, **of any origin**, as ``lmo`` sees them.
 
-    Le générateur ne sait pas plus que le solveur d'où vient le vecteur : distance
-    géométrique au jalon 2, gradient d'éclairement au jalon 3. C'est cette ignorance que
-    les tests doivent refléter.
+    The generator knows no more than the solver where the vector comes from: geometric
+    distance at milestone 2, illuminance gradient at milestone 3. The tests must reflect
+    that ignorance.
     """
     return st.lists(
         st.floats(min_value=-100.0, max_value=100.0, allow_nan=False),
         min_size=dimension,
         max_size=dimension,
-    ).map(lambda valeurs: np.array(valeurs, dtype=float))
+    ).map(lambda values: np.array(values, dtype=float))
 
 
 @st.composite
@@ -384,8 +380,8 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     The input is therefore valid under its own context: any violation in the output is
     introduced by ``legalize``.
     """
-    plan = draw(plans_valides(force_split=True))
-    width, height = (c / 100.0 for c in CONTOUR_DEFAUT_CM)
+    plan = draw(valid_plans(force_split=True))
+    width, height = (c / 100.0 for c in DEFAULT_OUTLINE_CM)
 
     edges: list[tuple[tuple[float, float], tuple[float, float]]] = []
     for room in plan.rooms:
@@ -396,7 +392,7 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
             edges.append(((room.x, top), (right, top)))
     # At least two rooms (force_split), hence at least one interior edge.
     a, b = draw(st.sampled_from(edges))
-    walls = (Wall(id="lb0", a=a, b=b, load_bearing=True),)
+    load_bearing_walls = (Wall(id="lb0", a=a, b=b, load_bearing=True),)
 
     smallest: dict[str, float] = {}
     for room in plan.rooms:
@@ -405,9 +401,11 @@ def realistic_scenarios(draw: st.DrawFn) -> tuple[Plan, Context]:
     minimum_areas = tuple(sorted((kind, ratio * area) for kind, area in smallest.items()))
 
     context = Context(
-        structure=Structure(load_bearing_walls=walls),
+        structure=Structure(load_bearing_walls=load_bearing_walls),
         orientation=Orientation(deg=draw(st.floats(0.0, 360.0, allow_nan=False))),
-        outline=CONTEXTE_DEFAUT.outline,
-        regulation=Regulation(min_areas=minimum_areas, min_width=LARGEUR_MIN_DEFAUT),
+        outline=DEFAULT_CONTEXT.outline,
+        regulation=Regulation(min_areas=minimum_areas, min_width=DEFAULT_MIN_WIDTH),
     )
-    return Plan(rooms=plan.rooms, walls=walls, openings=(), outline=plan.outline), context
+    return Plan(
+        rooms=plan.rooms, walls=load_bearing_walls, openings=(), outline=plan.outline
+    ), context

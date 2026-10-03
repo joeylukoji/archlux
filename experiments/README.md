@@ -1,7 +1,7 @@
-# Expériences
+# Experiments
 
-Scripts **jetables**, API publique seulement, **moins de 50 lignes**.
+**Throwaway** scripts, public API only, **under 50 lines**.
 
-> Un script de plus de 50 lignes signale une fonction manquante dans la bibliothèque.
-> C'est un signal de conception, pas une limite de style : le déplacer dans `src/` est
-> la bonne réaction, pas le découper en deux fichiers de 40 lignes.
+> A script longer than 50 lines signals a function missing from the library.
+> It is a design signal, not a style limit: moving it into `src/` is the right
+> response, not splitting it into two 40-line files.

@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING
 from archlux._deprecation import LazyAlias, lazy_aliases, lazy_module_attributes
 
 if TYPE_CHECKING:
-    from archlux.certify.borne import build_bound as build_bound
+    from archlux.certify.bound import build_bound as build_bound
     from archlux.certify.dual import translate_duals as translate_duals
     from archlux.certify.proof import verify_exactly as verify_exactly
-    from archlux.certify.rapport import render as render
+    from archlux.certify.report import render as render
 
 __all__ = [
     "build_bound",
@@ -26,8 +26,8 @@ __all__ = [
 ]
 
 _ATTRS = {
-    "build_bound": "archlux.certify.borne",
-    "render": "archlux.certify.rapport",
+    "build_bound": "archlux.certify.bound",
+    "render": "archlux.certify.report",
     "translate_duals": "archlux.certify.dual",
     "verify_exactly": "archlux.certify.proof",
 }
@@ -39,9 +39,9 @@ __getattr__ = lazy_aliases(
             "archlux.certify.proof", "verify_exactly", "archlux.certify.verify_exactly"
         ),
         "construire_borne": LazyAlias(
-            "archlux.certify.borne", "build_bound", "archlux.certify.build_bound"
+            "archlux.certify.bound", "build_bound", "archlux.certify.build_bound"
         ),
-        "rendre": LazyAlias("archlux.certify.rapport", "render", "archlux.certify.render"),
+        "rendre": LazyAlias("archlux.certify.report", "render", "archlux.certify.render"),
         "traduire_duaux": LazyAlias(
             "archlux.certify.dual", "translate_duals", "archlux.certify.translate_duals"
         ),

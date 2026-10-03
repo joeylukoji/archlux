@@ -1,1 +1,1 @@
-"""Couche 1 — modélisation géométrique. Pure et déterministe."""
+"""Layer 1 — geometric modelling. Pure and deterministic."""

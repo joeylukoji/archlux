@@ -16,12 +16,12 @@ import pytest
 import archlux
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.io.json_io import from_dict, to_dict
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
-from archlux.light.protocole import point_prediction
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
+from archlux.light.protocol import point_prediction
 from archlux.types import Certificate, GeometricProof, PerformanceBound, Regulation
-from archlux.uq.conforme import Calibration, ConformalCalibrator, bound, dataset_fingerprint
-from tests.properties.strategies import CONTEXTE_DEFAUT
+from archlux.uq.conformal import Calibration, ConformalCalibrator, bound, dataset_fingerprint
+from tests.properties.strategies import DEFAULT_CONTEXT
 
 
 def _bound(**changes: object) -> PerformanceBound:
@@ -131,7 +131,7 @@ def test_the_fingerprint_identifies_the_data_set_not_the_scores() -> None:
     second.fit(predictions + 10.0, truths + 10.0, sigma)
     assert first.scores is not None and second.scores is not None
     assert np.allclose(first.scores, second.scores)
-    assert first.empreinte_jeu != second.empreinte_jeu
+    assert first.data_fingerprint != second.data_fingerprint
 
 
 def test_the_fingerprint_is_deterministic_and_column_aware() -> None:
@@ -152,16 +152,16 @@ def _plan() -> archlux.Plan:
         ),
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
 
 
 def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     plan = _plan()
     surrogate = AnalyticSurrogate()
-    objective = Daylight(surrogate, q_chapeau=1.0)
+    objective = Daylight(surrogate, q_hat=1.0)
     calibration = _calibration(surrogate.indicator)
-    result = archlux.legalize(plan, CONTEXTE_DEFAUT, objective=objective, calibration=calibration)
+    result = archlux.legalize(plan, DEFAULT_CONTEXT, objective=objective, calibration=calibration)
     assert result.certificate is not None
     bound = result.certificate.performance
     assert bound is not None
@@ -169,29 +169,29 @@ def test_legalize_bounds_the_chosen_plan_in_the_selected_regime() -> None:
     assert bound.n_calibration == calibration.n
     # Centred on the surrogate's prediction mu, not on the pessimistic mu - q sigma.
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
-    mu, _ = point_prediction(objective, x, CONTEXTE_DEFAUT.orientation)
+    mu, _ = point_prediction(objective, x, DEFAULT_CONTEXT.orientation)
     assert bound.value == pytest.approx(mu, rel=1e-6)
     assert "coverage NOT guaranteed" in result.certificate.report()
 
 
 def test_legalize_without_calibration_claims_no_performance() -> None:
     result = archlux.legalize(
-        _plan(), CONTEXTE_DEFAUT, objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0)
+        _plan(), DEFAULT_CONTEXT, objective=Daylight(AnalyticSurrogate(), q_hat=1.0)
     )
     assert result.certificate is not None and result.certificate.performance is None
 
 
 def test_a_calibration_needs_an_objective() -> None:
     with pytest.raises(ValueError, match="objective"):
-        archlux.legalize(_plan(), CONTEXTE_DEFAUT, calibration=_calibration())
+        archlux.legalize(_plan(), DEFAULT_CONTEXT, calibration=_calibration())
 
 
 def test_a_calibration_of_another_indicator_is_refused() -> None:
-    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_hat=1.0)
     other = "ASE" if objective.indicator != "ASE" else "sDA"
     with pytest.raises(ValueError, match="cannot bound"):
         archlux.legalize(
-            _plan(), CONTEXTE_DEFAUT, objective=objective, calibration=_calibration(other)
+            _plan(), DEFAULT_CONTEXT, objective=objective, calibration=_calibration(other)
         )
 
 
@@ -218,19 +218,19 @@ def test_a_serialized_bound_without_regime_is_refused() -> None:
 
 def test_an_ase_bound_is_published_as_a_positive_glare() -> None:
     """Review C1: surrogates return ASE negated; the certificate reads it positive."""
-    surrogate = AnalyticSurrogate(indicateur_vise="ASE")
+    surrogate = AnalyticSurrogate(target_indicator="ASE")
     calibration = _calibration("ASE")
     result = archlux.legalize(
         _plan(),
-        CONTEXTE_DEFAUT,
-        objective=Daylight(surrogate, q_chapeau=1.0),
+        DEFAULT_CONTEXT,
+        objective=Daylight(surrogate, q_hat=1.0),
         calibration=calibration,
     )
     assert result.certificate is not None
     bound = result.certificate.performance
     assert bound is not None and bound.indicator == "ASE"
     x = np.array([v for room in result.rooms for v in (room.x, room.y, room.w, room.h)])
-    raw = surrogate.evaluate(x, CONTEXTE_DEFAUT.orientation)
+    raw = surrogate.evaluate(x, DEFAULT_CONTEXT.orientation)
     assert raw < 0.0 < bound.value
     assert bound.value == pytest.approx(-raw, rel=1e-6)
     assert bound.lower <= bound.value <= bound.upper
@@ -240,8 +240,8 @@ def test_every_wrapping_layer_is_removed() -> None:
     """Review m2: Daylight(Daylight(s)) must not keep one pessimistic margin."""
     surrogate = AnalyticSurrogate()
     x = np.array([0.0, 0.0, 5.0, 9.0, 5.0, 0.0, 7.0, 9.0])
-    orientation = CONTEXTE_DEFAUT.orientation
-    nested = Daylight(Daylight(surrogate, q_chapeau=1.0), q_chapeau=2.0)
+    orientation = DEFAULT_CONTEXT.orientation
+    nested = Daylight(Daylight(surrogate, q_hat=1.0), q_hat=2.0)
     assert point_prediction(nested, x, orientation)[0] == pytest.approx(
         surrogate.evaluate(x, orientation)
     )
@@ -255,18 +255,18 @@ def test_an_unusable_calibration_is_refused_before_any_solving() -> None:
     """
     small_outline = ((0.0, 0.0), (3.0, 0.0), (3.0, 3.0), (0.0, 3.0))
     tiny_ctx = replace(
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         outline=small_outline,
         regulation=Regulation(min_areas=(), min_width=2.0),
     )
     with pytest.raises(Infeasible):
         archlux.legalize(_plan(), tiny_ctx, objective=AnalyticSurrogate())
-    too_small = Calibration(scores=np.ones(5), alpha=0.10, indicator="sDA", empreinte_jeu="x")
+    too_small = Calibration(scores=np.ones(5), alpha=0.10, indicator="sDA", data_fingerprint="x")
     with pytest.raises(InvariantViolation, match="too small"):
         archlux.legalize(
             _plan(),
             tiny_ctx,
-            objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0),
+            objective=Daylight(AnalyticSurrogate(), q_hat=1.0),
             calibration=too_small,
         )
 
@@ -275,8 +275,8 @@ def test_a_calibration_of_the_wrong_type_is_refused() -> None:
     with pytest.raises(InvariantViolation, match="Calibration"):
         archlux.legalize(
             _plan(),
-            CONTEXTE_DEFAUT,
-            objective=Daylight(AnalyticSurrogate(), q_chapeau=1.0),
+            DEFAULT_CONTEXT,
+            objective=Daylight(AnalyticSurrogate(), q_hat=1.0),
             calibration=object(),  # type: ignore[arg-type]
         )
 
@@ -285,7 +285,7 @@ def test_no_uncertainty_at_the_plan_gives_no_bound_not_a_lost_plan() -> None:
     """Review m1: sigma = 0 is only known after solving; keep the proved plan."""
     result = archlux.legalize(
         _plan(),
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         objective=AnalyticSurrogate(sigma_nominal=0.0),
         calibration=_calibration(),
     )
@@ -299,8 +299,8 @@ def test_the_fingerprint_is_computed_on_the_raw_uncertainties() -> None:
     zero, tiny = ConformalCalibrator(), ConformalCalibrator()
     zero.fit(predictions, truths, np.array([0.0, 1.0]), alpha=0.5)
     tiny.fit(predictions, truths, np.array([1e-13, 1.0]), alpha=0.5)
-    assert zero.empreinte_jeu != tiny.empreinte_jeu
-    assert zero.empreinte_jeu == dataset_fingerprint(predictions, truths, np.array([0.0, 1.0]))
+    assert zero.data_fingerprint != tiny.data_fingerprint
+    assert zero.data_fingerprint == dataset_fingerprint(predictions, truths, np.array([0.0, 1.0]))
 
 
 @pytest.mark.parametrize("bad", [-1.0, np.nan, np.inf])

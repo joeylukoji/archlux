@@ -39,9 +39,9 @@ def paired_bootstrap(
     diffs = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
     rng = np.random.default_rng(seed)
     n = len(diffs)
-    echantillon = rng.choice(diffs, size=(n_replications, n), replace=True)
-    moyens = echantillon.mean(axis=1)
-    lo, hi = np.quantile(moyens, [alpha / 2.0, 1.0 - alpha / 2.0])
+    sample = rng.choice(diffs, size=(n_replications, n), replace=True)
+    means = sample.mean(axis=1)
+    lo, hi = np.quantile(means, [alpha / 2.0, 1.0 - alpha / 2.0])
     return Interval(value=float(diffs.mean()), low=float(lo), high=float(hi))
 
 
@@ -65,14 +65,14 @@ def tost(
         raise InvariantViolation(("delta must be > 0",))
     diffs = np.asarray(a, dtype=float) - np.asarray(b, dtype=float)
     n = len(diffs)
-    moyenne = float(diffs.mean())
-    ecart = float(diffs.std(ddof=1))
-    if ecart == 0.0:
-        equivalent = abs(moyenne) < delta
+    mean = float(diffs.mean())
+    gap = float(diffs.std(ddof=1))
+    if gap == 0.0:
+        equivalent = abs(mean) < delta
         return equivalent, 0.0 if equivalent else 1.0
-    se = ecart / np.sqrt(n)
-    t_inf = (moyenne - (-delta)) / se
-    t_sup = (delta - moyenne) / se
+    se = gap / np.sqrt(n)
+    t_inf = (mean - (-delta)) / se
+    t_sup = (delta - mean) / se
     ddl = n - 1
     p_inf = float(1.0 - scipy_stats.t.cdf(t_inf, ddl))
     p_sup = float(1.0 - scipy_stats.t.cdf(t_sup, ddl))
@@ -126,15 +126,15 @@ def holm(p_values: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]:
     if bool(np.any(p < 0.0) or np.any(p > 1.0)) or bool(np.any(np.isnan(p))):
         raise InvariantViolation(("p-values outside [0, 1]",))
     m = p.size
-    ordre = np.argsort(p, kind="stable")
-    seuils = alpha / (m - np.arange(m))
-    sous_seuil = p[ordre] <= seuils
+    order = np.argsort(p, kind="stable")
+    thresholds = alpha / (m - np.arange(m))
+    below_threshold = p[order] <= thresholds
     # Holm stops at the **first** failure: everything after is kept, even if its
     # p-value falls back under its own threshold. The monotone cumulation forces
     # this stop.
-    rejets_tries = np.logical_and.accumulate(sous_seuil)
+    sorted_rejections = np.logical_and.accumulate(below_threshold)
     rejections = np.empty(m, dtype=bool)
-    rejections[ordre] = rejets_tries
+    rejections[order] = sorted_rejections
     return tuple(bool(v) for v in rejections)
 
 
@@ -158,9 +158,9 @@ def power(
     t_crit = float(scipy_stats.t.ppf(1.0 - alpha / 2.0, ddl))
     ncp = effect / se
     # Power = P(|T| > t_crit | ncp)
-    p_bas = float(scipy_stats.nct.cdf(-t_crit, ddl, ncp))
-    p_haut = float(1.0 - scipy_stats.nct.cdf(t_crit, ddl, ncp))
-    return float(np.clip(p_bas + p_haut, 0.0, 1.0))
+    p_low = float(scipy_stats.nct.cdf(-t_crit, ddl, ncp))
+    p_high = float(1.0 - scipy_stats.nct.cdf(t_crit, ddl, ncp))
+    return float(np.clip(p_low + p_high, 0.0, 1.0))
 
 
 __getattr__ = lazy_aliases(

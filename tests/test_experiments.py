@@ -1,7 +1,7 @@
 """Every experiment script runs (PLAN.md phase 2: `experiments/` was outside the tests).
 
 Synthetic scripts run in full into a temporary directory. Corpus scripts (MSD) run on a
-small MSD-format CSV built here, as ``tests/unit/test_chargeurs.py`` does: the real
+small MSD-format CSV built here, as ``tests/unit/test_loaders.py`` does: the real
 corpus is not redistributed, but a script that no longer runs is caught before anyone
 spends an afternoon on the corpus. Byte-for-byte reproduction of ``results/`` is
 checked by ``make check-results``, not here: floating-point output may differ in the
@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 from shapely.geometry import box
 
-from tests.unit.test_chargeurs import _ecrire_csv
+from tests.unit.test_loaders import _write_csv
 
 ROOT = Path(__file__).resolve().parents[1]
 SYNTHETIC = {
@@ -56,7 +56,7 @@ def _mini_msd(path: Path) -> None:
             (f"a{k}", "area", "BEDROOM", box(4.1, 0.0, 8.0 + k, 5.0)),
             (f"a{k}", "separator", "WALL", box(3.9, 0.0, 4.1, 5.0)),
         ]
-    _ecrire_csv(path, rows)
+    _write_csv(path, rows)
 
 
 def test_the_msd_experiments_run_on_a_mini_corpus(
@@ -84,9 +84,9 @@ def test_the_msd_experiments_run_on_a_mini_corpus(
 def test_the_msd_summary_rebuilds_the_published_table(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """``results/j7_reparation.md`` had no script: rebuilt from its raw rows (J7 review)."""
+    """``results/j7_repair.md`` had no script: rebuilt from its raw rows (J7 review)."""
     out = tmp_path / "summary.md"
-    raw = ROOT / "results" / "j7_reparation_brut.csv"
+    raw = ROOT / "results" / "j7_repair_raw.csv"
     _run("j7_msd_summary.py", str(raw), str(out), monkeypatch=monkeypatch)
     table = out.read_text(encoding="utf-8")
     assert "| all faults | 4796 | 35.9 % | 93.0 % | **93.9 %** | [93.2, 94.5] |" in table

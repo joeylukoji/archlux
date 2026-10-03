@@ -25,7 +25,7 @@ import re
 import numpy as np
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
-from archlux.arrays import VecteurF
+from archlux.arrays import FloatVector
 from archlux.geom.polytope import Polytope
 
 __all__ = ["describe_origin", "translate_duals"]
@@ -98,7 +98,7 @@ def _sentence(description: str, price: float, *, objective: str, step_m: float) 
 
 @renamed_parameters({"duaux": "duals", "seuil": "threshold"})
 def translate_duals(
-    duals: VecteurF,
+    duals: FloatVector,
     poly: Polytope,
     *,
     threshold: float = 1e-6,

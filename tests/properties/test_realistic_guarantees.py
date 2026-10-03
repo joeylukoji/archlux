@@ -16,10 +16,10 @@ from hypothesis import strategies as st
 
 import archlux
 from archlux.errors import ArchluxError
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, devectorize
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
 from archlux.types import Context, Plan
 from tests import checkers
 from tests.properties.strategies import GATE_EXAMPLES, realistic_scenarios
@@ -109,7 +109,7 @@ def test_every_frank_wolfe_iterate_keeps_every_guarantee(
 @given(scenario=realistic_scenarios())
 def test_daylight_objective_is_accepted_by_legalize(scenario: tuple[Plan, Context]) -> None:
     plan, ctx = scenario
-    objective = Daylight(AnalyticSurrogate(), q_chapeau=1.0)
+    objective = Daylight(AnalyticSurrogate(), q_hat=1.0)
     result = archlux.legalize(plan, ctx, objective=objective)
     assert _independent_violations(result, ctx) == []
 

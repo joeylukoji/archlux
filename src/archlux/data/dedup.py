@@ -50,22 +50,22 @@ def side_distance(a: Plan, b: Plan) -> float:
     outline: it does not detect a partition duplicate. It is the gap between
     the rectangles that matters for deduplicating before splitting.
     """
-    gauche = {p.id: p for p in a.rooms}
-    droite = {p.id: p for p in b.rooms}
-    if gauche.keys() != droite.keys():
+    left = {p.id: p for p in a.rooms}
+    right = {p.id: p for p in b.rooms}
+    if left.keys() != right.keys():
         return hausdorff(a, b)
-    if not gauche:
+    if not left:
         # Two empty tilings are identical; ``max`` over an empty sequence would raise a
         # bare ``ValueError``, outside the project's error domain (§7).
         return 0.0
     return max(
         max(
-            abs(gauche[i].x - droite[i].x),
-            abs(gauche[i].y - droite[i].y),
-            abs(gauche[i].w - droite[i].w),
-            abs(gauche[i].h - droite[i].h),
+            abs(left[i].x - right[i].x),
+            abs(left[i].y - right[i].y),
+            abs(left[i].w - right[i].w),
+            abs(left[i].h - right[i].h),
         )
-        for i in gauche
+        for i in left
     )
 
 
@@ -93,14 +93,14 @@ def near_duplicate_pairs(
     ``O(n^2)`` comparisons; fingerprints are computed **once per plan** (``O(n)``),
     not per pair.
     """
-    empreintes = [geometric_fingerprint(plan) for _, plan in plans]
-    paires: list[tuple[str, str]] = []
+    fingerprints = [geometric_fingerprint(plan) for _, plan in plans]
+    pairs: list[tuple[str, str]] = []
     for i, (ida, pa) in enumerate(plans):
-        for decalage, (idb, pb) in enumerate(plans[i + 1 :]):
-            j = i + 1 + decalage
-            if empreintes[i] == empreintes[j] or side_distance(pa, pb) <= threshold:
-                paires.append((ida, idb) if ida < idb else (idb, ida))
-    return tuple(paires)
+        for offset, (idb, pb) in enumerate(plans[i + 1 :]):
+            j = i + 1 + offset
+            if fingerprints[i] == fingerprints[j] or side_distance(pa, pb) <= threshold:
+                pairs.append((ida, idb) if ida < idb else (idb, ida))
+    return tuple(pairs)
 
 
 __getattr__ = lazy_aliases(

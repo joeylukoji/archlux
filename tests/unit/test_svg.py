@@ -27,7 +27,7 @@ def _lines(svg: str, css_class: str) -> list[ET.Element]:
 
 
 def test_the_document_is_well_formed_svg() -> None:
-    root = ET.fromstring(render(_plan(), titre="t"))
+    root = ET.fromstring(render(_plan(), title="t"))
     assert root.tag.endswith("svg")
 
 
@@ -72,6 +72,6 @@ def test_an_empty_plan_with_no_outline_still_renders() -> None:
     unit box keeps the document well-formed instead of dividing by a zero extent.
     """
     empty = Plan(rooms=(), walls=(), openings=(), outline=())
-    svg = render(empty, titre="empty")
+    svg = render(empty, title="empty")
     root = ET.fromstring(svg)
     assert root.tag.endswith("svg")

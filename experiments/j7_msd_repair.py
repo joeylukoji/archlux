@@ -1,6 +1,6 @@
 """Repair of corrupted MSD plans, milestone 7 (PLAN.md phase 2): raw rows, root seed 17,
 the derived seeds of the published run. Usage: j7_msd_repair.py MSD_CSV [N] [OUT_DIR]. MSD is
-not redistributed (docs/donnees/msd.md). No timing column (§9). Summary: j7_msd_summary.py."""
+not redistributed (docs/data/msd.md). No timing column (§9). Summary: j7_msd_summary.py."""
 
 import csv
 import sys
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import archlux as ax
 from archlux.certify import verify_exactly
-from archlux.data.chargeurs import load_msd
 from archlux.data.corruption import MODES, corrupt
+from archlux.data.loaders import load_msd
 from archlux.seeds import derive
 
 MSD, N = Path(sys.argv[1]), int(sys.argv[2]) if len(sys.argv) > 2 else 300

@@ -91,7 +91,7 @@ def _point(value: Any, where: str = "point") -> Point:
 
 def _pairs(value: Any) -> tuple[tuple[str, str], ...]:
     """Normalize a JSON list of pairs into a tuple of string pairs."""
-    return tuple((str(cle), str(val)) for cle, val in value)
+    return tuple((str(json_key), str(val)) for json_key, val in value)
 
 
 def _check_ranges(data: Any) -> None:

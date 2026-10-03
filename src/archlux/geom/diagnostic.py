@@ -26,7 +26,7 @@ The five measures returned here are the ones that decide whether
 - ``cells`` — size of the implicit grid, ``(|X| - 1) × (|Y| - 1)`` over the lines
   carried by the edges. In a real plan rooms share their walls and this number
   stays small; if it explodes, the combinatorial structure of the tiling **does
-  not exist** — see :mod:`archlux.geom.pavage`.
+  not exist** — see :mod:`archlux.geom.tiling`.
 
 None of these quantities is a guarantee: this module describes, it proves nothing.
 The proof stays in ``certify``.
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 
 __all__ = ["Diagnostic", "diagnose"]
 
-_AIRE_MIN = 1e-6
+_MIN_AREA = 1e-6
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,34 +142,34 @@ def diagnose(plan: Plan) -> Diagnostic:
     if not plan.rooms:
         raise InvalidInput("rooms", "the plan has no room: nothing to diagnose")
 
-    formes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in plan.rooms]
-    n = len(formes)
-    recouvrements = (
+    shapes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in plan.rooms]
+    n = len(shapes)
+    overlap_area = (
         sum(
             1
             for i in range(n)
             for j in range(n)
-            if i != j and formes[i].intersection(formes[j]).area > _AIRE_MIN
+            if i != j and shapes[i].intersection(shapes[j]).area > _MIN_AREA
         )
         / n
     )
 
-    union = unary_union(formes)
+    union = unary_union(shapes)
     x0, y0, x1, y1 = union.bounds
-    aire_boite = (x1 - x0) * (y1 - y0)
+    box_area = (x1 - x0) * (y1 - y0)
     parts = list(union.geoms) if isinstance(union, MultiPolygon) else [union]
-    aire_trous = sum(Polygon(anneau).area for forme in parts for anneau in forme.interiors)
+    hole_area = sum(Polygon(ring).area for shape in parts for ring in shape.interiors)
 
-    lignes_x = {p.x for p in plan.rooms} | {p.x + p.w for p in plan.rooms}
-    lignes_y = {p.y for p in plan.rooms} | {p.y + p.h for p in plan.rooms}
+    lines_x = {p.x for p in plan.rooms} | {p.x + p.w for p in plan.rooms}
+    lines_y = {p.y for p in plan.rooms} | {p.y + p.h for p in plan.rooms}
 
     return Diagnostic(
-        overlaps=float(recouvrements),
-        gap_share=float(1.0 - union.area / aire_boite) if aire_boite > 0 else 0.0,
-        hole_share=float(aire_trous / aire_boite) if aire_boite > 0 else 0.0,
+        overlaps=float(overlap_area),
+        gap_share=float(1.0 - union.area / box_area) if box_area > 0 else 0.0,
+        hole_share=float(hole_area / box_area) if box_area > 0 else 0.0,
         fragments=len(parts),
-        cells=(len(lignes_x) - 1) * (len(lignes_y) - 1),
-        size=math.sqrt(aire_boite),
+        cells=(len(lines_x) - 1) * (len(lines_y) - 1),
+        size=math.sqrt(box_area),
     )
 
 

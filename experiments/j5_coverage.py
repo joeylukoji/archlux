@@ -8,14 +8,14 @@ from pathlib import Path
 import numpy as np
 
 import archlux as ax
-from archlux.data.synthese import TWO_ROOM_OUTLINE, two_room_plan, two_room_vectors
+from archlux.data.synthetic import TWO_ROOM_OUTLINE, two_room_plan, two_room_vectors
 from archlux.geom.polytope import decision_vector
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.objectif import Daylight
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.objective import Daylight
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.seeds import derive
-from archlux.uq.conforme import ConformalCalibrator
-from archlux.uq.fiabilite import measure_coverage
+from archlux.uq.conformal import ConformalCalibrator
+from archlux.uq.reliability import measure_coverage
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j5_coverage.csv"
 model, oracle = AnalyticSurrogate(), SplitFluxOracle()
@@ -28,7 +28,7 @@ def columns(xs: tuple, orientations: tuple) -> list[np.ndarray]:
 
 def chosen(xs: tuple, orientations: tuple, q: float) -> tuple:
     """Start from each held-out plan and let Frank-Wolfe choose where it goes."""
-    fw, ref = Daylight(model, q_chapeau=q), ax.Regulation((), 1.0)
+    fw, ref = Daylight(model, q_hat=q), ax.Regulation((), 1.0)
     ctx = [
         ax.Context(
             structure=ax.Structure(()), orientation=o, outline=TWO_ROOM_OUTLINE, regulation=ref

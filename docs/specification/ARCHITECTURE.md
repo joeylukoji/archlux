@@ -83,9 +83,9 @@ INPUTS: proposed plan · load-bearing structure · orientation · room program
 
 **All layers are deterministic** (same inputs, same output); only one is
 learned, isolated behind a protocol. They are not all **pure**: `lmo` keeps
-a mutable global cache of GLOP models (at most 4, `lmo.solveur._CACHE`, ADR-8 of the
+a mutable global cache of GLOP models (at most 4, `lmo.solver._CACHE`, ADR-8 of the
 blueprint) for the Frank-Wolfe warm start. This cache changes the time, never
-the result; `lmo.solveur.clear_cache` empties it, and the budget tests empty it before
+the result; `lmo.solver.clear_cache` empties it, and the budget tests empty it before
 measuring a cold LP.
 
 ---
@@ -122,7 +122,7 @@ solve   ← types, geom, lmo, light PROTOCOL (never the implementation)
 light   ← types, orient
 uq      ← types
 data    ← types, uq, orient, geom   (corpus loaders: straightening + split)
-active  ← types, light.protocole, uq
+active  ← types, light.protocol, uq
 export  ← types, errors
 feasibility ← types, errors, api
 certify ← types, geom, uq
@@ -139,20 +139,20 @@ bench   ← everything
 - [ ] `export` imports neither `geom` nor `certify` (certificate appendix via `Plan.certificate`)
 - [ ] `feasibility` imports neither `light` nor `uq` (no performance promise).
       **Justified exception:** `is_feasible` calls `legalize`, so `feasibility` depends
-      on `api` by design and therefore *loads* `light.protocole` (via `solve`) and `uq`
+      on `api` by design and therefore *loads* `light.protocol` (via `solve`) and `uq`
       (via `certify`) through it. It never imports them directly (static test), loads no
       `light` implementation, and loads nothing `api` does not already load (dynamic test)
 - [ ] no module may import `bench`
 - [ ] `data` may read `geom` and `orient` (corpus loaders **only**),
       never `lmo`, `solve` or `light`: it produces inputs, it solves nothing
 
-Every rule above is checked twice by `tests/test_dependances.py`: statically (the AST
+Every rule above is checked twice by `tests/test_dependencies.py`: statically (the AST
 of every module against `AUTORISE`) and dynamically (`FORBIDDEN`: a fresh subprocess
 imports the package, all its submodules and every name of its `__all__`, then reads
 `sys.modules`, with no transitive closure). The simplest of these tests:
 
 ```python
-def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/test_dependances.py
+def test_le_noyau_n_importe_pas_torch():  # lang-ok: real test name in tests/test_dependencies.py
     import subprocess, sys
     code = "import archlux, sys; assert 'torch' not in sys.modules"
     assert subprocess.run([sys.executable, "-c", code]).returncode == 0
@@ -280,20 +280,22 @@ archlux/
 │   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer
 │   ├── arrays.py            # `VecteurF`, the float64 array alias of the numerical core
 │   ├── types.py
-│   ├── geom/{graphe,polytope,pavage,grid,grid_repair,rectilineaire,diagnostic}.py
-│   ├── lmo/{solveur,coupes}.py
+│   ├── geom/{graph,polytope,tiling,grid,grid_repair,rectilinear,diagnostic}.py
+│   ├── lmo/{solver,cuts}.py
 │   ├── solve/{frank_wolfe,trace}.py
-│   ├── light/{protocole,analytique,appris,base,jetons,objectif,simulateur,validation}.py
-│   ├── orient/circulaire.py
-│   ├── uq/{conforme,gestion,derive,fiabilite}.py
-│   ├── certify/{proof,farkas,borne,dual,rapport}.py   # preuve.py: deprecated aliases
+│   ├── light/{protocol,analytic,learned,base,tokens,objective,split_flux,validation}.py
+│   ├── orient/circular.py
+│   ├── uq/{conformal,registry,drift,reliability}.py
+│   ├── certify/{proof,farkas,bound,dual,report}.py
 │   ├── feasibility/__init__.py
-│   ├── active/{boucle,densite,selection}.py
-│   ├── data/{chargeurs,corruption,decoupage,dedup,imputation,synthese}.py
-│   ├── export/{ifc,dxf,svg,pathologie,survie,wilson}.py
-│   ├── bench/{graines,manifeste,protocole,rapport,run,stats}.py
-│   └── io/json_io.py
-├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependances.py,
+│   ├── active/{loop,density,selection}.py
+│   ├── data/{loaders,corruption,splits,dedup,imputation,synthetic}.py
+│   ├── export/{ifc,dxf,svg,pathologies,survival,wilson}.py
+│   ├── bench/{seeds,manifest,protocol,report,run,stats}.py
+│   ├── io/json_io.py
+│   └── …                    # French module names (`geom/pavage.py`, `lmo/coupes.py`,
+│                            #   `certify/preuve.py`, …): deprecated shims (ADR 0001)
+├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependencies.py,
 │                                                #   test_hygiene.py, test_language.py
 ├── benchmarks/{test_budgets.py,guarantees/}
 ├── experiments/            # experiment scripts (milestones 2 to 9)
@@ -306,8 +308,8 @@ archlux/
 missing from the library. Since phase 2, 11 of 16 scripts comply; the five corpus
 scripts that can only be checked against their data (`j7_sd_*`, `j8_*`, `j9_*`) do not
 yet: known debt (PLAN.md phase 2). A script imports only public names: those of
-`archlux.__all__` and the `__all__` of a documented module (`archlux.data.synthese`,
-`archlux.certify`, `archlux.uq.fiabilite`...), never a name starting with `_`, and
+`archlux.__all__` and the `__all__` of a documented module (`archlux.data.synthetic`,
+`archlux.certify`, `archlux.uq.reliability`...), never a name starting with `_`, and
 never another script. `python scripts/results.py` (or `make results`) runs them;
 their outputs carry no timing, so `results/SHA256SUMS` fingerprints them.
 
@@ -319,7 +321,7 @@ their outputs carry no timing, so `results/SHA256SUMS` fingerprints them.
 |---|---|---|
 | 1 | `types`, `io` | JSON round trip |
 | **2** | **`geom`, `lmo`, `certify.proof`** | **classical legalization — see `MILESTONE-2.md`** |
-| **3** | **`light.analytique`, `orient`, `solve`** | **performance legalization without learning — `MILESTONE-3.md`** |
-| 4 | `light.appris`, `light.validation` | trained surrogate + gradient validation against `SplitFluxOracle` (split-flux closed form) — `MILESTONE-4.md` |
-| 5 | `uq`, `certify.borne`, `certify.dual` | complete certificate — `MILESTONE-5.md` |
+| **3** | **`light.analytic`, `orient`, `solve`** | **performance legalization without learning — `MILESTONE-3.md`** |
+| 4 | `light.learned`, `light.validation` | trained surrogate + gradient validation against `SplitFluxOracle` (split-flux closed form) — `MILESTONE-4.md` |
+| 5 | `uq`, `certify.bound`, `certify.dual` | complete certificate — `MILESTONE-5.md` |
 | 6 | L-shaped rooms (unions of rectangles), active, IFC export; **non-Manhattan is not delivered** (an oblique load-bearing wall raises `UnsupportedInput`) | `MILESTONE-6.md` |

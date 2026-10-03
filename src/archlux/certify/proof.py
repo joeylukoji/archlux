@@ -44,7 +44,7 @@ Displacement
 :math:`\\delta_\\infty = \\max_p \\max\\bigl(|\\Delta x|,|\\Delta y|,|\\Delta w|,|\\Delta h|\\bigr)`
 in metres, relative to the reference plan; checked against an optional budget.
 
-Derivation, tolerances and use cases: ``docs/formules/preuve-exacte.md``.
+Derivation, tolerances and use cases: ``docs/formulas/exact-proof.md``.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ from shapely.geometry import LineString, Polygon, box
 from shapely.ops import unary_union
 
 from archlux._deprecation import renamed_parameters
-from archlux.geom.rectilineaire import MERGE_RIGHT, RectilinearRoom
+from archlux.geom.rectilinear import MERGE_RIGHT, RectilinearRoom
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
 from archlux.types import Context, GeometricProof, Plan, Room, Wall
 
@@ -173,17 +173,17 @@ def _edge_connected(members: list[Room]) -> bool:
 
 
 def _recorded_seams(
-    piece: RectilinearRoom, by_id: dict[str, Room], min_contact: float
+    fused_room: RectilinearRoom, by_id: dict[str, Room], min_contact: float
 ) -> tuple[str, ...]:
     """Every seam recorded in the decomposition still holds, at least ``min_contact`` long.
 
-    The solver keeps these seams (``geom.rectilineaire.overlap_constraints``); the proof
+    The solver keeps these seams (``geom.rectilinear.overlap_constraints``); the proof
     does not take its word for it. Connectivity alone would accept a foot that slid to
     another edge, or a neck of 1e-7 m.
     """
     violations: list[str] = []
-    for i, j, kind in piece.merges:
-        a, b = by_id.get(piece.rectangles[i].id), by_id.get(piece.rectangles[j].id)
+    for i, j, kind in fused_room.merges:
+        a, b = by_id.get(fused_room.rectangles[i].id), by_id.get(fused_room.rectangles[j].id)
         if a is None or b is None:
             continue
         if kind == MERGE_RIGHT:
@@ -192,23 +192,25 @@ def _recorded_seams(
             gap, span = abs(a.y + a.h - b.y), min(a.x + a.w, b.x + b.w) - max(a.x, b.x)
         if gap > SNAP_M or span < min_contact - SNAP_M:
             violations.append(
-                f"area {piece.id}: seam {a.id}|{b.id} not kept "
+                f"area {fused_room.id}: seam {a.id}|{b.id} not kept "
                 f"(offset {gap:.3g} m, shared {span:.4f} m < {min_contact:g} m)"
             )
     return tuple(violations)
 
 
-def _fused_area(piece: RectilinearRoom, by_id: dict[str, Room], ctx: Context) -> tuple[str, ...]:
+def _fused_area(
+    fused_room: RectilinearRoom, by_id: dict[str, Room], ctx: Context
+) -> tuple[str, ...]:
     """Area of the recomposed polygon of a fused room against its minimum.
 
     The minimum applies to the room, not to each sub-rectangle. Sub-rectangles that do
     not form a single polygon (detached, or touching at a corner only) are not one
     room, and have no area to compare; every recorded seam must also still hold.
     """
-    room_id = piece.id
-    members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    room_id = fused_room.id
+    members = [by_id[r.id] for r in fused_room.rectangles if r.id in by_id]
     minimum = max(ctx.regulation.min_area(member.type) for member in members)
-    seams = _recorded_seams(piece, by_id, max(ctx.regulation.min_width, SNAP_M))
+    seams = _recorded_seams(fused_room, by_id, max(ctx.regulation.min_width, SNAP_M))
     if seams:
         return seams
     if not _edge_connected(members):
@@ -226,11 +228,11 @@ def _areas(
     by_id = {room.id: room for room in rooms}
     fused: set[str] = set()
     violations: list[str] = []
-    for piece in merges:
-        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    for fused_room in merges:
+        members = [by_id[r.id] for r in fused_room.rectangles if r.id in by_id]
         fused.update(member.id for member in members)
         if members:
-            violations.extend(_fused_area(piece, by_id, ctx))
+            violations.extend(_fused_area(fused_room, by_id, ctx))
     for room in rooms:
         if room.id in fused:
             continue
@@ -262,13 +264,13 @@ def _interiors(
     by_id = {room.id: room for room in plan.rooms}
     interiors: list[tuple[str, Polygon]] = []
     fused: set[str] = set()
-    for piece in merges:
-        members = [by_id[r.id] for r in piece.rectangles if r.id in by_id]
+    for fused_room in merges:
+        members = [by_id[r.id] for r in fused_room.rectangles if r.id in by_id]
         if not members:
             continue
         fused.update(member.id for member in members)
         union = unary_union([_rectangle(member) for member in members])
-        interiors.append((piece.id, union.buffer(-tol, join_style="mitre")))
+        interiors.append((fused_room.id, union.buffer(-tol, join_style="mitre")))
     for room in plan.rooms:
         if room.id in fused or room.w <= 2 * tol or room.h <= 2 * tol:
             continue  # a degenerate room has no interior to cross
@@ -618,7 +620,7 @@ def verify_exactly(
         Maximum displacement allowed from ``reference``, in metres. When given, a
         larger ``max_displacement`` (beyond ``SNAP_M``) makes the plan invalid. Without
         ``reference`` the displacement is 0 and the budget cannot be violated.
-    merges : tuple of PieceRectilineaire, optional
+    merges : tuple of RectilinearRoom, optional
         Rooms decomposed into sub-rectangles (L, T, U, Z), as passed to
         :func:`archlux.api.legalize`. The minimum area of such a room applies to the
         union of its sub-rectangles found in ``plan`` (by id), which must form a single
@@ -639,7 +641,7 @@ def verify_exactly(
 
     Notes
     -----
-    Formulas: ``docs/formules/preuve-exacte.md``.
+    Formulas: ``docs/formulas/exact-proof.md``.
     """
     malformed = _malformed_rooms(plan)
     if malformed:

@@ -1,1 +1,1 @@
-"""Couche données : corpus, dédup, découpage. N'importe jamais ``geom`` ni ``light``."""
+"""Data layer: corpus, deduplication, splits. Never imports ``geom`` or ``light``."""

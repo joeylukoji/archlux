@@ -10,7 +10,7 @@ from pathlib import Path
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux._version import __version__
 from archlux.errors import ArchluxError
-from archlux.export.pathologie import diagnose
+from archlux.export.pathologies import diagnose
 from archlux.types import Plan
 
 __all__ = ["ExportReport", "to_ifc"]
@@ -69,7 +69,7 @@ def to_ifc(plan: Plan, path: Path | str, *, validate: bool = True) -> ExportRepo
             n_spaces=0,
         )
 
-    engine = _ecrire_spf_minimal(plan, path)
+    engine = _write_minimal_spf(plan, path)
 
     return ExportReport(
         valid=diag.exportable,
@@ -81,28 +81,28 @@ def to_ifc(plan: Plan, path: Path | str, *, validate: bool = True) -> ExportRepo
     )
 
 
-def _annexe_certificat(plan: Plan) -> str:
+def _certificate_annex(plan: Plan) -> str:
     """Text annex; a rendering failure must not block the leaf export."""
     if plan.certificate is None:
         return ""
     try:
-        texte = plan.certificate.report()
+        text = plan.certificate.report()
     except (ImportError, AttributeError, ArchluxError):
         # ``report()`` imports ``certify`` locally: outside the ``export`` graph.
-        texte = "certificate present"
-    return _safe(texte.replace("\n", " | "), lim=1800)
+        text = "certificate present"
+    return _safe(text.replace("\n", " | "), lim=1800)
 
 
-def _safe(texte: str, *, lim: int = 120) -> str:
+def _safe(text: str, *, lim: int = 120) -> str:
     """Neutralize apostrophes and backslashes, and truncate, for a STEP string."""
-    return texte.replace("'", " ").replace("\\", "/")[:lim]
+    return text.replace("'", " ").replace("\\", "/")[:lim]
 
 
 _IFC_BASE64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$"
 """Alphabet of ``IfcGloballyUniqueId`` (IFC base 64, not RFC 4648)."""
 
 
-def _guid(etiquette: str) -> str:
+def _guid(entity_label: str) -> str:
     """Deterministic IFC identifier derived from a stable label.
 
     The parameter is **not** a seed in the sense of `ARCHITECTURE.md` §7: nothing
@@ -113,15 +113,15 @@ def _guid(etiquette: str) -> str:
     zero). ``ifcopenshell.guid.expand`` decodes it. The previous version wrote 22
     hexadecimal characters, rejected by every IFC validator (PLAN.md phase 2, J6).
     """
-    nombre = int.from_bytes(hashlib.sha256(etiquette.encode()).digest()[:16], "big")
-    chiffres = []
+    number = int.from_bytes(hashlib.sha256(entity_label.encode()).digest()[:16], "big")
+    digits = []
     for _ in range(22):
-        nombre, reste = divmod(nombre, 64)
-        chiffres.append(_IFC_BASE64[reste])
-    return "".join(reversed(chiffres))
+        number, rest = divmod(number, 64)
+        digits.append(_IFC_BASE64[rest])
+    return "".join(reversed(digits))
 
 
-def _version_paquet() -> str:
+def _package_version() -> str:
     """Version of the source code (avoids a stale install metadata)."""
     return __version__
 
@@ -147,9 +147,9 @@ class _SpfWriter:
         self.nxt += 1
         return cur
 
-    def emit(self, num: int, corps: str) -> None:
+    def emit(self, num: int, body: str) -> None:
         """Write a STEP entity line to the buffer."""
-        self.ents.append(f"#{num}={corps};")
+        self.ents.append(f"#{num}={body};")
 
     def point(self, x: float, y: float, z: float = 0.0) -> int:
         """Emit an ``IFCCARTESIANPOINT`` and return its number."""
@@ -187,7 +187,7 @@ def _write_header(w: _SpfWriter) -> tuple[int, int]:
     # ``ApplicationDeveloper`` is mandatory in the IFC4 schema: leaving it as ``$``
     # produced a file that a strict validator rejects.
     id_app = w.alloc()
-    w.emit(id_app, f"IFCAPPLICATION(#{id_org},'{_version_paquet()}','archlux','archlux')")
+    w.emit(id_app, f"IFCAPPLICATION(#{id_org},'{_package_version()}','archlux','archlux')")
     id_po = w.alloc()
     w.emit(id_po, f"IFCPERSONANDORGANIZATION(#{id_pers},#{id_org},$)")
     id_owner = w.alloc()
@@ -223,7 +223,7 @@ def _write_project(w: _SpfWriter, id_owner: int, id_units: int) -> tuple[int, in
 def _write_spatial_hierarchy(w: _SpfWriter, id_owner: int, id_proj: int) -> tuple[int, int, int]:
     """``IFCSITE``/``IFCBUILDING``/``IFCBUILDINGSTOREY`` and their ``IFCRELAGGREGATES`` chain.
 
-    Returns ``(id_floor_pl, id_etage, id_bat)``.
+    Returns ``(id_floor_pl, storey_id, id_bat)``.
     """
     id_site_ax = w.axis2(0.0, 0.0, 0.0)
     id_site_pl = w.alloc()
@@ -246,39 +246,39 @@ def _write_spatial_hierarchy(w: _SpfWriter, id_owner: int, id_proj: int) -> tupl
     id_floor_ax = w.axis2(0.0, 0.0, 0.0)
     id_floor_pl = w.alloc()
     w.emit(id_floor_pl, f"IFCLOCALPLACEMENT(#{id_bat_pl},#{id_floor_ax})")
-    id_etage = w.alloc()
+    storey_id = w.alloc()
     w.emit(
-        id_etage,
+        storey_id,
         f"IFCBUILDINGSTOREY('{w.guid('storey')}',#{id_owner},'RDC',$,$,#{id_floor_pl},$,$,.ELEMENT.,0.0)",
     )
 
-    for rel_id, parent, enfants in (
+    for rel_id, parent, children in (
         (w.alloc(), id_proj, (id_site,)),
         (w.alloc(), id_site, (id_bat,)),
-        (w.alloc(), id_bat, (id_etage,)),
+        (w.alloc(), id_bat, (storey_id,)),
     ):
-        refs = ",".join(f"#{e}" for e in enfants)
+        refs = ",".join(f"#{e}" for e in children)
         w.emit(
             rel_id,
             f"IFCRELAGGREGATES('{w.guid(f'agg{rel_id}')}',#{id_owner},$,$,#{parent},({refs}))",
         )
-    return id_floor_pl, id_etage, id_bat
+    return id_floor_pl, storey_id, id_bat
 
 
 def _write_spaces(
-    w: _SpfWriter, plan: Plan, id_owner: int, id_ctx: int, id_floor_pl: int, id_etage: int
+    w: _SpfWriter, plan: Plan, id_owner: int, id_ctx: int, id_floor_pl: int, storey_id: int
 ) -> None:
     """``IFCSPACE`` per room, plus their ``IFCRELAGGREGATES`` to the storey."""
-    espaces: list[int] = []
-    for piece in plan.rooms:
-        coins = (
-            (piece.x, piece.y),
-            (piece.x + piece.w, piece.y),
-            (piece.x + piece.w, piece.y + piece.h),
-            (piece.x, piece.y + piece.h),
-            (piece.x, piece.y),
+    spaces: list[int] = []
+    for room in plan.rooms:
+        corners = (
+            (room.x, room.y),
+            (room.x + room.w, room.y),
+            (room.x + room.w, room.y + room.h),
+            (room.x, room.y + room.h),
+            (room.x, room.y),
         )
-        pts = [w.point2(x, y) for x, y in coins]
+        pts = [w.point2(x, y) for x, y in corners]
         id_poly = w.alloc()
         w.emit(id_poly, f"IFCPOLYLINE(({','.join(f'#{p}' for p in pts)}))")
         id_ax = w.axis2(0.0, 0.0, 0.0)
@@ -291,12 +291,12 @@ def _write_spaces(
         id_space = w.alloc()
         w.emit(
             id_space,
-            f"IFCSPACE('{w.guid(f'space/{piece.id}')}',#{id_owner},'{_safe(piece.id)}',"
-            f"$,'{_safe(piece.type)}',#{id_pl},#{id_psd},$,.ELEMENT.,.INTERNAL.,$)",
+            f"IFCSPACE('{w.guid(f'space/{room.id}')}',#{id_owner},'{_safe(room.id)}',"
+            f"$,'{_safe(room.type)}',#{id_pl},#{id_psd},$,.ELEMENT.,.INTERNAL.,$)",
         )
-        espaces.append(id_space)
+        spaces.append(id_space)
 
-    if espaces:
+    if spaces:
         # ``IfcSpace`` is an ``IfcSpatialStructureElement``: it **aggregates** to the
         # storey. ``IfcRelContainedInSpatialStructure`` explicitly forbids spatial
         # structure elements in ``RelatedElements`` (IFC4), and that is what the
@@ -304,29 +304,29 @@ def _write_spaces(
         id_agg = w.alloc()
         w.emit(
             id_agg,
-            f"IFCRELAGGREGATES('{w.guid('agg_espaces')}',#{id_owner},$,$,#{id_etage},"
-            f"({','.join(f'#{e}' for e in espaces)}))",
+            f"IFCRELAGGREGATES('{w.guid('agg_espaces')}',#{id_owner},$,$,#{storey_id},"
+            f"({','.join(f'#{e}' for e in spaces)}))",
         )
 
 
 def _write_walls(
-    w: _SpfWriter, plan: Plan, id_owner: int, id_ctx: int, id_floor_pl: int, id_etage: int
+    w: _SpfWriter, plan: Plan, id_owner: int, id_ctx: int, id_floor_pl: int, storey_id: int
 ) -> dict[str, int]:
     """``IFCWALL`` per wall, plus one ``IFCRELCONTAINEDINSPATIALSTRUCTURE``.
 
     Returns ``{wall id: entity number}``, needed by :func:`_write_openings` to void
     the right wall.
     """
-    murs_ids: list[int] = []
+    wall_ids: list[int] = []
     wall_entity: dict[str, int] = {}
-    for mur in plan.walls:
+    for wall in plan.walls:
         # Placed at the storey origin: the axis already holds absolute coordinates. The
-        # previous placement at ``mur.a`` shifted every wall by ``a`` (drawn from 2a).
+        # previous placement at ``wall.a`` shifted every wall by ``a`` (drawn from 2a).
         id_ax = w.axis2(0.0, 0.0, 0.0)
         id_pl = w.alloc()
         w.emit(id_pl, f"IFCLOCALPLACEMENT(#{id_floor_pl},#{id_ax})")
-        id_p1 = w.point2(mur.a[0], mur.a[1])
-        id_p2 = w.point2(mur.b[0], mur.b[1])
+        id_p1 = w.point2(wall.a[0], wall.a[1])
+        id_p2 = w.point2(wall.b[0], wall.b[1])
         id_line = w.alloc()
         w.emit(id_line, f"IFCPOLYLINE((#{id_p1},#{id_p2}))")
         id_sr = w.alloc()
@@ -336,50 +336,50 @@ def _write_walls(
         id_wall = w.alloc()
         w.emit(
             id_wall,
-            f"IFCWALL('{w.guid(f'wall/{mur.id}')}',#{id_owner},'{_safe(mur.id)}',$,$,#{id_pl},#{id_psd},$,$)",
+            f"IFCWALL('{w.guid(f'wall/{wall.id}')}',#{id_owner},'{_safe(wall.id)}',$,$,#{id_pl},#{id_psd},$,$)",
         )
-        murs_ids.append(id_wall)
-        wall_entity[mur.id] = id_wall
+        wall_ids.append(id_wall)
+        wall_entity[wall.id] = id_wall
 
-    if murs_ids:
+    if wall_ids:
         # Walls, on the other hand, are indeed elements **contained** in the storey.
         # Without this relation they remained orphaned from any spatial structure.
         id_cont = w.alloc()
         w.emit(
             id_cont,
             f"IFCRELCONTAINEDINSPATIALSTRUCTURE('{w.guid('contain')}',#{id_owner},$,$,"
-            f"({','.join(f'#{e}' for e in murs_ids)}),#{id_etage})",
+            f"({','.join(f'#{e}' for e in wall_ids)}),#{storey_id})",
         )
     return wall_entity
 
 
 def _write_openings(w: _SpfWriter, plan: Plan, id_owner: int, wall_entity: dict[str, int]) -> None:
     """``IFCOPENINGELEMENT`` per opening, plus ``IFCRELVOIDSELEMENT`` where the wall exists."""
-    for ouv in plan.openings:
-        id_ouv = w.alloc()
+    for opening in plan.openings:
+        opening_id = w.alloc()
         w.emit(
-            id_ouv,
-            f"IFCOPENINGELEMENT('{w.guid(f'opening/{ouv.id}')}',#{id_owner},'{_safe(ouv.id)}',"
-            f"$,'mur={_safe(ouv.wall_id)} s={ouv.s:.4f}',$,$,$,$)",
+            opening_id,
+            f"IFCOPENINGELEMENT('{w.guid(f'opening/{opening.id}')}',#{id_owner},'{_safe(opening.id)}',"
+            f"$,'mur={_safe(opening.wall_id)} s={opening.s:.4f}',$,$,$,$)",
         )
-        if ouv.wall_id in wall_entity:  # else refused by diagnostiquer when validating
+        if opening.wall_id in wall_entity:  # else refused by diagnostiquer when validating
             id_void = w.alloc()
             w.emit(
                 id_void,
-                f"IFCRELVOIDSELEMENT('{w.guid(f'void/{ouv.id}')}',#{id_owner},$,$,"
-                f"#{wall_entity[ouv.wall_id]},#{id_ouv})",
+                f"IFCRELVOIDSELEMENT('{w.guid(f'void/{opening.id}')}',#{id_owner},$,$,"
+                f"#{wall_entity[opening.wall_id]},#{opening_id})",
             )
 
 
 def _write_certificate_annex(w: _SpfWriter, plan: Plan, id_owner: int, id_bat: int) -> None:
     """``Pset_Archlux``: the certificate as a text annex on the building, if any."""
-    annexe = _annexe_certificat(plan)
-    if not annexe:
+    annex = _certificate_annex(plan)
+    if not annex:
         return
     id_prop = w.alloc()
     w.emit(
         id_prop,
-        f"IFCPROPERTYSINGLEVALUE('CertificatArchlux',$,IFCTEXT('{annexe}'),$)",
+        f"IFCPROPERTYSINGLEVALUE('CertificatArchlux',$,IFCTEXT('{annex}'),$)",
     )
     id_pset = w.alloc()
     w.emit(
@@ -393,7 +393,7 @@ def _write_certificate_annex(w: _SpfWriter, plan: Plan, id_owner: int, id_bat: i
     )
 
 
-def _ecrire_spf_minimal(plan: Plan, path: Path) -> str:
+def _write_minimal_spf(plan: Plan, path: Path) -> str:
     """Deterministic IFC4 SPF: Project / Site / Building / Storey / Space / Wall."""
     # GlobalIds must be unique across files, not only within one: salted by the plan
     # geometry, two different plans never share one, and one plan always gets the same.
@@ -413,13 +413,13 @@ def _ecrire_spf_minimal(plan: Plan, path: Path) -> str:
 
     id_owner, id_units = _write_header(writer)
     id_ctx, id_proj = _write_project(writer, id_owner, id_units)
-    id_floor_pl, id_etage, id_bat = _write_spatial_hierarchy(writer, id_owner, id_proj)
-    _write_spaces(writer, plan, id_owner, id_ctx, id_floor_pl, id_etage)
-    wall_entity = _write_walls(writer, plan, id_owner, id_ctx, id_floor_pl, id_etage)
+    id_floor_pl, storey_id, id_bat = _write_spatial_hierarchy(writer, id_owner, id_proj)
+    _write_spaces(writer, plan, id_owner, id_ctx, id_floor_pl, storey_id)
+    wall_entity = _write_walls(writer, plan, id_owner, id_ctx, id_floor_pl, storey_id)
     _write_openings(writer, plan, id_owner, wall_entity)
     _write_certificate_annex(writer, plan, id_owner, id_bat)
 
-    texte = "\n".join(
+    text = "\n".join(
         [
             "ISO-10303-21;",
             "HEADER;",
@@ -433,7 +433,7 @@ def _ecrire_spf_minimal(plan: Plan, path: Path) -> str:
             "END-ISO-10303-21;",
         ]
     )
-    path.write_text(texte + "\n", encoding="utf-8")
+    path.write_text(text + "\n", encoding="utf-8")
     return "spf-minimal"
 
 

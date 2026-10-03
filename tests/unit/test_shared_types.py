@@ -59,7 +59,7 @@ def test_no_module_spells_out_the_ase_comparison_again() -> None:
 
 
 def test_the_bound_and_the_protocol_share_the_alias() -> None:
-    from archlux.light.protocole import Surrogate
+    from archlux.light.protocol import Surrogate
 
     assert typing.get_type_hints(PerformanceBound)["indicator"] == Indicator
     assert typing.get_type_hints(Surrogate.indicator.fget)["return"] == Indicator  # type: ignore[attr-defined]

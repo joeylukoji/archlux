@@ -1,35 +1,13 @@
-"""Survival rate on validated export, with Wilson interval."""
+"""Deprecated module name: use :mod:`archlux.export.survival` (ADR 0001).
+
+Every public name of the new module, and every former French name it still serves, stays
+reachable here until 1.0.0 and emits a ``DeprecationWarning`` naming the new path.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from archlux._deprecation import module_shim
 
-from archlux.errors import InvariantViolation
-from archlux.export.pathologie import diagnose
-from archlux.export.wilson import wilson_interval
-from archlux.types import Plan
+__all__: list[str] = []
 
-__all__ = ["survival_rate"]
-
-
-def survival_rate(plans: Sequence[Plan], *, z: float = 1.96) -> tuple[float, tuple[float, float]]:
-    """Proportion of exportable plans + Wilson interval.
-
-    Parameters
-    ----------
-    plans : Sequence[Plan]
-        Sample (``n >= 1``).
-    z : float, optional
-        Gaussian quantile (1.96 ~= 95%).
-
-    Returns
-    -------
-    tuple
-        ``(rate, (lo, hi))`` with ``0 <= lo <= rate <= hi <= 1``.
-    """
-    n = len(plans)
-    if n < 1:
-        raise InvariantViolation(("plans must be non-empty",))
-    successes = sum(1 for plan in plans if diagnose(plan).exportable)
-    taux = successes / n
-    return taux, wilson_interval(successes, n, z=z)
+__getattr__ = module_shim(__name__, "archlux.export.survival")

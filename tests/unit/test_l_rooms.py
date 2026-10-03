@@ -1,7 +1,7 @@
 """L-shaped rooms keep their shape and their area through legalization (PLAN.md 1.7).
 
 An L room is decomposed into sub-rectangles tied by fusion equalities
-(:mod:`archlux.geom.rectilineaire`). The equalities only glue one edge line: without
+(:mod:`archlux.geom.rectilinear`). The equalities only glue one edge line: without
 constraints on the orthogonal axis the sub-rectangles slide along it, and the L turns
 into a T, a Z, or two detached pieces (AUDIT.md §5.2).
 """
@@ -15,12 +15,12 @@ from shapely.geometry import Polygon
 
 import archlux
 from archlux.certify.proof import verify_exactly
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.geom.rectilineaire import RectilinearRoom, decompose, extend_merges
+from archlux.geom.rectilinear import RectilinearRoom, decompose, extend_merges
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
-from tests.properties.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import DEFAULT_CONTEXT
 
 
 def _pushed_l_plan() -> tuple[Plan, Context, RectilinearRoom]:
@@ -45,10 +45,10 @@ def _pushed_l_plan() -> tuple[Plan, Context, RectilinearRoom]:
         rooms=room.rectangles + others,
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
     wall = Wall(id="wall", a=(2.0, 1.8), b=(6.0, 1.8), load_bearing=True)
-    ctx = replace(CONTEXTE_DEFAUT, structure=Structure(load_bearing_walls=(wall,)))
+    ctx = replace(DEFAULT_CONTEXT, structure=Structure(load_bearing_walls=(wall,)))
     return plan, ctx, room
 
 
@@ -75,8 +75,8 @@ def test_fused_polytope_excludes_a_slid_foot(foot_y: float, shape: str) -> None:
     """Bar [0, 1] x [0, 3], foot [1, 2] x [0, 1]: sliding the foot up leaves the domain."""
     outline = Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)])
     room = decompose(outline, id="l", room_type="kitchen")
-    plan = Plan(rooms=room.rectangles, walls=(), openings=(), outline=CONTEXTE_DEFAUT.outline)
-    poly = extend_merges(build_polytope(deduce_order(plan), CONTEXTE_DEFAUT), room, min_contact=0.5)
+    plan = Plan(rooms=room.rectangles, walls=(), openings=(), outline=DEFAULT_CONTEXT.outline)
+    poly = extend_merges(build_polytope(deduce_order(plan), DEFAULT_CONTEXT), room, min_contact=0.5)
     assert poly.contains(vectorize(plan, poly.index))
 
     bar, foot = room.rectangles
@@ -89,13 +89,13 @@ def _small_l() -> tuple[Plan, RectilinearRoom]:
     """Bar [0, 1] x [0, 3] (3 m²) and foot [1, 2] x [0, 1] (1 m²): 4 m² in total."""
     outline = Polygon([(0, 0), (2, 0), (2, 1), (1, 1), (1, 3), (0, 3)])
     room = decompose(outline, id="l", room_type="kitchen")
-    plan = Plan(rooms=room.rectangles, walls=(), openings=(), outline=CONTEXTE_DEFAUT.outline)
+    plan = Plan(rooms=room.rectangles, walls=(), openings=(), outline=DEFAULT_CONTEXT.outline)
     return plan, room
 
 
 def _kitchen_minimum(area: float) -> Context:
     return replace(
-        CONTEXTE_DEFAUT, regulation=Regulation(min_areas=(("kitchen", area),), min_width=1.0)
+        DEFAULT_CONTEXT, regulation=Regulation(min_areas=(("kitchen", area),), min_width=1.0)
     )
 
 
@@ -174,7 +174,7 @@ def test_checker_refuses_a_detached_fused_room() -> None:
 def _l_in_tiling(wall_x: float | None = None) -> tuple[Plan, Context, RectilinearRoom]:
     """A kitchen L (bar [0,1]x[0,3], foot [1,2]x[0,1]) tiling 12 x 9 with three rooms."""
     ctx = replace(
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         regulation=Regulation(min_areas=(("kitchen", 3.5),), min_width=1.0),
     )
     if wall_x is not None:
@@ -200,12 +200,12 @@ def test_a_wall_on_the_seam_of_an_l_is_a_crossing() -> None:
     assert any(v.kind == "wall" for v in checkers.violations(plan, ctx, merges=(room,)))
 
 
-@pytest.mark.parametrize("pavage", [False, True])
-def test_legalize_never_puts_a_seam_on_a_wall(pavage: bool) -> None:
+@pytest.mark.parametrize("tiling_flag", [False, True])
+def test_legalize_never_puts_a_seam_on_a_wall(tiling_flag: bool) -> None:
     """Review C1: the solver used to widen the bar until the seam sat on the wall."""
     plan, ctx, room = _l_in_tiling(wall_x=1.4)
     try:
-        result = archlux.legalize(plan, ctx, merges=(room,), tiling=pavage)
+        result = archlux.legalize(plan, ctx, merges=(room,), tiling=tiling_flag)
     except archlux.Infeasible:
         return  # an L straddling a wall has no valid plan in this order: honest refusal
     assert result.certificate is not None and result.certificate.geometry.valid
@@ -228,7 +228,7 @@ def test_the_proof_checks_every_recorded_seam_with_the_minimum_width() -> None:
 def test_a_fused_room_without_area_is_an_input_limit() -> None:
     """Review m3: a user input, not an internal fault."""
     from archlux.errors import UnsupportedInput
-    from archlux.geom.rectilineaire import minimum_area_shares
+    from archlux.geom.rectilinear import minimum_area_shares
 
     _, ctx, room = _l_in_tiling()
     flat = tuple(replace(r, w=0.0) for r in room.rectangles)
@@ -238,7 +238,7 @@ def test_a_fused_room_without_area_is_an_input_limit() -> None:
 
 def test_the_area_shares_keep_the_proof_tolerance_per_part() -> None:
     """Review m4: k parts each short by the solver tolerance must not miss the minimum."""
-    from archlux.geom.rectilineaire import minimum_area_shares
+    from archlux.geom.rectilinear import minimum_area_shares
     from archlux.tolerances import AREA_PROOF_M2
 
     plan, ctx, room = _l_in_tiling()

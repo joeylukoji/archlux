@@ -10,9 +10,9 @@ from pathlib import Path
 import numpy as np
 
 from archlux.errors import InvalidSurrogate
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.base import DenseSurrogate
-from archlux.light.simulateur import SplitFluxOracle
+from archlux.light.split_flux import SplitFluxOracle
 from archlux.light.validation import validate_gradient
 from archlux.types import Orientation
 
@@ -29,7 +29,7 @@ def draw(n: int) -> tuple[list[np.ndarray], list[Orientation]]:
 (train_x, train_o), (test_x, test_o) = draw(36), draw(80)
 net = DenseSurrogate()
 train_y = np.array([oracle.evaluate(x, o) for x, o in zip(train_x, train_o, strict=True)])
-net.fit(tuple(train_x), train_y, tuple(train_o), seed=SEED, epoques=40, lr=0.12)
+net.fit(tuple(train_x), train_y, tuple(train_o), seed=SEED, epochs=40, lr=0.12)
 truth = [oracle.evaluate(x, o) for x, o in zip(test_x, test_o, strict=True)]
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
@@ -45,5 +45,5 @@ with OUT.open("w", newline="", encoding="utf-8") as handle:
                 )
             except InvalidSurrogate as failed:  # below 0.80: recorded, not hidden
                 report = failed.report
-            sign = report.accord_de_signe  # lang-ok: French field, renamed with module light
+            sign = report.sign_agreement
             writer.writerow((name, azimuth, 20, f"{sign:.4f}", f"{mae:.4f}"))

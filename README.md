@@ -10,7 +10,7 @@
 **Where it works, and where it does not.** archlux repairs plans that are *almost*
 right. On 4,796 corruptions of 300 real apartments (MSD corpus: gaps, overlaps,
 undersized and shifted rooms), it returns a certified valid plan in **93.9 %** of cases
-(95 % CI [93.2, 94.5], tiling mode with fallback; `results/j7_reparation.md`). On raw
+(95 % CI [93.2, 94.5], tiling mode with fallback; `results/j7_repair.md`). On raw
 outputs of a generative model (HouseDiffusion, 740 plans, none valid at the start), it
 returns an intact certified plan in only **about 20 %** of cases (17.8 % to 23.0 %
 across three sets; `results/j8_generation.md`): four plans out of five are too far
@@ -106,7 +106,7 @@ pip install "archlux[bim]"          # + IFC export (ifcopenshell)
 The package is not on PyPI yet: install from a clone with `pip install -e ".[dev]"`.
 The `sim` and `stats` extras exist but are empty.
 
-**The core never imports PyTorch**, and a test checks it (`tests/test_dependances.py`).
+**The core never imports PyTorch**, and a test checks it (`tests/test_dependencies.py`).
 Core dependencies: `numpy`, `scipy`, `shapely`, `networkx`, `ortools`, `structlog`.
 
 ---
@@ -177,7 +177,7 @@ factor, not a simulation).
 import numpy as np
 
 from archlux.light import Daylight, SplitFluxOracle, AnalyticSurrogate
-from archlux.uq.conforme import ConformalCalibrator
+from archlux.uq.conformal import ConformalCalibrator
 
 surrogate, oracle = AnalyticSurrogate(), SplitFluxOracle()
 rng = np.random.default_rng(17)
@@ -198,7 +198,7 @@ calibrator.fit(
 better = ax.legalize(
     plan,
     ctx,
-    objective=Daylight(surrogate, q_chapeau=calibrator.q),
+    objective=Daylight(surrogate, q_hat=calibrator.q),
     calibration=calibrator.snapshot(),
     budget=0.5,  # maximum displacement from the proposal, in metres, checked by the proof
     tiling=True,
@@ -218,7 +218,7 @@ PERFORMANCE                        [PREDICTION: selected plan, coverage NOT guar
 ```
 
 A guaranteed coverage needs a plan exchangeable with the calibration set, for instance
-a held-out plan bounded with `calibrator.borne(prediction, sigma, regime="exchangeable")`.
+a held-out plan bounded with `calibrator.bound(prediction, sigma, regime="exchangeable")`.
 In this example the interval is also wide: the analytic surrogate misses the split-flux
 term of the oracle, and the calibration reports that error instead of hiding it.
 
@@ -276,7 +276,7 @@ the result is then wrong somewhere without any warning. archlux refuses and says
 "Room A is left of room B" means that A ends before B starts: `x_A + w_A <= x_B`. With
 one such separation per pair of rooms, overlap becomes impossible by construction, not
 discouraged by a penalty. The order is read from the proposed plan
-(`geom.graphe.deduce_order`), and each room is also kept on its side of every
+(`geom.graph.deduce_order`), and each room is also kept on its side of every
 load-bearing wall.
 
 Minimum areas (`w h >= a`) are not linear but define a convex set. The classic mode
@@ -286,7 +286,7 @@ cut `3w + 3h >= 18` accepts `w = 5.9, h = 0.1`, whose area is 0.59 m²). The loo
 cuts until the exact check passes, and the proof then checks every area. The
 performance mode instead uses an *inner* approximation (chords of the hyperbola around
 the start, `lmo.coupes.inner_area_constraints`), so that every iterate keeps every
-minimum area. See `docs/formules/coupes-surface.md`.
+minimum area. See `docs/formulas/area-cuts.md`.
 
 ### Step 2: one solver, two objectives
 
@@ -324,7 +324,7 @@ azimuth, and the glazing (`baies`). Shipped implementations:
 | `AnalyticSurrogate` | Closed-form rules (CIBSE depth rule, sector factor), no learning |
 | `SplitFluxOracle` | Analytic part + BRE split-flux daylight factor: the **frozen oracle** of the CI, used to test the chain end to end. A closed form, not a simulation and not ground truth |
 | `light.base.DenseSurrogate` | Three-layer perceptron, numpy weights, trained on the residual to the analytic form |
-| `light.appris.LearnedSurrogate` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
+| `light.learned.LearnedSurrogate` | Loads numpy weights; **PyTorch `.pt` weights are refused**: the token transformer is not implemented |
 | `Daylight` | Wraps a surrogate and returns the pessimistic value `mu - q sigma` |
 
 The input is a set of numbers per room, not an image: moving a wall by 2 cm changes no
@@ -333,7 +333,7 @@ Openings are stored relative to their wall (`Opening.wall_id`, relative abscissa
 `s`); their absolute position is never stored. The solver moves rooms, never walls, and
 the glazing is passed unchanged to the surrogate during the optimization.
 
-Read [`docs/donnees/verite-terrain.md`](docs/donnees/verite-terrain.md) before quoting
+Read [`docs/data/ground-truth.md`](docs/data/ground-truth.md) before quoting
 any daylight figure: the shipped labels come from a closed form, not from a measured
 or simulated physical quantity.
 
@@ -376,7 +376,7 @@ This is the core of the project, and the two must never be confused.
 
 - **Geometry, exact.** On an axis-aligned rectangular outline, overlaps and gaps are
   decided in rational arithmetic (`certify.proof.rational_tiling`; theorem and proof in
-  `docs/formules/preuve-exacte.md`). The only tolerance is the identification of edges
+  `docs/formulas/exact-proof.md`). The only tolerance is the identification of edges
   closer than `SNAP_M`, and the raw plan is bounded as well so that this identification
   cannot accept a plan the floating-point check would reject. Other outlines use GEOS
   with the tolerances of `archlux/tolerances.py`. Infeasibility is proved by a Farkas
@@ -393,7 +393,7 @@ This is the core of the project, and the two must never be confused.
 
 The two are **distinct types**: `GeometricProof` has no probability field,
 `PerformanceBound` always carries its coverage, calibration size and regime. See
-[`docs/concepts/deux-garanties.md`](docs/concepts/deux-garanties.md).
+[`docs/concepts/two-guarantees.md`](docs/concepts/two-guarantees.md).
 
 ---
 
@@ -448,7 +448,7 @@ INPUT: proposed plan, load-bearing structure, orientation, program
 Every layer is deterministic: same inputs, same outputs. `lmo` is not pure in the
 strict sense: it keeps a small module-level cache of solver models (at most four) to
 warm-start Frank-Wolfe; the cache changes timing, never results
-(`lmo.solveur.clear_cache` empties it). `lmo` receives a cost vector and does not know
+(`lmo.solver.clear_cache` empties it). `lmo` receives a cost vector and does not know
 whether it comes from a distance or from a daylight gradient: this is what lets one
 solver serve both modes.
 
@@ -477,18 +477,18 @@ public data sets.
 
 | Corpus | What it brings | Licence | Access |
 |---|---|---|---|
-| **[Swiss Dwellings](docs/donnees/swiss-dwellings.md)** | geometry and simulated sun, view and noise per room (45,000 apartments) | CC BY 4.0 | [doi:10.5281/zenodo.7788422](https://doi.org/10.5281/zenodo.7788422) |
-| **[MSD](docs/donnees/msd.md)** (Modified Swiss Dwellings) | annotated load-bearing walls and columns, cardinal orientation kept; many plans are not rectilinear | CC BY-SA 4.0 | [arXiv:2407.10121](https://arxiv.org/abs/2407.10121) |
-| **[CubiCasa5K](docs/donnees/cubicasa.md)** | annotated doors and windows, vector SVG | research, non-commercial | [github.com/CubiCasa/CubiCasa5k](https://github.com/CubiCasa/CubiCasa5k) |
+| **[Swiss Dwellings](docs/data/swiss-dwellings.md)** | geometry and simulated sun, view and noise per room (45,000 apartments) | CC BY 4.0 | [doi:10.5281/zenodo.7788422](https://doi.org/10.5281/zenodo.7788422) |
+| **[MSD](docs/data/msd.md)** (Modified Swiss Dwellings) | annotated load-bearing walls and columns, cardinal orientation kept; many plans are not rectilinear | CC BY-SA 4.0 | [arXiv:2407.10121](https://arxiv.org/abs/2407.10121) |
+| **[CubiCasa5K](docs/data/cubicasa.md)** | annotated doors and windows, vector SVG | research, non-commercial | [github.com/CubiCasa/CubiCasa5k](https://github.com/CubiCasa/CubiCasa5k) |
 | **RPLAN** | 80,000 plans, comparability with the vision literature | on request | [project page](http://staff.ustc.edu.cn/~fuxm/projects/DeepLayout/index.html) |
 
-The MSD loader (`data.chargeurs`) keeps only axis-aligned plans with a simple outline:
+The MSD loader (`data.loaders`) keeps only axis-aligned plans with a simple outline:
 in the J7 run, 143 apartments were rejected for oblique geometry and 240 for a
 non-simple outline.
 
 **Three splits, not two.** Training (60 %), calibration (20 %, never seen in training)
 and test (20 %, opened once). If the calibration set leaks into training, the coverage
-guarantee is silently wrong, and no test or review would notice. `uq.gestion` keeps
+guarantee is silently wrong, and no test or review would notice. `uq.registry` keeps
 three distinct directories and hands out the calibration set against a token issued
 after the model is frozen. This is a checkable discipline, not a lock: the token is an
 unkeyed checksum, and `ConformalCalibrator` calibrates from plain arrays without asking
@@ -614,7 +614,7 @@ values):
 
 - Every sampling function takes a **seed, with no default**.
 - Splits are **frozen and published** as lists of identifiers.
-- Raw results are published **before** any aggregation (`results/*_brut.csv`).
+- Raw results are published **before** any aggregation (`results/*_raw.csv`).
 - **The calibration set is published with the model**: without it, a conformal bound
   cannot be checked.
 - Any change in the behaviour of the oracle or of the certificate is a **major
@@ -625,7 +625,7 @@ values):
 ## Limitations
 
 Read before any professional use. Full version (in French):
-[`docs/limites.md`](docs/limites.md).
+[`docs/limitations.md`](docs/limitations.md).
 
 - Daylight figures are **early-design estimates** against a frozen closed-form oracle.
   They replace no regulatory daylight or thermal study.
@@ -652,11 +652,11 @@ The documentation site is still in French (translation: PLAN.md, track E22).
 
 | | |
 |---|---|
-| [Gallery](docs/galerie/) | Worked examples |
-| [Tutorials](docs/tutoriels/) | Guided walkthroughs |
+| [Gallery](docs/gallery/) | Worked examples |
+| [Tutorials](docs/tutorials/) | Guided walkthroughs |
 | [Concepts](docs/concepts/) | The why rather than the how |
 | [API reference](docs/reference/) | Signatures |
-| [Limitations](docs/limites.md) | What the system does not do |
+| [Limitations](docs/limitations.md) | What the system does not do |
 | [Glossary](docs/glossary.md) | French and English names |
 | [`ARCHITECTURE.md`](docs/specification/ARCHITECTURE.md) | For contributors |
 

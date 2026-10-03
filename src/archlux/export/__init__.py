@@ -8,8 +8,8 @@ sufficient for CI and rectangular plans.
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.export.dxf import to_dxf
 from archlux.export.ifc import ExportReport, to_ifc
-from archlux.export.pathologie import PathologyDiagnostic, diagnose
-from archlux.export.survie import survival_rate
+from archlux.export.pathologies import PathologyDiagnostic, diagnose
+from archlux.export.survival import survival_rate
 from archlux.export.svg import render as render_svg
 from archlux.export.wilson import wilson_interval
 

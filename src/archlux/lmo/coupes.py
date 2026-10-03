@@ -16,7 +16,7 @@ _RENAMED = {
     "Coupe": "Cut",
     "coupe_surface": "area_cut",
     "surfaces_violees": "violated_areas",
-    "resoudre_avec_surfaces": "solve_with_areas",
+    "resoudre_avec_surfaces": "solve_with_areas",  # lang-ok: deprecated French alias name
     "MAX_COUPES_PAR_PIECE": "MAX_CUTS_PER_ROOM",
 }
 _NAMES = {**{name: name for name in _cuts.__all__}, **_RENAMED}

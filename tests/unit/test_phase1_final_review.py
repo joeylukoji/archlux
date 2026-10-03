@@ -21,11 +21,11 @@ from shapely.geometry import Polygon
 import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.errors import Infeasible
-from archlux.geom.graphe import deduce_order
-from archlux.geom.rectilineaire import decompose
+from archlux.geom.graph import deduce_order
+from archlux.geom.rectilinear import decompose
 from archlux.types import Context, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
-from tests.properties.strategies import CONTEXTE_DEFAUT
+from tests.properties.strategies import DEFAULT_CONTEXT
 
 # --- C1: the scope of an infeasibility certificate ---------------------------------------
 
@@ -55,7 +55,7 @@ def test_the_message_without_scope_is_about_the_order_alone() -> None:
 
 def _overlapping_pair() -> tuple[Plan, Context]:
     """Two rooms overlapping by 1 m: repairing them moves an edge by at least 0.5 m."""
-    ctx = CONTEXTE_DEFAUT
+    ctx = DEFAULT_CONTEXT
     plan = Plan(
         rooms=(
             Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
@@ -134,7 +134,7 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
     """
     wall = Wall(id="w", a=(3.0, 2.0), b=(3.0, 4.0), load_bearing=True)
     ctx = replace(
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         structure=Structure(load_bearing_walls=(wall,)),
         regulation=Regulation(min_areas=(("kitchen", 10.0),), min_width=1.0),
     )
@@ -155,8 +155,8 @@ def _l_beside_a_partial_wall() -> tuple[Plan, Context, tuple[str, str]]:
 
 def test_each_member_of_an_l_keeps_its_own_side_when_none_are_opposite() -> None:
     plan, ctx, (bar, foot) = _l_beside_a_partial_wall()
-    ordre = deduce_order(plan, ctx.structure, groups=((bar, foot),))
-    sides = {ws.room: ws.side for ws in ordre.wall_sides}
+    order = deduce_order(plan, ctx.structure, groups=((bar, foot),))
+    sides = {ws.room: ws.side for ws in order.wall_sides}
     assert sides[bar] == "left"
     assert sides[foot] == "below"
 
@@ -181,14 +181,14 @@ def test_frank_wolfe_may_close_the_step_of_an_l() -> None:
 
     Frank-Wolfe meets the ends (the L degenerates into a rectangle): the non-strict order
     of ``overlap_constraints`` allows it, and every exact guarantee holds."""
-    from archlux.geom.rectilineaire import RectilinearRoom
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.geom.rectilinear import RectilinearRoom
+    from archlux.light.analytic import AnalyticSurrogate
 
     wall = Wall(id="lb0", a=(1.0, 0.0), b=(1.0, 1.0), load_bearing=True)
     bar = Room(id="f__0", type="living_room", x=0.0, y=1.0, w=1.0, h=1.0)
     foot = Room(id="f__1", type="living_room", x=0.0, y=2.0, w=1.01, h=7.0)
     ctx = replace(
-        CONTEXTE_DEFAUT,
+        DEFAULT_CONTEXT,
         structure=Structure(load_bearing_walls=(wall,)),
         regulation=Regulation(min_areas=(("bedroom", 76.93), ("living_room", 1.0)), min_width=1.0),
     )
@@ -216,7 +216,7 @@ def test_a_budget_is_not_relaxable_when_the_plan_without_it_is_still_refused() -
     """Review M1: an optimal LP without the budget kept the 1 m gap; the proof refused it.
 
     The message used to say "Without budget 0.1 m, this order admits a plan"."""
-    ctx = CONTEXTE_DEFAUT
+    ctx = DEFAULT_CONTEXT
     plan = Plan(
         rooms=(
             Room(id="a", type="living_room", x=0.0, y=0.0, w=7.0, h=9.0),
@@ -246,8 +246,8 @@ def test_a_nan_in_the_reference_is_an_unbounded_displacement() -> None:
 def test_the_scope_names_only_what_the_domain_contains() -> None:
     """Review m1: no shared side when every member of the L keeps its own side."""
     plan, ctx, (bar, foot) = _l_beside_a_partial_wall()
-    ordre = deduce_order(plan, ctx.structure, groups=((bar, foot),))
-    assert ordre.shared_sides == ()
+    order = deduce_order(plan, ctx.structure, groups=((bar, foot),))
+    assert order.shared_sides == ()
     zero = Wall(id="z", a=(3.0, 3.0), b=(3.0, 3.0), load_bearing=True)
     assert deduce_order(plan, Structure(load_bearing_walls=(zero,))).wall_sides == ()
 
@@ -258,9 +258,9 @@ def test_members_on_opposite_sides_share_the_side_of_their_bounding_box() -> Non
 
     plan, ctx, room = _l_in_tiling(wall_x=1.4)
     members = tuple(r.id for r in room.rectangles)
-    ordre = deduce_order(plan, ctx.structure, groups=(members,))
-    assert ordre.shared_sides == (("w", members),)
-    assert len({ws.side for ws in ordre.wall_sides if ws.room in members}) == 1
+    order = deduce_order(plan, ctx.structure, groups=(members,))
+    assert order.shared_sides == (("w", members),)
+    assert len({ws.side for ws in order.wall_sides if ws.room in members}) == 1
 
 
 def _grid_too_tight() -> tuple[Plan, Context]:

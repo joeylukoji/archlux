@@ -151,6 +151,6 @@ def __dir__() -> list[str]:
     return list(__all__)
 
 
-# Note: ``light.appris``, ``solve`` and ``uq`` are NOT imported here.
+# Note: ``light.learned``, ``solve`` and ``uq`` are NOT imported here.
 # ``import archlux`` must load neither ``torch`` nor a model: this is checked by
 # ``tests/test_dependances.py`` and blocks the CI.

@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
-from archlux.bench.manifeste import emit
+from archlux.bench.manifest import emit
 from archlux.errors import InvariantViolation
 from archlux.io.json_io import manifest_to_dict
-from archlux.light.protocole import Surrogate
+from archlux.light.protocol import Surrogate
 from archlux.types import Manifest, ModelTrace, Orientation, Plan
 
 __all__ = ["Manifest", "RawRow", "Result", "run"]
@@ -69,8 +69,8 @@ def run(
     if not methods:
         raise InvariantViolation(("at least one method is required",))
 
-    dossier = Path(directory)
-    dossier.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(directory)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     manifest = emit(
         seed=seed,
@@ -79,8 +79,8 @@ def run(
         parameters=dict(parameters) if parameters else None,
         model=model,
     )
-    manifest_path = dossier / "manifest.json"
-    _ecrire_manifeste(manifest_path, manifest)
+    manifest_path = out_dir / "manifest.json"
+    _write_manifest(manifest_path, manifest)
 
     rows: list[RawRow] = []
     for plan, orientation in zip(plans, orientations, strict=True):
@@ -99,8 +99,8 @@ def run(
                 )
             )
 
-    raw_path = dossier / "raw_results.csv"
-    _ecrire_bruts(raw_path, rows)
+    raw_path = out_dir / "raw_results.csv"
+    _write_raw(raw_path, rows)
 
     return Result(
         manifest=manifest,
@@ -110,22 +110,20 @@ def run(
     )
 
 
-def _ecrire_manifeste(path: Path, manifest: Manifest) -> None:
+def _write_manifest(path: Path, manifest: Manifest) -> None:
     # Same shape as the certificates' JSON schema (`io.json_io`) — a single truth.
     """Write the manifest as JSON, sorted keys, before any result."""
     payload = manifest_to_dict(manifest)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _ecrire_bruts(path: Path, rows: Sequence[RawRow]) -> None:
+def _write_raw(path: Path, rows: Sequence[RawRow]) -> None:
     """Write the raw measurements as CSV, before any aggregation."""
     with path.open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(["plan_id", "methode", "orientation_deg", "score"])
-        for ligne in rows:
-            w.writerow(
-                [ligne.plan_id, ligne.method, f"{ligne.orientation_deg:.6f}", f"{ligne.score:.8f}"]
-            )
+        for row in rows:
+            w.writerow([row.plan_id, row.method, f"{row.orientation_deg:.6f}", f"{row.score:.8f}"])
 
 
 __getattr__ = lazy_aliases(

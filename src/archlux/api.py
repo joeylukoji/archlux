@@ -11,7 +11,7 @@ Classic pipeline
 4. Minimize :math:`\\sum e_i` under area cuts (Kelley / AM-GM).
 5. Devectorize, re-verify **independently**, attach the certificate.
 
-Full chain, assumptions and contra-indications: ``docs/formules/pipeline.md``.
+Full chain, assumptions and contra-indications: ``docs/formulas/pipeline.md``.
 """
 
 from __future__ import annotations
@@ -24,14 +24,13 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 from archlux._deprecation import renamed_parameters
-from archlux.arrays import VecteurF
-from archlux.certify.borne import bound_selected_plan, check_calibration
+from archlux.arrays import FloatVector
+from archlux.certify.bound import bound_selected_plan, check_calibration
 from archlux.certify.dual import translate_duals
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
 from archlux.errors import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
-from archlux.geom.graphe import RelativeOrder, deduce_order
-from archlux.geom.pavage import Grid, deduce_grid, extend_tiling, snap_to_grid
+from archlux.geom.graph import RelativeOrder, deduce_order
 from archlux.geom.polytope import (
     Polytope,
     build_polytope,
@@ -40,17 +39,18 @@ from archlux.geom.polytope import (
     freeze_contacts,
     vectorize,
 )
-from archlux.geom.rectilineaire import (
+from archlux.geom.rectilinear import (
     RectilinearRoom,
     extend_merges,
     minimum_area_shares,
 )
-from archlux.light.protocole import Glazing, Surrogate, point_prediction
+from archlux.geom.tiling import Grid, deduce_grid, extend_tiling, snap_to_grid
+from archlux.light.protocol import Glazing, Surrogate, point_prediction
 from archlux.lmo.cuts import (
     inner_area_constraints,
     solve_with_areas,
 )
-from archlux.lmo.solveur import LPSolution
+from archlux.lmo.solver import LPSolution
 from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
 from archlux.tolerances import SNAP_M
 from archlux.types import Certificate, Context, GeometricProof, Plan
@@ -59,7 +59,7 @@ from archlux.validation import resolve_outline, validate_inputs
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from archlux.certify.borne import Calibration
+    from archlux.certify.bound import Calibration
     from archlux.solve.trace import Trace
 
 __all__ = ["gradient_distance", "legalize", "legalize_trace"]
@@ -68,7 +68,7 @@ _DUAL_THRESHOLD = 1e-9
 
 
 @renamed_parameters({"x_propose": "x_proposed"})
-def gradient_distance(x_proposed: VecteurF) -> VecteurF:
+def gradient_distance(x_proposed: FloatVector) -> FloatVector:
     r"""Cost vector of the L1 epigraph: zeros on :math:`x`, ones on :math:`e`.
 
     .. math::
@@ -91,12 +91,12 @@ def gradient_distance(x_proposed: VecteurF) -> VecteurF:
 
     Notes
     -----
-    Epigraph: ``docs/formules/epigraphe-l1.md``.
+    Epigraph: ``docs/formulas/l1-epigraph.md``.
     """
     n_var = int(x_proposed.shape[0])
-    couts = np.zeros(2 * n_var, dtype=float)
-    couts[n_var:] = 1.0
-    return couts
+    costs = np.zeros(2 * n_var, dtype=float)
+    costs[n_var:] = 1.0
+    return costs
 
 
 def _active_origins(sol: LPSolution, poly: Polytope) -> tuple[str, ...]:
@@ -122,7 +122,7 @@ def _active_origins(sol: LPSolution, poly: Polytope) -> tuple[str, ...]:
 
 
 def _translated_duals(
-    duals: VecteurF | None, poly: Polytope, *, objective: str = "displacement"
+    duals: FloatVector | None, poly: Polytope, *, objective: str = "displacement"
 ) -> tuple[tuple[str, float], ...]:
     """Pair the duals of the rows of ``A`` with ``poly.origins``.
 
@@ -136,14 +136,14 @@ def _translated_duals(
     return translate_duals(duals, poly, threshold=_DUAL_THRESHOLD, objective=objective)
 
 
-def _only_a_gap(preuve: GeometricProof, budget: float | None) -> bool:
+def _only_a_gap(geometric_proof: GeometricProof, budget: float | None) -> bool:
     """The proof fails on a gap and on nothing else, read from its flags, never its text."""
     return (
-        preuve.gaps
-        and not preuve.overlap
-        and preuve.areas_ok
-        and preuve.structure_kept
-        and (budget is None or preuve.max_displacement <= budget + SNAP_M)
+        geometric_proof.gaps
+        and not geometric_proof.overlap
+        and geometric_proof.areas_ok
+        and geometric_proof.structure_kept
+        and (budget is None or geometric_proof.max_displacement <= budget + SNAP_M)
     )
 
 
@@ -157,18 +157,18 @@ def budget_label(budget: float) -> str:
 
 
 def _scope(
-    ordre: RelativeOrder,
+    order: RelativeOrder,
     merges: tuple[RectilinearRoom, ...],
     grid: bool,
     budget: float | None,
 ) -> tuple[str, ...]:
     """Restrictions of the solver's domain beyond the relative order, as built."""
     scope: list[str] = []
-    if ordre.wall_sides:
+    if order.wall_sides:
         scope.append("load-bearing sides")
     if merges:
         scope.append("fused-room seams and area shares")
-    if ordre.shared_sides:
+    if order.shared_sides:
         scope.append("one shared side per fused room straddling a wall")
     if grid:
         scope.append(GRID_LABEL)
@@ -192,7 +192,7 @@ class _Problem:
     grid: Grid | None
     order: RelativeOrder
     base: Polytope
-    x_ref: VecteurF
+    x_ref: FloatVector
     minima: Mapping[str, float]  # read-only: the frozen problem shares it
 
     def domain(self, *, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
@@ -218,7 +218,7 @@ class _Problem:
             minima=self.minima,
         )
 
-    def decode(self, x: VecteurF, index: dict[str, int], template: Plan | None = None) -> Plan:
+    def decode(self, x: FloatVector, index: dict[str, int], template: Plan | None = None) -> Plan:
         """The plan of a decision vector, on the context's outline."""
         decoded = devectorize(x, template or self.plan, index)
         return replace(decoded, outline=self.ctx.outline)
@@ -263,7 +263,7 @@ def _build_problem(
     repair_budget: int,
 ) -> _Problem:
     """Derive the relative order, the polytope and the reference vector of a plan."""
-    # Makes a gap unrepresentable: see ``geom.pavage``. Raises if the grid of the
+    # Makes a gap unrepresentable: see ``geom.tiling``. Raises if the grid of the
     # proposed plan cannot be recovered: an explicit failure, not a silent one.
     grid = deduce_grid(plan, ctx, repair_budget=repair_budget) if tiling else None
     # With a grid, the order is read from the plan snapped onto it: the order read from
@@ -273,11 +273,11 @@ def _build_problem(
         plan if grid is None else snap_to_grid(plan, grid),
         structure=ctx.structure,
         # A fused room keeps one side of every wall: never a wall on its seam.
-        groups=tuple(tuple(r.id for r in piece_l.rectangles) for piece_l in merges),
+        groups=tuple(tuple(r.id for r in room_l.rectangles) for room_l in merges),
     )
     base = build_polytope(order, ctx)
-    for piece_l in merges:
-        base = extend_merges(base, piece_l, min_contact=ctx.regulation.min_width)
+    for room_l in merges:
+        base = extend_merges(base, room_l, min_contact=ctx.regulation.min_width)
     return _Problem(
         plan=plan,
         ctx=ctx,
@@ -372,18 +372,18 @@ def _optimize_light(
         poly_fw = restrict_to_budget(poly_fw, problem.x_ref, budget, keep=x0)
     # Glazing is not part of the decision vector: it is constant during the
     # optimization and passed through unchanged. Without it the surrogate only sees
-    # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
+    # rectangles and cannot predict real daylight (`docs/formulas/tokens.md`).
     glazing = Glazing(walls=corrected.walls, openings=corrected.openings)
     result = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
-    performant = problem.decode(result.x, poly.index, template=corrected)
-    proof = problem.prove(performant)
+    best_plan = problem.decode(result.x, poly.index, template=corrected)
+    proof = problem.prove(best_plan)
     if not proof.valid:
         raise InvariantViolation(proof.violations)
     # The last Frank-Wolfe LP is on poly_fw, not on poly_l1: its duals are the only ones
     # that pair with poly_fw.origins. Failing that, keep those of the L1 pass: they
     # describe another polytope, but are at least labelled correctly. Careful:
     # figer_contacts moved the saturated rows into A_eq, which is not dualized; this
-    # diagnostic is therefore often empty (see lmo.solveur.resoudre).
+    # diagnostic is therefore often empty (see lmo.solver.resoudre).
     duals = duals_l1
     if result.duals is not None:
         duals = _translated_duals(result.duals, poly_fw, objective=objective.indicator)
@@ -393,7 +393,7 @@ def _optimize_light(
         mu, sigma = point_prediction(objective, result.x, ctx.orientation, glazing=glazing)
         performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
     return replace(
-        performant,
+        best_plan,
         certificate=Certificate(geometry=proof, performance=performance, duals=duals),
         trace=result.trace if trace else None,
     )
@@ -414,7 +414,7 @@ def _not_a_surrogate(objective: object) -> str:
     It names the members to rename when the object has the pre-rename French ones
     (review of the stack, #9).
     """
-    message = "objective must implement archlux.light.protocole.Surrogate"
+    message = "objective must implement archlux.light.protocol.Surrogate"
     legacy = [old for old in _RENAMED_MEMBERS if hasattr(objective, old)]
     if not legacy:
         return message
@@ -536,10 +536,10 @@ def legalize(
     ----------
     plan : Plan
         Proposed plan, possibly invalid. An L-shaped room must already be decomposed into
-        sub-rectangles (:func:`~archlux.geom.rectilineaire.decompose`).
+        sub-rectangles (:func:`~archlux.geom.rectilinear.decompose`).
     ctx : Contexte
         Load-bearing structure, orientation, outline, regulation.
-    objective : Substitut or None, optional
+    objective : Surrogate or None, optional
         Objective to maximize. ``None`` means geometric proximity.
     calibration : Calibration or None, optional
         Conformal calibration of ``objective`` (same indicator, scores normalized by
@@ -558,12 +558,12 @@ def legalize(
             Use :func:`legalize_trace` instead, which returns ``(Plan, Trace)`` instead
             of smuggling the trace through a field of ``Plan`` (PLAN.md phase 4, block
             2). ``trace=True`` still works, with a warning, until 1.0.0 (ADR 0001).
-    merges : tuple of PieceRectilineaire, optional
+    merges : tuple of RectilinearRoom, optional
         Fused rooms (L, T, U, Z) decomposed into sub-rectangles. Their shared edges
         become equalities of ``A_eq``; on the orthogonal axis, the order of the
         sub-rectangle ends is kept and every shared edge keeps at least
         ``regulation.min_width`` of length, so an L cannot turn into a Z or split
-        (:func:`~archlux.geom.rectilineaire.overlap_constraints`).
+        (:func:`~archlux.geom.rectilinear.overlap_constraints`).
     tiling : bool, optional
         Require that the union of the rooms **tiles the outline exactly**. Without it,
         the separations of the polytope being inequalities, a plan with a gap remains the
@@ -572,20 +572,20 @@ def legalize(
 
         Turn it on as soon as the input may carry a **gap**: this is the case of the
         outputs of generative models. Measured on 4,796 corruptions of 300 real MSD
-        plans (`results/j7_reparation.md`): repair goes from 35.9 % to 93.0 %, and on
+        plans (`results/j7_repair.md`): repair goes from 35.9 % to 93.0 %, and on
         gaps alone from 10.0 % to 97.6 % (column ``tiling=True``; the 93.9 % of the
         README is the "fallback" column: ``tiling=True``, otherwise ``legalize`` alone).
         Figures measured before batch 1.1.
 
         Requires the grid of the proposed plan to be recoverable
-        (:func:`~archlux.geom.pavage.deduce_grid`); otherwise ``GridNotRecoverable``
+        (:func:`~archlux.geom.tiling.deduce_grid`); otherwise ``GridNotRecoverable``
         names the faulty cells. Default ``False``: the 1.x contract is unchanged.
         With a grid, the relative order and the load-bearing sides are read from
-        the plan snapped onto it (:func:`~archlux.geom.pavage.snap_to_grid`), so
+        the plan snapped onto it (:func:`~archlux.geom.tiling.snap_to_grid`), so
         that they never contradict the tiling equalities.
     repair_budget : int, optional
         Number of repair steps granted to the grid recovery, passed as is to
-        :func:`~archlux.geom.pavage.deduce_grid`. No effect if ``tiling`` is false.
+        :func:`~archlux.geom.tiling.deduce_grid`. No effect if ``tiling`` is false.
 
         The default ``4`` is tuned on **corrupted** plans, where the fault is a wrong
         dimension and is absorbed in one or two steps. The output of a generative model
@@ -631,7 +631,7 @@ def legalize(
         ``calibration`` without ``objective`` or for another indicator. Its ``field``
         names the argument (a ``ValueError`` subclass).
     TypeError
-        ``objective`` does not implement :class:`~archlux.light.protocole.Surrogate`.
+        ``objective`` does not implement :class:`~archlux.light.protocol.Surrogate`.
 
     Guarantees
     ----------
@@ -655,7 +655,7 @@ def legalize(
 
     Notes
     -----
-    Pipeline and sources: ``docs/formules/pipeline.md``.
+    Pipeline and sources: ``docs/formulas/pipeline.md``.
 
     Examples
     --------

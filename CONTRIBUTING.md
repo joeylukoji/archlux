@@ -9,12 +9,12 @@ and [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md)
 1. **Exact geometry; probabilistic light.** Never confuse the two
    kinds in types, error messages, certificates or documentation.
 2. **Dependency rules** (`ARCHITECTURE.md` §5): checked by
-   `tests/test_dependances.py`. In particular:
+   `tests/test_dependencies.py`. In particular:
    - `geom`, `lmo`, `solve`, `certify` **never import** `torch`;
    - `lmo` does not import `light`;
    - `light` does not import `geom` / `lmo` / `solve`;
    - nobody imports `bench` from the core;
-   - `active` imports only `light.protocole`, never an implementation.
+   - `active` imports only `light.protocol`, never an implementation.
 3. A **public** function without a NumPy docstring is not finished.
 4. A random seed **always** has an explicit parameter, with no default.
 5. **English-first.** All new code, docstrings, messages and documentation are
@@ -30,7 +30,7 @@ and [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md)
 3. Tests first for new behaviour (`tests/unit/`,
    `tests/properties/`). Public seams only.
 4. After non-trivial Python: rerun at least
-   `pytest tests/test_dependances.py` and the tests of the touched module;
+   `pytest tests/test_dependencies.py` and the tests of the touched module;
    `ruff check` + `mypy` on the modified files.
 5. Documentation of new behaviour (gallery, formula or concept)
    is part of the definition of "done".
@@ -45,7 +45,7 @@ and [`docs/specification/DOCUMENTATION.md`](docs/specification/DOCUMENTATION.md)
 | Release | Maintainers | `CHANGELOG.md` (Keep a Changelog) + semver |
 
 **Review.** At least one review for PRs that touch `geom`, `lmo`,
-`solve`, `certify`, `uq` or `tests/test_dependances.py`. A PR that breaks
+`solve`, `certify`, `uq` or `tests/test_dependencies.py`. A PR that breaks
 `test_le_noyau_n_importe_pas_torch` is rejected without discussion.
 
 **Versions.** Semver. Any change in the behaviour of the oracle (`lmo`) or

@@ -7,15 +7,15 @@ import pytest
 from hypothesis import given, settings
 
 import archlux
-from archlux.data.synthese import two_room_plan, two_room_vectors
+from archlux.data.synthetic import two_room_plan, two_room_vectors
 from archlux.errors import InvariantViolation
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, decision_vector, vectorize
-from archlux.light.analytique import AnalyticSurrogate
+from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
-from archlux.uq.conforme import ConformalCalibrator
-from archlux.uq.fiabilite import measure_coverage
-from tests.properties.strategies import CONTEXTE_DEFAUT, realistic_scenarios
+from archlux.uq.conformal import ConformalCalibrator
+from archlux.uq.reliability import measure_coverage
+from tests.properties.strategies import DEFAULT_CONTEXT, realistic_scenarios
 
 
 def test_the_decision_vector_matches_the_polytope_columns() -> None:
@@ -27,9 +27,9 @@ def test_the_decision_vector_matches_the_polytope_columns() -> None:
         ),
         walls=(),
         openings=(),
-        outline=CONTEXTE_DEFAUT.outline,
+        outline=DEFAULT_CONTEXT.outline,
     )
-    index = build_polytope(deduce_order(plan), CONTEXTE_DEFAUT).index
+    index = build_polytope(deduce_order(plan), DEFAULT_CONTEXT).index
     assert np.array_equal(decision_vector(plan), vectorize(plan, index))
 
 
@@ -108,13 +108,13 @@ def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
         Room(id="p3", type="living_room", x=2.42, y=0.0, w=9.58, h=1.0),
         Room(id="p4", type="living_room", x=2.42, y=1.0, w=9.58, h=8.0),
     )
-    plan = Plan(rooms, (wall,), (), CONTEXTE_DEFAUT.outline)
+    plan = Plan(rooms, (wall,), (), DEFAULT_CONTEXT.outline)
     surrogate, values, widths = AnalyticSurrogate(), [], []
     for deg in (0.0, 360.0):
         ctx = Context(
             structure=Structure(load_bearing_walls=(wall,)),
             orientation=Orientation(deg=deg),
-            outline=CONTEXTE_DEFAUT.outline,
+            outline=DEFAULT_CONTEXT.outline,
             regulation=Regulation(min_areas=(("living_room", 1.41),), min_width=1.0),
         )
         out = archlux.legalize(plan, ctx, objective=surrogate)

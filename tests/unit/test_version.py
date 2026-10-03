@@ -11,12 +11,12 @@ def test_root_exposes_the_single_version() -> None:
 
 
 def test_certificate_prints_the_source_version() -> None:
-    from archlux.certify.rapport import _version
+    from archlux.certify.report import _version
 
     assert _version() == __version__
 
 
 def test_ifc_export_stamps_the_source_version() -> None:
-    from archlux.export.ifc import _version_paquet
+    from archlux.export.ifc import _package_version
 
-    assert _version_paquet() == __version__
+    assert _package_version() == __version__

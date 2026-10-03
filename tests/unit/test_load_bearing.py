@@ -13,10 +13,10 @@ import pytest
 import archlux
 from archlux.certify.proof import verify_exactly
 from archlux.errors import UnsupportedInput
-from archlux.geom.graphe import WallSide, deduce_order
+from archlux.geom.graph import WallSide, deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
-from archlux.light.analytique import AnalyticSurrogate
-from archlux.light.protocole import Surrogate
+from archlux.light.analytic import AnalyticSurrogate
+from archlux.light.protocol import Surrogate
 from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 from tests import checkers
 

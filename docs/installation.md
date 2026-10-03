@@ -1,12 +1,12 @@
 # Installation
 
 ```bash
-pip install archlux                # noyau : aucune dépendance d'apprentissage
-pip install "archlux[appris]"      # + substitut entraîné (torch)
-pip install "archlux[ml]"          # alias de ``appris``
-# ``archlux[sim]`` : extra vide (Radiance). Hors chemin critique ; la CI
-# utilise ``SplitFluxOracle`` (forme fermée).
+pip install archlux                # core: no learning dependency
+pip install "archlux[appris]"      # + trained surrogate (torch)
+pip install "archlux[ml]"          # alias of ``appris``
+# ``archlux[sim]``: empty extra (Radiance). Off the critical path; CI
+# uses ``SplitFluxOracle`` (closed form).
 ```
 
-Python 3.11 ou supérieur. Le noyau n'importe jamais `torch` : `import archlux` reste
-léger, même avec l'extra installé.
+Python 3.11 or later. The core never imports `torch`: `import archlux` stays
+light, even with the extra installed.

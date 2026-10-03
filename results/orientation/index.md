@@ -1,10 +1,10 @@
-# Jalon 9 — variantes par azimut solaire
+# Milestone 9: variants by solar azimuth
 
-Budget de deplacement 3.0 m (norme infinie autour du point L1), `largeur_min = 0.50 m`.
+Displacement budget 3.0 m (infinity norm around the L1 point), `min_width = 0.50 m`.
 
-**L'objectif optimise n'est pas l'eclairement reel** : voir l'en-tete de `experiments/j9_orientation.py`. Ce qui est garanti est geometrique.
+**The optimized objective is not real daylight**: see the header of `experiments/j9_orientation.py`. What is guaranteed is geometric.
 
-| plan | pieces | azimut du meilleur sDA | gain | deplacement | plus petit cote | variantes valides |
+| plan | rooms | azimuth of the best sDA | gain | displacement | smallest side | valid variants |
 |---|--:|--:|--:|--:|--:|--:|
 | [`hd0012`](hd0012.md) | 4 | 45° | +12 % | 3.00 m | 0.50 m | 8 / 8 |
 | [`hd0013`](hd0013.md) | 4 | 135° | +21 % | 3.00 m | 1.25 m | 8 / 8 |

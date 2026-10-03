@@ -18,14 +18,14 @@ def wilson_interval(successes: int, n: int, *, z: float = 1.96) -> tuple[float, 
     small ``n`` or rates close to 0 / 1.
 
     At both extremes, the bounds are set **exactly** rather than computed. At
-    ``p_hat = 0``, the formula analytically gives ``centre = margin = z^2/(2n)``: the
+    ``p_hat = 0``, the formula analytically gives ``center = margin = z^2/(2n)``: the
     subtraction cancels out in exact arithmetic, but the square root introduces an
-    ulp of drift, and ``centre - margin`` comes out ~1e-17 **above** zero. The final
+    ulp of drift, and ``center - margin`` comes out ~1e-17 **above** zero. The final
     ``max(0, ·)`` caught nothing — the value was positive — so the returned interval
     then did not contain its own point estimate:
     ``wilson_interval(0, 3)`` returned ``(4.9e-17, 0.561)`` for a zero rate,
     contradicting the ``0 <= lo <= rate <= hi <= 1`` contract of
-    :func:`~archlux.export.survie.survival_rate`. Symmetrically, ``p_hat = 1`` gave
+    :func:`~archlux.export.survival.survival_rate`. Symmetrically, ``p_hat = 1`` gave
     ``hi = 0.9999999999999999``.
 
     Parameters
@@ -61,10 +61,10 @@ def wilson_interval(successes: int, n: int, *, z: float = 1.96) -> tuple[float, 
     phat = successes / n
     z2 = z * z
     denom = 1.0 + z2 / n
-    centre = phat + z2 / (2.0 * n)
-    marge = z * math.sqrt((phat * (1.0 - phat) + z2 / (4.0 * n)) / n)
-    lo = 0.0 if successes == 0 else max(0.0, (centre - marge) / denom)
-    hi = 1.0 if successes == n else min(1.0, (centre + marge) / denom)
+    center = phat + z2 / (2.0 * n)
+    margin = z * math.sqrt((phat * (1.0 - phat) + z2 / (4.0 * n)) / n)
+    lo = 0.0 if successes == 0 else max(0.0, (center - margin) / denom)
+    hi = 1.0 if successes == n else min(1.0, (center + margin) / denom)
     return lo, hi
 
 

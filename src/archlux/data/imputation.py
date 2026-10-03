@@ -17,10 +17,10 @@ def impute_openings(plan: Plan, *, ratio: float = DEFAULT_OPENING_RATIO) -> Plan
     """Add an opening centered on each wall that has none.
 
     Does not touch openings already present. The effect of this imputation on
-    calibration must be measured separately (`docs/donnees/imputation.md`).
+    calibration must be measured separately (`docs/data/imputation.md`).
     """
-    murs_occupes = {o.wall_id for o in plan.openings}
-    nouvelles: list[Opening] = list(plan.openings)
+    occupied_walls = {o.wall_id for o in plan.openings}
+    added: list[Opening] = list(plan.openings)
     walls: tuple[Wall, ...] = plan.walls
     if not walls and len(plan.outline) >= 2:
         outline = (*plan.outline, plan.outline[0])
@@ -29,9 +29,9 @@ def impute_openings(plan: Plan, *, ratio: float = DEFAULT_OPENING_RATIO) -> Plan
             for i in range(len(plan.outline))
         )
     for wall in walls:
-        if wall.id in murs_occupes:
+        if wall.id in occupied_walls:
             continue
-        nouvelles.append(
+        added.append(
             Opening(
                 id=f"impute-{wall.id}",
                 wall_id=wall.id,
@@ -39,7 +39,7 @@ def impute_openings(plan: Plan, *, ratio: float = DEFAULT_OPENING_RATIO) -> Plan
                 relative_width=ratio,
             )
         )
-    return replace(plan, walls=walls, openings=tuple(nouvelles))
+    return replace(plan, walls=walls, openings=tuple(added))
 
 
 __getattr__ = lazy_aliases(

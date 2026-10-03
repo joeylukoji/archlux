@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 
 import archlux
-from archlux.geom.graphe import deduce_order
+from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope
-from archlux.lmo.solveur import clear_cache, solve
+from archlux.lmo.solver import clear_cache, solve
 from archlux.types import (
     Context,
     Orientation,
@@ -157,7 +157,7 @@ def test_budget_legalisation_classique(benchmark: BenchmarkFixture) -> None:
 @pytest.mark.budget
 def test_budget_legalisation_performantielle(benchmark: BenchmarkFixture) -> None:
     """Frank-Wolfe + substitut analytique < 500 ms (`ARCHITECTURE.md` §9)."""
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
 
     plan = _plan_15_pieces()
     objectif = AnalyticSurrogate()
@@ -181,7 +181,7 @@ def test_budget_performance_legalization_with_minimum_areas(benchmark: Benchmark
     Until PLAN.md batch 1.2 this case raised InvariantViolation, and the tangent cuts it
     needed disabled the LP warm start on every iteration.
     """
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
 
     plan = _plan_15_pieces()
     benchmark(archlux.legalize, plan, CTX_15_AREAS, objective=AnalyticSurrogate())
@@ -205,7 +205,7 @@ def test_performance_mode_scales_with_tight_minimum_areas(
 
     from tests import checkers
 
-    from archlux.light.analytique import AnalyticSurrogate
+    from archlux.light.analytic import AnalyticSurrogate
 
     width, height = 3.0 * columns, 4.0 * rows
     outline = ((0.0, 0.0), (width, 0.0), (width, height), (0.0, height))

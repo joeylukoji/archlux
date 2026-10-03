@@ -24,8 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 USER_FACING = (
     ROOT / "README.md",
     ROOT / "docs" / "index.md",
-    *sorted((ROOT / "docs" / "galerie").glob("*.md")),
-    *sorted((ROOT / "docs" / "tutoriels").glob("*.md")),
+    *sorted((ROOT / "docs" / "gallery").glob("*.md")),
+    *sorted((ROOT / "docs" / "tutorials").glob("*.md")),
     *sorted((ROOT / "docs" / "concepts").glob("*.md")),
 )
 _PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
