@@ -238,25 +238,74 @@ day count.
 **Ratchet**: `MAX_VIOLATIONS` (block 0's `tests/test_complexity.py`) moved from 33 to
 28 across items 12, 13, 15 — five named functions fixed, zero new violations.
 
-### 4. `lmo`
+### 4. `lmo` — done
 
-16. Replace the model cache (currently a global dict keyed by `id()`) with an
-    explicit, injectable `CacheLP` object, thread-safe, passed to `solve` instead of
-    read from module state. `clear_cache()` becomes a method.
-17. Break `_solve_with_area_cuts` (`cuts.py`, CC 12) and `solve` (`solveur.py`, CC 16)
-    under CC 10 once the cache is an object (some of their complexity is cache
-    bookkeeping that moves with it).
+16. Replaced the module-global cache dict (`_CACHE: OrderedDict[...]`, keyed by
+    `id(poly)`, no locking) with `CacheLP`: an explicit, injectable, thread-safe
+    (`threading.Lock`) object (`get`/`put`/`take`/`clear`; `maxsize >= 1` validated).
+    It is still keyed by `id(poly)` — not a module global any more, but the key is kept
+    deliberately: each entry holds a strong reference to its polytope, so that `id()`
+    cannot be reused while the entry lives. Thread safety covers the whole solve, not
+    only get/put: `solve` checks the model out of the cache (`take`) for the
+    set-objective / `Solve()` / read-solution sequence and puts it back afterwards, so
+    no two threads ever hold the same OR-Tools model (one that finds it checked out
+    builds its own). A module-level `_DEFAULT_CACHE =
+    CacheLP()` keeps the existing zero-argument call sites and `clear_cache()` working
+    unchanged; `solve()` gained an optional `cache: CacheLP | None = None` parameter for
+    callers that want an isolated cache (e.g. a test). Covered in isolation by `tests/unit/test_cache_lp.py` (empty-start,
+    put/get round-trip, clear, eviction beyond `maxsize`, isolation between two
+    instances, `solve` giving the identical answer regardless of which cache serves it,
+    a warm solve through an injected cache, and a `threading.Barrier`-based test of
+    concurrent warm solves with different objectives on one shared cache — which
+    segfaulted before the check-out fix).
+17. `solve` (`solveur.py`, was CC 16) split into `_cached_model` (the cache get/build/put
+    sequence, now trivial once the cache is an object), `_solve_model` and
+    `_infeasible_solution` (the GLOP infeasible/unbounded/Farkas-certificate branch);
+    each at most CC 10 (rank B or better).
+    `_solve_with_area_cuts` (`cuts.py`, was CC 12) split off its per-iteration
+    tighten-or-give-up step into `_tighten_if_short`; under CC 10.
 
-### 5. `solve`
+**Ratchet**: `MAX_VIOLATIONS` moved from 28 to 26 across items 16-17 (`solve` and
+`_solve_with_area_cuts`). Verified: full suite green (no regressions), `mypy src`
+clean, `radon cc solveur.py cuts.py -n C -s` empty, coverage 89.27% (ratchet 88.8%),
+`mkdocs build --strict` clean.
 
-18. Remove the legacy `coupes`/`pieces`/`ctx` call path and `_enrichir_coupes` in
-    `frank_wolfe.py` (confirmed unreferenced since PLAN.md's lot 1.2 — verify with a
-    repo-wide grep before deleting, not from memory).
-19. Extract `_step_away`, `_line_search`, `_update_weights` out of `frank_wolfe`
-    (currently CC 32), each independently testable against the formulas in
-    `docs/formules/frank-wolfe.md`.
-20. Introduce a `Strategy` protocol for the step computation, injectable, so a future
-    step rule does not require editing `frank_wolfe` itself.
+### 5. `solve` — done
+
+18. Removed the legacy `cuts`/`rooms`/`ctx` parameters and `_add_cuts` from
+    `frank_wolfe` (`frank_wolfe.py`). Verified unreferenced by a repo-wide grep (not from
+    memory) before deleting: no source file or test ever passed `cuts=`, `rooms=` or
+    `ctx=` to `frank_wolfe` (the identically-named `cuts=` on `lmo.solveur.solve` is a
+    different, still-used mechanism, untouched). The `active_cuts`/`n_cuts` bookkeeping
+    that only existed to feed that dead path is gone too; `Iteration.n_cuts` now always
+    reports `0` from this function (the field itself is unchanged, part of `Trace`'s
+    public schema). This alone brought `frank_wolfe` from CC 32 to CC 28 by deleting
+    dead branches, before any extraction.
+19. Extracted `_step_away` (the away-direction decision, Lacoste-Julien & Jaggi 2015),
+    `_line_search` (the backtracking loop) and `_update_weights` (mass transfer, pruning,
+    renormalization) out of `frank_wolfe`'s main loop; also extracted `_final_diagnostics`
+    (the post-loop gap/duals computation, previously two near-duplicate `if`/`elif`
+    branches). `_step_away`, `_line_search` and `_update_weights` are
+    independently tested (`tests/unit/test_frank_wolfe_steps.py`) against the formulas
+    in `docs/formules/frank-wolfe.md`. `frank_wolfe` itself is now CC 9 (from 32); every
+    function in the file is under CC 10 (`_update_weights` CC 8 and `_final_diagnostics`
+    CC 7 are the highest of the new helpers).
+20. Added `StepStrategy`, a `Protocol` with one method (`propose`: gradient, x, the LMO
+    vertex, active vertices and weights → direction, its max step, and whether it is an
+    away step), and `AwayStepStrategy` as the built-in default implementing the existing
+    away/plain-FW choice. `frank_wolfe` gained an optional `strategy: StepStrategy | None
+    = None` parameter (`None` uses `AwayStepStrategy(enabled=away_steps)`, so the
+    existing `away_steps` flag keeps working unchanged); a new step rule is now a class
+    satisfying the protocol, passed in, with no edit to `frank_wolfe` itself. Covered by
+    `tests/unit/test_frank_wolfe.py::test_a_strategy_replaces_away_steps` (an injected
+    `AwayStepStrategy` matches the `away_steps=` flag bit-for-bit) and
+    `test_a_custom_strategy_is_consulted_every_iteration` (a minimal custom strategy is
+    called and its choice honored).
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 26 to 25 across items 18-19. Verified: full
+suite green (no regressions), `mypy src` clean, `radon cc frank_wolfe.py -n C -s` empty,
+coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.py` and
+`test_neutrality.py` green.
 
 ### 6. `light`
 

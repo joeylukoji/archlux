@@ -504,6 +504,36 @@ def _meets_areas(
     )
 
 
+def _tighten_if_short(
+    domaine: Polytope,
+    solution: LPSolution,
+    c: VecteurF,
+    need: Mapping[str, float],
+    rooms: tuple[Room, ...],
+    cuts: list[Cut],
+    duals: bool,
+    margin: float,
+) -> tuple[Polytope, LPSolution, bool]:
+    """One attempt to satisfy the minima by tightening bounds instead of a Kelley cut.
+
+    Extracted from :func:`_solve_with_area_cuts` (PLAN.md phase 4, block 4).
+
+    Returns
+    -------
+    tuple of (Polytope, LPSolution, bool)
+        The domain and solution to continue the Kelley loop with, and whether they
+        are already the final answer (``True``: the caller returns ``solution``
+        immediately, without a tangent cut).
+    """
+    resserre = _resserrer_bornes(domaine, solution.x, need, rooms, margin=margin)
+    if resserre is domaine:
+        return domaine, solution, False
+    affine = solve(resserre, c, start=solution.x, cuts=cuts or None, duals=duals)
+    if affine.status != "optimal":
+        return domaine, solution, False
+    return resserre, affine, not _short_of_area(affine.x, resserre, need, rooms)
+
+
 def _solve_with_area_cuts(
     poly: Polytope,
     c: VecteurF,
@@ -530,14 +560,11 @@ def _solve_with_area_cuts(
             return solution
         if not _short_of_area(solution.x, domaine, need, rooms):
             return solution
-        resserre = _resserrer_bornes(domaine, solution.x, need, rooms, margin=margin)
-        if resserre is not domaine:
-            affine = solve(resserre, c, start=solution.x, cuts=cuts or None, duals=duals)
-            if affine.status == "optimal":
-                if not _short_of_area(affine.x, resserre, need, rooms):
-                    return affine
-                domaine = resserre
-                solution = affine
+        domaine, solution, resolved = _tighten_if_short(
+            domaine, solution, c, need, rooms, cuts, duals, margin
+        )
+        if resolved:
+            return solution
         restantes = _identifiants_a_couper(solution.x, domaine, need, rooms, comptes)
         if not restantes:
             return solution
