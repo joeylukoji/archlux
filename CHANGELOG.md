@@ -8,6 +8,18 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 1 (imports and layers): dynamic dependency check
+
+- `tests/test_dependances.py` gets `test_a_fresh_import_loads_only_the_declared_layers`: for every top-level package, a fresh subprocess import is checked against `sys.modules`, a dynamic complement to the existing static AST walk (which cannot see a computed `importlib.import_module` call). Each fresh import also loads every submodule and every `__all__` name, so the lazy facades are actually exercised. A `FORBIDDEN` table encodes each `ARCHITECTURE.md` §5 rule (torch, `lmo`/`light`, `solve`/`active` protocol only, `export`, `data`) and is checked with no transitive closure; no package but `bench` loads `bench`, none loads `torch`. The transitive closure of `AUTORISE` remains only for the coarser declared-layers check.
+- `ARCHITECTURE.md` §5 gains an `api ←` line (matching `AUTORISE["api"]`) and states the `feasibility` exception: it reaches `light.protocole` and `uq` only through `api` (`is_feasible` calls `legalize`), never directly, and loads nothing `api` does not.
+- `__version__`'s import path confirmed already correct (`_version.py` is a genuine leaf); no change needed.
+- This closes PLAN.md phase 4, block 1.
+
+### Added — PLAN.md phase 4, block 1 (imports and layers): lazy certify and light facades
+
+- `archlux.light` and `archlux.certify` are now lazy facades: asking for one name (e.g. `light.Daylight` or `certify.render`) imports only the module that defines it, not every sibling submodule. Verified empirically (`tests/unit/test_lazy_facades.py`, fresh-interpreter subprocess checks) — `light.Daylight` no longer loads `analytique`/`simulateur`; `certify.render` no longer loads `proof`/`borne`.
+- `tests/test_dependances.py`'s leaf allow-list gets `importlib` for `_deprecation` (needed by the new lazy resolution, added below).
+
 ### Added — PLAN.md phase 4, block 0: complexity and coverage tooling
 
 - `radon` added as a dev dependency; a ratchet test (`tests/test_complexity.py`) tracks the number of radon blocks above cyclomatic complexity 10 (33 today: 32 functions/methods plus the class `Loop`), and fails if it drops without the constant being lowered, lowered block by block until it reaches zero (phase 4's exit gate). Not wired into CI as a hard gate yet — that would fail on every commit until the whole phase is done.

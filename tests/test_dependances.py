@@ -57,7 +57,7 @@ AUTORISE: dict[str, frozenset[str]] = {
     "active": frozenset({"types", "errors", "light.protocole", "uq"}),
     # Export BIM : feuille — types + erreurs ; ifcopenshell optionnel (hors archlux).
     "export": frozenset({"types", "errors"}),
-    # Faisabilité : façade sur legalize / Farkas — exacte, sans lumière.
+    # Faisabilité : facade sur legalize / Farkas — exacte, sans lumière.
     "feasibility": frozenset({"types", "errors", "api"}),
     "bench": frozenset(
         {
@@ -97,7 +97,16 @@ LEAVES: dict[str, frozenset[str]] = {
     "seeds": frozenset({"__future__", "hashlib"}),
     "arrays": frozenset({"__future__", "typing", "numpy"}),
     "_deprecation": frozenset(
-        {"__future__", "functools", "sys", "warnings", "dataclasses", "typing", "collections"}
+        {
+            "__future__",
+            "functools",
+            "importlib",
+            "sys",
+            "warnings",
+            "dataclasses",
+            "typing",
+            "collections",
+        }
     ),
 }
 """Modules importable by every layer, with the only imports they may make themselves."""
@@ -256,3 +265,131 @@ def test_no_relative_imports(fichier: Path) -> None:
     arbre = ast.parse(fichier.read_text(encoding="utf-8"))
     relative = [n.lineno for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom) and n.level]
     assert not relative, f"{_chemin_module(fichier)}: relative imports at lines {relative}"
+
+
+_ROOT_EAGER = frozenset({"types", "errors"})
+"""``archlux/__init__.py``'s own eager top-level imports: initializing the parent
+package is unavoidable before any ``import archlux.<x>`` runs, so every dynamic check
+below sees these two regardless of ``x`` (`test_import_cost.py` checks the root itself
+does not go further than this)."""
+
+
+def _closure(paquet: str) -> frozenset[str]:
+    """Every top-level layer ``paquet`` may reach, directly or through one it may reach.
+
+    ``AUTORISE`` entries name the layers a package may import from; this expands that
+    one level to every level, so a name reached only *through* an allowed layer (e.g.
+    ``api`` reaches ``uq`` through ``certify``) is not mistaken for a violation.
+    """
+    seen: set[str] = {paquet, *_ROOT_EAGER}
+    pile = [paquet, *_ROOT_EAGER]
+    while pile:
+        for cible in AUTORISE.get(pile.pop(), frozenset()):
+            racine = cible.split(".")[0]
+            if racine not in seen:
+                seen.add(racine)
+                pile.append(racine)
+    return frozenset(seen)
+
+
+_FRESH_IMPORT = """\
+import importlib, pkgutil, sys
+package = importlib.import_module("archlux." + sys.argv[1])
+# A lazy facade loads almost nothing on `import`: also load every submodule and resolve
+# every public name, so the check sees what the package can actually pull in.
+for info in pkgutil.walk_packages(getattr(package, "__path__", []), package.__name__ + "."):
+    if info.name != "archlux.light.appris":  # torch-only, optional (TORCH_TOLERE)
+        importlib.import_module(info.name)
+for name in getattr(package, "__all__", []):
+    getattr(package, name)
+print(",".join(sorted(m for m in sys.modules if m.startswith("archlux.") or m == "torch")))
+"""
+
+
+def _fresh_import(paquet: str) -> frozenset[str]:
+    """Modules (``archlux.*`` and ``torch``) loaded by a fresh, exhaustive import."""
+    result = subprocess.run(
+        [sys.executable, "-c", _FRESH_IMPORT, paquet], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stderr
+    return frozenset(m for m in result.stdout.strip().split(",") if m)
+
+
+_LIGHT_IMPLEMENTATIONS = ("archlux.light.",)
+"""Every ``light`` submodule; ``archlux.light.protocole`` is the one allowed exception."""
+
+FORBIDDEN: dict[str, tuple[tuple[str, ...], frozenset[str]]] = {
+    # importer: (forbidden module prefixes, modules exempted from them) — ARCHITECTURE.md
+    # §5 "FORBIDDEN", checked WITHOUT any transitive closure: what loads is what counts.
+    "geom": (("torch",), frozenset()),
+    "lmo": (("torch", "archlux.light"), frozenset()),
+    "solve": (("torch", *_LIGHT_IMPLEMENTATIONS), frozenset({"archlux.light.protocole"})),
+    "certify": (("torch",), frozenset()),
+    "light": (("archlux.geom", "archlux.lmo", "archlux.solve"), frozenset()),
+    "active": (_LIGHT_IMPLEMENTATIONS, frozenset({"archlux.light.protocole"})),
+    "export": (("archlux.geom", "archlux.certify"), frozenset()),
+    "data": (("archlux.lmo", "archlux.solve", "archlux.light"), frozenset()),
+    # Justified exception (ARCHITECTURE.md §5): `is_feasible` calls `legalize`, so
+    # `feasibility` depends on `api` by design and reaches `light.protocole` and `uq`
+    # through it (api -> solve -> light.protocole, api -> certify -> uq). It never imports
+    # them directly (the static AUTORISE walk forbids that) and loads no light
+    # implementation; `test_feasibility_reaches_light_and_uq_only_through_api` proves it
+    # loads nothing `api` does not load already.
+    "feasibility": (_LIGHT_IMPLEMENTATIONS, frozenset({"archlux.light.protocole"})),
+}
+"""ARCHITECTURE.md §5 FORBIDDEN rules, by importer. "No module may import bench" and
+"no torch outside ``light.appris``" apply to every package and are checked separately."""
+
+
+def _hits(module: str, prefix: str) -> bool:
+    """``"archlux.light"`` matches the package and its submodules; ``"archlux.light."``
+    only the submodules (the lazy facade itself loads no implementation)."""
+    if prefix.endswith("."):
+        return module.startswith(prefix)
+    return module == prefix or module.startswith(prefix + ".")
+
+
+@pytest.mark.parametrize("paquet", sorted(FORBIDDEN))
+def test_a_fresh_import_breaks_no_forbidden_rule(paquet: str) -> None:
+    """Each §5 FORBIDDEN rule, against ``sys.modules`` after a fresh exhaustive import."""
+    prefixes, allowed = FORBIDDEN[paquet]
+    broken = sorted(
+        m for m in _fresh_import(paquet) if m not in allowed and any(_hits(m, p) for p in prefixes)
+    )
+    assert not broken, f"import archlux.{paquet} loads forbidden {broken} (ARCHITECTURE.md §5)"
+
+
+@pytest.mark.parametrize("paquet", sorted(p for p in AUTORISE if p != "__init__"))
+def test_a_fresh_import_loads_no_bench_and_no_torch(paquet: str) -> None:
+    """No package but ``bench`` loads ``bench``; none loads ``torch`` (``appris`` aside)."""
+    loaded = _fresh_import(paquet)
+    assert "torch" not in loaded
+    if paquet != "bench":
+        assert not any(_hits(m, "archlux.bench") for m in loaded)
+
+
+def test_feasibility_reaches_light_and_uq_only_through_api() -> None:
+    """The §5 exception for ``feasibility`` is exactly "through ``api``", nothing more."""
+    extra = _fresh_import("feasibility") - _fresh_import("api")
+    assert all(_hits(m, "archlux.feasibility") for m in extra), sorted(extra)
+
+
+@pytest.mark.parametrize("paquet", sorted(p for p in AUTORISE if p != "__init__"))
+def test_a_fresh_import_loads_only_the_declared_layers(paquet: str) -> None:
+    """The static AST walk above cannot see a dynamic ``importlib.import_module`` call,
+    or a transitive import the declared sets did not anticipate (PLAN.md phase 4,
+    block 1: a *dynamic*, ``sys.modules``-based check, alongside the static one).
+
+    ``__init__`` (the root package) is excluded: its own laziness is already checked,
+    more precisely, by ``test_import_cost.py``.
+    """
+    autorise = _closure(paquet)
+    for module in sorted(_fresh_import(paquet) - {"torch"}):
+        module = module.removeprefix("archlux.")
+        racine = module.split(".")[0]
+        if racine in LEAVES or racine in autorise:
+            continue
+        pytest.fail(
+            f"import archlux.{paquet} actually loads archlux.{module}, not reachable "
+            f"through AUTORISE[{paquet!r}] = {sorted(AUTORISE[paquet])}"
+        )

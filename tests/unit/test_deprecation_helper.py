@@ -12,7 +12,7 @@ import warnings
 
 import pytest
 
-from archlux._deprecation import Alias, lazy_aliases
+from archlux._deprecation import Alias, LazyAlias, lazy_aliases, lazy_module_attributes
 
 NEW = object()
 
@@ -79,6 +79,34 @@ def test_a_from_import_warns_exactly_once() -> None:
         del sys.modules["archlux_demo_from_import"]
 
 
+def test_a_lazy_alias_imports_only_on_first_use() -> None:
+    """PLAN.md phase 4, block 1: a package facade must not import a name's module just
+    to build its deprecated-alias table."""
+    getattr_ = lazy_aliases(
+        "archlux.demo",
+        {"OldName": LazyAlias("archlux._deprecation", "Alias", "archlux.demo.Alias")},
+    )
+    with pytest.warns(DeprecationWarning) as record:
+        value = getattr_("OldName")  # type: ignore[operator]
+    assert value is Alias
+    assert str(record[0].message) == (
+        "archlux.demo.OldName is deprecated, use archlux.demo.Alias (ADR 0001)"
+    )
+
+
+def test_lazy_module_attributes_resolves_and_caches() -> None:
+    served: dict[str, object] = {}
+    fallback = lazy_module_attributes("pkg", served, {"Alias": "archlux._deprecation"})
+    assert fallback("Alias") is Alias
+    assert served == {"Alias": Alias}  # cached: a later lookup skips __getattr__
+
+
+def test_lazy_module_attributes_raises_for_an_unknown_name() -> None:
+    fallback = lazy_module_attributes("pkg", {}, {"Alias": "archlux._deprecation"})
+    with pytest.raises(AttributeError, match="module 'pkg' has no attribute 'Nothing'"):
+        fallback("Nothing")
+
+
 def test_a_fallback_serves_the_names_that_are_not_aliases() -> None:
     """A module with its own lazy attributes keeps them, and still warns only once."""
     import sys
@@ -106,3 +134,11 @@ def test_a_fallback_serves_the_names_that_are_not_aliases() -> None:
         assert sum(issubclass(w.category, DeprecationWarning) for w in caught) == 1
     finally:
         del sys.modules["archlux_demo_fallback"]
+
+
+@pytest.mark.parametrize("package", ["archlux.light", "archlux.certify"])
+def test_a_lazy_facade_raises_the_standard_message_for_an_unknown_name(package: str) -> None:
+    import importlib
+
+    with pytest.raises(AttributeError, match=f"^module '{package}' has no attribute 'X'$"):
+        _ = importlib.import_module(package).X

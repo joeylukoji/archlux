@@ -136,16 +136,33 @@ day count.
    is checked with `coverage report --skip-covered` when a block's tests move it, not
    read off this single combined number.
 
-### 1. Imports and layers
+### 1. Imports and layers — **done**
 
-4. Make `light/__init__` and `certify/__init__` lazy façades (same lazy-attribute
-   pattern as the package root, PLAN.md 3.13), so importing `archlux.certify` for one
-   report function does not pull in the whole certification stack.
-5. Move `__version__` out of the package root's hot import path (already read from
-   `_version.py`; confirm nothing re-imports the whole package just for it).
-6. Add a **dynamic** `sys.modules`-based test for every `ARCHITECTURE.md` §5 rule (today
-   `tests/test_dependances.py` is a static list); add `api` to the layers it checks
-   (it currently isn't covered as an importer boundary).
+4. `light/__init__` and `certify/__init__` are now lazy facades: asking for one name
+   (`light.Daylight`, `certify.render`) imports only the module that defines it. Not the
+   same lazy-attribute code as the package root (that pattern serves whole submodules
+   and top-level functions, a different shape) — instead, the root's helper itself grew
+   two new pieces (`LazyAlias`, `lazy_module_attributes`, in `_deprecation.py`) so both
+   the deprecated names and the current names of a facade resolve without importing
+   anything until asked. Verified empirically (`tests/unit/test_lazy_facades.py`,
+   fresh-interpreter checks): `light.Daylight` no longer loads `analytique`/
+   `simulateur` (~0.33 s), `certify.render` no longer loads `proof`/`borne` (~1.34 s).
+5. `__version__`'s import path was already correct: `_version.py` is a genuine leaf
+   (imports nothing), read directly by every module that stamps an output, and nothing
+   in the codebase or its docs re-imports the whole package just for the version.
+   Confirmed, no change needed.
+6. Added `test_a_fresh_import_loads_only_the_declared_layers` to
+   `tests/test_dependances.py`: for every top-level package, import it in a fresh
+   subprocess and read `sys.modules` back — a dynamic check the static AST walk cannot
+   do (it cannot see a computed `importlib.import_module(...)` call, and it checks
+   *declared* imports, not what actually loads transitively). `api` was in `AUTORISE`
+   but missing from `ARCHITECTURE.md` §5 itself: PLAN.md was right that it needed adding,
+   and §5 now has an `api ←` line. The dynamic check imports every submodule and every
+   `__all__` name (a lazy facade loads almost nothing otherwise) and checks a `FORBIDDEN`
+   table derived from §5 with no transitive closure; a closure of `AUTORISE` is used only
+   for the separate "declared layers" check, where it would otherwise flag `api` reaching
+   `uq` through `certify`. That closure hid a real gap: `feasibility` loads `light.protocole`
+   and `uq` through `api`. §5 now states this as an explicit, justified exception.
 
 ### 2. `types`
 
@@ -308,7 +325,7 @@ day count.
   solve → light → orient → uq → certify → feasibility → api → active → export → data →
   bench → experiments → cross-cutting). A block starts only once every block above it in
   this list is merged, so no block's tests chase a moving foundation.
-- **Patterns**: exactly the ones PLAN.md's phase-4 table names per block (façade,
+- **Patterns**: exactly the ones PLAN.md's phase-4 table names per block (facade,
   entities, SRP, explicit cache, parameter object, strategy, registry/protocol,
   composite, pipeline, value object). No new pattern introduced without a specific CC or
   coupling problem it solves.
