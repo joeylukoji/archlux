@@ -12,7 +12,7 @@ métriques correspondant : diagnostic géométrique avant, verdict de certificat
 après, déplacement. Les échecs sont inclus au même titre que les réussites — un
 dossier qui ne montrerait que ce qui marche ne servirait à rien.
 
-Usage : j8_visuels.py [plans.jsonl] [etiquette] [n_par_categorie]
+Usage : j8_visuals.py [plans.jsonl] [etiquette] [n_par_categorie]
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ PLANS = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/j8_plans.
 ETIQUETTE = sys.argv[2] if len(sys.argv) > 2 else "etoile"
 PAR_CATEGORIE = int(sys.argv[3]) if len(sys.argv) > 3 else 8
 BUDGET = BUDGETS[-1]
-RACINE = Path("results/visuels") / ETIQUETTE
+RACINE = Path("results/visuals") / ETIQUETTE
 
 
 def _fiche(plan_id: str, plan, diag, preuve, corrige, statut: str, echelle: float) -> str:

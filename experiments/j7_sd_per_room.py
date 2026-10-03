@@ -4,7 +4,7 @@
 La reference n'est pas la moyenne mais la **surface au sol**, seule variable triviale
 qui predise quoi que ce soit.
 
-Usage : j7_sd_par_piece.py <msd.csv> <sd.zip> [n].
+Usage : j7_sd_per_room.py <msd.csv> <sd.zip> [n].
 """
 
 from __future__ import annotations
@@ -121,7 +121,7 @@ couv = float(np.mean([b.lower <= v <= b.upper for b, v in zip(bornes, y_te, stri
 largeur = float(np.mean([b.upper - b.lower for b in bornes]))
 
 Path("results").mkdir(exist_ok=True)
-Path("results/j7_sd_par_piece.md").write_text(
+Path("results/j7_sd_per_room.md").write_text(
     f"# Jalon 7 — prediction **par piece**\n\n"
     f"cible `{DEFAULT_SUN_COLUMN}`, decoupage par site (graine {GRAINE})\n"
     f"pieces : train {p_tr.size} / calibration {p_ca.size} / test {p_te.size}\n\n"

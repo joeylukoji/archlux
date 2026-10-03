@@ -17,7 +17,7 @@ Ce que ce jalon ne montre PAS
 mesure contre 4 239 pieces simulees de Swiss Dwellings : une fois normalise par
 l'aire, son rang tombe a `rho = +0,085`, l'aire au sol seule le bat
 (`rho = +0,590` contre `+0,403`), et sur des sites disjoints de l'entrainement le
-rang **s'inverse** (`-0,342`). Voir `results/j7_sd_par_piece.md`.
+rang **s'inverse** (`-0,342`). Voir `results/j7_sd_per_room.md`.
 
 Ces variantes sont donc « ce que le substitut croit », pas « ce que la lumiere
 fait ». Ce qui est garanti ici est **geometrique** : chaque variante pave son

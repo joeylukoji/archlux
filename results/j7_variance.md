@@ -28,7 +28,7 @@ a position solaire donnee, pas une grandeur meteo.
 scalaire par plan** ; l'eclairement est une grandeur **par piece**. Predire une moyenne
 d'appartement revient a predire une quantite dont la variance ne represente que 7,7 %
 de celle du phenomene, le reste etant lisse par l'agregation. C'est ce qui explique les
-`R2 ~ 0` de `j7_sd_etiquettes.md` bien plus que la pauvrete des entrees.
+`R2 ~ 0` de `j7_sd_labels.md` bien plus que la pauvrete des entrees.
 
 ## Ce que cela implique
 

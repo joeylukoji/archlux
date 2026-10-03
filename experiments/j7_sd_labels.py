@@ -1,6 +1,6 @@
 """Substitut d'eclairement contre de vraies simulations — jalon 7.
 
-Corpus non redistribue. Usage : j7_sd_etiquettes.py <msd.csv> <sd.zip> [n].
+Corpus non redistribue. Usage : j7_sd_labels.py <msd.csv> <sd.zip> [n].
 """
 
 from __future__ import annotations
@@ -130,7 +130,7 @@ rapport = (
     f"(visee 90 %), largeur moyenne {largeur:.3f}, n_calibration {cal.n}\n"
 )
 Path("results").mkdir(exist_ok=True)
-Path("results/j7_sd_etiquettes.md").write_text(rapport, encoding="utf-8")
+Path("results/j7_sd_labels.md").write_text(rapport, encoding="utf-8")
 print("\nconstante  :", score(pred_nul, y_te))
 print("analytique :", score(pred_ana, y_te), f"[recale {pente:.4f}f{ordonnee:+.3f}]")
 print("perceptron :", score(pred_net, y_te))

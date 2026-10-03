@@ -113,7 +113,7 @@ saturates quickly — 8 gains nothing over 4:
 ## Results
 
 4,796 corruptions of 300 real MSD apartments; raw data and table in
-`results/j7_reparation_brut.csv` and `results/j7_reparation.md`:
+`results/j7_repair_raw.csv` and `results/j7_repair.md`:
 
 | Fault | `legalize` | `tiling=True` | fallback |
 |---|--:|--:|--:|

@@ -10,7 +10,7 @@
 **Where it works, and where it does not.** archlux repairs plans that are *almost*
 right. On 4,796 corruptions of 300 real apartments (MSD corpus: gaps, overlaps,
 undersized and shifted rooms), it returns a certified valid plan in **93.9 %** of cases
-(95 % CI [93.2, 94.5], tiling mode with fallback; `results/j7_reparation.md`). On raw
+(95 % CI [93.2, 94.5], tiling mode with fallback; `results/j7_repair.md`). On raw
 outputs of a generative model (HouseDiffusion, 740 plans, none valid at the start), it
 returns an intact certified plan in only **about 20 %** of cases (17.8 % to 23.0 %
 across three sets; `results/j8_generation.md`): four plans out of five are too far
@@ -614,7 +614,7 @@ values):
 
 - Every sampling function takes a **seed, with no default**.
 - Splits are **frozen and published** as lists of identifiers.
-- Raw results are published **before** any aggregation (`results/*_brut.csv`).
+- Raw results are published **before** any aggregation (`results/*_raw.csv`).
 - **The calibration set is published with the model**: without it, a conformal bound
   cannot be checked.
 - Any change in the behaviour of the oracle or of the certificate is a **major

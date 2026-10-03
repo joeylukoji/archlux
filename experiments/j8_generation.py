@@ -330,7 +330,7 @@ def _resumer(brut: Path, echelle: float, rejections: dict[str, int]) -> str:
 
 
 def main() -> None:
-    # La ligne de commande est lue ICI et pas au niveau module : `j8_visuels`
+    # La ligne de commande est lue ICI et pas au niveau module : `j8_visuals`
     # importe `_construire` et `_echelle`, et un parsing a l'import ferait
     # echouer l'import sur ses propres arguments.
     plans = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAUT
@@ -349,7 +349,7 @@ def main() -> None:
     print(f"{len(rows)} plans generes, echelle {echelle:.4f} m/unite")
 
     Path("results").mkdir(exist_ok=True)
-    sortie = Path(f"results/j8_{etiquette}_brut.csv")
+    sortie = Path(f"results/j8_{etiquette}_raw.csv")
     rejections: dict[str, int] = {}
     with sortie.open("w", newline="", encoding="utf-8") as flux:
         ecrivain = csvmod.DictWriter(flux, fieldnames=FIELDS)

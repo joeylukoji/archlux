@@ -572,7 +572,7 @@ def legalize(
 
         Turn it on as soon as the input may carry a **gap**: this is the case of the
         outputs of generative models. Measured on 4,796 corruptions of 300 real MSD
-        plans (`results/j7_reparation.md`): repair goes from 35.9 % to 93.0 %, and on
+        plans (`results/j7_repair.md`): repair goes from 35.9 % to 93.0 %, and on
         gaps alone from 10.0 % to 97.6 % (column ``tiling=True``; the 93.9 % of the
         README is the "fallback" column: ``tiling=True``, otherwise ``legalize`` alone).
         Figures measured before batch 1.1.
