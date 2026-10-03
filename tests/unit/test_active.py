@@ -326,3 +326,46 @@ def test_a_getattr_forwarding_wrapper_is_retrained() -> None:
 
     _short_campaign(Wrapper(Counting()))
     assert calls, "a __getattr__-forwarding wrapper was never retrained"
+
+
+def test_a_fit_with_the_old_epochs_keyword_is_retrained_with_a_warning() -> None:
+    """A third-party ``fit(..., epoques=)`` written before the rename kept failing with a
+    ``TypeError`` once ``Loop`` passed ``epochs=``: it is retrained, with a warning
+    attributed to the caller of ``run``."""
+    calls: list[int] = []
+
+    class OldKeyword(_LocalModel):
+        def fit(  # type: ignore[override]
+            self,
+            xs: tuple[np.ndarray, ...],
+            ys: np.ndarray,
+            orientations: tuple[Orientation, ...],
+            *,
+            seed: int,
+            lr: float,
+            epoques: int,  # lang-ok: the pre-English keyword under test
+        ) -> None:
+            calls.append(1)
+            _LocalModel.fit(self, xs, ys, orientations, seed=seed, lr=lr, epochs=epoques)
+
+    rng = np.random.default_rng(0)
+    pool = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=16)]
+    calib = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=12)]
+    loop = Loop(
+        surrogate=OldKeyword(),
+        simulator=_RegionOracle(),
+        acquire=RandomStrategy(),
+        budget=8,
+        batch=4,
+        seed=3,
+    )
+    with pytest.warns(DeprecationWarning, match="rename the keyword epochs") as caught:
+        loop.run(
+            pool,
+            [Orientation(0.0) for _ in pool],
+            optimizer_reference=pool[:4],
+            calibration=calib,
+            calibration_orientations=[Orientation(0.0) for _ in calib],
+        )
+    assert calls
+    assert {w.filename for w in caught} == {__file__}
