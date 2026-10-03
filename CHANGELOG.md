@@ -8,6 +8,39 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — English module names (chantier E, wave 1a)
+
+- 26 French-named modules renamed to the English names fixed by `docs/glossary.md` (ADR 0001). Mechanical rename only (`git mv`, then every import and module reference updated; rule 4): no logic change, results byte-identical. Prose is not translated yet (wave 1b).
+  - `archlux.active.boucle` → `archlux.active.loop`
+  - `archlux.bench.graines` → `archlux.bench.seeds`
+  - `archlux.bench.manifeste` → `archlux.bench.manifest`
+  - `archlux.bench.protocole` → `archlux.bench.protocol`
+  - `archlux.bench.rapport` → `archlux.bench.report`
+  - `archlux.certify.borne` → `archlux.certify.bound`
+  - `archlux.certify.rapport` → `archlux.certify.report`
+  - `archlux.data.chargeurs` → `archlux.data.loaders`
+  - `archlux.data.decoupage` → `archlux.data.splits`
+  - `archlux.data.synthese` → `archlux.data.synthetic`
+  - `archlux.export.pathologie` → `archlux.export.pathologies`
+  - `archlux.geom.graphe` → `archlux.geom.graph`
+  - `archlux.geom.pavage` → `archlux.geom.tiling`
+  - `archlux.geom.rectilineaire` → `archlux.geom.rectilinear`
+  - `archlux.light.analytique` → `archlux.light.analytic`
+  - `archlux.light.appris` → `archlux.light.learned`
+  - `archlux.light.jetons` → `archlux.light.tokens`
+  - `archlux.light.objectif` → `archlux.light.objective`
+  - `archlux.light.protocole` → `archlux.light.protocol`
+  - `archlux.light.simulateur` → `archlux.light.split_flux`
+  - `archlux.lmo.solveur` → `archlux.lmo.solver`
+  - `archlux.orient.circulaire` → `archlux.orient.circular`
+  - `archlux.uq.conforme` → `archlux.uq.conformal`
+  - `archlux.uq.derive` → `archlux.uq.drift`
+  - `archlux.uq.fiabilite` → `archlux.uq.reliability`
+  - `archlux.uq.gestion` → `archlux.uq.registry`
+- **Shim policy** (ADR 0001, rule 6): every old path stays importable until 1.0.0 as a deprecated shim built by `archlux._deprecation.module_shim`. Through it, each public name of the new module and each former French name the new module still serves (for instance `from archlux.geom.pavage import deduire_trame`) resolves to the same object and emits a `DeprecationWarning` naming the new path. Shims advertise nothing (`__all__ = []`) and nothing inside `src/archlux` imports them.
+- **Pickles**: classes now report the new `__module__` (for instance `archlux.uq.registry.CalibrationToken`). A pickle written before the rename names the old path; it still loads, through the shim, with the same warning. Re-pickle to drop the warning before 1.0.0.
+- New `tests/unit/test_module_shims.py` (old paths, former French names through them, an old pickle); the dependency guards (`tests/test_dependances.py`), the language and identifier ratchets and `docs/specification/ARCHITECTURE.md` (§5, §11) use the new paths.
+
 ### Changed — PLAN.md phase 4, block 13 (`export`): IFC entity split, diagnose under CC 10, SVG at 100% branch coverage
 
 - `_ecrire_spf_minimal` (`export/ifc.py`, was CC 17) split into `_SpfWriter` (the shared STEP-entity buffer, now explicit state instead of closures) and one function per IFC entity block (`_write_header`, `_write_project`, `_write_spatial_hierarchy`, `_write_spaces`, `_write_walls`, `_write_openings`, `_write_certificate_annex`). Verified byte-identical output via a SHA-256 comparison before/after the split, on top of the strict ifcopenshell validation tests (`tests/unit/test_ifc_validation.py`, run in CI via the `dev` extra); now pinned by a golden test (`test_the_export_of_a_certified_plan_is_byte_identical`).

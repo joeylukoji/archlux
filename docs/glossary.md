@@ -191,25 +191,28 @@ public function (`archlux._deprecation.renamed_parameters`).
 
 | French | English | | French | English |
 |---|---|---|---|---|
-| `erreurs.py` | `errors.py` | | `graphe.py` | `graph.py` |
-| `pavage.py` | `tiling.py` | | `rectilineaire.py` | `rectilinear.py` |
-| `solveur.py` | `solver.py` | | `coupes.py` | `cuts.py` |
-| `analytique.py` | `analytic.py` | | `simulateur.py` | `split_flux.py` |
-| `jetons.py` | `tokens.py` | | `objectif.py` | `objective.py` |
-| `appris.py` | `learned.py` | | `protocole.py` | `protocol.py` |
-| `circulaire.py` | `circular.py` | | `conforme.py` | `conformal.py` |
-| `derive.py` | `drift.py` | | `fiabilite.py` | `reliability.py` |
-| `gestion.py` | `registry.py` | | `boucle.py` | `loop.py` |
+| `erreurs.py` | `errors.py` | | `graphe.py` | `graph.py` (done: wave 1a) |
+| `pavage.py` | `tiling.py` (done: wave 1a) | | `rectilineaire.py` | `rectilinear.py` (done: wave 1a) |
+| `solveur.py` | `solver.py` (done: wave 1a) | | `coupes.py` | `cuts.py` |
+| `analytique.py` | `analytic.py` (done: wave 1a) | | `simulateur.py` | `split_flux.py` (done: wave 1a) |
+| `jetons.py` | `tokens.py` (done: wave 1a) | | `objectif.py` | `objective.py` (done: wave 1a) |
+| `appris.py` | `learned.py` (done: wave 1a) | | `protocole.py` | `protocol.py` (done: wave 1a) |
+| `circulaire.py` | `circular.py` (done: wave 1a) | | `conforme.py` | `conformal.py` (done: wave 1a) |
+| `derive.py` | `drift.py` (done: wave 1a) | | `fiabilite.py` | `reliability.py` (done: wave 1a) |
+| `gestion.py` | `registry.py` (done: wave 1a) | | `boucle.py` | `loop.py` (done: wave 1a) |
 | `densite.py` | `density.py` | | `selection.py` | `selection.py` |
-| `preuve.py` | `proof.py` (done: batch E10, old module kept as a deprecated shim) | | `borne.py` | `bound.py` |
-| `rapport.py` | `report.py` | | `dual.py` | `dual.py` |
-| `chargeurs.py` | `loaders.py` | | `decoupage.py` | `splits.py` |
-| `synthese.py` | `synthetic.py` | | `corruption.py` | `corruption.py` |
-| `pathologie.py` | `pathologies.py` | | `survie.py` | `survival.py` |
-| `graines.py` | `seeds.py` | | `manifeste.py` | `manifest.py` |
-| `protocole.py` (bench) | `protocol.py` | | `json_io.py` | `json_io.py` |
+| `preuve.py` | `proof.py` (done: batch E10, old module kept as a deprecated shim) | | `borne.py` | `bound.py` (done: wave 1a) |
+| `rapport.py` (bench, certify) | `report.py` (done: wave 1a) | | `dual.py` | `dual.py` |
+| `chargeurs.py` | `loaders.py` (done: wave 1a) | | `decoupage.py` | `splits.py` (done: wave 1a) |
+| `synthese.py` | `synthetic.py` (done: wave 1a) | | `corruption.py` | `corruption.py` |
+| `pathologie.py` | `pathologies.py` (done: wave 1a) | | `survie.py` | `survival.py` |
+| `graines.py` | `seeds.py` (done: wave 1a) | | `manifeste.py` | `manifest.py` (done: wave 1a) |
+| `protocole.py` (bench) | `protocol.py` (done: wave 1a) | | `json_io.py` | `json_io.py` |
 | `tests/unites` | `tests/unit` (done) | | `tests/proprietes` | `tests/properties` (done) |
 | `experiences/` | `experiments/` (done) | | `resultats/` | `results/` (done) |
+
+Every module marked "done: wave 1a" keeps its old path as a deprecated shim until 1.0.0:
+importing from it still works and warns with the new path (ADR 0001, rule 6).
 
 ## Light modules (rename wave 5, batch 5)
 

@@ -280,19 +280,21 @@ archlux/
 │   ├── seeds.py             # named sub-seeds (`derive`), importable by every layer
 │   ├── arrays.py            # `VecteurF`, the float64 array alias of the numerical core
 │   ├── types.py
-│   ├── geom/{graphe,polytope,pavage,grid,grid_repair,rectilineaire,diagnostic}.py
-│   ├── lmo/{solveur,coupes}.py
+│   ├── geom/{graph,polytope,tiling,grid,grid_repair,rectilinear,diagnostic}.py
+│   ├── lmo/{solver,cuts}.py
 │   ├── solve/{frank_wolfe,trace}.py
-│   ├── light/{protocole,analytique,appris,base,jetons,objectif,simulateur,validation}.py
+│   ├── light/{protocol,analytic,learned,base,tokens,objective,split_flux,validation}.py
 │   ├── orient/circular.py
-│   ├── uq/{conforme,gestion,derive,fiabilite}.py
-│   ├── certify/{proof,farkas,borne,dual,rapport}.py   # preuve.py: deprecated aliases
+│   ├── uq/{conformal,registry,drift,reliability}.py
+│   ├── certify/{proof,farkas,bound,dual,report}.py
 │   ├── feasibility/__init__.py
-│   ├── active/{boucle,densite,selection}.py
-│   ├── data/{chargeurs,corruption,decoupage,dedup,imputation,synthese}.py
-│   ├── export/{ifc,dxf,svg,pathologie,survie,wilson}.py
-│   ├── bench/{graines,manifeste,protocole,rapport,run,stats}.py
-│   └── io/json_io.py
+│   ├── active/{loop,densite,selection}.py
+│   ├── data/{loaders,corruption,splits,dedup,imputation,synthetic}.py
+│   ├── export/{ifc,dxf,svg,pathologies,survie,wilson}.py
+│   ├── bench/{seeds,manifest,protocol,report,run,stats}.py
+│   ├── io/json_io.py
+│   └── …                    # French module names (`geom/pavage.py`, `lmo/coupes.py`,
+│                            #   `certify/preuve.py`, …): deprecated shims (ADR 0001)
 ├── tests/{unites,proprietes,references,docs}/   # + checkers.py, test_dependances.py,
 │                                                #   test_hygiene.py, test_language.py
 ├── benchmarks/{test_budgets.py,guarantees/}
