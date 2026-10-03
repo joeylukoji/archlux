@@ -9,12 +9,14 @@ open the files with ifcopenshell when it is installed (``dev`` and ``bim`` extra
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 
 import pytest
 from hypothesis import given, settings
 
+from archlux import __version__, legalize
 from archlux.export import diagnose, to_ifc
 from archlux.types import Opening, Plan, Room, Wall
 from tests.properties.strategies import CONTEXTE_DEFAUT, plans_valides
@@ -121,3 +123,22 @@ def test_the_global_ids_do_not_depend_on_class_or_field_names(tmp_path: Path) ->
     project = re.search(r"IFCPROJECT\('([^']*)'", (tmp_path / "plan.ifc").read_text())
     assert project is not None
     assert project.group(1) == "0Iie9ISb$ViPPopaAp6Tto"
+
+
+_GOLDEN_SHA256 = "230697e34fe521d96ed76cdc5188ac4dd2aaa2f543785d2bf90595d0364e913d"
+"""SHA-256 of the golden export below, package version replaced by ``<version>``."""
+
+
+def test_the_export_of_a_certified_plan_is_byte_identical(tmp_path: Path) -> None:
+    """Golden file (review of PLAN.md phase 4, block 13): the IFC writer split must not
+    change one byte. Walls, an opening and a certificate annex cover every emission block.
+
+    The writer has no timestamp; the only environment-dependent content is the package
+    version (``IFCAPPLICATION`` and the certificate text), normalized before hashing so a
+    release does not break the pin. Change the constant only on purpose.
+    """
+    plan = legalize(_plan(), CONTEXTE_DEFAUT)
+    assert plan.certificate is not None and plan.openings
+    assert to_ifc(plan, tmp_path / "plan.ifc", validate=True).valid
+    data = (tmp_path / "plan.ifc").read_bytes().replace(__version__.encode(), b"<version>")
+    assert hashlib.sha256(data).hexdigest() == _GOLDEN_SHA256

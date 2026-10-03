@@ -5,10 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+import pytest
 
-from archlux.active.boucle import Loop
+from archlux.active.boucle import Batch, Loop
 from archlux.active.densite import kernel_density
 from archlux.active.selection import RandomStrategy, UncertaintyTimesDensity
+from archlux.errors import InvariantViolation
+from archlux.light.protocole import Adjustable
 from archlux.types import Orientation
 
 
@@ -173,8 +176,6 @@ def test_actif_bat_l_aleatoire() -> None:
 def test_a_surrogate_that_still_has_ajuster_is_retrained_with_a_warning() -> None:
     """Review of the stack (#12): the loop looked up ``fit`` only, and silently stopped
     retraining a surrogate written before the rename."""
-    import pytest
-
     calls: list[int] = []
 
     class Legacy(_ModeleLocal):
@@ -205,3 +206,123 @@ def test_a_surrogate_that_still_has_ajuster_is_retrained_with_a_warning() -> Non
             calibration_orientations=[Orientation(0.0) for _ in calib],
         )
     assert calls, "the legacy surrogate was never retrained"
+
+
+def test_batch_rejects_mismatched_lengths() -> None:
+    """PLAN.md phase 4, block 12, item 33: `x` and `orientations` stay in sync."""
+    with pytest.raises(InvariantViolation):
+        Batch(x=(np.zeros(4),), orientations=())
+
+
+def test_batch_len_is_the_candidate_count() -> None:
+    batch = Batch(x=(np.zeros(4), np.ones(4)), orientations=(Orientation(0.0), Orientation(90.0)))
+    assert len(batch) == 2
+
+
+def test_a_trainable_surrogate_satisfies_adjustable() -> None:
+    """PLAN.md phase 4, block 12, item 34: `fit` makes a surrogate `Adjustable`."""
+    assert isinstance(_ModeleLocal(), Adjustable)
+
+
+def test_a_frozen_surrogate_does_not_satisfy_adjustable() -> None:
+    assert not isinstance(_OracleRegion(), Adjustable)
+
+
+def _short_campaign(surrogate: object) -> None:
+    """Run a small campaign with an independent calibration set."""
+    rng = np.random.default_rng(0)
+    pool = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=16)]
+    calib = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=12)]
+    loop = Loop(
+        surrogate=surrogate,  # type: ignore[arg-type]
+        simulateur=_OracleRegion(),
+        acquire=RandomStrategy(),
+        budget=8,
+        batch=4,
+        seed=3,
+    )
+    loop.run(
+        pool,
+        [Orientation(0.0) for _ in pool],
+        reference_optimiseur=pool[:4],
+        calibration=calib,
+        calibration_orientations=[Orientation(0.0) for _ in calib],
+    )
+
+
+def test_the_ajuster_deprecation_points_at_the_caller_of_run() -> None:
+    """Review of block 12: the warning moved two frames deeper with the ``run`` split,
+    so it was attributed to ``boucle.py`` and hidden by Python's default filters."""
+
+    class Legacy(_ModeleLocal):
+        fit = None  # type: ignore[assignment]
+
+        def ajuster(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            return _ModeleLocal.fit(self, *args, **kwargs)
+
+    rng = np.random.default_rng(0)
+    pool = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=16)]
+    calib = [np.array([float(z)]) for z in rng.uniform(-1.5, 1.5, size=12)]
+    loop = Loop(
+        surrogate=Legacy(),
+        simulateur=_OracleRegion(),
+        acquire=RandomStrategy(),
+        budget=8,
+        batch=4,
+        seed=3,
+    )
+    with pytest.warns(DeprecationWarning, match="ajuster is deprecated") as caught:
+        loop.run(
+            pool,
+            [Orientation(0.0) for _ in pool],
+            reference_optimiseur=pool[:4],
+            calibration=calib,
+            calibration_orientations=[Orientation(0.0) for _ in calib],
+        )
+    assert {w.filename for w in caught} == {__file__}
+
+
+def test_a_surrogate_with_fit_but_no_gradient_is_retrained() -> None:
+    """Review of block 12: ``Loop`` never calls ``gradient``, so a surrogate lacking it
+    must still be retrained -- ``isinstance(..., Adjustable)`` silently skipped it."""
+    calls: list[int] = []
+
+    class NoGradient:
+        indicator = "sDA"
+
+        def __init__(self) -> None:
+            self._inner = _ModeleLocal()
+
+        def evaluate(self, x: np.ndarray, o: Orientation, *, glazing: object = None) -> float:
+            return self._inner.evaluate(x, o)
+
+        def uncertainty(self, x: np.ndarray, o: Orientation, *, glazing: object = None) -> float:
+            return self._inner.uncertainty(x, o)
+
+        def fit(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            calls.append(1)
+            self._inner.fit(*args, **kwargs)
+
+    _short_campaign(NoGradient())
+    assert calls, "a surrogate with fit but no gradient was never retrained"
+
+
+def test_a_getattr_forwarding_wrapper_is_retrained() -> None:
+    """Review of block 12: on Python >= 3.12 a runtime-checkable protocol check ignores
+    ``__getattr__``, so a forwarding wrapper around a trainable surrogate was skipped."""
+    calls: list[int] = []
+
+    class Counting(_ModeleLocal):
+        def fit(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            calls.append(1)
+            super().fit(*args, **kwargs)
+
+    class Wrapper:
+        def __init__(self, inner: object) -> None:
+            self._inner = inner
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(self._inner, name)
+
+    _short_campaign(Wrapper(Counting()))
+    assert calls, "a __getattr__-forwarding wrapper was never retrained"

@@ -448,42 +448,137 @@ coverage 89.48% (ratchet 88.8%), `mkdocs build --strict` clean, `test_language.p
 Verified: full suite green, `mypy src` clean, coverage 89.41% (ratchet 88.8%),
 `mkdocs build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
-### 10. `feasibility`
+### 10. `feasibility` — done
 
-29. Move the business logic out of `feasibility/__init__.py` into `verdict.py`; the
-    package root re-exports.
-30. Share `_solve_l1` between `feasibility` and `api` (today likely duplicated or
-    near-duplicated — confirm at the commit, not from memory).
+29. Moved `FeasibilityCertificate`, `Verdict`, `is_feasible` and the private
+    `_legalize_any_dimensions` out of `feasibility/__init__.py` into
+    `feasibility/verdict.py`; the package root is now a four-line re-export plus the
+    existing `lazy_aliases` deprecated-name shim — the same shape as every other
+    package in this project. `feasibility` is itself imported lazily by the root
+    package (`archlux/__init__.py`'s `_LAZY`), so this buys no further import-cost
+    benefit on its own; it is purely the structural separation this item asks for.
+    Covered by new `tests/unit/test_feasibility_package.py`: the root re-exports
+    `verdict`'s three public names by identity, and `__init__.py`'s source has no
+    `def` of its own.
+30. **Found stale, not applicable.** No `_solve_l1` (or any solving logic at all)
+    exists in `feasibility`: `is_feasible` has zero LP code of its own — it calls the
+    public `archlux.api.legalize` and reads the `Infeasible` exception it raises.
+    There is nothing to deduplicate between the two modules; this item's premise
+    (written before PLAN.md 3.9's English rename, presumably) does not hold against
+    the current code.
 
-### 11. `api`
+Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` and
+`tests/unit/test_import_cost.py` green (no layering or import-cost change).
 
-31. Replace the two `pavage`/tiling-related booleans with one `pavage: TilingMode |
-    None` (or equivalent single value), resolving the parameter-alias question left
-    open by PLAN.md 3.9 (see PR #17, already merged) for this specific parameter pair.
-32. Confirm `legalize`'s pipeline (`_Problem`, `_build_problem`, `_admits`, from PR #8)
-    is still under CC 10 end to end after blocks 2–10 land; extract further only if a
-    later block pushed it back up.
+### 11. `api` — pipeline done, item 31 deferred
 
-### 12. `active`
+31. **Deferred.** The pair this item means is `tiling: bool` + `repair_budget: int`
+    (`repair_budget` has no effect when `tiling` is false), not `pavage`/`tiling`: an
+    earlier note calling it "already resolved" was wrong. Folding them into
+    `tiling: int | None` is deferred because (1) these keywords were just renamed in
+    PR #17 (`fusions`/`pavage`/`budget_reparation` → `merges`/`tiling`/`repair_budget`)
+    and another public change now would churn users, and (2) in Python `bool` is an
+    `int` (`True == 1`), so `tiling=True` would be ambiguous with a repair budget of 1.
+32. **Done.** The planned Pipeline: `api._legalize` (shared by `legalize` and
+    `legalize_trace`) now chains `_plan_polytope` (validation + `_build_problem`) →
+    `_legalize_l1` (L1 pass or typed refusal) → `_optimize_light` (light mode, certifies
+    its own plan) → `_certify` (classic mode). Private refactor only: no public API
+    change, `scripts/results.py --check` byte-identical, warning stacklevels still point
+    at the caller, every function under CC 10, complexity ratchet unchanged.
 
-33. Add a `Batch(x, orientations)` value object replacing the positional tuples `Loop`
-    passes around.
-34. Add an `Adjustable` protocol for what `Loop.run` expects from a surrogate
-    (`fit`/`evaluate`/`gradient`), replacing the `getattr(surrogate, "fit", None)` duck
-    typing found and fixed during PLAN.md 3.9 wave 5 batch 5.
-35. Derive every seed in `active` through `bench.graines.derive`, not a local scheme.
-36. Break `Loop.run` (CC 29, the highest after `_convertir`) under CC 10 using the
-    `Batch`/`Adjustable` types from the two commits above.
+### 12. `active` — done
 
-### 13. `export`
+33. Added `Batch(x, orientations)` (`active/boucle.py`), a frozen value object replacing
+    the parallel `xs`/`orientations` lists `Loop` passed to `_incertitudes_acquisition`
+    and `_largeur_moyenne`. **Scoped down from the plan's own wording**: `Loop.run`'s own
+    public parameter list (`propositions`/`orientations`,
+    `holdout`/`holdout_orientations`, `calibration`/`calibration_orientations`) is
+    unchanged — merging those into `Batch` too would break every existing caller for a
+    cosmetic gain. `Batch` is internal plumbing, not a public-API change (not in
+    `active/boucle.py`'s `__all__`).
+34. Added `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`) to
+    document the contract. `Loop._fit_cycle` deliberately keeps its run-time test on a
+    callable `fit` attribute (`callable(getattr(surrogate, "fit", None))`), not
+    `isinstance(self.surrogate, Adjustable)`: the protocol check also demands
+    `gradient`/`evaluate`/`uncertainty`/`indicator`, so a surrogate with `fit` but no
+    `gradient` (which `Loop` never calls) would silently stop being retrained, and on
+    Python >= 3.12 it ignores `__getattr__`, skipping a forwarding wrapper. The legacy
+    `ajuster`-attribute fallback (a surrogate written before the English rename) stays
+    attribute-based too, since no protocol can represent "the old, deprecated spelling
+    of this method"; its warning uses `stacklevel=4` so it still names the caller of
+    `Loop.run`.
+35. **Found stale, not applicable.** `active/boucle.py` already calls
+    `archlux.seeds.derive` directly (not a local scheme) at all three of its seed
+    sites. It cannot go through `bench.graines.derive` as the item literally asks:
+    `active` may import `types`/`errors`/`light.protocole`/`uq`, not `bench`
+    (`ARCHITECTURE.md` §5) — and `bench.graines.derive` is itself only a thin
+    backward-compatible wrapper around `archlux.seeds.derive`, the same leaf `active`
+    already calls. No change needed.
+36. Broke `Loop.run` (was CC 29) into `_validate_run_inputs`, `_seed_calibration` (free
+    functions) and `_run_cycle`/`_fit_cycle`/`_recalibrate_cycle` (methods, since they
+    need `self.surrogate`/`self.simulateur`/`self.seed`). `run` itself is now CC 6;
+    `Loop`'s own class-aggregate complexity drops from 11 to 5. Covered by new tests in
+    `tests/unit/test_actif.py` (`Batch`'s length-mismatch guard and `__len__`, and that
+    a trainable vs. a frozen surrogate correctly (dis)satisfies `Adjustable`; after
+    review, that a surrogate without `gradient` and a `__getattr__` wrapper are both
+    retrained and that the `ajuster` warning names the caller's file), on top of
+    the five pre-existing `Loop`/acquisition tests, all still green.
 
-37. Split `_write_spf_minimal` (`ifc.py`, CC 17) by IFC entity (one function per
-    `IFCBUILDINGSTOREY`/`IFCSPACE`/`IFCRELCONTAINEDINSPATIALSTRUCTURE`... block).
-38. Make `pathologie.py`'s `diagnose` (CC 19) read overlaps from `Plan.certificate`
-    when one is already attached, instead of recomputing them — verify the call sites
-    that diagnose an uncertified plan still work standalone.
-39. Add missing SVG rendering tests (`export/svg.py`) if the coverage gap from the
-    branch-coverage baseline (block 0.3) shows one.
+**Ratchet**: `MAX_VIOLATIONS` moved from 22 to 20 (`run` and `Loop`'s own
+class-aggregate entry both counted as violations).
+Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` green (no new
+cross-layer import), coverage 89.51% (ratchet 88.8%), `mkdocs build --strict` clean.
+
+### 13. `export` — done
+
+37. Split `_ecrire_spf_minimal` (`ifc.py`, was CC 17) into `_SpfWriter` (the
+    `alloc`/`emit`/`point`/`point2`/`axis2`/`guid` closures, now methods sharing
+    explicit `ents`/`nxt`/`salt` state instead of a shared mutable closure scope) and
+    one function per IFC entity block: `_write_header`, `_write_project`,
+    `_write_spatial_hierarchy`, `_write_spaces`, `_write_walls`, `_write_openings`,
+    `_write_certificate_annex`. The call order in the new orchestrator is unchanged, so
+    STEP entity numbering and every `IfcGloballyUniqueId` are unchanged too — **verified
+    by comparing a SHA-256 of the rendered `.ifc` file before and after the split: byte
+    identical**. The strict schema/rule-validation tests in
+    `tests/unit/test_ifc_validation.py` run in CI (ifcopenshell comes with the `dev`
+    extra) and pass; the before/after SHA-256 is additional evidence of byte identity,
+    now pinned by a golden test
+    (`test_the_export_of_a_certified_plan_is_byte_identical`: walls, an opening and a
+    certificate annex; its hash also matches the pre-split writer).
+    `_ecrire_spf_minimal` itself is now CC 4.
+38. **Scoped down from the plan's own wording, after reading the actual risk.**
+    `pathologie.diagnose` is **not** changed to read overlaps from `Plan.certificate`.
+    Reasons found before writing any code:
+    - `GeometricProof.overlap` is a bare `bool`; it does not name *which* rooms
+      overlap, and `diagnose`'s `chevauchement:{a}|{b}` codes are asserted on by name
+      in `tests/unit/test_export.py`. Reading only the boolean would still need the
+      full pairwise computation to recover the pair names whenever `overlap` is
+      `True` — the "skip the computation" case only works for the `False` branch.
+    - Nothing stops a caller from constructing `Plan(rooms=X, certificate=some_other_
+      certificate)` by hand; `Plan` is frozen but the type system does not tie a
+      `certificate` to having actually been computed from that same `Plan`'s current
+      `rooms`. Trusting an attached certificate's `overlap` flag without reverifying
+      it against the plan actually being diagnosed is exactly the "believe the prior
+      computation on its word" pattern `ARCHITECTURE.md` forbids for the solver
+      itself; extending that same trust to BIM export, where a silent miss produces
+      an invalid file downstream tools accept, is a worse place to introduce it than
+      most. No profiling evidence in the plan motivates the risk either.
+    Did the safe half of this item instead: split `diagnose` (was CC 19) into
+    `_room_pathologies`, `_wall_pathologies`, `_orphan_opening_pathologies`,
+    `_outline_pathologies`, `_overlap_pathologies` — pure extraction, same recomputation
+    as before, zero behavior change. `diagnose` itself is now CC 1.
+39. Branch coverage of `export/svg.py` was 98.1% (1 line, 1 branch missing): `_etendue`'s
+    `if not xs: return (0.0, 0.0, 1.0, 1.0)` fallback, reachable from the public
+    `render()` with a plan that has no rooms and no outline (only `sheet` guards against
+    an empty *panel list*, a different check). Added
+    `test_an_empty_plan_with_no_outline_still_renders` to
+    `tests/unit/test_svg.py`; `export/svg.py` is now 100% branch coverage.
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 20 to 18 (`_ecrire_spf_minimal` and
+`pathologie.diagnose`).
+Verified: full suite green, `mypy src` clean, byte-identical IFC output (SHA-256
+comparison), coverage 89.51% (ratchet 88.8%, `export/svg.py` itself 100%), `mkdocs
+build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
 ### 14. `data`
 

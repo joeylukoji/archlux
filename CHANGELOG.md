@@ -8,6 +8,33 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 13 (`export`): IFC entity split, diagnose under CC 10, SVG at 100% branch coverage
+
+- `_ecrire_spf_minimal` (`export/ifc.py`, was CC 17) split into `_SpfWriter` (the shared STEP-entity buffer, now explicit state instead of closures) and one function per IFC entity block (`_write_header`, `_write_project`, `_write_spatial_hierarchy`, `_write_spaces`, `_write_walls`, `_write_openings`, `_write_certificate_annex`). Verified byte-identical output via a SHA-256 comparison before/after the split, on top of the strict ifcopenshell validation tests (`tests/unit/test_ifc_validation.py`, run in CI via the `dev` extra); now pinned by a golden test (`test_the_export_of_a_certified_plan_is_byte_identical`).
+- `diagnose` (`export/pathologie.py`, was CC 19) split into `_room_pathologies`, `_wall_pathologies`, `_orphan_opening_pathologies`, `_outline_pathologies`, `_overlap_pathologies`. **Scoped down from the plan's own wording**: does not read overlaps from an attached `Plan.certificate` instead of recomputing them — nothing ties a certificate to having actually been computed from the plan it is attached to, and trusting it would reintroduce the "believe a prior computation on its word" pattern the project forbids for the solver, here for BIM export. See `docs/plans/phase-4-design-patterns.md`.
+- `export/svg.py`'s branch coverage gap (98.1%, `_etendue`'s empty-extent fallback) closed with a new test; now 100%.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 20 to 18.
+
+### Changed — PLAN.md phase 4, block 12 (`active`): `Batch` value object, `Adjustable` protocol, `Loop.run` under CC 10
+
+- `Batch(x, orientations)` (`active/boucle.py`): replaces the parallel `xs`/`orientations` lists `Loop` passed to its own helpers. Internal plumbing, not exported (`__all__` lists only `ActiveReport` and `Loop`): `Loop.run`'s public parameter list is unchanged, since merging it into `Batch` too would break every existing caller.
+- `light.protocole.Adjustable` (`Surrogate` + `fit`, `@runtime_checkable`) documents the contract of a retrainable surrogate. `Loop`'s run-time test deliberately stays a callable `fit` attribute (`callable(getattr(surrogate, "fit", None))`, the pre-block behaviour): `isinstance(surrogate, Adjustable)` would also demand `gradient`, which `Loop` never calls, and on Python >= 3.12 ignores `__getattr__`, so a surrogate without `gradient` or a forwarding wrapper would silently stop being retrained. The legacy `ajuster` fallback (pre-English-rename surrogates) stays attribute-based, and its `DeprecationWarning` again points at the caller of `Loop.run` (`stacklevel=4` after the split).
+- `Loop.run` (was CC 29) split into `_validate_run_inputs`, `_seed_calibration`, `_run_cycle`, `_fit_cycle`, `_recalibrate_cycle`; now CC 6. The lists a campaign grows in place travel in a private `_CampaignState` dataclass, so `_run_cycle` takes 7 parameters instead of 13. `Loop`'s own class-aggregate complexity drops from 11 to 5.
+- **Found stale, not applicable**: deriving `active`'s seeds through `bench.graines.derive` — `active` may not import `bench`, and `bench.graines.derive` is itself a thin wrapper around `archlux.seeds.derive`, which `active` already calls directly.
+- New tests in `tests/unit/test_actif.py`.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 22 to 20.
+
+### Changed — PLAN.md phase 4, block 10 (`feasibility`): business logic moved to `verdict.py`
+
+- `FeasibilityCertificate`, `Verdict`, `is_feasible` and `_legalize_any_dimensions` moved from `feasibility/__init__.py` to `feasibility/verdict.py`; the package root is now a four-line re-export plus the existing deprecated-alias shim, the same shape as every other package. No import-cost change: `feasibility` is already imported lazily by the root package.
+- New `tests/unit/test_feasibility_package.py`.
+- **Found stale, not applicable**: item 30, sharing `_solve_l1` between `feasibility` and `api`. No such function, or any solving logic at all, exists in `feasibility` — `is_feasible` delegates entirely to `archlux.api.legalize`. Nothing to deduplicate.
+
+### Changed — PLAN.md phase 4, block 11 (`api`): `legalize` as a pipeline; item 31 deferred
+
+- Item 32: the private body of `legalize`/`legalize_trace` is now the planned pipeline `_plan_polytope` → `_legalize_l1` → `_optimize_light` → `_certify`. No public API change; results byte-identical; every function under CC 10.
+- Item 31 (fold `tiling: bool` + `repair_budget: int` into `tiling: int | None`): deferred, not resolved. These keywords were just renamed in PR #17, and since `bool` is an `int` in Python, `tiling=True` would be ambiguous with a repair budget of 1.
+
 ### Changed — PLAN.md phase 4, block 9 (`certify`): three functions under CC 10
 
 - `verify_infeasibility` (`certify/farkas.py`, was CC 20) split into `_accumulate` (the inequality/equality row-weighting loop, previously duplicated almost verbatim) and `_lowest_over_box`; now exactly CC 10 (rank B).
