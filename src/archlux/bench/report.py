@@ -68,7 +68,7 @@ def report(
     Stratification is mandatory (`MILESTONE-6.md` §5): no single global summary.
 
     **Known limitation**: the intervals are marginal, one per (sector, method) pair.
-    Reading ``n_secteurs × n_methods`` 95% intervals as that many simultaneous
+    Reading ``n_sectors × n_methods`` 95% intervals as that many simultaneous
     conclusions overstates significance; correct the family with
     :func:`archlux.bench.stats.holm` before any publication.
     """

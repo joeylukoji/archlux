@@ -17,7 +17,7 @@ def impute_openings(plan: Plan, *, ratio: float = DEFAULT_OPENING_RATIO) -> Plan
     """Add an opening centered on each wall that has none.
 
     Does not touch openings already present. The effect of this imputation on
-    calibration must be measured separately (`docs/donnees/imputation.md`).
+    calibration must be measured separately (`docs/data/imputation.md`).
     """
     occupied_walls = {o.wall_id for o in plan.openings}
     added: list[Opening] = list(plan.openings)

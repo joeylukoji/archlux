@@ -12,7 +12,7 @@ may depend on it.
 Not registered yet (inventoried in phase 1.5): ``geom.diagnostic._AIRE_MIN``, the
 ``tol`` defaults of ``Polytope.contient`` and ``lmo.coupes.satisfait``, the pivot of
 ``geom.rectilinear``, ``lmo.coupes._TOLERANCE_BORNE``, ``api._DUAL_SEUIL``, the
-``seuil`` of ``certify.dual`` and ``geom.tiling._EPS``.
+``threshold`` of ``certify.dual`` and ``geom.tiling._EPS``.
 
 Known inconsistencies (to be resolved in phase 1.5)
 ----------------------------------------------------

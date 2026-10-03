@@ -1,4 +1,4 @@
-"""The Frank-Wolfe helpers against ``docs/formules/frank-wolfe.md`` (away steps, weights).
+"""The Frank-Wolfe helpers against ``docs/formulas/frank-wolfe.md`` (away steps, weights).
 
 Expectations are derived by hand from the formulas (Lacoste-Julien & Jaggi 2015), not
 from running the code.

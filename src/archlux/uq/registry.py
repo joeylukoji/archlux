@@ -16,7 +16,7 @@ actually holds. The known bypasses, all one line each:
 2. :meth:`CalibrationToken.verify` recomputes ``blake2b(fingerprint|timestamp)``:
    this is an **unkeyed checksum**, not a signature. It detects corruption, never
    forgery — the material is entirely inside the token.
-3. :attr:`DataManagement.racine` is a public field: ``gestion.racine / "calibration"``
+3. :attr:`DataManagement.root` is a public field: ``registry.root / "calibration"``
    opens the directory without going through :meth:`DataManagement.for_calibration`.
 4. ``model`` is **optional** in :meth:`DataManagement.for_calibration`; omitted, no
    fingerprint is compared and the token is no longer bound to anything.

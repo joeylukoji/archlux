@@ -11,7 +11,7 @@ Classic pipeline
 4. Minimize :math:`\\sum e_i` under area cuts (Kelley / AM-GM).
 5. Devectorize, re-verify **independently**, attach the certificate.
 
-Full chain, assumptions and contra-indications: ``docs/formules/pipeline.md``.
+Full chain, assumptions and contra-indications: ``docs/formulas/pipeline.md``.
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ def gradient_distance(x_proposed: FloatVector) -> FloatVector:
 
     Notes
     -----
-    Epigraph: ``docs/formules/epigraphe-l1.md``.
+    Epigraph: ``docs/formulas/l1-epigraph.md``.
     """
     n_var = int(x_proposed.shape[0])
     costs = np.zeros(2 * n_var, dtype=float)
@@ -372,7 +372,7 @@ def _optimize_light(
         poly_fw = restrict_to_budget(poly_fw, problem.x_ref, budget, keep=x0)
     # Glazing is not part of the decision vector: it is constant during the
     # optimization and passed through unchanged. Without it the surrogate only sees
-    # rectangles and cannot predict real daylight (`docs/formules/jetons.md`).
+    # rectangles and cannot predict real daylight (`docs/formulas/tokens.md`).
     glazing = Glazing(walls=corrected.walls, openings=corrected.openings)
     result = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
     best_plan = problem.decode(result.x, poly.index, template=corrected)
@@ -539,7 +539,7 @@ def legalize(
         sub-rectangles (:func:`~archlux.geom.rectilinear.decompose`).
     ctx : Contexte
         Load-bearing structure, orientation, outline, regulation.
-    objective : Substitut or None, optional
+    objective : Surrogate or None, optional
         Objective to maximize. ``None`` means geometric proximity.
     calibration : Calibration or None, optional
         Conformal calibration of ``objective`` (same indicator, scores normalized by
@@ -558,7 +558,7 @@ def legalize(
             Use :func:`legalize_trace` instead, which returns ``(Plan, Trace)`` instead
             of smuggling the trace through a field of ``Plan`` (PLAN.md phase 4, block
             2). ``trace=True`` still works, with a warning, until 1.0.0 (ADR 0001).
-    merges : tuple of PieceRectilineaire, optional
+    merges : tuple of RectilinearRoom, optional
         Fused rooms (L, T, U, Z) decomposed into sub-rectangles. Their shared edges
         become equalities of ``A_eq``; on the orthogonal axis, the order of the
         sub-rectangle ends is kept and every shared edge keeps at least
@@ -655,7 +655,7 @@ def legalize(
 
     Notes
     -----
-    Pipeline and sources: ``docs/formules/pipeline.md``.
+    Pipeline and sources: ``docs/formulas/pipeline.md``.
 
     Examples
     --------

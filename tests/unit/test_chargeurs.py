@@ -1,4 +1,4 @@
-"""Chargeur de corpus reel (MSD) — `docs/donnees/msd.md`.
+"""Chargeur de corpus reel (MSD) — `docs/data/msd.md`.
 
 Le CSV de test est fabrique ici : le corpus reel fait 400 Mo et n'est pas
 redistribuable. La geometrie reproduit ce qui compte dans MSD — repere tourne,

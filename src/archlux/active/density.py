@@ -20,11 +20,11 @@ def kernel_density(
 
     Parameters
     ----------
-    candidats : numpy.ndarray
+    candidates : numpy.ndarray
         Shape ``(n, d)`` — candidate plans (vectorized).
     reference : numpy.ndarray
         Shape ``(m, d)`` — plans produced by the optimizer (useful domain).
-    bande : float or None, optional
+    bandwidth : float or None, optional
         Kernel bandwidth. Default: Scott's rule on the reference.
 
     Returns

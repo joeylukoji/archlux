@@ -44,7 +44,7 @@ def _validate(
 
 
 def _available_mask(n_candidates: int, excluded: np.ndarray | None) -> np.ndarray:
-    """Boolean mask of the free indices; reject ``exclus`` entries outside ``[0, N)``."""
+    """Boolean mask of the free indices; reject ``excluded`` entries outside ``[0, N)``."""
     mask = np.ones(n_candidates, dtype=bool)
     if excluded is None:
         return mask
@@ -70,7 +70,7 @@ class UncertaintyTimesDensity:
         seed: int,
         excluded: np.ndarray | None = None,
     ) -> np.ndarray:
-        """Take the ``n`` highest scores, skipping ``exclus``."""
+        """Take the ``n`` highest scores, skipping ``excluded``."""
         del seed  # deterministic once the scores are fixed
         inc, dens = _validate(uncertainties, densities, n=n)
         scores = inc * dens

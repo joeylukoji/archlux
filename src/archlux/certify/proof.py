@@ -44,7 +44,7 @@ Displacement
 :math:`\\delta_\\infty = \\max_p \\max\\bigl(|\\Delta x|,|\\Delta y|,|\\Delta w|,|\\Delta h|\\bigr)`
 in metres, relative to the reference plan; checked against an optional budget.
 
-Derivation, tolerances and use cases: ``docs/formules/preuve-exacte.md``.
+Derivation, tolerances and use cases: ``docs/formulas/exact-proof.md``.
 """
 
 from __future__ import annotations
@@ -620,7 +620,7 @@ def verify_exactly(
         Maximum displacement allowed from ``reference``, in metres. When given, a
         larger ``max_displacement`` (beyond ``SNAP_M``) makes the plan invalid. Without
         ``reference`` the displacement is 0 and the budget cannot be violated.
-    merges : tuple of PieceRectilineaire, optional
+    merges : tuple of RectilinearRoom, optional
         Rooms decomposed into sub-rectangles (L, T, U, Z), as passed to
         :func:`archlux.api.legalize`. The minimum area of such a room applies to the
         union of its sub-rectangles found in ``plan`` (by id), which must form a single
@@ -641,7 +641,7 @@ def verify_exactly(
 
     Notes
     -----
-    Formulas: ``docs/formules/preuve-exacte.md``.
+    Formulas: ``docs/formulas/exact-proof.md``.
     """
     malformed = _malformed_rooms(plan)
     if malformed:

@@ -6,9 +6,9 @@ silent error capable of invalidating a publication. Two modes follow from this:
 
 - ``run(..., calibration=...)`` -- an **independent** set, drawn outside the loop.
   The only mode whose coverage is publishable;
-- otherwise, a fraction ``part_calibration`` of the acquired points is set aside and
+- otherwise, a fraction ``calibration_share`` of the acquired points is set aside and
   never enters ``fit``. The separation holds, but the points remain *selected*
-  by the acquisition: ``ActiveReport.calibration_independante`` is then ``False``.
+  by the acquisition: ``ActiveReport.independent_calibration`` is then ``False``.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ class ActiveReport:
 
     Attributes
     ----------
-    calibration_independante : bool
+    independent_calibration : bool
         True if the calibration comes from a set drawn **outside** the loop. False
         if it was drawn from the acquired points: the points are then chosen by
         the acquisition strategy, hence not exchangeable with a randomly drawn
@@ -70,7 +70,7 @@ class Batch:
 
     Replaces the parallel ``xs``/``orientations`` lists :class:`Loop` passed around
     internally (PLAN.md phase 4, block 12, item 33). Scoped to internal use: changing
-    ``Loop.run``'s own public parameter list (``propositions``/``orientations``,
+    ``Loop.run``'s own public parameter list (``proposals``/``orientations``,
     ``holdout``/``holdout_orientations``, ``calibration``/``calibration_orientations``)
     would break every existing caller for a cosmetic gain. Not in ``__all__``.
     """
@@ -93,7 +93,7 @@ class _CampaignState:
     """The lists one ``Loop.run`` campaign grows in place, cycle after cycle.
 
     ``*_lab`` feed ``fit``; ``*_cal`` feed the conformal calibration only, never
-    ``fit``; ``exclus`` holds the pool indices already acquired.
+    ``fit``; ``excluded`` holds the pool indices already acquired.
     """
 
     xs_cal: list[np.ndarray]
@@ -218,9 +218,9 @@ class Loop:
 
     Parameters
     ----------
-    surrogate : Substitut
+    surrogate : Surrogate
         Model to improve. If it exposes ``fit``, it is retrained every cycle.
-    simulateur : Substitut
+    simulator : Surrogate
         Frozen oracle (e.g. ``SplitFluxOracle``).
     acquire : AcquisitionStrategy
         ``UncertaintyTimesDensity`` or ``RandomStrategy``.
@@ -237,7 +237,7 @@ class Loop:
     alpha : float, optional
         Target conformal level (default 0.10 -> 90% coverage). Also sets the
         minimum calibration size, via :func:`~archlux.uq.conformal.minimal_n_conformal`.
-    part_calibration : float, optional
+    calibration_share : float, optional
         Fraction of the acquired points set aside for calibration when no
         independent set is supplied. ``0.0`` disables the set-aside -- ``calibration=``
         must then be passed, otherwise ``run`` raises.
@@ -249,7 +249,7 @@ class Loop:
     fault is avoided -- but they are not exchangeable with a randomly drawn test
     set. In this mode, ``run`` measures an **interval width**, a legitimate quantity
     for comparing two strategies at equal budget, and **not** a coverage.
-    ``ActiveReport.calibration_independante`` carries the distinction.
+    ``ActiveReport.independent_calibration`` carries the distinction.
     """
 
     surrogate: Surrogate
@@ -408,7 +408,7 @@ class Loop:
         bounds anything; scores come from ``xs_cal``, never from the training set.
         Degenerate scores early in a campaign are logged and retried next cycle,
         never swallowed silently (``errors.InvariantViolation`` forbids it): if no
-        cycle ever succeeds, ``calibrateur.n < 1`` and :meth:`run`'s own fallback
+        cycle ever succeeds, ``calibrator.n < 1`` and :meth:`run`'s own fallback
         relays the failure.
 
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
@@ -444,11 +444,11 @@ class Loop:
 
         Parameters
         ----------
-        propositions :
+        proposals :
             Pool of candidates (vectorized).
         orientations :
             One orientation per candidate.
-        reference_optimiseur :
+        optimizer_reference :
             Typical plans produced by the optimizer -- basis of the density.
         holdout, holdout_orientations :
             Set used to measure the final interval width. Default: the candidates.
@@ -459,7 +459,7 @@ class Loop:
         Returns
         -------
         ActiveReport
-            ``calibration_independante`` says whether the associated coverage is
+            ``independent_calibration`` says whether the associated coverage is
             publishable.
 
         Raises

@@ -37,7 +37,7 @@ class Calibration:
 
     Attributes
     ----------
-    empreinte_jeu : str
+    data_fingerprint : str
         ``sha256`` of the calibration **data set** (predictions, ground truths and
         uncertainties), not of the scores: two data sets can give the same scores, and
         only the data set can be checked or tested for leakage (PLAN.md batch 1.6).
@@ -309,7 +309,7 @@ class ConformalCalibrator:
 
         Parameters
         ----------
-        predictions, verites, incertitudes : numpy.ndarray
+        predictions, truths, uncertainties : numpy.ndarray
             One scalar per plan, same length.
         alpha : float, optional
             Target level (default 0.10 -> 90 % coverage).
@@ -353,11 +353,11 @@ class ConformalCalibrator:
             ``sigma_hat`` at the same point, **strictly positive**: the fitted scores
             are normalized, so ``sigma_hat = 0`` would publish a zero-width interval
             announced at ``1 - alpha``, and ``sigma_hat < 0`` an inverted interval.
-        sens : {">=", "<=", None}
+        sense : {">=", "<=", None}
             Must match the indicator (``"<="`` for ASE, ``">="`` otherwise).
             Default: inferred from ``indicator``. The published interval stays
             two-sided ``prediction +/- margin``; the report picks the side via
-            ``indicator``. ``sens`` does not change the bounds — it only refuses
+            ``indicator``. ``sense`` does not change the bounds — it only refuses
             inconsistency.
         regime : {"exchangeable", "selected"}
             See :func:`bound`.

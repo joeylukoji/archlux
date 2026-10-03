@@ -8,7 +8,7 @@ project, and every iterate is a valid plan: no projection, no illegal intermedia
 Dependencies: ``types``, ``geom``, ``lmo``, and the **protocol** ``light.protocol``.
 Never a concrete surrogate implementation.
 
-Formulas: ``docs/formules/frank-wolfe.md``.
+Formulas: ``docs/formulas/frank-wolfe.md``.
 """
 
 from __future__ import annotations
@@ -77,9 +77,9 @@ class FrankWolfeResult:
 def restrict_to_budget(
     poly: Polytope, center: FloatVector, radius: float, *, keep: FloatVector | None = None
 ) -> Polytope:
-    """Intersection of the polytope with the box ``‖x − centre‖_∞ ≤ radius``.
+    """Intersection of the polytope with the box ``‖x − center‖_∞ ≤ radius``.
 
-    ``centre`` must be the **proposed** plan, so that the budget is spent once over the
+    ``center`` must be the **proposed** plan, so that the budget is spent once over the
     whole legalization, not once per pass.
 
     ``keep`` is a point the box must contain even if it exceeds the radius by a solver
@@ -324,7 +324,7 @@ def frank_wolfe(
     ----------
     poly : Polytope
         Admissible domain; every iterate stays in it.
-    surrogate : Substitut
+    surrogate : Surrogate
         Objective. The solver does not know whether it is analytic, learned or simulated.
     orientation : Orientation
         Azimuth of the plan.
@@ -346,7 +346,7 @@ def frank_wolfe(
         How the direction and its maximum step are computed each iteration. ``None``
         uses the built-in :class:`AwayStepStrategy` (``away_steps`` above). Inject a
         different one to try a new step rule without editing this function.
-    glazing : Baies or None, optional
+    glazing : Glazing or None, optional
         Windows, constant during optimization; passed to the surrogate as ``baies``.
 
     Returns

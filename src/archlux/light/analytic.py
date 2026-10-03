@@ -1,16 +1,16 @@
-"""Substitut en formes fermées — **sans aucun apprentissage**.
+"""Closed-form surrogate — **no learning at all**.
 
-Son intérêt n'est pas la précision : c'est de faire tourner la chaîne complète au
-troisième mois plutôt qu'au dix-huitième. Si l'architecture est fausse, elle est fausse
-ici, avant toute dépense de simulation ou d'entraînement.
+Its point is not accuracy: it is to run the whole chain in the third month rather than
+the eighteenth. If the architecture is wrong, it is wrong here, before any money is spent
+on simulation or training.
 
-Implémente :class:`archlux.light.protocol.Surrogate`. Entrée vectorielle uniquement.
+Implements :class:`archlux.light.protocol.Surrogate`. Vector input only.
 
-Le facteur d'orientation passe par :func:`archlux.orient.circular.encode_orientation` : jamais
-le degré brut. Formules : ``docs/formules/substitut-analytique.md``.
+The orientation factor goes through :func:`archlux.orient.circular.encode_orientation`:
+never the raw degree. Formulas: ``docs/formulas/analytic-surrogate.md``.
 
-Ce module n'importe ni ``geom`` ni ``lmo`` ni ``solve`` : uniquement un vecteur et un
-azimut (`ARCHITECTURE.md` §5).
+This module imports neither ``geom`` nor ``lmo`` nor ``solve``: only a vector and an
+azimuth (`ARCHITECTURE.md` §5).
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ __all__ = ["SECTOR_FACTORS", "AnalyticSurrogate", "sector_factor"]
 
 _EPS = 1e-12
 _N_FIELDS = 4
-"""Même contrat que ``geom.polytope.FIELDS`` : ``(x, y, w, h)`` par pièce. Dupliqué
-ici pour que ``light`` n'importe pas ``geom``.
+"""Same contract as ``geom.polytope.FIELDS``: ``(x, y, w, h)`` per room. Duplicated
+here so that ``light`` does not import ``geom``.
 """
 
 SECTOR_FACTORS: tuple[float, ...] = (
@@ -44,32 +44,32 @@ SECTOR_FACTORS: tuple[float, ...] = (
     0.70,
     0.55,
 )
-"""Huit secteurs N, NE, E, SE, S, SW, W, NW. Le sud (180 degres) est le plus favorable.
+"""Eight sectors N, NE, E, SE, S, SW, W, NW. South (180 degrees) is the most favourable.
 
-**Table d'atelier, pas une source citee.** Ces huit poids ne viennent d'aucune norme :
-CIBSE LG10 donne une profondeur limite independante de l'azimut, et le split-flux BRE
-travaille sous ciel couvert CIE, donc lui aussi sans azimut. Ils encodent la preference
-sud d'un climat de l'hemisphere nord pour que l'argmax de l'optimiseur depende de
-l'orientation. Un article doit les presenter comme un a priori de modelisation, calibre
-ou remplace par une simulation annuelle, jamais comme la regle citee.
+**A workshop table, not a cited source.** These eight weights come from no standard:
+CIBSE LG10 gives a limiting depth independent of the azimuth, and the BRE split-flux
+works under a CIE overcast sky, hence without azimuth too. They encode the southern
+preference of a northern-hemisphere climate so that the optimizer's argmax depends on
+the orientation. An article must present them as a modelling prior, calibrated or
+replaced by an annual simulation, never as the cited rule.
 """
 
 
 def sector_factor(orientation: Orientation) -> float:
-    """Poids d'exposition du secteur de 45 degres contenant ``orientation``.
+    """Exposure weight of the 45 degree sector that contains ``orientation``.
 
-    Passe par :func:`archlux.orient.circular.encode_orientation`, jamais par le degre brut :
-    l'azimut est reconstruit depuis ``(cos, sin)``, donc continu en 0 / 360.
+    Goes through :func:`archlux.orient.circular.encode_orientation`, never the raw degree:
+    the azimuth is rebuilt from ``(cos, sin)``, hence continuous at 0 / 360.
 
     Parameters
     ----------
     orientation : Orientation
-        Azimut du batiment.
+        Azimuth of the building.
 
     Returns
     -------
     float
-        Un element de :data:`FACTEURS_SECTEUR`, dans ``[0.45, 1.00]``.
+        An element of :data:`SECTOR_FACTORS`, in ``[0.45, 1.00]``.
     """
     features = encode_orientation(orientation, harmonics=1)
     azimuth = float(np.degrees(np.arctan2(features[1], features[0]))) % 360.0
@@ -87,55 +87,55 @@ def sector_factor(orientation: Orientation) -> float:
 )
 @dataclass(frozen=True, slots=True)
 class AnalyticSurrogate:
-    """Modèle de facteur de lumière du jour par règle de profondeur limite.
+    """Daylight factor model based on the limiting-depth rule.
 
-    La profondeur au-delà de laquelle une pièce cesse d'être éclairée naturellement
-    dépend fortement de l'exposition : le modèle module cette profondeur par
-    l'orientation, encodée circulairement, et favorise les pièces situées au sud
-    géographique (sinon toutes les orientations donneraient le même argmax).
+    The depth beyond which a room stops being naturally lit depends strongly on the
+    exposure: the model modulates this depth by the orientation, encoded circularly,
+    and favours rooms placed towards geographic south (otherwise every orientation
+    would give the same argmax).
 
     Attributes
     ----------
-    indicateur_vise : {"sDA", "ASE", "UDI", "vue"}
-        Grandeur rendue par :meth:`evaluate`. ASE est renvoyé *négatif* pour que
-        Frank-Wolfe, qui maximise, réduise l'éblouissement.
+    target_indicator : {"sDA", "ASE", "UDI", "vue"}
+        Quantity returned by :meth:`evaluate`. ASE is returned *negative* so that
+        Frank-Wolfe, which maximizes, reduces glare.
     sigma_nominal : float
-        Écart-type constant. Ce substitut ne modélise pas son erreur.
+        Constant standard deviation. This surrogate does not model its own error.
     """
 
     target_indicator: Indicator = "sDA"
     sigma_nominal: float = 0.08
 
     DEPTH_FACTOR: ClassVar[float] = 2.5
-    """Règle usuelle : profondeur utile ≈ 2,5 fois la hauteur de linteau (CIBSE LG10)."""
+    """Usual rule: useful depth ≈ 2.5 times the head height (CIBSE LG10)."""
 
     HEAD_HEIGHT: ClassVar[float] = 2.15
-    """Linteau typique, en mètres. Marge d'incertitude de la règle : ~30 %."""
+    """Typical head height, in metres. Uncertainty margin of the rule: ~30 %."""
 
     KAPPA_SOUTH: ClassVar[float] = 0.15
-    """Poids, en 1/m, du placement vers le sud géographique."""
+    """Weight, in 1/m, of a placement towards geographic south."""
 
     SECTOR_FACTORS: ClassVar[tuple[float, ...]] = SECTOR_FACTORS
-    """Alias de classe vers :data:`FACTEURS_SECTEUR` (contrat public conservé)."""
+    """Class alias of :data:`SECTOR_FACTORS` (public contract kept)."""
 
     @property
     def indicator(self) -> Indicator:
-        """Nom de l'indicateur modélisé."""
+        """Name of the modelled indicator."""
         return self.target_indicator
 
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Estimer l'indicateur en formes fermées.
+        """Estimate the indicator in closed form.
 
-        ``baies`` est **ignoré** : ce substitut ne modélise pas la fenestration,
-        il suppose un bandeau vitré constant. C'est précisément ce qui lui vaut
-        ``R² = −0,000`` contre une irradiance simulée.
+        ``glazing`` is **ignored**: this surrogate does not model fenestration, it
+        assumes a constant glazed band. That is exactly what earns it
+        ``R² = −0.000`` against a simulated irradiance.
 
         Guarantees
         ----------
-        - Performance : **aucune garantie en soi**. La valeur devient bornée seulement
-          après passage par :mod:`archlux.uq.conformal`.
+        - Performance: **no guarantee by itself**. The value becomes bounded only
+          after going through :mod:`archlux.uq.conformal`.
         """
         del glazing
         return float(self._score_and_gradient(x, orientation, with_gradient=False)[0])
@@ -143,13 +143,13 @@ class AnalyticSurrogate:
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Gradient analytique, dérivé à la main puis validé par différences finies.
+        """Analytic gradient, derived by hand then validated by finite differences.
 
-        **Exact** partout sauf en deux endroits, tous deux de mesure nulle :
-        au coude ``profondeur == profondeur_utile`` (dérivée à gauche retenue) et sous
-        les seuils ``w < 1e-12`` / ``h < 1e-12``, où ``evaluate`` écrête mais où la
-        dérivée écrite ignore l'écrêtage. Hors de ces points, la vérification
-        symbolique donne l'égalité stricte avec ``∂ evaluer / ∂ x``.
+        **Exact** everywhere except in two places, both of measure zero: at the kink
+        ``depth == useful_depth`` (the left derivative is kept) and below the thresholds
+        ``w < 1e-12`` / ``h < 1e-12``, where ``evaluate`` clips but the written
+        derivative ignores the clipping. Outside these points, the symbolic check gives
+        strict equality with ``∂ evaluate / ∂ x``.
         """
         del glazing
         return self._score_and_gradient(x, orientation, with_gradient=True)[1]
@@ -157,24 +157,24 @@ class AnalyticSurrogate:
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Écart-type nominal constant : ce substitut ne modélise pas son erreur."""
+        """Constant nominal standard deviation: this surrogate does not model its error."""
         del x, orientation, glazing
         return float(self.sigma_nominal)
 
     def evaluate_rooms(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Contribution de chaque pièce, avant sommation.
+        """Contribution of each room, before summation.
 
-        ``evaluate`` en est la somme, au signe d'ASE près. Voir
-        :class:`~archlux.light.protocol.SubstitutParPiece` : c'est à cette
-        granularité que vit 92 % de la variance de l'éclairement réel.
+        ``evaluate`` is their sum, up to the sign of ASE. See
+        :class:`~archlux.light.protocol.PerRoomSurrogate`: 92 % of the variance of real
+        daylight lives at this granularity.
         """
         del glazing
         return self._parts(x, orientation) * indicator_sign(self.target_indicator)
 
     def _parts(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
-        """Score positif de chaque pièce, sans le signe de l'indicateur."""
+        """Positive score of each room, without the sign of the indicator."""
         vector = np.asarray(x, dtype=float).ravel()
         n_rooms = vector.size // _N_FIELDS
         features = encode_orientation(orientation, harmonics=1)
@@ -195,13 +195,13 @@ class AnalyticSurrogate:
         return parts
 
     def _orientation_factor(self, orientation: Orientation) -> float:
-        """Table à 8 secteurs. Délègue à :func:`sector_factor`, sans état."""
+        """Eight-sector table. Delegates to :func:`sector_factor`, stateless."""
         return sector_factor(orientation)
 
     def _score_and_gradient(
         self, x: np.ndarray, orientation: Orientation, *, with_gradient: bool
     ) -> tuple[float, np.ndarray]:
-        """Score scalaire et, si demandé, ∇x du même scalaire."""
+        """Scalar score and, if asked, ∇x of the same scalar."""
         vector = np.asarray(x, dtype=float).ravel()
         n_rooms = vector.size // _N_FIELDS
         gradient = np.zeros_like(vector, dtype=float)
@@ -223,11 +223,11 @@ class AnalyticSurrogate:
 
             south_facade = width * cos2 + height * sin2
             depth = width * sin2 + height * cos2
-            # min(profondeur, profondeur_utile) : la penetration est continue mais
-            # **non differentiable** en profondeur == profondeur_utile. La convention
-            # retenue est la derivee a GAUCHE (d_pen_d_p = 1) ; a droite elle vaut 0.
-            # Au coude exact, aucune difference finie centree ne peut retrouver la
-            # valeur declaree : valider_gradient y verifie des signes, pas une egalite.
+            # min(depth, useful_depth): the penetration is continuous but **not
+            # differentiable** at depth == useful_depth. The convention kept is the LEFT
+            # derivative (d_pen_d_p = 1); on the right it is 0. At the exact kink, no
+            # centred finite difference can recover the declared value: validate_gradient
+            # checks signs there, not an equality.
             if depth <= useful_depth:
                 penetration = depth
                 d_pen_d_p = 1.0

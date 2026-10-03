@@ -1,1 +1,1 @@
-"""Encodage et statistiques circulaires de l'orientation."""
+"""Circular encoding and statistics of the orientation."""

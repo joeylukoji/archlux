@@ -195,7 +195,7 @@ class Opening:
 
         Parameters
         ----------
-        wall : Mur
+        wall : Wall
             The wall carrying this opening; its ``id`` must equal ``self.wall_id``.
 
         Returns
@@ -586,7 +586,7 @@ class Manifest:
 
 @dataclass(frozen=True, slots=True)
 class Certificate:
-    """Preuve exacte + borne probabiliste optionnelle + diagnostic dual.
+    """Exact proof + optional probabilistic bound + dual diagnostic.
 
     ``performance`` is ``None`` in classic legalization: there is then nothing
     probabilistic to claim, and the certificate must say so rather than suggest it.

@@ -1,28 +1,28 @@
-"""Substitut appris — seul module du projet autorisé à importer ``torch``.
+"""Learned surrogate — the only module of the project allowed to import ``torch``.
 
-L'import est local et paresseux : ``import archlux`` ne doit jamais charger ``torch``,
-et ``tests/test_dependances.py`` en fait un test bloquant de la CI.
+The import is local and lazy: ``import archlux`` must never load ``torch``, and
+``tests/test_dependances.py`` makes that a blocking CI test.
 
-Ce module ne connaît ni ``geom``, ni ``lmo``, ni ``solve`` : il ne voit qu'un vecteur et
-une orientation, et rend un nombre, un gradient et une incertitude.
+This module knows neither ``geom``, nor ``lmo``, nor ``solve``: it sees only a vector
+and an orientation, and returns a number, a gradient and an uncertainty.
 
-Tant que les poids sont un ``npz`` du perceptron (:class:`~archlux.light.base.DenseSurrogate`),
-``torch`` n'est pas chargé. Un fichier ``.pt`` déclenche le transformeur.
+As long as the weights are an ``npz`` of the perceptron
+(:class:`~archlux.light.base.DenseSurrogate`), ``torch`` is not loaded. A ``.pt`` file
+triggers the transformer.
 
-État réel du transformeur
--------------------------
-**Il n'existe pas.** Aucune architecture, aucun poids, aucun entraînement dans ce dépôt.
-:meth:`SubstitutAppris._charger_torch` lève **toujours**
-:class:`~archlux.errors.InvariantViolation`, quel que soit le contenu du ``.pt`` : son
-type de retour est ``NoReturn``, et le contrôle
-de taille contre :data:`MAX_PARAMETRES` qu'elle exécute d'abord ne peut donc que changer
-le message d'erreur, jamais laisser passer un modèle. Le seul substitut appris réellement
-servi par :class:`LearnedSurrogate` est le perceptron numpy de
-:mod:`archlux.light.base`, chargé depuis un ``npz``.
+Actual state of the transformer
+-------------------------------
+**It does not exist.** No architecture, no weights, no training in this repository.
+:meth:`LearnedSurrogate._load_torch` **always** raises
+:class:`~archlux.errors.InvariantViolation`, whatever the content of the ``.pt``: its
+return type is ``NoReturn``, so the size check against :data:`MAX_PARAMETERS` it runs
+first can only change the error message, never let a model through. The only learned
+surrogate :class:`LearnedSurrogate` actually serves is the numpy perceptron of
+:mod:`archlux.light.base`, loaded from an ``npz``.
 
-Conséquence pour la lecture des résultats : tout chiffre de « substitut appris » produit
-par ce dépôt vient du perceptron dense sur descripteurs, jamais d'un transformeur sur
-jetons. Le jalon 4 décrit une cible, pas un état livré.
+Consequence for reading the results: every "learned surrogate" figure produced by this
+repository comes from the dense perceptron on descriptors, never from a transformer on
+tokens. Milestone 4 describes a target, not a delivered state.
 """
 
 from __future__ import annotations
@@ -47,15 +47,15 @@ if TYPE_CHECKING:
 __all__ = ["MAX_PARAMETERS", "LearnedSurrogate"]
 
 MAX_PARAMETERS = 2_000_000
-"""Plafond `MILESTONE-4.md` : au-delà, le modèle mémorise hors distribution."""
+"""Ceiling of `MILESTONE-4.md`: beyond it, the model memorizes out of distribution."""
 
 
 @lru_cache(maxsize=8)
 def _dense_from_disk(path: str, fingerprint: str) -> DenseSurrogate:
-    """Charger un ``npz`` une fois par ``(chemin, empreinte)``, après contrôle SHA-256."""
+    """Load an ``npz`` once per ``(path, fingerprint)``, after a SHA-256 check."""
     current = hashlib.sha256(Path(path).read_bytes()).hexdigest()
     if current != fingerprint:
-        raise InvariantViolation((f"empreinte des poids divergente pour {path}",))
+        raise InvariantViolation((f"weights fingerprint mismatch for {path}",))
     return DenseSurrogate.load(Path(path))
 
 
@@ -69,16 +69,16 @@ def _dense_from_disk(path: str, fingerprint: str) -> DenseSurrogate:
 )
 @dataclass(frozen=True, slots=True)
 class LearnedSurrogate:
-    """Tête publique du substitut entraîné.
+    """Public head of the trained surrogate.
 
     Attributes
     ----------
-    empreinte_poids : str
-        ``sha256`` des poids, reporté dans le manifeste. Sans lui, un résultat publié
-        n'est pas reproductible.
-    gele : bool
-        Une fois les poids gelés, l'accès au jeu de calibration devient possible — et
-        pas avant (voir :mod:`archlux.uq.registry`).
+    weights_fingerprint : str
+        ``sha256`` of the weights, recorded in the manifest. Without it, a published
+        result is not reproducible.
+    frozen : bool
+        Once the weights are frozen, access to the calibration set becomes possible —
+        and not before (see :mod:`archlux.uq.registry`).
     """
 
     weights_path: Path
@@ -88,7 +88,7 @@ class LearnedSurrogate:
 
     @property
     def indicator(self) -> Indicator:
-        """Nom de l'indicateur modélisé."""
+        """Name of the modelled indicator."""
         return self.target_indicator
 
     def _backend(self) -> DenseSurrogate:
@@ -98,43 +98,43 @@ class LearnedSurrogate:
         return _dense_from_disk(str(path.resolve()), self.weights_fingerprint)
 
     def _load_torch(self) -> NoReturn:
-        """Refuser un ``.pt``. ``torch`` n'est importé qu'ici, et seulement alors.
+        """Refuse a ``.pt``. ``torch`` is imported here only, and only then.
 
-        Lève **inconditionnellement** : le transformeur n'existe pas (voir l'en-tête du
-        module). Le contrôle contre :data:`MAX_PARAMETRES` est conservé pour que
-        l'erreur nomme la vraie cause quand le fichier est aussi hors gabarit, mais il
-        ne conditionne aucun chemin de succès.
+        Raises **unconditionally**: the transformer does not exist (see the module
+        header). The check against :data:`MAX_PARAMETERS` is kept so that the error
+        names the real cause when the file is also too large, but it gates no success
+        path.
         """
         import torch
 
         state = torch.load(self.weights_path, map_location="cpu", weights_only=True)
         n_params = int(sum(p.numel() for p in state.values())) if isinstance(state, dict) else 0
         if n_params >= MAX_PARAMETERS:
-            raise InvariantViolation((f"modèle trop grand : {n_params} ≥ {MAX_PARAMETERS}",))
+            raise InvariantViolation((f"model too large: {n_params} ≥ {MAX_PARAMETERS}",))
         raise InvariantViolation(
-            ("poids .pt : le transformeur n'est servi que hors CI ; utiliser un npz dense",)
+            (".pt weights: the transformer is only served outside CI; use a dense npz",)
         )
 
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Estimer l'indicateur. Charge ``torch`` seulement pour un fichier ``.pt``."""
+        """Estimate the indicator. Loads ``torch`` only for a ``.pt`` file."""
         return self._backend().evaluate(x, orientation, glazing=glazing)
 
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Gradient par différences finies du backend, ramené en ``numpy``."""
+        """Finite-difference gradient of the backend, returned as ``numpy``."""
         return self._backend().gradient(x, orientation, glazing=glazing)
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Écart-type prédictif appris."""
+        """Learned predictive standard deviation."""
         return self._backend().uncertainty(x, orientation, glazing=glazing)
 
     def n_parameters(self) -> int:
-        """Taille du modèle chargé."""
+        """Size of the loaded model."""
         return self._backend().n_parameters()
 
 

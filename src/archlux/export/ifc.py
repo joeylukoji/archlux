@@ -223,7 +223,7 @@ def _write_project(w: _SpfWriter, id_owner: int, id_units: int) -> tuple[int, in
 def _write_spatial_hierarchy(w: _SpfWriter, id_owner: int, id_proj: int) -> tuple[int, int, int]:
     """``IFCSITE``/``IFCBUILDING``/``IFCBUILDINGSTOREY`` and their ``IFCRELAGGREGATES`` chain.
 
-    Returns ``(id_floor_pl, id_etage, id_bat)``.
+    Returns ``(id_floor_pl, storey_id, id_bat)``.
     """
     id_site_ax = w.axis2(0.0, 0.0, 0.0)
     id_site_pl = w.alloc()
@@ -321,7 +321,7 @@ def _write_walls(
     wall_entity: dict[str, int] = {}
     for wall in plan.walls:
         # Placed at the storey origin: the axis already holds absolute coordinates. The
-        # previous placement at ``mur.a`` shifted every wall by ``a`` (drawn from 2a).
+        # previous placement at ``wall.a`` shifted every wall by ``a`` (drawn from 2a).
         id_ax = w.axis2(0.0, 0.0, 0.0)
         id_pl = w.alloc()
         w.emit(id_pl, f"IFCLOCALPLACEMENT(#{id_floor_pl},#{id_ax})")

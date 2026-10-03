@@ -34,7 +34,7 @@ def crps(predictions: np.ndarray, truths: np.ndarray, uncertainties: np.ndarray)
 
     Parameters
     ----------
-    predictions, verites, incertitudes : numpy.ndarray
+    predictions, truths, uncertainties : numpy.ndarray
         ``mu``, ``y``, ``sigma`` point by point.
 
     Returns
@@ -77,9 +77,9 @@ def reliability_diagram(
 
     Parameters
     ----------
-    predictions, verites, incertitudes : numpy.ndarray
+    predictions, truths, uncertainties : numpy.ndarray
         Same convention as :func:`crps`. These are the **evaluated** points.
-    niveaux : numpy.ndarray or None, optional
+    levels : numpy.ndarray or None, optional
         Nominal levels in ``(0, 1)``. Default: 20 points from 0.50 to 0.99.
     scores_calibration : numpy.ndarray or None, optional
         Non-conformity scores from a **disjoint** calibration set. If given, the
@@ -146,9 +146,9 @@ def stratify_by_orientation(
 
     Parameters
     ----------
-    degres : numpy.ndarray
+    degrees : numpy.ndarray
         Azimuths in degrees.
-    n_secteurs : int, optional
+    n_sectors : int, optional
         Number of sectors (default 8).
 
     Returns
@@ -235,7 +235,7 @@ def measure_coverage(
     ------
     InvariantViolation
         Arrays of different lengths, fewer than two points, a non-finite value, or an
-        uncertainty that is not strictly positive (``borne`` would refuse it midway).
+        uncertainty that is not strictly positive (``bound`` would refuse it midway).
     """
     mu, sigma, y = (
         np.asarray(a, dtype=float).ravel() for a in (predictions, uncertainties, truths)

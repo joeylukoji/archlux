@@ -7,7 +7,7 @@ and nothing in the usual tests flags it.
 Every quantity derived from :class:`archlux.types.Orientation` goes through this
 module.
 
-Formulas: ``docs/formules/circulaire.md`` (Mardia & Jupp, 2000).
+Formulas: ``docs/formulas/circular.md`` (Mardia & Jupp, 2000).
 """
 
 from __future__ import annotations
@@ -63,13 +63,13 @@ def encode(deg: float, *, harmonics: int = 3) -> np.ndarray:
     ----------
     deg : float
         Azimuth, in degrees. **Never** returned as-is.
-    harmoniques : int, optional
+    harmonics : int, optional
         Number of harmonics. A single one does not capture the east/west asymmetry.
 
     Returns
     -------
     numpy.ndarray
-        Vector of dimension ``2 * harmoniques``, bounded, continuous at 0°/360°.
+        Vector of dimension ``2 * harmonics``, bounded, continuous at 0°/360°.
     """
     if harmonics < 1:
         raise InvalidInput("harmonics", f"must be >= 1, got {harmonics}")
@@ -89,13 +89,13 @@ def encode_orientation(orientation: Orientation, *, harmonics: int = 2) -> np.nd
     ----------
     orientation : Orientation
         Azimuth, in degrees.
-    harmoniques : int, optional
+    harmonics : int, optional
         Number of harmonics. Default 2 (historical contract of the skeleton).
 
     Returns
     -------
     numpy.ndarray
-        Vector of dimension ``2 * harmoniques``.
+        Vector of dimension ``2 * harmonics``.
     """
     return encode(orientation.deg, harmonics=harmonics)
 
@@ -135,7 +135,7 @@ def dominant_direction(
     *,
     period: float = 90.0,
 ) -> float:
-    r"""Mean direction of a set of axes, weighted and of period ``periode``.
+    r"""Mean direction of a set of axes, weighted and of period ``period``.
 
     A wall edge has no direction of travel: ``10°`` and ``190°`` describe the
     same direction, and on an orthogonal grid ``10°``, ``100°``, ``190°``,
@@ -158,32 +158,32 @@ def dominant_direction(
 
     Parameters
     ----------
-    degres : array_like
+    degrees : array_like
         Angles of the axes, in degrees.
     weights : array_like or None, optional
         Positive weights, same length. ``None`` = unit weights.
-    periode : float, optional
+    period : float, optional
         Period of the symmetry, in degrees. ``90`` for an orthogonal grid
         (default), ``180`` for unoriented axes, ``360`` for vectors.
 
     Returns
     -------
     float
-        Dominant direction, in degrees, in ``[0, periode)``.
+        Dominant direction, in degrees, in ``[0, period)``.
 
     Raises
     ------
     InvariantViolation
-        Empty input, inconsistent lengths, ``periode`` outside ``]0, 360]``,
+        Empty input, inconsistent lengths, ``period`` outside ``]0, 360]``,
         negative weights, or a null resultant -- in this last case no direction is
         dominant and returning an angle would be inventing information.
 
     Examples
     --------
-    >>> from archlux.orient.circular import direction_dominante
-    >>> round(direction_dominante([10.0, 100.0, 190.0, 280.0]), 6)
+    >>> from archlux.orient.circular import dominant_direction
+    >>> round(dominant_direction([10.0, 100.0, 190.0, 280.0]), 6)
     10.0
-    >>> round(direction_dominante([0.0, 90.0], [1.0, 3.0]), 6)
+    >>> round(dominant_direction([0.0, 90.0], [1.0, 3.0]), 6)
     0.0
     """
     angles = np.asarray(degrees, dtype=float).ravel()
@@ -206,7 +206,7 @@ def dominant_direction(
     if math.hypot(cosine, sine) <= _EPS_RESULTANT:
         raise InvariantViolation(("null resultant: no dominant direction",))
     deg = float(np.degrees(math.atan2(sine, cosine)) / m) % period
-    # A direction just below ``periode`` is the same as ``0``: without this
+    # A direction just below ``period`` is the same as ``0``: without this
     # realignment, a grid perfectly aligned with the x-axis comes out at
     # 89.999999° instead of 0°, because ``atan2`` returns an infinitesimally
     # negative angle.
@@ -348,9 +348,9 @@ def stratify(
 
     Parameters
     ----------
-    degres : array-like
+    degrees : array-like
         Azimuths, in degrees.
-    n_secteurs : int, optional
+    n_sectors : int, optional
         Number of sectors. 8 -> named compass rose (N, NE, ...).
     """
     if n_sectors < 1:

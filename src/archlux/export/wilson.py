@@ -18,9 +18,9 @@ def wilson_interval(successes: int, n: int, *, z: float = 1.96) -> tuple[float, 
     small ``n`` or rates close to 0 / 1.
 
     At both extremes, the bounds are set **exactly** rather than computed. At
-    ``p_hat = 0``, the formula analytically gives ``centre = margin = z^2/(2n)``: the
+    ``p_hat = 0``, the formula analytically gives ``center = margin = z^2/(2n)``: the
     subtraction cancels out in exact arithmetic, but the square root introduces an
-    ulp of drift, and ``centre - margin`` comes out ~1e-17 **above** zero. The final
+    ulp of drift, and ``center - margin`` comes out ~1e-17 **above** zero. The final
     ``max(0, ·)`` caught nothing — the value was positive — so the returned interval
     then did not contain its own point estimate:
     ``wilson_interval(0, 3)`` returned ``(4.9e-17, 0.561)`` for a zero rate,

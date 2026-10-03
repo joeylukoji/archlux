@@ -1,7 +1,7 @@
 """Array type alias shared by every layer (PLAN.md 3.8).
 
 ``np.ndarray`` appears about 170 times in ``src/`` with no dtype: a bool mask, an int index
-and a float vector read the same. ``VecteurF`` names the case that matters, a float64
+and a float vector read the same. ``FloatVector`` names the case that matters, a float64
 array (decision vector, gradient, dual prices, scores), in the signatures of the numerical
 core.
 

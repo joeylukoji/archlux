@@ -192,9 +192,9 @@ def render(
         Plan to draw. May be invalid — that is the use case.
     outline : tuple of Point, optional
         Target outline, drawn dashed. Default: the plan's own.
-    titre : str, optional
+    title : str, optional
         Label shown at the top of the panel.
-    walls : tuple of Mur, optional
+    walls : tuple of Wall, optional
         Extra walls to draw, typically ``ctx.structure.load_bearing_walls``: a plan does not
         have to repeat its load-bearing structure, but a drawing should show it.
 
@@ -210,7 +210,7 @@ def render(
     ...     rooms=(Room(id="a", type="salon", x=0.0, y=0.0, w=3.0, h=2.0),),
     ...     walls=(), openings=(), outline=(),
     ... )
-    >>> render(plan, titre="essai").startswith("<svg")
+    >>> render(plan, title="demo").startswith("<svg")
     True
     """
     target = outline or plan.outline
@@ -233,13 +233,13 @@ def compare(
 
     Parameters
     ----------
-    avant, apres : Plan
+    before, after : Plan
         The two states to compare.
     outline : tuple of Point, optional
-        Target outline, common to both panels. Default: ``avant``'s own.
-    titres : tuple of str, optional
+        Target outline, common to both panels. Default: ``before``'s own.
+    titles : tuple of str, optional
         Labels of the two panels.
-    walls : tuple of Mur, optional
+    walls : tuple of Wall, optional
         Extra walls drawn in both panels (see :func:`render`).
 
     Returns
@@ -278,13 +278,13 @@ def sheet(
 
     Parameters
     ----------
-    volets : tuple of (Plan, str)
+    panels : tuple of (Plan, str)
         The variants and their caption, in display order.
     outline : tuple of Point, optional
         Target outline, common to all panels. Default: the first plan's own.
-    colonnes : int, optional
+    columns : int, optional
         Panels per row.
-    walls : tuple of Mur, optional
+    walls : tuple of Wall, optional
         Extra walls drawn in every panel (see :func:`render`).
 
     Returns
@@ -313,7 +313,7 @@ def sheet(
     ...           walls=(), openings=(), outline=()), f"{k}°")
     ...     for k in range(3)
     ... )
-    >>> sheet(plans, colonnes=2).startswith("<svg")
+    >>> sheet(plans, columns=2).startswith("<svg")
     True
     """
     if not panels:

@@ -34,11 +34,11 @@ def _consolidate(
 
     Parameters
     ----------
-    lignes : list of float
+    lines : list of float
         Line positions, increasing.
-    bords : list of (int, int)
+    borders : list of (int, int)
         One ``(low_line, high_line)`` pair per room, on this axis.
-    protegees : set of int
+    protected : set of int
         Lines that are never absorbed: the outline edges.
     min_support : int
         Below this number of carried edges, an interior line is an orphan.
@@ -46,7 +46,7 @@ def _consolidate(
     Returns
     -------
     tuple
-        ``(lignes, bords, protegees)`` reindexed, with no absorbable orphan line left.
+        ``(lines, borders, protected)`` reindexed, with no absorbable orphan line left.
     """
     while True:
         support: dict[int, int] = dict.fromkeys(range(len(lines)), 0)
@@ -203,7 +203,7 @@ def _repair_partition(
     ----------
     incidences : list of (str, int, int, int, int)
         Current incidences, possibly faulty.
-    dedans : numpy.ndarray of bool
+    inside : numpy.ndarray of bool
         Mask of the cells inside the outline.
     budget : int
         Maximum number of adjustments. Bounding it distinguishes a **repair** from a

@@ -1,7 +1,7 @@
-"""Tokenisation d'un plan : ensemble de jetons, **jamais une image**.
+"""Tokenization of a plan: a set of tokens, **never an image**.
 
-Déplacer un mur de 2 cm doit changer les jetons. Sur un raster, ce déplacement ne
-change aucun pixel : gradient nul, projet impossible (`ARCHITECTURE.md` §10).
+Moving a wall by 2 cm must change the tokens. On a raster, this move changes no pixel:
+zero gradient, impossible project (`ARCHITECTURE.md` §10).
 """
 
 from __future__ import annotations
@@ -29,14 +29,14 @@ __all__ = [
 
 TOKEN_DIM = 32
 FIELDS_PER_ROOM = 4
-"""``len(archlux.types.FIELDS_VECTOR)``: ``(x, y, w, h)`` par pièce."""
+"""``len(archlux.types.FIELDS_VECTOR)``: ``(x, y, w, h)`` per room."""
 _TYPES = ("living_room", "bedroom", "kitchen", "bathroom", "corridor", "toilet")
 _EPS = 1e-12
 
 
 @renamed_parameters({"ordre": "order"})
 def permute_rooms(plan: Plan, order: tuple[int, ...]) -> Plan:
-    """Réordonner les pièces sans changer la géométrie."""
+    """Reorder the rooms without changing the geometry."""
     if len(order) != len(plan.rooms):
         raise InvalidInput("order", "the permutation must have one index per room")
     rooms = tuple(plan.rooms[i] for i in order)
@@ -63,7 +63,7 @@ def _room_token(
     n_rooms: float,
     total_area: float,
 ) -> np.ndarray:
-    """Un jeton de pièce, continu en géométrie et périodique en azimut."""
+    """A room token, continuous in geometry and periodic in azimuth."""
     w = max(w, _EPS)
     h = max(h, _EPS)
     area = w * h
@@ -92,7 +92,7 @@ def _opening_token(
     total_area: float,
     orientation: Orientation,
 ) -> np.ndarray:
-    """Un jeton de baie : azimut du mur porteur, jamais recopié sur chaque pièce."""
+    """A window token: azimuth of the carrying wall, never copied onto every room."""
     wall_azimuth = math.degrees(math.atan2(wall.b[1] - wall.a[1], wall.b[0] - wall.a[0]))
     token = np.zeros(TOKEN_DIM, dtype=float)
     token[14:20] = encode_orientation(orientation, harmonics=3)
@@ -109,13 +109,13 @@ def _opening_token(
 
 
 def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
-    """Encoder ``plan`` en ``(jetons [N, d], masque_padding [N])``.
+    """Encode ``plan`` as ``(tokens [N, d], padding_mask [N])``.
 
-    Trois familles, dans cet ordre : pièces, puis ouvertures (`MILESTONE-4.md` §4).
-    Une baie n'est **pas** recopiée sur chaque pièce.
+    Three families, in this order: rooms, then openings (`MILESTONE-4.md` §4). A window is
+    **not** copied onto every room.
 
-    ``masque_padding[i]`` est vrai si le jeton ``i`` est du remplissage
-    (convention PyTorch ``src_key_padding_mask``).
+    ``padding_mask[i]`` is true if token ``i`` is padding (PyTorch convention
+    ``src_key_padding_mask``).
     """
     n = len(plan.rooms)
     total_area = sum(p.area for p in plan.rooms)
@@ -148,29 +148,28 @@ def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
 def vector_to_tokens(
     x: np.ndarray, orientation: Orientation, glazing: Glazing | None = None
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Même vocabulaire depuis le vecteur de décision, baies comprises.
+    """Same vocabulary from the decision vector, windows included.
 
     Parameters
     ----------
     x : numpy.ndarray
-        Vecteur de décision ``(x, y, w, h)`` par pièce.
+        Decision vector, ``(x, y, w, h)`` per room.
     orientation : Orientation
-        Azimut du bâtiment.
-    glazing : Baies or None, optional
-        Fenestration. ``None`` rend les seuls jetons de pièce — c'est le
-        comportement d'avant l'extension du protocole, et il est **exactement**
-        conservé.
+        Azimuth of the building.
+    glazing : Glazing or None, optional
+        Fenestration. ``None`` returns the room tokens only — the behaviour from before
+        the protocol was extended, kept **exactly**.
 
     Returns
     -------
     tuple
-        ``(jetons [N, DIM_JETON], masque_padding [N])``, pièces puis baies.
+        ``(tokens [N, TOKEN_DIM], padding_mask [N])``, rooms then windows.
 
     Notes
     -----
-    Le type de pièce est inconnu depuis un vecteur nu : toutes les pièces portent
-    donc ``"living_room"``. C'est une perte assumée — le vecteur de décision ne
-    transporte pas le programme.
+    The room type is unknown from a bare vector: every room therefore carries
+    ``"living_room"``. An accepted loss — the decision vector does not carry the room
+    program.
     """
     vector = np.asarray(x, dtype=float).ravel()
     n = vector.size // FIELDS_PER_ROOM

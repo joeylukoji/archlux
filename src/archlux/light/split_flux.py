@@ -1,11 +1,11 @@
-"""Oracle d'éclairement — split-flux BRE, même protocole ``Surrogate``.
+"""Daylight oracle — BRE split-flux, same ``Surrogate`` protocol.
 
-La CI utilise cette forme fermée, **plus riche** que l'analytique (CIBSE profondeur),
-pour que le réseau puisse la battre et que le point de contrôle du gradient soit
-exécutable. Un moteur de lancer de rayons (Radiance) est hors chemin critique.
+The CI uses this closed form, **richer** than the analytic surrogate (CIBSE depth), so
+that the network can beat it and the gradient checkpoint can run. A ray-tracing engine
+(Radiance) is off the critical path.
 
-Le DF moyen d'une pièce suit Littlefair / BRE : baie = WWR × façade éclairée
-(déjà dans le vecteur ``(w, h)``), sans élargir le protocole ``Surrogate``.
+The mean DF of a room follows Littlefair / BRE: window = WWR × lit facade (already in
+the vector ``(w, h)``), without widening the ``Surrogate`` protocol.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ _REFLECTION_DENOM = 1.0 - _REFLECTANCE * _REFLECTANCE
 
 
 def _south_facade(w: float, h: float, orientation: Orientation) -> float:
-    """Longueur de façade au sud géographique, même convention que l'analytique."""
+    """Facade length towards geographic south, same convention as the analytic surrogate."""
     features = encode_orientation(orientation, harmonics=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
@@ -44,7 +44,7 @@ def _south_facade(w: float, h: float, orientation: Orientation) -> float:
 
 
 def _facade_derivatives(orientation: Orientation) -> tuple[float, float]:
-    """∂L/∂w et ∂L/∂h pour la façade sud."""
+    """∂L/∂w and ∂L/∂h of the south facade."""
     features = encode_orientation(orientation, harmonics=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
@@ -58,42 +58,42 @@ def daylight_factor(
     *,
     wwr: float = _DEFAULT_WWR,
 ) -> float:
-    """Facteur de lumière du jour moyen (fraction, pas un sDA LM-83).
+    """Mean daylight factor (a fraction, not an LM-83 sDA).
 
-    Formule split-flux BRE / Littlefair, ciel couvert, baie sur la façade sud :
+    BRE / Littlefair split-flux formula, overcast sky, window on the south facade:
 
-    ``DF = T A_w θ / (A_surf (1 − R²))`` en pourcent, rendu ici en fraction.
+    ``DF = T A_w θ / (A_surf (1 − R²))`` in percent, returned here as a fraction.
 
     Parameters
     ----------
     w, h : float
-        Côtés du rectangle, en mètres, même contrat que le polytope.
+        Sides of the rectangle, in metres, same contract as the polytope.
     orientation : Orientation
-        Azimut du bâtiment. Module l'angle de ciel via les 8 secteurs.
+        Azimuth of the building. Modulates the sky angle through the 8 sectors.
     wwr : float, optional
-        Facteur de bandeau vitré, dans ``]0, 1]``. Défaut 0,30 (imputation jalon 4).
+        Glazed band factor, in ``]0, 1]``. Default 0.30 (milestone 4 imputation).
 
     Returns
     -------
     float
-        Éclairement relatif moyen, dans ``[0, 1]`` (2 % → ``0.02``).
+        Mean relative daylight, in ``[0, 1]`` (2 % → ``0.02``).
 
     Notes
     -----
-    Deux écarts assumés à la source citée, à déclarer dans toute publication :
+    Two deliberate departures from the cited source, to be declared in any publication:
 
-    1. **θ dépend de l'azimut ici.** Dans BRE / Littlefair, θ est l'angle de ciel
-       visible, une grandeur purement géométrique (obstructions), et le ciel CIE
-       couvert est isotrope : le DF moyen y est **indépendant de l'orientation**.
-       Le facteur ``sector_factor`` est un a priori de modélisation ajouté par
-       archlux pour que l'optimiseur distingue les azimuts ; il fait sortir la formule
-       du cadre où elle est validée. ``θ = 65°`` (au lieu de 90° sans obstruction) est
-       de même une hypothèse d'obstruction urbaine non mesurée.
-    2. **``wwr`` n'est pas un window-to-wall ratio.** L'aire de baie vaut ici
-       ``wwr × 1,15 m × longueur_de_façade`` : la hauteur du bandeau est déjà dans la
-       formule, donc ``wwr`` la module une seconde fois. Le WWR effectif d'un
-       ``wwr = 0,30`` sur un étage de 2,70 m est ``0,30 × 1,15 / 2,70 ≈ 0,13``.
-       Le paramètre est un coefficient de bandeau, et devrait être renommé.
+    1. **θ depends on the azimuth here.** In BRE / Littlefair, θ is the visible sky
+       angle, a purely geometric quantity (obstructions), and the CIE overcast sky is
+       isotropic: the mean DF is **independent of the orientation** there. The
+       ``sector_factor`` factor is a modelling prior added by archlux so that the
+       optimizer tells azimuths apart; it takes the formula outside the frame where it
+       is validated. ``θ = 65°`` (instead of 90° without obstruction) is likewise an
+       unmeasured urban-obstruction assumption.
+    2. **``wwr`` is not a window-to-wall ratio.** The window area here is
+       ``wwr × 1.15 m × facade_length``: the height of the band is already in the
+       formula, so ``wwr`` modulates it a second time. The effective WWR of
+       ``wwr = 0.30`` on a 2.70 m storey is ``0.30 × 1.15 / 2.70 ≈ 0.13``. The parameter
+       is a band coefficient, and should be renamed.
     """
     return _split_flux(w, h, orientation, wwr, with_gradient=False)[0]
 
@@ -106,9 +106,9 @@ def _split_flux(
     *,
     with_gradient: bool,
 ) -> tuple[float, float, float]:
-    """DF fractionnaire et, si demandé, ∂DF/∂w et ∂DF/∂h."""
+    """Fractional DF and, if asked, ∂DF/∂w and ∂DF/∂h."""
     if wwr <= 0.0 or wwr > 1.0:
-        raise InvariantViolation((f"wwr hors ]0, 1] : {wwr}",))
+        raise InvariantViolation((f"wwr outside ]0, 1]: {wwr}",))
     w = max(float(w), _EPS)
     h = max(float(h), _EPS)
     theta = _SKY_THETA_DEG * sector_factor(orientation)
@@ -143,38 +143,36 @@ class SplitFluxOracle:
     A closed form, **not** a simulation and not ground truth: it lets the CI exercise
     the whole chain against a fixed reference. Formerly ``SimulateurExact``.
 
-    Oracle déterministe : analytique CIBSE + split-flux BRE sur les façades.
-
-    Le terme d'aire × sin 2θ (jouet) est remplacé par un DF cité. Pour ``ASE``,
-    l'analytique rend déjà l'opposé ; le split-flux est nié une seule fois.
+    The area × sin 2θ term (a toy) is replaced by a cited DF. For ``ASE``, the analytic
+    surrogate already returns the opposite; the split-flux term is negated only once.
     """
 
     target_indicator: Indicator = "sDA"
     sigma_nominal: float = 0.04
     wwr: float = _DEFAULT_WWR
     DF_SCALE: ClassVar[float] = 100.0
-    """Poids m²·% : ``100 * DF * aire`` pour rester à l'échelle de l'analytique.
+    """Weight in m²·%: ``100 * DF * area`` to stay at the scale of the analytic surrogate.
 
-    Ce ``100`` **annule exactement** la division par 100 de ``daylight_factor``,
-    qui convertit le DF de pourcent en fraction. Le terme ajoute au score vaut donc
-    ``DF[%] * aire[m2]`` : une unite composite (m2 pour cent), pas un indicateur
-    normalise. L'aller-retour fraction / pourcent n'existe que pour garder l'API
-    publique de ``daylight_factor`` en fraction. La constante n'est donc pas un
-    reglage libre : la changer desaccorderait les deux echelles.
+    This ``100`` **exactly cancels** the division by 100 in ``daylight_factor``, which
+    converts the DF from percent to a fraction. The term added to the score is therefore
+    ``DF[%] * area[m2]``: a composite unit (m2 percent), not a normalized indicator. The
+    fraction / percent round trip exists only to keep the public API of
+    ``daylight_factor`` in fractions. The constant is therefore not a free setting:
+    changing it would put the two scales out of step.
     """
 
     @property
     def indicator(self) -> Indicator:
-        """Nom de l'étiquette visée. Le scalaire rendu n'est pas un sDA LM-83."""
+        """Name of the target label. The scalar returned is not an LM-83 sDA."""
         return self.target_indicator
 
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Score déterministe. Deux appels identiques rendent le même flottant.
+        """Deterministic score. Two identical calls return the same float.
 
-        ``baies`` est ignoré : le WWR est une constante du modèle, pas une
-        lecture de la fenestration réelle.
+        ``glazing`` is ignored: the WWR is a constant of the model, not a reading of the
+        actual fenestration.
         """
         del glazing
         return float(self._score_and_gradient(x, orientation, with_gradient=False)[0])
@@ -182,24 +180,23 @@ class SplitFluxOracle:
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Gradient analytique du même score (CIBSE + split-flux)."""
+        """Analytic gradient of the same score (CIBSE + split-flux)."""
         del glazing
         return self._score_and_gradient(x, orientation, with_gradient=True)[1]
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Écart-type nominal constant : pas d'erreur apprise."""
+        """Constant nominal standard deviation: no learned error."""
         del x, orientation, glazing
         return float(self.sigma_nominal)
 
     def evaluate_rooms(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Contribution de chaque piece : analytique + split-flux, avant sommation.
+        """Contribution of each room: analytic + split-flux, before summation.
 
-        ``evaluate`` en est la somme. Voir
-        :class:`~archlux.light.protocol.SubstitutParPiece`.
+        ``evaluate`` is their sum. See :class:`~archlux.light.protocol.PerRoomSurrogate`.
         """
         del glazing
         base = AnalyticSurrogate(target_indicator=self.target_indicator)

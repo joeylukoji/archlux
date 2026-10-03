@@ -1,11 +1,11 @@
-"""Objectif lumineux : la borne conforme, pas la prédiction ponctuelle.
+"""Daylight objective: the conformal bound, not the point prediction.
 
-``J = μ̂ − q̂ · σ̂`` (sDA). Là où le substitut ne sait pas, ``σ̂`` est grand, la
-marge s'ouvre, l'objectif chute, et l'optimiseur est dissuadé d'y aller. Le garde-fou
-n'est pas ajouté : il découle de l'incertitude.
+``J = μ̂ − q̂ · σ̂`` (sDA). Where the surrogate does not know, ``σ̂`` is large, the margin
+widens, the objective drops, and the optimizer is discouraged from going there. The
+safeguard is not bolted on: it follows from the uncertainty.
 
-``q_chapeau`` est un **flottant** déjà calibré. Ce module n'importe pas ``uq``
-(`ARCHITECTURE.md` §5 : ``light`` ← ``types``, ``errors``, ``orient``).
+``q_hat`` is an already calibrated **float**. This module does not import ``uq``
+(`ARCHITECTURE.md` §5: ``light`` ← ``types``, ``errors``, ``orient``).
 """
 
 from __future__ import annotations
@@ -27,10 +27,10 @@ _EPS_SIGMA = 1e-5
 @renamed_attributes({"q_chapeau": "q_hat", "pessimiste": "pessimistic"})
 @dataclass(frozen=True, slots=True)
 class Daylight:
-    """Substitut dont :meth:`evaluate` rend la borne pessimiste ``μ − q σ``.
+    """Surrogate whose :meth:`evaluate` returns the pessimistic bound ``μ − q σ``.
 
-    Implémente :class:`~archlux.light.protocol.Surrogate` : Frank-Wolfe n'a pas à
-    savoir que l'objectif est une borne plutôt qu'une prédiction.
+    Implements :class:`~archlux.light.protocol.Surrogate`: Frank-Wolfe need not know that
+    the objective is a bound rather than a prediction.
     """
 
     surrogate: Surrogate
@@ -38,40 +38,40 @@ class Daylight:
     pessimistic: bool = True
 
     def __post_init__(self) -> None:
-        """Refuser un quantile négatif : la marge conforme n'inverse pas le sens."""
+        """Refuse a negative quantile: the conformal margin does not reverse the sense."""
         if self.q_hat < 0.0:
-            raise InvariantViolation(("q_chapeau doit être ≥ 0",))
+            raise InvariantViolation(("q_hat must be ≥ 0",))
 
     @property
     def indicator(self) -> Indicator:
-        """Nom de l'indicateur modélisé, délégué au substitut enveloppé."""
+        """Name of the modelled indicator, delegated to the wrapped surrogate."""
         return self.surrogate.indicator
 
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Rendre ``μ̂ − q̂ σ̂`` si ``pessimiste``, sinon ``μ̂`` seul.
+        """Return ``μ̂ − q̂ σ̂`` if ``pessimistic``, otherwise ``μ̂`` alone.
 
         Parameters
         ----------
         x : numpy.ndarray
-            Vecteur de décision.
+            Decision vector.
         orientation : Orientation
-            Azimut.
-        glazing : Baies or None, optional
+            Azimuth.
+        glazing : Glazing or None, optional
             Glazing, forwarded unchanged to the wrapped surrogate.
 
         Returns
         -------
         float
-            Objectif à maximiser. **Probabiliste** : c'est une borne, pas une preuve.
+            Objective to maximize. **Probabilistic**: a bound, not a proof.
 
         Notes
         -----
-        Pour ASE, le substitut doit déjà renvoyer une valeur **négative**
-        (contrat ``AnalyticSurrogate`` / ``SplitFluxOracle``). Alors
-        ``μ − qσ`` reste le bon sens sous maximisation : l'incertitude
-        détériore l'objectif. Ne pas envelopper un ASE positif brut.
+        For ASE, the surrogate must already return a **negative** value (contract of
+        ``AnalyticSurrogate`` / ``SplitFluxOracle``). Then ``μ − qσ`` keeps the right
+        sense under maximization: uncertainty worsens the objective. Do not wrap a raw
+        positive ASE.
         """
         mu = float(self.surrogate.evaluate(x, orientation, glazing=glazing))
         if not self.pessimistic:
@@ -82,7 +82,7 @@ class Daylight:
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """``∇μ − q̂ ∇σ``. ``∇σ`` par différences finies centrées (Nocedal §8.1)."""
+        """``∇μ − q̂ ∇σ``. ``∇σ`` by centred finite differences (Nocedal §8.1)."""
         grad_mu = np.asarray(self.surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
         if not self.pessimistic:
             return grad_mu
@@ -91,13 +91,13 @@ class Daylight:
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Écart-type du substitut enveloppé, inchangé."""
+        """Standard deviation of the wrapped surrogate, unchanged."""
         return float(self.surrogate.uncertainty(x, orientation, glazing=glazing))
 
     def __call__(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> tuple[float, np.ndarray]:
-        """Rendre ``(J, ∇J)`` d'un coup, même convention que :meth:`evaluate`."""
+        """Return ``(J, ∇J)`` at once, same convention as :meth:`evaluate`."""
         return self.evaluate(x, orientation, glazing=glazing), self.gradient(
             x, orientation, glazing=glazing
         )

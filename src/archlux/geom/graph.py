@@ -9,7 +9,7 @@ no later added constraint can catch it.
 Allowed dependencies: ``types``, ``errors``. Nothing else (`ARCHITECTURE.md` §5).
 
 Derivation of the gap between rectangles, acyclicity and transitive reduction:
-``docs/formules/ordre-relatif.md``.
+``docs/formulas/relative-order.md``.
 """
 
 from __future__ import annotations
@@ -530,7 +530,7 @@ def build_graph(order: RelativeOrder, rooms: Sequence[str]) -> ConstraintGraph:
 
     Parameters
     ----------
-    ordre : RelativeOrder
+    order : RelativeOrder
         Partial order, typically from :func:`deduce_order`.
     rooms : sequence of str
         **Authoritative** set of the expected rooms. An edge carrying an

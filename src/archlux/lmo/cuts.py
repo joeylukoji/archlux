@@ -45,7 +45,7 @@ The Kelley loop (Kelley, J. E., *The cutting-plane method for solving convex
 programs*, SIAM J. 8, 1960) adds these tangents until satisfaction or
 ``MAX_CUTS_PER_ROOM``.
 
-Step-by-step derivation, use cases and DOI: ``docs/formules/coupes-surface.md``.
+Step-by-step derivation, use cases and DOI: ``docs/formulas/area-cuts.md``.
 """
 
 from __future__ import annotations
@@ -82,7 +82,7 @@ __all__ = [
 ]
 
 MAX_CUTS_PER_ROOM = 10
-"""Beyond it, ``log.warning("coupe.limite", piece=...)`` and stop for that room."""
+"""Beyond it, ``log.warning("cut.limit", room=...)`` and stop for that room."""
 
 _AREA_TOLERANCE = AREA_PROOF_M2
 """Acceptance: a room is short of its minimum area when ``w h + tol < a_min``. Equal to
@@ -119,7 +119,7 @@ def _hyperbola_support_points(
     side = sqrt(min_area)
 
     def _in_box(width: float, height: float) -> bool:
-        """Say whether the pair ``(largeur, hauteur)`` fits within the LP bounds."""
+        """Say whether the pair ``(width, height)`` fits within the LP bounds."""
         return (
             w_min - _BOUND_TOLERANCE <= width <= w_max + _BOUND_TOLERANCE
             and h_min - _BOUND_TOLERANCE <= height <= h_max + _BOUND_TOLERANCE
@@ -219,7 +219,7 @@ def area_cut(w0: float, h0: float, min_area: float, *, room: str = "") -> Cut:
         Linearisation point, strictly positive (current solution).
     min_area : float
         Minimum area, in square metres, strictly positive.
-    piece : str, optional
+    room : str, optional
         Room identifier, prefix of the variables ``<id>.w`` / ``<id>.h``.
 
     Returns
@@ -238,7 +238,7 @@ def area_cut(w0: float, h0: float, min_area: float, *, room: str = "") -> Cut:
 
     Notes
     -----
-    Formula and sources: ``docs/formules/coupes-surface.md``.
+    Formula and sources: ``docs/formulas/area-cuts.md``.
     """
     if w0 <= 0.0 or h0 <= 0.0:
         raise InvariantViolation((f"linearisation point not strictly positive: {(w0, h0)}",))
@@ -395,7 +395,7 @@ def _ids_to_cut(
             # Lazy: structlog costs up to 0.4 s at import and this path is rare.
             import structlog
 
-            structlog.get_logger("archlux.lmo.coupes").warning("coupe.limite", room=identifier)
+            structlog.get_logger("archlux.lmo.cuts").warning("cut.limit", room=identifier)
             continue
         remaining.append(identifier)
     return remaining
@@ -473,7 +473,7 @@ def solve_with_areas(
 
     Notes
     -----
-    Derivation, sources and use cases: ``docs/formules/coupes-surface.md``.
+    Derivation, sources and use cases: ``docs/formulas/area-cuts.md``.
     """
     need = _minimum_areas(ctx, rooms, minima)
     first = _solve_with_area_cuts(poly, c, need, rooms, start, duals, AREA_TARGET_MARGIN_M2)
@@ -627,7 +627,7 @@ def inner_area_constraints(
         Start point, typically the classic legalization result.
     ctx : Contexte
         Provides the minimum area of each room type.
-    rooms : tuple of Piece
+    rooms : tuple of Room
         Rooms, for their types.
     spread : tuple of float, optional
         Relative node widths.

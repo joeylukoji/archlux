@@ -8,7 +8,7 @@ without a single line of difference. Making ``lmo`` aware of light breaks this r
 
 Allowed dependencies: ``types``, ``errors``, ``geom``. **Never ``light``.**
 
-Duality, phase I and Farkas: ``docs/formules/farkas.md``.
+Duality, phase I and Farkas: ``docs/formulas/farkas.md``.
 """
 
 from __future__ import annotations

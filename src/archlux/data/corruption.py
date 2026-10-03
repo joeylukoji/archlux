@@ -120,7 +120,7 @@ def corrupt(
     n_rooms: int = 1,
     modes: Sequence[Mode] = MODES,
 ) -> tuple[Plan, tuple[Corruption, ...]]:
-    """Perturb ``n_pieces`` rooms of a valid plan, reproducibly.
+    """Perturb ``n_rooms`` rooms of a valid plan, reproducibly.
 
     Parameters
     ----------
@@ -135,7 +135,7 @@ def corrupt(
     amplitude : float, optional
         Targeted magnitude of the perturbation, in metres. The *applied*
         amplitude is reported by each :class:`Corruption` and may be smaller.
-    n_pieces : int, optional
+    n_rooms : int, optional
         Number of distinct rooms to affect. Capped at the number of rooms.
     modes : sequence of Mode, optional
         Allowed fault families, drawn uniformly. Restricting to a single mode
@@ -150,22 +150,22 @@ def corrupt(
     Raises
     ------
     InvariantViolation
-        Plan with no room, ``n_pieces < 1``, ``amplitude <= 0``, or empty
+        Plan with no room, ``n_rooms < 1``, ``amplitude <= 0``, or empty
         ``modes``.
 
     Examples
     --------
-    >>> from archlux.data.corruption import corrompre
+    >>> from archlux.data.corruption import corrupt
     >>> from archlux.types import Plan, Room
     >>> plan = Plan(
     ...     rooms=(Room(id="a", type="living_room", x=0.0, y=0.0, w=6.0, h=9.0),),
     ...     walls=(), openings=(),
     ...     outline=((0.0, 0.0), (6.0, 0.0), (6.0, 9.0), (0.0, 9.0)),
     ... )
-    >>> abime, fautes = corrompre(plan, seed=17, modes=("elargir",))
-    >>> len(fautes), fautes[0].mode, fautes[0].room_id
+    >>> damaged, faults = corrupt(plan, seed=17, modes=("elargir",))
+    >>> len(faults), faults[0].mode, faults[0].room_id
     (1, 'elargir', 'a')
-    >>> abime.certificate is None
+    >>> damaged.certificate is None
     True
     """
     if not plan.rooms:

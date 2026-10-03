@@ -216,7 +216,7 @@ def _anchor_outline_vertices(
     Extracted from :func:`_deduce_lines` (PLAN.md phase 4, block 3). A line that
     carries an outline vertex *is* the outline: the group mean would drift with the
     room edges grouped with it, and the anchoring equalities would then pin the rooms
-    off the outline, leaving an uncovered strip. Mutates ``lignes`` in place.
+    off the outline, leaving an uncovered strip. Mutates ``lines`` in place.
 
     Raises
     ------

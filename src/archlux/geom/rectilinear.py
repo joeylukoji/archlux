@@ -194,7 +194,7 @@ def _chord_through_pivot(
 
 
 def _vertical_cut(poly: Polygon, x_cut: float, y_vertex: float) -> LineString | None:
-    """Interior vertical chord through ``(x_coupe, y_sommet)``."""
+    """Interior vertical chord through ``(x_cut, y_vertex)``."""
     minx, miny, maxx, maxy = poly.bounds
     if not (minx + _EPS < x_cut < maxx - _EPS):
         return None
@@ -209,7 +209,7 @@ def _vertical_cut(poly: Polygon, x_cut: float, y_vertex: float) -> LineString | 
 
 
 def _horizontal_cut(poly: Polygon, y_cut: float, x_vertex: float) -> LineString | None:
-    """Interior horizontal chord through ``(x_sommet, y_coupe)``.
+    """Interior horizontal chord through ``(x_vertex, y_cut)``.
 
     Exact mirror of :func:`_coupe_verticale`, axes swapped.
     """
@@ -447,10 +447,10 @@ def minimum_area_shares(
 
     Parameters
     ----------
-    rooms : tuple of Piece
+    rooms : tuple of Room
         Rooms of the plan whose proportions set the shares (the proposed plan, or the
         start point of an optimization).
-    merges : tuple of PieceRectilineaire
+    merges : tuple of RectilinearRoom
         Fused rooms; their sub-rectangles are found in ``rooms`` by id.
     regulation : Referentiel
         Minimum area by room type; a fused room takes the largest minimum of the types
@@ -530,7 +530,7 @@ def overlap_constraints(
 
     Parameters
     ----------
-    piece : PieceRectilineaire
+    room : RectilinearRoom
         Fused room; its rectangles give the order to keep.
     index : dict of str to int
         Variables of the polytope.
@@ -602,7 +602,7 @@ def extend_merges(poly: Polytope, room: RectilinearRoom, *, min_contact: float =
     ----------
     poly : Polytope
         System already assembled for the sub-rectangles.
-    piece : PieceRectilineaire
+    room : RectilinearRoom
         Fusions to impose. The ids of the sub-rectangles must be in ``poly.index``.
     min_contact : float, optional
         Minimum length of every shared edge, in metres

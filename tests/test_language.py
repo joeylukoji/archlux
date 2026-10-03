@@ -183,6 +183,25 @@ MIGRATED: tuple[str, ...] = (
     "tests/properties/test_milestone3_as_written.py",
     "experiments/j2_validity.py",
     "tests/properties/test_milestone2_as_written.py",
+    "src/archlux/data/__init__.py",
+    "src/archlux/feasibility/verdict.py",
+    "src/archlux/geom/__init__.py",
+    "src/archlux/io/__init__.py",
+    "src/archlux/light/__init__.py",
+    "src/archlux/light/analytique.py",
+    "src/archlux/light/appris.py",
+    "src/archlux/light/base.py",
+    "src/archlux/light/jetons.py",
+    "src/archlux/light/learned.py",
+    "src/archlux/light/objectif.py",
+    "src/archlux/light/objective.py",
+    "src/archlux/light/simulateur.py",
+    "src/archlux/light/split_flux.py",
+    "src/archlux/light/tokens.py",
+    "src/archlux/light/validation.py",
+    "src/archlux/lmo/__init__.py",
+    "src/archlux/lmo/coupes.py",
+    "src/archlux/orient/__init__.py",
 )
 """Repository-relative paths that must contain no French prose."""
 
@@ -278,7 +297,7 @@ def test_the_checker_detects_french() -> None:
     assert _french_markers("L" + "e solveur ren" + "d u" + "n plan valide.")
     assert _french_markers("surface minimale " + chr(0xE9) + "chou" + chr(0xE9) + "e")
     assert not _french_markers("The solver returns a valid plan.")
-    assert not _french_markers("reads `docs/tutoriels/premiers-pas.md` again")
+    assert not _french_markers("reads `docs/tutorials/getting-started.md` again")
     assert _french_markers("def test_l" + "e_certificat_affiche_l" + "a_version() -> None:")
     assert not _french_markers("import xml.etree.ElementTree as ET")
     assert not _french_markers(r"r^\top x \le \beta, \qquad")

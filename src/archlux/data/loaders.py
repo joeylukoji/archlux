@@ -12,7 +12,7 @@ The conversion holds in four steps, in this order:
    the plan: it is not discarded, it becomes the input of the daylight
    surrogate.
 2. **Snap.** After rotation, the edges sit within a few millimetres of an axis
-   (measured median: 0 mm). Exact alignment is forced under ``tolerance_calage``,
+   (measured median: 0 mm). Exact alignment is forced under ``snap_tolerance``,
    without which ``geom.rectilinear`` refuses the polygon for a "diagonal
    edge".
 3. **Decompose.** Few real rooms are rectangles (0.1% of apartments); almost
@@ -30,7 +30,7 @@ and ``COLUMN``. ``Structure.load_bearing_walls`` is therefore empty and only
 the columns are populated: inventing load-bearing status would produce
 arbitrary ``A_eq`` equalities, and a ``structure_kept`` that means nothing.
 
-No daylight simulation either: see ``docs/donnees/verite-terrain.md``.
+No daylight simulation either: see ``docs/data/ground-truth.md``.
 """
 
 from __future__ import annotations
@@ -114,7 +114,7 @@ class MSDApartment:
 
     Attributes
     ----------
-    merges : tuple of PieceRectilineaire
+    merges : tuple of RectilinearRoom
         To be passed as is to ``legalize(..., merges=...)``. Empty if all
         rooms were already rectangles.
     straightening_angle : float
@@ -384,7 +384,7 @@ def _read_groups(
 ) -> dict[str, list[tuple[str, str, str, str, str]]]:
     """Group the CSV by apartment, keeping only the useful entities.
 
-    Each entity is ``(genre, sous_type, wkt, area_id, site_id)``. The last two
+    Each entity is ``(kind, subtype, wkt, area_id, site_id)``. The last two
     are not used for the geometry: they carry the join to the Swiss Dwellings
     simulations and the splitting unit.
     """
@@ -460,9 +460,9 @@ def load_msd(
     max_rectangles : int, optional
         Cap per room, passed to
         :func:`~archlux.geom.rectilinear.decompose`.
-    tolerance_calage : float, optional
+    snap_tolerance : float, optional
         Maximum gap, in metres, under which an edge is snapped onto an axis.
-    tolerance_recollage : float, optional
+    stitch_tolerance : float, optional
         Maximum gap, in metres, under which two edges of neighbouring rooms
         are merged into one (see :func:`_recoller`). Default 0.20 m: this is
         the value that maximises retention on MSD (22%), the measured median

@@ -94,7 +94,7 @@ def two_room_vectors(
     The toy family of milestones 4 to 6 (AUDIT.md M12): rooms ``[0, c] x [0, 4.5]`` and
     ``[c, 12] x [0, 4.5]``, the cut ``c`` uniform in ``[4, 8]`` m, the azimuth uniform in
     ``[0, 360)``. One degree of freedom: a surrogate that fits it has learned a curve,
-    not daylight (``docs/donnees/verite-terrain.md``).
+    not daylight (``docs/data/ground-truth.md``).
 
     Parameters
     ----------

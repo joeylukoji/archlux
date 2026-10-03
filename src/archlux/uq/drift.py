@@ -98,7 +98,7 @@ def check_drift(
       (``1 - 0.95^k``). Continuous monitoring must go through a sequential test
       (e-value, conformal martingale mixture) or at least a corrected threshold.
     - **Power not characterized.** No power analysis accompanies the threshold: for
-      small ``n_observations``, ``echangeable=True`` means "drift not detected", not
+      small ``n_observations``, ``exchangeable=True`` means "drift not detected", not
       "no drift". :func:`archlux.certify.bound.build_bound` nonetheless treats
       this boolean as authorization to publish.
     - **Poorly targeted statistic.** Kolmogorov-Smirnov is most sensitive to the
@@ -152,7 +152,7 @@ def measure_drift(predictions: np.ndarray, truths: np.ndarray, *, seed: int) -> 
 
     Parameters
     ----------
-    predictions, verites : numpy.ndarray
+    predictions, truths : numpy.ndarray
         Already computed evaluations (surrogate and frozen oracle), same length.
     seed : int
         Kept for the reproducible signature; the regression is deterministic.
@@ -160,11 +160,11 @@ def measure_drift(predictions: np.ndarray, truths: np.ndarray, *, seed: int) -> 
     Returns
     -------
     DriftReport
-        Positive ``derive_moyenne``: the surrogate overestimates the oracle.
+        Positive ``mean_drift``: the surrogate overestimates the oracle.
 
     Notes
     -----
-    ``tendance_pvalue`` comes from an ordinary least-squares regression on the
+    ``trend_pvalue`` comes from an ordinary least-squares regression on the
     arrival index: it assumes **independent and homoscedastic** gaps. On a sequence
     produced by an optimizer that reuses its iterates, the gaps are autocorrelated
     and this p-value is anti-conservative. Read it as a trend indicator, never as a

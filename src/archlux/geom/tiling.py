@@ -59,7 +59,7 @@ Grid recovery lives in :mod:`archlux.geom.grid` and its repair in
 :mod:`archlux.geom.grid_repair`; both public names are re-exported here.
 
 Reference: wall-coordinate formulation of rectangular dissections,
-Otten (1982) and Lengauer (1990) ch. 10; see ``docs/formules/sources.md``.
+Otten (1982) and Lengauer (1990) ch. 10; see ``docs/formulas/sources.md``.
 """
 
 from __future__ import annotations

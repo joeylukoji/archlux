@@ -5,8 +5,8 @@ Four variables per room: ``<room>.x``, ``<room>.y``, ``<room>.w``, ``<room>.h``.
 Minimum areas are **not** produced here: ``w · h >= a`` is nonlinear and
 is handled by tangent cuts in :mod:`archlux.lmo.coupes`.
 
-Assembly of A x <= b and sources: ``docs/formules/polytope-separe.md``.
-L1 epigraph: ``docs/formules/epigraphe-l1.md``.
+Assembly of A x <= b and sources: ``docs/formulas/separated-polytope.md``.
+L1 epigraph: ``docs/formulas/l1-epigraph.md``.
 """
 
 from __future__ import annotations
@@ -270,7 +270,7 @@ def build_polytope(order: RelativeOrder, ctx: Context) -> Polytope:
     - horizontal separation ``x_a + w_a - x_b <= 0`` per edge of ``g.horizontal``;
     - vertical separation ``y_a + h_a - y_b <= 0``;
     - load-bearing walls: one row per room and wall, keeping the room on its side
-      (``ordre.wall_sides``, see :class:`archlux.geom.graph.WallSide`);
+      (``order.wall_sides``, see :class:`archlux.geom.graph.WallSide`);
     - outline ``x_i + w_i <= x_max``, ``y_i + h_i <= y_max``;
     - bottom and left edges, and minimum widths ``w_i >= l_min``, **via ``bounds``**.
 
@@ -280,7 +280,7 @@ def build_polytope(order: RelativeOrder, ctx: Context) -> Polytope:
 
     Parameters
     ----------
-    ordre : RelativeOrder
+    order : RelativeOrder
         Partial order, typically from :func:`archlux.geom.graph.deduce_order`.
     ctx : Context
         Outline, load-bearing structure and regulation.
@@ -378,7 +378,7 @@ def build_polytope(order: RelativeOrder, ctx: Context) -> Polytope:
     return Polytope(
         A=matrix,
         b=np.array(rhs, dtype=float),
-        # Empty but well shaped. Load-bearing walls are inequality rows (ordre.wall_sides),
+        # Empty but well shaped. Load-bearing walls are inequality rows (order.wall_sides),
         # not equalities: a room only has to stay on its side of a wall.
         A_eq=sparse.csr_matrix((0, n_var)),
         b_eq=np.zeros(0, dtype=float),
@@ -563,7 +563,7 @@ def extend_l1_slack(poly: Polytope, x_ref: FloatVector) -> Polytope:
 
     Notes
     -----
-    Derivation and use cases: ``docs/formules/epigraphe-l1.md``.
+    Derivation and use cases: ``docs/formulas/l1-epigraph.md``.
     """
     n_var = len(poly.index)
     if x_ref.shape != (n_var,):
