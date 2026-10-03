@@ -288,9 +288,9 @@ archlux/
 │   ├── uq/{conformal,registry,drift,reliability}.py
 │   ├── certify/{proof,farkas,bound,dual,report}.py
 │   ├── feasibility/__init__.py
-│   ├── active/{loop,densite,selection}.py
+│   ├── active/{loop,density,selection}.py
 │   ├── data/{loaders,corruption,splits,dedup,imputation,synthetic}.py
-│   ├── export/{ifc,dxf,svg,pathologies,survie,wilson}.py
+│   ├── export/{ifc,dxf,svg,pathologies,survival,wilson}.py
 │   ├── bench/{seeds,manifest,protocol,report,run,stats}.py
 │   ├── io/json_io.py
 │   └── …                    # French module names (`geom/pavage.py`, `lmo/coupes.py`,
