@@ -1,19 +1,19 @@
-# Entraîner un substitut
+# Train a surrogate
 
-Le substitut appris n'entre dans `legalize` **que** s'il respecte le protocole
-vectoriel et si son gradient est validé contre l'oracle gelé (`SplitFluxOracle`,
-split-flux BRE ; (Radiance) hors chemin critique).
+The learned surrogate enters `legalize` **only** if it follows the vector
+protocol and if its gradient is validated against the frozen oracle (`SplitFluxOracle`,
+BRE split-flux; (Radiance) off the critical path).
 
-Les blocs de cette page s'exécutent dans l'ordre, tels quels. Les tailles sont
-réduites pour tourner en quelques secondes (80 plans, 8 neurones, 30 époques) : la
-chaîne est complète, le modèle obtenu n'est qu'un jouet.
+The blocks of this page run in order, as is. The sizes are
+reduced to run in a few seconds (80 plans, 8 neurons, 30 epochs): the
+chain is complete, the resulting model is only a toy.
 
-## 1. Un plan, et des dispositions pour apprendre
+## 1. A plan, and layouts to learn from
 
-Le plan à corriger est celui des [premiers pas](premiers-pas.md) : trois pièces dans
-une enveloppe de 12 m × 9 m, un débord de 5 cm et un vide de 3 cm. Le substitut ne
-voit qu'un vecteur `[x, y, w, h]` par pièce ; `disposition` tire des variantes valides
-des mêmes trois pièces.
+The plan to repair is the one of [getting started](getting-started.md): three rooms in
+a 12 m × 9 m envelope, a 5 cm overlap and a 3 cm gap. The surrogate only
+sees a vector `[x, y, w, h]` per room; `layout` draws valid variants
+of the same three rooms.
 
 ```python
 from pathlib import Path
@@ -41,13 +41,13 @@ ctx = ax.Context(
 )
 
 
-def disposition(rng: np.random.Generator) -> np.ndarray:
-    """Séjour à gauche, chambre et salle de bain empilées à droite."""
+def layout(rng: np.random.Generator) -> np.ndarray:
+    """Living room on the left, bedroom and bathroom stacked on the right."""
     w, h = rng.uniform(4.0, 8.0), rng.uniform(3.0, 6.0)
     return np.array([0, 0, w, 9, w, 0, 12 - w, h, w, h, 12 - w, 9 - h], dtype=float)
 ```
 
-## 2. Entraîner, sauver, geler
+## 2. Train, save, freeze
 
 ```python
 from archlux.light.base import DenseSurrogate
@@ -56,68 +56,68 @@ from archlux.uq.registry import issue_token
 
 sim = SplitFluxOracle()
 rng = np.random.default_rng(17)
-# xs, ys, orientations : jeu d'entraînement uniquement — jamais la calibration
-xs = tuple(disposition(rng) for _ in range(80))
+# xs, ys, orientations: training set only — never the calibration set
+xs = tuple(layout(rng) for _ in range(80))
 orientations = tuple(ax.Orientation(deg=float(d)) for d in rng.uniform(0.0, 360.0, len(xs)))
 ys = np.array([sim.evaluate(x, o) for x, o in zip(xs, orientations, strict=True)])
 
 dense = DenseSurrogate(largeur=8)
 dense.fit(xs, ys, orientations, seed=17, epoques=30)
-Path("poids").mkdir(exist_ok=True)
-path = Path("poids/dense.npz")
+Path("weights").mkdir(exist_ok=True)
+path = Path("weights/dense.npz")
 fingerprint = dense.save(path)
-token = issue_token(fingerprint, "2026-09-09T10:00:00Z")  # après gel
+token = issue_token(fingerprint, "2026-09-09T10:00:00Z")  # after the freeze
 ```
 
-`save` rend l'empreinte SHA-256 du fichier écrit ; le jeton la lie à l'instant du
-gel. C'est lui qui ouvrira le jeu de calibration au
-[tutoriel suivant](calibrer-un-substitut.md).
+`save` returns the SHA-256 fingerprint of the written file; the token binds it to the
+moment of the freeze. It is the token that will open the calibration set in the
+[next tutorial](calibrate-a-surrogate.md).
 
-## 3. Valider le gradient, puis légaliser
+## 3. Validate the gradient, then legalize
 
 ```python
 from archlux.light.learned import LearnedSurrogate
 from archlux.light.validation import validate_gradient
 
-reseau = LearnedSurrogate(path, fingerprint, gele=True)
-points = np.stack([disposition(rng) for _ in range(8)])
-rapport = validate_gradient(reseau, points, ctx.orientation, seed=17, reference=sim)
-assert rapport.accord_de_signe > 0.80
+network = LearnedSurrogate(path, fingerprint, gele=True)
+points = np.stack([layout(rng) for _ in range(8)])
+report = validate_gradient(network, points, ctx.orientation, seed=17, reference=sim)
+assert report.accord_de_signe > 0.80
 
-q = ax.legalize(plan, ctx, objective=reseau, budget=0.5, tiling=True)
+q = ax.legalize(plan, ctx, objective=network, budget=0.5, tiling=True)
 assert q.certificate is not None and q.certificate.geometry.valid
 ```
 
-!!! danger "Point de contrôle rouvert (revue de phase 2)"
-    Cet exemple mesure l'accord de signe à **une** orientation. Rejoué sur 80 points à
-    quatre azimuts, le perceptron échoue à 0°, 90° et 270° (0,68 / 0,50 / 0,67), comme
-    le substitut analytique non entraîné : voir [la revue du jalon 4](../revues/j4.md).
-    Passer ce contrôle ici ne dit pas que le gradient est exploitable.
+!!! danger "Checkpoint reopened (phase 2 review)"
+    This example measures sign agreement at **one** orientation. Replayed on 80 points at
+    four azimuths, the perceptron fails at 0°, 90° and 270° (0.68 / 0.50 / 0.67), as
+    does the untrained analytic surrogate: see [the milestone 4 review](../revues/j4.md).
+    Passing this check here does not say that the gradient is usable.
 
-`validate_gradient` lève `InvalidSurrogate` sous le seuil d'accord de signe (0,80) :
-l'`assert` ne fait que rendre le point de contrôle visible. `budget=0.5` borne le
-déplacement de chaque mur à 50 cm autour de la proposition ; sans lui, Frank-Wolfe
-suit le substitut aussi loin que le polytope le permet : dans cet exemple, il réduit
-le séjour à 1 m, la largeur minimale.
+`validate_gradient` raises `InvalidSurrogate` below the sign-agreement threshold (0.80):
+the `assert` only makes the checkpoint visible. `budget=0.5` bounds the
+displacement of each wall to 50 cm around the proposal; without it, Frank-Wolfe
+follows the surrogate as far as the polytope allows: in this example, it shrinks
+the living room to 1 m, the minimum width.
 
-`torch` n'est chargé que pour un fichier `.pt`. La CI entraîne le perceptron
-numpy (`light.base`).
+`torch` is loaded only for a `.pt` file. CI trains the numpy
+perceptron (`light.base`).
 
-!!! warning "Le transformeur n'est pas implémenté"
-    `LearnedSurrogate._charger_torch` **lève systématiquement** : l'extra
-    `archlux[ml]` installe `torch`, mais aucun modèle `.pt` n'est servi. La seule
-    implémentation apprise du dépôt est le perceptron `numpy` ci-dessus.
+!!! warning "The transformer is not implemented"
+    `LearnedSurrogate._charger_torch` **always raises**: the
+    `archlux[ml]` extra installs `torch`, but no `.pt` model is served. The only
+    learned implementation in the repository is the `numpy` perceptron above.
 
-!!! danger "D'où viennent `xs`, `ys`, `orientations` ?"
-    Ici, comme dans le dépôt, `ys` vient de `SplitFluxOracle` — une **forme fermée**.
-    Le perceptron apprend alors le résidu entre deux formules analytiques : la chaîne
-    est exercée, la physique n'est pas mesurée. Pour des étiquettes réelles, lire
-    [vérité terrain](../donnees/verite-terrain.md) : Swiss Dwellings (CC BY 4.0,
-    367 colonnes de simulation par pièce) ou une campagne Radiance.
+!!! danger "Where do `xs`, `ys`, `orientations` come from?"
+    Here, as in the repository, `ys` comes from `SplitFluxOracle` — a **closed form**.
+    The perceptron then learns the residual between two analytic formulas: the chain
+    is exercised, the physics is not measured. For real labels, read
+    [ground truth](../data/ground-truth.md): Swiss Dwellings (CC BY 4.0,
+    367 simulation columns per room) or a Radiance campaign.
 
-Le jeu de calibration n'est **pas** ouvert ici. Voir
-[calibrer un substitut](calibrer-un-substitut.md) (jalon 5).
+The calibration set is **not** opened here. See
+[calibrate a surrogate](calibrate-a-surrogate.md) (milestone 5).
 
-Formules : [jetons](../formules/jetons.md),
-[validation du gradient](../formules/validation-gradient.md).
-[Pourquoi pas une image](../concepts/pourquoi-pas-une-image.md).
+Formulas: [tokens](../formulas/tokens.md),
+[gradient validation](../formulas/gradient-validation.md).
+[Why not an image](../concepts/why-not-an-image.md).

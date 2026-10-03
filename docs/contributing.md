@@ -1,13 +1,13 @@
-# Contribuer
+# Contributing
 
-Le guide de contribution (gouvernance, revue, versions, règles de dépendance)
-est à la racine du dépôt : [`CONTRIBUTING.md`](https://github.com/ORG/archlux/blob/main/CONTRIBUTING.md).
+The contribution guide (governance, review, versions, dependency rules)
+is at the root of the repository: [`CONTRIBUTING.md`](https://github.com/ORG/archlux/blob/main/CONTRIBUTING.md).
 
-Résumé non négociable :
+Non-negotiable summary:
 
-1. Lire [`ARCHITECTURE.md`](specification/ARCHITECTURE.md) avant toute PR.
-2. Géométrie exacte ; lumière probabiliste — ne pas les confondre.
-3. `geom` / `lmo` / `solve` / `certify` n'importent **jamais** `torch`.
-4. Une fonction publique sans docstring n'est pas terminée.
+1. Read [`ARCHITECTURE.md`](specification/ARCHITECTURE.md) before any PR.
+2. Exact geometry; probabilistic light — do not confuse the two.
+3. `geom` / `lmo` / `solve` / `certify` **never** import `torch`.
+4. A public function without a docstring is not finished.
 
-**Voir aussi :** [Limites](limites.md), [Documentation](specification/DOCUMENTATION.md).
+**See also:** [Limitations](limitations.md), [Documentation](specification/DOCUMENTATION.md).

@@ -1,26 +1,26 @@
-# Les deux garanties
+# The two guarantees
 
-Un certificat `archlux` porte **deux affirmations de natures différentes**. Les
-confondre — présenter une prédiction avec l'assurance d'une preuve — est la faute
-que le système est conçu pour rendre difficile.
+An `archlux` certificate carries **two claims of different kinds**. Confusing them —
+presenting a prediction with the confidence of a proof — is the mistake the system is
+designed to make hard.
 
-## Ce que dit le certificat
+## What the certificate says
 
-| | Géométrie | Performance lumineuse |
+| | Geometry | Daylight performance |
 |---|---|---|
-| **Phrase type** | « ce plan n'a aucun chevauchement » | « ce plan atteindra au moins 51,4 % » |
-| **Nature** | Preuve | Prédiction assortie d'une marge |
-| **Vérification** | Inspection finie, \(O(n^2)\) | Couverture \(\ge 1-\alpha\) sur un jeu de calibration |
-| **Peut être fausse ?** | Non (à la tolérance d'arrondi près) | Oui, dans au plus \(\alpha\) des cas |
-| **Type** | `GeometricProof` — aucun champ de probabilité | `PerformanceBound` — `coverage`, `n_calibration` et `regime` obligatoires |
-| **Bandeau** | `[EXACT]` | `[PREDICTION: coverage 90 %]` (plan échangeable) ou `[PREDICTION: selected plan, coverage NOT guaranteed]` |
+| **Typical sentence** | "this plan has no overlap" | "this plan will reach at least 51.4 %" |
+| **Kind** | Proof | Prediction with a margin |
+| **Check** | Finite inspection, \(O(n^2)\) | Coverage \(\ge 1-\alpha\) on a calibration set |
+| **Can it be wrong?** | No (up to the rounding tolerance) | Yes, in at most \(\alpha\) of the cases |
+| **Type** | `GeometricProof` — no probability field | `PerformanceBound` — `coverage`, `n_calibration` and `regime` mandatory |
+| **Banner** | `[EXACT]` | `[PREDICTION: coverage 90 %]` (exchangeable plan) or `[PREDICTION: selected plan, coverage NOT guaranteed]` |
 
-La géométrie est un prédicat sur des rectangles : on peut le recompter. La lumière
-est un oracle **gelé** (`SplitFluxOracle`, split-flux BRE) : la borne dit « au moins
-neuf fois sur dix, la valeur de *cet* oracle tombera au-dessus du seuil annoncé ».
-Ce n'est pas un sDA LM-83, ce n'est pas Radiance.
+The geometry is a predicate on rectangles: it can be recounted. Daylight is a
+**frozen** oracle (`SplitFluxOracle`, BRE split-flux): the bound says "at least nine
+times out of ten, the value of *this* oracle will fall above the announced threshold".
+It is not an LM-83 sDA, it is not Radiance.
 
-## Comment les lire l'une à côté de l'autre
+## How to read them side by side
 
 ```
 GEOMETRY                                        [EXACT]
@@ -34,22 +34,22 @@ NOT EVALUABLE
   Summer comfort, technical systems, materials: out of scope
 ```
 
-- Si `performance is None`, la section prédiction affiche `NOT EVALUABLE` : le
-  système refuse d'inventer une couverture.
-- `n_calibration` est affiché : une borne sur 50 points n'en vaut pas une sur 1 284.
-- Le **régime** est affiché. La couverture n'est annoncée que pour un plan
-  échangeable avec la calibration (`regime="exchangeable"`). Pour un plan choisi par
-  l'optimiseur (`regime="selected"`, ce que rend `legalize(..., calibration=...)`),
-  le bandeau dit « coverage NOT guaranteed » et le rapport demande de réévaluer le
-  plan avec l'oracle.
-- Rien n'agrège les deux natures en un score unique.
+- If `performance is None`, the prediction section shows `NOT EVALUABLE`: the
+  system refuses to invent a coverage.
+- `n_calibration` is shown: a bound on 50 points is not worth one on 1,284.
+- The **regime** is shown. Coverage is announced only for a plan that is
+  exchangeable with the calibration (`regime="exchangeable"`). For a plan chosen by
+  the optimizer (`regime="selected"`, which is what `legalize(..., calibration=...)`
+  returns), the banner says "coverage NOT guaranteed" and the report asks for the
+  plan to be re-evaluated with the oracle.
+- Nothing aggregates the two kinds into a single score.
 
-## Ce qu'il faut retenir
+## What to remember
 
-La légalisation **prouve** que le plan est un pavage valide. Le substitut
-**prévoit** un indicateur et le calibrateur **borne** cette prévision. Le lecteur
-qui lit « 51,4 % » comme il lit « aucun chevauchement » se trompe de garantie.
+Legalization **proves** that the plan is a valid tiling. The surrogate **predicts** an
+indicator and the calibrator **bounds** that prediction. A reader who reads
+"51.4 %" the way they read "no overlap" has the wrong guarantee in mind.
 
-**Voir aussi :** [Prédiction conforme](prediction-conforme.md),
-[Lire un certificat](../galerie/04-lire-un-certificat.md),
-[Limites](../limites.md).
+**See also:** [Conformal prediction](conformal-prediction.md),
+[Read a certificate](../gallery/04-read-a-certificate.md),
+[Limitations](../limitations.md).

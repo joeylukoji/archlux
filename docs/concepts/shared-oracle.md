@@ -1,13 +1,13 @@
-# L'oracle partagé
+# The shared oracle
 
-L'oracle linéaire de Frank-Wolfe **est** le solveur de légalisation. Ce n'est
-pas une métaphore : c'est le même appel, avec un autre vecteur de coûts.
+The linear oracle of Frank-Wolfe **is** the legalization solver. This is not a
+metaphor: it is the same call, with another cost vector.
 
-Le bloc ci-dessous s'exécute tel quel. Il reprend le plan de la
-[galerie 01](../galerie/01-corriger-un-plan.md) (deux pièces qui se recouvrent d'un
-mètre), construit le polytope des plans valides pour l'ordre lu sur la proposition,
-puis appelle deux fois `lmo.solver.solve` : une fois pour la légalisation classique, une
-fois pour le pas d'une itération Frank-Wolfe.
+The block below runs as is. It takes the plan of
+[gallery 01](../gallery/01-repair-a-plan.md) (two rooms that overlap by one metre),
+builds the polytope of valid plans for the order read on the proposal, then calls
+`lmo.solver.solve` twice: once for classic legalization, once for the step of one
+Frank-Wolfe iteration.
 
 ```python
 import archlux as ax
@@ -34,45 +34,44 @@ ctx = ax.Context(
     regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
 poly = build_polytope(deduce_order(plan, structure=ctx.structure), ctx)
-Q_propose = vectorize(plan, poly.index)
+Q_proposed = vectorize(plan, poly.index)
 n = len(poly.index)
 
-# légalisation classique — jalon 2 : minimiser la distance L1 à la proposition
-poly_l1 = extend_l1_slack(poly, Q_propose)
-sol = lmo.solve(poly_l1, c=gradient_distance(Q_propose))
-Q = sol.x[:n]  # les n premières coordonnées ; les suivantes sont les écarts L1
+# classic legalization — milestone 2: minimize the L1 distance to the proposal
+poly_l1 = extend_l1_slack(poly, Q_proposed)
+sol = lmo.solve(poly_l1, c=gradient_distance(Q_proposed))
+Q = sol.x[:n]  # the first n coordinates; the following ones are the L1 slacks
 assert sol.status == "optimal" and poly.contains(Q)
 
-# une itération Frank-Wolfe — jalon 3 : même appel, coûts = -gradient du substitut
+# one Frank-Wolfe iteration — milestone 3: same call, costs = -gradient of the surrogate
 surrogate = AnalyticSurrogate()
 sol = lmo.solve(poly, c=-surrogate.gradient(Q, ctx.orientation), start=Q)
-S = sol.x  # un sommet du polytope
-gamma = 0.5  # pas de l'itération
-Q_suivant = Q + gamma * (S - Q)
-assert poly.contains(S) and poly.contains(Q_suivant)
+S = sol.x  # a vertex of the polytope
+gamma = 0.5  # step of the iteration
+Q_next = Q + gamma * (S - Q)
+assert poly.contains(S) and poly.contains(Q_next)
 ```
 
-`lmo` ignore d'où vient \(c\). Cette ignorance est le cœur de
-`ARCHITECTURE.md` : un seul simplexe, deux usages. Ajouter un second solveur
-« pour la lumière » casserait la garantie que tout itéré est un plan valide :
-`Q_suivant` est une moyenne de deux points du polytope, donc un point du polytope,
-qui est convexe.
+`lmo` ignores where \(c\) comes from. That ignorance is the heart of
+`ARCHITECTURE.md`: one simplex, two uses. Adding a second solver
+"for daylight" would break the guarantee that every iterate is a valid plan:
+`Q_next` is an average of two points of the polytope, hence a point of the polytope,
+which is convex.
 
-Ce bloc montre le mécanisme, pas tout `legalize`. Avant la boucle, `legalize` fige
-les contacts du plan légalisé et ajoute l'approximation intérieure des surfaces
-minimales et le budget de déplacement ; la boucle (`archlux.solve.frank_wolfe`) prend
-le pas \(2/(k+2)\), le divise par deux tant que l'objectif baisse, ajoute
-des pas « away », et s'arrête quand le gap de Frank-Wolfe passe sous la tolérance.
+This block shows the mechanism, not all of `legalize`. Before the loop, `legalize`
+freezes the contacts of the legalized plan and adds the inner approximation of the
+minimum areas and the displacement budget; the loop (`archlux.solve.frank_wolfe`)
+takes the step \(2/(k+2)\), halves it while the objective decreases, adds
+"away" steps, and stops when the Frank-Wolfe gap falls below the tolerance.
 
-Le démarrage à chaud (`depart=x` **à chaque** itération) ne change pas la
-solution, seulement le temps : seule la présence de `start` compte, elle permet de
-réutiliser le modèle déjà construit pour ce polytope. L'omettre dans une boucle de
-50 tours coûte un facteur 3 à 5.
+Warm start (`start=x` **at every** iteration) does not change the solution, only the
+time: only the presence of `start` matters, it lets the model already built for this
+polytope be reused. Omitting it in a 50-round loop costs a factor of 3 to 5.
 
-La géométrie reste **exacte** (chaque itéré \(\in P\)). Le score du substitut
-reste **sans garantie** jusqu'à la prédiction conforme (jalon 5). Ne pas
-écrire « plan optimal pour la lumière » : écrire « plan valide qui maximise
-le substitut, gap d'optimisation \(g\) ».
+The geometry stays **exact** (every iterate \(\in P\)). The surrogate's score stays
+**without guarantee** until conformal prediction (milestone 5). Do not write
+"optimal plan for daylight": write "valid plan that maximizes the surrogate,
+optimization gap \(g\)".
 
-Voir [Frank-Wolfe](../formules/frank-wolfe.md),
-[comparer deux méthodes](../galerie/02-comparer-deux-methodes.md).
+See [Frank-Wolfe](../formulas/frank-wolfe.md),
+[compare two methods](../gallery/02-compare-two-methods.md).

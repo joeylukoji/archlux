@@ -1,17 +1,16 @@
-# Pourquoi pas une image
+# Why not an image
 
-Un relecteur formé à la vision par ordinateur demandera un CNN sur le plan
-rasterisé. C'est le piège le plus séduisant du projet, et il le tue.
+A reviewer trained in computer vision will ask for a CNN on the rasterized plan.
+It is the most tempting trap of the project, and it kills it.
 
-Déplacer un mur de 2 cm — exactement le geste de Frank-Wolfe — ne change
-**aucun pixel** d'une image à résolution de pièce. Le gradient du réseau par
-rapport aux variables de décision \(x,y,w,h\) est alors nul presque partout.
-L'oracle linéaire reçoit \(c=0\), et l'optimiseur est aveugle.
+Moving a wall by 2 cm — exactly the Frank-Wolfe move — changes **no pixel** of an
+image at room resolution. The gradient of the network with respect to the decision
+variables \(x,y,w,h\) is then zero almost everywhere. The linear oracle receives
+\(c=0\), and the optimizer is blind.
 
-L'entrée du substitut est donc un **ensemble de jetons** continus en géométrie
-(`light.tokens.plan_to_tokens`). Le test anti-image
-(`test_jetons_continus`) échoue si un déplacement de 2 cm laisse les jetons
-invariants.
+The surrogate's input is therefore a **set of tokens** that are continuous in the
+geometry (`light.tokens.plan_to_tokens`). The anti-image test
+(`test_jetons_continus`) fails if a 2 cm displacement leaves the tokens unchanged.
 
-`ARCHITECTURE.md` §10 en fait un anti-pattern fatal. Ce n'est pas une
-préférence d'implémentation.
+`ARCHITECTURE.md` §10 makes it a fatal anti-pattern. It is not an implementation
+preference.

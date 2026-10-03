@@ -1,13 +1,13 @@
-# Imputation des ouvertures
+# Opening imputation
 
-**Code :** `data.imputation.impute_openings`.
+**Code:** `data.imputation.impute_openings`.
 
-Le corpus simulé n'a souvent pas les baies ; celui qui a les baies n'a pas les
+The simulated corpus often lacks the windows; the one that has the windows lacks the
 simulations.
 
-Règle : baie centrée (`s=0.5`) sur chaque mur sans ouverture, largeur relative
-\(0{,}30\) (`DEFAULT_OPENING_RATIO`). Les baies déjà présentes sont intactes.
+Rule: a centred window (`s=0.5`) on each wall without an opening, relative width
+\(0{,}30\) (`DEFAULT_OPENING_RATIO`). Windows already present are left intact.
 
-Pour mesurer l'effet : calibrer (jalon 5) séparément sur le sous-jeu aux baies
-observées et sur le jeu imputé, et **publier les deux** couvertures. Une
-couverture obtenue seulement sur l'imputé n'est pas une couverture sur le réel.
+To measure the effect: calibrate (milestone 5) separately on the subset with observed
+windows and on the imputed set, and **publish both** coverages. A coverage obtained
+only on the imputed set is not a coverage on the real one.

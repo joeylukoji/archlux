@@ -1,7 +1,7 @@
-# Lire un certificat
+# Read a certificate
 
-**Problème.** Le solveur a rendu un plan valide. On veut savoir, sur une page,
-ce qui est **prouvé** et ce qui est **prédit** — sans les mélanger.
+**Problem.** The solver returned a valid plan. We want to know, on one page,
+what is **proved** and what is **predicted** — without mixing them.
 
 **Solution.**
 
@@ -26,7 +26,7 @@ ctx = ax.Context(
     regulation=ax.Regulation(min_areas=(), min_width=1.0),
 )
 q = ax.legalize(plan, ctx)
-borne = PerformanceBound(
+bound = PerformanceBound(
     indicator="sDA",
     value=56.2,
     lower=51.4,
@@ -37,30 +37,30 @@ borne = PerformanceBound(
 )
 certificate = ax.Certificate(
     geometry=q.certificate.geometry,
-    performance=borne,
+    performance=bound,
     duals=q.certificate.duals,
     manifest=Manifest(version="0.4.0", timestamp="2026-09-09T00:00:00Z", seed=17),
 )
 print(certificate.report())
 ```
 
-On construit ici la borne à la main pour lire le gabarit. `regime="exchangeable"`
-déclare que le plan est échangeable avec le jeu de calibration (un plan tenu à
-l'écart, par exemple) : c'est le seul cas où la couverture de 90 % est garantie.
-`legalize(..., objective=..., calibration=...)` attache lui-même la borne, mais en
-régime `"selected"` : l'optimiseur a choisi le plan, et le rapport écrit alors
+Here the bound is built by hand to read the template. `regime="exchangeable"`
+declares that the plan is exchangeable with the calibration set (a held-out plan,
+for example): it is the only case where the 90 % coverage is guaranteed.
+`legalize(..., objective=..., calibration=...)` attaches the bound itself, but in the
+`"selected"` regime: the optimizer chose the plan, and the report then writes
 `[PREDICTION: selected plan, coverage NOT guaranteed]`.
 
-**Résultat.** Le texte sépare `[EXACT]` et `[PREDICTION: coverage 90 %]`.
-`n_calibration` (1 284) est visible. La section `NOT EVALUABLE` est toujours
-là : confort d'été, systèmes, matériaux.
+**Result.** The text separates `[EXACT]` and `[PREDICTION: coverage 90 %]`.
+`n_calibration` (1,284) is visible. The `NOT EVALUABLE` section is always
+there: summer comfort, systems, materials.
 
-**Ce qu'il faut retenir.** « Aucun chevauchement » se revérifie en comptant des
-aires. « sDA ≥ 51,4 » est une couverture à 90 % **contre l'oracle gelé**
-(split-flux), pas un sDA réglementaire. Si `performance is None`, le rapport
-écrit `NOT EVALUABLE` dans la section prédiction plutôt que d'inventer un
-chiffre.
+**What to remember.** "No overlap" can be re-checked by counting areas.
+"sDA ≥ 51.4" is a 90 % coverage **against the frozen oracle**
+(split-flux), not a regulatory sDA. If `performance is None`, the report
+writes `NOT EVALUABLE` in the prediction section rather than inventing a
+number.
 
-**Voir aussi :** [Les deux garanties](../concepts/deux-garanties.md),
-[Diagnostic dual](05-diagnostic-dual.md),
-[Prédiction conforme](../concepts/prediction-conforme.md).
+**See also:** [The two guarantees](../concepts/two-guarantees.md),
+[Dual diagnostics](05-dual-diagnostics.md),
+[Conformal prediction](../concepts/conformal-prediction.md).

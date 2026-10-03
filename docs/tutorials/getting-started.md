@@ -1,15 +1,15 @@
-# Premiers pas
+# Getting started
 
-Installer le noyau (sans PyTorch) :
+Install the core (without PyTorch):
 
 ```bash
 pip install archlux
 ```
 
-## Un plan, un contexte, une correction
+## One plan, one context, one repair
 
-L'enveloppe et les pièces ci-dessous sont celles du corpus de tests publié
-(`CONTEXTE_DEFAUT` : 12 m × 9 m) — pas une géométrie inventée pour la doc.
+The envelope and the rooms below are those of the published test corpus
+(`CONTEXTE_DEFAUT`: 12 m × 9 m) — not a geometry invented for the docs.
 
 ```python
 import archlux as ax
@@ -34,25 +34,25 @@ ctx = ax.Context(
 q = ax.legalize(plan, ctx)
 assert q.certificate is not None
 assert q.certificate.geometry.valid
-assert q.certificate.performance is None  # légalisation classique : pas de borne
+assert q.certificate.performance is None  # classic legalization: no bound
 print(q.certificate.report())
 ```
 
-`legalize` renvoie un plan **prouvé** valide (pavage, surfaces, porteurs).
-La section `[PREDICTION]` du rapport reste `NOT EVALUABLE` tant qu'aucune
-calibration conforme n'a été attachée.
+`legalize` returns a plan **proved** valid (tiling, areas, load-bearing walls).
+The `[PREDICTION]` section of the report stays `NOT EVALUABLE` as long as no
+conformal calibration has been attached.
 
-## Charger depuis un fichier
+## Load from a file
 
-Un générateur écrit ses plans en JSON. Le fichier ci-dessous en imite une sortie
-typique : le séjour déborde de 5 cm sur la chambre, et 3 cm de vide séparent la
-chambre de la salle de bain. On l'écrit ici pour que l'exemple se suffise à lui-même ;
-en pratique, il vient du générateur.
+A generator writes its plans as JSON. The file below imitates a typical output:
+the living room overlaps the bedroom by 5 cm, and a 3 cm gap separates the
+bedroom from the bathroom. It is written here so that the example is self-contained;
+in practice, it comes from the generator.
 
 ```python
 from pathlib import Path
 
-Path("sortie_generateur.json").write_text(
+Path("generator_output.json").write_text(
     """{
       "schema": "2",
       "outline": [[0, 0], [12, 0], [12, 9], [0, 9]],
@@ -66,25 +66,25 @@ Path("sortie_generateur.json").write_text(
     encoding="utf-8",
 )
 
-plan = ax.Plan.from_json("sortie_generateur.json")
+plan = ax.Plan.from_json("generator_output.json")
 q = ax.legalize(plan, ctx, tiling=True)
 assert q.certificate is not None and q.certificate.geometry.valid
-q.to_json("plan_legalise.json")
+q.to_json("legalized_plan.json")
 ```
 
-`tiling=True` impose que les pièces couvrent exactement le contour. Il est nécessaire
-dès que l'entrée peut contenir un vide, ce qui est le cas des sorties de générateur :
-sans lui, les séparations sont des inégalités, le plan troué est déjà son propre point
-le plus proche, et la vérification exacte le rejette (`InvariantViolation`).
+`tiling=True` requires the rooms to cover the outline exactly. It is needed
+as soon as the input can contain a gap, which is the case of generator outputs:
+without it, the separations are inequalities, the plan with a hole is already its own
+closest point, and the exact verification rejects it (`InvariantViolation`).
 
-Le schéma JSON est versionné, et `certificate` vaut `null` sur un plan proposé ; voir
-[référence](../reference/schema-json.md).
+The JSON schema is versioned, and `certificate` is `null` on a proposed plan; see the
+[reference](../reference/schema-json.md).
 
-## Suite
+## Next
 
-| Besoin | Page |
+| Need | Page |
 |---|---|
-| Voir le même exemple commenté | [Corriger un plan](../galerie/01-corriger-un-plan.md) |
-| Comprendre preuve ≠ prédiction | [Les deux garanties](../concepts/deux-garanties.md) |
-| Maximiser la lumière sous validité | [Légalisation performantielle](legalisation-performantielle.md) |
-| Ce que le système ne vérifie pas | [Limites](../limites.md) |
+| See the same example with commentary | [Repair a plan](../gallery/01-repair-a-plan.md) |
+| Understand proof ≠ prediction | [The two guarantees](../concepts/two-guarantees.md) |
+| Maximize daylight under validity | [Performance legalization](performance-legalization.md) |
+| What the system does not check | [Limitations](../limitations.md) |

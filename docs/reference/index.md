@@ -1,4 +1,4 @@
-# Référence d'API
+# API reference
 
 ::: archlux.legalize
 

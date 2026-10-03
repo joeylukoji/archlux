@@ -1,10 +1,10 @@
-# Corriger un plan généré
+# Repair a generated plan
 
-Géométrie d'exemple : enveloppe **12 m × 9 m** du corpus de tests publié
-(`CONTEXTE_DEFAUT`), pas une pièce inventée pour la documentation.
+Example geometry: the **12 m × 9 m** envelope of the published test corpus
+(`CONTEXTE_DEFAUT`), not a room invented for the documentation.
 
-**Problème.** Un générateur a produit deux pièces qui se recouvrent d'un mètre, tout
-en couvrant l'enveloppe. Le plan n'est pas constructible.
+**Problem.** A generator produced two rooms that overlap by one metre, while
+covering the envelope. The plan cannot be built.
 
 **Solution.**
 
@@ -32,23 +32,23 @@ print(q.certificate.geometry.valid)
 print(round(q.certificate.geometry.max_displacement, 2))
 ```
 
-**Résultat.**
+**Result.**
 
 ```
 True
 1.0
 ```
 
-Le séjour passe de 7 m à 6 m de large ; la chambre ne bouge pas. Aucun chevauchement,
-aucun jour. La preuve est **exacte** : `certify.proof` recompte les aires, indépendamment
-du solveur.
+The living room goes from 7 m to 6 m wide; the bedroom does not move. No overlap,
+no gap. The proof is **exact**: `certify.proof` recounts the areas, independently of
+the solver.
 
-**Ce qu'il faut retenir.** `legalize` minimise le déplacement L1 sous le polytope des
-plans valides de même ordre relatif. La disposition (qui est à gauche de qui) est
-conservée ; seules les cotes bougent.
+**What to remember.** `legalize` minimizes the L1 displacement over the polytope of
+valid plans with the same relative order. The layout (who is left of whom) is
+kept; only the dimensions move.
 
-Formule : [épigraphe L1](../formules/epigraphe-l1.md),
-[pipeline](../formules/pipeline.md).
+Formula: [L1 epigraph](../formulas/l1-epigraph.md),
+[pipeline](../formulas/pipeline.md).
 
-**Voir aussi :** [Détecter une infaisabilité](03-detecter-une-infaisabilite.md),
-[Le polytope](../concepts/polytope.md)
+**See also:** [Detect infeasibility](03-detect-infeasibility.md),
+[The polytope](../concepts/polytope.md)

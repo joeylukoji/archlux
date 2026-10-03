@@ -1,21 +1,21 @@
-# Calibrer un substitut
+# Calibrate a surrogate
 
-L'entraînement et le point de contrôle du gradient sont au
-[jalon 4](entrainer-un-substitut.md). Ici : geler, scorer, borner.
+Training and the gradient checkpoint are in
+[milestone 4](train-a-surrogate.md). Here: freeze, score, bound.
 
-Ne pas ouvrir le jeu de calibration avant le gel des poids. Lire la
-calibration à l'entraînement rend la couverture conforme **fausse**, et aucun
-test de perte ne le signale.
+Do not open the calibration set before the weights are frozen. Reading the
+calibration set during training makes the conformal coverage **wrong**, and no
+loss test reports it.
 
-Les blocs de cette page s'exécutent dans l'ordre, tels quels, en quelques secondes.
-Les jeux de données y sont tirés au hasard et étiquetés par l'oracle gelé
-`SplitFluxOracle` ; dans un vrai projet, ils sont lus dans les répertoires `train/`,
-`calibration/` et `test/`.
+The blocks of this page run in order, as is, in a few seconds.
+The data sets are drawn at random and labelled by the frozen oracle
+`SplitFluxOracle`; in a real project, they are read from the `train/`,
+`calibration/` and `test/` directories.
 
-## 0. Point de départ : un modèle entraîné
+## 0. Starting point: a trained model
 
-Le plan, le contexte et le modèle du [tutoriel précédent](entrainer-un-substitut.md),
-en plus court :
+The plan, the context and the model of the [previous tutorial](train-a-surrogate.md),
+shorter:
 
 ```python
 from pathlib import Path
@@ -45,24 +45,24 @@ ctx = ax.Context(
 )
 
 
-def disposition(rng: np.random.Generator) -> np.ndarray:
-    """Séjour à gauche, chambre et salle de bain empilées à droite."""
+def layout(rng: np.random.Generator) -> np.ndarray:
+    """Living room on the left, bedroom and bathroom stacked on the right."""
     w, h = rng.uniform(4.0, 8.0), rng.uniform(3.0, 6.0)
     return np.array([0, 0, w, 9, w, 0, 12 - w, h, w, h, 12 - w, 9 - h], dtype=float)
 
 
 oracle = SplitFluxOracle()
 rng = np.random.default_rng(17)
-xs = tuple(disposition(rng) for _ in range(80))
+xs = tuple(layout(rng) for _ in range(80))
 ys = np.array([oracle.evaluate(x, ctx.orientation) for x in xs])
 model = DenseSurrogate(largeur=8)
 model.fit(xs, ys, (ctx.orientation,) * len(xs), seed=17, epoques=30)
 
-for sous_dossier in ("train", "calibration", "test"):
-    Path("splits/v1", sous_dossier).mkdir(parents=True, exist_ok=True)
+for subdirectory in ("train", "calibration", "test"):
+    Path("splits/v1", subdirectory).mkdir(parents=True, exist_ok=True)
 ```
 
-## 1. Geler puis émettre le jeton
+## 1. Freeze, then issue the token
 
 ```python
 from archlux.uq.registry import DataManagement, freeze_and_issue
@@ -71,100 +71,100 @@ token = freeze_and_issue(model, timestamp="2026-09-09T12:00:00Z")
 calibration = DataManagement("splits/v1").for_calibration(token, model)
 ```
 
-Si un poids bouge après le gel, `pour_calibration(..., modele)` lève
+If a weight moves after the freeze, `for_calibration(..., model)` raises
 `ModelModified`.
 
-## 2. Ajuster un calibrateur par indicateur
+## 2. Fit one calibrator per indicator
 
 ```python
 from archlux.uq.conformal import ConformalCalibrator
 
-plans_calibration = [disposition(rng) for _ in range(200)]  # jamais vus à l'entraînement
-predictions = np.array([model.evaluate(x, ctx.orientation) for x in plans_calibration])
-verites = np.array([oracle.evaluate(x, ctx.orientation) for x in plans_calibration])
-incertitudes = np.array([model.uncertainty(x, ctx.orientation) for x in plans_calibration])
+calibration_plans = [layout(rng) for _ in range(200)]  # never seen during training
+predictions = np.array([model.evaluate(x, ctx.orientation) for x in calibration_plans])
+truths = np.array([oracle.evaluate(x, ctx.orientation) for x in calibration_plans])
+uncertainties = np.array([model.uncertainty(x, ctx.orientation) for x in calibration_plans])
 
 cal = ConformalCalibrator(indicator="sDA")
-cal.fit(predictions, verites, incertitudes, alpha=0.10)
+cal.fit(predictions, truths, uncertainties, alpha=0.10)
 
-x_nouveau = disposition(rng)  # tiré comme la calibration : échangeable avec elle
-prediction = model.evaluate(x_nouveau, ctx.orientation)
-sigma = model.uncertainty(x_nouveau, ctx.orientation)
-borne = cal.borne(prediction, sigma, ">=", regime="exchangeable")
-assert borne.lower <= prediction <= borne.upper
-# borne.lower, borne.coverage, borne.n_calibration
+x_new = layout(rng)  # drawn like the calibration set: exchangeable with it
+prediction = model.evaluate(x_new, ctx.orientation)
+sigma = model.uncertainty(x_new, ctx.orientation)
+bound = cal.borne(prediction, sigma, ">=", regime="exchangeable")
+assert bound.lower <= prediction <= bound.upper
+# bound.lower, bound.coverage, bound.n_calibration
 ```
 
-Le rang est \(\lceil(n+1)(1-\alpha)\rceil\), pas `np.quantile(s, 0.90)`. ASE
-s'ajuste à part, avec `sens="<="`. `regime` est obligatoire : `"exchangeable"`
-pour un plan tiré comme la calibration, `"selected"` pour un plan choisi par un
-optimiseur, dont la couverture n'est alors pas garantie.
+The rank is \(\lceil(n+1)(1-\alpha)\rceil\), not `np.quantile(s, 0.90)`. ASE
+is fitted separately, with `sens="<="`. `regime` is mandatory: `"exchangeable"`
+for a plan drawn like the calibration set, `"selected"` for a plan chosen by an
+optimizer, whose coverage is then not guaranteed.
 
-## 3. Objectif pessimiste
+## 3. Pessimistic objective
 
 ```python
 from archlux.light.objective import Daylight
 
-objectif = Daylight(model, q_chapeau=cal.q)  # pessimiste=True par défaut
+objective = Daylight(model, q_chapeau=cal.q)  # pessimiste=True by default
 q = ax.legalize(
-    plan, ctx, objective=objectif, calibration=cal.snapshot(), budget=0.5, tiling=True
+    plan, ctx, objective=objective, calibration=cal.snapshot(), budget=0.5, tiling=True
 )
 assert q.certificate is not None and q.certificate.performance is not None
 assert q.certificate.performance.regime == "selected"
 print(q.certificate.report())
 ```
 
-`q.certificat.performance` porte alors l'intervalle conforme du plan rendu, en
-régime `"selected"` : c'est l'optimiseur qui a choisi ce plan, là où le
-substitut surestime le plus (malédiction du vainqueur), donc la couverture
-nominale n'est **pas** garantie. Le rapport le dit. Pour publier une couverture,
-réévaluer le plan avec l'oracle.
+`q.certificate.performance` then carries the conformal interval of the returned plan,
+in the `"selected"` regime: the optimizer chose this plan, where the
+surrogate overestimates the most (winner's curse), so the nominal coverage
+is **not** guaranteed. The report says so. To publish a coverage,
+re-evaluate the plan with the oracle.
 
-## 4. Dérive et `NOT EVALUABLE`
+## 4. Drift and `NOT EVALUABLE`
 
-Les scores de production sont ceux de plans rendus après calibration, une fois leur
-vraie valeur connue : \(|y - \hat{y}| / \hat{\sigma}\), comme à l'ajustement.
+The production scores are those of plans returned after calibration, once their
+true value is known: \(|y - \hat{y}| / \hat{\sigma}\), as at fitting time.
 
 ```python
 from archlux.certify.bound import build_bound
 from archlux.uq.drift import check_drift
 
-plans_production = [disposition(rng) for _ in range(50)]
-scores_production = np.array(
+production_plans = [layout(rng) for _ in range(50)]
+production_scores = np.array(
     [
         abs(oracle.evaluate(x, ctx.orientation) - model.evaluate(x, ctx.orientation))
         / model.uncertainty(x, ctx.orientation)
-        for x in plans_production
+        for x in production_plans
     ]
 )
-derive = check_drift(scores_production, cal.snapshot(), seed=17)
-certificat_borne = build_bound(
-    prediction, cal.snapshot(), derive, uncertainty=sigma, regime="exchangeable"
+drift = check_drift(production_scores, cal.snapshot(), seed=17)
+certificate_bound = build_bound(
+    prediction, cal.snapshot(), drift, uncertainty=sigma, regime="exchangeable"
 )
 ```
 
-Ces plans sont tirés comme la calibration : le test ne détecte pas de dérive et
-`certificat_borne` est un intervalle. Des erreurs trois fois plus grandes, elles, sont
-détectées :
+These plans are drawn like the calibration set: the test detects no drift and
+`certificate_bound` is an interval. Errors three times larger, on the other hand, are
+detected:
 
 ```python
-derive_forte = check_drift(3.0 * scores_production, cal.snapshot(), seed=17)
-assert not derive_forte.echangeable
+strong_drift = check_drift(3.0 * production_scores, cal.snapshot(), seed=17)
+assert not strong_drift.echangeable
 assert (
     build_bound(
-        prediction, cal.snapshot(), derive_forte, uncertainty=sigma, regime="exchangeable"
+        prediction, cal.snapshot(), strong_drift, uncertainty=sigma, regime="exchangeable"
     )
     is None
 )
 ```
 
-Si `derive.echangeable` est faux, `build_bound` rend `None` : le rapport
-écrit `NOT EVALUABLE` plutôt qu'un intervalle. L'inverse ne vaut pas preuve :
-`echangeable=True` signifie « dérive non détectée », et à faible effectif le test
-n'a presque aucune puissance.
+If `drift.echangeable` is false, `build_bound` returns `None`: the report
+writes `NOT EVALUABLE` rather than an interval. The converse is not a proof:
+`echangeable=True` means "drift not detected", and with a small sample the test
+has almost no power.
 
-Oracle gelé : `SplitFluxOracle` (forme fermée split-flux). Pas Radiance, pas une vérité terrain.
+Frozen oracle: `SplitFluxOracle` (split-flux closed form). Not Radiance, not ground truth.
 
-**Voir aussi :** [Prédiction conforme](../concepts/prediction-conforme.md),
-[Statistique](../formules/statistique.md),
-[Les deux garanties](../concepts/deux-garanties.md).
+**See also:** [Conformal prediction](../concepts/conformal-prediction.md),
+[Statistics](../formulas/statistics.md),
+[The two guarantees](../concepts/two-guarantees.md).

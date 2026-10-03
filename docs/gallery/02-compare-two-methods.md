@@ -1,12 +1,12 @@
-# Comparer deux méthodes honnêtement
+# Compare two methods honestly
 
-**Problème.** Le légaliseur classique ignore le nord. Deux appartements identiques,
-l'un au nord, l'autre au sud, reçoivent la même correction L1. On veut une
-correction qui *préfère* la lumière, sans encore entraîner de réseau.
+**Problem.** The classic legalizer ignores north. Two identical apartments,
+one facing north, the other south, receive the same L1 repair. We want a
+repair that *prefers* daylight, without training a network yet.
 
-**Solution.** Même fonction, un paramètre : `objective=AnalyticSurrogate()`.
-Le substitut est un modèle fermé (profondeur utile \(2{,}5\times\) linteau,
-harmoniques d'orientation). Frank-Wolfe réutilise l'oracle LP du jalon 2.
+**Solution.** Same function, one parameter: `objective=AnalyticSurrogate()`.
+The surrogate is a closed-form model (useful depth \(2{,}5\times\) head height,
+orientation harmonics). Frank-Wolfe reuses the LP oracle of milestone 2.
 
 ```python
 import archlux as ax
@@ -41,25 +41,24 @@ print(q_l1.certificate.geometry.valid)
 print(q_n.rooms == q_s.rooms)
 ```
 
-**Résultat.**
+**Result.**
 
 ```
 True
 False
 ```
 
-La preuve géométrique reste **exacte** dans les trois cas. Les deux plans
-performantiels diffèrent : le nord n'est plus une coordonnée muette. Le score du
-substitut n'est **pas** un sDA mesuré ; aucune couverture conforme n'est
-affirmée (jalon 5).
+The geometric proof stays **exact** in all three cases. The two performance
+plans differ: north is no longer a dummy coordinate. The surrogate's score is
+**not** a measured sDA; no conformal coverage is claimed (milestone 5).
 
-**Ce qu'il faut retenir.** `objective=None` reproduit le jalon 2. Un substitut
-ne change pas le domaine : il change le vecteur \(c\) de l'oracle. Comparer L1
-et performantiel sur le *même* ordre, jamais en mélangeant les garanties.
+**What to remember.** `objective=None` reproduces milestone 2. A surrogate
+does not change the domain: it changes the vector \(c\) of the oracle. Compare L1
+and performance legalization on the *same* order, never by mixing the guarantees.
 
-Formules : [substitut analytique](../formules/substitut-analytique.md),
-[Frank-Wolfe](../formules/frank-wolfe.md),
-[oracle partagé](../concepts/oracle-partage.md).
+Formulas: [analytic surrogate](../formulas/analytic-surrogate.md),
+[Frank-Wolfe](../formulas/frank-wolfe.md),
+[shared oracle](../concepts/shared-oracle.md).
 
-**Voir aussi :** [Corriger un plan](01-corriger-un-plan.md),
-[Légalisation performantielle](../tutoriels/legalisation-performantielle.md)
+**See also:** [Repair a plan](01-repair-a-plan.md),
+[Performance legalization](../tutorials/performance-legalization.md)

@@ -1,69 +1,69 @@
-# Publication 1.0.0 — checklist
+# Release 1.0.0 — checklist
 
-Ce document prépare la publication logicielle. **Il ne remplace pas** les
-conditions de recevabilité des revues (historique public, usage tiers).
+This document prepares the software release. **It does not replace** the
+admissibility conditions of the journals (public history, third-party use).
 
-## Prêt dans le dépôt
+## Ready in the repository
 
-| Livrable | État |
+| Deliverable | Status |
 |---|---|
-| Version `1.0.0` (`_version.py`, source unique) | **non** : `0.10.0.dev0`, 1.0.0 reportée (PLAN.md phase 5) |
-| API gelée + `test_api_publique_stable` | test présent ; gel reporté (renommage anglais, ADR 0001) |
-| `CHANGELOG.md` section `1.0.0` | section retirée (jamais publiée) |
-| `CITATION.cff` | oui (URL / DOI à finaliser) |
-| Licence Apache-2.0 (fichier `LICENSE`) | oui (ajouté en phase 0) |
-| Docs MkDocs (`mkdocs build --strict`) | oui |
-| `CONTRIBUTING.md` | oui |
-| Tests CI (dépendances, torch hors noyau) | oui |
+| Version `1.0.0` (`_version.py`, single source) | **no**: `0.10.0.dev0`, 1.0.0 postponed (PLAN.md phase 5) |
+| Frozen API + `test_api_publique_stable` | test present; freeze postponed (English renaming, ADR 0001) |
+| `CHANGELOG.md` section `1.0.0` | section removed (never published) |
+| `CITATION.cff` | yes (URL / DOI to finalize) |
+| Apache-2.0 licence (`LICENSE` file) | yes (added in phase 0) |
+| MkDocs docs (`mkdocs build --strict`) | yes |
+| `CONTRIBUTING.md` | yes |
+| CI tests (dependencies, torch out of the core) | yes |
 
-## À faire hors code (mainteneurs)
+## To do outside the code (maintainers)
 
-1. Remplacer `ORG/archlux` dans `CITATION.cff`, `README`, `docs/contribution.md`
-   par l'URL publique réelle.
-2. Étiqueter `v1.0.0` et archiver (Zenodo / Software Heritage) → DOI dans
+1. Replace `ORG/archlux` in `CITATION.cff`, `README`, `docs/contributing.md`
+   with the real public URL.
+2. Tag `v1.0.0` and archive (Zenodo / Software Heritage) → DOI in
    `CITATION.cff`.
-3. Publier la distribution sur l'index de paquets (`twine` / Trusted Publishing).
-4. Joindre au dépôt public : poids du substitut, **jeu de calibration**,
-   découpages `splits/`, résultats bruts du banc.
-5. Attendre **≥ 6 mois** d'historique public étalé et **au moins un usage tiers**
-   documenté avant une soumission de revue de logiciel
+3. Publish the distribution on the package index (`twine` / Trusted Publishing).
+4. Attach to the public repository: surrogate weights, **calibration set**,
+   `splits/`, raw benchmark results.
+5. Wait for **≥ 6 months** of spread-out public history and **at least one documented
+   third-party use** before a software-journal submission
    (`MILESTONE-6.md` §7).
 
-## Publication **scientifique** — ce qui manque encore
+## **Scientific** publication — what is still missing
 
-Cette page couvre la publication *logicielle*. Un article à comité de lecture
-demande autre chose, et le dépôt n'y est pas.
+This page covers the *software* release. A peer-reviewed paper
+asks for something else, and the repository is not there.
 
-| Exigence | État | Où |
+| Requirement | Status | Where |
 |---|---|---|
-| Méthode formulée, sourcée, dérivée | ✅ | `docs/formules/` (17 références localisées) |
-| Implémentation vérifiable, typée, testée | ✅ | `mypy --strict` propre, couverture 89 % |
-| Budgets de performance tenus | ✅ | `benchmarks/`, `ARCHITECTURE.md` §9 |
-| **Étiquettes d'éclairement mesurées** | ❌ | forme fermée uniquement — [vérité terrain](donnees/verite-terrain.md) |
-| **Corpus réel chargé** | ❌ | chargeur WKT à écrire (`data/loaders.py`) |
-| **Baseline : 3 modèles génératifs publics** | ❌ | `MILESTONE-2.md` §8 ; jamais construite : `j2_brut.csv` contenait 2 plans faits à la main (retiré) ; revue [`j2`](revues/j2.md) |
-| **Couverture conforme mesurée sur corpus réel** | ❌ | `n = 18` en calibration synthétique |
-| Étude d'ablation (jetons, imputation des baies, actif vs aléatoire) | ⚠️ | scripts présents, résultats à l'échelle jouet |
-| Comparaison à l'état de l'art | ❌ | aucune |
+| Method formulated, sourced, derived | ✅ | `docs/formulas/` (17 located references) |
+| Verifiable, typed, tested implementation | ✅ | clean `mypy --strict`, 89 % coverage |
+| Performance budgets met | ✅ | `benchmarks/`, `ARCHITECTURE.md` §9 |
+| **Measured daylight labels** | ❌ | closed form only — [ground truth](data/ground-truth.md) |
+| **Real corpus loaded** | ❌ | WKT loader to write (`data/loaders.py`) |
+| **Baseline: 3 public generative models** | ❌ | `MILESTONE-2.md` §8; never built: `j2_brut.csv` contained 2 hand-made plans (removed); review [`j2`](revues/j2.md) |
+| **Conformal coverage measured on a real corpus** | ❌ | `n = 18` in synthetic calibration |
+| Ablation study (tokens, window imputation, active vs random) | ⚠️ | scripts present, results at toy scale |
+| Comparison with the state of the art | ❌ | none |
 
-**Lecture honnête :** les jalons 1–6 démontrent qu'une *architecture* tient — deux
-garanties séparées par construction, un solveur pour deux objectifs, un certificat
-qui refuse de conclure quand l'échangeabilité tombe. C'est un résultat d'ingénierie
-logicielle et de conception, défendable comme tel (article outil / JOSS-like, ou
-section « méthode » d'un article plus large).
+**Honest reading:** milestones 1–6 show that an *architecture* holds — two
+guarantees separated by construction, one solver for two objectives, a certificate
+that refuses to conclude when exchangeability fails. It is a software-engineering
+and design result, defensible as such (tool paper / JOSS-like, or the
+"method" section of a broader paper).
 
-Ce n'est pas encore un résultat expérimental : aucune grandeur physique n'a été
-mesurée, aucun générateur public n'a été corrigé, aucune baseline n'a été battue.
+It is not yet an experimental result: no physical quantity has been
+measured, no public generator has been repaired, no baseline has been beaten.
 
-## Contrat d'API 1.x
+## 1.x API contract
 
-Toute suppression ou renommage d'un symbole de `archlux.__all__` est une
-**version 2.0**. Les ajouts non cassants restent en `1.x`.
+Any removal or renaming of a symbol of `archlux.__all__` is a
+**version 2.0**. Non-breaking additions stay in `1.x`.
 
-Changement de comportement de `lmo` ou `certify` → version **majeure**
-(reproductibilité des certificats).
+A change of behaviour of `lmo` or `certify` → **major** version
+(reproducibility of the certificates).
 
-## Citer
+## Cite
 
 ```bibtex
 @software{archlux100,
@@ -76,4 +76,4 @@ Changement de comportement de `lmo` ou `certify` → version **majeure**
 }
 ```
 
-Préférer le DOI Zenodo une fois l'archive créée.
+Prefer the Zenodo DOI once the archive is created.

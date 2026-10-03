@@ -1,7 +1,7 @@
-# Détecter une infaisabilité
+# Detect infeasibility
 
-**Problème.** Deux pièces exigent chacune 8 m de largeur minimale dans une enveloppe
-de 12 m. Aucun plan valide n'existe : le dire vaut mieux que de renvoyer un plan faux.
+**Problem.** Two rooms each require a minimum width of 8 m in a 12 m envelope.
+No valid plan exists: saying so is better than returning a wrong plan.
 
 **Solution.**
 
@@ -30,21 +30,21 @@ except ax.Infeasible as err:
     print(sorted(err.origins))
 ```
 
-**Résultat.**
+**Result.**
 
 ```
 ['contour droit b', 'separation horizontale a|b']
 ```
 
-Le certificat de Farkas désigne le sous-système en conflit : les deux séparations
-horizontales et les bords droits. Ce n'est pas un message d'erreur, c'est une **preuve**
-d'inexistence (lemme de Farkas).
+The Farkas certificate names the conflicting subsystem: the two horizontal
+separations and the right edges. It is not an error message, it is a **proof** of
+non-existence (Farkas' lemma). The labels are the solver's own row labels, still in
+French in this version.
 
-**Ce qu'il faut retenir.** `Infeasible` n'est pas un échec du solveur. C'est le
-programme qui ne tient pas. Les `origins` sont des libellés métier, jamais des
-indices de lignes.
+**What to remember.** `Infeasible` is not a solver failure. It is the program
+that does not hold. The `origins` are domain labels, never row indices.
 
-Formule : [Farkas et duaux](../formules/farkas.md).
+Formula: [Farkas and duals](../formulas/farkas.md).
 
-**Voir aussi :** [Corriger un plan](01-corriger-un-plan.md),
-[Le polytope](../concepts/polytope.md)
+**See also:** [Repair a plan](01-repair-a-plan.md),
+[The polytope](../concepts/polytope.md)

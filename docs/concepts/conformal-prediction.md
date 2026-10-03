@@ -1,54 +1,54 @@
-# La prédiction conforme
+# Conformal prediction
 
-Quatre étapes, un piège, une hypothèse. Module : `archlux.uq.conformal`.
-Source : Vovk, Gammerman & Shafer (2005), [bibliographie](../formules/sources.md) n° 12.
+Four steps, one trap, one assumption. Module: `archlux.uq.conformal`.
+Source: Vovk, Gammerman & Shafer (2005), [bibliography](../formulas/sources.md) no. 12.
 
-## Les quatre étapes
+## The four steps
 
-1. **Geler** le substitut, émettre le jeton (`freeze_and_issue`). Le jeu de
-   calibration n'a jamais été lu à l'entraînement.
-2. **Scorer** chaque plan de calibration : \(s_i = \lvert y_i - \hat y_i\rvert / \hat\sigma_i\).
-3. **Prendre le rang** \(k = \lceil (n+1)(1-\alpha)\rceil\) dans les scores triés.
-   C'est \(q̂\). Pas le quantile empirique à \(1-\alpha\).
-4. **Annoncer** l'intervalle \(\hat y \pm q̂\,\hat\sigma\) et la couverture
-   visée \(1-\alpha\), avec \(n\) affiché.
+1. **Freeze** the surrogate, issue the token (`freeze_and_issue`). The calibration
+   set has never been read during training.
+2. **Score** each calibration plan: \(s_i = \lvert y_i - \hat y_i\rvert / \hat\sigma_i\).
+3. **Take the rank** \(k = \lceil (n+1)(1-\alpha)\rceil\) in the sorted scores.
+   That is \(q̂\). Not the empirical quantile at \(1-\alpha\).
+4. **Announce** the interval \(\hat y \pm q̂\,\hat\sigma\) and the target coverage
+   \(1-\alpha\), with \(n\) shown.
 
-Exemple chiffré. \(n = 100\), \(\alpha = 0{,}10\). Le rang conforme est
-\(\lceil 101 \times 0{,}90\rceil = 91\). Le quantile empirique à 0,90 tombe plus
-bas (entre les rangs 90 et 91, interpolation). L'intervalle conforme est
-**strictement plus large**. Avec 1 000 points l'écart est minime ; avec 100, la
-garantie tombe si on omet la correction.
+Worked example. \(n = 100\), \(\alpha = 0{,}10\). The conformal rank is
+\(\lceil 101 \times 0{,}90\rceil = 91\). The empirical quantile at 0.90 falls lower
+(between ranks 90 and 91, interpolation). The conformal interval is
+**strictly wider**. With 1,000 points the difference is tiny; with 100, the
+guarantee fails if the correction is omitted.
 
-Si \(k > n\) (jeu trop petit pour \(\alpha\)), `conformal_quantile` lève
-`InvariantViolation`. Pas de borne infinie silencieuse.
+If \(k > n\) (set too small for \(\alpha\)), `conformal_quantile` raises
+`InvariantViolation`. No silent infinite bound.
 
-## L'hypothèse d'échangeabilité
+## The exchangeability assumption
 
-La couverture \(\ge 1-\alpha\) vaut si le plan à borner est **échangeable** avec
-les \(n\) plans de calibration. Un plan *sélectionné* par Frank-Wolfe pour
-maximiser \(\hat y\) ne l'est plus tout à fait : l'optimiseur cherche les
-erreurs du réseau (malédiction du vainqueur). Chaque borne déclare donc son
-**régime** : `"exchangeable"` (la couverture est garantie) ou `"selected"` (plan
-choisi par l'optimiseur : l'intervalle est calculé de la même façon, mais sa
-couverture n'est pas garantie et le rapport ne l'annonce pas). `legalize` rend
-toujours `"selected"`. Une procédure valide sous sélection (sélection conforme,
-Jin & Candès 2023 ; conforme pondéré, Fannjiang et al. 2022) est prévue en phase
-6.4 du plan. Pour un plan échangeable, si un test d'échangeabilité rejette,
-`build_bound` rend `None` et le certificat porte `NOT EVALUABLE`.
+The coverage \(\ge 1-\alpha\) holds if the plan to bound is **exchangeable** with
+the \(n\) calibration plans. A plan *selected* by Frank-Wolfe to maximize \(\hat y\)
+no longer quite is: the optimizer seeks out the network's errors (winner's curse).
+Each bound therefore declares its **regime**: `"exchangeable"` (coverage is
+guaranteed) or `"selected"` (plan chosen by the optimizer: the interval is computed
+the same way, but its coverage is not guaranteed and the report does not announce
+it). `legalize` always returns `"selected"`. A procedure valid under selection
+(conformal selection, Jin & Candès 2023; weighted conformal, Fannjiang et al. 2022)
+is planned in phase 6.4 of the plan. For an exchangeable plan, if an exchangeability
+test rejects, `build_bound` returns `None` and the certificate carries
+`NOT EVALUABLE`.
 
-## Sens des indicateurs
+## Direction of the indicators
 
-- sDA, UDI, vue : on publie la **borne inférieure** (`>=`).
-- ASE : on publie la **borne supérieure** (`<=`).
+- sDA, UDI, view: the **lower bound** is published (`>=`).
+- ASE: the **upper bound** is published (`<=`).
 
-Un calibrateur par indicateur : les erreurs n'ont pas la même échelle.
+One calibrator per indicator: the errors do not have the same scale.
 
-## Objectif pessimiste
+## Pessimistic objective
 
-Frank-Wolfe maximise \(J = \hat\mu - q̂\,\hat\sigma\), pas \(\hat\mu\). Là où
-\(\hat\sigma\) s'ouvre, \(J\) chute, l'optimiseur revient. Classe :
-`light.objective.Daylight`. Le flottant \(q̂\) est injecté : `light` n'importe
-pas `uq`.
+Frank-Wolfe maximizes \(J = \hat\mu - q̂\,\hat\sigma\), not \(\hat\mu\). Where
+\(\hat\sigma\) widens, \(J\) drops, and the optimizer backs off. Class:
+`light.objective.Daylight`. The float \(q̂\) is injected: `light` does not import
+`uq`.
 
-Formule : [statistique](../formules/statistique.md).
-Tutoriel : [calibrer un substitut](../tutoriels/calibrer-un-substitut.md).
+Formula: [statistics](../formulas/statistics.md).
+Tutorial: [calibrate a surrogate](../tutorials/calibrate-a-surrogate.md).

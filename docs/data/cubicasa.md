@@ -1,45 +1,46 @@
 # CubiCasa5K
 
-Le versant **baies** de l'appariement : portes et fenêtres annotées finement, là
-où les corpus simulés les omettent souvent.
+The **windows** side of the pairing: finely annotated doors and windows, where
+simulated corpora often omit them.
 
-## Fiche
+## Sheet
 
-| Point | Valeur |
+| Item | Value |
 |---|---|
-| Auteurs | Kalervo, A., Ylioinas, J., Häikiö, M., Karhu, A., Kannala, J. (2019) |
-| Article | [arXiv:1904.01920](https://arxiv.org/abs/1904.01920) |
-| Code et téléchargement | <https://github.com/CubiCasa/CubiCasa5k> |
-| Volume | 5 000 plans annotés, > 80 catégories d'objets |
-| Format | **SVG vectoriel** par image, annotations sémantiques *et* géométriques |
-| Licence | **usage recherche / non commercial** — lire la licence du dépôt avant tout téléchargement |
-| Redistribué ici | **non** |
+| Authors | Kalervo, A., Ylioinas, J., Häikiö, M., Karhu, A., Kannala, J. (2019) |
+| Paper | [arXiv:1904.01920](https://arxiv.org/abs/1904.01920) |
+| Code and download | <https://github.com/CubiCasa/CubiCasa5k> |
+| Size | 5,000 annotated plans, > 80 object categories |
+| Format | **vector SVG** per image, semantic *and* geometric annotations |
+| Licence | **research / non-commercial use** — read the repository's licence before any download |
+| Redistributed here | **no** |
 
-## Ce qu'il apporte
+## What it brings
 
-Les annotations sont **vectorielles**, pas raster : les segments de fenêtre sont
-directement projetables en `Opening(mur_id=..., s=..., largeur_rel=...)`. C'est le seul
-corpus de cette liste qui permet de mesurer l'écart entre baies **observées** et
-baies **imputées** — la mesure exigée par [imputation](imputation.md).
+The annotations are **vector**, not raster: window segments can be projected
+directly into `Opening(wall_id=..., s=..., relative_width=...)`. It is the only
+corpus in this list that makes it possible to measure the difference between
+**observed** windows and **imputed** windows — the measurement required by
+[imputation](imputation.md).
 
-## Ce qu'il n'apporte pas
+## What it does not bring
 
-- Aucune simulation d'éclairement.
-- Aucune orientation cardinale fiable (plans finlandais, nord non garanti dans
-  l'annotation) : `Orientation` reste à renseigner ou à traiter comme manquante.
-- Échelle en pixels à convertir en mètres avant tout usage
-  (`ARCHITECTURE.md` §7 : unités en mètres, sans exception).
+- No daylight simulation.
+- No reliable cardinal orientation (Finnish plans, north not guaranteed in
+  the annotation): `Orientation` must be filled in or treated as missing.
+- Scale in pixels, to be converted to metres before any use
+  (`ARCHITECTURE.md` §7: units in metres, no exception).
 
 !!! warning "Licence"
-    La licence non commerciale de CubiCasa5K contamine tout modèle entraîné
-    dessus. Si le substitut publié doit être réutilisable, entraîner sur
-    [Swiss Dwellings](swiss-dwellings.md) (CC BY 4.0) / [MSD](msd.md) (CC BY-SA 4.0) et ne se
-    servir de CubiCasa5K que pour l'**étude d'ablation** sur les baies.
+    The non-commercial licence of CubiCasa5K contaminates any model trained
+    on it. If the published surrogate must be reusable, train on
+    [Swiss Dwellings](swiss-dwellings.md) (CC BY 4.0) / [MSD](msd.md) (CC BY-SA 4.0) and use
+    CubiCasa5K only for the **ablation study** on windows.
 
-## Citer
+## Cite
 
 > Kalervo, A., Ylioinas, J., Häikiö, M., Karhu, A. & Kannala, J. (2019).
 > *CubiCasa5K: A Dataset and an Improved Multi-Task Model for Floorplan Image
 > Analysis*. SCIA 2019. [arXiv:1904.01920](https://arxiv.org/abs/1904.01920)
 
-**Voir aussi :** [imputation](imputation.md), [vérité terrain](verite-terrain.md).
+**See also:** [imputation](imputation.md), [ground truth](ground-truth.md).

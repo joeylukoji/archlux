@@ -1,65 +1,65 @@
 # MSD — Modified Swiss Dwellings
 
-Le corpus de **géométrie** de référence de la littérature récente : murs porteurs
-et poteaux annotés, graphes de zonage, orientation cardinale conservée, géométrie
-non-Manhattan. **Il ne contient aucune simulation d'éclairement** — c'est son
-corpus parent, [Swiss Dwellings](swiss-dwellings.md), qui les porte.
+The reference **geometry** corpus of the recent literature: annotated load-bearing
+walls and columns, zoning graphs, preserved cardinal orientation, non-Manhattan
+geometry. **It contains no daylight simulation** — its parent corpus,
+[Swiss Dwellings](swiss-dwellings.md), carries them.
 
-## Fiche
+## Sheet
 
-| Point | Valeur |
+| Item | Value |
 |---|---|
-| Auteurs | van Engelenburg, C., Mostafavi, F. *et al.* (2024), ECCV |
-| Article | [arXiv:2407.10121](https://arxiv.org/abs/2407.10121) · [doi:10.1007/978-3-031-73636-0_4](https://doi.org/10.1007/978-3-031-73636-0_4) |
-| Page projet | <https://caspervanengelenburg.github.io/msd-eccv24-page/> |
+| Authors | van Engelenburg, C., Mostafavi, F. *et al.* (2024), ECCV |
+| Paper | [arXiv:2407.10121](https://arxiv.org/abs/2407.10121) · [doi:10.1007/978-3-031-73636-0_4](https://doi.org/10.1007/978-3-031-73636-0_4) |
+| Project page | <https://caspervanengelenburg.github.io/msd-eccv24-page/> |
 | Code | <https://github.com/CasperVanEngelenburg/MSD> |
-| Téléchargement | Kaggle : `caspervanengelenburg/modified-swiss-dwellings` |
-| Volume | 5 372 plans d'étage, > 18 900 appartements distincts |
-| Dérivé de | Swiss Dwellings **v3.0.0** |
-| Licence | **CC BY-SA 4.0** (fiche Kaggle, vérifiée par l'API). **Pas** la CC BY 4.0 du corpus parent |
-| Redistribué ici | **non** |
+| Download | Kaggle: `caspervanengelenburg/modified-swiss-dwellings` |
+| Size | 5,372 floor plans, > 18,900 distinct apartments |
+| Derived from | Swiss Dwellings **v3.0.0** |
+| Licence | **CC BY-SA 4.0** (Kaggle sheet, checked through the API). **Not** the CC BY 4.0 of the parent corpus |
+| Redistributed here | **no** |
 
-!!! warning "Partage à l'identique"
-    MSD est sous **CC BY-SA 4.0**, alors que son corpus parent
-    [Swiss Dwellings](swiss-dwellings.md) est sous CC BY 4.0. Le `SA` est une clause
-    de **partage à l'identique** : elle se propage aux œuvres dérivées. Si le modèle
-    ou les résultats publiés doivent rester librement réutilisables sans cette
-    contrainte, entraîner sur Swiss Dwellings directement et n'employer MSD que pour
-    la géométrie de comparaison.
+!!! warning "Share-alike"
+    MSD is under **CC BY-SA 4.0**, while its parent corpus
+    [Swiss Dwellings](swiss-dwellings.md) is under CC BY 4.0. The `SA` is a
+    **share-alike** clause: it propagates to derived works. If the model
+    or the published results must stay freely reusable without this
+    constraint, train on Swiss Dwellings directly and use MSD only for
+    the comparison geometry.
 
-## Contenu
+## Content
 
-Trois modalités liées : **image**, **géométrie**, **graphe**. Le graphe
-(`networkx.Graph` ou `torch_geometric.data.Data`) porte forme et type de pièce sur
-les nœuds, type de connexion sur les arêtes, image du plan complet au niveau graphe.
+Three linked modalities: **image**, **geometry**, **graph**. The graph
+(`networkx.Graph` or `torch_geometric.data.Data`) carries room shape and type on
+the nodes, connection type on the edges, and the image of the whole plan at graph level.
 
-Pour `archlux`, seule la modalité **géométrie** est utilisable : l'image est un
-raster, et un substitut à entrée raster a un gradient nul presque partout
-(`ARCHITECTURE.md` §10, premier anti-pattern).
+For `archlux`, only the **geometry** modality is usable: the image is a
+raster, and a surrogate with raster input has a zero gradient almost everywhere
+(`ARCHITECTURE.md` §10, first anti-pattern).
 
-## Ce que MSD apporte à `archlux`
+## What MSD brings to `archlux`
 
 - **No load-bearing annotation.** MSD separators are only `WALL` or `COLUMN`, so
   `Structure.load_bearing_walls` stays empty on this corpus (see `data/loaders.py`);
   the load-bearing guarantee is exercised by the synthetic benchmark instead
   (`benchmarks/guarantees`). Columns are loaded but not constrained (ADR-7).
-- **Géométrie non-Manhattan** → exerce `geom.rectilinear.decompose` sur autre
-  chose qu'un cas de test.
-- **Orientation cardinale conservée** → `Orientation` cesse d'être tirée au sort.
-- **Complexes multi-logements** → des ordres relatifs autrement plus riches que
-  les pavages 2×2 du [corpus synthétique](synthetique.md).
+- **Non-Manhattan geometry** → exercises `geom.rectilinear.decompose` on something
+  other than a test case.
+- **Preserved cardinal orientation** → `Orientation` is no longer drawn at random.
+- **Multi-dwelling complexes** → relative orders far richer than
+  the 2×2 tilings of the [synthetic corpus](synthetic.md).
 
-## Ce qu'il n'apporte pas
+## What it does not bring
 
-Aucune étiquette d'éclairement. L'appariement se fait par les identifiants Swiss
-Dwellings dont MSD est dérivé — c'est la voie recommandée, et elle est décrite
-dans [vérité terrain](verite-terrain.md).
+No daylight label. The pairing goes through the Swiss Dwellings identifiers
+from which MSD is derived — this is the recommended route, and it is described
+in [ground truth](ground-truth.md).
 
-## Citer
+## Cite
 
 > van Engelenburg, C., Mostafavi, F., *et al.* (2024). *MSD: A Benchmark Dataset
 > for Floor Plan Generation of Building Complexes*. ECCV 2024.
 > [doi:10.1007/978-3-031-73636-0_4](https://doi.org/10.1007/978-3-031-73636-0_4)
 
-**Voir aussi :** [Swiss Dwellings](swiss-dwellings.md),
-[imputation](imputation.md), [vérité terrain](verite-terrain.md).
+**See also:** [Swiss Dwellings](swiss-dwellings.md),
+[imputation](imputation.md), [ground truth](ground-truth.md).

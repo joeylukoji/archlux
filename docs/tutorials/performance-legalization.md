@@ -1,13 +1,13 @@
-# Légalisation performantielle
+# Performance legalization
 
-Après la [légalisation classique](premiers-pas.md), on peut choisir, *parmi les
-plans valides de même ordre*, celui que le substitut juge le plus lumineux.
+After [classic legalization](getting-started.md), one can choose, *among the
+valid plans with the same order*, the one the surrogate judges brightest.
 
-## Problème
+## Problem
 
-Le correcteur L1 ignore l'orientation. Deux appartements identiques, nord et
-sud, reçoivent la même correction. On veut préférer la lumière **sans** sortir
-du polytope.
+The L1 repairer ignores orientation. Two identical apartments, north and
+south, receive the same repair. We want to prefer daylight **without** leaving
+the polytope.
 
 ## Solution
 
@@ -34,23 +34,23 @@ ctx = ax.Context(
 
 q = ax.legalize(plan, ctx, objective=AnalyticSurrogate())
 assert q.certificate.geometry.valid
-assert q.certificate.performance is None  # borne via certify.bound, pas via api
+assert q.certificate.performance is None  # bound via certify.bound, not via api
 ```
 
-Le substitut analytique n'apprend rien : profondeur utile, table à 8 secteurs,
-placement vers le sud. Il sert à valider le flux (polytope → Frank-Wolfe →
-preuve) avant toute simulation.
+The analytic surrogate learns nothing: useful depth, an 8-sector table,
+placement towards the south. It serves to validate the flow (polytope → Frank-Wolfe →
+proof) before any simulation.
 
-`objective=None` (défaut) reste strictement le jalon 2. Un objet qui n'implémente
-pas `Surrogate` lève `TypeError`.
+`objective=None` (the default) stays strictly milestone 2. An object that does not
+implement `Surrogate` raises `TypeError`.
 
-## Ce qu'il faut retenir
+## What to remember
 
-Le réseau (`LearnedSurrogate`) est le [jalon 4](entrainer-un-substitut.md).
-La borne conforme s'attache après calibration :
-[calibrer un substitut](calibrer-un-substitut.md).
-Comparer les méthodes avec `bench.compare(..., evaluate_by=oracle)` — jamais
-avec le substitut lui-même.
+The network (`LearnedSurrogate`) is [milestone 4](train-a-surrogate.md).
+The conformal bound is attached after calibration:
+[calibrate a surrogate](calibrate-a-surrogate.md).
+Compare methods with `bench.compare(..., evaluate_by=oracle)` — never
+with the surrogate itself.
 
-**Voir aussi :** [Comparer deux méthodes](../galerie/02-comparer-deux-methodes.md),
-[Oracle partagé](../concepts/oracle-partage.md).
+**See also:** [Compare two methods](../gallery/02-compare-two-methods.md),
+[Shared oracle](../concepts/shared-oracle.md).

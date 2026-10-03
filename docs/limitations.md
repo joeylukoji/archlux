@@ -1,145 +1,145 @@
-# Limites
+# Limitations
 
-**À lire avant tout usage professionnel.** Cette page est obligatoire, pas optionnelle :
-un outil qui produit des chiffres réglementaires doit dire explicitement ce qu'il ne
-vérifie pas.
+**To read before any professional use.** This page is mandatory, not optional:
+a tool that produces regulatory numbers must say explicitly what it does not
+check.
 
-## Estimations de phase amont
+## Early-design estimates
 
-Les indicateurs produits sont des **estimations de phase amont**. Ils ne se substituent
-pas à une étude thermique ou d'éclairement réglementaire. La borne du jalon 5 couvre
-l'oracle gelé (`SplitFluxOracle` split-flux / analytique), **pas** un sDA LM-83
-(Radiance). Extra `sim` : vide volontairement.
+The indicators produced are **early-design estimates**. They do not replace a
+regulatory thermal or daylight study. The bound of milestone 5 covers
+the frozen oracle (`SplitFluxOracle` split-flux / analytic), **not** an LM-83 sDA
+(Radiance). `sim` extra: empty on purpose.
 
-## Sur une sortie de générateur, le plan valide le plus proche n'est pas proche
+## On a generator output, the closest valid plan is not close
 
-**C'est la limite qui décide de l'usage réel du légaliseur, et elle est mesurée.**
+**This is the limitation that decides the real use of the legalizer, and it is measured.**
 
-Le jalon 7 répare 93,9 % de plans MSD **corrompus à la main**, en déplaçant peu. Le
-jalon 8 refait la mesure sur des plans **réellement générés** — HouseDiffusion (CVPR
-2023), poids officiels, 1000 pas, 740 plans sous trois conditionnements. Le régime n'est
-pas le même :
+Milestone 7 repairs 93.9 % of MSD plans **corrupted by hand**, moving little.
+Milestone 8 redoes the measurement on **really generated** plans — HouseDiffusion (CVPR
+2023), official weights, 1000 steps, 740 plans under three conditionings. The regime is
+not the same:
 
-| sur les sorties du générateur | médiane |
+| on the generator outputs | median |
 |---|--:|
-| plans valides avant correction | **0 / 740** |
-| pièces recouvertes par pièce | 0,80 |
-| part de jour dans l'enveloppe | 28,6 % |
-| morceaux disjoints de l'union | **4** |
-| cellules de la trame implicite (6 pièces) | **80** |
+| valid plans before repair | **0 / 740** |
+| rooms overlapped per room | 0.80 |
+| share of gap in the envelope | 28.6 % |
+| disjoint fragments of the union | **4** |
+| cells of the implicit grid (6 rooms) | **80** |
 
-Un plan corrompu est un plan valide dont une cote a bougé : sa trame existe, il suffit
-de la retrouver. Une sortie de générateur n'a **pas de trame** — ses pièces ne partagent
-presque aucune ligne, l'union tombe en quatre morceaux, et la structure combinatoire
-que `geom.tiling` exploite n'est pas seulement violée, elle est absente.
+A corrupted plan is a valid plan one of whose dimensions has moved: its grid exists, it
+only has to be found again. A generator output has **no grid** — its rooms share
+almost no line, the union falls into four fragments, and the combinatorial structure
+that `geom.tiling` exploits is not merely violated, it is absent.
 
-Conséquences chiffrées, à budget de réparation 16 et `largeur_min = 0,50 m` :
+Quantified consequences, at repair budget 16 and `min_width = 0.50 m`:
 
-- `legalize` seul répare **0,0 %** — attendu : un jour est un point stationnaire de
-  l'optimum L1, exactement ce que `pavage` existe pour corriger ;
-- `legalize(tiling=True)` répare **17,8 à 23,0 %** selon le conditionnement, en
-  déplaçant de **38 à 43 % du côté** du plan. Le résultat est un plan valide *au
-  voisinage* du plan généré, pas le plan généré corrigé ;
-- **sans plancher sur la largeur, ce taux monte à ~60 % — et c'est un trompe-l'œil.**
-  Fermer un jour en réduisant une pièce à zéro est la solution la moins coûteuse : 61 %
-  des plans alors réputés réparés portaient au moins une pièce de côté **exactement
-  nul**, et sortaient certifiés valides, amputés. Compter les pièces ne le détecte pas.
-  Le taux est **plat de 0,25 m à 1,80 m** : ce n'est pas un calibrage de seuil mais un
-  choix binaire, autoriser ou non les solutions dégénérées ;
-- le taux chute avec la taille du programme, parce que la trame enfle en
-  \\((2n-1)^2\\) quand aucun bord ne coïncide, alors que la réparation bornée ne
-  corrige qu'un nombre borné de cellules ;
-- des plans sont **prouvés infaisables** : la trame réparée contredit alors les
-  séparations issues de `deduce_order`, et le certificat de Farkas nomme le conflit
-  minimal (2 à 3 lignes sur 45).
+- `legalize` alone repairs **0.0 %** — expected: a gap is a stationary point of
+  the L1 optimum, exactly what `tiling` exists to correct;
+- `legalize(tiling=True)` repairs **17.8 to 23.0 %** depending on the conditioning,
+  moving **38 to 43 % of the side** of the plan. The result is a valid plan *in the
+  neighbourhood* of the generated plan, not the generated plan repaired;
+- **without a floor on the width, this rate rises to ~60 % — and it is an illusion.**
+  Closing a gap by shrinking a room to zero is the cheapest solution: 61 %
+  of the plans then deemed repaired carried at least one room with a side of **exactly
+  zero**, and came out certified valid, amputated. Counting the rooms does not detect it.
+  The rate is **flat from 0.25 m to 1.80 m**: this is not a threshold calibration but a
+  binary choice, to allow degenerate solutions or not;
+- the rate drops with the size of the program, because the grid swells as
+  \\((2n-1)^2\\) when no edge coincides, while the bounded repair only
+  corrects a bounded number of cells;
+- some plans are **proved infeasible**: the repaired grid then contradicts the
+  separations from `deduce_order`, and the Farkas certificate names the minimal
+  conflict (2 to 3 rows out of 45).
 
-Ce que cela veut dire pour un utilisateur : **la légalisation a posteriori ne remplace
-pas un générateur qui respecte la condition de pavage.** Elle garantit la validité et
-la prouve ; elle ne garantit ni la ressemblance ni la survie du programme, et il faut
-lui demander cette dernière explicitement, par un `min_width` strictement positif. La
-contrainte a sa place *dans* le générateur — ce que ce dépôt permet de chiffrer, pas ce
-qu'il fournit.
+What this means for a user: **a-posteriori legalization does not replace
+a generator that respects the tiling condition.** It guarantees validity and
+proves it; it guarantees neither resemblance nor the survival of the program, and the
+latter must be asked for explicitly, with a strictly positive `min_width`. The
+constraint belongs *in* the generator — which this repository makes it possible to
+quantify, not what it provides.
 
-Détail, protocole et comparaisons avant / après plan par plan :
-`results/j8_generation.md` et `results/visuels/`.
+Details, protocol and before / after comparisons plan by plan:
+`results/j8_generation.md` and `results/visuels/`.
 
-## Le substitut prédit à la mauvaise granularité
+## The surrogate predicts at the wrong granularity
 
-**C'est la limite la plus profonde du projet, et elle est mesurée.**
+**This is the deepest limitation of the project, and it is measured.**
 
-Le protocole `Surrogate` rend **un scalaire par plan**. L'éclairement est une grandeur
-**par pièce**. Décomposition de la variance sur 367 466 pièces de Swiss Dwellings,
-cible `sun_201803211200_mean` :
+The `Surrogate` protocol returns **one scalar per plan**. Daylight is a quantity
+**per room**. Variance decomposition over 367,466 rooms of Swiss Dwellings,
+target `sun_201803211200_mean`:
 
-| effet fixe | groupes | \(R^2\) |
+| fixed effect | groups | \(R^2\) |
 |---|--:|--:|
-| identité du bâtiment | 3 171 | **0,026** |
-| bâtiment × étage | 13 688 | 0,068 |
-| identité de l'appartement | 44 888 | **0,077** |
-| numéro d'étage seul | — | 0,004 |
+| building identity | 3,171 | **0.026** |
+| building × floor | 13,688 | 0.068 |
+| apartment identity | 44,888 | **0.077** |
+| floor number alone | — | 0.004 |
 
-**92 % de la variance est intra-appartement**, entre pièces. Agréger en moyenne de
-logement revient donc à prédire une quantité dont la variance ne pèse que 7,7 % du
-phénomène : le reste est lissé par l'agrégation elle-même.
+**92 % of the variance is within-apartment**, between rooms. Aggregating into a
+dwelling mean therefore amounts to predicting a quantity whose variance weighs only
+7.7 % of the phenomenon: the rest is smoothed out by the aggregation itself.
 
-C'est ce qui explique les \(R^2 \approx 0\) mesurés — analytique \(-0{,}000\),
-perceptron \(-0{,}557\), perceptron avec baies \(-0{,}220\) — bien plus que la
-pauvreté des entrées. Enrichir l'entrée aide réellement (les baies comblent 60 % de
-l'écart) mais s'attaque au mauvais problème.
+This is what explains the measured \(R^2 \approx 0\) — analytic \(-0{,}000\),
+perceptron \(-0{,}557\), perceptron with windows \(-0{,}220\) — much more than the
+poverty of the inputs. Enriching the input really helps (the windows close 60 % of
+the gap) but attacks the wrong problem.
 
-Conséquence pratique : **aucun indicateur de type sDA n'est représentable** par ce
-protocole. Le sDA se définit par pièce — part du sol au-dessus de 300 lux — jamais par
-logement. Un substitut utile rendrait un vecteur, une valeur par pièce, et Frank-Wolfe
-optimiserait une scalarisation explicite de ces valeurs.
+Practical consequence: **no sDA-type indicator can be represented** by this
+protocol. sDA is defined per room — share of the floor above 300 lux — never per
+dwelling. A useful surrogate would return a vector, one value per room, and Frank-Wolfe
+would optimize an explicit scalarization of these values.
 
-## Le masque urbain n'est pas le facteur manquant
+## The urban mask is not the missing factor
 
-L'hypothèse était naturelle, et deux vérifications indépendantes la réfutent.
+The hypothesis was natural, and two independent checks refute it.
 
-L'identité du bâtiment — qui porte le masque urbain, le climat et la position solaire —
-n'explique que **2,6 %** de la variance. Et les normales climatiques ne corrèlent pas :
-`climate_snorm_year` donne \(r = -0{,}06\), `climate_snorm_march` \(r = +0{,}05\).
-La cible est un lancer de rayons **géométrique** à position solaire fixée, pas une
-grandeur météorologique.
+Building identity — which carries the urban mask, the climate and the solar position —
+explains only **2.6 %** of the variance. And the climate normals do not correlate:
+`climate_snorm_year` gives \(r = -0{,}06\), `climate_snorm_march` \(r = +0{,}05\).
+The target is a **geometric** ray tracing at fixed solar position, not a
+meteorological quantity.
 
-Aucune géométrie d'environnement bâti n'est d'ailleurs publiée dans le corpus : le
-masque n'existe que dans les sorties de simulation. S'en servir comme entrée exigerait
-de simuler pour prédire, ce qui vide le substitut de sa raison d'être.
+No geometry of the built environment is published in the corpus anyway: the
+mask exists only in the simulation outputs. Using it as an input would require
+simulating in order to predict, which empties the surrogate of its reason to exist.
 
-Détail et protocole : `results/j7_variance.md`.
+Details and protocol: `results/j7_variance.md`.
 
-## Le substitut appris n'a jamais vu de mesure
+## The learned surrogate has never seen a measurement
 
-Les étiquettes **livrées dans ce dépôt** viennent de
-`light.split_flux.SplitFluxOracle`, une **forme fermée** (analytique CIBSE +
-split-flux BRE). Le perceptron `light.base.DenseSurrogate` y apprend le *résidu* entre
-cette forme fermée et `AnalyticSurrogate` : deux formules connues, sur 90 pavages
-2×2 à deux degrés de liberté, sans murs ni ouvertures.
+The labels **shipped in this repository** come from
+`light.split_flux.SplitFluxOracle`, a **closed form** (CIBSE analytic +
+BRE split-flux). The perceptron `light.base.DenseSurrogate` learns the *residual* between
+this closed form and `AnalyticSurrogate`: two known formulas, on 90 2×2 tilings
+with two degrees of freedom, without walls or openings.
 
-Des étiquettes réelles sont désormais atteignables — `data.loaders` joint MSD aux
-simulations Swiss Dwellings, 18 263 appartements sur 18 270 — mais elles ne sont pas
-redistribuées, et la mesure faite contre elles est un **résultat négatif** : voir
-ci-dessus.
+Real labels are now reachable — `data.loaders` joins MSD to the
+Swiss Dwellings simulations, 18,263 apartments out of 18,270 — but they are not
+redistributed, and the measurement made against them is a **negative result**: see
+above.
 
-Autrement dit : la chaîne tokenisation → entraînement → gel → calibration conforme →
-Frank-Wolfe est **exercée de bout en bout**, et aucune grandeur physique n'a été
-mesurée. Le transformeur annoncé au jalon 4 n'existe pas — `LearnedSurrogate` refuse
-les poids `.pt`.
+In other words: the chain tokenization → training → freeze → conformal calibration →
+Frank-Wolfe is **exercised end to end**, and no physical quantity has been
+measured. The transformer announced at milestone 4 does not exist — `LearnedSurrogate`
+refuses `.pt` weights.
 
-Toute couverture rapportée par ce dépôt est donc une couverture **sur l'oracle gelé**,
-jamais sur un éclairement observé. Les sources d'étiquettes réelles et leur coût sont
-détaillées dans [vérité terrain](donnees/verite-terrain.md).
+Any coverage reported by this repository is therefore a coverage **on the frozen oracle**,
+never on observed daylight. The sources of real labels and their cost are
+detailed in [ground truth](data/ground-truth.md).
 
-## Échangeabilité et sélection
+## Exchangeability and selection
 
-La garantie de performance suppose l'**échangeabilité** avec le jeu de calibration.
-Les plans produits par un optimiseur sont *sélectionnés* pour maximiser la
-prédiction : la couverture réelle sous cette sélection est une question de
-recherche ouverte, mesurée et publiée par le projet (dérive, banc d'essai).
-Le certificat le dit : la borne d'un plan rendu par `legalize` porte
-`regime="selected"`, et le rapport écrit « coverage NOT guaranteed » au lieu d'un
-pourcentage. Pour un plan échangeable, si la dérive est détectée, le certificat
-affiche `NOT EVALUABLE` plutôt qu'un intervalle trompeur.
+The performance guarantee assumes **exchangeability** with the calibration set.
+Plans produced by an optimizer are *selected* to maximize the
+prediction: the real coverage under this selection is an open research
+question, measured and published by the project (drift, benchmark).
+The certificate says so: the bound of a plan returned by `legalize` carries
+`regime="selected"`, and the report writes "coverage NOT guaranteed" instead of a
+percentage. For an exchangeable plan, if drift is detected, the certificate
+shows `NOT EVALUABLE` rather than a misleading interval.
 
 ## Load-bearing structure: what is and is not certified
 
@@ -157,30 +157,30 @@ and the solver keeps every room on its side of each wall. It does not certify mo
 
 ## `NOT EVALUABLE`
 
-Le champ **`NOT EVALUABLE`** couvre les articles dont la vérification exige une
-information absente du plan — matériaux, systèmes techniques, confort d'été —
-ou une interprétation réglementaire. Ce n'est pas un oubli de calcul : c'est un
-refus explicite d'inventer une couverture.
+The **`NOT EVALUABLE`** field covers the articles whose check requires
+information absent from the plan — materials, technical systems, summer comfort —
+or a regulatory interpretation. It is not a forgotten computation: it is an
+explicit refusal to invent a coverage.
 
-## Pas un avis juridique
+## Not legal advice
 
-La vérification calcule des prédicats sur une géométrie (et, le cas échéant,
-une borne probabiliste sur un oracle gelé). **Elle ne constitue pas un avis
-juridique** ni une attestation de conformité administrative.
+The check computes predicates on a geometry (and, where applicable,
+a probabilistic bound on a frozen oracle). **It does not constitute legal
+advice** nor an administrative certificate of compliance.
 
-## Ce que la vérification automatique ne peut pas établir
+## What automatic checking cannot establish
 
-- Que le plan est constructible au sens du chantier (tolérances, phasage, fluides).
-- Que les ouvertures imputées (si corpus lacunaire) correspondent au bâtiment réel.
-- Qu'un export IFC « valide » au sens des pathologies `archlux` est accepté par
-  tout outil BIM tiers sans retraitement.
-- Qu'une couverture conforme à 90 % sur l'oracle gelé vaut pour un autre climat,
-  un autre usage, ou un autre générateur hors distribution de calibration.
+- That the plan can be built in the site sense (tolerances, phasing, services).
+- That the imputed openings (if the corpus is incomplete) match the real building.
+- That an IFC export "valid" in the sense of the `archlux` pathologies is accepted by
+  every third-party BIM tool without reprocessing.
+- That a 90 % conformal coverage on the frozen oracle holds for another climate,
+  another use, or another generator outside the calibration distribution.
 
-> Un plan produit par ce système est une proposition, jamais un document de projet.
+> A plan produced by this system is a proposal, never a project document.
 
-API **non gelée** : version de développement `0.10.0.dev0`, la 1.0.0 est reportée à la fin de la phase 5 de `PLAN.md` ; checklist hors code :
-[publication 1.0](publication-1.0.md).
+API **not frozen**: development version `0.10.0.dev0`, 1.0.0 is postponed to the end of phase 5 of `PLAN.md`; checklist outside the code:
+[release 1.0](release-1.0.md).
 
-**Voir aussi :** [Les deux garanties](concepts/deux-garanties.md),
-[Contribuer](contribution.md).
+**See also:** [The two guarantees](concepts/two-guarantees.md),
+[Contributing](contributing.md).

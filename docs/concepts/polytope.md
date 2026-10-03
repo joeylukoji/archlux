@@ -1,56 +1,56 @@
-# Le polytope des plans valides
+# The polytope of valid plans
 
-Un ordre relatif fixé (A à gauche de B, C sous D) transforme la légalisation en
-**programme linéaire**. Sans cet ordre, le domaine des plans valides n'est pas convexe :
-on peut glisser A autour de B par deux chemins dont le segment n'est pas admissible.
+A fixed relative order (A left of B, C below D) turns legalization into a
+**linear program**. Without that order, the domain of valid plans is not convex:
+A can slide around B along two paths whose connecting segment is not feasible.
 
-## Formule
+## Formula
 
-Quatre variables par pièce : `(x, y, w, h)`. Pour chaque arête horizontale `a → b`
-du graphe d'ordre (Otten, *Automatic Floorplan Design*, DAC 1982, pavages en
-guillotine ; compaction par graphe de contraintes, Lengauer, *Combinatorial Algorithms
-for Integrated Circuit Layout*, Teubner, 1990, ch. 10) :
+Four variables per room: `(x, y, w, h)`. For each horizontal edge `a → b` of the order
+graph (Otten, *Automatic Floorplan Design*, DAC 1982, slicing floorplans; compaction by
+constraint graph, Lengauer, *Combinatorial Algorithms for Integrated Circuit Layout*,
+Teubner, 1990, ch. 10):
 
 ```
 x_a + w_a ≤ x_b
 ```
 
-Idem à la verticale : `y_a + h_a ≤ y_b`. L'enveloppe ajoute `x + w ≤ X_max` et
-`y + h ≤ Y_max`. Les largeurs minimales sont des bornes, pas des lignes de `A`.
+Likewise vertically: `y_a + h_a ≤ y_b`. The envelope adds `x + w ≤ X_max` and
+`y + h ≤ Y_max`. Minimum widths are bounds, not rows of `A`.
 
-L'ensemble des `x` qui satisfont `A x ≤ b` est un **polyèdre** (Boyd & Vandenberghe,
-*Convex Optimization*, Cambridge University Press, 2004, §2.2.4). Tout point de ce
-polyèdre est un plan sans chevauchement, à ordre relatif fixé.
+The set of `x` that satisfy `A x ≤ b` is a **polyhedron** (Boyd & Vandenberghe,
+*Convex Optimization*, Cambridge University Press, 2004, §2.2.4). Every point of this
+polyhedron is a plan without overlap, for the fixed relative order.
 
-## Ce qui n'est pas linéaire
+## What is not linear
 
-La surface `w h ≥ a_min` n'est pas une inégalité linéaire. L'ensemble
-`{(w,h) > 0 : w h ≥ a_min}` est toutefois **convexe** : c'est un super-niveau de
-`log w + log h`, concave (Boyd & Vandenberghe, §3.1.5–3.1.6). On le remplace par
-ses tangentes (Kelley, *SIAM J.* 8, 1960) :
+The area `w h ≥ a_min` is not a linear inequality. The set
+`{(w,h) > 0 : w h ≥ a_min}` is nevertheless **convex**: it is a superlevel set of
+`log w + log h`, which is concave (Boyd & Vandenberghe, §3.1.5–3.1.6). It is replaced
+by its tangents (Kelley, *SIAM J.* 8, 1960):
 
 ```
 h₀ w + w₀ h ≥ 2 a_min
 ```
 
-au point de l'hyperbole `w₀ h₀ = a_min`. C'est aussi l'AM-GM (Hardy, Littlewood,
-Pólya, *Inequalities*, 2e éd., Cambridge, 1952, théorème 16).
+at the point of the hyperbola `w₀ h₀ = a_min`. This is also AM-GM (Hardy, Littlewood,
+Pólya, *Inequalities*, 2nd ed., Cambridge, 1952, theorem 16).
 
-## Distance au plan proposé
+## Distance to the proposed plan
 
-Minimiser `Σ |x_i − x̂_i|` n'est pas linéaire. L'épigraphe (Bertsimas & Tsitsiklis,
-*Introduction to Linear Optimization*, Athena Scientific, 1997, §1.3) introduit
-`e_i ≥ |x_i − x̂_i|` et minimise `Σ e_i`. Les `x̂_i` entrent dans les **contraintes**,
-jamais dans le vecteur de coûts `c = (0, …, 0, 1, …, 1)`.
+Minimizing `Σ |x_i − x̂_i|` is not linear. The epigraph (Bertsimas & Tsitsiklis,
+*Introduction to Linear Optimization*, Athena Scientific, 1997, §1.3) introduces
+`e_i ≥ |x_i − x̂_i|` and minimizes `Σ e_i`. The `x̂_i` enter the **constraints**,
+never the cost vector `c = (0, …, 0, 1, …, 1)`.
 
-## Vérification
+## Verification
 
-Le solveur n'est pas cru. `certify.proof` recompte aires d'intersection (Shapely /
-GEOS), écart d'aire union–contour, surfaces et murs porteurs. `valid` est la
-conjonction de quatre booléens, aucun n'est probabiliste.
+The solver is not trusted. `certify.proof` recounts intersection areas (Shapely /
+GEOS), the area gap between union and outline, room areas and load-bearing walls.
+`valid` is the conjunction of four booleans, none of them probabilistic.
 
-**Voir aussi :** [Corriger un plan](../galerie/01-corriger-un-plan.md),
-[Les deux garanties](deux-garanties.md),
-[formulaire — polytope](../formules/polytope-separe.md),
-[formulaire — L1](../formules/epigraphe-l1.md),
-[formulaire — coupes](../formules/coupes-surface.md).
+**See also:** [Repair a plan](../gallery/01-repair-a-plan.md),
+[The two guarantees](two-guarantees.md),
+[formula book — polytope](../formulas/separated-polytope.md),
+[formula book — L1](../formulas/l1-epigraph.md),
+[formula book — cuts](../formulas/area-cuts.md).

@@ -1,22 +1,22 @@
-# Corpus
+# Corpora
 
-Les jeux **train / calibration / test** sont des listes d'identifiants publiées
-dans `splits/v1/`. **Dédupliquer avant de découper**, jamais l'inverse.
+The **train / calibration / test** sets are lists of identifiers published
+in `splits/v1/`. **Deduplicate before splitting**, never the other way round.
 
-| Fiche | Ce qu'elle apporte | Licence | Dans ce dépôt |
+| Sheet | What it brings | Licence | In this repository |
 |---|---|---|---|
-| [**Vérité terrain**](verite-terrain.md) | **où sont les étiquettes d'éclairement** | — | méthode |
-| [Synthétique](synthetique.md) | pavages 2×2 déterministes, substitut de CI | Apache-2.0 | oui, générateur |
-| [Swiss Dwellings](swiss-dwellings.md) | **géométrie ↔ lumière appariées**, 367 colonnes de simulation | CC BY 4.0 | non redistribué |
-| [MSD](msd.md) | murs porteurs, non-Manhattan, orientation cardinale | **CC BY-SA 4.0** | non redistribué |
-| [CubiCasa5K](cubicasa.md) | baies annotées, SVG vectoriel | recherche / non commercial | non redistribué |
-| [Imputation des baies](imputation.md) | corpus lacunaire → baies par défaut | — | méthode |
+| [**Ground truth**](ground-truth.md) | **where the daylight labels are** | — | method |
+| [Synthetic](synthetic.md) | deterministic 2×2 tilings, CI stand-in | Apache-2.0 | yes, generator |
+| [Swiss Dwellings](swiss-dwellings.md) | **paired geometry ↔ daylight**, 367 simulation columns | CC BY 4.0 | not redistributed |
+| [MSD](msd.md) | load-bearing walls, non-Manhattan, cardinal orientation | **CC BY-SA 4.0** | not redistributed |
+| [CubiCasa5K](cubicasa.md) | annotated windows, vector SVG | research / non-commercial | not redistributed |
+| [Window imputation](imputation.md) | incomplete corpus → default windows | — | method |
 
-!!! warning "Commencer par la vérité terrain"
-    Le corpus livré (90 plans synthétiques, étiquettes issues d'une forme fermée)
-    fait tourner la chaîne, **pas une évaluation**. Avant d'annoncer un chiffre de
-    couverture, lire [vérité terrain](verite-terrain.md) : elle dit d'où viennent
-    réellement les étiquettes et ce qu'on a le droit d'en conclure.
+!!! warning "Start with the ground truth"
+    The shipped corpus (90 synthetic plans, labels from a closed form)
+    runs the chain, **not an evaluation**. Before announcing a coverage
+    number, read [ground truth](ground-truth.md): it says where the labels
+    really come from and what one is entitled to conclude from them.
 
-Le jeu de calibration n'est lisible qu'avec un jeton émis **après** le gel des
-poids (`uq.registry`).
+The calibration set can only be read with a token issued **after** the weights
+are frozen (`uq.registry`).

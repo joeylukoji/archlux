@@ -1,8 +1,8 @@
-# Diagnostic dual
+# Dual diagnostics
 
-**Problème.** Le plan est valide et la borne de sDA est connue, mais on ne sait
-pas **quelle contrainte** empêche d'ouvrir davantage la pièce au sud. Reculer
-un porteur de 20 cm, ou élargir le dégagement ?
+**Problem.** The plan is valid and the sDA bound is known, but we do not know
+**which constraint** prevents the south room from opening further. Move a
+load-bearing wall back by 20 cm, or widen the corridor?
 
 **Solution.**
 
@@ -21,38 +21,38 @@ poly = Polytope(
     bounds=((0.0, 1.0),) * 3,
     index={"a.x": 0, "a.y": 1, "a.w": 2},
     origins=(
-        "mur porteur axe 3",
-        "surface minimale cuisine",
-        "largeur de passage",
+        "load-bearing wall axis 3",
+        "minimum area kitchen",
+        "passage width",
     ),
 )
-for phrase, prix in translate_duals(np.array([-4.1, -1.7, 0.0]), poly):
-    print(f"{prix:+.1f}  {phrase}")
+for sentence, price in translate_duals(np.array([-4.1, -1.7, 0.0]), poly):
+    print(f"{price:+.1f}  {sentence}")
 ```
 
-Les prix duaux viennent du même LP que la légalisation (`lmo.resoudre(...,
-duaux=True)`). `Polytope.origins` les rend lisibles ; un indice de ligne nu
-ne l'est pas. Les prix nuls (contraintes inactives) sont filtrés.
+The dual prices come from the same LP as legalization (`lmo.solve(...,
+duals=True)`). `Polytope.origins` makes them readable; a bare row index
+does not. Zero prices (inactive constraints) are filtered out.
 
-**Résultat.**
+**Result.**
 
 ```
--4.1  mur porteur axe 3: relaxing it by 10 cm would change the total displacement by -0.41 m (valid for small changes only, a few tens of cm)
--1.7  surface minimale cuisine: relaxing it by 10 cm would change the total displacement by -0.17 m (valid for small changes only, a few tens of cm)
+-4.1  load-bearing wall axis 3: relaxing it by 10 cm would change the total displacement by -0.41 m (valid for small changes only, a few tens of cm)
+-1.7  minimum area kitchen: relaxing it by 10 cm would change the total displacement by -0.17 m (valid for small changes only, a few tens of cm)
 ```
 
-Le prix brut (`-4.1`) est la variation de l'objectif par mètre de relâchement ; la phrase le
-convertit pour un cran de 10 cm (`step_m`) et dans l'unité de l'objectif : des mètres de
-déplacement total en mode classique, des points de l'indicateur **prédits** en mode
-performance. Les libellés inconnus (comme ceux de cet exemple) sont repris tels quels ;
-ceux du polytope réel sont reformulés (« load-bearing wall p1 at x = 6 m : … »), et les
-lignes de l'épigraphe L1, qui sont des artefacts du solveur, ne sont jamais rapportées.
+The raw price (`-4.1`) is the change of the objective per metre of relaxation; the sentence
+converts it for a 10 cm notch (`step_m`) and into the unit of the objective: metres of
+total displacement in classic mode, points of the **predicted** indicator in performance
+mode. Unknown labels (like the ones of this example) are kept as they are;
+those of the real polytope are rephrased ("load-bearing wall p1 at x = 6 m : …"), and the
+rows of the L1 epigraph, which are solver artefacts, are never reported.
 
-**Ce qu'il faut retenir.** Un prix dual est une dérivée *locale*. Reculer le
-porteur de 20 cm est dans l'intervalle annoncé ; le reculer de 2 m ne l'est
-pas. Ni un correcteur géométrique ni un simulateur seuls ne produisent ces
-lignes : elles naissent de la fusion polytope × objectif lumineux.
+**What to remember.** A dual price is a *local* derivative. Moving the
+wall back by 20 cm is within the announced range; moving it back by 2 m is
+not. Neither a geometric repairer nor a simulator alone produces these
+lines: they come from the fusion polytope × daylight objective.
 
-**Voir aussi :** [Farkas et duaux](../formules/farkas.md),
-[Lire un certificat](04-lire-un-certificat.md),
-[Le polytope](../concepts/polytope.md).
+**See also:** [Farkas and duals](../formulas/farkas.md),
+[Read a certificate](04-read-a-certificate.md),
+[The polytope](../concepts/polytope.md).
