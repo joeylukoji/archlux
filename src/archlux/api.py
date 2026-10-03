@@ -104,6 +104,18 @@ def _active_origins(sol: LPSolution, poly: Polytope) -> tuple[str, ...]:
 
     Without a certificate nothing is identified; listing every constraint, as before
     batch 1.5c, wrongly presented all of them as conflicting.
+
+    Parameters
+    ----------
+    sol
+        Solver result carrying the Farkas certificate.
+    poly
+        Polytope the certificate is about.
+
+    Returns
+    -------
+    tuple of str
+        Labels of the rows with a non-zero Farkas weight; empty without a certificate.
     """
     labels: list[str] = []
     if sol.farkas_certificate is not None:
@@ -130,6 +142,20 @@ def _translated_duals(
     positional, and ``origins`` only covers ``A``, never ``A_eq`` nor the cuts.
     ``objective`` names the unit of the prices: ``"displacement"`` (L1 pass) or the
     indicator of the surrogate (Frank-Wolfe pass, a prediction).
+
+    Parameters
+    ----------
+    duals
+        Duals of an LP solved on ``poly``.
+    poly
+        Polytope whose ``origins`` label the rows.
+    objective
+        Unit of the prices: ``"displacement"`` or the surrogate's indicator.
+
+    Returns
+    -------
+    tuple of (str, float)
+        Each dual price paired with the label of its row.
     """
     if duals is None:
         return ()
@@ -137,7 +163,20 @@ def _translated_duals(
 
 
 def _only_a_gap(geometric_proof: GeometricProof, budget: float | None) -> bool:
-    """The proof fails on a gap and on nothing else, read from its flags, never its text."""
+    """The proof fails on a gap and on nothing else, read from its flags, never its text.
+
+    Parameters
+    ----------
+    geometric_proof
+        Exact proof of the plan.
+    budget
+        Displacement budget, or ``None``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the proof fails on a gap and on nothing else.
+    """
     return (
         geometric_proof.gaps
         and not geometric_proof.overlap
@@ -152,7 +191,18 @@ GRID_LABEL = "tiling grid"
 
 
 def budget_label(budget: float) -> str:
-    """Scope entry of the displacement budget."""
+    """Scope entry of the displacement budget.
+
+    Parameters
+    ----------
+    budget
+        Displacement budget in metres, or ``None``.
+
+    Returns
+    -------
+    str or None
+        Scope entry naming the displacement budget, or ``None`` without a budget.
+    """
     return f"budget {budget:g} m"
 
 
@@ -162,7 +212,24 @@ def _scope(
     grid: bool,
     budget: float | None,
 ) -> tuple[str, ...]:
-    """Restrictions of the solver's domain beyond the relative order, as built."""
+    """Restrictions of the solver's domain beyond the relative order, as built.
+
+    Parameters
+    ----------
+    order
+        Relative order of the rooms.
+    merges
+        Fused rooms, decomposed into sub-rectangles.
+    grid
+        Tiling grid, or ``None``.
+    budget
+        Displacement budget, or ``None``.
+
+    Returns
+    -------
+    tuple of str
+        Restrictions of the solver's domain beyond the relative order, as built.
+    """
     scope: list[str] = []
     if order.wall_sides:
         scope.append("load-bearing sides")
@@ -196,7 +263,20 @@ class _Problem:
     minima: Mapping[str, float]  # read-only: the frozen problem shares it
 
     def domain(self, *, grid: bool = True, bounded: bool = True) -> tuple[Polytope, Polytope]:
-        """The solver's domain, optionally without the tiling grid or the budget."""
+        """The solver's domain, optionally without the tiling grid or the budget.
+
+        Parameters
+        ----------
+        grid
+            Whether to include the tiling grid.
+        bounded
+            Whether to include the displacement budget.
+
+        Returns
+        -------
+        tuple of Polytope
+            The solver's domain, optionally without the tiling grid or the budget.
+        """
         geometric = extend_tiling(self.base, self.grid) if grid and self.grid else self.base
         l1 = extend_l1_slack(geometric, self.x_ref)
         if bounded and self.budget is not None:
@@ -208,7 +288,18 @@ class _Problem:
         return geometric, l1
 
     def solve(self, l1: Polytope) -> LPSolution:
-        """Minimize the L1 displacement over ``l1``, with the area cuts."""
+        """Minimize the L1 displacement over ``l1``, with the area cuts.
+
+        Parameters
+        ----------
+        l1
+            Polytope of the L1 problem.
+
+        Returns
+        -------
+        LPSolution
+            The L1 optimum over ``l1``, with the area cuts.
+        """
         return solve_with_areas(
             l1,
             gradient_distance(self.x_ref),
@@ -219,12 +310,40 @@ class _Problem:
         )
 
     def decode(self, x: FloatVector, index: dict[str, int], template: Plan | None = None) -> Plan:
-        """The plan of a decision vector, on the context's outline."""
+        """The plan of a decision vector, on the context's outline.
+
+        Parameters
+        ----------
+        x
+            Decision vector.
+        index
+            Column index of the variables.
+        template
+            Plan supplying the rooms' identifiers and types.
+
+        Returns
+        -------
+        Plan
+            The plan of the decision vector, on the context's outline.
+        """
         decoded = devectorize(x, template or self.plan, index)
         return replace(decoded, outline=self.ctx.outline)
 
     def prove(self, candidate: Plan, *, bounded: bool = True) -> GeometricProof:
-        """The exact proof of ``candidate`` against the proposed plan (and the budget)."""
+        """The exact proof of ``candidate`` against the proposed plan (and the budget).
+
+        Parameters
+        ----------
+        candidate
+            Plan to prove.
+        bounded
+            Whether the displacement budget applies.
+
+        Returns
+        -------
+        GeometricProof
+            The exact proof of ``candidate`` against the proposed plan and its budget.
+        """
         return verify_exactly(
             candidate,
             self.ctx,
@@ -235,7 +354,20 @@ class _Problem:
 
 
 def _check_calibration(objective: Surrogate | None, calibration: Calibration | None) -> None:
-    """Refuse a calibration that cannot bound the objective."""
+    """Refuse a calibration that cannot bound the objective.
+
+    Parameters
+    ----------
+    objective
+        Surrogate to maximize, or ``None``.
+    calibration
+        Conformal calibration, or ``None``.
+
+    Returns
+    -------
+    None
+        Nothing; raises when the calibration cannot bound the objective.
+    """
     if calibration is None:
         return
     if objective is None:
@@ -262,7 +394,28 @@ def _build_problem(
     tiling: bool,
     repair_budget: int,
 ) -> _Problem:
-    """Derive the relative order, the polytope and the reference vector of a plan."""
+    """Derive the relative order, the polytope and the reference vector of a plan.
+
+    Parameters
+    ----------
+    plan
+        Proposed plan.
+    ctx
+        Context: structure, outline and regulation.
+    merges
+        Fused rooms, decomposed into sub-rectangles.
+    budget
+        Displacement budget, or ``None``.
+    tiling
+        Whether to add the tiling grid.
+    repair_budget
+        Number of repairs allowed when deducing the grid.
+
+    Returns
+    -------
+    _Problem
+        The relative order, the polytope and the reference vector of the plan.
+    """
     # Makes a gap unrepresentable: see ``geom.tiling``. Raises if the grid of the
     # proposed plan cannot be recovered: an explicit failure, not a silent one.
     grid = deduce_grid(plan, ctx, repair_budget=repair_budget) if tiling else None
@@ -296,6 +449,20 @@ def _admits(problem: _Problem, l1: Polytope, *, bounded: bool) -> bool:
 
     An ``"optimal"`` LP is not enough: without the grid the L1 optimum keeps a gap, and
     the area cuts are an outer approximation (final review of phase 1, M1).
+
+    Parameters
+    ----------
+    problem
+        Problem being solved.
+    l1
+        Polytope of the L1 problem.
+    bounded
+        Whether the displacement budget applies.
+
+    Returns
+    -------
+    bool
+        ``True`` when the relaxed optimum is a plan the exact proof accepts.
     """
     relaxed = problem.solve(l1)
     if relaxed.status != "optimal":
@@ -304,7 +471,22 @@ def _admits(problem: _Problem, l1: Polytope, *, bounded: bool) -> bool:
 
 
 def _refusal(problem: _Problem, poly_l1: Polytope, sol: LPSolution) -> Infeasible:
-    """The exception for an infeasible domain: the certificate, its scope and its causes."""
+    """The exception for an infeasible domain: the certificate, its scope and its causes.
+
+    Parameters
+    ----------
+    problem
+        Problem that is infeasible.
+    poly_l1
+        Polytope of the L1 problem.
+    sol
+        Solver result carrying the certificate.
+
+    Returns
+    -------
+    Infeasible
+        The exception with the certificate, its scope and its causes.
+    """
     check = (
         verify_infeasibility(poly_l1, sol.farkas_certificate, sol.farkas_certificate_eq)
         if sol.farkas_certificate is not None
@@ -332,7 +514,22 @@ def _refusal(problem: _Problem, poly_l1: Polytope, sol: LPSolution) -> Infeasibl
 def _classic_result(
     problem: _Problem, sol: LPSolution, poly_l1: Polytope
 ) -> tuple[Plan, GeometricProof]:
-    """The classically legalized plan and its exact proof, or the typed refusal."""
+    """The classically legalized plan and its exact proof, or the typed refusal.
+
+    Parameters
+    ----------
+    problem
+        Problem to legalize.
+    sol
+        L1 solver result.
+    poly_l1
+        Polytope of the L1 problem.
+
+    Returns
+    -------
+    tuple of Plan and GeometricProof
+        The classically legalized plan and its exact proof, or a typed refusal.
+    """
     if sol.status != "optimal":
         raise InvariantViolation((f"statut LP inattendu : {sol.status}",))
     corrected = problem.decode(sol.x, poly_l1.index)
@@ -353,7 +550,30 @@ def _optimize_light(
     duals_l1: tuple[tuple[str, float], ...],
     trace: bool,
 ) -> Plan:
-    """Frank-Wolfe from the classic plan, inside the polytope, then the exact proof."""
+    """Frank-Wolfe from the classic plan, inside the polytope, then the exact proof.
+
+    Parameters
+    ----------
+    problem
+        Problem being solved.
+    corrected
+        Classically legalized plan.
+    poly
+        Polytope to optimize inside.
+    objective
+        Surrogate to maximize.
+    calibration
+        Conformal calibration, or ``None``.
+    duals_l1
+        Duals of the L1 pass.
+    trace
+        Whether to keep the Frank-Wolfe trace.
+
+    Returns
+    -------
+    tuple
+        The optimized plan and its exact proof, following the Frank-Wolfe run.
+    """
     ctx, merges, budget = problem.ctx, problem.merges, problem.budget
     x0 = vectorize(corrected, poly.index)
     # Inner approximation of the minimum areas, added *after* freezing contacts so that
@@ -413,6 +633,16 @@ def _not_a_surrogate(objective: object) -> str:
 
     It names the members to rename when the object has the pre-rename French ones
     (review of the stack, #9).
+
+    Parameters
+    ----------
+    objective
+        Object passed as objective.
+
+    Returns
+    -------
+    TypeError
+        The error naming the members the object lacks.
     """
     message = "objective must implement archlux.light.protocol.Surrogate"
     legacy = [old for old in _RENAMED_MEMBERS if hasattr(objective, old)]
@@ -437,6 +667,32 @@ def _plan_polytope(
     """Stage 1: validate the inputs and derive the plan's polytope (the :class:`_Problem`).
 
     ``stacklevel`` counts the frames from this function up to the public caller.
+
+    Parameters
+    ----------
+    plan
+        Proposed plan.
+    ctx
+        Context.
+    objective
+        Surrogate to maximize, or ``None``.
+    calibration
+        Conformal calibration, or ``None``.
+    budget
+        Displacement budget, or ``None``.
+    merges
+        Fused rooms.
+    tiling
+        Whether to add the tiling grid.
+    repair_budget
+        Repairs allowed when deducing the grid.
+    stacklevel
+        Stack depth for deprecation warnings.
+
+    Returns
+    -------
+    _Problem
+        The validated inputs and the polytope of the plan.
     """
     if objective is not None and not isinstance(objective, Surrogate):
         raise TypeError(_not_a_surrogate(objective))
@@ -459,6 +715,16 @@ def _legalize_l1(
     """Stage 2: the L1 legalization, or the typed refusal.
 
     Returns the full polytope, the corrected plan, its exact proof and the L1 duals.
+
+    Parameters
+    ----------
+    problem
+        Problem to legalize.
+
+    Returns
+    -------
+    tuple
+        The full L1 result, or the typed refusal.
     """
     poly, poly_l1 = problem.domain()
     sol = problem.solve(poly_l1)
@@ -470,7 +736,22 @@ def _legalize_l1(
 
 
 def _certify(corrected: Plan, proof: GeometricProof, duals: tuple[tuple[str, float], ...]) -> Plan:
-    """Stage 4 (classic mode): attach the geometric certificate, no performance claim."""
+    """Stage 4 (classic mode): attach the geometric certificate, no performance claim.
+
+    Parameters
+    ----------
+    corrected
+        Legalized plan.
+    proof
+        Exact proof of the plan.
+    duals
+        Duals of the L1 pass, or ``None``.
+
+    Returns
+    -------
+    Plan
+        The plan with its geometric certificate and no performance bound.
+    """
     return replace(
         corrected,
         certificate=Certificate(geometry=proof, performance=None, duals=duals),
@@ -496,6 +777,34 @@ def _legalize(
     (:func:`_optimize_light` certifies its own plan). ``stacklevel`` counts the frames
     from this function up to the public caller, so the input warnings point at that
     caller whichever entry point it used.
+
+    Parameters
+    ----------
+    plan
+        Proposed plan.
+    ctx
+        Context.
+    objective
+        Surrogate to maximize, or ``None``.
+    calibration
+        Conformal calibration, or ``None``.
+    budget
+        Displacement budget, or ``None``.
+    trace
+        Whether to keep the Frank-Wolfe trace.
+    merges
+        Fused rooms.
+    tiling
+        Whether to add the tiling grid.
+    repair_budget
+        Repairs allowed when deducing the grid.
+    stacklevel
+        Stack depth for deprecation warnings.
+
+    Returns
+    -------
+    Plan
+        The legalized plan, with its trace attached when requested.
     """
     problem = _plan_polytope(
         plan,
