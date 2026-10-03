@@ -529,15 +529,56 @@ class-aggregate entry both counted as violations).
 Verified: full suite green, `mypy src` clean, `tests/test_dependances.py` green (no new
 cross-layer import), coverage 89.51% (ratchet 88.8%), `mkdocs build --strict` clean.
 
-### 13. `export`
+### 13. `export` — done
 
-37. Split `_write_spf_minimal` (`ifc.py`, CC 17) by IFC entity (one function per
-    `IFCBUILDINGSTOREY`/`IFCSPACE`/`IFCRELCONTAINEDINSPATIALSTRUCTURE`... block).
-38. Make `pathologie.py`'s `diagnose` (CC 19) read overlaps from `Plan.certificate`
-    when one is already attached, instead of recomputing them — verify the call sites
-    that diagnose an uncertified plan still work standalone.
-39. Add missing SVG rendering tests (`export/svg.py`) if the coverage gap from the
-    branch-coverage baseline (block 0.3) shows one.
+37. Split `_ecrire_spf_minimal` (`ifc.py`, was CC 17) into `_SpfWriter` (the
+    `alloc`/`emit`/`point`/`point2`/`axis2`/`guid` closures, now methods sharing
+    explicit `ents`/`nxt`/`salt` state instead of a shared mutable closure scope) and
+    one function per IFC entity block: `_write_header`, `_write_project`,
+    `_write_spatial_hierarchy`, `_write_spaces`, `_write_walls`, `_write_openings`,
+    `_write_certificate_annex`. The call order in the new orchestrator is unchanged, so
+    STEP entity numbering and every `IfcGloballyUniqueId` are unchanged too — **verified
+    by comparing a SHA-256 of the rendered `.ifc` file before and after the split: byte
+    identical**. The strict schema/rule-validation tests in
+    `tests/unit/test_ifc_validation.py` run in CI (ifcopenshell comes with the `dev`
+    extra) and pass; the before/after SHA-256 is additional evidence of byte identity,
+    now pinned by a golden test
+    (`test_the_export_of_a_certified_plan_is_byte_identical`: walls, an opening and a
+    certificate annex; its hash also matches the pre-split writer).
+    `_ecrire_spf_minimal` itself is now CC 4.
+38. **Scoped down from the plan's own wording, after reading the actual risk.**
+    `pathologie.diagnose` is **not** changed to read overlaps from `Plan.certificate`.
+    Reasons found before writing any code:
+    - `GeometricProof.overlap` is a bare `bool`; it does not name *which* rooms
+      overlap, and `diagnose`'s `chevauchement:{a}|{b}` codes are asserted on by name
+      in `tests/unit/test_export.py`. Reading only the boolean would still need the
+      full pairwise computation to recover the pair names whenever `overlap` is
+      `True` — the "skip the computation" case only works for the `False` branch.
+    - Nothing stops a caller from constructing `Plan(rooms=X, certificate=some_other_
+      certificate)` by hand; `Plan` is frozen but the type system does not tie a
+      `certificate` to having actually been computed from that same `Plan`'s current
+      `rooms`. Trusting an attached certificate's `overlap` flag without reverifying
+      it against the plan actually being diagnosed is exactly the "believe the prior
+      computation on its word" pattern `ARCHITECTURE.md` forbids for the solver
+      itself; extending that same trust to BIM export, where a silent miss produces
+      an invalid file downstream tools accept, is a worse place to introduce it than
+      most. No profiling evidence in the plan motivates the risk either.
+    Did the safe half of this item instead: split `diagnose` (was CC 19) into
+    `_room_pathologies`, `_wall_pathologies`, `_orphan_opening_pathologies`,
+    `_outline_pathologies`, `_overlap_pathologies` — pure extraction, same recomputation
+    as before, zero behavior change. `diagnose` itself is now CC 1.
+39. Branch coverage of `export/svg.py` was 98.1% (1 line, 1 branch missing): `_etendue`'s
+    `if not xs: return (0.0, 0.0, 1.0, 1.0)` fallback, reachable from the public
+    `render()` with a plan that has no rooms and no outline (only `sheet` guards against
+    an empty *panel list*, a different check). Added
+    `test_an_empty_plan_with_no_outline_still_renders` to
+    `tests/unit/test_svg.py`; `export/svg.py` is now 100% branch coverage.
+
+**Ratchet**: `MAX_VIOLATIONS` moved from 20 to 18 (`_ecrire_spf_minimal` and
+`pathologie.diagnose`).
+Verified: full suite green, `mypy src` clean, byte-identical IFC output (SHA-256
+comparison), coverage 89.51% (ratchet 88.8%, `export/svg.py` itself 100%), `mkdocs
+build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
 ### 14. `data`
 

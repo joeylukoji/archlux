@@ -62,3 +62,16 @@ def test_structure_walls_are_drawn_even_if_the_plan_omits_them() -> None:
 
 def test_a_wall_declared_twice_is_drawn_once_per_panel() -> None:
     assert len(_lines(render(_plan(_BEARING), walls=(_BEARING,)), "wall-load-bearing")) == 1
+
+
+def test_an_empty_plan_with_no_outline_still_renders() -> None:
+    """PLAN.md phase 4, block 13, item 39: `_etendue`'s empty-extent fallback.
+
+    No room and no outline: nothing to measure a bounding box from. ``render`` has no
+    guard against this (only ``sheet`` refuses an empty *panel list*), so a default
+    unit box keeps the document well-formed instead of dividing by a zero extent.
+    """
+    empty = Plan(rooms=(), walls=(), openings=(), outline=())
+    svg = render(empty, titre="empty")
+    root = ET.fromstring(svg)
+    assert root.tag.endswith("svg")

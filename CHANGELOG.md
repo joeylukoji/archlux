@@ -8,6 +8,13 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — PLAN.md phase 4, block 13 (`export`): IFC entity split, diagnose under CC 10, SVG at 100% branch coverage
+
+- `_ecrire_spf_minimal` (`export/ifc.py`, was CC 17) split into `_SpfWriter` (the shared STEP-entity buffer, now explicit state instead of closures) and one function per IFC entity block (`_write_header`, `_write_project`, `_write_spatial_hierarchy`, `_write_spaces`, `_write_walls`, `_write_openings`, `_write_certificate_annex`). Verified byte-identical output via a SHA-256 comparison before/after the split, on top of the strict ifcopenshell validation tests (`tests/unit/test_ifc_validation.py`, run in CI via the `dev` extra); now pinned by a golden test (`test_the_export_of_a_certified_plan_is_byte_identical`).
+- `diagnose` (`export/pathologie.py`, was CC 19) split into `_room_pathologies`, `_wall_pathologies`, `_orphan_opening_pathologies`, `_outline_pathologies`, `_overlap_pathologies`. **Scoped down from the plan's own wording**: does not read overlaps from an attached `Plan.certificate` instead of recomputing them — nothing ties a certificate to having actually been computed from the plan it is attached to, and trusting it would reintroduce the "believe a prior computation on its word" pattern the project forbids for the solver, here for BIM export. See `docs/plans/phase-4-design-patterns.md`.
+- `export/svg.py`'s branch coverage gap (98.1%, `_etendue`'s empty-extent fallback) closed with a new test; now 100%.
+- The complexity ratchet (`tests/test_complexity.py::MAX_VIOLATIONS`) moves from 20 to 18.
+
 ### Changed — PLAN.md phase 4, block 12 (`active`): `Batch` value object, `Adjustable` protocol, `Loop.run` under CC 10
 
 - `Batch(x, orientations)` (`active/boucle.py`): replaces the parallel `xs`/`orientations` lists `Loop` passed to its own helpers. Internal plumbing, not exported (`__all__` lists only `ActiveReport` and `Loop`): `Loop.run`'s public parameter list is unchanged, since merging it into `Batch` too would break every existing caller.
