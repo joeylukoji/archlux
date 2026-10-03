@@ -1,18 +1,18 @@
-# Statistiques circulaires
+# Circular statistics
 
-**Code :** `orient.circular`.
+**Code:** `orient.circular`.
 
-## Énoncé
+## Statement
 
-Un azimut \(\theta\) est un point du cercle. On l'encode par les harmoniques
+An azimuth \(\theta\) is a point on the circle. It is encoded by the harmonics
 
 \[
 \phi(\theta)=\bigl(\cos\theta,\;\sin\theta,\;\cos 2\theta,\;\sin 2\theta,\;\ldots\bigr)
 \in\mathbb{R}^{2H},
 \]
 
-jamais par le degré brut. La moyenne de \(n\) azimuts est l'argument de la
-somme des vecteurs unitaires :
+never by the raw degree. The mean of \(n\) azimuths is the argument of the
+sum of the unit vectors:
 
 \[
 \bar\theta=\operatorname{atan2}\Bigl(\sum_i\sin\theta_i,\;\sum_i\cos\theta_i\Bigr),
@@ -20,23 +20,23 @@ somme des vecteurs unitaires :
 \bar R=\frac{1}{n}\Bigl\lVert\textstyle\sum_i(\cos\theta_i,\,\sin\theta_i)\Bigr\rVert.
 \]
 
-La variance circulaire est \(V=1-\bar R\). Le test de Rayleigh d'uniformité
-utilise \(p\approx\exp(-n\bar R^2)\).
+The circular variance is \(V=1-\bar R\). The Rayleigh test of uniformity
+uses \(p\approx\exp(-n\bar R^2)\).
 
-## Hypothèses
+## Assumptions
 
-- Angles en degrés à l'entrée, radians dans les fonctions trigonométriques.
-- \(H\ge 1\). Une seule harmonique ne sépare pas l'est de l'ouest au-delà du signe de \(\sin\).
-- Le test de Rayleigh est une approximation exponentielle (grand \(n\), ou
-  concentration marquée). Pour \(n=5\) azimuts tous au nord, \(p<0{,}01\).
+- Angles in degrees on input, radians inside the trigonometric functions.
+- \(H\ge 1\). A single harmonic does not separate east from west beyond the sign of \(\sin\).
+- The Rayleigh test is an exponential approximation (large \(n\), or
+  marked concentration). For \(n=5\) azimuths all pointing north, \(p<0.01\).
 
-## Dérivation
+## Derivation
 
-\(359^\circ\) et \(1^\circ\) sont proches : \(\cos 359^\circ\approx\cos 1^\circ\).
-La moyenne arithmétique \((359+1)/2=180\) est l'antipodale — le piège que
-`circular_mean([350, 10])` doit éviter (résultat \(0^\circ\)).
+\(359^\circ\) and \(1^\circ\) are close: \(\cos 359^\circ\approx\cos 1^\circ\).
+The arithmetic mean \((359+1)/2=180\) is the antipode — the trap that
+`circular_mean([350, 10])` must avoid (result \(0^\circ\)).
 
-La régression circulaire-linéaire est le moindre carré
+The circular-linear regression is the least-squares fit
 
 \[
 y\approx a\cos\theta+b\sin\theta+c.
@@ -47,14 +47,14 @@ y\approx a\cos\theta+b\sin\theta+c.
 `encode`, `encode_orientation`, `circular_mean`, `concentration`, `circular_variance`,
 `rayleigh`, `circular_linear_regression`, `stratify`.
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Passer tout azimut par `encode_orientation` avant un modèle | Soustraire des degrés comme des réels |
-| Stratifier une rose des vents en 8 secteurs | Croire qu'un \(p\) de Rayleigh *prouve* une cause physique |
+| Pass every azimuth through `encode_orientation` before a model | Subtract degrees as if they were reals |
+| Stratify a wind rose into 8 sectors | Believe that a Rayleigh \(p\) *proves* a physical cause |
 
 ## Source
 
-Mardia & Jupp (2000), *Directional Statistics*, Wiley, ch. 2–3 et §6.3 (Rayleigh).
-[Bibliographie](sources.md) n° 11.
+Mardia & Jupp (2000), *Directional Statistics*, Wiley, ch. 2–3 and §6.3 (Rayleigh).
+[Bibliography](sources.md) no. 11.

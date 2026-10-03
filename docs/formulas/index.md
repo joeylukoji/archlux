@@ -1,61 +1,60 @@
-# Formules des jalons 2 et 3
+# Formulas of milestones 2 and 3
 
-Ce dossier est le **formulaire** : chaque résultat utilisé dans le code y est énoncé,
-dérivé, sourcé, et rattaché à une fonction. Un chercheur doit pouvoir refaire le calcul
-sur papier sans ouvrir l'implémentation.
+This folder is the **formulary**: every result used in the code is stated,
+derived, sourced and tied to a function here. A researcher should be able to redo the
+computation on paper without opening the implementation.
 
-Les pages `concepts/` expliquent *pourquoi* l'architecture est ainsi.
-Les pages `formules/` expliquent *quelle égalité* est codée, et d'où elle vient.
+The `concepts/` pages explain *why* the architecture is the way it is.
+The `formulas/` pages explain *which equality* is coded, and where it comes from.
 
-## Carte jalon 2 → pages
+## Map from milestone 2 to pages
 
-| Étape | Module | Page | Garantie |
+| Step | Module | Page | Guarantee |
 |---|---|---|---|
-| Ordre relatif | `geom.graph` | [Ordre et graphe](ordre-relatif.md) | exacte |
-| Polytope | `geom.polytope` | [Séparations linéaires](polytope-separe.md) | exacte |
-| Objectif L1 | `geom.polytope`, `api` | [Épigraphe L1](epigraphe-l1.md) | exacte (reformulation) |
-| Surfaces | `lmo.coupes` | [Coupes de surface](coupes-surface.md) | exacte (appui convexe) |
-| Oracle LP | `lmo.solver` | [Simplexe, duaux, Farkas](farkas.md) | exacte (LP) |
-| Preuve | `certify.proof` | [Vérification exacte](preuve-exacte.md) | exacte (inspection) |
-| Chaîne | `api.legalize` | [Pipeline](pipeline.md) | exacte en sortie |
-| Orientation | `orient.circular` | [Statistiques circulaires](circulaire.md) | exacte (trigo) |
-| Substitut J3 | `light.analytic` | [Substitut analytique](substitut-analytique.md) | **sans garantie** |
-| Split-flux J4 | `light.split_flux` | [Facteur de lumière du jour](split-flux.md) | **sans garantie** (pas un sDA) |
-| Rectilinéaire J6 | `geom.rectilinear` | [Décomposition L](rectilineaire.md) | exacte (partition + fusions) |
-| Actif J6 | `active` | [Apprentissage actif](apprentissage-actif.md) | budget de sims |
-| Export J6 | `export` | [IFC / DXF / Wilson](export-bim.md) | exacte (pathologies) ; Wilson |
-| Banc J6 | `bench` | [Banc d'essai](banc-essai.md) | trace + stats |
-| Jetons J4 | `light.tokens` | [Jetons](jetons.md) | continu (anti-image) |
-| Substitut appris J4 | `light.base` | — (perceptron `numpy`) | **sans garantie** ; cible = résidu analytique |
-| Gradient J4 | `light.validation` | [Validation du gradient](validation-gradient.md) | accord de signe |
-| Frank-Wolfe | `solve.frank_wolfe` | [Frank-Wolfe](frank-wolfe.md) | itérés exacts ; gap d'opt. |
-| Statistique J5 | `uq.conformal` | [Prédiction conforme](statistique.md) | probabiliste |
+| Relative order | `geom.graph` | [Order and graph](relative-order.md) | exact |
+| Polytope | `geom.polytope` | [Linear separations](separated-polytope.md) | exact |
+| L1 objective | `geom.polytope`, `api` | [L1 epigraph](l1-epigraph.md) | exact (reformulation) |
+| Areas | `lmo.cuts` | [Area cuts](area-cuts.md) | exact (convex support) |
+| LP oracle | `lmo.solver` | [Simplex, duals, Farkas](farkas.md) | exact (LP) |
+| Proof | `certify.proof` | [Exact verification](exact-proof.md) | exact (inspection) |
+| Chain | `api.legalize` | [Pipeline](pipeline.md) | exact on output |
+| Orientation | `orient.circular` | [Circular statistics](circular.md) | exact (trigonometry) |
+| Surrogate M3 | `light.analytic` | [Analytic surrogate](analytic-surrogate.md) | **no guarantee** |
+| Split-flux M4 | `light.split_flux` | [Daylight factor](split-flux.md) | **no guarantee** (not an sDA) |
+| Rectilinear M6 | `geom.rectilinear` | [L decomposition](rectilinear.md) | exact (partition + merges) |
+| Active M6 | `active` | [Active learning](active-learning.md) | simulation budget |
+| Export M6 | `export` | [IFC / DXF / Wilson](bim-export.md) | exact (pathologies); Wilson |
+| Benchmark M6 | `bench` | [Benchmark](benchmark.md) | trace + statistics |
+| Tokens M4 | `light.tokens` | [Tokens](tokens.md) | continuous (anti-image) |
+| Learned surrogate M4 | `light.base` | — (`numpy` perceptron) | **no guarantee**; target = analytic residual |
+| Gradient M4 | `light.validation` | [Gradient validation](gradient-validation.md) | sign agreement |
+| Frank-Wolfe | `solve.frank_wolfe` | [Frank-Wolfe](frank-wolfe.md) | exact iterates; optimality gap |
+| Statistics M5 | `uq.conformal` | [Conformal prediction](statistics.md) | probabilistic |
 
-## Comment lire une fiche
+## How to read a page
 
-Chaque fiche a la même structure :
+Every page has the same structure:
 
-1. **Énoncé** — la formule, seule.
-2. **Hypothèses** — ce qui doit être vrai pour que l'égalité tienne.
-3. **Dérivation** — assez de pas pour la reconstruire.
-4. **Code** — fonction et fichiers.
-5. **Cas d'utilisation** — quand l'appliquer, quand elle est **fausse**.
-6. **Source** — édition, section ou théorème, DOI si l'article en a un.
+1. **Statement** — the formula, alone.
+2. **Assumptions** — what must be true for the equality to hold.
+3. **Derivation** — enough steps to rebuild it.
+4. **Code** — function and files.
+5. **Use cases** — when to apply it, when it is **wrong**.
+6. **Source** — edition, section or theorem, DOI if the article has one.
 
-Les sources sont regroupées dans [la bibliographie](sources.md). Une citation sans
-localisation (chapitre, théorème, DOI) n'est pas retenue.
+The sources are gathered in [the bibliography](sources.md). A citation without a
+location (chapter, theorem, DOI) is not accepted.
 
-## Exact vs probabiliste
+## Exact vs probabilistic
 
-Au jalon 2, les formules géométriques et d'optimisation linéaire sont **exactes**.
-Au jalon 3, les itérés de Frank-Wolfe restent dans le polytope (garantie exacte) ;
-le score du substitut analytique **n'a aucune couverture**. Au jalon 5, la
-prédiction conforme borne l'oracle gelé : voir [statistique](statistique.md).
-Ce n'est pas une preuve géométrique.
+At milestone 2, the geometric and linear optimization formulas are **exact**.
+At milestone 3, the Frank-Wolfe iterates stay in the polytope (exact guarantee);
+the score of the analytic surrogate **has no coverage at all**. At milestone 5,
+conformal prediction bounds the frozen oracle: see [statistics](statistics.md).
+This is not a geometric proof.
 
-!!! warning "Ce que « l'oracle gelé » veut dire"
-    `SplitFluxOracle` est une **forme fermée**, pas une mesure ni un lancer de
-    rayons. Une couverture calculée contre lui est une couverture *sur cette
-    formule*. Aucune fiche de ce dossier ne prétend le contraire, et
-    [vérité terrain](../donnees/verite-terrain.md) dit où trouver de vraies
-    étiquettes.
+!!! warning "What \"the frozen oracle\" means"
+    `SplitFluxOracle` is a **closed form**, not a measurement nor a ray tracer.
+    A coverage computed against it is a coverage *on that formula*. No page in
+    this folder claims otherwise, and [ground truth](../data/ground-truth.md)
+    says where to find real labels.

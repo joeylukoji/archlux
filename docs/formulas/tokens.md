@@ -1,85 +1,85 @@
-# Jetons d'un plan
+# Tokens of a plan
 
-**Code :** `light.tokens.plan_to_tokens`, `vector_to_tokens`, `permute_rooms`.
+**Code:** `light.tokens.plan_to_tokens`, `vector_to_tokens`, `permute_rooms`.
 
-## Énoncé
+## Statement
 
-Un plan n'est pas une image. Il devient un **ensemble** de jetons
+A plan is not an image. It becomes a **set** of tokens
 \(\{\phi_1,\ldots,\phi_N\}\subset\mathbb{R}^{d}\), \(d=32\)
-(`TOKEN_DIM`), de **deux familles**, dans cet ordre : les pièces, puis les baies.
+(`TOKEN_DIM`), of **two families**, in this order: the rooms, then the glazing.
 
 \[
-N = \underbrace{n_{\text{pièces}}}_{\text{toujours}}
-  + \underbrace{n_{\text{baies rattachées}}}_{\text{0 si le plan n'a ni murs ni ouvertures}}
+N = \underbrace{n_{\text{rooms}}}_{\text{always}}
+  + \underbrace{n_{\text{attached glazing}}}_{\text{0 if the plan has neither walls nor openings}}
 \]
 
-Une baie n'est **jamais recopiée** sur chaque pièce : elle est son propre jeton.
+A window is **never copied** onto each room: it is its own token.
 
-## Disposition des 32 composantes
+## Layout of the 32 components
 
-| Indices | Jeton de **pièce** | Jeton de **baie** |
+| Indices | **Room** token | **Glazing** token |
 |---:|---|---|
-| `0:4` | \((x,y,w,h)\), mètres | 0 |
-| `4:7` | \(\bigl(wh,\;2(w+h),\;\tfrac{4wh}{4(w+h)^2}\bigr)\) — aire, périmètre, compacité | 0 |
-| `7:14` | one-hot du type sur 6 catégories + 1 case « inconnu » | 0 |
-| `14:20` | \(\phi(\theta_{\text{bâtiment}})\), harmoniques 1–3 | idem |
-| `20` | \(n_{\text{pièces}}\) | idem |
-| `21` | \(\sum_j w_j h_j\) | idem |
-| `22:24` | 0 | \(\phi(\theta_{\text{mur}})\), harmonique 1 |
-| `24:27` | 0 | \((s,\ \text{largeur\_rel},\ \text{hauteur\_linteau})\) |
-| `27` | 0 | **1,0 — drapeau « ceci est une baie »** |
-| `28` | 0 | hauteur d'allège |
-| `29:32` | 0 (réserve) | 0 (réserve) |
+| `0:4` | \((x,y,w,h)\), metres | 0 |
+| `4:7` | \(\bigl(wh,\;2(w+h),\;\tfrac{4wh}{4(w+h)^2}\bigr)\) — area, perimeter, compactness | 0 |
+| `7:14` | one-hot of the type over 6 categories + 1 "unknown" slot | 0 |
+| `14:20` | \(\phi(\theta_{\text{building}})\), harmonics 1–3 | same |
+| `20` | \(n_{\text{rooms}}\) | same |
+| `21` | \(\sum_j w_j h_j\) | same |
+| `22:24` | 0 | \(\phi(\theta_{\text{wall}})\), harmonic 1 |
+| `24:27` | 0 | \((s,\ \text{relative\_width},\ \text{head\_height})\) |
+| `27` | 0 | **1.0 — "this is glazing" flag** |
+| `28` | 0 | sill height |
+| `29:32` | 0 (reserved) | 0 (reserved) |
 
-\(\phi(\theta)\) sont les [harmoniques circulaires](circulaire.md) — jamais le degré
-brut. \(\theta_{\text{mur}}=\operatorname{atan2}(b_y-a_y,\;b_x-a_x)\) est l'azimut du
-mur portant la baie, en degrés.
+\(\phi(\theta)\) are the [circular harmonics](circular.md) — never the raw
+degree. \(\theta_{\text{wall}}=\operatorname{atan2}(b_y-a_y,\;b_x-a_x)\) is the azimuth of the
+wall carrying the window, in degrees.
 
-La compacité vaut \(1/4\) pour un carré et tend vers \(0\) pour un rectangle
-dégénéré ; ce n'est pas l'indice de Polsby–Popper \(4\pi A/P^2\), mais la même
-grandeur à un facteur \(\pi\) près.
+Compactness is \(1/4\) for a square and tends to \(0\) for a degenerate
+rectangle; it is not the Polsby–Popper index \(4\pi A/P^2\), but the same
+quantity up to a factor \(\pi\).
 
-## Le masque de remplissage
+## The padding mask
 
-`plan_to_tokens` rend le couple \((\text{jetons }[N,d],\ \text{masque }[N])\), où
-`masque[i]` est **vrai si le jeton i est du remplissage** — convention PyTorch
-`src_key_padding_mask`, pas l'inverse. Sur un plan seul le masque est entièrement
-faux ; il ne devient utile qu'en lot de plans de tailles différentes.
+`plan_to_tokens` returns the pair \((\text{tokens }[N,d],\ \text{mask }[N])\), where
+`mask[i]` is **true if token i is padding** — the PyTorch
+`src_key_padding_mask` convention, not the reverse. On a single plan the mask is entirely
+false; it only becomes useful in a batch of plans of different sizes.
 
-## Hypothèses
+## Assumptions
 
-- Coordonnées en mètres, contrat \((x,y,w,h)\) par pièce, **même ordre que
-  `Polytope.index`** — c'est ce qui rend le gradient du substitut directement
-  additionnable au vecteur de décision.
-- Un déplacement de \(2\,\mathrm{cm}\) **doit** changer \(\phi\) : c'est le test
-  anti-image. Sur un raster à 100 px/m, ce déplacement ne change aucun pixel, le
-  gradient est nul presque partout, et l'optimiseur est aveugle
-  (`ARCHITECTURE.md` §10, premier anti-pattern).
-- Toute statistique d'ensemble (moyenne, somme) est **invariante par permutation**
-  des pièces : `permute_rooms` ne doit pas changer le score. C'est ce que teste
-  `tests/unit/test_jetons.py`.
-- Une ouverture dont le `wall_id` ne correspond à aucun mur du plan est
-  **silencieusement ignorée** (`plan_to_tokens`). C'est un choix : un corpus
-  lacunaire ne doit pas faire tomber l'encodage. La contrepartie est qu'une erreur
-  d'appariement mur/baie ne se signale pas ici — elle se signale à la
-  dévectorisation.
+- Coordinates in metres, \((x,y,w,h)\) per-room contract, **same order as
+  `Polytope.index`** — this is what makes the surrogate's gradient directly
+  addable to the decision vector.
+- A displacement of \(2\,\mathrm{cm}\) **must** change \(\phi\): this is the anti-image
+  test. On a raster at 100 px/m, this displacement changes no pixel, the
+  gradient is zero almost everywhere, and the optimizer is blind
+  (`ARCHITECTURE.md` §10, first anti-pattern).
+- Every set statistic (mean, sum) is **permutation invariant** over
+  the rooms: `permute_rooms` must not change the score. This is what
+  `tests/unit/test_jetons.py` tests.
+- An opening whose `wall_id` matches no wall of the plan is
+  **silently ignored** (`plan_to_tokens`). This is a choice: an incomplete corpus
+  must not bring the encoding down. The flip side is that a wall/window
+  matching error is not reported here — it is reported at
+  devectorization.
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Encoder depuis `Plan` quand murs et baies existent | Croire que `vector_to_tokens` encode les baies : il ne voit que \((x,y,w,h)\) et force le type `"living_room"` |
-| Vérifier l'invariance par permutation | Trier les jetons par position (ce serait un ordre implicite) |
-| Ajouter une composante en fin de vecteur | Réindexer `0:22` — les poids `npz` gelés deviendraient faux sans que rien ne le signale |
+| Encode from `Plan` when walls and glazing exist | Believe that `vector_to_tokens` encodes glazing: it only sees \((x,y,w,h)\) and forces the type `"living_room"` |
+| Check permutation invariance | Sort the tokens by position (that would be an implicit order) |
+| Add a component at the end of the vector | Reindex `0:22` — the frozen `npz` weights would become wrong without anything reporting it |
 
-!!! warning "Le corpus livré n'exerce pas les jetons de baie"
-    `data.synthetic.generate_corpus` produit des plans avec `murs=()` et
-    `ouvertures=()`. Les colonnes `22:29` y sont donc **identiquement nulles**, et
-    `SplitFluxOracle` utilise son WWR par défaut (0,30) quelle que soit la
-    fenestration. Voir [vérité terrain](../donnees/verite-terrain.md).
+!!! warning "The shipped corpus does not exercise the glazing tokens"
+    `data.synthetic.generate_corpus` produces plans with `walls=()` and
+    `openings=()`. Columns `22:29` are therefore **identically zero** there, and
+    `SplitFluxOracle` uses its default WWR (0.30) whatever the
+    fenestration. See [ground truth](../data/ground-truth.md).
 
 ## Source
 
-Décision d'architecture : `ARCHITECTURE.md` §10 ; `MILESTONE-4.md` §4 (ordre des
-familles). Harmoniques : Mardia & Jupp (2000), voir [circulaire](circulaire.md).
-[Pourquoi pas une image](../concepts/pourquoi-pas-une-image.md).
+Architecture decision: `ARCHITECTURE.md` §10; `MILESTONE-4.md` §4 (order of
+the families). Harmonics: Mardia & Jupp (2000), see [circular](circular.md).
+[Why not an image](../concepts/why-not-an-image.md).

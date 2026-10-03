@@ -1,69 +1,69 @@
-# Ordre relatif et graphe de contraintes
+# Relative order and constraint graph
 
-**Code :** `geom.graph.deduce_order`, `build_graph`, `transitive_reduction`.
+**Code:** `geom.graph.deduce_order`, `build_graph`, `transitive_reduction`.
 
-## Énoncé
+## Statement
 
-Pour deux rectangles \(A,B\), le *jeu* sur l'axe \(x\) est
+For two rectangles \(A,B\), the *clearance* on the \(x\) axis is
 
 \[
 \delta_x(A,B)=\max\bigl(x_B-(x_A+w_A),\; x_A-(x_B+w_B)\bigr).
 \]
 
-\(\delta_x>0\) : les projections sur \(x\) sont disjointes ; \(\delta_x=0\) : elles
-se touchent ; \(\delta_x<0\) : elles se recouvrent. Idem \(\delta_y\) en hauteur.
+\(\delta_x>0\): the projections on \(x\) are disjoint; \(\delta_x=0\): they
+touch; \(\delta_x<0\): they overlap. Likewise \(\delta_y\) vertically.
 
-**Règle fondatrice.** Toute paire reçoit **exactement une** arête, sur l'axe où les
-pièces sont réellement disjointes (le plus grand jeu si les deux le sont). À défaut
-des deux jeux négatifs (chevauchement), l'axe du plus grand écart entre *centres*
-tranche. Le *sens* de l'arête suit l'ordre total \((\text{centre}, \mathrm{id})\).
+**Founding rule.** Every pair receives **exactly one** edge, on the axis where the
+rooms are actually disjoint (the larger clearance if both are). When both
+clearances are negative (overlap), the axis of the larger distance between *centers*
+decides. The *direction* of the edge follows the total order \((\text{center}, \mathrm{id})\).
 
-Une arête horizontale \(A\to B\) se lit « \(A\) est à gauche de \(B\) » et deviendra
+A horizontal edge \(A\to B\) reads "\(A\) is left of \(B\)" and will become
 
 \[
 x_A+w_A\le x_B.
 \]
 
-## Hypothèses
+## Assumptions
 
-- Pièces rectangulaires, côtés parallèles aux axes.
-- Identifiants comparables (ordre lexicographique) pour casser les égalités de centres.
-- Tolérance de contact \(\tau=10^{-9}\,\mathrm{m}\) : \(\delta\ge -\tau\) compte comme
-  disjoint. Sans elle, \(1+3{,}47=4{,}470000000000001\) en IEEE-754 fait passer deux
-  pièces jointives pour recouvrantes.
+- Rectangular rooms, sides parallel to the axes.
+- Comparable identifiers (lexicographic order) to break ties between centers.
+- Contact tolerance \(\tau=10^{-9}\,\mathrm{m}\): \(\delta\ge -\tau\) counts as
+  disjoint. Without it, \(1+3.47=4.470000000000001\) in IEEE-754 makes two
+  adjoining rooms look overlapping.
 
-## Dérivation — acyclicity
+## Derivation — acyclicity
 
-Sur un axe fixé, l'arête va toujours du plus petit centre vers le plus grand (à
-\(\mathrm{id}\) près). L'ensemble des arêtes d'un axe est donc un sous-graphe d'un
-**ordre total**, donc un DAG. Un cycle « \(A\) à gauche de \(B\) à gauche de \(A\) »
-est impossible *par construction* de `deduce_order`. `build_graph` le revérifie
-(`networkx.is_directed_acyclic_graph`) au cas où l'ordre viendrait d'ailleurs.
+On a fixed axis, the edge always goes from the smaller center to the larger one (up to
+\(\mathrm{id}\)). The set of edges of one axis is therefore a subgraph of a
+**total order**, hence a DAG. A cycle "\(A\) left of \(B\) left of \(A\)"
+is impossible *by construction* of `deduce_order`. `build_graph` checks it again
+(`networkx.is_directed_acyclic_graph`) in case the order comes from elsewhere.
 
-## Dérivation — réduction transitive
+## Derivation — transitive reduction
 
-Si \(A\to B\) et \(B\to C\), alors \(x_A+w_A\le x_B\) et \(x_B+w_B\le x_C\). Comme
-\(w_B\ge 0\), \(x_A+w_A\le x_C\) : l'arête \(A\to C\) est *impliquée*. La réduction
-transitive (Aho, Garey & Ullman, 1972) retire ces arêtes sans changer la fermeture
-d'ordre. 15 pièces : \(\sim 210\) contraintes brutes, \(\sim 30\) après réduction.
+If \(A\to B\) and \(B\to C\), then \(x_A+w_A\le x_B\) and \(x_B+w_B\le x_C\). Since
+\(w_B\ge 0\), \(x_A+w_A\le x_C\): the edge \(A\to C\) is *implied*. The transitive
+reduction (Aho, Garey & Ullman, 1972) removes these edges without changing the order
+closure. 15 rooms: \(\sim 210\) raw constraints, \(\sim 30\) after reduction.
 
-`networkx.transitive_reduction` omet les nœuds isolés ; ils sont **réinjectés** :
-une pièce séparée seulement sur l'autre axe disparaîtrait, et le polytope perdrait
-ses bornes.
+`networkx.transitive_reduction` drops isolated nodes; they are **put back**:
+a room separated only on the other axis would disappear, and the polytope would lose
+its bounds.
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Lire l'ordre d'un plan *proposé* (le générateur décide) | Choisir l'axe du plus grand écart de centres alors que les pièces se recouvrent sur cet axe — la contrainte produite est déjà violée par un plan correct |
-| Réduire avant d'assembler \(A x\le b\) | Tester `has_separation` *après* réduction : une paire séparée par transitivité n'a plus d'arête directe |
-| Tolérer le contact à \(10^{-9}\,\mathrm{m}\) | Traiter un `set` d'arêtes : l'ordre d'itération changerait les lignes de \(A\) |
+| Read the order of a *proposed* plan (the generator decides) | Pick the axis of the larger distance between centers while the rooms overlap on that axis — the constraint produced is already violated by a correct plan |
+| Reduce before assembling \(A x\le b\) | Test `has_separation` *after* reduction: a pair separated by transitivity no longer has a direct edge |
+| Tolerate contact at \(10^{-9}\,\mathrm{m}\) | Handle edges as a `set`: the iteration order would change the rows of \(A\) |
 
 ## Source
 
-- Otten (1982), DAC — pavages en guillotine, ordre de coupes.
-- Lengauer (1990), ch. 10 — graphe de contraintes \(x_a+w_a\le x_b\).
-- Aho, Garey & Ullman (1972), *SIAM J. Comput.* — réduction transitive,
+- Otten (1982), DAC — slicing floorplans, order of cuts.
+- Lengauer (1990), ch. 10 — constraint graph \(x_a+w_a\le x_b\).
+- Aho, Garey & Ullman (1972), *SIAM J. Comput.* — transitive reduction,
   [doi:10.1137/0201008](https://doi.org/10.1137/0201008).
 
-Détail des éditions : [bibliographie](sources.md).
+Details of the editions: [bibliography](sources.md).

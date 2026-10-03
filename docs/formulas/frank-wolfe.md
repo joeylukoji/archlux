@@ -5,7 +5,7 @@
 ## Statement
 
 We maximize a surrogate \(f\) (concave or not) over the
-[polytope](polytope-separe.md) \(P\):
+[polytope](separated-polytope.md) \(P\):
 
 \[
 \max_{x\in P} f(x).
@@ -18,7 +18,7 @@ s_k\in\arg\max_{s\in P}\langle\nabla f(x_k),s\rangle
 =\arg\min_{s\in P}\langle -\nabla f(x_k),s\rangle,
 \]
 
-that is `lmo.solver.solve(poly, c=-gradient, depart=x_k)`. The standard step is
+that is `lmo.solver.solve(poly, c=-gradient, start=x_k)`. The standard step is
 \(\gamma_k=\min\{2/(k+2),\gamma_{\max}\}\), halved while \(f\) decreases. The gap
 
 \[
@@ -43,7 +43,7 @@ therefore reports:
 ## Assumptions
 
 - \(x_0\in P\) (in practice: the L1 output of milestone 2).
-- Every call passes `depart=x`: the GLOP model is reused (`ARCHITECTURE.md` §10).
+- Every call passes `start=x`: the GLOP model is reused (`ARCHITECTURE.md` §10).
 - Iterates are convex combinations of vertices, hence in \(P\).
 - A budget \(\Delta\) is the box \(\lVert x-\hat x\rVert_\infty\le\Delta\) around the
   **proposed** plan \(\hat x\), shared by the classic pass and Frank-Wolfe, so that it

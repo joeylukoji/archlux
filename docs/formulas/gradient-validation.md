@@ -1,33 +1,33 @@
-# Validation du gradient
+# Gradient validation
 
-**Code :** `light.validation.validate_gradient`.
+**Code:** `light.validation.validate_gradient`.
 
-## Énoncé
+## Statement
 
-Pour un point \(x\) et une direction \(e_i\), la pente réelle du simulateur est
+For a point \(x\) and a direction \(e_i\), the actual slope of the simulator is
 
 \[
 \widehat{\partial_i f}(x)
 =\frac{f(x+\delta e_i)-f(x-\delta e_i)}{2\delta}.
 \]
 
-L'**accord de signe** est la fraction des coordonnées telles que
+The **sign agreement** is the fraction of coordinates such that
 \(\mathrm{sign}(\nabla \hat f_i)=\mathrm{sign}(\widehat{\partial_i f})\).
 
-| Accord | Décision |
+| Agreement | Decision |
 |---|---|
-| \(> 0{,}90\) | continuer |
-| \(0{,}80\)–\(0{,}90\) | continuer en surveillant |
-| \(< 0{,}80\) | **arrêt** — ne pas ouvrir le jalon 5 |
+| \(> 0.90\) | continue |
+| \(0.80\)–\(0.90\) | continue while monitoring |
+| \(< 0.80\) | **stop** — do not open milestone 5 |
 
-## Hypothèses
+## Assumptions
 
-- Le simulateur est déterministe (sinon la pente n'est pas définie).
-- \(\delta=0{,}10\,\mathrm{m}\) pour le point de contrôle (pas un \(\varepsilon\)
-  numérique).
-- On évalue par le simulateur, jamais par le réseau.
+- The simulator is deterministic (otherwise the slope is not defined).
+- \(\delta=0.10\,\mathrm{m}\) for the checkpoint (not a numerical
+  \(\varepsilon\)).
+- Evaluation goes through the simulator, never through the network.
 
 ## Source
 
-`MILESTONE-4.md` §7. Différences finies centrées : Nocedal & Wright,
+`MILESTONE-4.md` §7. Centred finite differences: Nocedal & Wright,
 *Numerical Optimization*, Springer, §8.1.

@@ -1,23 +1,23 @@
-# Apprentissage actif
+# Active learning
 
-**Code :** `active.selection`, `active.densite`, `active.loop.Loop`.
+**Code:** `active.selection`, `active.densite`, `active.loop.Loop`.
 
-## Énoncé
+## Statement
 
 \[
-\mathrm{priorite}(Q) \;=\; \hat\sigma(Q)\;\times\;\hat f(Q).
+\mathrm{priority}(Q) \;=\; \hat\sigma(Q)\;\times\;\hat f(Q).
 \]
 
-C'est un **produit**, pas une somme : un facteur nul écarte le candidat. Sans la
-densité, on simule des plans aberrants que l'optimiseur ne visitera jamais ; sans
-l'incertitude, on resimule ce que le modèle maîtrise déjà. C'est la pondération
-« incertitude × représentativité » de Settles (§6.3.2).
+It is a **product**, not a sum: a zero factor discards the candidate. Without the
+density, we simulate aberrant plans that the optimizer will never visit; without
+the uncertainty, we re-simulate what the model already masters. This is the
+"uncertainty × representativeness" weighting of Settles (§6.3.2).
 
-### La densité
+### The density
 
-\(\hat f\) est un estimateur à noyau gaussien isotrope sur les plans **produits par
-l'optimiseur** — c'est-à-dire sur la région où le substitut va réellement être
-interrogé, pas sur le corpus d'entraînement :
+\(\hat f\) is an isotropic Gaussian kernel estimator on the plans **produced by
+the optimizer** — that is, on the region where the surrogate will actually be
+queried, not on the training corpus:
 
 \[
 \hat f(c) \;=\; \frac{1}{m}\sum_{j=1}^{m}
@@ -26,66 +26,66 @@ interrogé, pas sur le corpus d'entraînement :
 h \;=\; \bar s_{r}\; m^{-1/(d+4)} ,
 \]
 
-où \(\bar s_r\) est l'écart-type moyen par coordonnée de la référence et \(d\) la
-dimension du vecteur de plan. L'exposant \(-1/(d+4)\) est la **règle de Scott**.
+where \(\bar s_r\) is the mean per-coordinate standard deviation of the reference and \(d\) the
+dimension of the plan vector. The exponent \(-1/(d+4)\) is **Scott's rule**.
 
-Le facteur de normalisation \((2\pi h^2)^{-d/2}\) est **volontairement omis** : la
-priorité n'est utilisée que pour *classer* des candidats, et une constante
-multiplicative commune ne change aucun classement. \(\hat f\) n'est donc pas une
-densité de probabilité et ne doit pas être publiée comme telle.
+The normalization factor \((2\pi h^2)^{-d/2}\) is **deliberately omitted**: the
+priority is only used to *rank* candidates, and a common multiplicative
+constant changes no ranking. \(\hat f\) is therefore not a
+probability density and must not be published as one.
 
-!!! warning "Fléau de la dimension"
-    Un noyau isotrope en dimension \(d = 4n_{\text{pièces}}\) se dégrade vite :
-    à \(d = 60\), \(m^{-1/64}\) est presque \(1\) quel que soit \(m\), et toutes
-    les densités s'écrasent vers la même valeur. La sélection tend alors vers
-    l'incertitude seule. Sur des plans à plus d'une dizaine de pièces, réduire la
-    dimension (ACP, ou distance sur les descriptors de `light.base`) **avant**
-    d'estimer la densité.
+!!! warning "Curse of dimensionality"
+    An isotropic kernel in dimension \(d = 4n_{\text{rooms}}\) degrades quickly:
+    at \(d = 60\), \(m^{-1/64}\) is almost \(1\) whatever \(m\), and all
+    densities collapse to the same value. Selection then tends towards
+    uncertainty alone. On plans with more than about ten rooms, reduce the
+    dimension (PCA, or a distance on the descriptors of `light.base`) **before**
+    estimating the density.
 
-### La boucle
+### The loop
 
-Après chaque lot de \(k\) candidats : simuler avec l'oracle gelé → réentraîner si
-`fit` existe → **recalibrer le conforme**. La recalibration n'est pas
-facultative : le modèle a changé, donc \(\hat q\) d'avant ne borne plus rien.
+After each batch of \(k\) candidates: simulate with the frozen oracle → retrain if
+`fit` exists → **recalibrate the conformal predictor**. Recalibration is not
+optional: the model has changed, so the previous \(\hat q\) no longer bounds anything.
 
-!!! danger "L'échangeabilité est cassée par construction"
-    Les points ajoutés sont **choisis** par le critère de priorité. Ils ne sont
-    donc pas échangeables avec un tirage i.i.d., et un jeu de calibration alimenté
-    par la boucle active **invalide le théorème conforme**. Le jeu de calibration
-    doit rester tiré indépendamment. Ce que la boucle améliore légitimement, c'est
-    la **largeur** d'intervalle (via \(\hat\sigma\)), mesurée à budget de
-    simulations égal contre `RandomStrategy`.
+!!! danger "Exchangeability is broken by construction"
+    The added points are **chosen** by the priority criterion. They are
+    therefore not exchangeable with an i.i.d. draw, and a calibration set fed
+    by the active loop **invalidates the conformal theorem**. The calibration set
+    must stay independently drawn. What the loop legitimately improves is
+    the interval **width** (through \(\hat\sigma\)), measured at an equal simulation
+    budget against `RandomStrategy`.
 
-## Hypothèses
+## Assumptions
 
-- Candidats et référence vivent dans le même espace vectoriel, même échelle.
-- L'oracle est un `Surrogate` déterministe (`SplitFluxOracle`), pas un lancer de
-  rayons — voir [vérité terrain](../donnees/verite-terrain.md).
-- Budget de simulations fini ; comparaison **à budget égal** avec `RandomStrategy`,
-  même graine racine.
+- Candidates and reference live in the same vector space, at the same scale.
+- The oracle is a deterministic `Surrogate` (`SplitFluxOracle`), not a ray
+  tracer — see [ground truth](../data/ground-truth.md).
+- Finite simulation budget; comparison **at equal budget** with `RandomStrategy`,
+  same root seed.
 
 ## Code
 
-| Symbole | Fonction |
+| Symbol | Function |
 |---|---|
-| produit \(\hat\sigma\times\hat f\) | `active.selection.UncertaintyTimesDensity` |
-| référence aléatoire | `active.selection.RandomStrategy` |
+| product \(\hat\sigma\times\hat f\) | `active.selection.UncertaintyTimesDensity` |
+| random baseline | `active.selection.RandomStrategy` |
 | \(\hat f\) | `active.densite.kernel_density` |
 | \(h\) (Scott) | `kernel_density(..., bande=None)` |
-| boucle | `active.loop.Loop.run` → `ActiveReport` |
+| loop | `active.loop.Loop.run` → `ActiveReport` |
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Recalibrer après chaque cycle | Réutiliser un jeton de calibration d'un modèle antérieur |
-| Comparer actif vs aléatoire à budget égal | Sommer incertitude et densité |
-| Mesurer la largeur d'intervalle finale | Optimiser seulement le MAE du réseau |
-| Garder la calibration hors de la boucle | Verser les points acquis dans le jeu de calibration |
+| Recalibrate after each cycle | Reuse a calibration token from an earlier model |
+| Compare active vs random at equal budget | Add uncertainty and density |
+| Measure the final interval width | Optimize only the network's MAE |
+| Keep the calibration out of the loop | Add the acquired points to the calibration set |
 
 ## Source
 
-Pondération incertitude × densité : Settles (2009), §6.3.2 —
-[bibliographie](sources.md) n° 26. Largeur de bande : Scott (1992), §6.3, n° 24 ;
-noyau gaussien isotrope : Silverman (1986), §4.3, n° 25.
-Protocole du dépôt : `MILESTONE-6.md` §3.
+Uncertainty × density weighting: Settles (2009), §6.3.2 —
+[bibliography](sources.md) no. 26. Bandwidth: Scott (1992), §6.3, no. 24;
+isotropic Gaussian kernel: Silverman (1986), §4.3, no. 25.
+Repository protocol: `MILESTONE-6.md` §3.

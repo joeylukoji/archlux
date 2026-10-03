@@ -1,77 +1,77 @@
-# Simplexe, duaux et Farkas
+# Simplex, duals and Farkas
 
-**Code :** `lmo.solver.solve`, `_certificat_farkas`, `_est_faisable`.
+**Code:** `lmo.solver.solve`, `_certificat_farkas`, `_is_feasible`.
 
-## Énoncé — primal
+## Statement — primal
 
 \[
 \min_x \; c^\top x
-\quad\text{s.c.}\quad
+\quad\text{s.t.}\quad
 Ax \le b,\quad
 A_{\mathrm{eq}} x = b_{\mathrm{eq}},\quad
 \ell \le x \le u,
 \]
 
-plus les [coupes](coupes-surface.md) \(\sum_j \alpha_j x_j \ge \beta\).
+plus the [cuts](area-cuts.md) \(\sum_j \alpha_j x_j \ge \beta\).
 
-**Ce module ne sait pas d'où vient \(c\).** Distance L1 ou \(-\nabla\) d'éclairement :
-même oracle (`ARCHITECTURE.md` §2).
+**This module does not know where \(c\) comes from.** L1 distance or \(-\nabla\) of daylight:
+same oracle (`ARCHITECTURE.md` §2).
 
-Backend : OR-Tools **GLOP** (simplexe).
+Backend: OR-Tools **GLOP** (simplex).
 
-## Duaux
+## Duals
 
-Si `duaux=True`, les prix sont extraits **dans l'ordre des lignes de \(A\)** — le
-seul ordre appariable avec `Polytope.origins`. Les coupes et les égalités ne sont
-pas dans ce vecteur au jalon 2 : un dual de coupe de surface n'est pas encore
-libellé. Les composantes \(\lvert y_i\rvert \le 10^{-9}\) sont omises à l'API.
+With `duals=True`, the prices are extracted **in the order of the rows of \(A\)** — the
+only order that can be matched with `Polytope.origins`. Cuts and equalities are
+not in this vector at milestone 2: the dual of an area cut is not labelled
+yet. Components with \(\lvert y_i\rvert \le 10^{-9}\) are omitted at the API.
 
-Un prix dual se lit : « relâcher cette contrainte d'un mètre change l'objectif de
-\(y_i\) ». C'est la dualité LP standard (Bertsimas & Tsitsiklis, ch. 4).
+A dual price reads: "relaxing this constraint by one metre changes the objective by
+\(y_i\)". This is standard LP duality (Bertsimas & Tsitsiklis, ch. 4).
 
-## Infeasible vs non borné
+## Infeasible vs unbounded
 
-GLOP rend le code `INFEASIBLE` aussi pour un problème **non borné**. Discriminant :
-le LP à objectif nul sur le même système. Un LP à objectif nul ne peut pas être
-non borné ; s'il trouve un point, l'échec venait de \(c\), pas du programme.
+GLOP returns the `INFEASIBLE` code for an **unbounded** problem too. Discriminant:
+the LP with a zero objective on the same system. An LP with a zero objective cannot be
+unbounded; if it finds a point, the failure came from \(c\), not from the program.
 
-## Dérivation — certificat de Farkas (phase I)
+## Derivation — Farkas certificate (phase I)
 
-Lemme de Farkas (Schrijver, 1986, §7.3 ; Bertsimas & Tsitsiklis, ch. 4) : le
-système \(Ax\le b\) est infaisable si et seulement s'il existe \(y\ge 0\) tel que
+Farkas' lemma (Schrijver, 1986, §7.3; Bertsimas & Tsitsiklis, ch. 4): the
+system \(Ax\le b\) is infeasible if and only if there exists \(y\ge 0\) such that
 
 \[
-A^\top y = 0 \quad\text{et}\quad b^\top y < 0
+A^\top y = 0 \quad\text{and}\quad b^\top y < 0
 \]
 
-(forme d'alternative pour les inégalités ; les égalités et les bornes se ramènent
-à ce cas). Un tel \(y\) *désigne* les contraintes en conflit.
+(theorem of the alternative for inequalities; equalities and bounds reduce
+to this case). Such a \(y\) *designates* the conflicting constraints.
 
-**Ce que le code calcule.** Problème auxiliaire (phase I) : relâcher chaque
-inégalité \(a_i x \le b_i\) par \(s_i\ge 0\),
+**What the code computes.** Auxiliary problem (phase I): relax each
+inequality \(a_i x \le b_i\) by \(s_i\ge 0\),
 
 \[
 \min\; \sum_i s_i
-\quad\text{s.c.}\quad
+\quad\text{s.t.}\quad
 a_i x - s_i \le b_i.
 \]
 
-Toujours faisable. Si l'optimum est strictement positif, le primal ne l'est pas.
-Les duaux des contraintes relâchées, **négués** (OR-Tools rend le signe opposé à
-la convention \(y\ge 0\) pour une ligne \(\le\)), sont le certificat renvoyé.
-Les coupes \(\ge\) sont relâchées dans l'autre sens ; sans cela une coupe
-impossible rend l'auxiliaire lui-même infaisable, et ses duaux ne veulent plus
-rien dire.
+Always feasible. If the optimum is strictly positive, the primal is not.
+The duals of the relaxed constraints, **negated** (OR-Tools returns the sign opposite to
+the \(y\ge 0\) convention for a \(\le\) row), are the returned certificate.
+The \(\ge\) cuts are relaxed in the other direction; without that, an impossible
+cut makes the auxiliary problem itself infeasible, and its duals no longer mean
+anything.
 
-Le vecteur a une entrée par ligne de \(A\). Croisé avec `origins`, il devient un
-libellé métier : `separation horizontale a|b`, `contour droit b`.
+The vector has one entry per row of \(A\). Crossed with `origins`, it becomes a
+domain label: `separation horizontale a|b`, `contour droit b`.
 
 ## Equalities and exact verification (batch 1.5c)
 
 **Equalities are relaxed too.** The auxiliary problem relaxes each row of \(A_{eq}\)
 (tiling, fusions, frozen contacts) with two slacks. Before, a conflict among those
 equalities left it without an optimum and the certificate empty: 68 of 200 noisy
-benchmark plans were refused with "origines non renseignees". Each equality now carries
+benchmark plans were refused with `origines non renseignees`. Each equality now carries
 a label (`Polytope.origins_eq`), and the refusal names every row with a non-zero weight.
 
 **The certificate is checked, not believed.** Let \(y \ge 0\) be the multipliers of
@@ -97,18 +97,18 @@ outer approximation; an infeasible verdict on a tightened domain said nothing ab
 real problem (8 occurrences on the benchmark). The loop now solves the original domain
 before concluding.
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| `depart=` pour réutiliser le modèle (même polytope, nouvel objectif) | Réutiliser le cache si des *coupes* ont été ajoutées — le système a changé |
-| Lire `Infeasible.origins`, pas seulement le message | Traduire un dual par « ligne 47 » |
-| Distinguer `infaisable` / `non_borne` / `limite` | Fusionner en un booléen « pas optimal » |
+| `start=` to reuse the model (same polytope, new objective) | Reuse the cache if *cuts* were added — the system has changed |
+| Read `Infeasible.origins`, not only the message | Translate a dual as "row 47" |
+| Distinguish `infaisable` / `non_borne` / `limite` | Merge them into one "not optimal" boolean |
 
 ## Source
 
-- Bertsimas & Tsitsiklis (1997), ch. 4 — dualité et Farkas.
-- Schrijver (1986), §7.3 — lemme de Farkas.
-- Kelley (1960) — les coupes invalident la base, d'où le refus de cache.
+- Bertsimas & Tsitsiklis (1997), ch. 4 — duality and Farkas.
+- Schrijver (1986), §7.3 — Farkas' lemma.
+- Kelley (1960) — cuts invalidate the basis, hence the cache refusal.
 
-[Bibliographie](sources.md).
+[Bibliography](sources.md).

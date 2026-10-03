@@ -1,81 +1,81 @@
-# Statistique — prédiction conforme
+# Statistics — conformal prediction
 
-**Code :** `uq.conformal.conformal_quantile`, `uq.conformal.ConformalCalibrator`.
+**Code:** `uq.conformal.conformal_quantile`, `uq.conformal.ConformalCalibrator`.
 
-Cette page est le formulaire du jalon 5. Les duaux, Farkas, \(\delta_\infty\)
-restent des **nombres exacts** : ils n'appartiennent pas ici.
+This page is the formulary of milestone 5. Duals, Farkas, \(\delta_\infty\)
+remain **exact numbers**: they do not belong here.
 
-## Énoncé
+## Statement
 
-Scores de non-conformité normalisés, un par plan de calibration :
+Normalized nonconformity scores, one per calibration plan:
 
 \[
 s_i = \frac{\lvert y_i - \hat y_i\rvert}{\hat\sigma_i},\qquad i=1,\ldots,n.
 \]
 
-Quantile conforme à échantillon fini, niveau \(\alpha\in\,(0,1)\) :
+Finite-sample conformal quantile, level \(\alpha\in\,(0,1)\):
 
 \[
 k = \bigl\lceil (n+1)(1-\alpha)\bigr\rceil,
 \qquad
-\hat q = s_{(k)}\ \text{si}\ k\le n,\ \text{sinon indéfini}.
+\hat q = s_{(k)}\ \text{if}\ k\le n,\ \text{otherwise undefined}.
 \]
 
-Interval annoncé au point \((\hat y, \hat\sigma)\) :
+Interval announced at the point \((\hat y, \hat\sigma)\):
 
 \[
 \bigl[\hat y - \hat q\,\hat\sigma,\ \hat y + \hat q\,\hat\sigma\bigr].
 \]
 
-Sous échangeabilité du point avec le jeu de calibration,
+Under exchangeability of the point with the calibration set,
 
 \[
 \mathbb{P}\bigl(y \in [\hat y - \hat q\,\hat\sigma,\ \hat y + \hat q\,\hat\sigma]\bigr)
  \ge 1-\alpha.
 \]
 
-## Hypothèses
+## Assumptions
 
-- Les \(n+1\) scores (calibration + point à borner) sont échangeables.
+- The \(n+1\) scores (calibration + point to bound) are exchangeable.
 - \(\hat\sigma_i > 0\).
-- Le modèle est **gelé** avant toute lecture du jeu de calibration.
-- \(k\le n\) : sinon le noyau lève plutôt que de publier une borne infinie.
+- The model is **frozen** before any reading of the calibration set.
+- \(k\le n\): otherwise the kernel raises rather than publish an infinite bound.
 
-Les plans produits par un maximiseur de \(\hat y\) violent l'échangeabilité.
-La couverture *sous sélection* se mesure (`uq.drift`) ; elle n'est pas
-garantie par le théorème.
+Plans produced by a maximizer of \(\hat y\) violate exchangeability.
+Coverage *under selection* is measured (`uq.drift`); it is not
+guaranteed by the theorem.
 
-## Dérivation
+## Derivation
 
-La prédiction conforme par rang (Vovk, Gammerman & Shafer, 2005) prend le
-\((1-\alpha)\)-quantile *sur \(n+1\) points*, dont le point de test de rang
-inconnu. Remplacer \(n+1\) par \(n\) (quantile empirique ordinaire) donne des
-intervalles trop étroits : la couverture réelle tombe sous \(1-\alpha\), et
-rien ne le signale. D'où \(k=\lceil(n+1)(1-\alpha)\rceil\) et l'interdiction
-de `np.quantile(s, 0.90)` seul.
+Rank-based conformal prediction (Vovk, Gammerman & Shafer, 2005) takes the
+\((1-\alpha)\)-quantile *over \(n+1\) points*, including the test point of unknown
+rank. Replacing \(n+1\) by \(n\) (ordinary empirical quantile) gives
+intervals that are too narrow: the actual coverage falls below \(1-\alpha\), and
+nothing reports it. Hence \(k=\lceil(n+1)(1-\alpha)\rceil\) and the ban
+on `np.quantile(s, 0.90)` alone.
 
 ## Code
 
-| Symbole | Fonction |
+| Symbol | Function |
 |---|---|
 | \(s_{(k)}\) | `conformal_quantile` |
 | \(\hat q\) | `ConformalCalibrator.fit` / `.q` |
-| intervalle | `ConformalCalibrator.borne` → `PerformanceBound` |
+| interval | `ConformalCalibrator.borne` → `PerformanceBound` |
 | CRPS | `uq.reliability.crps` |
 | \(J=\hat\mu-\hat q\,\hat\sigma\) | `light.objective.Daylight` |
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Calibrer **après** le gel, sur un jeu jamais vu à l'entraînement | Lire `calibration/` pendant `fit` des poids |
-| Afficher `n_calibration` à côté de la borne | Publier \(\hat\sigma\) du réseau comme si c'était \(1-\alpha\) |
-| Un calibrateur par indicateur, ASE en `<=` | Réutiliser le \(q̂\) du sDA pour l'ASE |
-| `NOT EVALUABLE` si le test d'échangeabilité rejette | Élargir silencieusement l'intervalle |
+| Calibrate **after** freezing, on a set never seen in training | Read `calibration/` during the `fit` of the weights |
+| Display `n_calibration` next to the bound | Publish the network's \(\hat\sigma\) as if it were \(1-\alpha\) |
+| One calibrator per indicator, ASE in `<=` | Reuse the sDA's \(q̂\) for the ASE |
+| `NOT EVALUABLE` if the exchangeability test rejects | Silently widen the interval |
 
 ## Source
 
 Vovk, Gammerman & Shafer (2005), *Algorithmic Learning in a Random World*.
-[Bibliographie](sources.md) n° 12.
+[Bibliography](sources.md) no. 12.
 
-Oracle de vérité du jalon : [split-flux](split-flux.md), pas un sDA LM-83.
+Truth oracle of the milestone: [split-flux](split-flux.md), not an LM-83 sDA.

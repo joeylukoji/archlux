@@ -1,11 +1,11 @@
-# Substitut analytique
+# Analytic surrogate
 
-**Code :** `light.analytic.AnalyticSurrogate`.
+**Code:** `light.analytic.AnalyticSurrogate`.
 
-## Énoncé
+## Statement
 
-Pour chaque pièce, le vecteur \((x,y,w,h)\) et l'azimut \(\theta\) (via
-[`encode_orientation`](circulaire.md), jamais le degré brut) donnent un score
+For each room, the vector \((x,y,w,h)\) and the azimuth \(\theta\) (through
+[`encode_orientation`](circular.md), never the raw degree) give a score
 
 \[
 f_i=L\cdot\min(P,D)\cdot\exp(\kappa\,s),\qquad
@@ -13,49 +13,49 @@ L=w\cos^2\theta+h\sin^2\theta,\quad
 P=w\sin^2\theta+h\cos^2\theta,
 \]
 
-où \(D=2{,}5\times 2{,}15\times F_{\mathrm{secteur}}\) est la profondeur utile
-modulée par huit secteurs, et \(s\) la coordonnée vers le sud géographique :
+where \(D=2.5\times 2.15\times F_{\mathrm{sector}}\) is the useful depth
+modulated by eight sectors, and \(s\) the coordinate towards geographic south:
 
 \[
 s=-x\sin\theta-y\cos\theta.
 \]
 
-Le substitut rend \(\sum_i f_i\) (sDA, UDI, vue) ou son opposé (ASE).
+The surrogate returns \(\sum_i f_i\) (sDA, UDI, view) or its opposite (ASE).
 
-## Hypothèses
+## Assumptions
 
-- Le vecteur suit le contrat \((x,y,w,h)\) par pièce, même ordre que le polytope.
-- La règle \(2{,}5\times\) linteau est **empirique** (CIBSE LG10) ; incertitude
-  typique \(\sim 30\,\%\). Ce n'est **pas** une garantie de performance.
-- \(\kappa=0{,}15\,\mathrm{m}^{-1}\) casse l'invariance par translation : sans
-  lui, un facteur d'orientation *global* ne changerait pas l'argmax.
+- The vector follows the \((x,y,w,h)\) per-room contract, same order as the polytope.
+- The \(2.5\times\) head-height rule is **empirical** (CIBSE LG10); typical
+  uncertainty \(\sim 30\,\%\). It is **not** a performance guarantee.
+- \(\kappa=0.15\,\mathrm{m}^{-1}\) breaks translation invariance: without
+  it, a *global* orientation factor would not change the argmax.
 
-## Dérivation
+## Derivation
 
-La façade au sud d'un rectangle aligné vaut \(w\) si \(+y\) est le nord
-(\(\theta=0\)) et \(h\) si le bâtiment a tourné de \(90^\circ\). D'où
-\(L=w\cos^2\theta+h\sin^2\theta\). La profondeur associée est l'autre
-dimension. \(\min(P,D)\) est la règle de profondeur utile : au-delà de \(D\),
-approfondir n'ajoute plus de lumière. Le sous-gradient en \(P=D\) vaut \(\{0,1\}\).
+The south facade of an aligned rectangle is \(w\) if \(+y\) is north
+(\(\theta=0\)) and \(h\) if the building has turned by \(90^\circ\). Hence
+\(L=w\cos^2\theta+h\sin^2\theta\). The associated depth is the other
+dimension. \(\min(P,D)\) is the useful-depth rule: beyond \(D\),
+going deeper adds no more light. The subgradient at \(P=D\) is \(\{0,1\}\).
 
-Le gradient se calcule par règle du produit ; un test le compare aux
-différences finies centrées.
+The gradient is computed by the product rule; a test compares it with
+centred finite differences.
 
 ## Code
 
-`AnalyticSurrogate.evaluate`, `.gradient`, `.incertitude`.
-Constantes : `FACTEUR_PROFONDEUR`, `HAUTEUR_LINTEAU`, `KAPPA_SUD`,
-`FACTEURS_SECTEUR` — `ClassVar`, jamais de magie dans le corps.
+`AnalyticSurrogate.evaluate`, `.gradient`, `.uncertainty`.
+Constants: `FACTEUR_PROFONDEUR`, `HAUTEUR_LINTEAU`, `KAPPA_SUD`,
+`FACTEURS_SECTEUR` — `ClassVar`, never magic numbers in the body.
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| Valider le flux Frank-Wolfe avant tout apprentissage | Publier le score comme un sDA mesuré |
-| Vérifier que nord et sud *déplacent* le plan | Encoder \(\theta\) en réel dans \([0,360]\) |
+| Validate the Frank-Wolfe flow before any learning | Publish the score as a measured sDA |
+| Check that north and south *move* the plan | Encode \(\theta\) as a real number in \([0,360]\) |
 
 ## Source
 
-Règle de profondeur utile : CIBSE, *Lighting Guide 10 : Daylighting — a guide
-for designers*, Londres. Harmoniques : [circulaire](circulaire.md).
-Le protocole vectoriel : `ARCHITECTURE.md` §10.
+Useful-depth rule: CIBSE, *Lighting Guide 10: Daylighting — a guide
+for designers*, London. Harmonics: [circular](circular.md).
+The vector protocol: `ARCHITECTURE.md` §10.

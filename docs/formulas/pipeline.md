@@ -1,66 +1,66 @@
-# Pipeline de la légalisation classique
+# Pipeline of the classic legalization
 
-**Code :** `api.legalize` (`objective is None`).
+**Code:** `api.legalize` (`objective is None`).
 
-## Énoncé
+## Statement
 
 \[
 \min_{x,e}\; \sum_i e_i
-\quad\text{s.c.}\quad
+\quad\text{s.t.}\quad
 x\in P,\;
 e\ge \lvert x-\hat x\rvert,\;
 (w_p,h_p)\in K_p,
 \]
 
-où \(P\) est le [polytope d'ordre](polytope-separe.md), \(K_p\) le
-[super-niveau de surface](coupes-surface.md) de la pièce \(p\), et \(\hat x\) le
-plan proposé [vectorisé](epigraphe-l1.md).
+where \(P\) is the [order polytope](separated-polytope.md), \(K_p\) the
+[area superlevel set](area-cuts.md) of room \(p\), and \(\hat x\) the
+[vectorized](l1-epigraph.md) proposed plan.
 
-Puis : dévectoriser, [vérifier exactement](preuve-exacte.md), attacher le
-`Certificate`. Si la preuve est fausse → `InvariantViolation` (bogue interne, jamais
-silencieux). Si le LP est infaisable → `Infeasible` avec
+Then: devectorize, [verify exactly](exact-proof.md), attach the
+`Certificate`. If the proof fails → `InvariantViolation` (internal bug, never
+silent). If the LP is infeasible → `Infeasible` with
 [Farkas](farkas.md).
 
-## Chaîne, une ligne par étape
+## Chain, one line per step
 
-1. `deduce_order` — le générateur décide l'ordre ([graphe](ordre-relatif.md)).
+1. `deduce_order` — the generator decides the order ([graph](relative-order.md)).
 2. `build_polytope` — \(Ax\le b\).
 3. `extend_l1_slack` — \((x,e)\in\mathbb{R}^{2n}\).
 4. `gradient_distance` — \(c=(0_n,1_n)\).
-5. `solve_with_areas` — GLOP + Kelley + bornes.
-6. `devectorize` — murs et baies suivent (baie relative au mur).
+5. `solve_with_areas` — GLOP + Kelley + bounds.
+6. `devectorize` — walls and glazing follow (glazing relative to its wall).
 7. `verify_exactly(..., reference=plan)` — \(\delta_\infty\).
-8. `Certificate(geometrie=..., performance=None, duaux=...)`.
+8. `Certificate(geometry=..., performance=None, duals=...)`.
 
-`performance is None` : en mode classique il n'y a **rien de probabiliste** à
-affirmer.
+`performance is None`: in classic mode there is **nothing probabilistic** to
+claim.
 
-## Branche performantielle (`objective=Substitut`)
+## Performance branch (`objective=Surrogate`)
 
-Après l'étape 8, le point L1 devient \(x_0\). Les contacts saturés passent
-en égalités (`freeze_contacts`) : Frank-Wolfe reste un pavage. Then the minimum areas
+After step 8, the L1 point becomes \(x_0\). Saturated contacts become
+equalities (`freeze_contacts`): Frank-Wolfe stays a tiling. Then the minimum areas
 are replaced by an **inner** polyhedral approximation
-(`inner_area_constraints`, see [coupes de surface](coupes-surface.md)): every point of
+(`inner_area_constraints`, see [area cuts](area-cuts.md)): every point of
 the domain, hence every iterate, keeps every minimum area, and no tangent cut is needed.
-Puis [Frank-Wolfe](frank-wolfe.md) maximise le substitut, **même oracle LP**,
-`depart=x` à chaque tour. La sortie est revérifiée exactement ; un itéré
-invalide lève `InvariantViolation` — pas de repli silencieux vers L1.
+Then [Frank-Wolfe](frank-wolfe.md) maximizes the surrogate, **same LP oracle**,
+`start=x` at every round. The output is verified exactly again; an invalid
+iterate raises `InvariantViolation` — no silent fallback to L1.
 With `legalize(..., calibration=...)`, the surrogate's prediction at the returned
 plan is bounded by `certify.bound.bound_selected_plan`, in the **selected** regime:
 the optimizer chose the plan, so the nominal coverage is not guaranteed and the report
-says so. The calibration is checked before any solving. Sans calibration,
-`performance is None` et le rapport écrit `NOT EVALUABLE`.
+says so. The calibration is checked before any solving. Without calibration,
+`performance is None` and the report writes `NOT EVALUABLE`.
 
-## Cas d'utilisation
+## Use cases
 
-| Faire | Ne pas faire |
+| Do | Do not |
 |---|---|
-| `legalize(plan, ctx)` sur un pavage presque valide | Attendre 100 % de succès sur `plans_quelconques` × enveloppe petite : le programme peut ne pas tenir → `Infeasible` |
-| Lire `q.certificat.geometry.valid` | Agréger preuve et prédiction en un score |
-| Importer `light.protocol.Surrogate` seulement | Importer `bench` depuis `api` (interdit par `tests/test_dependances.py`) |
+| `legalize(plan, ctx)` on an almost valid tiling | Expect 100 % success on `plans_quelconques` × a small envelope: the room program may not fit → `Infeasible` |
+| Read `q.certificate.geometry.valid` | Aggregate proof and prediction into one score |
+| Import only `light.protocol.Surrogate` | Import `bench` from `api` (forbidden by `tests/test_dependances.py`) |
 
-Budget `ARCHITECTURE.md` §9 : \(< 20\,\mathrm{ms}\) pour 15 pièces.
+Budget of `ARCHITECTURE.md` §9: \(< 20\,\mathrm{ms}\) for 15 rooms.
 
 ## Source
 
-Composition des fiches de ce dossier ; pas un théorème séparé.
+Composition of the pages of this folder; not a separate theorem.
