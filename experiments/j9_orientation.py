@@ -22,7 +22,7 @@ rang **s'inverse** (`-0,342`). Voir `results/j7_sd_par_piece.md`.
 Ces variantes sont donc « ce que le substitut croit », pas « ce que la lumiere
 fait ». Ce qui est garanti ici est **geometrique** : chaque variante pave son
 contour, et le certificat le prouve. La garantie lumineuse, elle, porte sur
-l'oracle gele et non sur un sDA LM-83 (`docs/limites.md`).
+l'oracle gele et non sur un sDA LM-83 (`docs/limitations.md`).
 
 Usage : j9_orientation.py [plans.jsonl] [n_plans] [budget_m]
 """

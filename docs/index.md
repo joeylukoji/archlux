@@ -1,17 +1,18 @@
 # archlux
 
-**Corriger un plan généré vers la validité géométrique en préservant sa performance
-lumineuse. La géométrie est garantie ; la performance est bornée.**
+**Repair a generated plan towards geometric validity while preserving its daylight
+performance. The geometry is guaranteed; the performance is bounded.**
 
-Un générateur a rendu ce plan : le séjour déborde de 5 cm sur la chambre, et 3 cm de
-vide séparent la chambre de la salle de bain. `legalize` le corrige et prouve le résultat.
+A generator produced this plan: the living room overlaps the bedroom by 5 cm, and a
+3 cm gap separates the bedroom from the bathroom. `legalize` repairs it and proves the
+result.
 
 ```python
 from pathlib import Path
 
 import archlux as ax
 
-Path("sortie_generateur.json").write_text(
+Path("generator_output.json").write_text(
     """{
       "schema": "2",
       "outline": [[0, 0], [12, 0], [12, 9], [0, 9]],
@@ -25,18 +26,18 @@ Path("sortie_generateur.json").write_text(
     encoding="utf-8",
 )
 
-plan = ax.Plan.from_json("sortie_generateur.json")
+plan = ax.Plan.from_json("generator_output.json")
 ctx = ax.Context(
     structure=ax.Structure(load_bearing_walls=()),
     orientation=ax.Orientation(deg=0.0),
     outline=plan.outline,
     regulation=ax.Regulation(min_areas=(("bathroom", 5.0),), min_width=1.0),
 )
-q = ax.legalize(plan, ctx, tiling=True)  # tiling : les pièces couvrent tout le contour
+q = ax.legalize(plan, ctx, tiling=True)  # tiling: the rooms cover the whole outline
 print(q.certificate.report())
 ```
 
-Le plus rapide pour commencer : la [galerie d'exemples](galerie/01-corriger-un-plan.md).
-Le plus important à comprendre : [les deux garanties](concepts/deux-garanties.md).
-Pour refaire les calculs : le [formulaire](formules/index.md) (énoncé, dérivation,
-source, cas d'utilisation).
+The quickest way to start: the [example gallery](gallery/01-repair-a-plan.md).
+The most important thing to understand: [the two guarantees](concepts/two-guarantees.md).
+To redo the computations: the [formula book](formulas/index.md) (statement, derivation,
+source, use cases).

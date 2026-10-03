@@ -9,7 +9,7 @@ Usage (from the repository root)::
 
 ``make results``, ``make check-results`` and ``make results-corpus`` call it. The
 synthetic experiments take a few minutes (IFC validation: about 4); the corpora are not
-redistributed (``docs/donnees/``). Every script has a fixed seed and writes no timing, so
+redistributed (``docs/data/``). Every script has a fixed seed and writes no timing, so
 its output is byte-stable on one platform; ``SHA256SUMS`` records it.
 """
 

@@ -1,22 +1,22 @@
-# DOCUMENTATION — conventions et obligations
+# DOCUMENTATION — conventions and obligations
 
-> Contexte pour agents de code. **À lire avec `ARCHITECTURE.md`.**
-> La documentation fait partie de la définition de « terminé ». Une fonction publique
-> non documentée est une fonction non terminée.
+> Context for coding agents. **To be read with `ARCHITECTURE.md`.**
+> Documentation is part of the definition of "done". An undocumented public function
+> is an unfinished function.
 
 ---
 
-## 1. Principe
+## 1. Principle
 
-**On écrit la documentation dans l'ordre inverse de l'envie.**
+**Documentation is written in the reverse order of desire.**
 
-| Priorité | Niveau | Pourquoi |
+| Priority | Level | Why |
 |:--:|---|---|
-| **1** | **Galerie d'exemples** | Premier facteur d'adoption. Un utilisateur regarde un exemple, se dit « c'est ce qu'il me faut », installe |
-| 2 | Tutoriels | Parcours guidés pour les 3–4 usages principaux |
-| 3 | Référence d'API | Nécessaire, mais personne ne l'ouvre pour découvrir un outil |
+| **1** | **Example gallery** | First driver of adoption. A user looks at an example, thinks "that is what I need", installs |
+| 2 | Tutorials | Guided paths for the 3–4 main uses |
+| 3 | API reference | Necessary, but nobody opens it to discover a tool |
 
-L'envie naturelle est d'écrire la référence d'abord parce qu'elle se génère automatiquement. **C'est l'ordre le moins utile.**
+The natural desire is to write the reference first because it is generated automatically. **It is the least useful order.**
 
 ---
 
@@ -24,227 +24,227 @@ L'envie naturelle est d'écrire la référence d'abord parce qu'elle se génère
 
 ```
 docs/
-├── index.md                 # la phrase de positionnement + exemple 5 lignes
+├── index.md                 # the positioning sentence + 5-line example
 ├── installation.md
-├── galerie/                 # PRIORITÉ 1 — un fichier par exemple, autonome
-│   ├── 01-corriger-un-plan.md
-│   ├── 02-comparer-deux-methodes.md
-│   ├── 03-detecter-une-infaisabilite.md
-│   ├── 04-lire-un-certificat.md
-│   └── 05-diagnostic-dual.md
-├── tutoriels/
-│   ├── premiers-pas.md
-│   ├── legalisation-performantielle.md
-│   └── calibrer-un-substitut.md
-├── concepts/                # le POURQUOI, pas le comment
-│   ├── deux-garanties.md
+├── gallery/                 # PRIORITY 1 — one file per example, self-contained
+│   ├── 01-repair-a-plan.md
+│   ├── 02-compare-two-methods.md
+│   ├── 03-detect-infeasibility.md
+│   ├── 04-read-a-certificate.md
+│   └── 05-dual-diagnostics.md
+├── tutorials/
+│   ├── getting-started.md
+│   ├── performance-legalization.md
+│   └── calibrate-a-surrogate.md
+├── concepts/                # the WHY, not the how
+│   ├── two-guarantees.md
 │   ├── polytope.md
-│   ├── oracle-partage.md
-│   └── prediction-conforme.md
-├── formules/                # énoncé, dérivation, source, cas d'usage (jalon 2+)
+│   ├── shared-oracle.md
+│   └── conformal-prediction.md
+├── formulas/                # statement, derivation, source, use case (milestone 2+)
 │   ├── index.md
 │   └── sources.md
-├── reference/               # généré depuis les docstrings
-└── limites.md               # ce que le système NE fait PAS
+├── reference/               # generated from the docstrings
+└── limitations.md           # what the system does NOT do
 ```
 
-**`concepts/deux-garanties.md` est la page la plus importante du site.** Elle explique
-qu'un certificat porte une preuve et une prédiction, de natures logiquement différentes.
-Tout le reste en découle.
+**`concepts/two-guarantees.md` is the most important page of the site.** It explains
+that a certificate carries a proof and a prediction, of logically different kinds.
+Everything else follows from it.
 
-**`limites.md` est obligatoire, pas optionnel.** Un système qui produit des chiffres
-réglementaires doit dire explicitement ce qu'il ne vérifie pas.
+**`limitations.md` is mandatory, not optional.** A system that produces regulatory
+numbers must say explicitly what it does not check.
 
 ---
 
-## 3. Docstrings — le gabarit obligatoire
+## 3. Docstrings — the mandatory template
 
-Style **NumPy**. Toute fonction publique doit avoir les sections marquées ✱.
+**NumPy** style. Every public function must have the sections marked ✱.
 
 ```python
 def legalize(plan: Plan, ctx: Context, *, objective=None,
              budget: float | None = None) -> Plan:
-    """Corrige un plan vers le plan valide le plus proche.          ✱ résumé 1 ligne
+    """Repair a plan towards the closest valid plan.                 ✱ 1-line summary
 
-    Avec ``objective=None``, minimise le déplacement des murs        ✱ description
-    (légalisation classique). Avec un objectif, maximise celui-ci
-    sous contrainte de validité et de budget de déplacement.
+    With ``objective=None``, minimizes the displacement of the walls ✱ description
+    (classic legalization). With an objective, maximizes it
+    under the validity and displacement-budget constraints.
 
     Parameters                                                       ✱
     ----------
     plan : Plan
-        Plan proposé, éventuellement invalide.
-    ctx : Contexte
-        Structure porteuse, orientation, contour, référentiel.
-    objective : Substitut | None, optional
-        Objectif à maximiser. ``None`` = proximité géométrique.
+        Proposed plan, possibly invalid.
+    ctx : Context
+        Load-bearing structure, orientation, outline, regulation.
+    objective : Surrogate | None, optional
+        Objective to maximize. ``None`` = geometric proximity.
     budget : float | None, optional
-        Déplacement maximal autorisé, en mètres.
+        Maximum allowed displacement, in metres.
 
     Returns                                                          ✱
     -------
     Plan
-        Plan valide portant son ``certificate``.
+        Valid plan carrying its ``certificate``.
 
     Raises                                                           ✱
     ------
     Infeasible
-        Le programme ne tient pas dans l'enveloppe. L'exception porte
-        ``certificate`` : les contraintes en conflit.
+        The program does not fit in the envelope. The exception carries
+        ``certificate``: the conflicting constraints.
     InvariantViolation
-        Le solveur a produit une sortie invalide (bogue interne).
+        The solver produced an invalid output (internal bug).
 
-    Guarantees                                                       ✱ SPÉCIFIQUE PROJET
+    Guarantees                                                       ✱ PROJECT-SPECIFIC
     ----------
-    - Géométrique : **exacte**. ``result.certificate.geometry.valid``
-      est vérifié indépendamment du solveur avant retour.
-    - Performance : **probabiliste** si ``objective`` est fourni.
-      Couverture ≥ 1−α, sous hypothèse d'échangeabilité avec le jeu
-      de calibration.
+    - Geometric: **exact**. ``result.certificate.geometry.valid``
+      is checked independently of the solver before returning.
+    - Performance: **probabilistic** if ``objective`` is given.
+      Coverage ≥ 1−α, under the assumption of exchangeability with the
+      calibration set.
 
-    Complexity                                                       ✱ SPÉCIFIQUE PROJET
+    Complexity                                                       ✱ PROJECT-SPECIFIC
     ----------
-    O(n²) contraintes, un appel LP. ~15 ms pour n=15 pièces.
+    O(n²) constraints, one LP call. ~15 ms for n=15 rooms.
 
     Examples                                                         ✱
     --------
-    >>> plan = Plan.from_json("propose.json")
+    >>> plan = Plan.from_json("proposed.json")
     >>> q = legalize(plan, ctx)
-    >>> q.certificat.geometrie.valide
+    >>> q.certificate.geometry.valid
     True
     """
 ```
 
-### Les deux sections propres à ce projet
+### The two sections specific to this project
 
-**`Guarantees`** — obligatoire sur toute fonction qui rend un `Plan` ou un `Certificate`.
-Elle dit **de quelle nature** est chaque garantie. C'est la thèse du projet inscrite
-dans la documentation, au même titre que dans les types.
+**`Guarantees`** — mandatory on every function that returns a `Plan` or a `Certificate`.
+It says **of what kind** each guarantee is. It is the thesis of the project written
+into the documentation, just as into the types.
 
-**`Complexity`** — obligatoire sur `geom`, `lmo`, `solve`. Le projet vend de la vitesse ;
-elle doit être documentée, pas supposée.
-
----
-
-## 4. Règles de rédaction
-
-- [ ] Une fonction publique sans docstring = **échec CI**
-- [ ] Le résumé tient sur **une ligne**, à l'impératif ou à l'indicatif présent
-- [ ] Tout `raise` documenté dans `Raises`
-- [ ] Tout paramètre `seed` documenté avec sa portée exacte
-- [ ] Tout exemple est un **doctest exécutable**, pas du pseudo-code
-- [ ] Les fonctions privées (`_nom`) : une ligne suffit
-- [ ] **Jamais** de garantie affirmée sans dire de quelle nature elle est
+**`Complexity`** — mandatory on `geom`, `lmo`, `solve`. The project sells speed;
+it must be documented, not assumed.
 
 ---
 
-## 5. Galerie — le gabarit d'un exemple
+## 4. Writing rules
 
-Chaque fichier de `docs/galerie/` est **autonome** et tient sur un écran.
+- [ ] A public function without a docstring = **CI failure**
+- [ ] The summary fits on **one line**, in the imperative or present indicative
+- [ ] Every `raise` documented in `Raises`
+- [ ] Every `seed` parameter documented with its exact scope
+- [ ] Every example is an **executable doctest**, not pseudo-code
+- [ ] Private functions (`_name`): one line is enough
+- [ ] **Never** a guarantee asserted without saying of what kind it is
+
+---
+
+## 5. Gallery — the template of an example
+
+Each file of `docs/gallery/` is **self-contained** and fits on one screen.
 
 ````markdown
-# Corriger un plan généré
+# Repair a generated plan
 
-**Problème.** Le modèle a produit un plan où deux cloisons se chevauchent de 3 cm
-et où la salle de bains fait 4,6 m² au lieu des 5 m² réglementaires.
+**Problem.** The model produced a plan where two partitions overlap by 3 cm
+and where the bathroom is 4.6 m² instead of the regulatory 5 m².
 
 **Solution.**
 
 ```python
 import archlux as ax
 
-plan = ax.Plan.from_json("sortie_generateur.json")
-ctx  = ax.Contexte(structure=..., orientation=ax.Orientation(deg=12), ...)
+plan = ax.Plan.from_json("generator_output.json")
+ctx  = ax.Context(structure=..., orientation=ax.Orientation(deg=12), ...)
 
 q = ax.legalize(plan, ctx)
-print(q.certificat.rapport())
+print(q.certificate.report())
 ```
 
-**Résultat.**
+**Result.**
 
 ```
-GEOMETRIE                                       [EXACT]
-  Chevauchement          aucun         verifie
-  Surfaces minimales     6/6           verifie
-  Deplacement maximal    0,21 m
+GEOMETRY                                        [EXACT]
+  Overlap                none          verified
+  Minimum areas          6/6           verified
+  Maximum displacement   0.21 m
 ```
 
-**Ce qu'il faut retenir.** La disposition proposée est conservée ; seules les
-dimensions sont ajustées. Déplacement maximal : 21 cm.
+**What to remember.** The proposed layout is kept; only the
+dimensions are adjusted. Maximum displacement: 21 cm.
 
-**Voir aussi :** [Lire un certificat](04-lire-un-certificat.md)
+**See also:** [Read a certificate](04-read-a-certificate.md)
 ````
 
-**Structure imposée :** Problème → Solution → Résultat → Ce qu'il faut retenir → Voir aussi.
-Un exemple qui n'énonce pas d'abord un problème concret ne sert à rien.
+**Imposed structure:** Problem → Solution → Result → What to remember → See also.
+An example that does not first state a concrete problem is useless.
 
 ---
 
-## 6. Vérification automatique
+## 6. Automatic checking
 
 ```yaml
-# .github/workflows/ci.yml — extrait
-- run: uv run pytest --doctest-modules src/archlux    # les exemples s'exécutent
+# .github/workflows/ci.yml — excerpt
+- run: uv run pytest --doctest-modules src/archlux    # the examples run
 - run: uv run ruff check --select D src/              # pydocstyle
-- run: uv run interrogate -f 95 src/archlux           # couverture docstrings
-- run: uv run mkdocs build --strict                   # liens morts = échec
+- run: uv run interrogate -f 95 src/archlux           # docstring coverage
+- run: uv run mkdocs build --strict                   # dead links = failure
 ```
 
-- [ ] Les doctests s'exécutent en CI — un exemple faux casse la construction
-- [ ] Couverture de docstrings ≥ 95 % sur `src/`
-- [ ] `mkdocs build --strict` : tout lien mort échoue
-- [ ] Vérifier que la galerie tourne sur un plan réel, pas fictif
+- [ ] Doctests run in CI — a wrong example breaks the build
+- [ ] Docstring coverage ≥ 95 % on `src/`
+- [ ] `mkdocs build --strict`: every dead link fails
+- [ ] Check that the gallery runs on a real plan, not a fictitious one
 
 ---
 
-## 7. Ce qui se documente à chaque jalon
+## 7. What is documented at each milestone
 
-| Jalon | Documentation à produire |
+| Milestone | Documentation to produce |
 |---|---|
-| 1 | `README.md`, `installation.md`, schéma JSON |
-| **2** | **Galerie 01 et 03, `concepts/polytope.md`, `formules/`, docstrings `geom`/`lmo`/`certify`** |
-| 3 | Galerie 02, `concepts/oracle-partage.md`, tutoriel légalisation performantielle |
-| 4 | Tutoriel substitut, doc du protocole `Surrogate`, **doc de `validate_gradient`** |
-| 5 | Galerie 04 et 05, `concepts/deux-garanties.md`, `concepts/prediction-conforme.md` |
-| 6 | `limites.md`, guide de contribution, notes de version 1.0 |
+| 1 | `README.md`, `installation.md`, JSON schema |
+| **2** | **Gallery 01 and 03, `concepts/polytope.md`, `formulas/`, docstrings of `geom`/`lmo`/`certify`** |
+| 3 | Gallery 02, `concepts/shared-oracle.md`, performance legalization tutorial |
+| 4 | Surrogate tutorial, doc of the `Surrogate` protocol, **doc of `validate_gradient`** |
+| 5 | Gallery 04 and 05, `concepts/two-guarantees.md`, `concepts/conformal-prediction.md` |
+| 6 | `limitations.md`, contribution guide, 1.0 release notes |
 
-**Règle : la documentation d'un jalon est écrite pendant le jalon, pas après.**
-Un jalon dont la doc manque n'est pas terminé.
+**Rule: the documentation of a milestone is written during the milestone, not after.**
+A milestone whose docs are missing is not finished.
 
 ---
 
 ## 8. CHANGELOG
 
-Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement sémantique.
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format, semantic versioning.
 
 ```markdown
 ## [0.2.0] — 2026-11-14
 
-### Ajouté
-- `light.AnalyticSurrogate` : modèle de lumière en formes fermées, sans apprentissage.
-- `solve.frank_wolfe` avec pas d'écartement.
+### Added
+- `light.AnalyticSurrogate`: closed-form daylight model, without learning.
+- `solve.frank_wolfe` with away steps.
 
-### Modifié
-- `lmo.solver.solve` accepte `depart=` pour le démarrage à chaud (×3 sur le temps).
+### Changed
+- `lmo.solver.solve` accepts `start=` for warm start (×3 on the time).
 
-### Corrigé
-- Les coupes de surface pouvaient s'accumuler sans borne (#42).
+### Fixed
+- Area cuts could accumulate without bound (#42).
 ```
 
-**Règle propre au projet :** tout changement de comportement de l'oracle ou du
-certificat est une **version majeure**. Un certificat produit en `1.2.0` doit rester
-reproductible en `1.2.x`.
+**Project-specific rule:** any change of behaviour of the oracle or of the
+certificate is a **major version**. A certificate produced in `1.2.0` must stay
+reproducible in `1.2.x`.
 
 ---
 
 ## 9. Anti-patterns
 
-| Anti-pattern | Pourquoi |
+| Anti-pattern | Why |
 |---|---|
-| Écrire la référence d'API en premier | Ordre le moins utile pour l'adoption |
-| Exemples en pseudo-code | Ils pourrissent sans que personne ne s'en aperçoive |
-| Garantie affirmée sans sa nature | Confond preuve et prédiction — faute centrale du projet |
-| Documentation reportée « à la fin » | Elle est alors écrite dans l'urgence et ne sert personne |
-| Pas de page `limites.md` | Un outil réglementaire qui ne dit pas ce qu'il ne vérifie pas est dangereux |
-| Doctests non exécutés en CI | Ils deviennent faux en trois semaines |
-| Exemples sur des plans fictifs | Ne prouvent rien, et cachent les cas réels difficiles |
+| Writing the API reference first | Least useful order for adoption |
+| Pseudo-code examples | They rot without anyone noticing |
+| Guarantee asserted without its kind | Confuses proof and prediction — the central mistake of the project |
+| Documentation postponed "to the end" | It is then written in a rush and serves nobody |
+| No `limitations.md` page | A regulatory tool that does not say what it does not check is dangerous |
+| Doctests not run in CI | They become wrong in three weeks |
+| Examples on fictitious plans | They prove nothing, and hide the hard real cases |

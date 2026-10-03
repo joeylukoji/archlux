@@ -2,7 +2,7 @@
 
 A valid plan must come out unchanged (the L1 optimum is then e = 0). Usage:
 python experiments/j7_msd_idempotence.py MSD_CSV [N_APARTMENTS] [OUT_DIR]. MSD is not
-redistributed (docs/donnees/msd.md). Byte-stable: no timing (§9 budgets).
+redistributed (docs/data/msd.md). Byte-stable: no timing (§9 budgets).
 """
 
 import sys

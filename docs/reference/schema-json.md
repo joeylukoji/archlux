@@ -12,8 +12,7 @@ and room types) are still read: see [Reading schema v1](#reading-schema-v1).
 - **The version is mandatory.** A file whose `schema` is neither `"2"` nor `"1"` is refused
   with `InvariantViolation`: better to refuse loudly than to guess the format, because a
   misread plan produces a false certificate.
-- **Writing is deterministic.** Sorted keys, UTF-8, indentation 2, line ending `
-`. Two
+- **Writing is deterministic.** Sorted keys, UTF-8, indentation 2, line ending `\n`. Two
   writes of the same plan give the same bytes; without that, the fingerprint recorded in a
   manifest identifies nothing.
 - **No absolute position of an opening.** An opening is described by `wall_id`, `s` and
@@ -68,7 +67,7 @@ minimum area from a `Regulation` that does not list it.
 ### The certificate
 
 Two guarantees of different kinds, separated by construction; see
-[The two guarantees](../concepts/deux-garanties.md).
+[The two guarantees](../concepts/two-guarantees.md).
 
 | Field | Kind | Meaning |
 |---|---|---|
