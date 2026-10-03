@@ -1,0 +1,61 @@
+# Formules des jalons 2 et 3
+
+Ce dossier est le **formulaire** : chaque résultat utilisé dans le code y est énoncé,
+dérivé, sourcé, et rattaché à une fonction. Un chercheur doit pouvoir refaire le calcul
+sur papier sans ouvrir l'implémentation.
+
+Les pages `concepts/` expliquent *pourquoi* l'architecture est ainsi.
+Les pages `formulas/` expliquent *quelle égalité* est codée, et d'où elle vient.
+
+## Carte jalon 2 → pages
+
+| Étape | Module | Page | Garantie |
+|---|---|---|---|
+| Ordre relatif | `geom.graph` | [Ordre et graphe](relative-order.md) | exacte |
+| Polytope | `geom.polytope` | [Séparations linéaires](separated-polytope.md) | exacte |
+| Objectif L1 | `geom.polytope`, `api` | [Épigraphe L1](l1-epigraph.md) | exacte (reformulation) |
+| Surfaces | `lmo.cuts` | [Coupes de surface](area-cuts.md) | exacte (appui convexe) |
+| Oracle LP | `lmo.solver` | [Simplexe, duaux, Farkas](farkas.md) | exacte (LP) |
+| Preuve | `certify.proof` | [Vérification exacte](exact-proof.md) | exacte (inspection) |
+| Chaîne | `api.legalize` | [Pipeline](pipeline.md) | exacte en sortie |
+| Orientation | `orient.circular` | [Statistiques circulaires](circular.md) | exacte (trigo) |
+| Substitut J3 | `light.analytic` | [Substitut analytique](analytic-surrogate.md) | **sans garantie** |
+| Split-flux J4 | `light.split_flux` | [Facteur de lumière du jour](split-flux.md) | **sans garantie** (pas un sDA) |
+| Rectilinéaire J6 | `geom.rectilinear` | [Décomposition L](rectilinear.md) | exacte (partition + fusions) |
+| Actif J6 | `active` | [Apprentissage actif](active-learning.md) | budget de sims |
+| Export J6 | `export` | [IFC / DXF / Wilson](bim-export.md) | exacte (pathologies) ; Wilson |
+| Banc J6 | `bench` | [Banc d'essai](benchmark.md) | trace + stats |
+| Jetons J4 | `light.tokens` | [Jetons](tokens.md) | continu (anti-image) |
+| Substitut appris J4 | `light.base` | — (perceptron `numpy`) | **sans garantie** ; cible = résidu analytique |
+| Gradient J4 | `light.validation` | [Validation du gradient](gradient-validation.md) | accord de signe |
+| Frank-Wolfe | `solve.frank_wolfe` | [Frank-Wolfe](frank-wolfe.md) | itérés exacts ; gap d'opt. |
+| Statistique J5 | `uq.conformal` | [Prédiction conforme](statistics.md) | probabiliste |
+
+## Comment lire une fiche
+
+Chaque fiche a la même structure :
+
+1. **Énoncé** — la formule, seule.
+2. **Hypothèses** — ce qui doit être vrai pour que l'égalité tienne.
+3. **Dérivation** — assez de pas pour la reconstruire.
+4. **Code** — fonction et fichiers.
+5. **Cas d'utilisation** — quand l'appliquer, quand elle est **fausse**.
+6. **Source** — édition, section ou théorème, DOI si l'article en a un.
+
+Les sources sont regroupées dans [la bibliographie](sources.md). Une citation sans
+localisation (chapitre, théorème, DOI) n'est pas retenue.
+
+## Exact vs probabiliste
+
+Au jalon 2, les formules géométriques et d'optimisation linéaire sont **exactes**.
+Au jalon 3, les itérés de Frank-Wolfe restent dans le polytope (garantie exacte) ;
+le score du substitut analytique **n'a aucune couverture**. Au jalon 5, la
+prédiction conforme borne l'oracle gelé : voir [statistique](statistics.md).
+Ce n'est pas une preuve géométrique.
+
+!!! warning "Ce que « l'oracle gelé » veut dire"
+    `SplitFluxOracle` est une **forme fermée**, pas une mesure ni un lancer de
+    rayons. Une couverture calculée contre lui est une couverture *sur cette
+    formule*. Aucune fiche de ce dossier ne prétend le contraire, et
+    [vérité terrain](../data/ground-truth.md) dit où trouver de vraies
+    étiquettes.
