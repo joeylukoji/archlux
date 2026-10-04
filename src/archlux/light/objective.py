@@ -44,7 +44,13 @@ class Daylight:
 
     @property
     def indicator(self) -> Indicator:
-        """Name of the modelled indicator, delegated to the wrapped surrogate."""
+        """Name of the modelled indicator, delegated to the wrapped surrogate.
+
+        Returns
+        -------
+        Indicator
+            The indicator of the wrapped surrogate.
+        """
         return self.surrogate.indicator
 
     def evaluate(
@@ -82,7 +88,22 @@ class Daylight:
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """``∇μ − q̂ ∇σ``. ``∇σ`` by centred finite differences (Nocedal §8.1)."""
+        """``∇μ − q̂ ∇σ``. ``∇σ`` by centred finite differences (Nocedal §8.1).
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Gradient of ``mu - q_hat * sigma``.
+        """
         grad_mu = np.asarray(self.surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
         if not self.pessimistic:
             return grad_mu
@@ -91,13 +112,43 @@ class Daylight:
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Standard deviation of the wrapped surrogate, unchanged."""
+        """Standard deviation of the wrapped surrogate, unchanged.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        float
+            The wrapped surrogate's standard deviation.
+        """
         return float(self.surrogate.uncertainty(x, orientation, glazing=glazing))
 
     def __call__(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> tuple[float, np.ndarray]:
-        """Return ``(J, ∇J)`` at once, same convention as :meth:`evaluate`."""
+        """Return ``(J, ∇J)`` at once, same convention as :meth:`evaluate`.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        tuple of float and numpy.ndarray
+            ``(J, grad J)``.
+        """
         return self.evaluate(x, orientation, glazing=glazing), self.gradient(
             x, orientation, glazing=glazing
         )

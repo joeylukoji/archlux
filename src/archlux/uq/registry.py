@@ -74,7 +74,18 @@ class CalibrationToken:
 
 
 def _model_fingerprint(model: object) -> str:
-    """SHA-256 fingerprint of the weights, without importing ``torch`` or ``light``."""
+    """SHA-256 fingerprint of the weights, without importing ``torch`` or ``light``.
+
+    Parameters
+    ----------
+    model
+        Model whose weights are hashed.
+
+    Returns
+    -------
+    str
+        Hex SHA-256 of the weights.
+    """
     # English name first, then the French one: LearnedSurrogate still exposes
     # ``empreinte_poids``, and a user model written before the rename keeps ``poids``.
     for name in ("weights_fingerprint", "empreinte_poids"):
@@ -151,6 +162,18 @@ def issue_token(weights_fingerprint: str, freeze_timestamp: str) -> CalibrationT
 def open_calibration(root: Path, token: CalibrationToken) -> Path:
     """Open the calibration directory; a valid token is required.
 
+    Parameters
+    ----------
+    root
+        Data root holding ``calibration/``.
+    token
+        Calibration token issued after the freeze.
+
+    Returns
+    -------
+    Path
+        The calibration directory.
+
     Raises
     ------
     CalibrationLocked
@@ -171,14 +194,26 @@ class DataManagement:
     root: Path
 
     def for_training(self) -> Path:
-        """``train/`` directory — the only exposed path to fit the weights."""
+        """``train/`` directory — the only exposed path to fit the weights.
+
+        Returns
+        -------
+        Path
+            The ``train/`` directory.
+        """
         directory = Path(self.root) / "train"
         if not directory.is_dir():
             raise InvariantViolation((f"missing training directory: {directory}",))
         return directory
 
     def for_test(self) -> Path:
-        """``test/`` directory, opened only once for the final measurement."""
+        """``test/`` directory, opened only once for the final measurement.
+
+        Returns
+        -------
+        Path
+            The ``test/`` directory.
+        """
         directory = Path(self.root) / "test"
         if not directory.is_dir():
             raise InvariantViolation((f"missing test directory: {directory}",))
@@ -193,6 +228,11 @@ class DataManagement:
             Proof of the freeze.
         model : object or None, optional
             If given, its current fingerprint must match the token's.
+
+        Returns
+        -------
+        Path
+            The ``calibration/`` directory.
         """
         if model is not None and _model_fingerprint(model) != token.weights_fingerprint:
             raise ModelModified("model weights changed after the freeze")
