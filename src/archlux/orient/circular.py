@@ -101,7 +101,18 @@ def encode_orientation(orientation: Orientation, *, harmonics: int = 2) -> np.nd
 
 
 def _radians(degrees: np.ndarray | Sequence[float]) -> np.ndarray:
-    """Convert a sequence of azimuths to radians, raveled."""
+    """Convert a sequence of azimuths to radians, raveled.
+
+    Parameters
+    ----------
+    degrees
+        Azimuths, in degrees.
+
+    Returns
+    -------
+    numpy.ndarray
+        The azimuths in radians, as a flat array.
+    """
     samples = np.ravel(np.asarray(degrees, dtype=float))
     if samples.size == 0:
         raise InvalidInput("degrees", "at least one orientation is required")
@@ -109,7 +120,18 @@ def _radians(degrees: np.ndarray | Sequence[float]) -> np.ndarray:
 
 
 def _resultant(degrees: np.ndarray | Sequence[float]) -> tuple[float, float, int]:
-    """Sum of the unit vectors ``(C, S)`` and count ``n``."""
+    """Sum of the unit vectors ``(C, S)`` and count ``n``.
+
+    Parameters
+    ----------
+    degrees
+        Azimuths, in degrees.
+
+    Returns
+    -------
+    tuple of float, float, int
+        ``(C, S, n)``: the summed cosines and sines, and the count.
+    """
     theta = _radians(degrees)
     return float(np.cos(theta).sum()), float(np.sin(theta).sum()), int(theta.size)
 
@@ -117,6 +139,11 @@ def _resultant(degrees: np.ndarray | Sequence[float]) -> tuple[float, float, int
 @renamed_parameters({"degres": "degrees"})
 def circular_mean(degrees: np.ndarray | Sequence[float]) -> float:
     """Mean direction, via the sum of the unit vectors.
+
+    Parameters
+    ----------
+    degrees
+        Azimuths, in degrees.
 
     Returns
     -------
@@ -217,6 +244,11 @@ def dominant_direction(
 def concentration(degrees: np.ndarray | Sequence[float]) -> float:
     """Length of the mean resultant, in ``[0, 1]``.
 
+    Parameters
+    ----------
+    degrees
+        Azimuths, in degrees.
+
     Returns
     -------
     float
@@ -229,13 +261,29 @@ def concentration(degrees: np.ndarray | Sequence[float]) -> float:
 
 @renamed_parameters({"degres": "degrees"})
 def circular_variance(degrees: np.ndarray | Sequence[float]) -> float:
-    r"""Circular variance :math:`V = 1 - \bar R` (Mardia & Jupp, §2.3)."""
+    r"""Circular variance :math:`V = 1 - \bar R` (Mardia & Jupp, §2.3).
+
+    Parameters
+    ----------
+    degrees
+        Azimuths, in degrees.
+
+    Returns
+    -------
+    float
+        ``1 - R̄``, in ``[0, 1]``.
+    """
     return 1.0 - concentration(degrees)
 
 
 @renamed_parameters({"degres": "degrees"})
 def rayleigh(degrees: np.ndarray | Sequence[float]) -> tuple[float, float]:
     r"""Rayleigh test of uniformity on the circle.
+
+    Parameters
+    ----------
+    degrees
+        Azimuths, in degrees.
 
     Returns
     -------
@@ -260,7 +308,20 @@ def rayleigh(degrees: np.ndarray | Sequence[float]) -> tuple[float, float]:
 
 
 def angular_difference(a: float, b: float) -> float:
-    """Shortest signed difference between two azimuths, in ``]-180, 180]``."""
+    """Shortest signed difference between two azimuths, in ``]-180, 180]``.
+
+    Parameters
+    ----------
+    a
+        First azimuth, in degrees.
+    b
+        Second azimuth, in degrees.
+
+    Returns
+    -------
+    float
+        ``a - b`` wrapped into ``]-180, 180]``.
+    """
     gap = (a - b + 180.0) % 360.0 - 180.0
     if gap <= -180.0:
         return 180.0
@@ -276,6 +337,11 @@ def circular_linear_regression(theta: np.ndarray, y: np.ndarray) -> RegressionRe
         Azimuths, in degrees.
     y : numpy.ndarray
         Linear response (indicator, gain, ...).
+
+    Returns
+    -------
+    RegressionResult
+        The fitted coefficients ``a``, ``b``, ``c`` and the residuals.
     """
     azimuth = np.ravel(np.asarray(theta, dtype=float))
     response = np.ravel(np.asarray(y, dtype=float))
@@ -352,6 +418,11 @@ def stratify(
         Azimuths, in degrees.
     n_sectors : int, optional
         Number of sectors. 8 -> named compass rose (N, NE, ...).
+
+    Returns
+    -------
+    dict of str to numpy.ndarray
+        The azimuths of each sector, by sector name.
     """
     if n_sectors < 1:
         raise InvalidInput("n_sectors", f"must be >= 1, got {n_sectors}")
