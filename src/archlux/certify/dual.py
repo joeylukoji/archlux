@@ -83,7 +83,24 @@ def describe_origin(label: str) -> str | None:
 
 
 def _sentence(description: str, price: float, *, objective: str, step_m: float) -> str:
-    """One phrase: what is relaxed, by how much, and the effect in the objective's unit."""
+    """One phrase: what is relaxed, by how much, and the effect in the objective's unit.
+
+    Parameters
+    ----------
+    description
+        What the constraint is.
+    price
+        Its dual price.
+    objective
+        Unit of the price: ``displacement`` or an indicator.
+    step_m
+        Relaxation step, in metres.
+
+    Returns
+    -------
+    str
+        One sentence describing the effect of the relaxation.
+    """
     step = f"{step_m * 100.0:g} cm"
     if objective == "displacement":
         effect = f"would change the total displacement by {price * step_m:+.2f} m"

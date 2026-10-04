@@ -129,6 +129,13 @@ def tiling_constraints(
       are fixed on the outline. Without them the whole grid could slide, or
       shrink inside the envelope.
 
+    Parameters
+    ----------
+    grid
+        Grid deduced from the plan.
+    index
+        Column of each variable.
+
     Returns
     -------
     tuple

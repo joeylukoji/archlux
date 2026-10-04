@@ -56,7 +56,24 @@ class GradientReport:
 def _finite_differences(
     surrogate: Surrogate, x: np.ndarray, orientation: Orientation, step: float
 ) -> np.ndarray:
-    """Centred slope of ``evaluate`` along each coordinate of ``x``."""
+    """Centred slope of ``evaluate`` along each coordinate of ``x``.
+
+    Parameters
+    ----------
+    surrogate
+        Surrogate whose ``evaluate`` is differentiated.
+    x
+        Point of evaluation.
+    orientation
+        Azimuth of the plan.
+    step
+        Finite-difference step.
+
+    Returns
+    -------
+    numpy.ndarray
+        Centred slope along each coordinate of ``x``.
+    """
     x0 = np.asarray(x, dtype=float).ravel()
     g = np.empty_like(x0)
     for i in range(x0.size):

@@ -88,7 +88,24 @@ class Corruption:
 def _perturb(
     room: Room, mode: Mode, amplitude: float, axis: Literal["x", "y"]
 ) -> tuple[Room, float]:
-    """Apply a perturbation, and return the amplitude actually applied."""
+    """Apply a perturbation, and return the amplitude actually applied.
+
+    Parameters
+    ----------
+    room
+        Room to perturb.
+    mode
+        Kind of perturbation (move, widen or shrink).
+    amplitude
+        Requested amplitude, in metres.
+    axis
+        Axis of the perturbation, ``x`` or ``y``.
+
+    Returns
+    -------
+    tuple of Room and float
+        The perturbed room and the amplitude actually applied.
+    """
     if mode == "deplacer":
         if axis == "x":
             return replace(room, x=room.x + amplitude), amplitude

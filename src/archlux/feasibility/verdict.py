@@ -34,7 +34,13 @@ class FeasibilityCertificate:
     """Restrictions beyond the relative order the proof is about (``Infeasible.scope``)."""
 
     def explain(self) -> str:
-        """Render the conflict as one readable sentence."""
+        """Render the conflict as one readable sentence.
+
+        Returns
+        -------
+        str
+            The conflict as one sentence, with the verification status.
+        """
         status = {
             True: " Certificate verified exactly.",
             False: " Certificate NOT verified: treat as a solver diagnosis, not a proof.",
@@ -58,7 +64,13 @@ class Verdict:
     certificate: FeasibilityCertificate | None = None
 
     def __bool__(self) -> bool:
-        """``True`` if and only if the program admits at least one valid plan."""
+        """``True`` if and only if the program admits at least one valid plan.
+
+        Returns
+        -------
+        bool
+            Same as :attr:`feasible`.
+        """
         return self.feasible
 
 
@@ -67,6 +79,13 @@ def _legalize_any_dimensions(program: Plan, ctx: Context) -> None:
 
     The program is not asked to keep its dimensions: a gap in the proposal is not a
     reason to refuse. The retry adds the tiling grid to the scope of any refusal.
+
+    Parameters
+    ----------
+    program
+        Plan whose relative order is tested.
+    ctx
+        Context, with the structure of the query.
     """
     try:
         legalize(program, ctx)

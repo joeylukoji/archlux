@@ -60,5 +60,11 @@ __getattr__ = lazy_aliases(
 
 
 def __dir__() -> list[str]:
-    """Expose only the frozen public API."""
+    """Expose only the frozen public API.
+
+    Returns
+    -------
+    list of str
+        The public names of the package.
+    """
     return list(__all__)
