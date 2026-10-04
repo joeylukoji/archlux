@@ -46,6 +46,8 @@ dev = [
     # Cyclomatic complexity, PLAN.md phase 4's exit gate: `radon cc src -n C` must be
     # silent (no function above CC 10).
     "radon>=6.0",
+    # Docstring sections (PLAN.md phase 4, block 17): see [tool.numpydoc_validation].
+    "numpydoc>=1.8",
 ]
 docs = ["mkdocs>=1.6", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25", "mkdocs-static-i18n>=1.2"]
 
@@ -121,6 +123,12 @@ ignore_missing_imports = true
 fail-under = 95
 exclude = ["tests", "experiments", "benchmarks"]
 ignore-nested-functions = true
+
+[tool.numpydoc_validation]
+# Every documented callable states its parameters and return value. Only these two
+# checks are enforced: the other categories (examples, extended summaries...) still
+# have open findings. tests/test_docstrings.py runs it with the suite, so in CI.
+checks = ["PR01", "RT01"]
 
 [tool.coverage.run]
 source = ["src/archlux"]

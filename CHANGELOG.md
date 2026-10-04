@@ -8,6 +8,11 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Docs — PLAN.md phase 4, block 17, item 48: every callable documents its parameters and return
+
+- 611 missing numpydoc ``Parameters``/``Returns`` sections are filled across ``src/archlux``; docstrings only, no code changed.
+- New ``tests/test_docstrings.py`` runs ``numpydoc lint`` with ``[tool.numpydoc_validation] checks = ["PR01", "RT01"]`` (``pyproject.toml``), so a new undocumented parameter or return fails the suite and CI. ``numpydoc`` joins the ``dev`` extra. The other numpydoc categories (examples, extended summaries...) still have open findings and are not enforced.
+
 ### Added — PLAN.md phase 4, block 14 (`data`), item 43: `load_msd(impute_openings=)`
 
 - `load_msd` gains a keyword-only `impute_openings: bool = False`. When true, each wall without an opening gets a centred one, via the existing `archlux.data.imputation.impute_openings`, which was previously unused by the library. Off by default: loaded plans are unchanged.
