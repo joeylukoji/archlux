@@ -75,6 +75,18 @@ def _real(value: Any, where: str) -> float:
     file produced by another tool would bring non-finite values into the solver, where
     they propagate silently up to an absurd certificate. ``write`` already refuses to
     write them, so reading must refuse to read them.
+
+    Parameters
+    ----------
+    value
+        Value read from JSON.
+    where
+        Location of the value, for the error message.
+
+    Returns
+    -------
+    float
+        The value as a finite float; raises ``InvariantViolation`` otherwise.
     """
     real = float(value)
     if not math.isfinite(real):
@@ -83,14 +95,38 @@ def _real(value: Any, where: str) -> float:
 
 
 def _point(value: Any, where: str = "point") -> Point:
-    """Read a point ``[x, y]``, refusing anything that is not one."""
+    """Read a point ``[x, y]``, refusing anything that is not one.
+
+    Parameters
+    ----------
+    value
+        Value read from JSON, expected ``[x, y]``.
+    where
+        Location of the point, for the error message.
+
+    Returns
+    -------
+    Point
+        The point as two finite floats; raises ``InvariantViolation`` otherwise.
+    """
     if not isinstance(value, (list, tuple)) or len(value) != 2:
         raise InvariantViolation((f"expected a point as [x, y], got {value!r}",))
     return (_real(value[0], f"{where}.x"), _real(value[1], f"{where}.y"))
 
 
 def _pairs(value: Any) -> tuple[tuple[str, str], ...]:
-    """Normalize a JSON list of pairs into a tuple of string pairs."""
+    """Normalize a JSON list of pairs into a tuple of string pairs.
+
+    Parameters
+    ----------
+    value
+        JSON list of two-element lists.
+
+    Returns
+    -------
+    tuple of tuple of str
+        Each pair with both members as strings.
+    """
     return tuple((str(json_key), str(val)) for json_key, val in value)
 
 
@@ -114,6 +150,11 @@ def _check_ranges(data: Any) -> None:
     Complexity
     ----------
     O(n) in the number of elements of the plan.
+
+    Parameters
+    ----------
+    data
+        Decoded JSON document of a plan.
     """
     violations: list[str] = []
     for room in data["rooms"]:
@@ -144,7 +185,18 @@ def _check_ranges(data: Any) -> None:
 
 
 def _proof_to_dict(proof: GeometricProof) -> dict[str, Any]:
-    """Serialize a geometric proof; no probability field enters it."""
+    """Serialize a geometric proof; no probability field enters it.
+
+    Parameters
+    ----------
+    proof
+        Geometric proof to serialize.
+
+    Returns
+    -------
+    dict
+        The JSON form of the proof.
+    """
     return {
         "valid": proof.valid,
         "overlap": proof.overlap,
@@ -157,7 +209,18 @@ def _proof_to_dict(proof: GeometricProof) -> dict[str, Any]:
 
 
 def _proof_from_dict(data: Any) -> GeometricProof:
-    """Rebuild a geometric proof from its JSON form."""
+    """Rebuild a geometric proof from its JSON form.
+
+    Parameters
+    ----------
+    data
+        JSON form of a geometric proof.
+
+    Returns
+    -------
+    GeometricProof
+        The rebuilt proof.
+    """
     return GeometricProof(
         valid=bool(data["valid"]),
         overlap=bool(data["overlap"]),
@@ -170,7 +233,18 @@ def _proof_from_dict(data: Any) -> GeometricProof:
 
 
 def _bound_to_dict(bound: PerformanceBound) -> dict[str, Any]:
-    """Serialize a performance bound, coverage and n_calibration included."""
+    """Serialize a performance bound, coverage and n_calibration included.
+
+    Parameters
+    ----------
+    bound
+        Performance bound to serialize.
+
+    Returns
+    -------
+    dict
+        The JSON form of the bound, coverage and calibration size included.
+    """
     return {
         "indicator": bound.indicator,
         "value": bound.value,
@@ -183,7 +257,18 @@ def _bound_to_dict(bound: PerformanceBound) -> dict[str, Any]:
 
 
 def _regime(data: Any) -> Regime:
-    """The regime of a serialized bound; missing or unknown is refused."""
+    """The regime of a serialized bound; missing or unknown is refused.
+
+    Parameters
+    ----------
+    data
+        JSON form of a performance bound.
+
+    Returns
+    -------
+    Regime
+        The bound's regime; raises ``InvariantViolation`` when missing or unknown.
+    """
     regime = data.get("regime") if isinstance(data, dict) else None
     if regime not in REGIMES:
         raise InvariantViolation((f"bound.regime: expected one of {REGIMES}, got {regime!r}",))
@@ -191,7 +276,18 @@ def _regime(data: Any) -> Regime:
 
 
 def _bound_from_dict(data: Any) -> PerformanceBound:
-    """Rebuild a performance bound; refuse an unknown indicator."""
+    """Rebuild a performance bound; refuse an unknown indicator.
+
+    Parameters
+    ----------
+    data
+        JSON form of a performance bound.
+
+    Returns
+    -------
+    PerformanceBound
+        The rebuilt bound.
+    """
     indicator = data["indicator"]
     if indicator not in INDICATOR_SENSE:
         raise InvariantViolation((f"unknown indicator: {indicator!r}",))
@@ -211,7 +307,18 @@ def _bound_from_dict(data: Any) -> PerformanceBound:
 
 @renamed_parameters({"manifeste": "manifest"})
 def manifest_to_dict(manifest: Manifest) -> dict[str, Any]:
-    """Serialize a :class:`~archlux.types.Manifest` (single JSON / benchmark form)."""
+    """Serialize a :class:`~archlux.types.Manifest` (single JSON / benchmark form).
+
+    Parameters
+    ----------
+    manifest
+        Manifest to serialize.
+
+    Returns
+    -------
+    dict
+        The JSON form of the manifest.
+    """
     model = manifest.model
     return {
         "version": manifest.version,
@@ -232,7 +339,18 @@ def manifest_to_dict(manifest: Manifest) -> dict[str, Any]:
 
 
 def _manifest_from_dict(data: Any) -> Manifest:
-    """Rebuild a manifest, ``ModelTrace`` included if present."""
+    """Rebuild a manifest, ``ModelTrace`` included if present.
+
+    Parameters
+    ----------
+    data
+        JSON form of a manifest.
+
+    Returns
+    -------
+    Manifest
+        The rebuilt manifest, its ``ModelTrace`` included if present.
+    """
     raw = data.get("model")
     model = None
     if raw is not None:
@@ -254,7 +372,18 @@ def _manifest_from_dict(data: Any) -> Manifest:
 
 
 def _certificate_to_dict(certificate: Certificate | None) -> dict[str, Any] | None:
-    """Serialize a certificate; ``None`` for performance stays explicit."""
+    """Serialize a certificate; ``None`` for performance stays explicit.
+
+    Parameters
+    ----------
+    certificate
+        Certificate to serialize, or ``None``.
+
+    Returns
+    -------
+    dict or None
+        The JSON form of the certificate, or ``None`` when there is none.
+    """
     if certificate is None:
         return None
     performance = certificate.performance
@@ -270,7 +399,18 @@ def _certificate_to_dict(certificate: Certificate | None) -> dict[str, Any] | No
 
 
 def _certificate_from_dict(data: Any) -> Certificate | None:
-    """Rebuild a certificate, or ``None`` if the plan carries none."""
+    """Rebuild a certificate, or ``None`` if the plan carries none.
+
+    Parameters
+    ----------
+    data
+        JSON form of a certificate, or ``None``.
+
+    Returns
+    -------
+    Certificate or None
+        The rebuilt certificate, or ``None`` when the plan carries none.
+    """
     if data is None:
         return None
     performance = data["performance"]
@@ -333,7 +473,20 @@ _V1_KEYS: dict[str, dict[str, str]] = {
 
 
 def _rename_keys(section: Any, kind: str) -> Any:
-    """A copy of ``section`` with the v1 keys of ``kind`` renamed; anything else is kept."""
+    """A copy of ``section`` with the v1 keys of ``kind`` renamed; anything else is kept.
+
+    Parameters
+    ----------
+    section
+        Part of a v1 document.
+    kind
+        Kind of section, selecting the key table.
+
+    Returns
+    -------
+    Any
+        A copy with the v1 keys renamed; a non-mapping input is returned unchanged.
+    """
     if not isinstance(section, dict):
         return section
     mapping = _V1_KEYS[kind]
@@ -341,7 +494,18 @@ def _rename_keys(section: Any, kind: str) -> Any:
 
 
 def _room_from_v1(room: Any) -> Any:
-    """A v1 room with its French type mapped; a malformed room is returned unchanged."""
+    """A v1 room with its French type mapped; a malformed room is returned unchanged.
+
+    Parameters
+    ----------
+    room
+        Room of a v1 document.
+
+    Returns
+    -------
+    Any
+        The room with its French type mapped to English; a malformed room unchanged.
+    """
     if not isinstance(room, dict) or not isinstance(room.get("type"), str):
         return room
     return {**room, "type": _TYPES_FROM_V1.get(room["type"], room["type"])}
