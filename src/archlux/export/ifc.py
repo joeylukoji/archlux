@@ -82,7 +82,18 @@ def to_ifc(plan: Plan, path: Path | str, *, validate: bool = True) -> ExportRepo
 
 
 def _certificate_annex(plan: Plan) -> str:
-    """Text annex; a rendering failure must not block the leaf export."""
+    """Text annex; a rendering failure must not block the leaf export.
+
+    Parameters
+    ----------
+    plan
+        Plan whose certificate is rendered.
+
+    Returns
+    -------
+    str
+        The certificate report as one escaped STEP string; empty without a certificate.
+    """
     if plan.certificate is None:
         return ""
     try:
@@ -94,7 +105,20 @@ def _certificate_annex(plan: Plan) -> str:
 
 
 def _safe(text: str, *, lim: int = 120) -> str:
-    """Neutralize apostrophes and backslashes, and truncate, for a STEP string."""
+    """Neutralize apostrophes and backslashes, and truncate, for a STEP string.
+
+    Parameters
+    ----------
+    text
+        Text to embed in a STEP string.
+    lim
+        Maximum length kept.
+
+    Returns
+    -------
+    str
+        The text with apostrophes and backslashes neutralized, truncated to ``lim``.
+    """
     return text.replace("'", " ").replace("\\", "/")[:lim]
 
 
@@ -112,6 +136,16 @@ def _guid(entity_label: str) -> str:
     of ``0-9A-Za-z_$``, the first one in ``0-3`` (22 x 6 = 132 bits, the top 4 are
     zero). ``ifcopenshell.guid.expand`` decodes it. The previous version wrote 22
     hexadecimal characters, rejected by every IFC validator (PLAN.md phase 2, J6).
+
+    Parameters
+    ----------
+    entity_label
+        Stable label of the entity.
+
+    Returns
+    -------
+    str
+        A 22-character ``IfcGloballyUniqueId`` in IFC base 64.
     """
     number = int.from_bytes(hashlib.sha256(entity_label.encode()).digest()[:16], "big")
     digits = []
@@ -122,7 +156,13 @@ def _guid(entity_label: str) -> str:
 
 
 def _package_version() -> str:
-    """Version of the source code (avoids a stale install metadata)."""
+    """Version of the source code (avoids a stale install metadata).
+
+    Returns
+    -------
+    str
+        The package version from the source code.
+    """
     return __version__
 
 
@@ -142,36 +182,104 @@ class _SpfWriter:
     nxt: int = 1
 
     def alloc(self) -> int:
-        """Reserve the next STEP entity number."""
+        """Reserve the next STEP entity number.
+
+        Returns
+        -------
+        int
+            The reserved entity number.
+        """
         cur = self.nxt
         self.nxt += 1
         return cur
 
     def emit(self, num: int, body: str) -> None:
-        """Write a STEP entity line to the buffer."""
+        """Write a STEP entity line to the buffer.
+
+        Parameters
+        ----------
+        num
+            Entity number.
+        body
+            STEP entity text, without the trailing semicolon.
+        """
         self.ents.append(f"#{num}={body};")
 
     def point(self, x: float, y: float, z: float = 0.0) -> int:
-        """Emit an ``IFCCARTESIANPOINT`` and return its number."""
+        """Emit an ``IFCCARTESIANPOINT`` and return its number.
+
+        Parameters
+        ----------
+        x
+            Abscissa.
+        y
+            Ordinate.
+        z
+            Elevation.
+
+        Returns
+        -------
+        int
+            Entity number of the point.
+        """
         num = self.alloc()
         self.emit(num, f"IFCCARTESIANPOINT(({x:.6f},{y:.6f},{z:.6f}))")
         return num
 
     def point2(self, x: float, y: float) -> int:
-        """Emit a 2D ``IFCCARTESIANPOINT``: the vertices of a ``Curve2D`` representation."""
+        """Emit a 2D ``IFCCARTESIANPOINT``: the vertices of a ``Curve2D`` representation.
+
+        Parameters
+        ----------
+        x
+            Abscissa.
+        y
+            Ordinate.
+
+        Returns
+        -------
+        int
+            Entity number of the point.
+        """
         num = self.alloc()
         self.emit(num, f"IFCCARTESIANPOINT(({x:.6f},{y:.6f}))")
         return num
 
     def axis2(self, x: float, y: float, z: float = 0.0) -> int:
-        """Emit an ``IFCAXIS2PLACEMENT3D`` at the given position."""
+        """Emit an ``IFCAXIS2PLACEMENT3D`` at the given position.
+
+        Parameters
+        ----------
+        x
+            Abscissa of the origin.
+        y
+            Ordinate of the origin.
+        z
+            Elevation of the origin.
+
+        Returns
+        -------
+        int
+            Entity number of the placement.
+        """
         p = self.point(x, y, z)
         num = self.alloc()
         self.emit(num, f"IFCAXIS2PLACEMENT3D(#{p},$,$)")
         return num
 
     def guid(self, label: str) -> str:
-        """``IfcGloballyUniqueId`` of ``label`` in this plan."""
+        """``IfcGloballyUniqueId`` of ``label`` in this plan.
+
+        Parameters
+        ----------
+        label
+            Label of the entity in this plan.
+
+        Returns
+        -------
+        str
+            The GlobalId, salted by the plan geometry.
+        """
         return _guid(f"{self.salt}/{label}")
 
 
@@ -179,6 +287,16 @@ def _write_header(w: _SpfWriter) -> tuple[int, int]:
     """``IFCPERSON``/``IFCORGANIZATION``/``IFCAPPLICATION``/``IFCOWNERHISTORY``/units.
 
     Returns ``(id_owner, id_units)``, the two entities every later block references.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+
+    Returns
+    -------
+    tuple of int
+        ``(id_owner, id_units)``.
     """
     id_pers = w.alloc()
     w.emit(id_pers, "IFCPERSON($,$,'archlux',$,$,$,$,$)")
@@ -205,6 +323,20 @@ def _write_project(w: _SpfWriter, id_owner: int, id_units: int) -> tuple[int, in
     """``IFCGEOMETRICREPRESENTATIONCONTEXT`` and ``IFCPROJECT``.
 
     Returns ``(id_ctx, id_proj)``.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+    id_owner
+        Owner history entity.
+    id_units
+        Unit assignment entity.
+
+    Returns
+    -------
+    tuple of int
+        ``(id_ctx, id_proj)``.
     """
     id_world = w.axis2(0.0, 0.0, 0.0)
     id_ctx = w.alloc()
@@ -224,6 +356,20 @@ def _write_spatial_hierarchy(w: _SpfWriter, id_owner: int, id_proj: int) -> tupl
     """``IFCSITE``/``IFCBUILDING``/``IFCBUILDINGSTOREY`` and their ``IFCRELAGGREGATES`` chain.
 
     Returns ``(id_floor_pl, storey_id, id_bat)``.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+    id_owner
+        Owner history entity.
+    id_proj
+        Project entity.
+
+    Returns
+    -------
+    tuple of int
+        ``(id_floor_pl, storey_id, id_bat)``.
     """
     id_site_ax = w.axis2(0.0, 0.0, 0.0)
     id_site_pl = w.alloc()
@@ -268,7 +414,23 @@ def _write_spatial_hierarchy(w: _SpfWriter, id_owner: int, id_proj: int) -> tupl
 def _write_spaces(
     w: _SpfWriter, plan: Plan, id_owner: int, id_ctx: int, id_floor_pl: int, storey_id: int
 ) -> None:
-    """``IFCSPACE`` per room, plus their ``IFCRELAGGREGATES`` to the storey."""
+    """``IFCSPACE`` per room, plus their ``IFCRELAGGREGATES`` to the storey.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+    plan
+        Plan whose rooms are written.
+    id_owner
+        Owner history entity.
+    id_ctx
+        Representation context entity.
+    id_floor_pl
+        Storey placement entity.
+    storey_id
+        Storey entity.
+    """
     spaces: list[int] = []
     for room in plan.rooms:
         corners = (
@@ -316,6 +478,26 @@ def _write_walls(
 
     Returns ``{wall id: entity number}``, needed by :func:`_write_openings` to void
     the right wall.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+    plan
+        Plan whose walls are written.
+    id_owner
+        Owner history entity.
+    id_ctx
+        Representation context entity.
+    id_floor_pl
+        Storey placement entity.
+    storey_id
+        Storey entity.
+
+    Returns
+    -------
+    dict of str to int
+        Entity number of each wall, by wall id.
     """
     wall_ids: list[int] = []
     wall_entity: dict[str, int] = {}
@@ -354,7 +536,19 @@ def _write_walls(
 
 
 def _write_openings(w: _SpfWriter, plan: Plan, id_owner: int, wall_entity: dict[str, int]) -> None:
-    """``IFCOPENINGELEMENT`` per opening, plus ``IFCRELVOIDSELEMENT`` where the wall exists."""
+    """``IFCOPENINGELEMENT`` per opening, plus ``IFCRELVOIDSELEMENT`` where the wall exists.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+    plan
+        Plan whose openings are written.
+    id_owner
+        Owner history entity.
+    wall_entity
+        Entity number of each wall, by wall id.
+    """
     for opening in plan.openings:
         opening_id = w.alloc()
         w.emit(
@@ -372,7 +566,19 @@ def _write_openings(w: _SpfWriter, plan: Plan, id_owner: int, wall_entity: dict[
 
 
 def _write_certificate_annex(w: _SpfWriter, plan: Plan, id_owner: int, id_bat: int) -> None:
-    """``Pset_Archlux``: the certificate as a text annex on the building, if any."""
+    """``Pset_Archlux``: the certificate as a text annex on the building, if any.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+    plan
+        Plan whose certificate is attached.
+    id_owner
+        Owner history entity.
+    id_bat
+        Building entity.
+    """
     annex = _certificate_annex(plan)
     if not annex:
         return
@@ -394,7 +600,20 @@ def _write_certificate_annex(w: _SpfWriter, plan: Plan, id_owner: int, id_bat: i
 
 
 def _write_minimal_spf(plan: Plan, path: Path) -> str:
-    """Deterministic IFC4 SPF: Project / Site / Building / Storey / Space / Wall."""
+    """Deterministic IFC4 SPF: Project / Site / Building / Storey / Space / Wall.
+
+    Parameters
+    ----------
+    plan
+        Plan to export.
+    path
+        Target ``.ifc`` file.
+
+    Returns
+    -------
+    str
+        The engine name, ``spf-minimal``.
+    """
     # GlobalIds must be unique across files, not only within one: salted by the plan
     # geometry, two different plans never share one, and one plan always gets the same.
     # Values only, never ``repr`` of the dataclasses: a class or field rename must not

@@ -120,7 +120,13 @@ class Batch:
             raise InvariantViolation(("x and orientations have distinct lengths",))
 
     def __len__(self) -> int:
-        """Number of candidates."""
+        """Number of candidates.
+
+        Returns
+        -------
+        int
+            Number of candidates.
+        """
         return len(self.x)
 
 
@@ -142,7 +148,18 @@ class _CampaignState:
 
 
 def _stack(xs: list[np.ndarray]) -> np.ndarray:
-    """Stack plan vectors into a ``(n, d)`` matrix."""
+    """Stack plan vectors into a ``(n, d)`` matrix.
+
+    Parameters
+    ----------
+    xs
+        Plan vectors.
+
+    Returns
+    -------
+    numpy.ndarray
+        The ``(n, d)`` matrix.
+    """
     return np.stack([np.asarray(x, dtype=float).ravel() for x in xs])
 
 
@@ -155,6 +172,20 @@ def _acquisition_uncertainties(
 
     A constant ``incertitude`` (e.g. ``DenseSurrogate``) does not discriminate:
     the distance to the already-labeled points forces exploration.
+
+    Parameters
+    ----------
+    surrogate
+        Surrogate providing the predictive scale.
+    pool
+        Candidate plans.
+    xs_labeled
+        Plans already simulated.
+
+    Returns
+    -------
+    numpy.ndarray
+        Acquisition score of each candidate.
     """
     base = np.array(
         [
@@ -178,7 +209,22 @@ def _mean_width(
     surrogate: Surrogate,
     holdout: Batch,
 ) -> float:
-    """Mean width of the conformal intervals on the held-out set."""
+    """Mean width of the conformal intervals on the held-out set.
+
+    Parameters
+    ----------
+    calibrator
+        Fitted conformal calibrator.
+    surrogate
+        Surrogate to evaluate.
+    holdout
+        Held-out plans.
+
+    Returns
+    -------
+    float
+        Mean interval width on the held-out set.
+    """
     widths: list[float] = []
     for x, o in zip(holdout.x, holdout.orientations, strict=True):
         pred = float(surrogate.evaluate(x, o))
@@ -200,6 +246,26 @@ def _validate_run_inputs(
     """Validate ``Loop.run``'s inputs; return the holdout batch (default: the pool).
 
     Extracted from :meth:`Loop.run` (PLAN.md phase 4, block 12, item 36).
+
+    Parameters
+    ----------
+    proposals
+        Candidate plans.
+    orientations
+        Orientation of each candidate.
+    batch
+        Batch size.
+    optimizer_reference
+        Typical optimizer plans.
+    holdout
+        Held-out plans, or ``None``.
+    holdout_orientations
+        Their orientations, or ``None``.
+
+    Returns
+    -------
+    Batch
+        The holdout batch; the pool when no holdout is given.
     """
     if len(proposals) != len(orientations):
         raise InvariantViolation(("propositions and orientations have distinct lengths",))
@@ -226,6 +292,24 @@ def _seed_calibration(
     """The independent calibration set, ground-truthed once, outside the budget.
 
     Extracted from :meth:`Loop.run` (PLAN.md phase 4, block 12, item 36).
+
+    Parameters
+    ----------
+    simulator
+        Frozen oracle.
+    calibration
+        Independent calibration plans, or ``None``.
+    calibration_orientations
+        Their orientations, or ``None``.
+    n_min
+        Minimal calibration size.
+    alpha
+        Target conformal level.
+
+    Returns
+    -------
+    tuple
+        Plans, ground truths and orientations of the set, and whether it is independent.
     """
     independent = calibration is not None
     xs_cal: list[np.ndarray] = []
@@ -315,7 +399,19 @@ class Loop:
         ys: list[float],
         orientations: list[Orientation],
     ) -> None:
-        """Fit the conformal quantile on the calibration set, and only that set."""
+        """Fit the conformal quantile on the calibration set, and only that set.
+
+        Parameters
+        ----------
+        calibrator
+            Calibrator to fit.
+        xs
+            Calibration plans.
+        ys
+            Their ground truths.
+        orientations
+            Their orientations.
+        """
         preds = np.array(
             [float(self.surrogate.evaluate(x, o)) for x, o in zip(xs, orientations, strict=True)]
         )
@@ -331,6 +427,20 @@ class Loop:
 
         The draw is **internal to the batch**: it therefore does not depend on the
         acquisition order, which goes from most exploratory to most exploitative.
+
+        Parameters
+        ----------
+        n_acquired
+            Size of the current batch.
+        rng
+            Random generator of the split.
+        independent
+            Whether an independent calibration set is used.
+
+        Returns
+        -------
+        set of int
+            Ranks in the batch diverted to calibration.
         """
         if independent or self.calibration_share <= 0.0 or n_acquired < 1:
             return set()
@@ -353,6 +463,17 @@ class Loop:
         >= 3.12, ignore a wrapper's ``__getattr__`` -- silently skipping retraining.
         A surrogate written before the English rename (only ``ajuster``) is still
         retrained, with a deprecation warning.
+
+        Parameters
+        ----------
+        cycle
+            Cycle number, for the seed.
+        xs_lab
+            Labeled plans.
+        ys_lab
+            Their ground truths.
+        os_lab
+            Their orientations.
         """
         fit = getattr(self.surrogate, "fit", None)
         if not callable(fit):
@@ -398,6 +519,28 @@ class Loop:
         the caller's remaining-budget bookkeeping).
 
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
+
+        Parameters
+        ----------
+        cycle
+            Cycle number.
+        pool
+            Candidate plans.
+        dens
+            Optimizer density of each candidate.
+        rng
+            Random generator of the split.
+        n_take
+            Number of candidates to acquire.
+        state
+            Campaign lists, mutated in place.
+        independent
+            Whether an independent calibration set is used.
+
+        Returns
+        -------
+        list of int
+            Pool indices acquired this cycle.
         """
         inc = _acquisition_uncertainties(self.surrogate, pool, state.xs_lab)
         idxs = self.acquire.select(
@@ -448,6 +591,25 @@ class Loop:
         relays the failure.
 
         Extracted from :meth:`run` (PLAN.md phase 4, block 12, item 36).
+
+        Parameters
+        ----------
+        cycle
+            Cycle number.
+        calibrator
+            Calibrator to refit.
+        xs_cal
+            Calibration plans.
+        ys_cal
+            Their ground truths.
+        os_cal
+            Their orientations.
+        n_min
+            Minimal calibration size.
+        holdout
+            Held-out plans.
+        history
+            Widths so far, extended in place.
         """
         if len(xs_cal) < n_min:
             return

@@ -92,6 +92,22 @@ def restrict_to_budget(
     Infeasible
         The box does not intersect the bounds of some variable: the budget is too small
         for this plan. An input problem, not an internal error.
+
+    Parameters
+    ----------
+    poly
+        Polytope to restrict.
+    center
+        Proposed plan, center of the box.
+    radius
+        Budget, in metres.
+    keep
+        Point the box must contain, or ``None``.
+
+    Returns
+    -------
+    Polytope
+        The polytope with its bounds intersected with the box.
     """
     names = {column: name for name, column in poly.index.items()}
     bounds: list[tuple[float, float]] = []
@@ -111,7 +127,20 @@ def restrict_to_budget(
 
 
 def _vertex_index(vertices: list[FloatVector], candidate: FloatVector) -> int | None:
-    """Index of an already stored vertex, up to tolerance."""
+    """Index of an already stored vertex, up to tolerance.
+
+    Parameters
+    ----------
+    vertices
+        Stored vertices.
+    candidate
+        Vertex to look up.
+
+    Returns
+    -------
+    int or None
+        Index of the matching vertex, or ``None``.
+    """
     for rank, vertex in enumerate(vertices):
         if np.allclose(vertex, candidate, atol=1e-9, rtol=0.0):
             return rank
@@ -124,6 +153,11 @@ def _normalize(weights: list[float]) -> None:
     Numerically null masses are filtered **before** the call, by the caller, which alone
     can drop the matching vertex at the same time: pruning weights here would
     desynchronize the two lists.
+
+    Parameters
+    ----------
+    weights
+        Weights, rescaled in place.
     """
     total = sum(weights)
     if total <= 0.0:
@@ -147,7 +181,21 @@ class StepStrategy(Protocol):
         vertices: list[FloatVector],
         weights: list[float],
     ) -> tuple[FloatVector, float, bool, int | None]:
-        """Direction, its ``gamma_max``, whether it is an away step, and the away index."""
+        """Direction, its ``gamma_max``, whether it is an away step, and the away index.
+
+        Parameters
+        ----------
+        gradient
+            Gradient of the surrogate at ``x``.
+        x
+            Current iterate.
+        fw_vertex
+            Vertex returned by the linear oracle.
+        vertices
+            Active vertices.
+        weights
+            Weight of each active vertex.
+        """
         ...
 
 
@@ -162,6 +210,24 @@ def _step_away(
 
     Away is taken when it improves on the plain Frank-Wolfe direction and the worst
     active vertex still has mass to give up.
+
+    Parameters
+    ----------
+    gradient
+        Gradient of the surrogate at ``x``.
+    x
+        Current iterate.
+    fw_direction
+        Plain Frank-Wolfe direction.
+    vertices
+        Active vertices.
+    weights
+        Weight of each active vertex.
+
+    Returns
+    -------
+    tuple
+        ``(direction, gamma_max, away, away_index)``.
     """
     if len(vertices) <= 1:
         return fw_direction, 1.0, False, None
@@ -191,7 +257,26 @@ class AwayStepStrategy:
         vertices: list[FloatVector],
         weights: list[float],
     ) -> tuple[FloatVector, float, bool, int | None]:
-        """See :class:`StepStrategy`."""
+        """See :class:`StepStrategy`.
+
+        Parameters
+        ----------
+        gradient
+            Gradient of the surrogate at ``x``.
+        x
+            Current iterate.
+        fw_vertex
+            Vertex returned by the linear oracle.
+        vertices
+            Active vertices.
+        weights
+            Weight of each active vertex.
+
+        Returns
+        -------
+        tuple
+            ``(direction, gamma_max, away, away_index)``.
+        """
         fw_direction = fw_vertex - x
         if not self.enabled:
             return fw_direction, 1.0, False, None
@@ -199,7 +284,20 @@ class AwayStepStrategy:
 
 
 def _resolve_strategy(strategy: StepStrategy | None, *, away_steps: bool) -> StepStrategy:
-    """The injected strategy, or the built-in one; warns if ``away_steps=False`` is lost."""
+    """The injected strategy, or the built-in one; warns if ``away_steps=False`` is lost.
+
+    Parameters
+    ----------
+    strategy
+        Injected strategy, or ``None``.
+    away_steps
+        Whether the built-in strategy takes away steps.
+
+    Returns
+    -------
+    StepStrategy
+        The strategy to use.
+    """
     if strategy is None:
         return AwayStepStrategy(enabled=away_steps)
     if not away_steps:
@@ -228,6 +326,30 @@ def _final_diagnostics(
     On ``max_iter``, the last step moved ``x`` after its LP, so that LP's gap and duals
     describe the *previous* point: an extra solve is needed here. On any other stop, the
     last LP already describes ``x``, and only its duals (not yet requested) are missing.
+
+    Parameters
+    ----------
+    surrogate
+        Objective.
+    orientation
+        Azimuth of the plan.
+    domain
+        Polytope of the run.
+    x
+        Returned iterate.
+    status
+        Why the run stopped.
+    last_oracle
+        Last LP solution, or ``None``.
+    gap
+        Gap of the last LP.
+    glazing
+        Glazing, or ``None``.
+
+    Returns
+    -------
+    tuple of float and ndarray or None
+        The gap and the duals at ``x``.
     """
     if status == "max_iter" and last_oracle is not None:
         gradient = np.asarray(surrogate.gradient(x, orientation, glazing=glazing), dtype=float)
@@ -257,6 +379,30 @@ def _line_search(
 
     Returns ``(candidate, new_value, gamma)``, or ``None`` if no step in 12 tries
     improved the surrogate (``status = "line_search_failed"`` for the caller).
+
+    Parameters
+    ----------
+    surrogate
+        Objective.
+    orientation
+        Azimuth of the plan.
+    x
+        Current iterate.
+    value
+        Objective at ``x``.
+    direction
+        Step direction.
+    gamma_max
+        Largest admissible step.
+    k
+        Iteration number.
+    glazing
+        Glazing, or ``None``.
+
+    Returns
+    -------
+    tuple or None
+        ``(candidate, new_value, gamma)``, or ``None`` if no step improved.
     """
     gamma = min(2.0 / (k + 2), gamma_max)
     for _ in range(12):
@@ -280,6 +426,26 @@ def _update_weights(
     """Move ``gamma`` of mass onto ``fw_vertex`` (or off ``away_index``).
 
     Also drops the vertices left with near-zero weight, and renormalizes.
+
+    Parameters
+    ----------
+    vertices
+        Active vertices.
+    weights
+        Weight of each active vertex.
+    fw_vertex
+        Vertex returned by the linear oracle.
+    gamma
+        Step taken.
+    away
+        Whether the step was an away step.
+    away_index
+        Index of the away vertex, or ``None``.
+
+    Returns
+    -------
+    tuple of list
+        The kept vertices and their renormalized weights.
     """
     if away and away_index is not None:
         for rank in range(len(weights)):
