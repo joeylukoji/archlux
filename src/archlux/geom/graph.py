@@ -261,6 +261,18 @@ def _pairwise_order(
     Extracted from :func:`deduce_order` (PLAN.md phase 4, block 3): see that
     function's docstring for the axis-choice rule (real disjointness first, the
     larger center distance only if the rooms overlap on both axes).
+
+    Parameters
+    ----------
+    by_id
+        Rooms of the plan, by identifier.
+    identifiers
+        Identifiers of the rooms, in a fixed order.
+
+    Returns
+    -------
+    tuple of list of (str, str)
+        The horizontal edges and the vertical edges.
     """
     horizontal: list[tuple[str, str]] = []
     vertical: list[tuple[str, str]] = []
@@ -286,6 +298,16 @@ def _outline_envelope(plan: Plan) -> Envelope | None:
     """Axis-aligned bounding box of the plan's outline, or ``None`` if it has none.
 
     Extracted from :func:`deduce_order` (PLAN.md phase 4, block 3).
+
+    Parameters
+    ----------
+    plan
+        Plan whose outline is read.
+
+    Returns
+    -------
+    Envelope or None
+        Bounding box of the outline, or ``None`` when the plan has no outline.
     """
     if not plan.outline:
         return None
@@ -306,6 +328,24 @@ def _wall_sides_and_groups(
     Extracted from :func:`deduce_order` (PLAN.md phase 4, block 3): see that
     function's ``groups`` parameter for why a fused room's sub-rectangles usually take
     their own side of a wall, and only share one when their choices straddle it.
+
+    Parameters
+    ----------
+    structure
+        Load-bearing structure.
+    groups
+        Identifiers of the sub-rectangles of each fused room.
+    by_id
+        Rooms of the plan, by identifier.
+    identifiers
+        Identifiers of the rooms, in a fixed order.
+    envelope
+        Bounding box of the outline, or ``None``.
+
+    Returns
+    -------
+    tuple
+        The wall side of every room, and the groups that had to share one.
     """
     walls = [
         m for m in sorted(structure.load_bearing_walls, key=lambda m: m.id) if m.length > SNAP_M
@@ -328,13 +368,36 @@ def _group_members(group: tuple[str, ...], by_id: dict[str, Room]) -> list[Room]
     """The rooms of ``group`` that exist in this plan, or ``None`` if fewer than two do.
 
     Extracted from :func:`_assign_group_sides` (PLAN.md phase 4, block 3).
+
+    Parameters
+    ----------
+    group
+        Identifiers of a fused room's sub-rectangles.
+    by_id
+        Rooms of the plan, by identifier.
+
+    Returns
+    -------
+    list of Room or None
+        The members present in the plan, or ``None`` when fewer than two are.
     """
     members = [by_id[room_id] for room_id in group if room_id in by_id]
     return members if len(members) >= 2 else None
 
 
 def _bounding_hull(members: list[Room]) -> Room:
-    """Bounding box of ``members``, as a room of its own (PLAN.md phase 4, block 3)."""
+    """Bounding box of ``members``, as a room of its own (PLAN.md phase 4, block 3).
+
+    Parameters
+    ----------
+    members
+        Rooms to enclose.
+
+    Returns
+    -------
+    Room
+        Their bounding box, as a room of its own.
+    """
     x0, y0 = min(m.x for m in members), min(m.y for m in members)
     x1, y1 = max(m.x + m.w for m in members), max(m.y + m.h for m in members)
     return replace(members[0], x=x0, y=y0, w=x1 - x0, h=y1 - y0)
@@ -360,6 +423,19 @@ def _assign_group_sides(
         One ``shared_sides`` entry per wall this group could not split compatibly;
         empty if the group has fewer than two members, or every wall left it
         compatible.
+
+    Parameters
+    ----------
+    group
+        Identifiers of a fused room's sub-rectangles.
+    walls
+        Load-bearing walls.
+    by_id
+        Rooms of the plan, by identifier.
+    envelope
+        Bounding box of the outline, or ``None``.
+    sides
+        Wall side of each ``(room, wall)`` pair, updated in place.
     """
     members = _group_members(group, by_id)
     if members is None:
@@ -390,6 +466,19 @@ def _assign_wall_side_for_group(
     bool
         ``True`` if the members split compatibly (each its own side); ``False`` if
         they had to share the hull's side instead.
+
+    Parameters
+    ----------
+    wall
+        Load-bearing wall.
+    members
+        Sub-rectangles of the fused room.
+    hull
+        Bounding box of the members.
+    envelope
+        Bounding box of the outline, or ``None``.
+    sides
+        Wall side of each ``(room, wall)`` pair, updated in place.
     """
     # Among equally cheap sides, prefer an assignment without opposite sides.
     choices = [_wall_sides_by_penetration(m, wall, envelope) for m in members]
@@ -424,6 +513,16 @@ def _compatible_sides(choices: list[list[WallSide]]) -> list[WallSide] | None:
     sides without two opposite ones fits in one quadrant pair, so four candidates
     settle it in ``O(4 k)`` for ``k`` members; within a pair, each member keeps its
     cheapest side (the lists are sorted best first).
+
+    Parameters
+    ----------
+    choices
+        For each member, its candidate sides, best first.
+
+    Returns
+    -------
+    list of WallSide or None
+        One side per member with no two opposite, or ``None`` when no quadrant pair fits.
     """
     best = [options[0] for options in choices]
     if not _opposite({ws.side for ws in best}):
@@ -436,7 +535,18 @@ def _compatible_sides(choices: list[list[WallSide]]) -> list[WallSide] | None:
 
 
 def _opposite(taken: set[str]) -> bool:
-    """Two members on opposite sides of one wall: their seam could land on it."""
+    """Two members on opposite sides of one wall: their seam could land on it.
+
+    Parameters
+    ----------
+    taken
+        Sides already taken by the members.
+
+    Returns
+    -------
+    bool
+        ``True`` when two of them are opposite (left/right or below/above).
+    """
     return {"left", "right"} <= taken or {"below", "above"} <= taken
 
 
@@ -447,6 +557,11 @@ def _check_axis_aligned(wall: Wall) -> None:
     ------
     UnsupportedInput
         The wall is oblique.
+
+    Parameters
+    ----------
+    wall
+        Wall to check.
     """
     (xa, ya), (xb, yb) = wall.a, wall.b
     if abs(xa - xb) > SNAP_M and abs(ya - yb) > SNAP_M:
@@ -476,6 +591,20 @@ def _wall_side(room: Room, wall: Wall, envelope: Envelope | None) -> WallSide:
     ------
     UnsupportedInput
         The wall is oblique: no linear side constraint describes it exactly.
+
+    Parameters
+    ----------
+    room
+        Room to place.
+    wall
+        Load-bearing wall.
+    envelope
+        Bounding box of the outline, or ``None``.
+
+    Returns
+    -------
+    WallSide
+        The side of the wall the room penetrates least.
     """
     return _wall_sides_by_penetration(room, wall, envelope)[0]
 
@@ -487,6 +616,20 @@ def _wall_sides_by_penetration(room: Room, wall: Wall, envelope: Envelope | None
     ------
     UnsupportedInput
         The wall is oblique.
+
+    Parameters
+    ----------
+    room
+        Room to place.
+    wall
+        Load-bearing wall.
+    envelope
+        Bounding box of the outline, or ``None``.
+
+    Returns
+    -------
+    list of WallSide
+        The sides tied for least penetration, best first.
     """
     _check_axis_aligned(wall)
     (xa, ya), (xb, yb) = wall.a, wall.b
@@ -509,7 +652,22 @@ def _wall_sides_by_penetration(room: Room, wall: Wall, envelope: Envelope | None
 
 
 def _axis_graph(edges: tuple[tuple[str, str], ...], nodes: Sequence[str], axis: Axis) -> nx.DiGraph:
-    """Assemble a directed acyclic graph for one axis, or raise."""
+    """Assemble a directed acyclic graph for one axis, or raise.
+
+    Parameters
+    ----------
+    edges
+        Ordered pairs ``(a, b)`` on this axis.
+    nodes
+        Room identifiers.
+    axis
+        Axis of the graph.
+
+    Returns
+    -------
+    networkx.DiGraph
+        The acyclic graph; raises ``InconsistentOrder`` on an unknown node or a cycle.
+    """
     import networkx as nx
 
     graph = nx.DiGraph()
