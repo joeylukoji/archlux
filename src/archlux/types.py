@@ -345,15 +345,15 @@ class Plan:
         Facade over :func:`archlux.export.dxf.to_dxf`, by local import, like
         :meth:`from_json` (ADR-5 exemption).
 
-        Raises
-        ------
-        InvariantViolation
-            The plan has a blocking geometric pathology (overlap, gap...).
-
         Parameters
         ----------
         path
             Target ``.dxf`` file.
+
+        Raises
+        ------
+        InvariantViolation
+            The plan has a blocking geometric pathology (overlap, gap...).
         """
         from archlux.export import to_dxf
 

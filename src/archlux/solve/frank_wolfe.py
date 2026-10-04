@@ -87,12 +87,6 @@ def restrict_to_budget(
     LP tolerance (a saturated budget). Without it, that point could fall outside the box
     and make the domain empty for no real reason.
 
-    Raises
-    ------
-    Infeasible
-        The box does not intersect the bounds of some variable: the budget is too small
-        for this plan. An input problem, not an internal error.
-
     Parameters
     ----------
     poly
@@ -108,6 +102,12 @@ def restrict_to_budget(
     -------
     Polytope
         The polytope with its bounds intersected with the box.
+
+    Raises
+    ------
+    Infeasible
+        The box does not intersect the bounds of some variable: the budget is too small
+        for this plan. An input problem, not an internal error.
     """
     names = {column: name for name, column in poly.index.items()}
     bounds: list[tuple[float, float]] = []

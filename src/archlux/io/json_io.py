@@ -142,6 +142,11 @@ def _check_ranges(data: Any) -> None:
     All the violations are reported together: fixing a file one error at a time is a
     torment, and nothing requires returning only the first.
 
+    Parameters
+    ----------
+    data
+        Decoded JSON document of a plan.
+
     Raises
     ------
     InvariantViolation
@@ -150,11 +155,6 @@ def _check_ranges(data: Any) -> None:
     Complexity
     ----------
     O(n) in the number of elements of the plan.
-
-    Parameters
-    ----------
-    data
-        Decoded JSON document of a plan.
     """
     violations: list[str] = []
     for room in data["rooms"]:

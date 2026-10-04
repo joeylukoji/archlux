@@ -698,13 +698,6 @@ def _tighten_if_short(
 
     Extracted from :func:`_solve_with_area_cuts` (PLAN.md phase 4, block 4).
 
-    Returns
-    -------
-    tuple of (Polytope, LPSolution, bool)
-        The domain and solution to continue the Kelley loop with, and whether they
-        are already the final answer (``True``: the caller returns ``solution``
-        immediately, without a tangent cut).
-
     Parameters
     ----------
     domain
@@ -723,6 +716,13 @@ def _tighten_if_short(
         Whether to compute duals.
     margin
         Margin aimed above each minimum, in square metres.
+
+    Returns
+    -------
+    tuple of (Polytope, LPSolution, bool)
+        The domain and solution to continue the Kelley loop with, and whether they
+        are already the final answer (``True``: the caller returns ``solution``
+        immediately, without a tangent cut).
     """
     tightened = _tighten_bounds(domain, solution.x, need, rooms, margin=margin)
     if tightened is domain:

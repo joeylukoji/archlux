@@ -265,18 +265,18 @@ def _glop_bound(solver: object, value: float, *, upper: bool) -> float:
 def _build_model(poly: Polytope, cuts: list[Cut] | None) -> tuple[Any, list[Any], list[Any]]:
     """Translate a polytope into a GLOP model.
 
-    Returns
-    -------
-    tuple
-        The solver, its variables in column order, and its constraints in the row
-        order of ``A`` — this order is what makes the duals pairable with ``origins``.
-
     Parameters
     ----------
     poly
         Polytope to translate.
     cuts
         Extra cut rows, or ``None``.
+
+    Returns
+    -------
+    tuple
+        The solver, its variables in column order, and its constraints in the row
+        order of ``A`` — this order is what makes the duals pairable with ``origins``.
     """
     solver = pywraplp.Solver.CreateSolver("GLOP")
     if solver is None:  # pragma: no cover - depends on the OR-Tools installation
@@ -365,6 +365,13 @@ def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[FloatVe
     optimum and the certificate empty ("origins not filled in": 68 of 200 noisy
     benchmark plans before batch 1.5c).
 
+    Parameters
+    ----------
+    poly
+        Infeasible polytope.
+    cuts
+        Extra cut rows, or ``None``.
+
     Returns
     -------
     tuple of numpy.ndarray
@@ -389,13 +396,6 @@ def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[FloatVe
     convention. The multipliers are therefore negated here to be returned in the
     canonical form ``y ≥ 0``, the only one :mod:`archlux.certify.dual` can use without
     every reader having to know the backend's internal convention.
-
-    Parameters
-    ----------
-    poly
-        Infeasible polytope.
-    cuts
-        Extra cut rows, or ``None``.
     """
     solver, variables, constraints = _build_model(poly, cuts)
     objective = solver.Objective()

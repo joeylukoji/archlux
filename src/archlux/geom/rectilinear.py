@@ -548,16 +548,16 @@ def decompose(
 def recompose(room: RectilinearRoom) -> Polygon:
     """Rebuild the original polygon from its rectangles.
 
+    Parameters
+    ----------
+    room
+        Room made of rectangles.
+
     Returns
     -------
     shapely.geometry.Polygon
         Union of the rectangles. For a partition without holes, equal to the input
         polygon of :func:`decompose`.
-
-    Parameters
-    ----------
-    room
-        Room made of rectangles.
     """
     if not room.rectangles:
         raise InvariantViolation(("RectilinearRoom without rectangle",))

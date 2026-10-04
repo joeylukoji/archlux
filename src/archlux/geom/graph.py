@@ -417,13 +417,6 @@ def _assign_group_sides(
     take **opposite** sides on that axis; only then do they share one, read from their
     hull. Mutates ``sides`` in place.
 
-    Returns
-    -------
-    list of (str, tuple of str)
-        One ``shared_sides`` entry per wall this group could not split compatibly;
-        empty if the group has fewer than two members, or every wall left it
-        compatible.
-
     Parameters
     ----------
     group
@@ -436,6 +429,13 @@ def _assign_group_sides(
         Bounding box of the outline, or ``None``.
     sides
         Wall side of each ``(room, wall)`` pair, updated in place.
+
+    Returns
+    -------
+    list of (str, tuple of str)
+        One ``shared_sides`` entry per wall this group could not split compatibly;
+        empty if the group has fewer than two members, or every wall left it
+        compatible.
     """
     members = _group_members(group, by_id)
     if members is None:
@@ -461,12 +461,6 @@ def _assign_wall_side_for_group(
     Extracted from :func:`_assign_group_sides` (PLAN.md phase 4, block 3). Mutates
     ``sides`` in place.
 
-    Returns
-    -------
-    bool
-        ``True`` if the members split compatibly (each its own side); ``False`` if
-        they had to share the hull's side instead.
-
     Parameters
     ----------
     wall
@@ -479,6 +473,12 @@ def _assign_wall_side_for_group(
         Bounding box of the outline, or ``None``.
     sides
         Wall side of each ``(room, wall)`` pair, updated in place.
+
+    Returns
+    -------
+    bool
+        ``True`` if the members split compatibly (each its own side); ``False`` if
+        they had to share the hull's side instead.
     """
     # Among equally cheap sides, prefer an assignment without opposite sides.
     choices = [_wall_sides_by_penetration(m, wall, envelope) for m in members]
@@ -553,15 +553,15 @@ def _opposite(taken: set[str]) -> bool:
 def _check_axis_aligned(wall: Wall) -> None:
     """Refuse an oblique wall: no linear side constraint describes it exactly.
 
-    Raises
-    ------
-    UnsupportedInput
-        The wall is oblique.
-
     Parameters
     ----------
     wall
         Wall to check.
+
+    Raises
+    ------
+    UnsupportedInput
+        The wall is oblique.
     """
     (xa, ya), (xb, yb) = wall.a, wall.b
     if abs(xa - xb) > SNAP_M and abs(ya - yb) > SNAP_M:
@@ -587,11 +587,6 @@ def _wall_side(room: Room, wall: Wall, envelope: Envelope | None) -> WallSide:
     A half-plane with no room between the wall and the outline (``envelope``) is never
     kept: a full-span wall ends on the outline, so nothing fits beyond its ends.
 
-    Raises
-    ------
-    UnsupportedInput
-        The wall is oblique: no linear side constraint describes it exactly.
-
     Parameters
     ----------
     room
@@ -605,17 +600,17 @@ def _wall_side(room: Room, wall: Wall, envelope: Envelope | None) -> WallSide:
     -------
     WallSide
         The side of the wall the room penetrates least.
+
+    Raises
+    ------
+    UnsupportedInput
+        The wall is oblique: no linear side constraint describes it exactly.
     """
     return _wall_sides_by_penetration(room, wall, envelope)[0]
 
 
 def _wall_sides_by_penetration(room: Room, wall: Wall, envelope: Envelope | None) -> list[WallSide]:
     """The sides of :func:`_wall_side` that tie for the least penetration, best first.
-
-    Raises
-    ------
-    UnsupportedInput
-        The wall is oblique.
 
     Parameters
     ----------
@@ -630,6 +625,11 @@ def _wall_sides_by_penetration(room: Room, wall: Wall, envelope: Envelope | None
     -------
     list of WallSide
         The sides tied for least penetration, best first.
+
+    Raises
+    ------
+    UnsupportedInput
+        The wall is oblique.
     """
     _check_axis_aligned(wall)
     (xa, ya), (xb, yb) = wall.a, wall.b

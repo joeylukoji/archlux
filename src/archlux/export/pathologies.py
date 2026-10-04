@@ -183,6 +183,16 @@ def _overlap_pathologies(rooms_ok: list[tuple[Room, Polygon]]) -> list[str]:
 def diagnose(plan: Plan) -> PathologyDiagnostic:
     """List the pathologies that break an IFC/DXF export.
 
+    Parameters
+    ----------
+    plan
+        Plan to diagnose.
+
+    Returns
+    -------
+    PathologyDiagnostic
+        Every pathology found; empty means exportable.
+
     Codes
     -----
     Each pathology is ``code:subject``:
@@ -194,16 +204,6 @@ def diagnose(plan: Plan) -> PathologyDiagnostic:
     - ``sommets_dupliques:outline``, ``auto_intersection:outline``,
       ``solide_non_ferme:outline``;
     - ``chevauchement:{a}|{b}`` (two rooms overlap; ids sorted).
-
-    Parameters
-    ----------
-    plan
-        Plan to diagnose.
-
-    Returns
-    -------
-    PathologyDiagnostic
-        Every pathology found; empty means exportable.
     """
     found, rooms_ok = _room_pathologies(plan.rooms)
     found += _wall_pathologies(plan.walls)

@@ -138,11 +138,6 @@ class AnalyticSurrogate:
         assumes a constant glazed band. That is exactly what earns it
         ``R² = −0.000`` against a simulated irradiance.
 
-        Guarantees
-        ----------
-        - Performance: **no guarantee by itself**. The value becomes bounded only
-          after going through :mod:`archlux.uq.conformal`.
-
         Parameters
         ----------
         x
@@ -156,6 +151,11 @@ class AnalyticSurrogate:
         -------
         float
             The estimated indicator, negated for ASE.
+
+        Guarantees
+        ----------
+        - Performance: **no guarantee by itself**. The value becomes bounded only
+          after going through :mod:`archlux.uq.conformal`.
         """
         del glazing
         return float(self._score_and_gradient(x, orientation, with_gradient=False)[0])
