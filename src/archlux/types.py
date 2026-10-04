@@ -67,7 +67,18 @@ formatting that used to each spell out ``indicator == "ASE"`` (PLAN.md phase 4, 
 
 
 def indicator_sign(indicator: Indicator) -> float:
-    """``-1.0`` where lower is better (ASE), ``1.0`` otherwise: the surrogates' sign flip."""
+    """``-1.0`` where lower is better (ASE), ``1.0`` otherwise: the surrogates' sign flip.
+
+    Parameters
+    ----------
+    indicator
+        Daylight indicator.
+
+    Returns
+    -------
+    float
+        ``-1.0`` for ASE, ``1.0`` otherwise.
+    """
     return -1.0 if INDICATOR_SENSE[indicator] == "<=" else 1.0
 
 
@@ -118,12 +129,24 @@ class Room:
 
     @property
     def area(self) -> float:
-        """Area, in square metres."""
+        """Area, in square metres.
+
+        Returns
+        -------
+        float
+            ``w * h``, in square metres.
+        """
         return self.w * self.h
 
     @property
     def center(self) -> Point:
-        """Geometric center, used by ``geom.graph.deduce_order``."""
+        """Geometric center, used by ``geom.graph.deduce_order``.
+
+        Returns
+        -------
+        Point
+            ``(x + w / 2, y + h / 2)``.
+        """
         return (self.x + self.w / 2.0, self.y + self.h / 2.0)
 
 
@@ -147,7 +170,13 @@ class Wall:
 
     @property
     def length(self) -> float:
-        """Length of the segment, in metres."""
+        """Length of the segment, in metres.
+
+        Returns
+        -------
+        float
+            Distance between the two end points, in metres.
+        """
         return math.dist(self.a, self.b)
 
 
@@ -261,7 +290,13 @@ class Plan:
 
     @property
     def room_ids(self) -> tuple[str, ...]:
-        """Room identifiers, **sorted**: guarantees determinism."""
+        """Room identifiers, **sorted**: guarantees determinism.
+
+        Returns
+        -------
+        tuple of str
+            The room identifiers, sorted.
+        """
         return tuple(sorted(p.id for p in self.rooms))
 
     @classmethod
@@ -293,7 +328,13 @@ class Plan:
         return load(path)
 
     def to_json(self, path: Path | str) -> None:
-        """Write this plan as JSON, sorted keys, UTF-8 encoding."""
+        """Write this plan as JSON, sorted keys, UTF-8 encoding.
+
+        Parameters
+        ----------
+        path
+            Target file.
+        """
         from archlux.io.json_io import write
 
         write(self, path)
@@ -308,6 +349,11 @@ class Plan:
         ------
         InvariantViolation
             The plan has a blocking geometric pathology (overlap, gap...).
+
+        Parameters
+        ----------
+        path
+            Target ``.dxf`` file.
         """
         from archlux.export import to_dxf
 
@@ -318,6 +364,18 @@ class Plan:
 
         Facade over :func:`archlux.export.ifc.to_ifc`. With ``validate`` (default), a
         pathological plan is not written: the report says why, nothing is raised.
+
+        Parameters
+        ----------
+        path
+            Target ``.ifc`` file.
+        validate
+            Whether to refuse writing a pathological plan.
+
+        Returns
+        -------
+        ExportReport
+            The report of the export.
         """
         from archlux.export import to_ifc
 
@@ -328,6 +386,15 @@ class Plan:
 
         Facade over :func:`archlux.export.svg.render` (exported as ``render_svg``).
         ``walls`` adds walls to draw, typically ``ctx.structure.load_bearing_walls``.
+
+        Parameters
+        ----------
+        path
+            Target ``.svg`` file.
+        title
+            Label drawn at the top.
+        walls
+            Extra walls to draw.
         """
         from archlux.export import render_svg
 
@@ -534,7 +601,13 @@ class PerformanceBound:
 
     @property
     def coverage_guaranteed(self) -> bool:
-        """True only when the nominal coverage holds: an exchangeable plan."""
+        """True only when the nominal coverage holds: an exchangeable plan.
+
+        Returns
+        -------
+        bool
+            ``True`` only in the exchangeable regime.
+        """
         return self.regime == "exchangeable"
 
 
@@ -559,7 +632,18 @@ class ModelTrace:
             raise InvariantViolation((f"alpha hors ]0, 1[ : {self.alpha}",))
 
     def __getitem__(self, key: str) -> str | int | float:
-        """Dictionary access for manifest assertions (`MILESTONE-6`)."""
+        """Dictionary access for manifest assertions (`MILESTONE-6`).
+
+        Parameters
+        ----------
+        key
+            Field name.
+
+        Returns
+        -------
+        str, int or float
+            The value of that field.
+        """
         try:
             return getattr(self, key)  # type: ignore[no-any-return]
         except AttributeError as exc:
