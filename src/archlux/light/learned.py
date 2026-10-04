@@ -52,7 +52,20 @@ MAX_PARAMETERS = 2_000_000
 
 @lru_cache(maxsize=8)
 def _dense_from_disk(path: str, fingerprint: str) -> DenseSurrogate:
-    """Load an ``npz`` once per ``(path, fingerprint)``, after a SHA-256 check."""
+    """Load an ``npz`` once per ``(path, fingerprint)``, after a SHA-256 check.
+
+    Parameters
+    ----------
+    path
+        ``npz`` weights file.
+    fingerprint
+        Expected SHA-256 of the file.
+
+    Returns
+    -------
+    DenseSurrogate
+        The loaded surrogate, cached per ``(path, fingerprint)``.
+    """
     current = hashlib.sha256(Path(path).read_bytes()).hexdigest()
     if current != fingerprint:
         raise InvariantViolation((f"weights fingerprint mismatch for {path}",))
@@ -88,7 +101,13 @@ class LearnedSurrogate:
 
     @property
     def indicator(self) -> Indicator:
-        """Name of the modelled indicator."""
+        """Name of the modelled indicator.
+
+        Returns
+        -------
+        Indicator
+            The modelled indicator.
+        """
         return self.target_indicator
 
     def _backend(self) -> DenseSurrogate:
@@ -118,23 +137,74 @@ class LearnedSurrogate:
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Estimate the indicator. Loads ``torch`` only for a ``.pt`` file."""
+        """Estimate the indicator. Loads ``torch`` only for a ``.pt`` file.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        float
+            The predicted indicator.
+        """
         return self._backend().evaluate(x, orientation, glazing=glazing)
 
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Finite-difference gradient of the backend, returned as ``numpy``."""
+        """Finite-difference gradient of the backend, returned as ``numpy``.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Gradient, same dimension as ``x``.
+        """
         return self._backend().gradient(x, orientation, glazing=glazing)
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Learned predictive standard deviation."""
+        """Learned predictive standard deviation.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        float
+            The predictive standard deviation.
+        """
         return self._backend().uncertainty(x, orientation, glazing=glazing)
 
     def n_parameters(self) -> int:
-        """Size of the loaded model."""
+        """Size of the loaded model.
+
+        Returns
+        -------
+        int
+            Number of parameters of the loaded model.
+        """
         return self._backend().n_parameters()
 
 

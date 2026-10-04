@@ -68,7 +68,18 @@ _GREY = "#dcdcdc"
 
 
 def _escape(text: str) -> str:
-    """Neutralize the five characters XML does not tolerate in a text node."""
+    """Neutralize the five characters XML does not tolerate in a text node.
+
+    Parameters
+    ----------
+    text
+        Text to place in an XML text node.
+
+    Returns
+    -------
+    str
+        The text with ``& < > " '`` escaped.
+    """
     for raw, entity in (
         ("&", "&amp;"),
         ("<", "&lt;"),
@@ -83,7 +94,20 @@ def _escape(text: str) -> str:
 def _extent(
     plans: tuple[Plan, ...], outlines: tuple[tuple[Point, ...], ...]
 ) -> tuple[float, float, float, float]:
-    """Common bounding box, in meters. Empty if nothing is drawable."""
+    """Common bounding box, in meters. Empty if nothing is drawable.
+
+    Parameters
+    ----------
+    plans
+        Plans to draw.
+    outlines
+        Outlines to draw.
+
+    Returns
+    -------
+    tuple of float
+        ``(xmin, ymin, xmax, ymax)``; a unit box when nothing is drawable.
+    """
     xs: list[float] = []
     ys: list[float] = []
     for plan in plans:
@@ -111,6 +135,28 @@ def _panel(
 
     Load-bearing walls are drawn thick and dark (class ``wall-load-bearing``), other
     walls thin and grey (class ``wall``).
+
+    Parameters
+    ----------
+    plan
+        Plan to draw.
+    outline
+        Target outline, drawn dashed.
+    title
+        Label of the panel.
+    extent
+        Common metric extent.
+    offset_x
+        Horizontal offset of the panel, in pixels.
+    offset_y
+        Vertical offset of the panel, in pixels.
+    walls
+        Extra walls to draw.
+
+    Returns
+    -------
+    list of str
+        The SVG fragments of the panel.
     """
     x0, y0, x1, y1 = extent
     width_m = max(x1 - x0, 1e-9)
@@ -333,7 +379,18 @@ def sheet(
 
 
 def _height(extent: tuple[float, float, float, float]) -> float:
-    """Document height, in pixels, for a given metric extent."""
+    """Document height, in pixels, for a given metric extent.
+
+    Parameters
+    ----------
+    extent
+        Metric extent of the drawing.
+
+    Returns
+    -------
+    float
+        Height of the document, in pixels.
+    """
     x0, y0, x1, y1 = extent
     width_m = max(x1 - x0, 1e-9)
     height_m = max(y1 - y0, 1e-9)
@@ -342,7 +399,22 @@ def _height(extent: tuple[float, float, float, float]) -> float:
 
 
 def _document(width: float, height: float, parts: list[str]) -> str:
-    """Wrap the fragments in a standalone SVG document."""
+    """Wrap the fragments in a standalone SVG document.
+
+    Parameters
+    ----------
+    width
+        Width, in pixels.
+    height
+        Height, in pixels.
+    parts
+        SVG fragments.
+
+    Returns
+    -------
+    str
+        The complete SVG document.
+    """
     body = "\n  ".join(parts)
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" '
