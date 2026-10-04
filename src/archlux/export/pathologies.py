@@ -23,12 +23,29 @@ class PathologyDiagnostic:
 
     @property
     def exportable(self) -> bool:
-        """No blocking pathology."""
+        """No blocking pathology.
+
+        Returns
+        -------
+        bool
+            ``True`` when no pathology was found.
+        """
         return not self.pathologies
 
 
 def _room_box(room: Room) -> Polygon:
-    """Shapely rectangle of a room, in absolute coordinates."""
+    """Shapely rectangle of a room, in absolute coordinates.
+
+    Parameters
+    ----------
+    room
+        Room to convert.
+
+    Returns
+    -------
+    Polygon
+        The room's rectangle.
+    """
     return box(room.x, room.y, room.x + room.w, room.y + room.h)
 
 
@@ -41,6 +58,16 @@ def _room_pathologies(rooms: tuple[Room, ...]) -> tuple[list[str], list[tuple[Ro
     rebuilding a ``box`` on every comparison would have been too.
 
     Extracted from :func:`diagnose` (PLAN.md phase 4, block 13, item 38).
+
+    Parameters
+    ----------
+    rooms
+        Rooms of the plan.
+
+    Returns
+    -------
+    tuple of list of str and list of (Room, Polygon)
+        The pathology codes, and the geometrizable rooms with their polygons.
     """
     found: list[str] = []
     rooms_ok: list[tuple[Room, Polygon]] = []
@@ -59,6 +86,16 @@ def _wall_pathologies(walls: tuple[Wall, ...]) -> list[str]:
     """Degenerate (zero-length) walls.
 
     Extracted from :func:`diagnose` (PLAN.md phase 4, block 13, item 38).
+
+    Parameters
+    ----------
+    walls
+        Walls of the plan.
+
+    Returns
+    -------
+    list of str
+        One ``arete_nulle`` code per degenerate wall.
     """
     return [f"arete_nulle:{wall.id}" for wall in walls if _zero_length_edge(wall)]
 
@@ -69,6 +106,16 @@ def _orphan_opening_pathologies(plan: Plan) -> list[str]:
     IFC4 wants every ``IfcOpeningElement`` to void an element.
 
     Extracted from :func:`diagnose` (PLAN.md phase 4, block 13, item 38).
+
+    Parameters
+    ----------
+    plan
+        Plan to check.
+
+    Returns
+    -------
+    list of str
+        One ``ouverture_orpheline`` code per opening on an unknown wall.
     """
     walls = {wall.id for wall in plan.walls}
     return [
@@ -82,6 +129,16 @@ def _outline_pathologies(outline: tuple[tuple[float, float], ...]) -> list[str]:
     """Duplicate vertices, self-intersection, or a degenerate/open outline.
 
     Extracted from :func:`diagnose` (PLAN.md phase 4, block 13, item 38).
+
+    Parameters
+    ----------
+    outline
+        Vertices of the outline.
+
+    Returns
+    -------
+    list of str
+        The outline's pathology codes; empty for no outline.
     """
     if not outline:
         return []
@@ -103,6 +160,16 @@ def _overlap_pathologies(rooms_ok: list[tuple[Room, Polygon]]) -> list[str]:
     """Pairwise room overlap, ``O(n^2)``, accepted.
 
     Extracted from :func:`diagnose` (PLAN.md phase 4, block 13, item 38).
+
+    Parameters
+    ----------
+    rooms_ok
+        Geometrizable rooms with their polygons.
+
+    Returns
+    -------
+    list of str
+        One ``chevauchement`` code per overlapping pair.
     """
     found: list[str] = []
     for i, (a, ra) in enumerate(rooms_ok):
@@ -127,6 +194,16 @@ def diagnose(plan: Plan) -> PathologyDiagnostic:
     - ``sommets_dupliques:outline``, ``auto_intersection:outline``,
       ``solide_non_ferme:outline``;
     - ``chevauchement:{a}|{b}`` (two rooms overlap; ids sorted).
+
+    Parameters
+    ----------
+    plan
+        Plan to diagnose.
+
+    Returns
+    -------
+    PathologyDiagnostic
+        Every pathology found; empty means exportable.
     """
     found, rooms_ok = _room_pathologies(plan.rooms)
     found += _wall_pathologies(plan.walls)
@@ -137,12 +214,34 @@ def diagnose(plan: Plan) -> PathologyDiagnostic:
 
 
 def _zero_length_edge(wall: Wall) -> bool:
-    """Say whether the wall is degenerate (zero length within ``_EPS``)."""
+    """Say whether the wall is degenerate (zero length within ``_EPS``).
+
+    Parameters
+    ----------
+    wall
+        Wall to check.
+
+    Returns
+    -------
+    bool
+        ``True`` when the wall is shorter than ``_EPS``.
+    """
     return bool(LineString([wall.a, wall.b]).length <= _EPS)
 
 
 def _duplicate_vertices(outline: tuple[tuple[float, float], ...]) -> bool:
-    """Say whether the outline repeats a vertex, within 1e-9 m."""
+    """Say whether the outline repeats a vertex, within 1e-9 m.
+
+    Parameters
+    ----------
+    outline
+        Vertices of the outline.
+
+    Returns
+    -------
+    bool
+        ``True`` when a vertex repeats, within 1e-9 m.
+    """
     seen: set[tuple[float, float]] = set()
     for point in outline:
         key = (round(point[0], 9), round(point[1], 9))
