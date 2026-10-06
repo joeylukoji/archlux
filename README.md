@@ -261,6 +261,20 @@ information (`origins`, `certificat_farkas`, `verified`).
 Generative models always return something, even when the request is impossible, and
 the result is then wrong somewhere without any warning. archlux refuses and says why.
 
+### From the command line
+
+The same operations on a plan file (`Plan.to_json` format). The plan carries no
+context: its load-bearing walls are the structure, its outline is the site, and the
+regulation comes from the options.
+
+```text
+archlux verify plan.json --min-width 0.90 --min-area bedroom=9
+archlux legalize plan.json --tiling --min-width 0.90 -o fixed.json --svg fixed.svg --report
+archlux feasible plan.json --min-area bedroom=9
+```
+
+Exit code 0 means valid (or feasible), 1 invalid (or infeasible), 2 an error.
+
 ---
 
 ## How it works

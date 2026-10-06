@@ -55,6 +55,9 @@ ALLOWED: dict[str, frozenset[str]] = {
     "data": frozenset({"types", "errors", "uq", "orient", "geom"}),
     "certify": frozenset({"types", "errors", "geom", "uq"}),
     "io": frozenset({"types", "errors"}),
+    # Command line (PLAN.md 5.2): a top-level consumer, like the root package; nobody
+    # imports it.
+    "cli": frozenset({"types", "errors", "api", "io", "certify", "feasibility", "export"}),
     # Active learning: a leaf orchestrator; light protocol + uq, no torch.
     "active": frozenset({"types", "errors", "light.protocol", "uq"}),
     # BIM export: a leaf; types + errors; ifcopenshell optional (outside archlux).

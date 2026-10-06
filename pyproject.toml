@@ -21,6 +21,9 @@ dependencies = [
     "structlog>=24.1",
 ]
 
+[project.scripts]
+archlux = "archlux.cli:main"
+
 [project.optional-dependencies]
 # torch n'apparait QUE dans cet extra. Le noyau ne doit jamais l'importer.
 appris = ["torch>=2.2"]

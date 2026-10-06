@@ -8,6 +8,11 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md 5.2: command line
+
+- New `archlux` command (`archlux.cli`, entry point in `pyproject.toml`): `legalize` (`--tiling`, `--repair-budget`, `-o`, `--svg`, `--report`), `verify` and `feasible`. A plan file has no context, so it is built from the plan (load-bearing walls, outline, room types) and the options `--min-width`, `--min-area TYPE=M2` (repeatable) and `--orientation`. Exit codes: 0 valid or feasible, 1 invalid or infeasible, 2 error. Names are English, like the API (PLAN.md wrote `verifier`, `faisable`, `--pavage`).
+- New `tests/unit/test_cli.py`.
+
 ### Docs — PLAN.md phase 4 closed
 
 - Phase 4 is closed with its exit gate partly unmet; the remainder is recorded in the new `docs/plans/tech-debt.md` (modules over 400 lines, 17 functions over complexity 10, 8 experiment scripts over 50 lines, coverage and review not re-measured).
