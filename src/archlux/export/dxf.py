@@ -82,4 +82,4 @@ def to_dxf(plan: Plan, path: Path | str) -> None:
             ]
         )
     rows.extend(["0", "ENDSEC", "0", "EOF"])
-    path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    path.write_text("\n".join(rows) + "\n", encoding="utf-8", newline="\n")

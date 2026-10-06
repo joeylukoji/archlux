@@ -22,14 +22,18 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md phase 4, block 17, item 47: structured debug events
 
-- New `archlux._log.event(logger, name, **fields)`: a structured event sent to the standard `logging` module at `DEBUG`, under `archlux.<package>`. Silent by default (a disabled event costs one level check); records carry `event` and `fields` attributes for structured handlers. `structlog` is deliberately not used here: unconfigured, it prints every event to stdout, and its import costs about 0.4 s.
+- New `archlux._log.event(logger, name, **fields)`: a structured event sent to the standard `logging` module at `DEBUG`, under `archlux.<package>`. Silent by default (loggers cached per name; a disabled event costs about a microsecond); records carry `event` and `fields` attributes for structured handlers; `level=` raises an event to `WARNING`. `structlog` is no longer used: unconfigured, it prints every event to stdout, and its import costs about 0.4 s. Its two remaining callers (`active.loop`, `lmo.cuts`) now go through `_log.event` at `WARNING` (`calibration.cycle_skipped`, formerly the French `calibration_cycle_ignoree`, and `cut.limit`), and **`structlog` is removed from the core dependencies**. ARCHITECTURE.md and the blueprint name the new mechanism.
 - Events: `frank_wolfe.iteration` and `frank_wolfe.stop` (`solve`), `load.rejected` (`data.loaders`), `legalize.gap_needs_tiling` and `legalize.duals_fallback` (`api`), `export.refused` (`export.ifc`, `export.dxf`). No behaviour change.
-- New `tests/unit/test_log_events.py`.
+- New `tests/unit/test_log_events.py`, including the `legalize.duals_fallback` path.
 
 ### Docs — PLAN.md phase 4, block 17, item 48: every callable documents its parameters and return
 
 - 611 missing numpydoc ``Parameters``/``Returns`` sections are filled across ``src/archlux``; docstrings only, no code changed.
-- New ``tests/test_docstrings.py`` runs ``numpydoc lint`` with ``[tool.numpydoc_validation] checks = ["PR01", "RT01"]`` (``pyproject.toml``), so a new undocumented parameter or return fails the suite and CI. ``numpydoc`` joins the ``dev`` extra. The other numpydoc categories (examples, extended summaries...) still have open findings and are not enforced.
+- New ``tests/test_docstrings.py`` runs ``numpydoc lint`` with ``[tool.numpydoc_validation] checks = ["PR01", "RT01"]`` (``pyproject.toml``), so a new undocumented parameter or return fails the suite and CI. The test fails if numpydoc crashes (it used to pass silently), and a second test requires a docstring on every public function, method and class (PR01/RT01 only inspect existing docstrings). ``numpydoc`` joins the ``dev`` extra. The other numpydoc categories (examples, extended summaries...) still have open findings and are not enforced.
+
+### Fixed — IFC and DXF files differed between Windows and Linux
+
+- `to_ifc` and `to_dxf` wrote in text mode, so `\n` became `\r\n` on Windows: the same plan gave two different files. Both now write `\n` on every platform, like `io.json_io` already did. This is why the golden IFC hash was pinned twice to two values (a71e909 re-pinned it from a Windows machine and turned CI red on Linux): the original value is restored and a test checks the writers pass `newline="\n"`. The golden test now certifies its plan with the exact proof instead of `legalize`, so it does not depend on the LP solver either.
 
 ### Added — PLAN.md phase 4, block 14 (`data`), item 43: `load_msd(impute_openings=)`
 
@@ -44,7 +48,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 - `_convert` (`data/loaders.py`, was CC 36) split into `_parse_entities`, `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. Rejection reasons and their order are unchanged.
 - Complexity ratchet moves from 18 to 17.
-- Deferred (see the plan): splitting `loaders.py` into modules, the `MSDSettings` parameter object, and removing the unused `impute_openings`.
+- Deferred (see the plan): splitting `loaders.py` into modules (985 lines, over the 400-line exit gate) and the `MSDSettings` parameter object.
 
 ### Added — bilingual documentation site (English / French)
 

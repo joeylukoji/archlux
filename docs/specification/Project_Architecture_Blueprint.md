@@ -473,7 +473,7 @@ and the drift tests will depend. Written once here, it avoids three diverging ge
 | Determinism | explicit sorting of identifiers, never the order of a `set` | `Plan.room_ids`, `RelativeOrder.rooms` |
 | Seeds | `seed: int` mandatory, **without default** | Signatures of `uq.drift`, `light.validation` |
 | Metrics | value **+** interval, never a bare scalar | `PerformanceBound` |
-| Logs | `structlog`, structured, never free text | Review |
+| Logs | standard `logging` through `archlux._log.event`, structured, never free text | Review |
 | Frozen dictionaries | tuples of pairs in the frozen types | `Regulation`, `Manifest`, `Certificate` |
 
 The last point deserves a word: a `dict` in a `dataclass(frozen=True)` stays mutable

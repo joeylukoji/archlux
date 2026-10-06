@@ -14,14 +14,15 @@ silent error capable of invalidating a publication. Two modes follow from this:
 from __future__ import annotations
 
 import inspect
+import logging
 import warnings
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import numpy as np
-import structlog
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_attributes, renamed_parameters
+from archlux._log import event
 from archlux.active.density import kernel_density
 from archlux.active.selection import AcquisitionStrategy
 from archlux.errors import InvariantViolation
@@ -33,8 +34,6 @@ if TYPE_CHECKING:
     from archlux.types import Orientation
 
 __all__ = ["ActiveReport", "Loop"]
-
-_LOG = structlog.get_logger("archlux.active.loop")
 
 
 @renamed_attributes(
@@ -617,8 +616,10 @@ class Loop:
             self._calibrate(calibrator, xs_cal, ys_cal, os_cal)
             history.append(_mean_width(calibrator, self.surrogate, holdout))
         except InvariantViolation as failure:
-            _LOG.warning(
-                "calibration_cycle_ignoree",
+            event(
+                "archlux.active",
+                "calibration.cycle_skipped",
+                level=logging.WARNING,
                 cycle=cycle,
                 n_calibration=len(xs_cal),
                 violations=failure.violations,

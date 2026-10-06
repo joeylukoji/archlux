@@ -9,7 +9,8 @@ an application that uses it can route standard logging through it.
 Each record carries the event name and its fields twice: as attributes
 (``record.event``, ``record.fields``) for structured handlers, and in the message as
 ``event key=value ...`` for plain ones. Fields are formatted only when the logger is
-enabled, so a disabled event costs one level check.
+enabled, and loggers are cached per name, so a disabled event costs a dictionary
+lookup and a level check (about a microsecond), negligible next to an LP solve.
 
 This module imports only ``logging``: every layer may depend on it.
 """
@@ -20,9 +21,12 @@ import logging
 
 __all__ = ["event"]
 
+_LOGGERS: dict[str, logging.Logger] = {}
+"""Loggers by name: ``logging.getLogger`` takes a lock on every call."""
 
-def event(logger: str, name: str, **fields: object) -> None:
-    """Emit one structured ``DEBUG`` event.
+
+def event(logger: str, name: str, *, level: int = logging.DEBUG, **fields: object) -> None:
+    """Emit one structured event, ``DEBUG`` unless ``level`` says otherwise.
 
     Parameters
     ----------
@@ -30,6 +34,9 @@ def event(logger: str, name: str, **fields: object) -> None:
         Logger name, ``archlux.<package>`` by convention.
     name
         Event name, dotted (``"frank_wolfe.iteration"``).
+    level
+        Logging level. ``logging.WARNING`` for a condition the caller should see
+        (standard logging shows warnings on stderr when nothing is configured).
     **fields
         Values attached to the event.
 
@@ -37,8 +44,10 @@ def event(logger: str, name: str, **fields: object) -> None:
     --------
     >>> event("archlux.solve", "frank_wolfe.stop", status="converged", iterations=3)
     """
-    log = logging.getLogger(logger)
-    if not log.isEnabledFor(logging.DEBUG):
+    log = _LOGGERS.get(logger)
+    if log is None:
+        log = _LOGGERS.setdefault(logger, logging.getLogger(logger))
+    if not log.isEnabledFor(level):
         return
     text = " ".join(f"{key}={value!r}" for key, value in sorted(fields.items()))
-    log.debug("%s %s", name, text, extra={"event": name, "fields": dict(fields)})
+    log.log(level, "%s %s", name, text, extra={"event": name, "fields": dict(fields)})
