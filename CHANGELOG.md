@@ -8,6 +8,10 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Docs — PLAN.md phase 4 closed
+
+- Phase 4 is closed with its exit gate partly unmet; the remainder is recorded in the new `docs/plans/tech-debt.md` (modules over 400 lines, 17 functions over complexity 10, 8 experiment scripts over 50 lines, coverage and review not re-measured).
+
 ### Added — PLAN.md phase 4, block 16 (`experiments/`): `archlux.data.generated`
 
 - New public module `archlux.data.generated` (`generated_boxes`, `generated_scale`, `generated_plan`, and the constants `TARGET_AREA_M2`, `MIN_SIDE_M`, `DEFAULT_MIN_WIDTH`): the loader of generated plans (HouseDiffusion JSONL → `Plan`, `Context`, `Diagnostic`), moved unchanged out of `experiments/j8_generation.py`.

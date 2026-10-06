@@ -610,7 +610,7 @@ build --strict` clean, `test_language.py`/`test_neutrality.py` green.
     zero-variance TOST branch were untested). Added `tests/unit/test_stats_edges.py`:
     `stats.py` is now 100 %; total coverage 90.57 %.
 
-### 16. `experiments/` — in progress
+### 16. `experiments/` — closed, rest deferred to [technical debt](tech-debt.md) (D3)
 
 46. **Step 1 done: no script imports another one.** `j8_visuals.py` and
     `j9_orientation.py` imported `_build`, `_scale` and `BUDGETS` from
