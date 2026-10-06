@@ -11,14 +11,16 @@ from __future__ import annotations
 
 import hashlib
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from hypothesis import given, settings
 
-from archlux import __version__, legalize
+from archlux import __version__
+from archlux.certify.proof import verify_exactly
 from archlux.export import diagnose, to_ifc
-from archlux.types import Opening, Plan, Room, Wall
+from archlux.types import Certificate, Opening, Plan, Room, Wall
 from tests.properties.strategies import DEFAULT_CONTEXT, valid_plans
 
 _GUID = re.compile(r"^[0-3][0-9A-Za-z_$]{21}$")
@@ -125,7 +127,7 @@ def test_the_global_ids_do_not_depend_on_class_or_field_names(tmp_path: Path) ->
     assert project.group(1) == "0Iie9ISb$ViPPopaAp6Tto"
 
 
-_GOLDEN_SHA256 = "13d2fa94afcef8deeb7c8ee7ec93975e41af5987e8cec406ff9d6eb5649fd73e"
+_GOLDEN_SHA256 = "230697e34fe521d96ed76cdc5188ac4dd2aaa2f543785d2bf90595d0364e913d"
 """SHA-256 of the golden export below, package version replaced by ``<version>``."""
 
 
@@ -133,12 +135,42 @@ def test_the_export_of_a_certified_plan_is_byte_identical(tmp_path: Path) -> Non
     """Golden file (review of PLAN.md phase 4, block 13): the IFC writer split must not
     change one byte. Walls, an opening and a certificate annex cover every emission block.
 
-    The writer has no timestamp; the only environment-dependent content is the package
-    version (``IFCAPPLICATION`` and the certificate text), normalized before hashing so a
-    release does not break the pin. Change the constant only on purpose.
+    The plan is certified by the exact proof, without any LP solve, so nothing depends on
+    the solver build. The writer has no timestamp; the only environment-dependent content
+    is the package version (``IFCAPPLICATION`` and the certificate text), normalized before
+    hashing so a release does not break the pin. Change the constant only on purpose.
     """
-    plan = legalize(_plan(), DEFAULT_CONTEXT)
+    # Certified by the exact proof alone, not by legalize: the LP solver's last digits
+    # (duals, coordinates) vary with the OR-Tools build, and made this hash depend on
+    # the environment (it was pinned twice to two different values).
+    proposed = _plan()
+    proof = verify_exactly(proposed, DEFAULT_CONTEXT)
+    assert proof.valid
+    plan = replace(proposed, certificate=Certificate(geometry=proof))
     assert plan.certificate is not None and plan.openings
     assert to_ifc(plan, tmp_path / "plan.ifc", validate=True).valid
     data = (tmp_path / "plan.ifc").read_bytes().replace(__version__.encode(), b"<version>")
     assert hashlib.sha256(data).hexdigest() == _GOLDEN_SHA256
+
+
+@pytest.mark.parametrize("export", ["ifc", "dxf"])
+def test_exports_write_lf_line_endings_on_every_platform(
+    export: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A text-mode write turns ``\\n`` into ``\\r\\n`` on Windows: the same plan gave two
+    different files, and the golden hash above was pinned once on each platform."""
+    from archlux.export import to_dxf
+
+    seen: list[object] = []
+    original = Path.write_text
+
+    def spy(self: Path, data: str, *args: object, **kwargs: object) -> int:
+        seen.append(kwargs.get("newline"))
+        return original(self, data, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "write_text", spy)
+    if export == "ifc":
+        to_ifc(_plan(), tmp_path / "plan.ifc")
+    else:
+        to_dxf(_plan(), tmp_path / "plan.dxf")
+    assert seen == ["\n"]
