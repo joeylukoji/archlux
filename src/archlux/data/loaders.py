@@ -943,8 +943,9 @@ def _convert(
 ) -> MSDApartment | str:
     """Convert an apartment, or return the **rejection reason** in plain text.
 
-    The four stages (straighten, snap, decompose, attach openings) are the helpers above;
-    each returns either its result or the reason the apartment is rejected.
+    The stages are the helpers above, in order: `_parse_entities` → `_dominant_angle`
+    → `_stitched_rooms` → `_decompose_rooms` → `_assemble`; each returns either its
+    result or the reason the apartment is rejected.
 
     Parameters
     ----------

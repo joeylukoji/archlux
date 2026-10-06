@@ -88,3 +88,38 @@ def test_a_gap_refusal_is_reported(caplog: pytest.LogCaptureFixture) -> None:
         legalize(gapped_plan(), make_context())
     (record,) = _events(caplog, "legalize.gap_needs_tiling")
     assert all(v.startswith("gap") for v in record.fields["violations"])  # type: ignore[attr-defined]
+
+
+def test_a_missing_frank_wolfe_dual_falls_back_and_is_reported(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review of block 17: ``legalize.duals_fallback`` had no test."""
+    from dataclasses import replace
+
+    import archlux as ax
+    import archlux.api
+    from archlux.light.analytic import AnalyticSurrogate
+
+    def without_duals(*args: object, **kwargs: object) -> object:
+        return replace(frank_wolfe(*args, **kwargs), duals=None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(archlux.api, "frank_wolfe", without_duals)
+    caplog.set_level(logging.DEBUG, logger="archlux.api")
+    outline = ((0.0, 0.0), (12.0, 0.0), (12.0, 9.0), (0.0, 9.0))
+    plan = ax.Plan(
+        rooms=(
+            ax.Room(id="living_room", type="living_room", x=0.0, y=0.0, w=12.0, h=5.0),
+            ax.Room(id="bedroom", type="bedroom", x=0.0, y=4.0, w=12.0, h=5.0),
+        ),
+        outline=outline,
+    )
+    ctx = ax.Context(
+        structure=ax.Structure(()),
+        orientation=ax.Orientation(0.0),
+        outline=outline,
+        regulation=ax.Regulation((), 1.0),
+    )
+    legalized = ax.legalize(plan, ctx, objective=AnalyticSurrogate())
+    assert legalized.certificate is not None and legalized.certificate.geometry.valid
+    (fallback,) = _events(caplog, "legalize.duals_fallback")
+    assert fallback.fields == {"source": "l1_pass"}  # type: ignore[attr-defined]

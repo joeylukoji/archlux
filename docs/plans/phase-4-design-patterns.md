@@ -583,13 +583,14 @@ build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 ### 14. `data` — partly done
 
 40. **Not done, deferred.** `chargeurs.py` is already a deprecation shim pointing at
-    `loaders.py` (884 lines). Splitting `loaders.py` into `msd.py`, `labels_sd.py`,
+    `loaders.py` (985 lines after item 42, over the 400-line exit gate: this item blocks
+    the phase-4 exit gate until it is done). Splitting `loaders.py` into `msd.py`, `labels_sd.py`,
     `decoupage.py` is a file reorganization with its own import-path shims: a separate
     decision, not a CC fix.
 41. **Not done, deferred.** `MSDSettings` would replace the eight keyword parameters of
     `load_msd`: a public signature change, so it needs a deprecation path (ADR 0001)
     and a go-ahead first.
-42. Done. `_convert` (`loaders.py`, was CC 36) split into `_parse_entities`,
+42. Done. `_convert` (`loaders.py`, was CC 36, now CC 10) split into `_parse_entities`,
     `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. The
     rejection reasons and their order are unchanged. `_convert` is now CC 17 before the
     final assembly move and under CC 10 after it.

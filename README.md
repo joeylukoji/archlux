@@ -107,7 +107,7 @@ The package is not on PyPI yet: install from a clone with `pip install -e ".[dev
 The `sim` and `stats` extras exist but are empty.
 
 **The core never imports PyTorch**, and a test checks it (`tests/test_dependencies.py`).
-Core dependencies: `numpy`, `scipy`, `shapely`, `networkx`, `ortools`, `structlog`.
+Core dependencies: `numpy`, `scipy`, `shapely`, `networkx`, `ortools`.
 
 ---
 

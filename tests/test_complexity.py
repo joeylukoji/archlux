@@ -29,7 +29,8 @@ MAX_VIOLATIONS = 17
 CC 10; block 4 brought `solve` and `_solve_with_area_cuts` under CC 10; block 5 brought
 `frank_wolfe` under CC 10; block 9 brought `verify_infeasibility`, `rational_tiling`
 and `verify_exactly` under CC 10; block 12 brought `Loop.run` under CC 10; block 13
-brought `_ecrire_spf_minimal` and `pathologie.diagnose` under CC 10. Lower it in the
+brought `_ecrire_spf_minimal` and `pathologie.diagnose` under CC 10; block 14 brought
+`_convert` under CC 10. Lower it in the
 same commit that brings a block under CC 10; never raise it."""
 
 

@@ -50,6 +50,7 @@ Step-by-step derivation, use cases and DOI: ``docs/formulas/area-cuts.md``.
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -61,6 +62,7 @@ import numpy as np
 from scipy import sparse
 
 from archlux._deprecation import renamed_parameters
+from archlux._log import event
 from archlux.arrays import FloatVector
 from archlux.errors import InvariantViolation
 from archlux.lmo.solver import solve
@@ -543,10 +545,7 @@ def _ids_to_cut(
     remaining: list[str] = []
     for identifier in _short_of_area(x, poly, need, rooms):
         if counts[identifier] >= MAX_CUTS_PER_ROOM:
-            # Lazy: structlog costs up to 0.4 s at import and this path is rare.
-            import structlog
-
-            structlog.get_logger("archlux.lmo.cuts").warning("cut.limit", room=identifier)
+            event("archlux.lmo", "cut.limit", level=logging.WARNING, room=identifier)
             continue
         remaining.append(identifier)
     return remaining

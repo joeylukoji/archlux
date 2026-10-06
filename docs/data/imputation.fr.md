@@ -11,3 +11,12 @@ Règle : baie centrée (`s=0.5`) sur chaque mur sans ouverture, largeur relative
 Pour mesurer l'effet : calibrer (jalon 5) séparément sur le sous-jeu aux baies
 observées et sur le jeu imputé, et **publier les deux** couvertures. Une
 couverture obtenue seulement sur l'imputé n'est pas une couverture sur le réel.
+
+Elle s'applique au chargement sur demande, jamais par défaut :
+
+```python
+from archlux.data.loaders import load_msd
+
+# Off by default: plans are loaded exactly as observed.
+apartments = load_msd("mds_V2_5.372k.csv", impute_openings=True)
+```
