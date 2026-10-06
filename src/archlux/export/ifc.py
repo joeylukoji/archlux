@@ -433,7 +433,7 @@ def _write_minimal_spf(plan: Plan, path: Path) -> str:
             "END-ISO-10303-21;",
         ]
     )
-    path.write_text(text + "\n", encoding="utf-8")
+    path.write_text(text + "\n", encoding="utf-8", newline="\n")
     return "spf-minimal"
 
 

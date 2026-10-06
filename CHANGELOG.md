@@ -8,6 +8,10 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Fixed — IFC and DXF files differed between Windows and Linux
+
+- `to_ifc` and `to_dxf` wrote in text mode, so `\n` became `\r\n` on Windows: the same plan gave two different files. Both now write `\n` on every platform, like `io.json_io` already did. This is why the golden IFC hash was pinned twice to two values (a71e909 re-pinned it from a Windows machine and turned CI red on Linux): the original value is restored and a test checks the writers pass `newline="\n"`. The golden test now certifies its plan with the exact proof instead of `legalize`, so it does not depend on the LP solver either.
+
 ### Added — PLAN.md phase 4, block 14 (`data`), item 43: `load_msd(impute_openings=)`
 
 - `load_msd` gains a keyword-only `impute_openings: bool = False`. When true, each wall without an opening gets a centred one, via the existing `archlux.data.imputation.impute_openings`, which was previously unused by the library. Off by default: loaded plans are unchanged.
@@ -21,7 +25,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 - `_convert` (`data/loaders.py`, was CC 36) split into `_parse_entities`, `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. Rejection reasons and their order are unchanged.
 - Complexity ratchet moves from 18 to 17.
-- Deferred (see the plan): splitting `loaders.py` into modules, the `MSDSettings` parameter object, and removing the unused `impute_openings`.
+- Deferred (see the plan): splitting `loaders.py` into modules (985 lines, over the 400-line exit gate) and the `MSDSettings` parameter object.
 
 ### Added — bilingual documentation site (English / French)
 
