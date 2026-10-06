@@ -206,7 +206,7 @@ class Plan:
 | Seeds | `seed: int` argument **mandatory, with no default**, on every function that samples |
 | Metrics | return **value + interval**, never a bare scalar |
 | Errors | typed exceptions (`InconsistentOrder`, `Infeasible`, `InvariantViolation`) — never `Exception` |
-| Logs | `structlog`, structured logging, never free text |
+| Logs | standard `logging` through `archlux._log.event`: structured fields, never free text; silent by default (`DEBUG`) |
 | Style | `ruff check` + `ruff format` + `mypy --strict` on `src/` |
 | Language | **English** for code, API, docstrings, messages, tests and documentation. New code is English now; existing French is migrated batch by batch ([ADR 0001](../adr/0001-english-first.md), [glossary](../glossary.md)). This file was translated in batch E3 |
 | Tolerances | target rule, enforced from PLAN.md 1.5: declared once in `archlux/tolerances.py`, never as inline literals |

@@ -275,8 +275,10 @@ class _Problem:
 
         Returns
         -------
-        tuple of Polytope
-            The solver's domain, optionally without the tiling grid or the budget.
+        tuple of (Polytope, Polytope)
+            ``(geometric, l1)``: the geometric domain (with the tiling grid unless
+            ``grid`` is false), and its L1 epigraph extension (with the budget bounds
+            unless ``bounded`` is false), on which the solver runs.
         """
         geometric = extend_tiling(self.base, self.grid) if grid and self.grid else self.base
         l1 = extend_l1_slack(geometric, self.x_ref)
