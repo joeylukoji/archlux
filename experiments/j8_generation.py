@@ -53,31 +53,15 @@ from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
-from shapely.geometry import box
-from shapely.ops import unary_union
 
 import archlux as ax
 from archlux.certify.proof import verify_exactly
+from archlux.data.generated import DEFAULT_MIN_WIDTH, generated_plan, generated_scale
 from archlux.errors import GapNeedsTiling, GridNotRecoverable
 from archlux.export.wilson import wilson_interval
-from archlux.geom.diagnostic import Diagnostic, diagnose
-from archlux.types import (
-    Context,
-    Orientation,
-    Plan,
-    Regulation,
-    Room,
-    Structure,
-)
+from archlux.types import Regulation
 
 DEFAULT = Path("D:/archlux-donnees/j8_plans.jsonl")
-
-# Median area of an MSD apartment, measured on 1200 apartments: 79.0 m2.
-# RPLAN coordinates have no unit; the scale is set so that the median generated area
-# equals the MSD one, so that the displacements of milestones 7 and 8 are comparable.
-# No validity rate depends on it: overlap and gap are scale invariant.
-TARGET_AREA_M2 = 79.0
-MIN_SIDE_M = 0.05  # below this threshold a room is degenerate, not narrow
 
 # Swept budgets. The default of `api.legalize` is 4, tuned on corrupted plans. A
 # generator output belongs to another regime: the whole curve is measured rather than
@@ -93,7 +77,7 @@ BUDGETS = (0, 4, 8, 16)
 # Milestone 7 set 0.0 for a good reason: a 1.80 m threshold broke 52 MSD plans out of
 # 60 that were **already valid**. That caution does not apply here: 0 / 740 generated
 # plans are valid to begin with, so the threshold cannot break anything.
-DEFAULT_WIDTH = 0.50
+DEFAULT_WIDTH = DEFAULT_MIN_WIDTH
 WIDTHS = (0.0, 0.25, 1.00, 1.80)
 
 # Below this side, it is no longer a room but a residue that the drawing does not even
@@ -124,62 +108,6 @@ FIELDS = (
     "time_ms",
     "status",
 )
-
-
-def _boxes(plan_json: dict, scale: float) -> list[tuple[str, tuple[float, ...]]]:
-    """(type, (x, y, w, h)) in metres, one entry per generated room."""
-    out = []
-    for room in plan_json["pieces"]:  # key of the vendor JSONL format
-        corners = np.asarray(room["coins"], dtype=float) * scale
-        x0, y0 = float(corners[:, 0].min()), float(corners[:, 1].min())
-        x1, y1 = float(corners[:, 0].max()), float(corners[:, 1].max())
-        out.append((str(room["type"]), (x0, y0, x1 - x0, y1 - y0)))
-    return out
-
-
-def _scale(rows: list[dict]) -> float:
-    """Unit -> metre factor matching the median generated area to the MSD one."""
-    areas = []
-    for plan_json in rows:
-        shapes = [box(x, y, x + w, y + h) for _, (x, y, w, h) in _boxes(plan_json, 1.0)]
-        union = unary_union(shapes)
-        if not union.is_empty:
-            areas.append(union.area)
-    return float(np.sqrt(TARGET_AREA_M2 / np.median(areas)))
-
-
-def _build(plan_json: dict, scale: float) -> tuple[Plan, Context, Diagnostic] | str:
-    """archlux plan + input diagnostic, or the rejection reason in plain words."""
-    boxes = _boxes(plan_json, scale)
-    if any(w < MIN_SIDE_M or h < MIN_SIDE_M for _, (_, _, w, h) in boxes):
-        return "degenerate room"
-
-    rooms = tuple(
-        Room(id=f"p{rank:03d}", type=room_type, x=x, y=y, w=w, h=h)
-        for rank, (room_type, (x, y, w, h)) in enumerate(boxes)
-    )
-    shapes = [box(p.x, p.y, p.x + p.w, p.y + p.h) for p in rooms]
-    union = unary_union(shapes)
-    if union.is_empty:
-        return "empty union"
-
-    # The target outline is the **bounding box** of the union. HouseDiffusion receives
-    # no envelope as a condition: it invents its own footprint. Imposing the tiling of
-    # this box therefore also squares the footprint; this is deliberate, and the
-    # reported displacement gives its cost.
-    x0, y0, x1, y1 = union.bounds
-    outline = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
-
-    plan = Plan(rooms=rooms, walls=(), openings=(), outline=outline)
-    context = Context(
-        structure=Structure(load_bearing_walls=(), columns=()),
-        orientation=Orientation(deg=0.0),
-        outline=outline,
-        # The regulation is replaced run by run: see DEFAULT_WIDTH.
-        regulation=Regulation(min_areas=(), min_width=DEFAULT_WIDTH),
-        program=tuple(sorted(set(plan_json["programme"]))),
-    )
-    return plan, context, diagnose(plan)
 
 
 def _summarize(raw: Path, scale: float, rejections: dict[str, int]) -> str:
@@ -330,9 +258,6 @@ def _summarize(raw: Path, scale: float, rejections: dict[str, int]) -> str:
 
 
 def main() -> None:
-    # The command line is read HERE and not at module level: `j8_visuals` imports
-    # `_build` and `_scale`, and parsing at import time would make the import fail on
-    # its own arguments.
     plans = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT
     n_max = int(sys.argv[2]) if len(sys.argv) > 2 else 10**9
     # Output label: two graph conditionings are measured, and their results must not
@@ -345,7 +270,7 @@ def main() -> None:
     ]
     if not rows:
         raise SystemExit(f"no plan in {plans}")
-    scale = _scale(rows)
+    scale = generated_scale(rows)
     print(f"{len(rows)} generated plans, scale {scale:.4f} m/unit")
 
     Path("results").mkdir(exist_ok=True)
@@ -355,7 +280,7 @@ def main() -> None:
         writer = csvmod.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         for plan_json in rows:
-            built = _build(plan_json, scale)
+            built = generated_plan(plan_json, scale)
             if isinstance(built, str):
                 rejections[built] = rejections.get(built, 0) + 1
                 continue

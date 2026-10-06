@@ -8,6 +8,13 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 4, block 16 (`experiments/`): `archlux.data.generated`
+
+- New public module `archlux.data.generated` (`generated_boxes`, `generated_scale`, `generated_plan`, and the constants `TARGET_AREA_M2`, `MIN_SIDE_M`, `DEFAULT_MIN_WIDTH`): the loader of generated plans (HouseDiffusion JSONL → `Plan`, `Context`, `Diagnostic`), moved unchanged out of `experiments/j8_generation.py`.
+- `experiments/j8_visuals.py` and `experiments/j9_orientation.py` no longer import private functions of another script (`ARCHITECTURE.md` §11); the three scripts use the library module.
+- Verified against the real data (`j8_plans.jsonl`, `j8_plans_plausible.jsonl`, `j8_plans_divers.jsonl`): the 52 output files of `j8_generation`, `j8_visuals` and `j9_orientation` are byte-identical before and after, timings excluded (the `time_ms` column and the median times, which differ between two runs of the same code).
+- Not done yet: the three scripts are still over 50 lines (366, 170, 161).
+
 ### Added — PLAN.md phase 4, block 17, item 47: structured debug events
 
 - New `archlux._log.event(logger, name, **fields)`: a structured event sent to the standard `logging` module at `DEBUG`, under `archlux.<package>`. Silent by default (a disabled event costs one level check); records carry `event` and `fields` attributes for structured handlers. `structlog` is deliberately not used here: unconfigured, it prints every event to stdout, and its import costs about 0.4 s.

@@ -34,15 +34,14 @@ from dataclasses import replace
 from pathlib import Path
 
 import archlux as ax
+from archlux.data.generated import DEFAULT_MIN_WIDTH, generated_plan, generated_scale
 from archlux.export.svg import sheet
 from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import Orientation
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from j8_generation import BUDGETS, DEFAULT_WIDTH, _build, _scale
-
+BUDGET = 16  # largest repair budget swept by j8_generation.py
 DEFAULT = Path("D:/archlux-donnees/j8_plans_divers.jsonl")
 AZIMUTHS = tuple(range(0, 360, 45))
 ROOT = Path("results/orientation")
@@ -60,14 +59,14 @@ def main() -> None:
     budget = float(sys.argv[3]) if len(sys.argv) > 3 else 3.0
 
     rows = [json.loads(x) for x in source.read_text(encoding="utf-8").splitlines() if x.strip()]
-    scale = _scale(rows)
+    scale = generated_scale(rows)
     surrogate = AnalyticSurrogate(target_indicator="sDA")
     ROOT.mkdir(parents=True, exist_ok=True)
 
     index = [
         "# Milestone 9: variants by solar azimuth\n",
         f"Displacement budget {budget:.1f} m (infinity norm around the L1 point), "
-        f"`min_width = {DEFAULT_WIDTH:.2f} m`.\n",
+        f"`min_width = {DEFAULT_MIN_WIDTH:.2f} m`.\n",
         "**The optimized objective is not real daylight**: see the header of "
         "`experiments/j9_orientation.py`. What is guaranteed is geometric.\n",
         "| plan | rooms | azimuth of the best sDA | gain | displacement | "
@@ -79,12 +78,12 @@ def main() -> None:
     for plan_json in rows:
         if kept >= n_plans:
             break
-        built = _build(plan_json, scale)
+        built = generated_plan(plan_json, scale)
         if isinstance(built, str):
             continue
         proposed, context, diag = built
         try:
-            valid = ax.legalize(proposed, context, tiling=True, repair_budget=BUDGETS[-1])
+            valid = ax.legalize(proposed, context, tiling=True, repair_budget=BUDGET)
         except ax.ArchluxError:
             continue
         if not valid.certificate.geometry.valid or len(valid.rooms) < 4:
