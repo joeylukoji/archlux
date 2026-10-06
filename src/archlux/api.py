@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, cast
 import numpy as np
 
 from archlux._deprecation import renamed_parameters
+from archlux._log import event
 from archlux.arrays import FloatVector
 from archlux.certify.bound import bound_selected_plan, check_calibration
 from archlux.certify.dual import translate_duals
@@ -536,6 +537,7 @@ def _classic_result(
     proof = problem.prove(corrected)
     if not proof.valid:
         if problem.grid is None and _only_a_gap(proof, problem.budget):
+            event("archlux.api", "legalize.gap_needs_tiling", violations=proof.violations)
             raise GapNeedsTiling(proof.violations)
         raise InvariantViolation(proof.violations)
     return corrected, proof
@@ -607,6 +609,8 @@ def _optimize_light(
     duals = duals_l1
     if result.duals is not None:
         duals = _translated_duals(result.duals, poly_fw, objective=objective.indicator)
+    else:
+        event("archlux.api", "legalize.duals_fallback", source="l1_pass")
     performance = None
     if calibration is not None:
         # Centred on the prediction mu, not on the pessimistic objective mu - q sigma.

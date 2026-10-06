@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Protocol
 import numpy as np
 
 from archlux._deprecation import renamed_parameters
+from archlux._log import event
 from archlux.arrays import FloatVector
 from archlux.errors import Infeasible, InvariantViolation
 from archlux.geom.polytope import Polytope
@@ -641,11 +642,29 @@ def frank_wolfe(
                 x=x.copy(),
             )
         )
+        event(
+            "archlux.solve",
+            "frank_wolfe.iteration",
+            k=k,
+            value=value,
+            gap=gap,
+            step=gamma,
+            away_step=away,
+            lp_ms=oracle.time_ms,
+        )
 
     gap, duals = _final_diagnostics(
         surrogate, orientation, domain, x, status, last_oracle, gap, glazing=glazing
     )
 
+    event(
+        "archlux.solve",
+        "frank_wolfe.stop",
+        status=status,
+        iterations=len(history) - 1,
+        value=value,
+        gap=gap,
+    )
     return FrankWolfeResult(
         x=x,
         value=value,

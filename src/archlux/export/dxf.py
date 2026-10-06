@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from archlux._deprecation import renamed_parameters
+from archlux._log import event
 from archlux.errors import InvariantViolation
 from archlux.export.pathologies import diagnose
 from archlux.types import Plan
@@ -31,6 +32,7 @@ def to_dxf(plan: Plan, path: Path | str) -> None:
     path = Path(path)
     diag = diagnose(plan)
     if not diag.exportable:
+        event("archlux.export", "export.refused", format="dxf", pathologies=diag.pathologies)
         raise InvariantViolation(diag.pathologies)
 
     rows: list[str] = [

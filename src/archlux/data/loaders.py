@@ -51,6 +51,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._log import event
 from archlux.data.imputation import impute_openings as _impute_openings
 from archlux.errors import InvariantViolation
 from archlux.geom.rectilinear import RectilinearRoom, decompose
@@ -655,6 +656,7 @@ def load_msd(
         )
         if isinstance(result, str):
             stats.rejections[result] += 1
+            event("archlux.data", "load.rejected", apartment=id, reason=result)
             continue
         if impute_openings:
             result = replace(result, plan=_impute_openings(result.plan))

@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._log import event
 from archlux._version import __version__
 from archlux.errors import ArchluxError
 from archlux.export.pathologies import diagnose
@@ -61,6 +62,7 @@ def to_ifc(plan: Plan, path: Path | str, *, validate: bool = True) -> ExportRepo
     path = Path(path)
     diag = diagnose(plan)
     if validate and not diag.exportable:
+        event("archlux.export", "export.refused", format="ifc", pathologies=diag.pathologies)
         return ExportReport(
             valid=False,
             path=path,

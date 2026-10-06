@@ -616,14 +616,21 @@ build --strict` clean, `test_language.py`/`test_neutrality.py` green.
     only, no import of another script's private function. Split or trim the ones that
     fail, one script per commit.
 
-### 17. Cross-cutting (last, after every block above)
+### 17. Cross-cutting — done
 
-47. Add `structlog` events to `api`, `solve`, `data`, `export` at the points PLAN.md
-    names (Frank-Wolfe iterations, load rejections, fallbacks) — additive, no behaviour
-    change.
-48. Fill the missing NumPy `Parameters`/`Returns` docstring sections (54 measured
-    before phase 3.9; recount at this commit, since the English-API waves touched most
-    of them) and wire `numpydoc validate` into CI.
+47. Done, with the user's agreement on the approach (option A): events go through a new
+    leaf `archlux._log.event`, to standard `logging` at `DEBUG`, not to `structlog`
+    directly. Unconfigured, `structlog` prints every event to stdout — one line per
+    Frank-Wolfe iteration and per rejected MSD apartment — which would break "additive,
+    no behaviour change"; its import also costs about 0.4 s. An application that uses
+    `structlog` can route standard logging through it. Events: `frank_wolfe.iteration`,
+    `frank_wolfe.stop`, `load.rejected`, `legalize.gap_needs_tiling`,
+    `legalize.duals_fallback`, `export.refused`. `_log` is declared as a leaf in
+    `tests/test_dependencies.py`. Covered by `tests/unit/test_log_events.py`.
+48. Done. The 611 missing numpydoc `Parameters`/`Returns` sections are filled (docstrings
+    only), and `tests/test_docstrings.py` enforces PR01/RT01 in the suite, hence CI, via
+    `[tool.numpydoc_validation]`. The other numpydoc categories (491 findings: examples,
+    extended summaries...) are not enforced yet.
 
 ## Decision Document
 

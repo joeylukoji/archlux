@@ -37,6 +37,8 @@ ALLOWED: dict[str, frozenset[str]] = {
     "seeds": frozenset(),
     "arrays": frozenset(),
     "_deprecation": frozenset(),
+    # Structured debug events (PLAN.md phase 4, block 17, item 47): imports only logging.
+    "_log": frozenset(),
     # Door validation of the public arguments (PLAN.md 3.1): a leaf over `types`.
     "validation": frozenset({"types", "errors"}),
     "geom": frozenset({"types", "errors"}),
@@ -95,6 +97,7 @@ LEAVES: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset({"__future__", "typing"}),
     "seeds": frozenset({"__future__", "hashlib"}),
+    "_log": frozenset({"__future__", "logging"}),
     "arrays": frozenset({"__future__", "typing", "numpy", "warnings"}),
     "_deprecation": frozenset(
         {
