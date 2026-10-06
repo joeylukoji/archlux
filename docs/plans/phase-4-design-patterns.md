@@ -620,7 +620,13 @@ build --strict` clean, `test_language.py`/`test_neutrality.py` green.
     three scripts are byte-identical before and after, timings excluded (they differ
     between two runs of the same code, so they are masked by the comparison). Covered by
     `tests/unit/test_generated.py`.
-    **Still open:** the 50-line rule. `j8_generation.py` (366), `j8_visuals.py` (170),
+    **Step 2 done: `j8_generation.py` is 46 lines.** Its sweep and its Markdown summary
+    are the public module `archlux.bench.generation` (`evaluate_generated`,
+    `summarize_generation`, `FIELDS`, `BUDGETS`, `WIDTHS`), split so that no function
+    exceeds complexity 10 (the ratchet stays at 17). `bench` may not import `api`, so
+    `legalize` is passed in by the script. Same check: 52 files byte-identical. Covered by
+    `tests/unit/test_bench_generation.py`.
+    **Still open:** the 50-line rule. `j8_visuals.py` (170),
     `j9_orientation.py` (161), `j7_sd_labels.py` (139), `j7_sd_per_room.py` (134) and
     `j5_coverage.py`, `j3_orientation.py`, `j6_ifc.py`, `j2_validity.py` (51-54) remain
     over it. The large ones need their summary/report code moved into the library,
