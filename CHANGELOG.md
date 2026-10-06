@@ -8,6 +8,11 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md 5.3: examples
+
+- New `examples/`: three plans (`t2.json`, a small overlap; `t3_load_bearing.json`, a load-bearing wall crossed and a gap; `generated.json`, boxes overlapping and leaving holes as a generative model outputs them) and `legalize_examples.py` (18 lines), which legalizes all three.
+- New `tests/docs/test_examples_dir.py` runs the script and the command line on each example in CI.
+
 ### Added — PLAN.md 5.2: command line
 
 - New `archlux` command (`archlux.cli`, entry point in `pyproject.toml`): `legalize` (`--tiling`, `--repair-budget`, `-o`, `--svg`, `--report`), `verify` and `feasible`. A plan file has no context, so it is built from the plan (load-bearing walls, outline, room types) and the options `--min-width`, `--min-area TYPE=M2` (repeatable) and `--orientation`. Exit codes: 0 valid or feasible, 1 invalid or infeasible, 2 error. Names are English, like the API (PLAN.md wrote `verifier`, `faisable`, `--pavage`).
