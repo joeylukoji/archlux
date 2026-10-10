@@ -34,6 +34,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import archlux as ax
+from archlux.bench.generation import BUDGETS
 from archlux.data.generated import DEFAULT_MIN_WIDTH, generated_plan, generated_scale
 from archlux.export.svg import sheet
 from archlux.geom.graph import deduce_order
@@ -41,7 +42,7 @@ from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytic import AnalyticSurrogate
 from archlux.types import Orientation
 
-BUDGET = 16  # largest repair budget swept by j8_generation.py
+BUDGET = BUDGETS[-1]  # largest repair budget swept by j8_generation.py
 DEFAULT = Path("D:/archlux-donnees/j8_plans_divers.jsonl")
 AZIMUTHS = tuple(range(0, 360, 45))
 ROOT = Path("results/orientation")
