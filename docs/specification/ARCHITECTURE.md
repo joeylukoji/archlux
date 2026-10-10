@@ -127,7 +127,7 @@ export  ← types, errors
 feasibility ← types, errors, api
 certify ← types, geom, uq
 api     ← types, errors, validation, geom, lmo, solve, light PROTOCOL, certify, io
-bench   ← everything
+bench   ← everything except api, validation, feasibility   (legalize is injected)
 ```
 
 **FORBIDDEN:**
@@ -142,7 +142,9 @@ bench   ← everything
       on `api` by design and therefore *loads* `light.protocol` (via `solve`) and `uq`
       (via `certify`) through it. It never imports them directly (static test), loads no
       `light` implementation, and loads nothing `api` does not already load (dynamic test)
-- [ ] no module may import `bench`
+- [ ] no module may import `bench`; `bench` imports neither `api`, `validation` nor
+      `feasibility`: a bench that needs `legalize` receives it as a parameter
+      (`bench.generation.evaluate_generated(..., legalize=archlux.legalize)`)
 - [ ] `data` may read `geom` and `orient` (corpus loaders **only**),
       never `lmo`, `solve` or `light`: it produces inputs, it solves nothing
 
@@ -289,9 +291,9 @@ archlux/
 │   ├── certify/{proof,farkas,bound,dual,report}.py
 │   ├── feasibility/__init__.py
 │   ├── active/{loop,density,selection}.py
-│   ├── data/{loaders,corruption,splits,dedup,imputation,synthetic}.py
+│   ├── data/{loaders,corruption,splits,dedup,imputation,synthetic,generated}.py
 │   ├── export/{ifc,dxf,svg,pathologies,survival,wilson}.py
-│   ├── bench/{seeds,manifest,protocol,report,run,stats}.py
+│   ├── bench/{seeds,manifest,protocol,report,run,stats,generation}.py
 │   ├── io/json_io.py
 │   └── …                    # French module names (`geom/pavage.py`, `lmo/coupes.py`,
 │                            #   `certify/preuve.py`, …): deprecated shims (ADR 0001)

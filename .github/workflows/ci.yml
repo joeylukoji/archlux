@@ -19,7 +19,7 @@ jobs:
       - name: Repository hygiene (pre-commit hooks)
         run: pre-commit run --all-files --show-diff-on-failure
       - name: Types
-        run: mypy src/
+        run: mypy src/ examples/
       - name: Types (guarantee benchmark)
         run: mypy --strict --explicit-package-bases benchmarks/guarantees/measure.py benchmarks/guarantees/scenarios.py
       - name: Couverture des docstrings

@@ -565,6 +565,11 @@ But : structure à 10/10. Chaque bloc passe par la séquence
 - nouvelle revue `python-design-patterns` et `review-and-refactor` : 0 Critique,
   0 Majeur.
 
+> **Clôture (2026-10-07)** : phase close sur décision du mainteneur, porte de sortie
+> partiellement atteinte. Le reste (modules > 400 lignes, 17 fonctions > CC 10,
+> 8 scripts > 50 lignes, couverture et revue non remesurées) est consigné comme dette
+> technique dans `docs/plans/tech-debt.md`.
+
 ---
 
 ## Phase 5 : utilisabilité réelle
