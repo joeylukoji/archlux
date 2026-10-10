@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 import archlux as ax
 from archlux.bench.generation import (
     BUDGETS,
@@ -10,6 +12,13 @@ from archlux.bench.generation import (
     evaluate_generated,
     summarize_generation,
 )
+from archlux.errors import (
+    GapNeedsTiling,
+    GridNotRecoverable,
+    Infeasible,
+    InvariantViolation,
+)
+from archlux.types import Context, Plan
 
 # Overlapping rooms: invalid as generated, so every sweep has something to repair.
 RECORD = {
@@ -46,3 +55,32 @@ def test_the_summary_reads_back_the_csv_strings() -> None:
     assert summary.startswith("# Milestone 8")
     assert "**0 plan(s) out of 1 are valid before correction.**" in summary
     assert "{'degenerate room': 1}" in summary
+
+
+@pytest.mark.parametrize(
+    ("error", "status"),
+    [
+        (Infeasible(farkas_certificate=None, origins=("stub",)), "infaisable"),  # lang-ok: CSV
+        (GridNotRecoverable(excess=1, missing=0), "trame"),  # lang-ok: published CSV value
+        (InvariantViolation(("stub",)), "invariant_viole"),  # lang-ok: published CSV value
+        (GapNeedsTiling(("stub",)), "invariant_viole"),  # lang-ok: published CSV value
+    ],
+)
+def test_a_typed_failure_of_legalize_becomes_its_published_status(
+    error: Exception, status: str
+) -> None:
+    def failing(plan: Plan, context: Context, /, *, tiling: bool, repair_budget: int) -> Plan:
+        raise error
+
+    rows = evaluate_generated(RECORD, 1.0, legalize=failing)
+    assert not isinstance(rows, str)
+    assert {row["status"] for row in rows} == {status}
+    assert {row["valid_after"] for row in rows} == {False}
+    assert {row["max_displacement_m"] for row in rows} == {""}
+    assert {row["relative_displacement"] for row in rows} == {""}
+
+
+def test_a_record_without_rooms_is_rejected_as_an_empty_union() -> None:
+    assert evaluate_generated({**RECORD, "pieces": []}, 1.0, legalize=ax.legalize) == (
+        "empty union"
+    )

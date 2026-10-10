@@ -40,14 +40,13 @@ parameter (the script passes :func:`archlux.legalize`).
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
 from dataclasses import replace
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
 
 from archlux.certify.proof import verify_exactly
-from archlux.data.generated import DEFAULT_MIN_WIDTH, generated_plan
+from archlux.data.generated import DEFAULT_MIN_WIDTH, TARGET_AREA_M2, generated_plan
 from archlux.errors import GapNeedsTiling, GridNotRecoverable, Infeasible, InvariantViolation
 from archlux.export.wilson import wilson_interval
 from archlux.types import Context, Plan, Regulation
@@ -57,6 +56,7 @@ __all__ = [
     "FIELDS",
     "INTACT_SIDE_M",
     "WIDTHS",
+    "Legalize",
     "evaluate_generated",
     "summarize_generation",
 ]
@@ -103,8 +103,34 @@ FIELDS = (
 """Columns of the raw CSV, in order."""
 
 
+class Legalize(Protocol):
+    """Signature of the injected :func:`archlux.legalize` (``bench`` may not import ``api``)."""
+
+    def __call__(
+        self, plan: Plan, context: Context, /, *, tiling: bool, repair_budget: int
+    ) -> Plan:
+        """Legalize ``plan`` in ``context``.
+
+        Parameters
+        ----------
+        plan : Plan
+            Plan to legalize.
+        context : Context
+            Its context.
+        tiling : bool
+            Whether the rooms must tile the outline.
+        repair_budget : int
+            Repair budget of the run.
+
+        Returns
+        -------
+        Plan
+            The legalized plan, with its certificate.
+        """
+
+
 def evaluate_generated(
-    plan_json: dict[str, Any], scale: float, *, legalize: Callable[..., Any]
+    plan_json: dict[str, Any], scale: float, *, legalize: Legalize
 ) -> list[dict[str, object]] | str:
     """Raw rows of one generated plan, one per run, or the reason it is rejected.
 
@@ -118,7 +144,7 @@ def evaluate_generated(
         One JSONL record of the generator.
     scale : float
         Unit-to-metre factor, see :func:`archlux.data.generated.generated_scale`.
-    legalize : callable
+    legalize : Legalize
         :func:`archlux.legalize` (``bench`` may not import ``api``).
 
     Returns
@@ -180,7 +206,7 @@ def _runs() -> list[tuple[str, int, float]]:
 
 
 def _outcome(
-    plan: Plan, run_context: Context, mode: str, budget: int, legalize: Callable[..., Any]
+    plan: Plan, run_context: Context, mode: str, budget: int, legalize: Legalize
 ) -> dict[str, object]:
     """Result columns of one run: validity, displacement, smallest side, status.
 
@@ -194,7 +220,7 @@ def _outcome(
         ``"base"`` (``legalize`` alone) or ``"pavage"`` (``tiling=True``).
     budget : int
         Repair budget of the run.
-    legalize : callable
+    legalize : Legalize
         :func:`archlux.legalize`.
 
     Returns
@@ -214,6 +240,8 @@ def _outcome(
     }
     try:
         fixed = legalize(plan, run_context, tiling=(mode == "pavage"), repair_budget=budget)
+        if fixed.certificate is None:  # a legalized plan always carries one
+            raise InvariantViolation(("legalize returned no certificate",))
         valid = fixed.certificate.geometry.valid
         smallest = min(min(p.w, p.h) for p in fixed.rooms)
         out["valid_after"] = valid
@@ -564,6 +592,6 @@ def _header(records: list[dict[str, str]], diag: list[dict[str, str]], scale: fl
         f"HouseDiffusion (CVPR 2023), official weights `model250000.pt`, RPLAN, "
         f"**1000 steps** without respacing. {len(plans)} plans, "
         f"{len(plans) and int(np.sum([float(r['n_rooms']) for r in diag]))} rooms. "
-        f"Scale {scale:.3f} m/unit, matched to the MSD median area (79.0 m²).\n\n"
+        f"Scale {scale:.3f} m/unit, matched to the MSD median area ({TARGET_AREA_M2} m²).\n\n"
         f"**{before} plan(s) out of {len(plans)} are valid before correction.**\n\n"
     )

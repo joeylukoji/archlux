@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 import archlux as ax
+from archlux.bench.generation import BUDGETS
 from archlux.certify.proof import verify_exactly
 from archlux.data.generated import generated_plan, generated_scale
 from archlux.errors import GridNotRecoverable
@@ -29,7 +30,7 @@ from archlux.export.svg import compare, render
 PLANS = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/j8_plans.jsonl")
 LABEL = sys.argv[2] if len(sys.argv) > 2 else "etoile"
 PER_CATEGORY = int(sys.argv[3]) if len(sys.argv) > 3 else 8
-BUDGET = 16  # largest repair budget swept by j8_generation.py
+BUDGET = BUDGETS[-1]  # largest repair budget swept by j8_generation.py
 ROOT = Path("results/visuals") / LABEL
 
 

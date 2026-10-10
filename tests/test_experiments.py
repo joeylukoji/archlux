@@ -11,6 +11,7 @@ last digits across platforms.
 from __future__ import annotations
 
 import csv
+import json
 import runpy
 import sys
 from pathlib import Path
@@ -18,6 +19,7 @@ from pathlib import Path
 import pytest
 from shapely.geometry import box
 
+from tests.unit.test_bench_generation import RECORD
 from tests.unit.test_loaders import _write_csv
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -91,3 +93,19 @@ def test_the_msd_summary_rebuilds_the_published_table(
     table = out.read_text(encoding="utf-8")
     assert "| all faults | 4796 | 35.9 % | 93.0 % | **93.9 %** | [93.2, 94.5] |" in table
     assert "| fault retrecir | 1196 | 10.0 % | 97.6 % | **98.0 %** | [97.0, 98.6] |" in table
+
+
+def test_the_generation_experiment_runs_on_a_mini_jsonl(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``j8_generation.py`` end to end: JSONL in, raw CSV and summary out."""
+    plans = tmp_path / "plans.jsonl"
+    degenerate = {**RECORD, "id": "g1", "pieces": []}
+    plans.write_text(f"{json.dumps(RECORD)}\n{json.dumps(degenerate)}\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)  # the script writes under ./results
+    _run("j8_generation.py", str(plans), "2", "mini", monkeypatch=monkeypatch)
+    with (tmp_path / "results" / "j8_mini_raw.csv").open(encoding="utf-8") as handle:
+        assert {row["plan_id"] for row in csv.DictReader(handle)} == {"g0"}
+    summary = (tmp_path / "results" / "j8_mini.md").read_text(encoding="utf-8")
+    assert summary.startswith("# Milestone 8")
+    assert "{'empty union': 1}" in summary
