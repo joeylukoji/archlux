@@ -36,7 +36,20 @@ _EPS = 1e-12
 
 @renamed_parameters({"ordre": "order"})
 def permute_rooms(plan: Plan, order: tuple[int, ...]) -> Plan:
-    """Reorder the rooms without changing the geometry."""
+    """Reorder the rooms without changing the geometry.
+
+    Parameters
+    ----------
+    plan
+        Plan to reorder.
+    order
+        Index, in ``plan.rooms``, of the room placed at each position.
+
+    Returns
+    -------
+    Plan
+        The plan with its rooms reordered.
+    """
     if len(order) != len(plan.rooms):
         raise InvalidInput("order", "the permutation must have one index per room")
     rooms = tuple(plan.rooms[i] for i in order)
@@ -49,6 +62,16 @@ def plan_to_vector(plan: Plan) -> np.ndarray:
     :func:`archlux.types.vectorize` (PLAN.md phase 4, block 2): kept here under its own
     name since ``light`` may not import ``geom``, and this is the plain encoding, not
     the solver's index-ordered one.
+
+    Parameters
+    ----------
+    plan
+        Plan to encode.
+
+    Returns
+    -------
+    numpy.ndarray
+        The ``(x, y, w, h)`` of every room, flattened.
     """
     return _vectorize(plan)
 
@@ -63,7 +86,32 @@ def _room_token(
     n_rooms: float,
     total_area: float,
 ) -> np.ndarray:
-    """A room token, continuous in geometry and periodic in azimuth."""
+    """A room token, continuous in geometry and periodic in azimuth.
+
+    Parameters
+    ----------
+    x
+        Room abscissa.
+    y
+        Room ordinate.
+    w
+        Room width.
+    h
+        Room height.
+    room_type
+        Room type.
+    orientation
+        Azimuth of the plan.
+    n_rooms
+        Number of rooms of the plan.
+    total_area
+        Total area of the plan.
+
+    Returns
+    -------
+    numpy.ndarray
+        The room token.
+    """
     w = max(w, _EPS)
     h = max(h, _EPS)
     area = w * h
@@ -92,7 +140,26 @@ def _opening_token(
     total_area: float,
     orientation: Orientation,
 ) -> np.ndarray:
-    """A window token: azimuth of the carrying wall, never copied onto every room."""
+    """A window token: azimuth of the carrying wall, never copied onto every room.
+
+    Parameters
+    ----------
+    opening
+        Opening to encode.
+    wall
+        Wall carrying the opening.
+    n_rooms
+        Number of rooms of the plan.
+    total_area
+        Total area of the plan.
+    orientation
+        Azimuth of the plan.
+
+    Returns
+    -------
+    numpy.ndarray
+        The window token.
+    """
     wall_azimuth = math.degrees(math.atan2(wall.b[1] - wall.a[1], wall.b[0] - wall.a[0]))
     token = np.zeros(TOKEN_DIM, dtype=float)
     token[14:20] = encode_orientation(orientation, harmonics=3)
@@ -116,6 +183,18 @@ def plan_to_tokens(plan: Plan, ctx: Context) -> tuple[np.ndarray, np.ndarray]:
 
     ``padding_mask[i]`` is true if token ``i`` is padding (PyTorch convention
     ``src_key_padding_mask``).
+
+    Parameters
+    ----------
+    plan
+        Plan to encode.
+    ctx
+        Context providing the orientation.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        ``(tokens, padding_mask)``.
     """
     n = len(plan.rooms)
     total_area = sum(p.area for p in plan.rooms)

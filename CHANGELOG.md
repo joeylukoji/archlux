@@ -8,6 +8,44 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md 5.3: examples
+
+- New `examples/`: three plans (`t2.json`, a small overlap; `t3_load_bearing.json`, a load-bearing wall crossed and a gap; `generated.json`, boxes overlapping and leaving holes as a generative model outputs them) and `legalize_examples.py` (20 lines), which legalizes all three. CI type-checks `examples/` (`mypy src/ examples/`, and `files` in `[tool.mypy]`); the script guards `certificate is not None`, which mypy used to reject (PR #37 review).
+- New `tests/docs/test_examples_dir.py` runs the script and the command line on each example in CI.
+
+### Added — PLAN.md 5.2: command line
+
+- New `archlux` command (`archlux.cli`, entry point in `pyproject.toml`): `legalize` (`--tiling`, `--repair-budget`, `-o`, `--svg`, `--report`), `verify` and `feasible`. A plan file has no context, so it is built from the plan (load-bearing walls, outline, room types) and the options `--min-width`, `--min-area TYPE=M2` (repeatable) and `--orientation`. Exit codes: 0 valid or feasible, 1 invalid or infeasible, 2 error. Names are English, like the API (PLAN.md wrote `verifier`, `faisable`, `--pavage`).
+- `verify` and `legalize --report` also check widths: `verify_exactly` checks overlaps, gaps, areas and the structure only (the width rule is a polytope bound, enforced while legalizing), so the command line measures every rectangle of the plan, the sub-rectangles of a fused L room included, against `--min-width` (tolerance `SNAP_M`), names each narrow one and exits 1. The verdict now says `minimum areas met` and `minimum widths met` separately (it used to claim `areas and widths met` without checking widths). `verify_exactly` and the certificate are unchanged (PR #37 review).
+- Options are validated alike by the three subcommands, as a message and exit code 2, never a traceback: `--min-width` and each `--min-area` value must be finite and non-negative; a `--min-area` type must be non-empty, given once (no more "first wins") and one of the plan's room types, case-sensitive (the message lists them); `--orientation` must be finite and is taken modulo 360, since it is an azimuth (PR #37 review).
+- `legalize --report` prints an explicit line when the plan carries no certificate (it printed nothing). Errors name the file and the problem in plain words (`plan.json: missing field 'walls'`, `plan.json: no such file or directory`) instead of `invariant violated: invalid JSON structure: 'walls'` or a raw `[Errno 2]` (PR #37 review).
+- Documented: a new bilingual tutorial page `docs/tutorials/command-line.md` / `.fr.md` (nav "Command line" / "Ligne de commande"), a command-line section in `README.fr.md` mirroring the English one. `src/archlux/cli.py`, its tests and `examples/legalize_examples.py` join the language guard (`tests/test_language.py`), `cli.py` the identifier guard (PR #37 review).
+- New `tests/unit/test_cli.py`, which also covers `-o` overwriting the input file and an output path in a missing directory (exit 2).
+
+### Docs — PLAN.md phase 4 closed
+
+- Phase 4 is closed with its exit gate partly unmet; the remainder is recorded in the new `docs/plans/tech-debt.md` (modules over 400 lines, 17 functions over complexity 10, 8 experiment scripts over 50 lines, coverage and review not re-measured).
+
+### Added — PLAN.md phase 4, block 16 (`experiments/`): `archlux.data.generated`
+
+- New public module `archlux.data.generated` (`generated_boxes`, `generated_scale`, `generated_plan`, and the constants `TARGET_AREA_M2`, `MIN_SIDE_M`, `DEFAULT_MIN_WIDTH`): the loader of generated plans (HouseDiffusion JSONL → `Plan`, `Context`, `Diagnostic`), moved unchanged out of `experiments/j8_generation.py`.
+- `experiments/j8_visuals.py` and `experiments/j9_orientation.py` no longer import private functions of another script (`ARCHITECTURE.md` §11); the three scripts use the library module.
+- Verified against the real data (`j8_plans.jsonl`, `j8_plans_plausible.jsonl`, `j8_plans_divers.jsonl`): the 52 output files of `j8_generation`, `j8_visuals` and `j9_orientation` are byte-identical before and after, timings excluded (the `time_ms` column and the median times, which differ between two runs of the same code).
+- New public module `archlux.bench.generation` (`evaluate_generated`, `summarize_generation`, `FIELDS`, `BUDGETS`, `WIDTHS`, `INTACT_SIDE_M`): the milestone-8 sweep and summary, moved out of `experiments/j8_generation.py`, which drops from 366 to 46 lines. `legalize` is a parameter (`bench` may not import `api`). Same 52 output files, byte-identical, timings excluded.
+- Not done yet: `j8_visuals.py` (170) and `j9_orientation.py` (161) are still over 50 lines.
+- PR #36 review fixes: the injected `legalize` is typed by a `Legalize` protocol (mypy now checks the call and the certificate access; a missing certificate raises `InvariantViolation`); `_header` reads `TARGET_AREA_M2` instead of a hard-coded 79.0 (same output); `j8_visuals.py` and `j9_orientation.py` take their budget from `BUDGETS[-1]`; new tests for the `Infeasible`, `GridNotRecoverable`, `InvariantViolation`/`GapNeedsTiling` statuses and the empty-union rejection, and an end-to-end run of `j8_generation.py` on a two-line JSONL; `ARCHITECTURE.md` §5 states the real `bench` rule (everything except `api`, `validation`, `feasibility`) and §11 lists the two new modules; the `data` package docstring no longer claims it never imports `geom`; both modules and their tests join the language and identifier ratchets; `tech-debt.md` D1 recounted and D4 records lines/branches coverage separately (93.8 % / 81.5 %, 2026-10-10).
+
+### Added — PLAN.md phase 4, block 17, item 47: structured debug events
+
+- New `archlux._log.event(logger, name, **fields)`: a structured event sent to the standard `logging` module at `DEBUG`, under `archlux.<package>`. Silent by default (loggers cached per name; a disabled event costs about a microsecond); records carry `event` and `fields` attributes for structured handlers; `level=` raises an event to `WARNING`. `structlog` is no longer used: unconfigured, it prints every event to stdout, and its import costs about 0.4 s. Its two remaining callers (`active.loop`, `lmo.cuts`) now go through `_log.event` at `WARNING` (`calibration.cycle_skipped`, formerly the French `calibration_cycle_ignoree`, and `cut.limit`), and **`structlog` is removed from the core dependencies**. ARCHITECTURE.md and the blueprint name the new mechanism.
+- Events: `frank_wolfe.iteration` and `frank_wolfe.stop` (`solve`), `load.rejected` (`data.loaders`), `legalize.gap_needs_tiling` and `legalize.duals_fallback` (`api`), `export.refused` (`export.ifc`, `export.dxf`). No behaviour change.
+- New `tests/unit/test_log_events.py`, including the `legalize.duals_fallback` path.
+
+### Docs — PLAN.md phase 4, block 17, item 48: every callable documents its parameters and return
+
+- 611 missing numpydoc ``Parameters``/``Returns`` sections are filled across ``src/archlux``; docstrings only, no code changed.
+- New ``tests/test_docstrings.py`` runs ``numpydoc lint`` with ``[tool.numpydoc_validation] checks = ["PR01", "RT01"]`` (``pyproject.toml``), so a new undocumented parameter or return fails the suite and CI. The test fails if numpydoc crashes (it used to pass silently), and a second test requires a docstring on every public function, method and class (PR01/RT01 only inspect existing docstrings). ``numpydoc`` joins the ``dev`` extra. The other numpydoc categories (examples, extended summaries...) still have open findings and are not enforced.
+
 ### Fixed — IFC and DXF files differed between Windows and Linux
 
 - `to_ifc` and `to_dxf` wrote in text mode, so `\n` became `\r\n` on Windows: the same plan gave two different files. Both now write `\n` on every platform, like `io.json_io` already did. This is why the golden IFC hash was pinned twice to two values (a71e909 re-pinned it from a Windows machine and turned CI red on Linux): the original value is restored and a test checks the writers pass `newline="\n"`. The golden test now certifies its plan with the exact proof instead of `legalize`, so it does not depend on the LP solver either.

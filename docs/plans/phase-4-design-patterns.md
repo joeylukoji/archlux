@@ -611,20 +611,43 @@ build --strict` clean, `test_language.py`/`test_neutrality.py` green.
     zero-variance TOST branch were untested). Added `tests/unit/test_stats_edges.py`:
     `stats.py` is now 100 %; total coverage 90.57 %.
 
-### 16. `experiments/`
+### 16. `experiments/` — closed, rest deferred to [technical debt](tech-debt.md) (D3)
 
-46. Audit every script against §11 (`ARCHITECTURE.md`): under 50 lines, public API
-    only, no import of another script's private function. Split or trim the ones that
-    fail, one script per commit.
+46. **Step 1 done: no script imports another one.** `j8_visuals.py` and
+    `j9_orientation.py` imported `_build`, `_scale` and `BUDGETS` from
+    `j8_generation.py`. The loader is now the public module `archlux.data.generated`
+    (the "generated boxes → Plan" loader PLAN.md names as the missing library
+    function), moved unchanged. Verified on the real data: the 52 output files of the
+    three scripts are byte-identical before and after, timings excluded (they differ
+    between two runs of the same code, so they are masked by the comparison). Covered by
+    `tests/unit/test_generated.py`.
+    **Step 2 done: `j8_generation.py` is 46 lines.** Its sweep and its Markdown summary
+    are the public module `archlux.bench.generation` (`evaluate_generated`,
+    `summarize_generation`, `FIELDS`, `BUDGETS`, `WIDTHS`), split so that no function
+    exceeds complexity 10 (the ratchet stays at 17). `bench` may not import `api`, so
+    `legalize` is passed in by the script. Same check: 52 files byte-identical. Covered by
+    `tests/unit/test_bench_generation.py`.
+    **Still open:** the 50-line rule. `j8_visuals.py` (170),
+    `j9_orientation.py` (161), `j7_sd_labels.py` (139), `j7_sd_per_room.py` (134) and
+    `j5_coverage.py`, `j3_orientation.py`, `j6_ifc.py`, `j2_validity.py` (51-54) remain
+    over it. The large ones need their summary/report code moved into the library,
+    each checked the same way against its data.
 
-### 17. Cross-cutting (last, after every block above)
+### 17. Cross-cutting — done
 
-47. Add `structlog` events to `api`, `solve`, `data`, `export` at the points PLAN.md
-    names (Frank-Wolfe iterations, load rejections, fallbacks) — additive, no behaviour
-    change.
-48. Fill the missing NumPy `Parameters`/`Returns` docstring sections (54 measured
-    before phase 3.9; recount at this commit, since the English-API waves touched most
-    of them) and wire `numpydoc validate` into CI.
+47. Done, with the user's agreement on the approach (option A): events go through a new
+    leaf `archlux._log.event`, to standard `logging` at `DEBUG`, not to `structlog`
+    directly. Unconfigured, `structlog` prints every event to stdout — one line per
+    Frank-Wolfe iteration and per rejected MSD apartment — which would break "additive,
+    no behaviour change"; its import also costs about 0.4 s. An application that uses
+    `structlog` can route standard logging through it. Events: `frank_wolfe.iteration`,
+    `frank_wolfe.stop`, `load.rejected`, `legalize.gap_needs_tiling`,
+    `legalize.duals_fallback`, `export.refused`. `_log` is declared as a leaf in
+    `tests/test_dependencies.py`. Covered by `tests/unit/test_log_events.py`.
+48. Done. The 611 missing numpydoc `Parameters`/`Returns` sections are filled (docstrings
+    only), and `tests/test_docstrings.py` enforces PR01/RT01 in the suite, hence CI, via
+    `[tool.numpydoc_validation]`. The other numpydoc categories (491 findings: examples,
+    extended summaries...) are not enforced yet.
 
 ## Decision Document
 

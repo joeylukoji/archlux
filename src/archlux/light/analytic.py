@@ -120,7 +120,13 @@ class AnalyticSurrogate:
 
     @property
     def indicator(self) -> Indicator:
-        """Name of the modelled indicator."""
+        """Name of the modelled indicator.
+
+        Returns
+        -------
+        Indicator
+            The modelled indicator.
+        """
         return self.target_indicator
 
     def evaluate(
@@ -131,6 +137,20 @@ class AnalyticSurrogate:
         ``glazing`` is **ignored**: this surrogate does not model fenestration, it
         assumes a constant glazed band. That is exactly what earns it
         ``R² = −0.000`` against a simulated irradiance.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        float
+            The estimated indicator, negated for ASE.
 
         Guarantees
         ----------
@@ -150,6 +170,20 @@ class AnalyticSurrogate:
         ``w < 1e-12`` / ``h < 1e-12``, where ``evaluate`` clips but the written
         derivative ignores the clipping. Outside these points, the symbolic check gives
         strict equality with ``∂ evaluate / ∂ x``.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        numpy.ndarray
+            Analytic gradient, same dimension as ``x``.
         """
         del glazing
         return self._score_and_gradient(x, orientation, with_gradient=True)[1]
@@ -157,7 +191,22 @@ class AnalyticSurrogate:
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Constant nominal standard deviation: this surrogate does not model its error."""
+        """Constant nominal standard deviation: this surrogate does not model its error.
+
+        Parameters
+        ----------
+        x
+            Decision vector (unused).
+        orientation
+            Azimuth (unused).
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        float
+            The constant nominal standard deviation.
+        """
         del x, orientation, glazing
         return float(self.sigma_nominal)
 
@@ -169,12 +218,39 @@ class AnalyticSurrogate:
         ``evaluate`` is their sum, up to the sign of ASE. See
         :class:`~archlux.light.protocol.PerRoomSurrogate`: 92 % of the variance of real
         daylight lives at this granularity.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        numpy.ndarray
+            Contribution of each room, with the sign of the indicator.
         """
         del glazing
         return self._parts(x, orientation) * indicator_sign(self.target_indicator)
 
     def _parts(self, x: np.ndarray, orientation: Orientation) -> np.ndarray:
-        """Positive score of each room, without the sign of the indicator."""
+        """Positive score of each room, without the sign of the indicator.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+
+        Returns
+        -------
+        numpy.ndarray
+            Positive score of each room.
+        """
         vector = np.asarray(x, dtype=float).ravel()
         n_rooms = vector.size // _N_FIELDS
         features = encode_orientation(orientation, harmonics=1)
@@ -195,13 +271,39 @@ class AnalyticSurrogate:
         return parts
 
     def _orientation_factor(self, orientation: Orientation) -> float:
-        """Eight-sector table. Delegates to :func:`sector_factor`, stateless."""
+        """Eight-sector table. Delegates to :func:`sector_factor`, stateless.
+
+        Parameters
+        ----------
+        orientation
+            Azimuth of the plan.
+
+        Returns
+        -------
+        float
+            Exposure weight of the orientation's sector.
+        """
         return sector_factor(orientation)
 
     def _score_and_gradient(
         self, x: np.ndarray, orientation: Orientation, *, with_gradient: bool
     ) -> tuple[float, np.ndarray]:
-        """Scalar score and, if asked, ∇x of the same scalar."""
+        """Scalar score and, if asked, ∇x of the same scalar.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        with_gradient
+            Whether to compute the gradient.
+
+        Returns
+        -------
+        tuple of float and ndarray
+            The score and its gradient (zeros when not asked).
+        """
         vector = np.asarray(x, dtype=float).ravel()
         n_rooms = vector.size // _N_FIELDS
         gradient = np.zeros_like(vector, dtype=float)

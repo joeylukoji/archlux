@@ -42,6 +42,20 @@ def compare(
     Use :func:`archlux.bench.report.report` (stratified, bootstrap) for any paper
     table; ``compare`` only serves to roughly rank surrogates.
 
+    Parameters
+    ----------
+    plans
+        Plans to score.
+    methods
+        Surrogates compared.
+    evaluate_by
+        External evaluator: score of a plan under a method.
+
+    Returns
+    -------
+    tuple of float
+        Mean score of each method, in the order of ``methods``.
+
     Raises
     ------
     TypeError

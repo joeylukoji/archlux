@@ -98,7 +98,20 @@ def _consolidate(
 def _coverage(
     incidences: list[tuple[str, int, int, int, int]], shape: tuple[int, int]
 ) -> np.ndarray:
-    """Number of rooms covering each cell."""
+    """Number of rooms covering each cell.
+
+    Parameters
+    ----------
+    incidences
+        Cells covered by each room.
+    shape
+        Shape of the cell array.
+
+    Returns
+    -------
+    numpy.ndarray
+        Number of rooms covering each cell.
+    """
     grid = np.zeros(shape, dtype=int)
     for _, left, right, low, high in incidences:
         grid[left:right, low:high] += 1
@@ -112,6 +125,18 @@ def _touch_ups(
 
     The boolean says whether it is an extension (true) or a reduction (false).
     Moving a single index by one step leaves the room rectangular by construction.
+
+    Parameters
+    ----------
+    incidence
+        Cells covered by one room.
+    shape
+        Shape of the cell array.
+
+    Returns
+    -------
+    list of tuple
+        Each one-step change, the cells it affects, and whether it is a growth.
     """
     name, left, right, low, high = incidence
     width, height = shape

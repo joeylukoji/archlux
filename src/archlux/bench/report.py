@@ -48,6 +48,18 @@ def _sector_by_degree(degrees: Iterable[float], *, n_sectors: int) -> dict[float
     ``stratify`` returns grouped values, not indices, so it is queried distinct
     azimuth by distinct azimuth. Two equal azimuths always fall in the same sector,
     so ``O(distinct)`` calls suffice.
+
+    Parameters
+    ----------
+    degrees
+        Azimuths, in degrees.
+    n_sectors
+        Number of sectors.
+
+    Returns
+    -------
+    dict of float to str
+        The sector name of each distinct azimuth.
     """
     mapping: dict[float, str] = {}
     for deg in degrees:
@@ -71,6 +83,20 @@ def report(
     Reading ``n_sectors × n_methods`` 95% intervals as that many simultaneous
     conclusions overstates significance; correct the family with
     :func:`archlux.bench.stats.holm` before any publication.
+
+    Parameters
+    ----------
+    result
+        Raw result of :func:`archlux.bench.run.run`.
+    seed
+        Seed of the bootstrap intervals.
+    n_sectors
+        Number of orientation sectors.
+
+    Returns
+    -------
+    BenchReport
+        Scores per sector and per method.
     """
     if n_sectors < 1:
         raise InvariantViolation(("n_secteurs must be >= 1",))

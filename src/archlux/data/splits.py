@@ -24,7 +24,18 @@ class Split:
 
 
 def _lines(path: Path) -> tuple[str, ...]:
-    """Read identifiers, one per line, without duplicates or comments."""
+    """Read identifiers, one per line, without duplicates or comments.
+
+    Parameters
+    ----------
+    path
+        Text file, one identifier per line.
+
+    Returns
+    -------
+    tuple of str
+        The identifiers, without duplicates or comments.
+    """
     if not path.is_file():
         raise InvariantViolation((f"missing split file: {path}",))
     seen: list[str] = []
@@ -46,6 +57,16 @@ def load_split(path: Path) -> Split:
 
     ``path`` is a directory containing ``train.txt``, ``calibration.txt``
     and ``test.txt`` (one identifier per line).
+
+    Parameters
+    ----------
+    path
+        Directory holding ``train.txt``, ``calibration.txt`` and ``test.txt``.
+
+    Returns
+    -------
+    Split
+        The three disjoint sets of identifiers.
 
     Raises
     ------

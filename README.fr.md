@@ -54,6 +54,23 @@ documentation détaillée ([`docs/`](docs/)) est encore en français ; les limit
 [`docs/limites.md`](docs/limites.md), l'architecture dans
 [`docs/specification/ARCHITECTURE.md`](docs/specification/ARCHITECTURE.md).
 
+## En ligne de commande
+
+Les mêmes opérations sur un fichier de plan (format `Plan.to_json`). Le plan ne porte pas
+de contexte : ses murs porteurs forment la structure, son contour est la parcelle, et la
+réglementation vient des options.
+
+```text
+archlux verify plan.json --min-width 0.90 --min-area bedroom=9
+archlux legalize plan.json --tiling --min-width 0.90 -o fixed.json --svg fixed.svg --report
+archlux feasible plan.json --min-area bedroom=9
+```
+
+Code de sortie 0 : valide (ou faisable) ; 1 : invalide (ou infaisable) ; 2 : erreur.
+`verify` mesure aussi chaque rectangle de pièce contre `--min-width` ; les options sont
+vérifiées avant tout calcul (voir le
+[tutoriel en ligne de commande](docs/tutorials/command-line.fr.md)).
+
 > **Un plan produit par ce système est une proposition, jamais un document de projet.
 > La responsabilité de conception et de signature demeure celle d'un professionnel
 > habilité.**

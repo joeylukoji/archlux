@@ -52,6 +52,16 @@ def _analytic(indicator: Indicator) -> AnalyticSurrogate:
     :meth:`DenseSurrogate.gradient` evaluates ``2 n`` times per gradient; rebuilding the
     surrogate at each evaluation was pure waste on the critical path of
     ``ARCHITECTURE.md`` §9.
+
+    Parameters
+    ----------
+    indicator
+        Indicator the analytic surrogate models.
+
+    Returns
+    -------
+    AnalyticSurrogate
+        The shared, cached instance for that indicator.
     """
     return AnalyticSurrogate(target_indicator=indicator)
 
@@ -64,6 +74,20 @@ def descriptors(
 
     Explicitly includes ``area × sin 2θ``, a term present in the synthetic simulator and
     absent from the analytic surrogate — without it the perceptron cannot win.
+
+    Parameters
+    ----------
+    x
+        Decision vector of the plan.
+    orientation
+        Azimuth of the plan.
+    glazing
+        Glazing of the plan, or ``None``.
+
+    Returns
+    -------
+    numpy.ndarray
+        The continuous descriptor vector of the plan.
     """
     tokens, mask = vector_to_tokens(x, orientation, glazing)
     valid = tokens[~mask]
@@ -115,7 +139,20 @@ def descriptors(
 
 
 def _huber_derivative(residual: float, delta: float = 1.0) -> float:
-    """Derivative of the Huber loss, bounded outside ``[-delta, delta]``."""
+    """Derivative of the Huber loss, bounded outside ``[-delta, delta]``.
+
+    Parameters
+    ----------
+    residual
+        Prediction error.
+    delta
+        Half-width of the quadratic zone.
+
+    Returns
+    -------
+    float
+        The residual inside ``[-delta, delta]``, ``±delta`` outside.
+    """
     if abs(residual) <= delta:
         return residual
     return delta * (1.0 if residual > 0.0 else -1.0)
@@ -150,7 +187,13 @@ class DenseSurrogate:
 
     @property
     def indicator(self) -> Indicator:
-        """Name of the modelled indicator."""
+        """Name of the modelled indicator.
+
+        Returns
+        -------
+        Indicator
+            The modelled indicator.
+        """
         return self.target_indicator
 
     @property
@@ -159,6 +202,11 @@ class DenseSurrogate:
 
         ``uq.registry._model_fingerprint`` reads this directly instead of guessing at
         ``W1``/``b1``/... by name, so it survives an internal rename here.
+
+        Returns
+        -------
+        str
+            SHA-256 of the trained weights; raises ``InvariantViolation`` when untrained.
         """
         if (
             self.W1 is None
@@ -176,7 +224,13 @@ class DenseSurrogate:
         return hashlib.sha256(b"".join(buffers)).hexdigest()
 
     def n_parameters(self) -> int:
-        """Number of trained scalars."""
+        """Number of trained scalars.
+
+        Returns
+        -------
+        int
+            Number of trained scalars; zero when untrained.
+        """
         if (
             self.W1 is None
             or self.b1 is None
@@ -193,7 +247,18 @@ class DenseSurrogate:
         return np.asarray((feat - self.mu) / np.maximum(self.sigma, _EPS), dtype=float)
 
     def _forward(self, feat: np.ndarray) -> tuple[float, np.ndarray, np.ndarray]:
-        """Forward pass. Explicit guard: ``assert`` disappears under ``python -O``."""
+        """Forward pass. Explicit guard: ``assert`` disappears under ``python -O``.
+
+        Parameters
+        ----------
+        feat
+            Normalized descriptor vector.
+
+        Returns
+        -------
+        tuple of float, ndarray, ndarray
+            The network output and the two hidden activations.
+        """
         if (
             self.W1 is None
             or self.b1 is None
@@ -212,7 +277,22 @@ class DenseSurrogate:
     def evaluate(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Rescaled analytic surrogate + learned residual; untrained, the analytic alone."""
+        """Rescaled analytic surrogate + learned residual; untrained, the analytic alone.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        float
+            The predicted indicator.
+        """
         base = (
             self.base_scale * float(_analytic(self.target_indicator).evaluate(x, orientation))
             + self.base_offset
@@ -235,6 +315,20 @@ class DenseSurrogate:
         differentiable and the analytic surrogate has a closed-form gradient — but it
         changes the values returned near the kink ``depth == useful_depth``: substituting
         it requires running :func:`archlux.light.validation.validate_gradient` again.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
+        Returns
+        -------
+        numpy.ndarray
+            Finite-difference gradient, same dimension as ``x``.
         """
         x0 = np.asarray(x, dtype=float).ravel().copy()
         g = np.empty_like(x0)
@@ -258,6 +352,20 @@ class DenseSurrogate:
         uncertainty, only a scale. Conformal coverage stays valid (see
         :data:`RESIDUAL_SIGMA_FRACTION`), but the interval has the same width everywhere:
         no gain in adaptivity, and the figure ``0.15`` is backed by no measurement.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan (unused).
+        orientation
+            Azimuth of the plan (unused).
+        glazing
+            Glazing of the plan (unused).
+
+        Returns
+        -------
+        float
+            The constant predictive standard deviation.
         """
         del x, orientation, glazing
         return float(max(self.sigma_y * RESIDUAL_SIGMA_FRACTION, SIGMA_FLOOR))
@@ -287,6 +395,23 @@ class DenseSurrogate:
         So ``y ≈ a·f(x) + b`` is first fitted by least squares on the training set, then
         the network learns the residual to this **rescaled** base. ``a = 1``, ``b = 0``
         restores exactly the earlier behaviour.
+
+        Parameters
+        ----------
+        xs
+            Decision vectors of the training plans.
+        ys
+            Target indicator of each plan.
+        orientations
+            Azimuth of each plan.
+        seed
+            Seed of the weight initialization and shuffling.
+        epochs
+            Number of passes over the data.
+        lr
+            Learning rate.
+        glazing
+            Glazing of each plan, or ``None``.
         """
         if len(xs) != len(ys) or len(xs) != len(orientations):
             raise InvariantViolation(("xs, ys and orientations must have the same length",))
@@ -349,6 +474,16 @@ class DenseSurrogate:
         suffix is therefore normalized here, otherwise the fingerprint would be computed
         on a file that does not exist. Returning the path actually written is not
         needed: it follows from the same rule.
+
+        Parameters
+        ----------
+        path
+            Target ``npz`` file; the suffix is added if missing.
+
+        Returns
+        -------
+        str
+            SHA-256 of the file written.
         """
         if (
             self.W1 is None
@@ -389,7 +524,18 @@ class DenseSurrogate:
     @classmethod
     @renamed_parameters({"chemin": "path"})
     def load(cls, path: Path) -> DenseSurrogate:
-        """Read back an ``npz`` written by :meth:`save`."""
+        """Read back an ``npz`` written by :meth:`save`.
+
+        Parameters
+        ----------
+        path
+            ``npz`` file written by :meth:`save`.
+
+        Returns
+        -------
+        DenseSurrogate
+            The surrogate with its weights restored.
+        """
         with np.load(Path(path), allow_pickle=False) as archive:
             indicator = str(archive["indicateur"])
             # Matching by equality types the result on every mypy version, without a cast.

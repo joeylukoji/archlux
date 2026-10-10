@@ -20,7 +20,13 @@ _OUT_OF_SCOPE = (
 
 
 def _version() -> str:
-    """Version of the source code, never stale install metadata."""
+    """Version of the source code, never stale install metadata.
+
+    Returns
+    -------
+    str
+        The package version from the source code.
+    """
     return __version__
 
 
@@ -102,6 +108,11 @@ def _header(manifest: Manifest | None) -> str:
 @renamed_parameters({"certificat": "certificate"})
 def render(certificate: Certificate) -> str:
     """Render the certificate as readable text.
+
+    Parameters
+    ----------
+    certificate
+        Certificate to render.
 
     Returns
     -------

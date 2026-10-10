@@ -69,6 +69,11 @@ def build_bound(
 def check_calibration(calibration: object) -> None:
     """Refuse, before any solving, a calibration that could not give a finite bound.
 
+    Parameters
+    ----------
+    calibration
+        Calibration to check.
+
     Raises
     ------
     InvariantViolation

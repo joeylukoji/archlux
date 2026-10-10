@@ -42,25 +42,49 @@ class Iteration:
 
     @property
     def valeur(self) -> float:
-        """Deprecated alias of :attr:`value`."""
+        """Deprecated alias of :attr:`value`.
+
+        Returns
+        -------
+        float
+            Same as :attr:`value`.
+        """
         _deprecated_iteration("valeur", "value")
         return self.value
 
     @property
     def pas(self) -> float:  # lang-ok: deprecated French alias
-        """Deprecated alias of :attr:`step`."""
+        """Deprecated alias of :attr:`step`.
+
+        Returns
+        -------
+        float
+            Same as :attr:`step`.
+        """
         _deprecated_iteration("pas", "step")  # lang-ok: deprecated French alias
         return self.step
 
     @property
     def temps_lp_ms(self) -> float:
-        """Deprecated alias of :attr:`lp_ms`."""
+        """Deprecated alias of :attr:`lp_ms`.
+
+        Returns
+        -------
+        float
+            Same as :attr:`lp_ms`.
+        """
         _deprecated_iteration("temps_lp_ms", "lp_ms")
         return self.lp_ms
 
     @property
     def n_coupes(self) -> int:
-        """Deprecated alias of :attr:`n_cuts`."""
+        """Deprecated alias of :attr:`n_cuts`.
+
+        Returns
+        -------
+        int
+            Same as :attr:`n_cuts`.
+        """
         _deprecated_iteration("n_coupes", "n_cuts")
         return self.n_cuts
 
@@ -99,46 +123,93 @@ class Trace:
 
         Separates the cost of the oracle from that of the surrogate: this is the measure
         that tells which of the two layers limits the 500 ms budget.
+
+        Returns
+        -------
+        float
+            Sum of the LP times of every iteration, in milliseconds.
         """
         return sum(i.lp_ms for i in self.iterations)
 
     @property
     def iterates(self) -> tuple[FloatVector, ...]:
-        """Visited vectors, in order. All belong to the polytope."""
+        """Visited vectors, in order. All belong to the polytope.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            The visited vectors, in order.
+        """
         return tuple(step.x for step in self.iterations)
 
     @property
     def gaps(self) -> tuple[float, ...]:
-        """Frank-Wolfe gaps, in order. The first may be infinite (start)."""
+        """Frank-Wolfe gaps, in order. The first may be infinite (start).
+
+        Returns
+        -------
+        tuple of float
+            The Frank-Wolfe gap of each iteration.
+        """
         return tuple(step.gap for step in self.iterations)
 
     @property
     def values(self) -> tuple[float, ...]:
-        """Surrogate values, in order."""
+        """Surrogate values, in order.
+
+        Returns
+        -------
+        tuple of float
+            The surrogate value of each iteration.
+        """
         return tuple(step.value for step in self.iterations)
 
     # --- French names, deprecated until 1.0.0 (ADR 0001) ---------------------------
 
     @property
     def iteres(self) -> tuple[FloatVector, ...]:
-        """Deprecated alias of :attr:`iterates`."""
+        """Deprecated alias of :attr:`iterates`.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            Same as :attr:`iterates`.
+        """
         _deprecated("iteres", "iterates")
         return self.iterates
 
     @property
     def ecarts(self) -> tuple[float, ...]:
-        """Deprecated alias of :attr:`gaps`."""
+        """Deprecated alias of :attr:`gaps`.
+
+        Returns
+        -------
+        tuple of float
+            Same as :attr:`gaps`.
+        """
         _deprecated("ecarts", "gaps")
         return self.gaps
 
     @property
     def objectif(self) -> tuple[float, ...]:
-        """Deprecated alias of :attr:`values`."""
+        """Deprecated alias of :attr:`values`.
+
+        Returns
+        -------
+        tuple of float
+            Same as :attr:`values`.
+        """
         _deprecated("objectif", "values")
         return self.values
 
     @property
     def temps_lp_total_ms(self) -> float:
-        """Deprecated alias of :attr:`total_lp_ms`."""
+        """Deprecated alias of :attr:`total_lp_ms`.
+
+        Returns
+        -------
+        float
+            Same as :attr:`total_lp_ms`.
+        """
         _deprecated("temps_lp_total_ms", "total_lp_ms")
         return self.total_lp_ms

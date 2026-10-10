@@ -18,8 +18,10 @@ dependencies = [
     "networkx>=3.2",
     "shapely>=2.0",
     "ortools>=9.8",
-    "structlog>=24.1",
 ]
+
+[project.scripts]
+archlux = "archlux.cli:main"
 
 [project.optional-dependencies]
 # torch n'apparait QUE dans cet extra. Le noyau ne doit jamais l'importer.
@@ -46,6 +48,8 @@ dev = [
     # Cyclomatic complexity, PLAN.md phase 4's exit gate: `radon cc src -n C` must be
     # silent (no function above CC 10).
     "radon>=6.0",
+    # Docstring sections (PLAN.md phase 4, block 17): see [tool.numpydoc_validation].
+    "numpydoc>=1.8",
 ]
 docs = ["mkdocs>=1.6", "mkdocs-material>=9.5", "mkdocstrings[python]>=0.25", "mkdocs-static-i18n>=1.2"]
 
@@ -108,7 +112,7 @@ convention = "numpy"
 # Pas de `python_version` épinglé : les stubs de numpy utilisent la syntaxe `type` de
 # 3.12, et forcer 3.11 fait échouer mypy sur numpy avant d'avoir analysé une seule ligne
 # du projet. La compatibilité 3.11 est couverte par la matrice pytest de la CI.
-files = ["src"]
+files = ["src", "examples"]
 strict = true
 warn_unreachable = true
 disallow_any_explicit = false
@@ -121,6 +125,12 @@ ignore_missing_imports = true
 fail-under = 95
 exclude = ["tests", "experiments", "benchmarks"]
 ignore-nested-functions = true
+
+[tool.numpydoc_validation]
+# Every documented callable states its parameters and return value. Only these two
+# checks are enforced: the other categories (examples, extended summaries...) still
+# have open findings. tests/test_docstrings.py runs it with the suite, so in CI.
+checks = ["PR01", "RT01"]
 
 [tool.coverage.run]
 source = ["src/archlux"]

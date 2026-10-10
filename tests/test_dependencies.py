@@ -37,6 +37,8 @@ ALLOWED: dict[str, frozenset[str]] = {
     "seeds": frozenset(),
     "arrays": frozenset(),
     "_deprecation": frozenset(),
+    # Structured debug events (PLAN.md phase 4, block 17, item 47): imports only logging.
+    "_log": frozenset(),
     # Door validation of the public arguments (PLAN.md 3.1): a leaf over `types`.
     "validation": frozenset({"types", "errors"}),
     "geom": frozenset({"types", "errors"}),
@@ -53,6 +55,9 @@ ALLOWED: dict[str, frozenset[str]] = {
     "data": frozenset({"types", "errors", "uq", "orient", "geom"}),
     "certify": frozenset({"types", "errors", "geom", "uq"}),
     "io": frozenset({"types", "errors"}),
+    # Command line (PLAN.md 5.2): a top-level consumer, like the root package; nobody
+    # imports it.
+    "cli": frozenset({"types", "errors", "api", "io", "certify", "feasibility", "export"}),
     # Active learning: a leaf orchestrator; light protocol + uq, no torch.
     "active": frozenset({"types", "errors", "light.protocol", "uq"}),
     # BIM export: a leaf; types + errors; ifcopenshell optional (outside archlux).
@@ -95,6 +100,7 @@ LEAVES: dict[str, frozenset[str]] = {
     "_version": frozenset(),
     "tolerances": frozenset({"__future__", "typing"}),
     "seeds": frozenset({"__future__", "hashlib"}),
+    "_log": frozenset({"__future__", "logging"}),
     "arrays": frozenset({"__future__", "typing", "numpy", "warnings"}),
     "_deprecation": frozenset(
         {

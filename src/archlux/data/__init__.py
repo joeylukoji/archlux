@@ -1,1 +1,4 @@
-"""Data layer: corpus, deduplication, splits. Never imports ``geom`` or ``light``."""
+"""Data layer: corpus, deduplication, splits.
+
+Reads ``geom`` and ``orient`` (corpus loaders only), never ``lmo``, ``solve`` or ``light``.
+"""

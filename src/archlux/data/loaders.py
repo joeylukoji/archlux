@@ -51,6 +51,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
+from archlux._log import event
 from archlux.data.imputation import impute_openings as _impute_openings
 from archlux.errors import InvariantViolation
 from archlux.geom.rectilinear import RectilinearRoom, decompose
@@ -153,11 +154,23 @@ class LoadStatistics:
 
     @property
     def retention_rate(self) -> float:
-        """Share of read apartments actually converted, in ``[0, 1]``."""
+        """Share of read apartments actually converted, in ``[0, 1]``.
+
+        Returns
+        -------
+        float
+            ``kept / read``, zero when nothing was read.
+        """
         return self.kept / self.read if self.read else 0.0
 
     def summary(self) -> str:
-        """Render a readable summary, reasons sorted by decreasing frequency."""
+        """Render a readable summary, reasons sorted by decreasing frequency.
+
+        Returns
+        -------
+        str
+            One line of totals, then one line per rejection reason.
+        """
         rows = [f"lus {self.read}, retenus {self.kept} ({100.0 * self.retention_rate:.1f} %)"]
         rows.extend(f"  rejet {reason} : {n}" for reason, n in self.rejections.most_common())
         return "\n".join(rows)
@@ -169,6 +182,16 @@ def _identifier(value: str) -> str:
     MSD writes ``area_id`` as a float (``484803.0``), Swiss Dwellings as an
     integer (``484803``). Without this normalization the join yields **0%**
     instead of 99%.
+
+    Parameters
+    ----------
+    value
+        Identifier as written in the CSV, integer or float text.
+
+    Returns
+    -------
+    str
+        The identifier as an integer string; the input unchanged if it is not numeric.
     """
     text = str(value).strip()
     try:
@@ -180,7 +203,18 @@ def _identifier(value: str) -> str:
 def _angles_and_lengths(  # lang-ok: kept private identifier
     polygons: list[Polygon],
 ) -> tuple[list[float], list[float]]:
-    """Angle and length of each edge, to estimate the grid direction."""
+    """Angle and length of each edge, to estimate the grid direction.
+
+    Parameters
+    ----------
+    polygons
+        Polygons whose exterior edges are measured.
+
+    Returns
+    -------
+    tuple of list of float
+        The angle of each edge in degrees, and its length.
+    """
     angles: list[float] = []
     lengths: list[float] = []
     for poly in polygons:
@@ -200,6 +234,18 @@ def _snap(poly: Polygon, tolerance: float) -> Polygon:
     The snap propagates the coordinate of the previous vertex: it closes the
     outline without creating a residual diagonal edge, which a simple rounding
     does not guarantee.
+
+    Parameters
+    ----------
+    poly
+        Polygon to straighten.
+    tolerance
+        Largest gap, in metres, still snapped onto an axis.
+
+    Returns
+    -------
+    Polygon
+        The polygon with every near-axial edge made exactly axial.
     """
     coords = [list(point) for point in list(poly.exterior.coords)[:-1]]
     n = len(coords)
@@ -223,6 +269,18 @@ def _grid(values: list[float], tolerance: float) -> dict[float, float]:
     transitive by construction — two values more than ``tolerance`` apart can
     end up together if a chain links them, which is the intended behaviour for
     a run of partitions.
+
+    Parameters
+    ----------
+    values
+        Coordinates to group.
+    tolerance
+        Largest gap, in metres, between consecutive values of a group.
+
+    Returns
+    -------
+    dict of float to float
+        Mapping from each value to the representative of its group.
     """
     if not values:
         return {}
@@ -259,6 +317,18 @@ def _stitch(polygons: list[Polygon], tolerance: float) -> list[Polygon]:
     This is a **transformation of the corpus**, not a correction: it moves
     partitions by at most ``tolerance / 2``. Any publication must cite the
     value used and the area bias it induces.
+
+    Parameters
+    ----------
+    polygons
+        Straightened room surfaces.
+    tolerance
+        Largest gap, in metres, merged into one edge.
+
+    Returns
+    -------
+    list of Polygon
+        The rooms snapped onto a common grid; empty if a room degenerates.
     """
     xs: list[float] = []
     ys: list[float] = []
@@ -286,7 +356,19 @@ def _stitch(polygons: list[Polygon], tolerance: float) -> list[Polygon]:
 
 
 def _wall_segment(poly: Polygon) -> LineString | None:  # lang-ok: kept private identifier
-    """Long axis of a partition, from its minimum rotated bounding rectangle."""
+    """Long axis of a partition, from its minimum rotated bounding rectangle.
+
+    Parameters
+    ----------
+    poly
+        Partition polygon.
+
+    Returns
+    -------
+    LineString or None
+        The long axis of the partition, or ``None`` when its rectangle is degenerate or thicker
+        than a wall.
+    """
     rect = poly.minimum_rotated_rectangle
     if not isinstance(rect, Polygon) or rect.is_empty:
         return None
@@ -315,7 +397,20 @@ def _wall_segment(poly: Polygon) -> LineString | None:  # lang-ok: kept private 
 
 
 def _walls_from_polygons(polygons: list[Polygon], thicknesses: list[float]) -> tuple[Wall, ...]:
-    """Convert solid partitions into axis segments, with stable identifiers."""
+    """Convert solid partitions into axis segments, with stable identifiers.
+
+    Parameters
+    ----------
+    polygons
+        Straightened partition polygons.
+    thicknesses
+        Thickness of each partition, in metres.
+
+    Returns
+    -------
+    tuple of Wall
+        One wall per usable partition, with stable identifiers.
+    """
     walls: list[Wall] = []
     for rank, (poly, thickness) in enumerate(zip(polygons, thicknesses, strict=True)):
         segment = _wall_segment(poly)  # lang-ok: kept private identifier
@@ -335,7 +430,23 @@ def _walls_from_polygons(polygons: list[Polygon], thicknesses: list[float]) -> t
 
 
 def _opening_from_window(window: Polygon, walls: tuple[Wall, ...], rank: int) -> Opening | None:
-    """Project an opening onto the nearest wall, in **relative** coordinates."""
+    """Project an opening onto the nearest wall, in **relative** coordinates.
+
+    Parameters
+    ----------
+    window
+        Straightened window polygon.
+    walls
+        Walls the window may sit on.
+    rank
+        Order of the window, used for its identifier.
+
+    Returns
+    -------
+    Opening or None
+        The opening on the nearest wall in relative coordinates, or ``None`` when there is no
+        usable wall or the opening does not fit on it.
+    """
     if not walls:
         return None
     center = window.centroid
@@ -371,6 +482,16 @@ def _simple_outline(rooms: list[Polygon]) -> tuple[tuple[float, float], ...] | N
     single ring, and ``certify.proof`` compares a union area to the area of
     **this** outline. Silently plugging the hole would fabricate a gap that
     does not exist.
+
+    Parameters
+    ----------
+    rooms
+        Room polygons of the apartment.
+
+    Returns
+    -------
+    tuple of tuple of float or None
+        The outer ring of their union, or ``None`` when it is not one simple polygon.
     """
     union = unary_union(rooms)
     if not isinstance(union, Polygon) or union.is_empty:
@@ -388,6 +509,18 @@ def _read_groups(
     Each entity is ``(kind, subtype, wkt, area_id, site_id)``. The last two
     are not used for the geometry: they carry the join to the Swiss Dwellings
     simulations and the splitting unit.
+
+    Parameters
+    ----------
+    path
+        MSD CSV file.
+    excluded_types
+        Room subtypes left out.
+
+    Returns
+    -------
+    dict of str to list of tuple
+        Entities ``(kind, subtype, wkt, area_id, site_id)`` grouped by apartment.
     """
     kept_kinds = {("separator", "WALL"), ("separator", "COLUMN"), ("opening", "WINDOW")}
     groups: dict[str, list[tuple[str, str, str, str, str]]] = defaultdict(list)
@@ -523,6 +656,7 @@ def load_msd(
         )
         if isinstance(result, str):
             stats.rejections[result] += 1
+            event("archlux.data", "load.rejected", apartment=id, reason=result)
             continue
         if impute_openings:
             result = replace(result, plan=_impute_openings(result.plan))
@@ -570,6 +704,16 @@ def _parse_entities(entities: list[tuple[str, str, str, str, str]]) -> _Parsed |
     """Read the WKT of every entity; a rejection reason if one is unreadable.
 
     Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+
+    Parameters
+    ----------
+    entities
+        Entities ``(kind, subtype, wkt, area_id, site_id)`` of one apartment.
+
+    Returns
+    -------
+    _Parsed or str
+        The shapes bucketed by role, or the rejection reason.
     """
     parsed = _Parsed([], [], [], [], [])
     for kind, subtype, text, area_id, _site in entities:
@@ -595,6 +739,16 @@ def _dominant_angle(parsed: _Parsed) -> float | str:
     """Dominant wall direction in degrees, or a rejection reason.
 
     Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+
+    Parameters
+    ----------
+    parsed
+        Shapes of the apartment.
+
+    Returns
+    -------
+    float or str
+        The dominant direction in degrees, or the rejection reason.
     """
     angles, lengths = _angles_and_lengths(  # lang-ok: kept private identifier
         parsed.walls or [shape for _, shape in parsed.rooms]
@@ -619,6 +773,22 @@ def _stitched_rooms(
     edges, and it is the snapping step that makes neighbouring rooms contiguous.
 
     Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+
+    Parameters
+    ----------
+    rooms
+        Room subtypes and raw polygons.
+    theta
+        Straightening angle, in degrees.
+    snap_tolerance
+        Largest gap, in metres, snapped onto an axis.
+    stitch_tolerance
+        Largest gap, in metres, merged into one edge.
+
+    Returns
+    -------
+    list of Polygon or str
+        The straightened, stitched rooms, or the rejection reason.
     """
     straightened = [
         _snap(affinity.rotate(shape, -theta, origin=(0.0, 0.0)), snap_tolerance)
@@ -643,6 +813,22 @@ def _decompose_rooms(
     """Split each room into axis rectangles; the fragments needing a merge, or a reason.
 
     Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+
+    Parameters
+    ----------
+    raw_rooms
+        Room subtypes and raw polygons, in reading order.
+    room_polygons
+        Stitched room polygons, same order.
+    max_rooms
+        Cap on sub-rectangles for the apartment.
+    max_rectangles
+        Cap on rectangles per room.
+
+    Returns
+    -------
+    tuple of list of Room and list of RectilinearRoom, or str
+        The rectangles and the fused rooms, or the rejection reason.
     """
     rooms: list[Room] = []
     merges: list[RectilinearRoom] = []
@@ -679,6 +865,32 @@ def _assemble(
     """Walls, openings, columns and the plan/context of an accepted apartment.
 
     Extracted from :func:`_convert` (PLAN.md phase 4, block 14, item 42).
+
+    Parameters
+    ----------
+    id
+        Apartment identifier.
+    site
+        Swiss Dwellings site identifier.
+    parsed
+        Shapes of the apartment.
+    rooms
+        Rectangles of the plan.
+    merges
+        Fused rooms.
+    outline
+        Outline of the plan.
+    theta
+        Straightening angle, in degrees.
+    snap_tolerance
+        Largest gap, in metres, snapped onto an axis.
+    active_regulation
+        Regulation attached to the context.
+
+    Returns
+    -------
+    MSDApartment
+        The converted apartment, its plan and its context.
     """
 
     def straighten(shape: Polygon) -> Polygon:
@@ -734,6 +946,28 @@ def _convert(
     The stages are the helpers above, in order: `_parse_entities` → `_dominant_angle`
     → `_stitched_rooms` → `_decompose_rooms` → `_assemble`; each returns either its
     result or the reason the apartment is rejected.
+
+    Parameters
+    ----------
+    id
+        Apartment identifier.
+    entities
+        Entities ``(kind, subtype, wkt, area_id, site_id)`` of the apartment.
+    active_regulation
+        Regulation attached to the context.
+    max_rooms
+        Cap on rooms before and sub-rectangles after decomposition.
+    max_rectangles
+        Cap on rectangles per room.
+    snap_tolerance
+        Largest gap, in metres, snapped onto an axis.
+    stitch_tolerance
+        Largest gap, in metres, merged into one edge.
+
+    Returns
+    -------
+    MSDApartment or str
+        The converted apartment, or the rejection reason in plain text.
     """
     site = next((s for _, _, _, _, s in entities if s), "")
     parsed = _parse_entities(entities)
@@ -776,7 +1010,13 @@ def _convert(
 
 
 def _flux_simulations(path: Path) -> Iterator[dict[str, str]]:
-    """Read ``simulations.csv``, from the Zenodo zip or from the bare CSV."""
+    """Read ``simulations.csv``, from the Zenodo zip or from the bare CSV.
+
+    Parameters
+    ----------
+    path
+        Zenodo zip or bare ``simulations.csv``.
+    """
     if path.suffix.lower() == ".zip":
         with zipfile.ZipFile(path) as archive:
             names = [
