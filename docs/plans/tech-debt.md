@@ -11,26 +11,27 @@ phase 5 could start. Measured on 2026-10-07, branch `phase4-block16-experiments`
 
 ### D1. Modules over 400 lines (gate: none)
 
-19 modules, against 12 at the start of phase 4. Part of the growth is the numpydoc
+19 modules, against 12 at the start of phase 4 (`wc -l`, recounted 2026-10-10 after
+the PR #36 review fixes). Part of the growth is the numpydoc
 `Parameters`/`Returns` sections added in block 17, which count as lines.
 
 | Lines | Module |
 |--:|---|
-| 1225 | `data/loaders.py` |
-| 1084 | `api.py` |
+| 1226 | `data/loaders.py` |
+| 1086 | `api.py` |
 | 986 | `certify/proof.py` |
-| 920 | `lmo/cuts.py` |
+| 919 | `lmo/cuts.py` |
 | 886 | `geom/rectilinear.py` |
 | 785 | `geom/graph.py` |
 | 778 | `io/json_io.py` |
-| 741 | `active/loop.py` |
+| 742 | `active/loop.py` |
 | 729 | `types.py` |
 | 695 | `geom/polytope.py` |
 | 692 | `lmo/solver.py` |
 | 676 | `solve/frank_wolfe.py` |
 | 666 | `export/ifc.py` |
+| 597 | `bench/generation.py` |
 | 573 | `light/base.py` |
-| 569 | `bench/generation.py` |
 | 480 | `uq/conformal.py` |
 | 455 | `orient/circular.py` |
 | 434 | `export/svg.py` |
@@ -65,8 +66,12 @@ byte for byte against the real data (`D:/archlux-donnees`).
 
 ### D4. Not measured at closure
 
-- Coverage: gate ≥ 95 % lines and ≥ 90 % branches; last measured 92 % lines
-  (2026-10-02), branches never.
+- Coverage: gate ≥ 95 % lines and ≥ 90 % branches. Branch coverage was already
+  measured, but only as the combined figure (`CHANGELOG.md`: "total branch coverage
+  90.57 %", lines and branches together). Measured 2026-10-10 on this branch
+  (`pytest --cov=archlux --cov-branch`, 2870 passed): **93.8 % lines** (5645/6021),
+  **81.5 % branches** (1378/1690), 91.1 % combined. Both gates unmet; branches are the
+  larger gap.
 - Fresh `python-design-patterns` and `review-and-refactor` review: gate 0 Critical,
   0 Major; not run.
 

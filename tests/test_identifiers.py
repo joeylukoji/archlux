@@ -102,6 +102,8 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/bench/report.py",
     "src/archlux/bench/run.py",
     "src/archlux/bench/stats.py",
+    "src/archlux/bench/generation.py",
+    "src/archlux/data/generated.py",
     "src/archlux/active/boucle.py",
     "src/archlux/active/loop.py",
     "src/archlux/orient/circulaire.py",
