@@ -16,6 +16,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 ### Added — PLAN.md 5.2: command line
 
 - New `archlux` command (`archlux.cli`, entry point in `pyproject.toml`): `legalize` (`--tiling`, `--repair-budget`, `-o`, `--svg`, `--report`), `verify` and `feasible`. A plan file has no context, so it is built from the plan (load-bearing walls, outline, room types) and the options `--min-width`, `--min-area TYPE=M2` (repeatable) and `--orientation`. Exit codes: 0 valid or feasible, 1 invalid or infeasible, 2 error. Names are English, like the API (PLAN.md wrote `verifier`, `faisable`, `--pavage`).
+- `verify` and `legalize --report` also check widths: `verify_exactly` checks overlaps, gaps, areas and the structure only (the width rule is a polytope bound, enforced while legalizing), so the command line measures every rectangle of the plan, the sub-rectangles of a fused L room included, against `--min-width` (tolerance `SNAP_M`), names each narrow one and exits 1. The verdict now says `minimum areas met` and `minimum widths met` separately (it used to claim `areas and widths met` without checking widths). `verify_exactly` and the certificate are unchanged (PR #37 review).
 - New `tests/unit/test_cli.py`.
 
 ### Docs — PLAN.md phase 4 closed

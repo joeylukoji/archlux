@@ -79,3 +79,34 @@ def test_feasible_answers_yes_for_a_valid_program(
 ) -> None:
     assert main(["feasible", _write(VALID, tmp_path), "--min-width", "0.9"]) == 0
     assert "feasible" in capsys.readouterr().out
+
+
+# A 0.5 m corridor: no overlap, no gap, no area rule broken, but narrower than 0.9 m.
+NARROW = Plan(
+    rooms=(
+        Room(id="a", type="living_room", x=0.0, y=0.0, w=5.5, h=4.0),
+        Room(id="corridor", type="corridor", x=5.5, y=0.0, w=0.5, h=4.0),
+    ),
+    walls=(),
+    openings=(),
+    outline=OUTLINE,
+)
+
+
+def test_verify_exits_one_and_names_a_room_narrower_than_min_width(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["verify", _write(NARROW, tmp_path), "--min-width", "0.9"]) == 1
+    out = capsys.readouterr().out
+    assert out.startswith("invalid")
+    assert "corridor" in out
+    assert "0.50 m < 0.90 m" in out
+
+
+def test_verify_accepts_a_room_exactly_as_wide_as_min_width(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["verify", _write(NARROW, tmp_path), "--min-width", "0.5"]) == 0
+    out = capsys.readouterr().out
+    assert "widths met" in out
+    assert "areas and widths" not in out

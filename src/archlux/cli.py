@@ -5,6 +5,12 @@ the plan and the options: the load-bearing structure is the plan's walls marked
 ``load_bearing``, the outline is the plan's, and the regulation comes from
 ``--min-width`` and ``--min-area TYPE=M2``.
 
+``verify_exactly`` checks overlaps, gaps, areas and the structure, not widths: the width
+rule is a bound of the polytope, enforced only while legalizing. ``verify`` and
+``legalize --report`` therefore also measure every rectangle of the plan against
+``--min-width``, as the polytope bounds each rectangle (the sub-rectangles of a fused L
+room included), within :data:`~archlux.tolerances.SNAP_M`.
+
 Exit codes: ``0`` valid (or feasible, or legalized), ``1`` invalid (or infeasible), ``2``
 error (unreadable file, rejected input, no valid plan found).
 """
@@ -16,6 +22,7 @@ import sys
 from collections.abc import Sequence
 
 from archlux.errors import ArchluxError
+from archlux.tolerances import SNAP_M
 from archlux.types import Context, GeometricProof, Orientation, Plan, Regulation, Structure
 
 __all__ = ["main"]
@@ -129,28 +136,53 @@ def _context(plan: Plan, args: argparse.Namespace) -> Context:
     )
 
 
-def _describe(proof: GeometricProof) -> str:
-    """Plain-text verdict of an exact check.
+def _narrow_rooms(plan: Plan, min_width: float) -> tuple[str, ...]:
+    """Rectangles narrower than ``min_width``, the bound the polytope puts on ``w`` and ``h``.
+
+    Parameters
+    ----------
+    plan : Plan
+        The plan to measure.
+    min_width : float
+        Minimum width, in metres.
+
+    Returns
+    -------
+    tuple of str
+        One message per rectangle whose smaller side is below ``min_width - SNAP_M``.
+    """
+    return tuple(
+        f"width {room.id}: {min(room.w, room.h):.2f} m < {min_width:.2f} m"
+        for room in plan.rooms
+        if min(room.w, room.h) < min_width - SNAP_M
+    )
+
+
+def _describe(proof: GeometricProof, narrow: tuple[str, ...]) -> str:
+    """Plain-text verdict of an exact check and of the width check.
 
     Parameters
     ----------
     proof : GeometricProof
         Result of :func:`archlux.certify.proof.verify_exactly`.
+    narrow : tuple of str
+        Result of :func:`_narrow_rooms`.
 
     Returns
     -------
     str
         One line per finding.
     """
-    lines = ["valid" if proof.valid else "invalid"]
+    lines = ["valid" if proof.valid and not narrow else "invalid"]
     checks = (
         (not proof.overlap, "no overlap", "rooms overlap"),
         (not proof.gaps, "no gap", "gaps between rooms"),
-        (proof.areas_ok, "areas and widths met", "areas or widths below the regulation"),
+        (proof.areas_ok, "minimum areas met", "areas below the regulation"),
+        (not narrow, "minimum widths met", "rooms narrower than the regulation"),
         (proof.structure_kept, "structure kept", "load-bearing structure moved"),
     )
     lines += [f"  {'ok ' if ok else 'NO '} {good if ok else bad}" for ok, good, bad in checks]
-    lines += [f"  - {violation}" for violation in proof.violations]
+    lines += [f"  - {violation}" for violation in (*proof.violations, *narrow)]
     lines.append(f"  max displacement: {proof.max_displacement:.3f} m")
     return "\n".join(lines)
 
@@ -182,7 +214,7 @@ def _legalize(plan: Plan, ctx: Context, args: argparse.Namespace) -> int:
         with open(args.svg, "w", encoding="utf-8") as stream:
             stream.write(render_svg(fixed, outline=plan.outline, walls=fixed.walls))
     if args.report and fixed.certificate is not None:
-        print(_describe(fixed.certificate.geometry))
+        print(_describe(fixed.certificate.geometry, _narrow_rooms(fixed, args.min_width)))
     return 0
 
 
@@ -207,8 +239,9 @@ def _run(args: argparse.Namespace) -> int:
         from archlux.certify.proof import verify_exactly
 
         proof = verify_exactly(plan, ctx)
-        print(_describe(proof))
-        return 0 if proof.valid else 1
+        narrow = _narrow_rooms(plan, args.min_width)
+        print(_describe(proof, narrow))
+        return 0 if proof.valid and not narrow else 1
     from archlux.feasibility import is_feasible
 
     verdict = is_feasible(plan, ctx.structure, ctx)
