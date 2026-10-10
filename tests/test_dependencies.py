@@ -22,7 +22,7 @@ ALLOWED: dict[str, frozenset[str]] = {
     # `feasibility`, `light`: imported under TYPE_CHECKING only, so that type checkers see
     # the lazy packages (PLAN.md 3.8). `test_import_cost` proves that `import archlux`
     # loads none of them. `bench` cannot be listed: nobody imports it.
-    "__init__": frozenset({"types", "errors", "api", "io", "feasibility", "light"}),
+    "__init__": frozenset({"types", "errors", "api", "io", "feasibility", "light", "regulations"}),
     # `types` may reach `errors`: both are roots of the graph, `errors` depends on
     # nothing and above all does not import `types`. The edge creates no cycle and saves
     # every type from raising a bare `Exception` for lack of a typed exception at hand
@@ -55,9 +55,13 @@ ALLOWED: dict[str, frozenset[str]] = {
     "data": frozenset({"types", "errors", "uq", "orient", "geom"}),
     "certify": frozenset({"types", "errors", "geom", "uq"}),
     "io": frozenset({"types", "errors"}),
+    # Regulation presets (PLAN.md 5.4): data over `types`, like `io`.
+    "regulations": frozenset({"types", "errors"}),
     # Command line (PLAN.md 5.2): a top-level consumer, like the root package; nobody
     # imports it.
-    "cli": frozenset({"types", "errors", "api", "io", "certify", "feasibility", "export"}),
+    "cli": frozenset(
+        {"types", "errors", "api", "io", "certify", "feasibility", "export", "regulations"}
+    ),
     # Active learning: a leaf orchestrator; light protocol + uq, no torch.
     "active": frozenset({"types", "errors", "light.protocol", "uq"}),
     # BIM export: a leaf; types + errors; ifcopenshell optional (outside archlux).
