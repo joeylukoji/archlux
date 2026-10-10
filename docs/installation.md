@@ -4,6 +4,7 @@
 pip install archlux                # core: no learning dependency
 pip install "archlux[appris]"      # + trained surrogate (torch)
 pip install "archlux[ml]"          # alias of ``appris``
+pip install "archlux[cad]"         # + DXF reading (ezdxf)
 # ``archlux[sim]``: empty extra (Radiance). Off the critical path; CI
 # uses ``SplitFluxOracle`` (closed form).
 ```

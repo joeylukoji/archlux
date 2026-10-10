@@ -56,6 +56,7 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/geom/__init__.py",
     "src/archlux/geom/diagnostic.py",
     "src/archlux/io/__init__.py",
+    "src/archlux/io/dxf_io.py",
     "src/archlux/lmo/__init__.py",
     "src/archlux/orient/__init__.py",
     "src/archlux/seeds.py",

@@ -5,6 +5,10 @@ the plan and the options: the load-bearing structure is the plan's walls marked
 ``load_bearing``, the outline is the plan's, and the regulation comes from
 ``--min-width`` and ``--min-area TYPE=M2``.
 
+A ``.dxf`` plan is read by :meth:`~archlux.types.Plan.from_dxf` (extra ``cad``) with its
+default layers: rooms on ``ROOMS``, each labelled with its type, partitions on ``WALLS``
+and load-bearing walls on ``LOAD_BEARING``; units come from ``$INSUNITS``.
+
 ``verify_exactly`` checks overlaps, gaps, areas and the structure, not widths: the width
 rule is a bound of the polytope, enforced only while legalizing. ``verify`` and
 ``legalize --report`` therefore also measure every rectangle of the plan against
@@ -147,7 +151,7 @@ def _parser() -> argparse.ArgumentParser:
         ("feasible", "decide whether the program admits a valid plan; exit 1 if not"),
     ):
         sub = commands.add_parser(name, help=summary, description=summary)
-        sub.add_argument("plan", help="plan file (JSON, see Plan.from_json)")
+        sub.add_argument("plan", help="plan file: JSON (Plan.from_json) or DXF (Plan.from_dxf)")
         sub.add_argument(
             "--min-width",
             type=_length,
@@ -317,6 +321,11 @@ def _read(path: str) -> Plan:
     _InputError
         The file is not a valid plan.
     """
+    if path.lower().endswith(".dxf"):
+        try:
+            return Plan.from_dxf(path, wall_layer="WALLS", load_bearing_layer="LOAD_BEARING")
+        except ArchluxError as error:
+            raise _InputError(f"{path}: {error}") from error
     try:
         return Plan.from_json(path)
     except InvariantViolation as error:

@@ -320,6 +320,9 @@ MIGRATED: tuple[str, ...] = (
     "results/visuals/divers/index.md",
     "results/orientation/index.md",
     "scripts/smoke_install.py",
+    "src/archlux/io/dxf_io.py",
+    "tests/unit/test_dxf_import.py",
+    "docs/tutorials/dxf-import.md",
 )
 """Repository-relative paths that must contain no French prose."""
 

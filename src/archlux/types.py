@@ -323,7 +323,7 @@ class Plan:
         InvariantViolation
             The file does not respect the declared schema.
         """
-        from archlux.io.json_io import load
+        from archlux.io import load
 
         return load(path)
 
@@ -335,9 +335,71 @@ class Plan:
         path
             Target file.
         """
-        from archlux.io.json_io import write
+        from archlux.io import write
 
         write(self, path)
+
+    @classmethod
+    def from_dxf(
+        cls,
+        path: Path | str,
+        room_layer: str = "ROOMS",
+        *,
+        label_layer: str | None = None,
+        wall_layer: str | None = None,
+        load_bearing_layer: str | None = None,
+        outline_layer: str | None = None,
+        default_type: str | None = None,
+        scale: float | None = None,
+    ) -> Plan:
+        """Read a plan from a DXF drawing (needs the extra ``cad``).
+
+        Facade over :func:`archlux.io.dxf_io.load_plan`, by local import, like
+        :meth:`from_json` (ADR-5 exemption); the conventions are documented there.
+
+        Parameters
+        ----------
+        path : Path or str
+            The ``.dxf`` file.
+        room_layer : str, optional
+            Layer of the room rectangles, each labelled with its type.
+        label_layer : str, optional
+            Layer of the type labels; defaults to ``room_layer``.
+        wall_layer : str, optional
+            Layer of the partitions.
+        load_bearing_layer : str, optional
+            Layer of the load-bearing walls.
+        outline_layer : str, optional
+            Layer of the outline; defaults to the rooms' bounding box.
+        default_type : str, optional
+            Type of an unlabelled room; by default one is refused.
+        scale : float, optional
+            Metres per drawing unit, overriding the file's ``$INSUNITS``.
+
+        Returns
+        -------
+        Plan
+            The proposed plan, rooms identified ``"<type>-<n>"``.
+
+        Raises
+        ------
+        InvalidInput
+            Unreadable file, no room, ambiguous or missing label, bad outline or scale.
+        UnsupportedInput
+            ``ezdxf`` missing, or a room that is not an axis-aligned rectangle.
+        """
+        from archlux.io import load_plan
+
+        return load_plan(
+            path,
+            room_layer,
+            label_layer=label_layer,
+            wall_layer=wall_layer,
+            load_bearing_layer=load_bearing_layer,
+            outline_layer=outline_layer,
+            default_type=default_type,
+            scale=scale,
+        )
 
     def to_dxf(self, path: Path | str) -> None:
         """Write the rooms as ``LWPOLYLINE`` and the walls as ``LINE`` in a DXF file.
@@ -495,6 +557,40 @@ class Structure:
 
     load_bearing_walls: tuple[Wall, ...]
     columns: tuple[Point, ...] = ()
+
+    @classmethod
+    def from_dxf(
+        cls, path: Path | str, layer: str = "LOAD_BEARING", *, scale: float | None = None
+    ) -> Structure:
+        """Read the load-bearing walls and columns of a DXF layer (needs the extra ``cad``).
+
+        Facade over :func:`archlux.io.dxf_io.load_structure`, by local import (ADR-5
+        exemption).
+
+        Parameters
+        ----------
+        path : Path or str
+            The ``.dxf`` file.
+        layer : str, optional
+            Layer of the walls (``LINE``, polylines) and columns (``POINT``, ``CIRCLE``).
+        scale : float, optional
+            Metres per drawing unit, overriding the file's ``$INSUNITS``.
+
+        Returns
+        -------
+        Structure
+            The load-bearing structure.
+
+        Raises
+        ------
+        InvalidInput
+            Unreadable file, or nothing on the layer.
+        UnsupportedInput
+            ``ezdxf`` missing, or a polyline with arc segments.
+        """
+        from archlux.io import load_structure
+
+        return load_structure(path, layer, scale=scale)
 
 
 @dataclass(frozen=True, slots=True)

@@ -441,6 +441,10 @@ stays as light as before. The two methods only **delegate** — reading stays
 in `io`, formatting in `certify`. The cost is real and accepted: two entries in
 `EXEMPTIONS`, capped by a test.
 
+The `io` entry names the package `archlux.io`, not `archlux.io.json_io`: the DXF
+reading facades `Plan.from_dxf` and `Structure.from_dxf` (PLAN.md 5.1) go through the
+same entry, the package re-exporting both readers. One exemption, two formats.
+
 ## 8. Implementation order and status
 
 | Milestone | Modules | Deliverable | Skeleton status |

@@ -127,8 +127,10 @@ TORCH_TOLERATED = frozenset({"light.learned"})
 # The exemption is named, not a loosening of the rule: any other import from `types`
 # still fails.
 EXEMPTIONS: dict[str, frozenset[str]] = {
-    # ADR-9: the export facades `Plan.to_dxf`, `to_ifc`, `to_svg` (PLAN.md 3.11).
-    "types": frozenset({"archlux.io.json_io", "archlux.certify.report", "archlux.export"}),
+    # ADR-9: the export facades `Plan.to_dxf`, `to_ifc`, `to_svg` (PLAN.md 3.11), and the
+    # DXF reading facades `Plan.from_dxf`, `Structure.from_dxf` (PLAN.md 5.1). `archlux.io`
+    # is the package: it re-exports the JSON and DXF readers, one entry for both.
+    "types": frozenset({"archlux.io", "archlux.certify.report", "archlux.export"}),
 }
 
 
