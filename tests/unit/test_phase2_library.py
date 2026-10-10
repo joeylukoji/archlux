@@ -98,27 +98,43 @@ def test_the_decision_vector_matches_the_columns_of_every_polytope(
     assert np.array_equal(decision_vector(plan), vectorize(plan, index))
 
 
-def test_a_flat_optimum_gives_different_plans_at_equal_value() -> None:
-    """J3 review: theta = 0 and 360 give plans 5.2 m apart at the same objective value."""
-    wall = Wall(id="lb0", a=(1.01, 0.0), b=(1.01, 9.0), load_bearing=True)
+_FLAT_WALL = Wall(id="lb0", a=(1.01, 0.0), b=(1.01, 9.0), load_bearing=True)
+
+
+def _five_rooms(cut: float, split: float) -> Plan:
+    """Load-bearing column p0, then p1/p2 up to ``cut`` and p3/p4 beyond, split at ``split``."""
     rooms = (
         Room(id="p0", type="living_room", x=0.0, y=0.0, w=1.01, h=9.0),
-        Room(id="p1", type="living_room", x=1.01, y=0.0, w=1.41, h=1.0),
-        Room(id="p2", type="living_room", x=1.01, y=1.0, w=1.41, h=8.0),
-        Room(id="p3", type="living_room", x=2.42, y=0.0, w=9.58, h=1.0),
-        Room(id="p4", type="living_room", x=2.42, y=1.0, w=9.58, h=8.0),
+        Room(id="p1", type="living_room", x=1.01, y=0.0, w=cut - 1.01, h=split),
+        Room(id="p2", type="living_room", x=1.01, y=split, w=cut - 1.01, h=9.0 - split),
+        Room(id="p3", type="living_room", x=cut, y=0.0, w=12.0 - cut, h=split),
+        Room(id="p4", type="living_room", x=cut, y=split, w=12.0 - cut, h=9.0 - split),
     )
-    plan = Plan(rooms, (wall,), (), DEFAULT_CONTEXT.outline)
-    surrogate, values, widths = AnalyticSurrogate(), [], []
+    return Plan(rooms, (_FLAT_WALL,), (), DEFAULT_CONTEXT.outline)
+
+
+def test_a_flat_optimum_gives_equal_values_whatever_the_plan() -> None:
+    """J3 review: theta = 0 and 360 must reach the same objective value.
+
+    The optimum is flat: which plan the solver returns on it depends on the
+    platform's floating point (5.2 m apart on Linux, identical on macOS), so
+    only the value is guaranteed. The flatness itself is shown on two fixed
+    plans, taken from the Linux outputs, more than 5 m apart at equal value.
+    """
+    surrogate, values = AnalyticSurrogate(), []
     for deg in (0.0, 360.0):
         ctx = Context(
-            structure=Structure(load_bearing_walls=(wall,)),
+            structure=Structure(load_bearing_walls=(_FLAT_WALL,)),
             orientation=Orientation(deg=deg),
             outline=DEFAULT_CONTEXT.outline,
             regulation=Regulation(min_areas=(("living_room", 1.41),), min_width=1.0),
         )
-        out = archlux.legalize(plan, ctx, objective=surrogate)
+        out = archlux.legalize(_five_rooms(2.42, 1.0), ctx, objective=surrogate)
         values.append(surrogate.evaluate(decision_vector(out), Orientation(deg=0.0)))
-        widths.append(next(r.w for r in out.rooms if r.id == "p1"))
     assert values[0] == pytest.approx(values[1], rel=1e-12)
-    assert abs(widths[0] - widths[1]) > 1.0  # not unique: the criterion is on values
+
+    split = 2.4190979003906254
+    narrow, wide = _five_rooms(2.42, split), _five_rooms(7.63023657425966, split)
+    flat = [surrogate.evaluate(decision_vector(p), Orientation(deg=0.0)) for p in (narrow, wide)]
+    assert flat[0] == pytest.approx(flat[1], rel=1e-12)
+    assert flat[0] == pytest.approx(values[0], rel=1e-12)  # both sit on the optimum
