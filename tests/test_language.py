@@ -319,6 +319,7 @@ MIGRATED: tuple[str, ...] = (
     "results/visuals/plausible/index.md",
     "results/visuals/divers/index.md",
     "results/orientation/index.md",
+    "scripts/smoke_install.py",
 )
 """Repository-relative paths that must contain no French prose."""
 

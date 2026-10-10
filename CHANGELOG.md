@@ -8,6 +8,12 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md phase 5, exit gate: CI on Windows and macOS, install from the wheel
+
+- New CI job `tests-os`: the full suite on Windows and macOS (Python 3.12). Platform-dependent output, such as the IFC line endings fixed in #34, now fails CI instead of surfacing on a contributor's machine.
+- New CI job `install-from-wheel` (Linux, Windows, macOS): builds the wheel, installs it in a fresh virtual environment and runs `scripts/smoke_install.py`, which refuses to run against `src/` and executes the README examples, `examples/legalize_examples.py` and the `archlux` console script on each example plan. This is the "pip install in a clean environment, then the README example" part of the phase-5 exit gate.
+- PLAN.md: the tracking table is brought up to date (phases 3 to 5 and chantier E).
+
 ### Added — PLAN.md 5.3: examples
 
 - New `examples/`: three plans (`t2.json`, a small overlap; `t3_load_bearing.json`, a load-bearing wall crossed and a gap; `generated.json`, boxes overlapping and leaving holes as a generative model outputs them) and `legalize_examples.py` (20 lines), which legalizes all three. CI type-checks `examples/` (`mypy src/ examples/`, and `files` in `[tool.mypy]`); the script guards `certificate is not None`, which mypy used to reject (PR #37 review).
