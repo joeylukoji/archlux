@@ -8,6 +8,15 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md 5.1: DXF import
+
+- New `Plan.from_dxf(path, room_layer="ROOMS", ...)` and `Structure.from_dxf(path, layer="LOAD_BEARING")`, over `archlux.io.dxf_io` (`load_plan`, `load_structure`). They need the new extra `cad` (`ezdxf>=1.3`), imported at call time: `import archlux` does not load it, and without it the error says `pip install "archlux[cad]"`.
+- Conventions: a room is a closed, straight, axis-aligned rectangle (`LWPOLYLINE` or 2D `POLYLINE`) on the room layer; its type is the `TEXT`/`MTEXT` label inside it (`Living room` gives `living_room`), or `default_type`; rooms are named `<type>-<n>`, bottom to top then left to right. Walls are `LINE` entities and polyline sides (`wall_layer`, `load_bearing_layer`); columns are `POINT` entities and `CIRCLE` centers. The outline is the single closed polyline of `outline_layer`, else the rooms' bounding box. Layer names compare without case. Units come from `$INSUNITS` with exact factors (mm, cm, dm, m, inch, foot, yard; unitless reads as metres), `scale` overrides them.
+- Refused rather than approximated: a non-rectangular, rotated or self-crossing room, an arc segment, an open polyline on the room layer, a room with no label (without `default_type`) or with two different ones, an exotic unit, a file that is not DXF. Each error names the entity handle and layer.
+- The command line reads a `.dxf` plan directly, with the layers `ROOMS`, `WALLS` and `LOAD_BEARING`.
+- `archlux.io` re-exports the JSON and DXF readers, and the layer exemption of the `types` facades names the package (one entry for both formats, still three in all; ADR-5 in the blueprint updated).
+- Documented: a new bilingual tutorial `docs/tutorials/dxf-import.md` / `.fr.md`, run in CI; `docs/installation` lists the extra. New `tests/unit/test_dxf_import.py`.
+
 ### Added — PLAN.md phase 5, exit gate: CI on Windows and macOS, install from the wheel
 
 - New CI job `tests-os`: the full suite on Windows and macOS (Python 3.12). Platform-dependent output, such as the IFC line endings fixed in #34, now fails CI instead of surfacing on a contributor's machine.
