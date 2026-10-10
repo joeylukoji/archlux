@@ -51,6 +51,7 @@ plugins:
             Performance legalization: Légalisation performantielle
             Calibrate a surrogate: Calibrer un substitut
             Train a surrogate: Entraîner un substitut
+            Command line: Ligne de commande
             Concepts: Concepts
             The two guarantees: Les deux garanties
             The polytope: Le polytope
@@ -108,6 +109,7 @@ nav:
       - Performance legalization: tutorials/performance-legalization.md
       - Calibrate a surrogate: tutorials/calibrate-a-surrogate.md
       - Train a surrogate: tutorials/train-a-surrogate.md
+      - Command line: tutorials/command-line.md
   - Concepts:
       - The two guarantees: concepts/two-guarantees.md
       - The polytope: concepts/polytope.md

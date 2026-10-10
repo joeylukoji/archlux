@@ -20,6 +20,9 @@ dependencies = [
     "ortools>=9.8",
 ]
 
+[project.scripts]
+archlux = "archlux.cli:main"
+
 [project.optional-dependencies]
 # torch n'apparait QUE dans cet extra. Le noyau ne doit jamais l'importer.
 appris = ["torch>=2.2"]
@@ -109,7 +112,7 @@ convention = "numpy"
 # Pas de `python_version` épinglé : les stubs de numpy utilisent la syntaxe `type` de
 # 3.12, et forcer 3.11 fait échouer mypy sur numpy avant d'avoir analysé une seule ligne
 # du projet. La compatibilité 3.11 est couverte par la matrice pytest de la CI.
-files = ["src"]
+files = ["src", "examples"]
 strict = true
 warn_unreachable = true
 disallow_any_explicit = false
