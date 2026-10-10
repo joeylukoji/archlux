@@ -354,7 +354,7 @@ class Plan:
     ) -> Plan:
         """Read a plan from a DXF drawing (needs the extra ``cad``).
 
-        Facade over :func:`archlux.io.dxf_io.load_plan`, by local import, like
+        Facade over :func:`archlux.io.dxf_io.load_dxf_plan`, by local import, like
         :meth:`from_json` (ADR-5 exemption); the conventions are documented there.
 
         Parameters
@@ -388,9 +388,9 @@ class Plan:
         UnsupportedInput
             ``ezdxf`` missing, or a room that is not an axis-aligned rectangle.
         """
-        from archlux.io import load_plan
+        from archlux.io import load_dxf_plan
 
-        return load_plan(
+        return load_dxf_plan(
             path,
             room_layer,
             label_layer=label_layer,
@@ -400,6 +400,42 @@ class Plan:
             default_type=default_type,
             scale=scale,
         )
+
+    @classmethod
+    def from_ifc(
+        cls, path: Path | str, *, storey: str | None = None, default_type: str | None = None
+    ) -> Plan:
+        """Read one floor of an IFC model (needs the extra ``bim``).
+
+        Facade over :func:`archlux.io.ifc_io.load_ifc_plan`, by local import (ADR-5
+        exemption); the conventions are documented there.
+
+        Parameters
+        ----------
+        path : Path or str
+            The ``.ifc`` file.
+        storey : str, optional
+            ``Name`` of the storey to read; needed when spaces sit on several.
+        default_type : str, optional
+            Type of a space with neither ``LongName`` nor ``ObjectType``.
+
+        Returns
+        -------
+        Plan
+            Rooms from ``IfcSpace``, walls from ``IfcWall``, the rooms' bounding box as
+            outline.
+
+        Raises
+        ------
+        InvalidInput
+            Unreadable file, no space, ambiguous storey, unlabelled space.
+        UnsupportedInput
+            ``ifcopenshell`` missing, or a footprint that is not an axis-aligned rectangle
+            or needs a geometry kernel.
+        """
+        from archlux.io import load_ifc_plan
+
+        return load_ifc_plan(path, storey=storey, default_type=default_type)
 
     def repair_report(
         self,
@@ -599,7 +635,7 @@ class Structure:
     ) -> Structure:
         """Read the load-bearing walls and columns of a DXF layer (needs the extra ``cad``).
 
-        Facade over :func:`archlux.io.dxf_io.load_structure`, by local import (ADR-5
+        Facade over :func:`archlux.io.dxf_io.load_dxf_structure`, by local import (ADR-5
         exemption).
 
         Parameters
@@ -623,9 +659,39 @@ class Structure:
         UnsupportedInput
             ``ezdxf`` missing, or a polyline with arc segments.
         """
-        from archlux.io import load_structure
+        from archlux.io import load_dxf_structure
 
-        return load_structure(path, layer, scale=scale)
+        return load_dxf_structure(path, layer, scale=scale)
+
+    @classmethod
+    def from_ifc(cls, path: Path | str, *, storey: str | None = None) -> Structure:
+        """Read the load-bearing walls and columns of one IFC floor (needs the extra ``bim``).
+
+        Facade over :func:`archlux.io.ifc_io.load_ifc_structure`, by local import (ADR-5
+        exemption).
+
+        Parameters
+        ----------
+        path : Path or str
+            The ``.ifc`` file.
+        storey : str, optional
+            ``Name`` of the storey to read; needed when spaces sit on several.
+
+        Returns
+        -------
+        Structure
+            Walls whose ``Pset_WallCommon.LoadBearing`` is true, and ``IfcColumn`` origins.
+
+        Raises
+        ------
+        InvalidInput
+            Unreadable file, or ambiguous storey.
+        UnsupportedInput
+            ``ifcopenshell`` missing, or a load-bearing wall without an axis.
+        """
+        from archlux.io import load_ifc_structure
+
+        return load_ifc_structure(path, storey=storey)
 
 
 @dataclass(frozen=True, slots=True)

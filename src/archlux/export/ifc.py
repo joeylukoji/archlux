@@ -12,7 +12,7 @@ from archlux._log import event
 from archlux._version import __version__
 from archlux.errors import ArchluxError
 from archlux.export.pathologies import diagnose
-from archlux.types import Plan
+from archlux.types import Plan, Wall
 
 __all__ = ["ExportReport", "to_ifc"]
 
@@ -534,7 +534,38 @@ def _write_walls(
             f"IFCRELCONTAINEDINSPATIALSTRUCTURE('{w.guid('contain')}',#{id_owner},$,$,"
             f"({','.join(f'#{e}' for e in wall_ids)}),#{storey_id})",
         )
+    for wall in plan.walls:
+        _write_load_bearing(w, wall, id_owner, wall_entity[wall.id])
     return wall_entity
+
+
+def _write_load_bearing(w: _SpfWriter, wall: Wall, id_owner: int, id_wall: int) -> None:
+    """``Pset_WallCommon.LoadBearing`` of one wall: the structure survives a round trip.
+
+    Parameters
+    ----------
+    w
+        Entity buffer.
+    wall
+        The wall.
+    id_owner
+        Owner history entity.
+    id_wall
+        Its ``IFCWALL`` entity.
+    """
+    id_prop = w.alloc()
+    flag = ".T." if wall.load_bearing else ".F."
+    w.emit(id_prop, f"IFCPROPERTYSINGLEVALUE('LoadBearing',$,IFCBOOLEAN({flag}),$)")
+    id_pset = w.alloc()
+    w.emit(
+        id_pset,
+        f"IFCPROPERTYSET('{w.guid(f'pset/{wall.id}')}',#{id_owner},'Pset_WallCommon',$,(#{id_prop}))",
+    )
+    id_rel = w.alloc()
+    w.emit(
+        id_rel,
+        f"IFCRELDEFINESBYPROPERTIES('{w.guid(f'relp/{wall.id}')}',#{id_owner},$,$,(#{id_wall}),#{id_pset})",
+    )
 
 
 def _write_openings(w: _SpfWriter, plan: Plan, id_owner: int, wall_entity: dict[str, int]) -> None:

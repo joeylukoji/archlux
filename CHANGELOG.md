@@ -8,6 +8,23 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md 5.1 (optional part): IFC import
+
+- New `Plan.from_ifc(path, *, storey=None, default_type=None)` and `Structure.from_ifc(path, *, storey=None)`, over `archlux.io.ifc_io` (`load_ifc_plan`, `load_ifc_structure`), with the existing extra `bim` (ifcopenshell), imported at call time.
+- No geometry kernel: a room is an `IfcSpace` whose `FootPrint` polyline, or whose vertical `Body` extrusion of a rectangle or straight closed profile, is an axis-aligned rectangle once placed; anything else is refused with the entity named. Type from `LongName`, else `ObjectType`; identifier from `Name` when all are distinct, else `<type>-<n>`. Walls from `IfcWall` `Axis` polylines, load-bearing per `Pset_WallCommon.LoadBearing` (a partition without an axis is skipped, a load-bearing one refused); columns from `IfcColumn` origins. Units from the project; a model with spaces on several storeys needs `storey`.
+- `Plan.to_ifc` now writes `Pset_WallCommon.LoadBearing` on every wall, so an exported plan reads back with its structure. The golden IFC hash changes on purpose.
+- The DXF readers are renamed `load_dxf_plan` / `load_dxf_structure` (unreleased), and the rectangle check they share with the IFC reader moves to `archlux.io._footprint`.
+- Documented in the import tutorial (`docs/tutorials/dxf-import.md` / `.fr.md`, now "Import a DXF or IFC drawing"); `docs/installation` lists the extra `bim`. New `tests/unit/test_ifc_import.py`.
+
+### Added — PLAN.md 5.6: 10-minute notebook
+
+- New `examples/ten_minutes.ipynb`: the whole loop on a shipped example (read, preset, context, repair, room-by-room report in French, before/after drawing, JSON/DXF/IFC export). `tests/docs/test_notebook.py` runs its cells in order in a temporary directory, without a Jupyter dependency, and keeps it committed without outputs. Linked from the getting-started tutorial and both READMEs.
+
+### Added — PLAN.md 5.5: a repair report an architect can read
+
+- New `archlux.certify.render_repair` (also `Plan.repair_report(before, regulation, *, lang, not_checked)`), with `room_changes` / `RoomChange`: the verdict, then each room before and after (dimensions and area), its regulatory minimum, the margin left (never printed as `-0.00`) and how far its walls moved; the width check; what limited the repair (the dual diagnostic, still in English); what the regulation does not check (a preset's `not_checked`). English or French.
+- Command line: `legalize --report` prints this report instead of the bare verdict, `--lang fr` in French, and `--compare-svg FILE` writes the plan before and after, side by side at the same scale (`archlux.export.compare_svg`). New `tests/unit/test_repair_report.py`.
+
 ### Added — PLAN.md 5.4: regulation presets
 
 - New `archlux.regulations`: `ax.preset(name)` returns a `Preset` (its `regulation`, one `Source` per threshold with the text, the provision, a `verbatim` flag and a link, the `not_checked` rules of the same texts, and the `checked_on` date). An unknown name raises `InvalidInput` listing the known ones. Loaded lazily from the root package.
@@ -18,7 +35,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md 5.1: DXF import
 
-- New `Plan.from_dxf(path, room_layer="ROOMS", ...)` and `Structure.from_dxf(path, layer="LOAD_BEARING")`, over `archlux.io.dxf_io` (`load_plan`, `load_structure`). They need the new extra `cad` (`ezdxf>=1.3`), imported at call time: `import archlux` does not load it, and without it the error says `pip install "archlux[cad]"`.
+- New `Plan.from_dxf(path, room_layer="ROOMS", ...)` and `Structure.from_dxf(path, layer="LOAD_BEARING")`, over `archlux.io.dxf_io` (`load_dxf_plan`, `load_dxf_structure`). They need the new extra `cad` (`ezdxf>=1.3`), imported at call time: `import archlux` does not load it, and without it the error says `pip install "archlux[cad]"`.
 - Conventions: a room is a closed, straight, axis-aligned rectangle (`LWPOLYLINE` or 2D `POLYLINE`) on the room layer; its type is the `TEXT`/`MTEXT` label inside it (`Living room` gives `living_room`), or `default_type`; rooms are named `<type>-<n>`, bottom to top then left to right. Walls are `LINE` entities and polyline sides (`wall_layer`, `load_bearing_layer`); columns are `POINT` entities and `CIRCLE` centers. The outline is the single closed polyline of `outline_layer`, else the rooms' bounding box. Layer names compare without case. Units come from `$INSUNITS` with exact factors (mm, cm, dm, m, inch, foot, yard; unitless reads as metres), `scale` overrides them.
 - Refused rather than approximated: a non-rectangular, rotated or self-crossing room, an arc segment, an open polyline on the room layer, a room with no label (without `default_type`) or with two different ones, an exotic unit, a file that is not DXF. Each error names the entity handle and layer.
 - The command line reads a `.dxf` plan directly, with the layers `ROOMS`, `WALLS` and `LOAD_BEARING`.
