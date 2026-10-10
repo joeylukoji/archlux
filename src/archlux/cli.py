@@ -11,6 +11,11 @@ rule is a bound of the polytope, enforced only while legalizing. ``verify`` and
 ``--min-width``, as the polytope bounds each rectangle (the sub-rectangles of a fused L
 room included), within :data:`~archlux.tolerances.SNAP_M`.
 
+Options are validated the same way for the three subcommands: ``--min-width`` and every
+``--min-area`` value must be finite and non-negative, a ``--min-area`` type must be one of
+the plan's room types (case-sensitive) and appear once, and ``--orientation`` must be
+finite; it is an azimuth, so it is taken modulo 360 (``-90`` is ``270``).
+
 Exit codes: ``0`` valid (or feasible, or legalized), ``1`` invalid (or infeasible), ``2``
 error (unreadable file, rejected input, no valid plan found).
 """
@@ -18,6 +23,7 @@ error (unreadable file, rejected input, no valid plan found).
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from collections.abc import Sequence
 
@@ -26,6 +32,51 @@ from archlux.tolerances import SNAP_M
 from archlux.types import Context, GeometricProof, Orientation, Plan, Regulation, Structure
 
 __all__ = ["main"]
+
+
+class _OptionError(Exception):
+    """An option that the plan contradicts (exit code 2)."""
+
+
+def _finite(text: str) -> float:
+    """Parse a finite number.
+
+    Parameters
+    ----------
+    text : str
+        The option value.
+
+    Returns
+    -------
+    float
+        The number.
+    """
+    try:
+        value = float(text)
+    except ValueError:
+        value = math.nan
+    if not math.isfinite(value):
+        raise argparse.ArgumentTypeError(f"expected a finite number, got {text!r}")
+    return value
+
+
+def _length(text: str) -> float:
+    """Parse a finite, non-negative length or area.
+
+    Parameters
+    ----------
+    text : str
+        The option value.
+
+    Returns
+    -------
+    float
+        The value.
+    """
+    value = _finite(text)
+    if value < 0.0:
+        raise argparse.ArgumentTypeError(f"expected a value >= 0, got {text!r}")
+    return value
 
 
 def _min_area(text: str) -> tuple[str, float]:
@@ -42,13 +93,37 @@ def _min_area(text: str) -> tuple[str, float]:
         The room type and its minimum area, in square metres.
     """
     room_type, sep, area = text.partition("=")
-    try:
-        value = float(area)
-    except ValueError:
-        value = None
-    if not sep or not room_type or value is None:
+    if not sep or not room_type:
         raise argparse.ArgumentTypeError(f"expected TYPE=M2, got {text!r}")
-    return room_type, value
+    return room_type, _length(area)
+
+
+def _check_min_areas(plan: Plan, min_areas: list[tuple[str, float]]) -> None:
+    """Reject a ``--min-area`` type given twice or absent from the plan.
+
+    Parameters
+    ----------
+    plan : Plan
+        The plan read from the file.
+    min_areas : list of (str, float)
+        Parsed ``--min-area`` values.
+
+    Raises
+    ------
+    _OptionError
+        A type is repeated, or no room of the plan has it.
+    """
+    known = sorted({room.type for room in plan.rooms})
+    seen: set[str] = set()
+    for room_type, _ in min_areas:
+        if room_type in seen:
+            raise _OptionError(f"--min-area: type {room_type!r} given twice")
+        if room_type not in known:
+            raise _OptionError(
+                f"--min-area: no room of type {room_type!r} in the plan; "
+                f"its types are {', '.join(known)}"
+            )
+        seen.add(room_type)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -74,7 +149,7 @@ def _parser() -> argparse.ArgumentParser:
         sub.add_argument("plan", help="plan file (JSON, see Plan.from_json)")
         sub.add_argument(
             "--min-width",
-            type=float,
+            type=_length,
             default=Regulation(
                 (),
             ).min_width,
@@ -90,10 +165,10 @@ def _parser() -> argparse.ArgumentParser:
         )
         sub.add_argument(
             "--orientation",
-            type=float,
+            type=_finite,
             default=0.0,
             metavar="DEG",
-            help="azimuth of the plan, in degrees (default 0)",
+            help="azimuth of the plan, in degrees, taken modulo 360 (default 0)",
         )
     legalize = commands.choices["legalize"]
     legalize.add_argument("-o", "--output", help="write the legalized plan here (JSON)")
@@ -129,7 +204,7 @@ def _context(plan: Plan, args: argparse.Namespace) -> Context:
     """
     return Context(
         structure=Structure(load_bearing_walls=tuple(w for w in plan.walls if w.load_bearing)),
-        orientation=Orientation(deg=args.orientation),
+        orientation=Orientation(deg=args.orientation % 360.0),
         regulation=Regulation(min_areas=tuple(args.min_area), min_width=args.min_width),
         program=tuple(sorted({room.type for room in plan.rooms})),
         outline=plan.outline,
@@ -232,6 +307,7 @@ def _run(args: argparse.Namespace) -> int:
         The exit code.
     """
     plan = Plan.from_json(args.plan)
+    _check_min_areas(plan, args.min_area)
     ctx = _context(plan, args)
     if args.command == "legalize":
         return _legalize(plan, ctx, args)
@@ -262,9 +338,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     int
         The exit code, see the module docstring.
     """
-    args = _parser().parse_args(argv)
+    try:
+        args = _parser().parse_args(argv)
+    except SystemExit as stop:  # argparse exits on --help and on a rejected option
+        return stop.code if isinstance(stop.code, int) else 2
     try:
         return _run(args)
-    except (ArchluxError, OSError) as error:
+    except (ArchluxError, OSError, _OptionError) as error:
         print(f"archlux: error: {error}", file=sys.stderr)
         return 2

@@ -110,3 +110,52 @@ def test_verify_accepts_a_room_exactly_as_wide_as_min_width(
     out = capsys.readouterr().out
     assert "widths met" in out
     assert "areas and widths" not in out
+
+
+COMMANDS = ["verify", "feasible", "legalize"]
+
+
+@pytest.mark.parametrize("command", COMMANDS)
+@pytest.mark.parametrize(
+    ("options", "named"),
+    [
+        (["--min-width", "nan"], "--min-width"),
+        (["--min-width", "inf"], "--min-width"),
+        (["--min-width", "-1"], "--min-width"),
+        (["--min-area", "bedroom=nan"], "--min-area"),
+        (["--min-area", "bedroom=inf"], "--min-area"),
+        (["--min-area", "bedroom=-1"], "--min-area"),
+        (["--min-area", "=9"], "--min-area"),
+        (["--min-area", "bedroom"], "--min-area"),
+        (["--min-area", "bedroom=9", "--min-area", "bedroom=12"], "bedroom"),
+        (["--min-area", "Bedroom=9"], "Bedroom"),
+        (["--orientation", "nan"], "--orientation"),
+        (["--orientation", "inf"], "--orientation"),
+    ],
+)
+def test_a_hostile_option_is_a_message_and_exit_two(
+    command: str,
+    options: list[str],
+    named: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert main([command, _write(VALID, tmp_path), *options]) == 2
+    err = capsys.readouterr().err
+    assert named in err
+    assert "Traceback" not in err
+
+
+def test_an_unknown_room_type_lists_the_known_ones(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["verify", _write(VALID, tmp_path), "--min-area", "Bedroom=9"]) == 2
+    assert "bedroom, living_room" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("command", COMMANDS)
+@pytest.mark.parametrize("degrees", ["-90", "360", "725.5"])
+def test_any_finite_orientation_is_accepted_modulo_360(
+    command: str, degrees: str, tmp_path: Path
+) -> None:
+    assert main([command, _write(VALID, tmp_path), "--orientation", degrees]) == 0
