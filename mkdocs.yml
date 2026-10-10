@@ -53,6 +53,7 @@ plugins:
             Train a surrogate: Entraîner un substitut
             Command line: Ligne de commande
             Import a DXF drawing: Importer un dessin DXF
+            Regulation presets: Préréglages réglementaires
             Concepts: Concepts
             The two guarantees: Les deux garanties
             The polytope: Le polytope
@@ -112,6 +113,7 @@ nav:
       - Train a surrogate: tutorials/train-a-surrogate.md
       - Command line: tutorials/command-line.md
       - Import a DXF drawing: tutorials/dxf-import.md
+      - Regulation presets: tutorials/regulation-presets.md
   - Concepts:
       - The two guarantees: concepts/two-guarantees.md
       - The polytope: concepts/polytope.md

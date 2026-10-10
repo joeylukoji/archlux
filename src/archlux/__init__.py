@@ -82,6 +82,9 @@ __all__ = [  # noqa: RUF022
     "Certificate",
     "GeometricProof",
     "PerformanceBound",
+    # sourced regulation presets (PLAN.md 5.4)
+    "preset",
+    "Preset",
     # exceptions
     "ArchluxError",
     "InconsistentOrder",
@@ -113,10 +116,17 @@ if TYPE_CHECKING:
     import archlux.light as light
     from archlux.api import legalize as legalize
     from archlux.api import legalize_trace as legalize_trace
+    from archlux.regulations import Preset as Preset
+    from archlux.regulations import preset as preset
 
 # ``legalize`` drags in numpy, scipy.sparse, shapely and ortools (about 1 s): it is
 # resolved on first use, so that ``import archlux`` stays under 0.5 s (PLAN.md 3.13).
-_LAZY_FUNCTIONS = {"legalize": "archlux.api", "legalize_trace": "archlux.api"}
+_LAZY_FUNCTIONS = {
+    "legalize": "archlux.api",
+    "legalize_trace": "archlux.api",
+    "preset": "archlux.regulations",
+    "Preset": "archlux.regulations",
+}
 
 
 def _lazy_attribute(name: str) -> Any:  # noqa: ANN401 - a lazy module or function

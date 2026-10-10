@@ -3,7 +3,8 @@
 A plan file holds no :class:`~archlux.types.Context`, so the command line builds one from
 the plan and the options: the load-bearing structure is the plan's walls marked
 ``load_bearing``, the outline is the plan's, and the regulation comes from
-``--min-width`` and ``--min-area TYPE=M2``.
+``--min-width`` and ``--min-area TYPE=M2``, on top of ``--preset NAME`` when given (a
+sourced regulation, see :mod:`archlux.regulations`; the explicit options win).
 
 A ``.dxf`` plan is read by :meth:`~archlux.types.Plan.from_dxf` (extra ``cad``) with its
 default layers: rooms on ``ROOMS``, each labelled with its type, partitions on ``WALLS``
@@ -33,6 +34,7 @@ import sys
 from collections.abc import Sequence
 
 from archlux.errors import ArchluxError, InvariantViolation
+from archlux.regulations import PRESETS
 from archlux.tolerances import SNAP_M
 from archlux.types import Context, GeometricProof, Orientation, Plan, Regulation, Structure
 
@@ -103,6 +105,26 @@ def _min_area(text: str) -> tuple[str, float]:
     return room_type, _length(area)
 
 
+_DEFAULT_WIDTH = Regulation(()).min_width
+"""``--min-width`` without a preset: the default of :class:`~archlux.types.Regulation`."""
+
+
+def _apply_preset(args: argparse.Namespace) -> None:
+    """Fill ``--min-width`` and ``--min-area`` from ``--preset``, the explicit options winning.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed options, completed in place: ``min_width`` is never ``None`` afterwards.
+    """
+    regulation = PRESETS[args.preset].regulation if args.preset else None
+    if args.min_width is None:
+        args.min_width = regulation.min_width if regulation else _DEFAULT_WIDTH
+    if regulation:
+        given = {room_type for room_type, _ in args.min_area}
+        args.min_area += [pair for pair in regulation.min_areas if pair[0] not in given]
+
+
 def _check_min_areas(plan: Plan, min_areas: list[tuple[str, float]]) -> None:
     """Reject a ``--min-area`` type given twice or absent from the plan.
 
@@ -153,12 +175,14 @@ def _parser() -> argparse.ArgumentParser:
         sub = commands.add_parser(name, help=summary, description=summary)
         sub.add_argument("plan", help="plan file: JSON (Plan.from_json) or DXF (Plan.from_dxf)")
         sub.add_argument(
+            "--preset",
+            choices=sorted(PRESETS),
+            help="start from a sourced regulation preset; --min-width and --min-area override it",
+        )
+        sub.add_argument(
             "--min-width",
             type=_length,
-            default=Regulation(
-                (),
-            ).min_width,
-            help="minimum room width, in metres (default %(default)s)",
+            help=f"minimum room width, in metres (default: the preset's, else {_DEFAULT_WIDTH})",
         )
         sub.add_argument(
             "--min-area",
@@ -372,6 +396,7 @@ def _run(args: argparse.Namespace) -> int:
     """
     plan = _read(args.plan)
     _check_min_areas(plan, args.min_area)
+    _apply_preset(args)
     ctx = _context(plan, args)
     if args.command == "legalize":
         return _legalize(plan, ctx, args)

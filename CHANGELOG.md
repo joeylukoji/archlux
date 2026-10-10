@@ -8,6 +8,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — PLAN.md 5.4: regulation presets
+
+- New `archlux.regulations`: `ax.preset(name)` returns a `Preset` (its `regulation`, one `Source` per threshold with the text, the provision, a `verbatim` flag and a link, the `not_checked` rules of the same texts, and the `checked_on` date). An unknown name raises `InvalidInput` listing the known ones. Loaded lazily from the root package.
+- First preset `fr/new-collective-housing`: living room ≥ 9 m² (décret n° 2002-120, art. 4), bedroom ≥ 7 m² (RSD type, art. 40.1), every room at least 0.90 m wide (arrêté du 24 décembre 2015, art. 11, interior circulations). Listed as not checked: ceiling height and volume, the 2 m rule on narrow parts, door widths, bed and shower-room clearances, area per occupant, a stricter departmental RSD. PLAN.md named it `fr/logement-collectif`; names are English, like the API.
+- Sources were read on 2026-10-10 through search results: Légifrance itself was not reachable from the build environment. The decree's provision is quoted from Légifrance (`verbatim=True`); the RSD and the arrêté are summarized from secondary sources (`verbatim=False`) and must be checked against the original texts.
+- Command line: `--preset NAME` for `legalize`, `verify` and `feasible`; `--min-width` and `--min-area` override it type by type. Without a preset, `--min-width` keeps its default (1.80 m).
+- Documented: a new bilingual tutorial `docs/tutorials/regulation-presets.md` / `.fr.md`, run in CI. New `tests/unit/test_regulations.py`.
+
 ### Added — PLAN.md 5.1: DXF import
 
 - New `Plan.from_dxf(path, room_layer="ROOMS", ...)` and `Structure.from_dxf(path, layer="LOAD_BEARING")`, over `archlux.io.dxf_io` (`load_plan`, `load_structure`). They need the new extra `cad` (`ezdxf>=1.3`), imported at call time: `import archlux` does not load it, and without it the error says `pip install "archlux[cad]"`.
