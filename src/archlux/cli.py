@@ -202,7 +202,15 @@ def _parser() -> argparse.ArgumentParser:
     legalize = commands.choices["legalize"]
     legalize.add_argument("-o", "--output", help="write the legalized plan here (JSON)")
     legalize.add_argument("--svg", help="write an SVG drawing of the legalized plan here")
-    legalize.add_argument("--report", action="store_true", help="print the certificate")
+    legalize.add_argument(
+        "--report", action="store_true", help="print the repair, room by room, and its verdict"
+    )
+    legalize.add_argument(
+        "--lang", choices=("en", "fr"), default="en", help="language of --report (default en)"
+    )
+    legalize.add_argument(
+        "--compare-svg", metavar="FILE", help="write the plan before and after, side by side"
+    )
     legalize.add_argument(
         "--tiling", action="store_true", help="also close gaps: the rooms must tile the outline"
     )
@@ -309,22 +317,36 @@ def _legalize(plan: Plan, ctx: Context, args: argparse.Namespace) -> int:
         The exit code.
     """
     from archlux.api import legalize
-    from archlux.export import render_svg
+    from archlux.export import compare_svg, render_svg
 
     fixed = legalize(plan, ctx, tiling=args.tiling, repair_budget=args.repair_budget)
     if args.output:
         fixed.to_json(args.output)
     if args.svg:
-        with open(args.svg, "w", encoding="utf-8") as stream:
-            stream.write(render_svg(fixed, outline=plan.outline, walls=fixed.walls))
-    if args.report:
-        certificate = fixed.certificate
-        print(
-            "no certificate: the legalized plan carries none"
-            if certificate is None
-            else _describe(certificate.geometry, _narrow_rooms(fixed, args.min_width))
+        _write_text(args.svg, render_svg(fixed, outline=plan.outline, walls=fixed.walls))
+    if args.compare_svg:
+        _write_text(
+            args.compare_svg, compare_svg(plan, fixed, outline=plan.outline, walls=fixed.walls)
         )
+    if args.report:
+        not_checked = PRESETS[args.preset].not_checked if args.preset else ()
+        regulation = ctx.regulation
+        print(fixed.repair_report(plan, regulation, lang=args.lang, not_checked=not_checked))
     return 0
+
+
+def _write_text(path: str, text: str) -> None:
+    """Write a UTF-8 text file with Unix line endings, on every platform.
+
+    Parameters
+    ----------
+    path : str
+        Target file.
+    text : str
+        Its content.
+    """
+    with open(path, "w", encoding="utf-8", newline="\n") as stream:
+        stream.write(text)
 
 
 def _read(path: str) -> Plan:

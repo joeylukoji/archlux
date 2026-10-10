@@ -16,11 +16,17 @@ if TYPE_CHECKING:
     from archlux.certify.bound import build_bound as build_bound
     from archlux.certify.dual import translate_duals as translate_duals
     from archlux.certify.proof import verify_exactly as verify_exactly
+    from archlux.certify.repair import RoomChange as RoomChange
+    from archlux.certify.repair import render_repair as render_repair
+    from archlux.certify.repair import room_changes as room_changes
     from archlux.certify.report import render as render
 
 __all__ = [
+    "RoomChange",
     "build_bound",
     "render",
+    "render_repair",
+    "room_changes",
     "translate_duals",
     "verify_exactly",
 ]
@@ -28,6 +34,9 @@ __all__ = [
 _ATTRS = {
     "build_bound": "archlux.certify.bound",
     "render": "archlux.certify.report",
+    "render_repair": "archlux.certify.repair",
+    "room_changes": "archlux.certify.repair",
+    "RoomChange": "archlux.certify.repair",
     "translate_duals": "archlux.certify.dual",
     "verify_exactly": "archlux.certify.proof",
 }

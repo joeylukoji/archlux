@@ -40,6 +40,7 @@ MIGRATED: tuple[str, ...] = (
     "src/archlux/certify/preuve.py",
     "src/archlux/certify/proof.py",
     "src/archlux/certify/rapport.py",
+    "src/archlux/certify/repair.py",
     "src/archlux/certify/report.py",
     "src/archlux/cli.py",
     "src/archlux/data/__init__.py",

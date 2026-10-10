@@ -43,8 +43,23 @@ archlux verify fixed.json --min-width 0.90 --min-area bedroom=9
 ```
 
 `-o` writes the repaired plan (it may overwrite the input), `--svg` a drawing, and
-`--report` prints the same verdict for the result, or says that it carries no
-certificate. `--tiling` also closes the gaps, so the rooms tile the outline.
+`--compare-svg` the plan before and after, side by side at the same scale. `--report`
+prints the repair room by room: each room's size before and after, its minimum area and
+the margin left, how far its walls moved, the width check, what limited the repair and,
+with `--preset`, what the regulation does not check. `--lang fr` prints it in French.
+`--tiling` also closes the gaps, so the rooms tile the outline.
+
+```text
+PLAN REPAIR                                archlux 0.10.0
+
+Verdict: valid (exact check)
+Largest wall move: 0.50 m (living)
+
+ROOMS
+room                     before                  after                     minimum     margin    moved
+bed (bedroom)            3.50 x 3.00 = 10.50 m²  3.00 x 3.00 = 9.00 m²     7.00 m²   +2.00 m²   0.50 m
+living (living_room)     2.50 x 3.00 = 7.50 m²   3.00 x 3.00 = 9.00 m²     9.00 m²   +0.00 m²   0.50 m
+```
 
 ## Ask whether the program is feasible
 

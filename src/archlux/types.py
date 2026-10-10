@@ -401,6 +401,41 @@ class Plan:
             scale=scale,
         )
 
+    def repair_report(
+        self,
+        before: Plan,
+        regulation: Regulation,
+        *,
+        lang: Literal["en", "fr"] = "en",
+        not_checked: tuple[str, ...] = (),
+    ) -> str:
+        """Report what the repair changed, room by room, for an architect (PLAN.md 5.5).
+
+        Facade over :func:`archlux.certify.repair.render_repair`, reached through
+        :mod:`archlux.certify.report` by local import, like :meth:`Certificate.report`
+        (ADR-5 exemption).
+
+        Parameters
+        ----------
+        before : Plan
+            The plan as proposed; ``self`` is the repaired one.
+        regulation : Regulation
+            The regulation the repair enforced.
+        lang : {"en", "fr"}, optional
+            Language of the report.
+        not_checked : tuple of str, optional
+            Rules the regulation leaves unchecked, e.g. a preset's ``not_checked``.
+
+        Returns
+        -------
+        str
+            Verdict, room table (before, after, minimum, margin, wall move), widths, what
+            limited the repair, and what is not checked.
+        """
+        from archlux.certify.report import render_repair
+
+        return render_repair(before, self, regulation, lang=lang, not_checked=not_checked)
+
     def to_dxf(self, path: Path | str) -> None:
         """Write the rooms as ``LWPOLYLINE`` and the walls as ``LINE`` in a DXF file.
 

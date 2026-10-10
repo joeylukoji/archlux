@@ -270,6 +270,7 @@ regulation comes from the options.
 ```text
 archlux verify plan.json --min-width 0.90 --min-area bedroom=9
 archlux legalize plan.json --tiling --min-width 0.90 -o fixed.json --svg fixed.svg --report
+archlux legalize plan.json --preset fr/new-collective-housing --report --lang fr --compare-svg compare.svg
 archlux feasible plan.json --min-area bedroom=9
 ```
 
