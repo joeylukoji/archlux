@@ -580,41 +580,74 @@ Verified: full suite green, `mypy src` clean, byte-identical IFC output (SHA-256
 comparison), coverage 89.51% (ratchet 88.8%, `export/svg.py` itself 100%), `mkdocs
 build --strict` clean, `test_language.py`/`test_neutrality.py` green.
 
-### 14. `data`
+### 14. `data` — partly done
 
-40. Split `chargeurs.py` into `msd.py` (`load_msd`, `MSDApartment`), `labels_sd.py`
-    (`load_sd_labels`, `label`), `decoupage.py` (already separate — confirm no overlap
-    remains after the split).
-41. Add an `MSDSettings` parameter object replacing `load_msd`'s eight keyword
-    parameters (`regulation`, `max_rooms`, `max_rectangles`, `snap_tolerance`,
-    `merge_tolerance`, `excluded_types`, `stats`, `limit`).
-42. Break `_convertir` (CC 38, the single worst function in the codebase) into its
-    four named stages, already described in its own docstring: straighten, snap,
-    decompose, attach openings. One stage per commit, each independently testable.
-43. Decide `imputation.py`'s fate: wire it into a loader path that uses it, or remove
-    it if it has no caller (confirm at the commit — PLAN.md flags this as open).
+40. **Not done, deferred.** `chargeurs.py` is already a deprecation shim pointing at
+    `loaders.py` (985 lines after item 42, over the 400-line exit gate: this item blocks
+    the phase-4 exit gate until it is done). Splitting `loaders.py` into `msd.py`, `labels_sd.py`,
+    `decoupage.py` is a file reorganization with its own import-path shims: a separate
+    decision, not a CC fix.
+41. **Not done, deferred.** `MSDSettings` would replace the eight keyword parameters of
+    `load_msd`: a public signature change, so it needs a deprecation path (ADR 0001)
+    and a go-ahead first.
+42. Done. `_convert` (`loaders.py`, was CC 36, now CC 10) split into `_parse_entities`,
+    `_dominant_angle`, `_stitched_rooms`, `_decompose_rooms` and `_assemble`. The
+    rejection reasons and their order are unchanged. `_convert` is now CC 17 before the
+    final assembly move and under CC 10 after it.
+43. Done, option A (agreed): `impute_openings` is wired into `load_msd` through a new
+    keyword-only parameter `impute_openings: bool = False`. Off by default, so every
+    existing load is unchanged; on, each wall without an opening gets a centred one.
+    Covered by `test_impute_openings_is_off_by_default_and_on_when_asked`. No public name
+    removed.
 
-### 15. `bench`
+### 15. `bench` — done
 
-44. Extract the generic Wilson-interval summary duplicated in `experiments/j8_generation.py`
-    into `bench` (a reusable function, not a copy per experiment script).
-45. Raise `bench/stats.py`'s test coverage past 90% if the branch-coverage baseline
-    (block 0.3) shows a gap.
+44. **Already satisfied, no change.** No copy of the Wilson interval is left in
+    `experiments/`: `j6_ifc`, `j7_msd_summary` and `j8_generation` all import
+    `wilson_interval` from `archlux.export.wilson`. Moving it into `bench` would make
+    `export` import `bench`, which the layering rules forbid; the shared function
+    already lives in one place.
+45. Done. `bench/stats.py` was at 77 % branch coverage (its refusal paths and the
+    zero-variance TOST branch were untested). Added `tests/unit/test_stats_edges.py`:
+    `stats.py` is now 100 %; total coverage 90.57 %.
 
-### 16. `experiments/`
+### 16. `experiments/` — closed, rest deferred to [technical debt](tech-debt.md) (D3)
 
-46. Audit every script against §11 (`ARCHITECTURE.md`): under 50 lines, public API
-    only, no import of another script's private function. Split or trim the ones that
-    fail, one script per commit.
+46. **Step 1 done: no script imports another one.** `j8_visuals.py` and
+    `j9_orientation.py` imported `_build`, `_scale` and `BUDGETS` from
+    `j8_generation.py`. The loader is now the public module `archlux.data.generated`
+    (the "generated boxes → Plan" loader PLAN.md names as the missing library
+    function), moved unchanged. Verified on the real data: the 52 output files of the
+    three scripts are byte-identical before and after, timings excluded (they differ
+    between two runs of the same code, so they are masked by the comparison). Covered by
+    `tests/unit/test_generated.py`.
+    **Step 2 done: `j8_generation.py` is 46 lines.** Its sweep and its Markdown summary
+    are the public module `archlux.bench.generation` (`evaluate_generated`,
+    `summarize_generation`, `FIELDS`, `BUDGETS`, `WIDTHS`), split so that no function
+    exceeds complexity 10 (the ratchet stays at 17). `bench` may not import `api`, so
+    `legalize` is passed in by the script. Same check: 52 files byte-identical. Covered by
+    `tests/unit/test_bench_generation.py`.
+    **Still open:** the 50-line rule. `j8_visuals.py` (170),
+    `j9_orientation.py` (161), `j7_sd_labels.py` (139), `j7_sd_per_room.py` (134) and
+    `j5_coverage.py`, `j3_orientation.py`, `j6_ifc.py`, `j2_validity.py` (51-54) remain
+    over it. The large ones need their summary/report code moved into the library,
+    each checked the same way against its data.
 
-### 17. Cross-cutting (last, after every block above)
+### 17. Cross-cutting — done
 
-47. Add `structlog` events to `api`, `solve`, `data`, `export` at the points PLAN.md
-    names (Frank-Wolfe iterations, load rejections, fallbacks) — additive, no behaviour
-    change.
-48. Fill the missing NumPy `Parameters`/`Returns` docstring sections (54 measured
-    before phase 3.9; recount at this commit, since the English-API waves touched most
-    of them) and wire `numpydoc validate` into CI.
+47. Done, with the user's agreement on the approach (option A): events go through a new
+    leaf `archlux._log.event`, to standard `logging` at `DEBUG`, not to `structlog`
+    directly. Unconfigured, `structlog` prints every event to stdout — one line per
+    Frank-Wolfe iteration and per rejected MSD apartment — which would break "additive,
+    no behaviour change"; its import also costs about 0.4 s. An application that uses
+    `structlog` can route standard logging through it. Events: `frank_wolfe.iteration`,
+    `frank_wolfe.stop`, `load.rejected`, `legalize.gap_needs_tiling`,
+    `legalize.duals_fallback`, `export.refused`. `_log` is declared as a leaf in
+    `tests/test_dependencies.py`. Covered by `tests/unit/test_log_events.py`.
+48. Done. The 611 missing numpydoc `Parameters`/`Returns` sections are filled (docstrings
+    only), and `tests/test_docstrings.py` enforces PR01/RT01 in the suite, hence CI, via
+    `[tool.numpydoc_validation]`. The other numpydoc categories (491 findings: examples,
+    extended summaries...) are not enforced yet.
 
 ## Decision Document
 

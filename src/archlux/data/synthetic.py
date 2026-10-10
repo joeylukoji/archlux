@@ -33,7 +33,20 @@ MAX_SIZE = _N_CUTS_X * _N_CUTS_Y
 
 
 def _rng(seed: int, name: str) -> np.random.Generator:
-    """Named sub-stream (:func:`archlux.seeds.derive`): ``data`` does not import ``bench``."""
+    """Named sub-stream (:func:`archlux.seeds.derive`): ``data`` does not import ``bench``.
+
+    Parameters
+    ----------
+    seed
+        Root seed.
+    name
+        Name of the sub-stream.
+
+    Returns
+    -------
+    numpy.random.Generator
+        Generator seeded with the derived sub-seed.
+    """
     return np.random.default_rng(derive(seed, name))
 
 
@@ -46,6 +59,11 @@ def generate_corpus(n: int, *, seed: int) -> dict[str, Plan]:
         Corpus size, bounded by :data:`MAX_SIZE` (10 x 9 distinct cuts).
     seed : int
         Mandatory seed, with no default (`ARCHITECTURE.md` §7).
+
+    Returns
+    -------
+    dict of str to Plan
+        The plans, by identifier.
 
     Raises
     ------

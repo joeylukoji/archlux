@@ -54,7 +54,17 @@ class InvalidInput(ArchluxError, ValueError):
     """
 
     def __init__(self, field: str, problem: str, hint: str = "") -> None:
-        """Retain the field and compose an actionable message."""
+        """Retain the field and compose an actionable message.
+
+        Parameters
+        ----------
+        field
+            Name of the offending argument or field.
+        problem
+            What is wrong with it.
+        hint
+            How to fix it, or empty.
+        """
         self.field = field
         self.problem = problem
         self.hint = hint
@@ -73,7 +83,15 @@ class InconsistentOrder(ArchluxError):
     """
 
     def __init__(self, cycle: tuple[str, ...], axis: str) -> None:
-        """Retain the cycle and its axis, and compose the message."""
+        """Retain the cycle and its axis, and compose the message.
+
+        Parameters
+        ----------
+        cycle
+            Rooms forming the cycle.
+        axis
+            Axis of the cycle.
+        """
         self.cycle = cycle
         self.axis = axis
         super().__init__(f"{axis} cycle: {' -> '.join(cycle)}")
@@ -89,7 +107,13 @@ class MissingSeparation(ArchluxError):
     """
 
     def __init__(self, pair: tuple[str, str]) -> None:
-        """Retain the pair of rooms that is not separated."""
+        """Retain the pair of rooms that is not separated.
+
+        Parameters
+        ----------
+        pair
+            The two rooms with no separation.
+        """
         self.pair = pair
         super().__init__(f"no separation between {pair[0]} and {pair[1]}")
 
@@ -141,7 +165,21 @@ class Infeasible(ArchluxError):
         scope: tuple[str, ...] = (),
         relaxable: tuple[str, ...] = (),
     ) -> None:
-        """Retain the Farkas certificate and the origins in conflict."""
+        """Retain the Farkas certificate and the origins in conflict.
+
+        Parameters
+        ----------
+        farkas_certificate
+            Farkas multipliers, or ``None``.
+        origins
+            Labels of the constraints in conflict.
+        verified
+            Whether the certificate was checked exactly, or ``None``.
+        scope
+            Restrictions beyond the relative order.
+        relaxable
+            Restrictions whose removal makes this order admit a plan.
+        """
         self.farkas_certificate = farkas_certificate
         self.origins = origins
         self.verified = verified
@@ -175,7 +213,13 @@ class InvariantViolation(ArchluxError):
     """
 
     def __init__(self, violations: tuple[str, ...]) -> None:
-        """Retain the violations found by the exact verification."""
+        """Retain the violations found by the exact verification.
+
+        Parameters
+        ----------
+        violations
+            Violation messages.
+        """
         self.violations = violations
         super().__init__("invariant violated: " + " ; ".join(violations))
 
@@ -185,10 +229,21 @@ class CalibrationLocked(ArchluxError):
 
     Guard against the one silent error able to invalidate a publication: a calibration set
     seen during training makes the conformal coverage false, and no test would notice.
+
+    Parameters
+    ----------
+    detail : str
+        Why access is refused.
     """
 
     def __init__(self, detail: str = "token missing, invalid, or issued before the freeze") -> None:
-        """Compose the message refusing access to the calibration set."""
+        """Compose the message refusing access to the calibration set.
+
+        Parameters
+        ----------
+        detail
+            Why access is refused.
+        """
         super().__init__(detail)
 
 
@@ -197,10 +252,21 @@ class ModelModified(CalibrationLocked):
 
     Subclass of :class:`CalibrationLocked`: the same barrier, with the precise cause (a
     diverging fingerprint rather than an invalid signature).
+
+    Parameters
+    ----------
+    detail : str
+        What diverged.
     """
 
     def __init__(self, detail: str = "model weights changed after the freeze") -> None:
-        """Compose the message of a diverging weights fingerprint."""
+        """Compose the message of a diverging weights fingerprint.
+
+        Parameters
+        ----------
+        detail
+            What diverged.
+        """
         super().__init__(detail)
 
 
@@ -209,6 +275,13 @@ class InvalidSurrogate(ArchluxError):
 
     Raised by :func:`archlux.light.validation.validate_gradient`. A surrogate with a wrong
     gradient makes the optimizer converge to noise, with no visible error.
+
+    Parameters
+    ----------
+    detail : str
+        Why the gradient is unusable.
+    report : GradientReport or None
+        Full gradient report, or ``None``.
     """
 
     def __init__(
@@ -223,6 +296,13 @@ class InvalidSurrogate(ArchluxError):
         failed check, so that a caller can record the failing value without parsing
         the message (PLAN.md phase 2, J4). Typed ``object``: this module is imported by
         every layer and may not import ``light``, not even for a type.
+
+        Parameters
+        ----------
+        detail
+            Why the gradient is unusable.
+        report
+            Full gradient report, or ``None``.
         """
         self.report = report
         super().__init__(detail)
@@ -234,10 +314,21 @@ class UnsupportedInput(ArchluxError):
     Raised instead of silently ignoring part of the input. Example: an oblique
     load-bearing wall, which cannot be written as a linear side constraint on
     axis-aligned rooms.
+
+    Parameters
+    ----------
+    detail : str
+        What is not supported.
     """
 
     def __init__(self, detail: str) -> None:
-        """Compose the message of an unsupported input."""
+        """Compose the message of an unsupported input.
+
+        Parameters
+        ----------
+        detail
+            What is not supported.
+        """
         super().__init__(detail)
 
 
@@ -256,7 +347,13 @@ class GapNeedsTiling(UnsupportedInput):
     """
 
     def __init__(self, violations: tuple[str, ...]) -> None:
-        """Compose the message: what the proof found and how to fix it."""
+        """Compose the message: what the proof found and how to fix it.
+
+        Parameters
+        ----------
+        violations
+            Gap messages from the proof.
+        """
         self.violations = violations
         super().__init__(
             "the plan leaves a gap that legalize cannot close on its own ("
@@ -281,7 +378,15 @@ class GridNotRecoverable(UnsupportedInput):
     """
 
     def __init__(self, excess: int, missing: int) -> None:
-        """Compose the message from the cell counts."""
+        """Compose the message from the cell counts.
+
+        Parameters
+        ----------
+        excess
+            Number of grid cells covered more than once.
+        missing
+            Number of grid cells left uncovered.
+        """
         self.excess = excess
         self.missing = missing
         super().__init__(

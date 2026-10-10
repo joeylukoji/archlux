@@ -36,7 +36,22 @@ _REFLECTION_DENOM = 1.0 - _REFLECTANCE * _REFLECTANCE
 
 
 def _south_facade(w: float, h: float, orientation: Orientation) -> float:
-    """Facade length towards geographic south, same convention as the analytic surrogate."""
+    """Facade length towards geographic south, same convention as the analytic surrogate.
+
+    Parameters
+    ----------
+    w
+        Room width.
+    h
+        Room height.
+    orientation
+        Azimuth of the plan.
+
+    Returns
+    -------
+    float
+        Length of the facade facing geographic south.
+    """
     features = encode_orientation(orientation, harmonics=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
@@ -44,7 +59,18 @@ def _south_facade(w: float, h: float, orientation: Orientation) -> float:
 
 
 def _facade_derivatives(orientation: Orientation) -> tuple[float, float]:
-    """∂L/∂w and ∂L/∂h of the south facade."""
+    """∂L/∂w and ∂L/∂h of the south facade.
+
+    Parameters
+    ----------
+    orientation
+        Azimuth of the plan.
+
+    Returns
+    -------
+    tuple of float
+        ``(dL/dw, dL/dh)`` of the south facade.
+    """
     features = encode_orientation(orientation, harmonics=1)
     cos2 = float(features[0]) ** 2
     sin2 = float(features[1]) ** 2
@@ -106,7 +132,26 @@ def _split_flux(
     *,
     with_gradient: bool,
 ) -> tuple[float, float, float]:
-    """Fractional DF and, if asked, ∂DF/∂w and ∂DF/∂h."""
+    """Fractional DF and, if asked, ∂DF/∂w and ∂DF/∂h.
+
+    Parameters
+    ----------
+    w
+        Room width.
+    h
+        Room height.
+    orientation
+        Azimuth of the plan.
+    wwr
+        Window-to-wall ratio.
+    with_gradient
+        Whether to compute the derivatives.
+
+    Returns
+    -------
+    tuple of float
+        ``(DF, dDF/dw, dDF/dh)``; the derivatives are zero when not asked.
+    """
     if wwr <= 0.0 or wwr > 1.0:
         raise InvariantViolation((f"wwr outside ]0, 1]: {wwr}",))
     w = max(float(w), _EPS)
@@ -163,7 +208,13 @@ class SplitFluxOracle:
 
     @property
     def indicator(self) -> Indicator:
-        """Name of the target label. The scalar returned is not an LM-83 sDA."""
+        """Name of the target label. The scalar returned is not an LM-83 sDA.
+
+        Returns
+        -------
+        Indicator
+            The target label.
+        """
         return self.target_indicator
 
     def evaluate(
@@ -173,6 +224,20 @@ class SplitFluxOracle:
 
         ``glazing`` is ignored: the WWR is a constant of the model, not a reading of the
         actual fenestration.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        float
+            The deterministic score.
         """
         del glazing
         return float(self._score_and_gradient(x, orientation, with_gradient=False)[0])
@@ -180,14 +245,44 @@ class SplitFluxOracle:
     def gradient(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> np.ndarray:
-        """Analytic gradient of the same score (CIBSE + split-flux)."""
+        """Analytic gradient of the same score (CIBSE + split-flux).
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        numpy.ndarray
+            Analytic gradient, same dimension as ``x``.
+        """
         del glazing
         return self._score_and_gradient(x, orientation, with_gradient=True)[1]
 
     def uncertainty(
         self, x: np.ndarray, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> float:
-        """Constant nominal standard deviation: no learned error."""
+        """Constant nominal standard deviation: no learned error.
+
+        Parameters
+        ----------
+        x
+            Decision vector (unused).
+        orientation
+            Azimuth (unused).
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        float
+            The constant nominal standard deviation.
+        """
         del x, orientation, glazing
         return float(self.sigma_nominal)
 
@@ -197,6 +292,20 @@ class SplitFluxOracle:
         """Contribution of each room: analytic + split-flux, before summation.
 
         ``evaluate`` is their sum. See :class:`~archlux.light.protocol.PerRoomSurrogate`.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Ignored.
+
+        Returns
+        -------
+        numpy.ndarray
+            Contribution of each room.
         """
         del glazing
         base = AnalyticSurrogate(target_indicator=self.target_indicator)

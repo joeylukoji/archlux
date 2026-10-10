@@ -69,6 +69,11 @@ class Glazing:
         A surrogate that receives empty glazing must behave **exactly** as if it had
         received none: that is what makes the extension of the protocol backward
         compatible.
+
+        Returns
+        -------
+        bool
+            ``True`` when no opening is described.
         """
         return not self.openings
 
@@ -100,6 +105,15 @@ class PerRoomSurrogate(Protocol):
         self, x: FloatVector, orientation: Orientation, *, glazing: Glazing | None = None
     ) -> FloatVector:
         """Return one value per room, in the order of ``Polytope.index``.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
 
         Returns
         -------
@@ -171,6 +185,15 @@ class Surrogate(Protocol):
         This is **all** that learning provides to the system: a direction. The generator
         decides the order, the solver decides the dimensions.
 
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
+
         Returns
         -------
         numpy.ndarray
@@ -185,6 +208,15 @@ class Surrogate(Protocol):
 
         Serves as the non-conformity score of :mod:`archlux.uq.conformal` and as the
         sampling criterion of the active learning of milestone 6.
+
+        Parameters
+        ----------
+        x
+            Decision vector of the plan.
+        orientation
+            Azimuth of the plan.
+        glazing
+            Glazing of the plan, or ``None``.
         """
         ...
 
@@ -213,7 +245,25 @@ class Adjustable(Surrogate, Protocol):
         lr: float = 0.08,
         glazing: tuple[Glazing | None, ...] | None = None,
     ) -> None:
-        """Retrain in place from labeled data."""
+        """Retrain in place from labeled data.
+
+        Parameters
+        ----------
+        xs
+            Decision vectors of the training plans.
+        ys
+            Target indicator of each plan.
+        orientations
+            Azimuth of each plan.
+        seed
+            Seed of the training.
+        epochs
+            Number of passes over the data.
+        lr
+            Learning rate.
+        glazing
+            Glazing of each plan, or ``None``.
+        """
         ...
 
 
@@ -250,6 +300,22 @@ def point_prediction(
     Surrogates return ASE **negated**, so that Frank-Wolfe, which maximizes, reduces
     glare (:class:`archlux.light.analytic.AnalyticSurrogate`). The prediction is
     given back as a positive ASE, the quantity the calibration and the report read.
+
+    Parameters
+    ----------
+    objective
+        Objective, possibly wrapping a surrogate.
+    x
+        Decision vector of the plan.
+    orientation
+        Azimuth of the plan.
+    glazing
+        Glazing of the plan, or ``None``.
+
+    Returns
+    -------
+    tuple of float
+        ``(mu, sigma)`` of the underlying surrogate.
     """
     surrogate: Surrogate = objective
     while isinstance(surrogate, WrapsSurrogate):

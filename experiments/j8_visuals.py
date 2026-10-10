@@ -21,17 +21,16 @@ import sys
 from pathlib import Path
 
 import archlux as ax
+from archlux.bench.generation import BUDGETS
 from archlux.certify.proof import verify_exactly
+from archlux.data.generated import generated_plan, generated_scale
 from archlux.errors import GridNotRecoverable
 from archlux.export.svg import compare, render
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from j8_generation import BUDGETS, _build, _scale
 
 PLANS = Path(sys.argv[1] if len(sys.argv) > 1 else "D:/archlux-donnees/j8_plans.jsonl")
 LABEL = sys.argv[2] if len(sys.argv) > 2 else "etoile"
 PER_CATEGORY = int(sys.argv[3]) if len(sys.argv) > 3 else 8
-BUDGET = BUDGETS[-1]
+BUDGET = BUDGETS[-1]  # largest repair budget swept by j8_generation.py
 ROOT = Path("results/visuals") / LABEL
 
 
@@ -91,12 +90,12 @@ def _sheet(plan_id: str, plan, diag, proof, fixed, status: str, scale: float) ->
 
 def main() -> None:
     rows = [json.loads(x) for x in PLANS.read_text(encoding="utf-8").splitlines() if x.strip()]
-    scale = _scale(rows)
+    scale = generated_scale(rows)
     count: dict[str, int] = {}
     index: list[tuple[str, str, str, str]] = []
 
     for plan_json in rows:
-        built = _build(plan_json, scale)
+        built = generated_plan(plan_json, scale)
         if isinstance(built, str):
             continue
         plan, context, diag = built

@@ -31,12 +31,36 @@ __all__ = ["resolve_outline", "validate_inputs"]
 
 
 def _is_number(value: object) -> bool:
-    """A real number that is not a ``bool``: ``True`` as a width is a typo."""
+    """A real number that is not a ``bool``: ``True`` as a width is a typo.
+
+    Parameters
+    ----------
+    value
+        Value to test.
+
+    Returns
+    -------
+    bool
+        ``True`` for a real number that is not a ``bool``.
+    """
     return isinstance(value, Real) and not isinstance(value, bool)
 
 
 def _finite(field: str, value: object) -> float:
-    """Return ``value`` as a float, or refuse it if it is not a finite number."""
+    """Return ``value`` as a float, or refuse it if it is not a finite number.
+
+    Parameters
+    ----------
+    field
+        Name of the field, for the error.
+    value
+        Value to check.
+
+    Returns
+    -------
+    float
+        The value as a float; raises ``InvalidInput`` otherwise.
+    """
     if not _is_number(value):
         raise InvalidInput(field, f"must be a number, got {type(value).__name__} {value!r}")
     number = float(value)  # type: ignore[arg-type]
@@ -63,7 +87,15 @@ def _point(field: str, point: object) -> None:
 
 
 def _integer(field: str, value: object) -> None:
-    """Any integer, numpy's included (``operator.index``), but not a bool."""
+    """Any integer, numpy's included (``operator.index``), but not a bool.
+
+    Parameters
+    ----------
+    field
+        Name of the field, for the error.
+    value
+        Value to check.
+    """
     try:
         if isinstance(value, bool):
             raise TypeError
@@ -139,7 +171,15 @@ def _context(ctx: Context) -> None:
 
 
 def _outlines(plan: Plan, ctx: Context) -> None:
-    """Each outline given must be a polygon, and at least one of the two must be given."""
+    """Each outline given must be a polygon, and at least one of the two must be given.
+
+    Parameters
+    ----------
+    plan
+        Plan, possibly carrying an outline.
+    ctx
+        Context, possibly carrying an outline.
+    """
     for field, outline in (("outline", plan.outline), ("context.outline", ctx.outline)):
         if outline:
             _outline(field, outline)
@@ -156,6 +196,18 @@ def resolve_outline(plan: Plan, ctx: Context) -> Context:
 
     An outline in the context wins over the plan's: it is the site, the plan's own is
     what the generator drew. Call after :func:`validate_inputs`.
+
+    Parameters
+    ----------
+    plan
+        Plan, possibly carrying an outline.
+    ctx
+        Context, possibly carrying an outline.
+
+    Returns
+    -------
+    Context
+        The context, its outline taken from the plan when it had none.
     """
     return ctx if ctx.outline else replace(ctx, outline=plan.outline)
 
@@ -166,6 +218,15 @@ def _warn_unregulated_types(plan: Plan, ctx: Context, stacklevel: int) -> None:
     A typo such as ``"sejuor"`` silently removes the minimum-area requirement of the room
     (``Regulation.min_area`` gives ``0.0`` for an unknown type). Only when the regulation
     lists thresholds: an empty one means "no regulation", not a typo.
+
+    Parameters
+    ----------
+    plan
+        Plan whose room types are checked.
+    ctx
+        Context providing the regulation.
+    stacklevel
+        Stack depth of the warning.
     """
     known = {room_type for room_type, _ in ctx.regulation.min_areas}
     if not known:

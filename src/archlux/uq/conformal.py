@@ -52,7 +52,13 @@ class Calibration:
 
     @property
     def n(self) -> int:
-        """Size of the calibration set."""
+        """Size of the calibration set.
+
+        Returns
+        -------
+        int
+            Number of calibration scores.
+        """
         return int(self.scores.size)
 
 
@@ -165,6 +171,20 @@ def dataset_fingerprint(
 
     Each column is hashed as little-endian float64 behind its name and length, so that
     swapping two columns or moving a value from one to the other changes the digest.
+
+    Parameters
+    ----------
+    predictions
+        Point predictions.
+    truths
+        Ground truths.
+    uncertainties
+        Predictive standard deviations.
+
+    Returns
+    -------
+    str
+        Hex SHA-256 of the three columns.
     """
     digest = hashlib.sha256(b"archlux-calibration-v1")
     for name, column in (
@@ -195,6 +215,16 @@ def _scale(uncertainty: float) -> float:
     ``1 - alpha``, and ``sigma_hat < 0`` publishes an inverted interval
     (``lower > upper``) — two false guarantees that nothing would flag.
 
+    Parameters
+    ----------
+    uncertainty
+        Predictive standard deviation ``sigma_hat``.
+
+    Returns
+    -------
+    float
+        ``sigma_hat`` as a float.
+
     Raises
     ------
     InvariantViolation
@@ -219,7 +249,28 @@ def _interval(
     n_calibration: int,
     regime: str,
 ) -> PerformanceBound:
-    """Two-sided interval ``prediction +/- margin``; business sense picks the side published."""
+    """Two-sided interval ``prediction +/- margin``; business sense picks the side published.
+
+    Parameters
+    ----------
+    prediction
+        Point estimate.
+    margin
+        Conformal margin.
+    indicator
+        Indicator of the estimate.
+    coverage
+        Nominal coverage ``1 - alpha``.
+    n_calibration
+        Size of the calibration set.
+    regime
+        Exchangeable or selected regime.
+
+    Returns
+    -------
+    PerformanceBound
+        The interval ``prediction +/- margin``.
+    """
     return PerformanceBound(
         indicator=indicator,
         value=float(prediction),
@@ -253,6 +304,11 @@ def bound(
     regime : {"exchangeable", "selected"}
         Whether the plan is exchangeable with the calibration set or was selected by
         the optimizer (:data:`archlux.types.Regime`). Mandatory: only the caller knows.
+
+    Returns
+    -------
+    PerformanceBound
+        The conformal interval around ``value``.
 
     Raises
     ------
@@ -361,6 +417,11 @@ class ConformalCalibrator:
             inconsistency.
         regime : {"exchangeable", "selected"}
             See :func:`bound`.
+
+        Returns
+        -------
+        PerformanceBound
+            The conformal interval around ``prediction``.
         """
         if self.n < 1:
             raise InvariantViolation(("calibrator not fitted",))
@@ -388,6 +449,11 @@ class ConformalCalibrator:
 
         ``bound`` recomputes the conformal quantile from the scores; the data set
         fingerprint stays logged with the calibration.
+
+        Returns
+        -------
+        Calibration
+            A frozen copy of the scores, ``alpha`` and the data set fingerprint.
         """
         if self.n < 1 or self.scores is None:
             raise InvariantViolation(("calibrator not fitted",))

@@ -215,3 +215,24 @@ def test_a_refused_decomposition_is_classified_by_its_cause(
     with pytest.raises(InvariantViolation) as refusal:
         decompose(polygon, id="p", room_type="room", max_rectangles=max_rectangles)
     assert _decomposition_rejection(refusal.value) == expected
+
+
+def test_impute_openings_is_off_by_default_and_on_when_asked(tmp_path: Path) -> None:
+    """PLAN.md phase 4, block 14, item 43: the imputation is wired in, not dead code.
+
+    The fixture's wall carries a real window; without it, the imputation adds one
+    centred opening on the bare wall.
+    """
+    csv = tmp_path / "msd.csv"
+    rows = [row for row in _two_room_apartment() if row[1] != "opening"]
+    _write_csv(csv, rows)
+    plain = next(iter(load_msd(csv)))
+    imputed = next(iter(load_msd(csv, impute_openings=True)))
+    assert plain.plan.openings == ()
+    assert len(imputed.plan.openings) == 1
+    assert imputed.plan.openings[0].s == 0.5  # centred on its wall
+    # A wall that already carries a window is left as observed.
+    observed = tmp_path / "observed.csv"
+    _write_csv(observed, _two_room_apartment())
+    with_window = next(iter(load_msd(observed)))
+    assert next(iter(load_msd(observed, impute_openings=True))).plan == with_window.plan

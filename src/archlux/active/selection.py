@@ -24,14 +24,43 @@ class AcquisitionStrategy(Protocol):
         seed: int,
         excluded: np.ndarray | None = None,
     ) -> np.ndarray:
-        """Return ``n`` distinct indices in ``[0, N)``."""
+        """Return ``n`` distinct indices in ``[0, N)``.
+
+        Parameters
+        ----------
+        uncertainties
+            Uncertainty of each candidate.
+        densities
+            Optimizer density of each candidate.
+        n
+            Number of indices to return.
+        seed
+            Random seed.
+        excluded
+            Indices to skip, or ``None``.
+        """
         ...
 
 
 def _validate(
     uncertainties: np.ndarray, densities: np.ndarray, *, n: int
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Check the sizes and bounds of the selection inputs; return the raveled vectors."""
+    """Check the sizes and bounds of the selection inputs; return the raveled vectors.
+
+    Parameters
+    ----------
+    uncertainties
+        Uncertainty of each candidate.
+    densities
+        Optimizer density of each candidate.
+    n
+        Number of indices requested.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        The two vectors, raveled.
+    """
     inc = np.asarray(uncertainties, dtype=float).ravel()
     dens = np.asarray(densities, dtype=float).ravel()
     if inc.size != dens.size or inc.size == 0:
@@ -44,7 +73,20 @@ def _validate(
 
 
 def _available_mask(n_candidates: int, excluded: np.ndarray | None) -> np.ndarray:
-    """Boolean mask of the free indices; reject ``excluded`` entries outside ``[0, N)``."""
+    """Boolean mask of the free indices; reject ``excluded`` entries outside ``[0, N)``.
+
+    Parameters
+    ----------
+    n_candidates
+        Number of candidates.
+    excluded
+        Indices to skip, or ``None``.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean mask of the free indices.
+    """
     mask = np.ones(n_candidates, dtype=bool)
     if excluded is None:
         return mask
@@ -70,7 +112,26 @@ class UncertaintyTimesDensity:
         seed: int,
         excluded: np.ndarray | None = None,
     ) -> np.ndarray:
-        """Take the ``n`` highest scores, skipping ``excluded``."""
+        """Take the ``n`` highest scores, skipping ``excluded``.
+
+        Parameters
+        ----------
+        uncertainties
+            Uncertainty of each candidate.
+        densities
+            Optimizer density of each candidate.
+        n
+            Number of indices to return.
+        seed
+            Unused: the ranking is deterministic.
+        excluded
+            Indices to skip, or ``None``.
+
+        Returns
+        -------
+        numpy.ndarray
+            The ``n`` indices with the highest scores.
+        """
         del seed  # deterministic once the scores are fixed
         inc, dens = _validate(uncertainties, densities, n=n)
         scores = inc * dens
@@ -94,7 +155,26 @@ class RandomStrategy:
         seed: int,
         excluded: np.ndarray | None = None,
     ) -> np.ndarray:
-        """Sample ``n`` indices with the given seed."""
+        """Sample ``n`` indices with the given seed.
+
+        Parameters
+        ----------
+        uncertainties
+            Uncertainty of each candidate (unused).
+        densities
+            Optimizer density of each candidate (unused).
+        n
+            Number of indices to return.
+        seed
+            Random seed.
+        excluded
+            Indices to skip, or ``None``.
+
+        Returns
+        -------
+        numpy.ndarray
+            ``n`` indices drawn without replacement.
+        """
         inc, _dens = _validate(uncertainties, densities, n=n)
         available = np.flatnonzero(_available_mask(inc.size, excluded))
         if available.size < n:

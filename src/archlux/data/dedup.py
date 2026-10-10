@@ -28,7 +28,18 @@ HAUSDORFF_THRESHOLD_M = 0.02
 
 
 def geometric_fingerprint(plan: Plan) -> str:
-    """Hash the tiling rounded to the millimetre, rooms sorted by identifier."""
+    """Hash the tiling rounded to the millimetre, rooms sorted by identifier.
+
+    Parameters
+    ----------
+    plan
+        Plan to fingerprint.
+
+    Returns
+    -------
+    str
+        Hex BLAKE2b (128-bit) digest of the rounded tiling.
+    """
     rooms = tuple(
         (
             p.id,
@@ -49,6 +60,19 @@ def side_distance(a: Plan, b: Plan) -> float:
     The Hausdorff distance of the *unions* is zero for two tilings of the same
     outline: it does not detect a partition duplicate. It is the gap between
     the rectangles that matters for deduplicating before splitting.
+
+    Parameters
+    ----------
+    a
+        First plan.
+    b
+        Second plan.
+
+    Returns
+    -------
+    float
+        Largest dimension gap between rooms of the same identifier, in metres; the Hausdorff
+        distance when the identifiers differ, zero for two empty plans.
     """
     left = {p.id: p for p in a.rooms}
     right = {p.id: p for p in b.rooms}
@@ -70,7 +94,20 @@ def side_distance(a: Plan, b: Plan) -> float:
 
 
 def hausdorff(a: Plan, b: Plan) -> float:
-    """Hausdorff distance between the unions of rectangles, in metres."""
+    """Hausdorff distance between the unions of rectangles, in metres.
+
+    Parameters
+    ----------
+    a
+        First plan.
+    b
+        Second plan.
+
+    Returns
+    -------
+    float
+        Hausdorff distance between the two unions of rooms, in metres.
+    """
     ua = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in a.rooms])
     ub = unary_union([box(p.x, p.y, p.x + p.w, p.y + p.h) for p in b.rooms])
     return float(ua.hausdorff_distance(ub))
@@ -92,6 +129,18 @@ def near_duplicate_pairs(
     ----------
     ``O(n^2)`` comparisons; fingerprints are computed **once per plan** (``O(n)``),
     not per pair.
+
+    Parameters
+    ----------
+    plans
+        ``(identifier, plan)`` pairs.
+    threshold
+        Largest dimension gap, in metres, still a near duplicate.
+
+    Returns
+    -------
+    tuple of tuple of str
+        The pairs of identifiers closer than ``threshold``.
     """
     fingerprints = [geometric_fingerprint(plan) for _, plan in plans]
     pairs: list[tuple[str, str]] = []

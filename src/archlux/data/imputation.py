@@ -18,6 +18,18 @@ def impute_openings(plan: Plan, *, ratio: float = DEFAULT_OPENING_RATIO) -> Plan
 
     Does not touch openings already present. The effect of this imputation on
     calibration must be measured separately (`docs/data/imputation.md`).
+
+    Parameters
+    ----------
+    plan
+        Plan to complete.
+    ratio
+        Relative width of each imputed opening.
+
+    Returns
+    -------
+    Plan
+        The plan with one centred opening on every wall that had none.
     """
     occupied_walls = {o.wall_id for o in plan.openings}
     added: list[Opening] = list(plan.openings)

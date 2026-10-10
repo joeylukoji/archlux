@@ -120,7 +120,18 @@ _LAZY_FUNCTIONS = {"legalize": "archlux.api", "legalize_trace": "archlux.api"}
 
 
 def _lazy_attribute(name: str) -> Any:  # noqa: ANN401 - a lazy module or function
-    """Load a lazy package or function on first use."""
+    """Load a lazy package or function on first use.
+
+    Parameters
+    ----------
+    name
+        Attribute requested on the package.
+
+    Returns
+    -------
+    Any
+        The lazy subpackage or function; raises ``AttributeError`` for any other name.
+    """
     # Local import: do not pollute ``dir(archlux)`` with ``importlib``.
     import importlib
 
@@ -147,7 +158,13 @@ __getattr__ = lazy_aliases(
 
 
 def __dir__() -> list[str]:
-    """Expose only the frozen public API (lazy packages included)."""
+    """Expose only the frozen public API (lazy packages included).
+
+    Returns
+    -------
+    list of str
+        The public names of the package.
+    """
     return list(__all__)
 
 

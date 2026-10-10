@@ -94,7 +94,18 @@ class CacheLP:
         self._entries: OrderedDict[int, tuple[Polytope, Any, list[Any], list[Any]]] = OrderedDict()
 
     def get(self, poly: Polytope) -> tuple[Any, list[Any], list[Any]] | None:
-        """The ``(solver, variables, constraints)`` built for ``poly``, or ``None``."""
+        """The ``(solver, variables, constraints)`` built for ``poly``, or ``None``.
+
+        Parameters
+        ----------
+        poly
+            Polytope the model was built for.
+
+        Returns
+        -------
+        tuple or None
+            The ``(solver, variables, constraints)`` triple, or ``None`` if not cached.
+        """
         with self._lock:
             entry = self._entries.get(id(poly))
             if entry is None:
@@ -111,7 +122,19 @@ class CacheLP:
         variables: list[Any],
         constraints: list[Any],
     ) -> None:
-        """Store the model built for ``poly``, evicting the oldest beyond ``maxsize``."""
+        """Store the model built for ``poly``, evicting the oldest beyond ``maxsize``.
+
+        Parameters
+        ----------
+        poly
+            Polytope the model was built for.
+        solver
+            GLOP solver holding the model.
+        variables
+            Variables, in column order.
+        constraints
+            Constraints, in row order of ``A``.
+        """
         with self._lock:
             self._entries[id(poly)] = (poly, solver, variables, constraints)
             self._entries.move_to_end(id(poly))
@@ -124,6 +147,16 @@ class CacheLP:
         While checked out, no other thread can obtain that model: it either builds its
         own or waits for nothing. :func:`solve` hands it back with :meth:`put` once the
         solution is read.
+
+        Parameters
+        ----------
+        poly
+            Polytope the model was built for.
+
+        Returns
+        -------
+        tuple or None
+            The checked-out triple, or ``None`` if not cached.
         """
         with self._lock:
             entry = self._entries.pop(id(poly), None)
@@ -186,6 +219,16 @@ def _status(code: int) -> Literal["optimal", "infaisable", "non_borne", "limite"
     opposite situations — "the programme does not fit in the envelope" and "the
     objective has no finite optimum". The status returned here is therefore provisional:
     :func:`_is_feasible` settles it.
+
+    Parameters
+    ----------
+    code
+        OR-Tools result status.
+
+    Returns
+    -------
+    str
+        The project's status: ``optimal``, ``infaisable``, ``non_borne`` or ``limite``.
     """
     if code == pywraplp.Solver.OPTIMAL:
         return "optimal"
@@ -197,7 +240,22 @@ def _status(code: int) -> Literal["optimal", "infaisable", "non_borne", "limite"
 
 
 def _glop_bound(solver: object, value: float, *, upper: bool) -> float:
-    """Translate a Python bound (possibly infinite) into a GLOP bound."""
+    """Translate a Python bound (possibly infinite) into a GLOP bound.
+
+    Parameters
+    ----------
+    solver
+        GLOP solver, providing its infinity.
+    value
+        Bound, possibly infinite.
+    upper
+        Whether ``value`` is an upper bound.
+
+    Returns
+    -------
+    float
+        The bound as GLOP expects it.
+    """
     if math.isfinite(value):
         return float(value)
     infinite = float(solver.infinity())  # type: ignore[attr-defined]
@@ -206,6 +264,13 @@ def _glop_bound(solver: object, value: float, *, upper: bool) -> float:
 
 def _build_model(poly: Polytope, cuts: list[Cut] | None) -> tuple[Any, list[Any], list[Any]]:
     """Translate a polytope into a GLOP model.
+
+    Parameters
+    ----------
+    poly
+        Polytope to translate.
+    cuts
+        Extra cut rows, or ``None``.
 
     Returns
     -------
@@ -266,6 +331,18 @@ def _is_feasible(poly: Polytope, cuts: list[Cut] | None) -> bool:
 
     The model is identical to that of the real problem — cuts, equalities and bounds
     included — so that the verdict bears on the same system.
+
+    Parameters
+    ----------
+    poly
+        Polytope to test.
+    cuts
+        Extra cut rows, or ``None``.
+
+    Returns
+    -------
+    bool
+        ``True`` when the constraints admit at least one point.
     """
     solver, _, _ = _build_model(poly, cuts)
     solver.Objective().SetMinimization()
@@ -287,6 +364,13 @@ def _farkas_certificate(poly: Polytope, cuts: list[Cut] | None) -> tuple[FloatVe
     slacks each; otherwise a conflict among them left the auxiliary problem without an
     optimum and the certificate empty ("origins not filled in": 68 of 200 noisy
     benchmark plans before batch 1.5c).
+
+    Parameters
+    ----------
+    poly
+        Infeasible polytope.
+    cuts
+        Extra cut rows, or ``None``.
 
     Returns
     -------
@@ -365,6 +449,26 @@ def _infeasible_solution(
     means the constraints are satisfiable, hence the failure came from the objective.
     Without this distinction, ``api.legalize`` would raise "the programme does not fit
     in the envelope" on an open domain.
+
+    Parameters
+    ----------
+    poly
+        Polytope solved.
+    cuts
+        Extra cut rows, or ``None``.
+    n_var
+        Number of variables.
+    solver
+        GLOP solver that reported infeasibility.
+    lp_status
+        Status GLOP returned.
+    t_start
+        Start time of the solve, for the timing.
+
+    Returns
+    -------
+    LPSolution
+        An unbounded result, or an infeasible one with its Farkas certificate.
     """
     if _is_feasible(poly, cuts):
         return LPSolution(
@@ -398,6 +502,22 @@ def _cached_model(
     with :meth:`CacheLP.put` once done, so no two threads ever share it.
     A cold solve (no ``start``) without cuts builds a fresh model, which the caller then
     stores in place of any cached one: same answer, a refreshed entry.
+
+    Parameters
+    ----------
+    poly
+        Polytope to solve.
+    cuts
+        Extra cut rows, or ``None``.
+    start
+        Warm-start point, or ``None``.
+    cache
+        Model cache.
+
+    Returns
+    -------
+    tuple
+        The ``(solver, variables, constraints)`` triple, reused or freshly built.
     """
     if start is not None and not cuts:
         cached = cache.take(poly)
@@ -507,7 +627,32 @@ def _solve_model(
     constraints: list[Any],
     t_start: float,
 ) -> LPSolution:
-    """Set the objective on a model this thread holds exclusively, solve, read back."""
+    """Set the objective on a model this thread holds exclusively, solve, read back.
+
+    Parameters
+    ----------
+    poly
+        Polytope solved.
+    c
+        Objective vector.
+    cuts
+        Extra cut rows, or ``None``.
+    duals
+        Whether to read back the duals.
+    solver
+        GLOP solver held by this thread.
+    variables
+        Variables, in column order.
+    constraints
+        Constraints, in row order.
+    t_start
+        Start time of the solve, for the timing.
+
+    Returns
+    -------
+    LPSolution
+        The solution read back from the solver.
+    """
     n_var = len(poly.index)
 
     objective = solver.Objective()

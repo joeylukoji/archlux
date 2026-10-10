@@ -63,6 +63,34 @@ def run(
     """Run the bench: write the manifest, then the raw rows, then return.
 
     The order is binding (`MILESTONE-6.md` §5): no aggregate before the raw rows.
+
+    Parameters
+    ----------
+    plans
+        Plans to evaluate.
+    orientations
+        Orientation of each plan.
+    methods
+        Surrogates compared.
+    evaluate_by
+        Score of a plan under a method.
+    seed
+        Root seed of the run.
+    data_fingerprint
+        Fingerprint of the data set.
+    split
+        Name of the split.
+    model
+        Trace of the model.
+    directory
+        Output directory.
+    parameters
+        Extra parameters for the manifest, or ``None``.
+
+    Returns
+    -------
+    Result
+        The raw rows and the manifest of the run.
     """
     if len(plans) != len(orientations):
         raise InvariantViolation(("plans and orientations must have the same length",))
@@ -112,13 +140,29 @@ def run(
 
 def _write_manifest(path: Path, manifest: Manifest) -> None:
     # Same shape as the certificates' JSON schema (`io.json_io`) — a single truth.
-    """Write the manifest as JSON, sorted keys, before any result."""
+    """Write the manifest as JSON, sorted keys, before any result.
+
+    Parameters
+    ----------
+    path
+        Target file.
+    manifest
+        Manifest to write.
+    """
     payload = manifest_to_dict(manifest)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _write_raw(path: Path, rows: Sequence[RawRow]) -> None:
-    """Write the raw measurements as CSV, before any aggregation."""
+    """Write the raw measurements as CSV, before any aggregation.
+
+    Parameters
+    ----------
+    path
+        Target CSV file.
+    rows
+        Raw measurements.
+    """
     with path.open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(["plan_id", "methode", "orientation_deg", "score"])

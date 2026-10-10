@@ -107,7 +107,7 @@ The package is not on PyPI yet: install from a clone with `pip install -e ".[dev
 The `sim` and `stats` extras exist but are empty.
 
 **The core never imports PyTorch**, and a test checks it (`tests/test_dependencies.py`).
-Core dependencies: `numpy`, `scipy`, `shapely`, `networkx`, `ortools`, `structlog`.
+Core dependencies: `numpy`, `scipy`, `shapely`, `networkx`, `ortools`.
 
 ---
 
@@ -260,6 +260,22 @@ information (`origins`, `certificat_farkas`, `verified`).
 
 Generative models always return something, even when the request is impossible, and
 the result is then wrong somewhere without any warning. archlux refuses and says why.
+
+### From the command line
+
+The same operations on a plan file (`Plan.to_json` format). The plan carries no
+context: its load-bearing walls are the structure, its outline is the site, and the
+regulation comes from the options.
+
+```text
+archlux verify plan.json --min-width 0.90 --min-area bedroom=9
+archlux legalize plan.json --tiling --min-width 0.90 -o fixed.json --svg fixed.svg --report
+archlux feasible plan.json --min-area bedroom=9
+```
+
+Exit code 0 means valid (or feasible), 1 invalid (or infeasible), 2 an error. `verify`
+also measures every room rectangle against `--min-width`; options are checked before
+anything runs (see the [command-line tutorial](docs/tutorials/command-line.md)).
 
 ---
 

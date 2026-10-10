@@ -69,6 +69,26 @@ def _accumulate(
     Extracted from :func:`verify_infeasibility` (PLAN.md phase 4, block 9): the
     inequality rows (``clip_negative=True``, negative solver noise clipped to zero)
     and the equality rows (``clip_negative=False``, any sign) share this exact loop.
+
+    Parameters
+    ----------
+    rows
+        Rows of ``A`` or ``A_eq``.
+    b
+        Right-hand sides of those rows.
+    raw_weights
+        Multiplier of each row.
+    r
+        Combination ``A^T y``, updated in place.
+    beta
+        Running ``b^T y``.
+    clip_negative
+        Whether negative multipliers are clipped to zero.
+
+    Returns
+    -------
+    Fraction
+        The updated ``beta``.
     """
     for i in range(rows.shape[0]):
         raw = float(raw_weights[i])
@@ -86,6 +106,18 @@ def _lowest_over_box(poly: Polytope, r: list[Fraction]) -> Fraction | str:
 
     Returns the name of the first unbounded variable whose bound the minimum would
     need, instead, when one is encountered.
+
+    Parameters
+    ----------
+    poly
+        Polytope providing the bounds.
+    r
+        Combination ``A^T y``.
+
+    Returns
+    -------
+    Fraction or str
+        The minimum, or the name of an unbounded variable it would need.
     """
     names = {column: name for name, column in poly.index.items()}
     lowest = Fraction(0)

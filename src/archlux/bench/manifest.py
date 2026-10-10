@@ -25,7 +25,18 @@ if it is already installed. Recording a version is not loading a library.
 
 
 def _installed_version(name: str) -> str | None:
-    """Installed version of a package, or ``None`` if it is absent."""
+    """Installed version of a package, or ``None`` if it is absent.
+
+    Parameters
+    ----------
+    name
+        Distribution name.
+
+    Returns
+    -------
+    str or None
+        Its installed version, or ``None`` when it is not installed.
+    """
     try:
         return version(name)
     except PackageNotFoundError:
@@ -37,6 +48,11 @@ def _environment() -> tuple[tuple[str, str], ...]:
 
     An absent optional package is **omitted**, never noted as ``"absent"``: the
     manifest describes what was used, not what was missing.
+
+    Returns
+    -------
+    tuple of (str, str)
+        ``(package, version)`` pairs, Python included, sorted by name.
     """
     snapshot = {"python": sys.version.split()[0]}
     for name in _TRACKED_PACKAGES:

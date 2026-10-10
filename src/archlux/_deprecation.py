@@ -312,6 +312,13 @@ class _DeprecatedAttribute:
     Reading goes to the new attribute of the instance, or of the class when read on the
     class (a class constant, a method); writing goes to the new attribute too, so that a
     frozen dataclass still refuses it.
+
+    Parameters
+    ----------
+    old : str
+        Deprecated attribute name.
+    new : str
+        Current attribute name.
     """
 
     def __init__(self, old: str, new: str) -> None:

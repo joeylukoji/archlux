@@ -33,6 +33,16 @@ def __getattr__(name: str) -> object:
 
     Written by hand rather than with :func:`archlux._deprecation.lazy_aliases`: this
     module is a leaf and imports nothing from archlux.
+
+    Parameters
+    ----------
+    name
+        Attribute requested on the module.
+
+    Returns
+    -------
+    object
+        The current object behind a deprecated name; raises ``AttributeError`` otherwise.
     """
     if name == "VecteurF":  # lang-ok: deprecated French alias (ADR 0001, rule 6)
         warnings.warn(

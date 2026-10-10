@@ -52,7 +52,13 @@ class Grid:
 
     @property
     def n_cells(self) -> int:
-        """Number of cells of the array, ``(p - 1) × (q - 1)``."""
+        """Number of cells of the array, ``(p - 1) × (q - 1)``.
+
+        Returns
+        -------
+        int
+            ``(p - 1) * (q - 1)``.
+        """
         return (len(self.x_lines) - 1) * (len(self.y_lines) - 1)
 
 
@@ -63,6 +69,18 @@ def _cluster(values: Sequence[float], tolerance: float) -> tuple[list[float], di
     stays under ``tolerance``. The grouping is therefore transitive along a chain, which
     is intended: a string of edges offset step by step describes a single
     alignment intent.
+
+    Parameters
+    ----------
+    values
+        Coordinates to group.
+    tolerance
+        Largest gap, in metres, inside one line.
+
+    Returns
+    -------
+    tuple of list of float and dict
+        The grid lines, increasing, and the line index of each value.
     """
     sorted_lines = sorted(set(values))
     if not sorted_lines:
@@ -186,6 +204,20 @@ def _deduce_lines(
     outline-anchoring pass, on its own so the caller's own complexity does not include
     it.
 
+    Parameters
+    ----------
+    plan
+        Plan whose edges are grouped.
+    ctx
+        Context providing the outline.
+    tolerance
+        Largest gap, in metres, inside one line.
+
+    Returns
+    -------
+    tuple
+        ``(lines_x, rank_x, lines_y, rank_y)``.
+
     Raises
     ------
     UnsupportedInput
@@ -218,6 +250,19 @@ def _anchor_outline_vertices(
     room edges grouped with it, and the anchoring equalities would then pin the rooms
     off the outline, leaving an uncovered strip. Mutates ``lines`` in place.
 
+    Parameters
+    ----------
+    axis
+        0 for x, 1 for y.
+    lines
+        Grid lines on that axis, updated in place.
+    rank
+        Line index of each value.
+    values
+        Outline coordinates on that axis.
+    tolerance
+        Largest gap, in metres, inside one line.
+
     Raises
     ------
     UnsupportedInput
@@ -242,6 +287,22 @@ def _room_bounds(
     """Room bounds as grid-line indices, checked non-degenerate.
 
     Extracted from :func:`deduce_grid` (PLAN.md phase 4, block 3).
+
+    Parameters
+    ----------
+    plan
+        Plan whose rooms are placed.
+    rank_x
+        Line index of each x value.
+    rank_y
+        Line index of each y value.
+    tolerance
+        Largest gap, in metres, inside one line.
+
+    Returns
+    -------
+    tuple of list of (int, int)
+        The x and y line-index intervals of each room.
 
     Raises
     ------
@@ -273,6 +334,24 @@ def _verify_partition(
     Extracted from :func:`deduce_grid` (PLAN.md phase 4, block 3): each cell **inside
     the outline** covered exactly once, none outside. The real outline is rectilinear,
     not rectangular: requiring the bounding box to be tiled would be wrong.
+
+    Parameters
+    ----------
+    ctx
+        Context providing the outline.
+    lines_x
+        Grid lines on x.
+    lines_y
+        Grid lines on y.
+    incidences
+        Cells covered by each room.
+    repair_budget
+        Number of repairs allowed.
+
+    Returns
+    -------
+    list of tuple
+        The incidences, repaired if needed; raises when they cannot be.
 
     Raises
     ------

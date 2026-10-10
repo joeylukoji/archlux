@@ -57,7 +57,15 @@ def crps(predictions: np.ndarray, truths: np.ndarray, uncertainties: np.ndarray)
 
 
 def _check_diagram_inputs(targets: np.ndarray, reference: np.ndarray) -> None:
-    """Raise on caller errors, so that ``nan`` only ever means "n too small"."""
+    """Raise on caller errors, so that ``nan`` only ever means "n too small".
+
+    Parameters
+    ----------
+    targets
+        Nominal levels.
+    reference
+        Reference non-conformity scores.
+    """
     if not bool(np.all((targets > 0.0) & (targets < 1.0))):
         raise InvariantViolation(("nominal levels outside ]0, 1[",))
     if reference.size == 0 or not bool(np.all(np.isfinite(reference))):
@@ -203,7 +211,14 @@ class CoverageReport:
 
     @property
     def width_over_std(self) -> float:
-        """Mean width in units of the target spread; ``inf`` for a constant target."""
+        """Mean width in units of the target spread; ``inf`` for a constant target.
+
+        Returns
+        -------
+        float
+            Mean width divided by the standard deviation of the targets; ``inf`` for a constant
+            target.
+        """
         return self.mean_width / self.target_std if self.target_std > 0.0 else math.inf
 
 

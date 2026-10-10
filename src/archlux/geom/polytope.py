@@ -86,7 +86,13 @@ class Polytope:
     the constraints of an infeasibility certificate; see :meth:`labels_eq`."""
 
     def eq_labels(self) -> tuple[str, ...]:
-        """One label per row of ``A_eq``; rows added without a label get a generic one."""
+        """One label per row of ``A_eq``; rows added without a label get a generic one.
+
+        Returns
+        -------
+        tuple of str
+            One label per row of ``A_eq``.
+        """
         n_rows = self.A_eq.shape[0]
         labels = self.origins_eq[:n_rows]
         return labels + tuple(f"equality {k}" for k in range(len(labels), n_rows))
@@ -136,6 +142,20 @@ def _frozen_bounds(poly: Polytope, x: FloatVector, tol: float) -> list[tuple[flo
     (an edge attached to the outline can sit at its low or high side); every other
     field (widths, heights) freezes only at its high bound, since a saturated minimum
     width must stay free to grow.
+
+    Parameters
+    ----------
+    poly
+        Polytope whose bounds are read.
+    x
+        Solution vector.
+    tol
+        Saturation tolerance.
+
+    Returns
+    -------
+    list of tuple of float
+        The bounds, pinned to ``x`` where it saturates one.
     """
     names = {column: name for name, column in poly.index.items()}
     box_bounds: list[tuple[float, float]] = []
@@ -221,7 +241,18 @@ def freeze_contacts(poly: Polytope, x: FloatVector, *, tol: float = 1e-7) -> Pol
 
 
 def _envelope(ctx: Context) -> tuple[float, float, float, float]:
-    """Bounding box of the outline: ``(xmin, ymin, xmax, ymax)``."""
+    """Bounding box of the outline: ``(xmin, ymin, xmax, ymax)``.
+
+    Parameters
+    ----------
+    ctx
+        Context providing the outline.
+
+    Returns
+    -------
+    tuple of float
+        ``(xmin, ymin, xmax, ymax)``.
+    """
     if not ctx.outline:
         raise InvariantViolation(("empty outline: no envelope can be defined",))
     xs = [point[0] for point in ctx.outline]
@@ -243,6 +274,17 @@ def _check_admissible_envelope(
     what is actually an infeasible program. The Farkas certificate is also
     unusable in this case: the infeasibility comes from no row of ``A``, so
     the auxiliary problem has no solution either.
+
+    Parameters
+    ----------
+    min_width
+        Regulatory minimum width.
+    width
+        Width of the envelope.
+    height
+        Height of the envelope.
+    rooms
+        Identifiers of the rooms, for the error.
 
     Raises
     ------
@@ -326,7 +368,17 @@ def build_polytope(order: RelativeOrder, ctx: Context) -> Polytope:
     origins: list[str] = []
 
     def _add(row_terms: dict[str, float], bound: float, origin: str) -> None:
-        """Add a row ``A x <= b`` and its origin label."""
+        """Add a row ``A x <= b`` and its origin label.
+
+        Parameters
+        ----------
+        row_terms
+            Coefficient of each variable, by name.
+        bound
+            Right-hand side ``b``.
+        origin
+            Label of the row, used to translate duals and certificates.
+        """
         row = len(origins)
         for name, coefficient in row_terms.items():
             lines.append(row)
@@ -389,7 +441,18 @@ def build_polytope(order: RelativeOrder, ctx: Context) -> Polytope:
 
 
 def _decision_index(room_ids: tuple[str, ...]) -> dict[str, int]:
-    """Columns ``<room>.<field>``: rooms in the given order, fields in :data:`FIELDS` order."""
+    """Columns ``<room>.<field>``: rooms in the given order, fields in :data:`FIELDS` order.
+
+    Parameters
+    ----------
+    room_ids
+        Room identifiers, in column order.
+
+    Returns
+    -------
+    dict of str to int
+        Column of each ``<room>.<field>`` variable.
+    """
     return {
         f"{room}.{field}": 4 * rank + offset
         for rank, room in enumerate(room_ids)

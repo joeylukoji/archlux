@@ -31,7 +31,26 @@ def paired_bootstrap(
     n_replications: int = 9999,
     alpha: float = 0.05,
 ) -> Interval:
-    """Bootstrap confidence interval on the mean of paired differences."""
+    """Bootstrap confidence interval on the mean of paired differences.
+
+    Parameters
+    ----------
+    a
+        First sample.
+    b
+        Second sample, paired with ``a``.
+    seed
+        Random seed.
+    n_replications
+        Number of bootstrap replications.
+    alpha
+        Error level of the interval.
+
+    Returns
+    -------
+    Interval
+        Mean paired difference and its ``1 - alpha`` interval.
+    """
     if len(a) != len(b) or len(a) < 1:
         raise InvariantViolation(("a and b must have the same length >= 1",))
     if n_replications < 1:
@@ -53,6 +72,17 @@ def tost(
     alpha: float = 0.05,
 ) -> tuple[bool, float]:
     """Equivalence TOST on the mean of paired differences.
+
+    Parameters
+    ----------
+    a
+        First sample.
+    b
+        Second sample, paired with ``a``.
+    delta
+        Equivalence margin, positive.
+    alpha
+        Error level.
 
     Returns
     -------
@@ -146,7 +176,24 @@ def power(
     n: int,
     alpha: float = 0.05,
 ) -> float:
-    """Approximate power of a two-sided one-sample t-test."""
+    """Approximate power of a two-sided one-sample t-test.
+
+    Parameters
+    ----------
+    effect
+        Effect size, in the unit of the data.
+    sigma
+        Standard deviation, positive.
+    n
+        Sample size.
+    alpha
+        Error level.
+
+    Returns
+    -------
+    float
+        Approximate power, in ``[0, 1]``.
+    """
     if n < 2:
         raise InvariantViolation(("n must be >= 2",))
     if sigma <= 0.0:

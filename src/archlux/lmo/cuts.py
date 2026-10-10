@@ -50,6 +50,7 @@ Step-by-step derivation, use cases and DOI: ``docs/formulas/area-cuts.md``.
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -61,6 +62,7 @@ import numpy as np
 from scipy import sparse
 
 from archlux._deprecation import renamed_parameters
+from archlux._log import event
 from archlux.arrays import FloatVector
 from archlux.errors import InvariantViolation
 from archlux.lmo.solver import solve
@@ -93,7 +95,20 @@ leave it below; rooms that meet their minimum are never pushed by the margin."""
 
 
 def _target(min_area: float, margin: float = AREA_TARGET_MARGIN_M2) -> float:
-    """Area the cuts aim at: the minimum plus a margin larger than the LP noise."""
+    """Area the cuts aim at: the minimum plus a margin larger than the LP noise.
+
+    Parameters
+    ----------
+    min_area
+        Minimum area, in square metres.
+    margin
+        Margin added above the minimum, in square metres.
+
+    Returns
+    -------
+    float
+        ``min_area + margin``.
+    """
     return min_area + margin
 
 
@@ -114,12 +129,43 @@ def _hyperbola_support_points(
 
     The tangents at these points form the initial outer approximation (Kelley, 1960):
     the ends of the feasible arc and the square, if it fits.
+
+    Parameters
+    ----------
+    min_area
+        Minimum area ``a_min``.
+    w_min
+        Lower bound of the width.
+    w_max
+        Upper bound of the width.
+    h_min
+        Lower bound of the height.
+    h_max
+        Upper bound of the height.
+
+    Returns
+    -------
+    tuple of tuple of float
+        Distinct ``(w, h)`` points of ``w h = a_min`` inside the bounds box.
     """
     points: list[tuple[float, float]] = []
     side = sqrt(min_area)
 
     def _in_box(width: float, height: float) -> bool:
-        """Say whether the pair ``(width, height)`` fits within the LP bounds."""
+        """Say whether the pair ``(width, height)`` fits within the LP bounds.
+
+        Parameters
+        ----------
+        width
+            Candidate width.
+        height
+            Candidate height.
+
+        Returns
+        -------
+        bool
+            ``True`` when both lie inside the bounds box, up to ``_BOUND_TOLERANCE``.
+        """
         return (
             w_min - _BOUND_TOLERANCE <= width <= w_max + _BOUND_TOLERANCE
             and h_min - _BOUND_TOLERANCE <= height <= h_max + _BOUND_TOLERANCE
@@ -145,13 +191,43 @@ def _hyperbola_support_points(
 def _minimum_areas(
     ctx: Context, rooms: tuple[Room, ...], minima: Mapping[str, float] | None
 ) -> dict[str, float]:
-    """Minimum area of each room: ``minima`` if it names the room, else its type's."""
+    """Minimum area of each room: ``minima`` if it names the room, else its type's.
+
+    Parameters
+    ----------
+    ctx
+        Context providing the regulation.
+    rooms
+        Rooms of the plan.
+    minima
+        Per-room overrides, or ``None``.
+
+    Returns
+    -------
+    dict of str to float
+        Minimum area of each room, by identifier.
+    """
     overrides = minima or {}
     return {room.id: overrides.get(room.id, ctx.regulation.min_area(room.type)) for room in rooms}
 
 
 def _initial_cuts(poly: Polytope, need: Mapping[str, float], rooms: tuple[Room, ...]) -> list[Cut]:
-    """Envelope tangents, before the first solve."""
+    """Envelope tangents, before the first solve.
+
+    Parameters
+    ----------
+    poly
+        Polytope providing the bounds and index.
+    need
+        Area each room must reach, by identifier.
+    rooms
+        Rooms of the plan.
+
+    Returns
+    -------
+    list of Cut
+        Tangents at the support points, before the first solve.
+    """
     cuts: list[Cut] = []
     for room in rooms:
         threshold = need[room.id]
@@ -293,7 +369,24 @@ def _short_of_area(
     need: Mapping[str, float],
     rooms: tuple[Room, ...],
 ) -> tuple[str, ...]:
-    """Rooms whose ``w h`` is strictly below ``need``, sorted."""
+    """Rooms whose ``w h`` is strictly below ``need``, sorted.
+
+    Parameters
+    ----------
+    x
+        Current decision vector.
+    poly
+        Polytope providing the index.
+    need
+        Area each room must reach, by identifier.
+    rooms
+        Rooms of the plan.
+
+    Returns
+    -------
+    tuple of str
+        Identifiers of the rooms below their area, sorted.
+    """
     vector = np.asarray(x, dtype=float)
     violated: list[str] = []
     for room in rooms:
@@ -320,6 +413,29 @@ def _target_on_hyperbola(
 
     If the ray leaves through an edge, slide along the arc to the hyperbola–box
     intersection (a real vertex of ``K``, reachable by the simplex).
+
+    Parameters
+    ----------
+    width
+        Current width.
+    height
+        Current height.
+    min_area
+        Minimum area ``a_min``.
+    w_min
+        Lower bound of the width.
+    w_max
+        Upper bound of the width.
+    h_min
+        Lower bound of the height.
+    h_max
+        Upper bound of the height.
+
+    Returns
+    -------
+    tuple of float or None
+        The target ``(w, h)`` on the hyperbola inside the box; ``None`` when the area
+        is already met, an input is not positive, or no such point exists.
     """
     if width <= 0.0 or height <= 0.0 or min_area <= 0.0:
         return None
@@ -353,6 +469,24 @@ def _tighten_bounds(
     approximation: the vertices oscillate on a chord, product ``a − δ²``. Imposing
     ``w ≥ w★``, ``h ≥ h★`` forces the next vertex to respect the area, and lets GLOP
     readjust ``x, y`` (Kelley, 1960, plus bound tightening).
+
+    Parameters
+    ----------
+    poly
+        Polytope whose bounds are raised.
+    x
+        Current decision vector.
+    need
+        Area each room must reach, by identifier.
+    rooms
+        Rooms of the plan.
+    margin
+        Margin aimed above each minimum, in square metres.
+
+    Returns
+    -------
+    Polytope
+        The polytope with raised lower bounds on ``w`` and ``h``.
     """
     bounds = list(poly.bounds)
     change = False
@@ -388,14 +522,30 @@ def _ids_to_cut(
     rooms: tuple[Room, ...],
     counts: Counter[str],
 ) -> list[str]:
-    """Rooms still below ``min_area`` and under the cut cap."""
+    """Rooms still below ``min_area`` and under the cut cap.
+
+    Parameters
+    ----------
+    x
+        Current decision vector.
+    poly
+        Polytope providing the index.
+    need
+        Area each room must reach, by identifier.
+    rooms
+        Rooms of the plan.
+    counts
+        Number of cuts already added per room.
+
+    Returns
+    -------
+    list of str
+        Rooms still below their area and under the cut cap.
+    """
     remaining: list[str] = []
     for identifier in _short_of_area(x, poly, need, rooms):
         if counts[identifier] >= MAX_CUTS_PER_ROOM:
-            # Lazy: structlog costs up to 0.4 s at import and this path is rare.
-            import structlog
-
-            structlog.get_logger("archlux.lmo.cuts").warning("cut.limit", room=identifier)
+            event("archlux.lmo", "cut.limit", level=logging.WARNING, room=identifier)
             continue
         remaining.append(identifier)
     return remaining
@@ -411,7 +561,25 @@ def _stack_tangents(
     *,
     margin: float = AREA_TARGET_MARGIN_M2,
 ) -> None:
-    """Add one Kelley tangent per remaining room (Kelley, 1960)."""
+    """Add one Kelley tangent per remaining room (Kelley, 1960).
+
+    Parameters
+    ----------
+    remaining
+        Rooms that receive a tangent.
+    x
+        Current decision vector.
+    poly
+        Polytope providing the index.
+    need
+        Area each room must reach, by identifier.
+    cuts
+        Cuts, extended in place.
+    counts
+        Cuts per room, updated in place.
+    margin
+        Margin aimed above each minimum, in square metres.
+    """
     for identifier in remaining:
         width = float(x[poly.index[f"{identifier}.w"]])
         height = float(x[poly.index[f"{identifier}.h"]])
@@ -490,7 +658,24 @@ def solve_with_areas(
 def _meets_areas(
     solution: LPSolution, poly: Polytope, need: Mapping[str, float], rooms: tuple[Room, ...]
 ) -> bool:
-    """An optimal point inside the polytope (up to SNAP_M) with no area in deficit."""
+    """An optimal point inside the polytope (up to SNAP_M) with no area in deficit.
+
+    Parameters
+    ----------
+    solution
+        LP solution to check.
+    poly
+        Polytope the point must lie in.
+    need
+        Area each room must reach, by identifier.
+    rooms
+        Rooms of the plan.
+
+    Returns
+    -------
+    bool
+        ``True`` for an optimal point inside the polytope with no area in deficit.
+    """
     return (
         solution.status == "optimal"
         and not _short_of_area(solution.x, poly, need, rooms)
@@ -511,6 +696,25 @@ def _tighten_if_short(
     """One attempt to satisfy the minima by tightening bounds instead of a Kelley cut.
 
     Extracted from :func:`_solve_with_area_cuts` (PLAN.md phase 4, block 4).
+
+    Parameters
+    ----------
+    domain
+        Current domain.
+    solution
+        Last LP solution.
+    c
+        Objective vector.
+    need
+        Area each room must reach, by identifier.
+    rooms
+        Rooms of the plan.
+    cuts
+        Cuts in force.
+    duals
+        Whether to compute duals.
+    margin
+        Margin aimed above each minimum, in square metres.
 
     Returns
     -------
@@ -537,7 +741,30 @@ def _solve_with_area_cuts(
     duals: bool,
     margin: float,
 ) -> LPSolution:
-    """The Kelley loop of :func:`solve_with_areas`, aiming ``margin`` above minima."""
+    """The Kelley loop of :func:`solve_with_areas`, aiming ``margin`` above minima.
+
+    Parameters
+    ----------
+    poly
+        Linear domain.
+    c
+        Objective vector.
+    need
+        Area each room must reach, by identifier.
+    rooms
+        Rooms of the plan.
+    start
+        Warm-start point, or ``None``.
+    duals
+        Whether to compute duals.
+    margin
+        Margin aimed above each minimum, in square metres.
+
+    Returns
+    -------
+    LPSolution
+        The solution once every area is met, the loop gives up, or the LP fails.
+    """
     domain = poly
     cuts: list[Cut] = _initial_cuts(domain, need, rooms)
     counts: Counter[str] = Counter()
