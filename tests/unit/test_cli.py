@@ -159,3 +159,51 @@ def test_any_finite_orientation_is_accepted_modulo_360(
     command: str, degrees: str, tmp_path: Path
 ) -> None:
     assert main([command, _write(VALID, tmp_path), "--orientation", degrees]) == 0
+
+
+def test_report_says_so_when_there_is_no_certificate(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import archlux.api
+
+    monkeypatch.setattr(archlux.api, "legalize", lambda plan, ctx, **_: plan)
+    assert main(["legalize", _write(VALID, tmp_path), "--report"]) == 0
+    assert "no certificate" in capsys.readouterr().out
+
+
+def test_a_missing_file_is_named_plainly(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    missing = tmp_path / "absent.json"
+    assert main(["verify", str(missing)]) == 2
+    err = capsys.readouterr().err
+    assert f"{missing}: no such file" in err
+    assert "Errno" not in err
+
+
+def test_a_missing_field_is_named_with_its_file(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    broken = tmp_path / "broken.json"
+    broken.write_text(json.dumps({"schema": "2", "rooms": []}), encoding="utf-8")
+    assert main(["verify", str(broken)]) == 2
+    err = capsys.readouterr().err
+    assert f"{broken}: missing field 'walls'" in err
+    assert "invariant violated" not in err
+
+
+def test_output_may_overwrite_the_input_file(tmp_path: Path) -> None:
+    path = _write(OVERLAPPING, tmp_path)
+    assert main(["legalize", path, "--min-width", "0.9", "--tiling", "-o", path]) == 0
+    assert main(["verify", path, "--min-width", "0.9"]) == 0
+
+
+def test_output_in_a_missing_directory_is_a_message_and_exit_two(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "no" / "such" / "fixed.json"
+    argv = ["legalize", _write(OVERLAPPING, tmp_path), "--min-width", "0.9", "-o", str(out)]
+    assert main(argv) == 2
+    err = capsys.readouterr().err
+    assert f"{out}: no such file or directory" in err
+    assert "Errno" not in err

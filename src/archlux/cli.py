@@ -23,19 +23,20 @@ error (unreadable file, rejected input, no valid plan found).
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import sys
 from collections.abc import Sequence
 
-from archlux.errors import ArchluxError
+from archlux.errors import ArchluxError, InvariantViolation
 from archlux.tolerances import SNAP_M
 from archlux.types import Context, GeometricProof, Orientation, Plan, Regulation, Structure
 
 __all__ = ["main"]
 
 
-class _OptionError(Exception):
-    """An option that the plan contradicts (exit code 2)."""
+class _InputError(Exception):
+    """A plan file or an option the command line rejects (exit code 2)."""
 
 
 def _finite(text: str) -> float:
@@ -110,16 +111,16 @@ def _check_min_areas(plan: Plan, min_areas: list[tuple[str, float]]) -> None:
 
     Raises
     ------
-    _OptionError
+    _InputError
         A type is repeated, or no room of the plan has it.
     """
     known = sorted({room.type for room in plan.rooms})
     seen: set[str] = set()
     for room_type, _ in min_areas:
         if room_type in seen:
-            raise _OptionError(f"--min-area: type {room_type!r} given twice")
+            raise _InputError(f"--min-area: type {room_type!r} given twice")
         if room_type not in known:
-            raise _OptionError(
+            raise _InputError(
                 f"--min-area: no room of type {room_type!r} in the plan; "
                 f"its types are {', '.join(known)}"
             )
@@ -288,9 +289,63 @@ def _legalize(plan: Plan, ctx: Context, args: argparse.Namespace) -> int:
     if args.svg:
         with open(args.svg, "w", encoding="utf-8") as stream:
             stream.write(render_svg(fixed, outline=plan.outline, walls=fixed.walls))
-    if args.report and fixed.certificate is not None:
-        print(_describe(fixed.certificate.geometry, _narrow_rooms(fixed, args.min_width)))
+    if args.report:
+        certificate = fixed.certificate
+        print(
+            "no certificate: the legalized plan carries none"
+            if certificate is None
+            else _describe(certificate.geometry, _narrow_rooms(fixed, args.min_width))
+        )
     return 0
+
+
+def _read(path: str) -> Plan:
+    """Read the plan file, naming the file and the field in an error.
+
+    Parameters
+    ----------
+    path : str
+        The plan file.
+
+    Returns
+    -------
+    Plan
+        The plan.
+
+    Raises
+    ------
+    _InputError
+        The file is not a valid plan.
+    """
+    try:
+        return Plan.from_json(path)
+    except InvariantViolation as error:
+        cause = error.__cause__
+        if isinstance(cause, KeyError):
+            raise _InputError(f"{path}: missing field {cause.args[0]!r}") from error
+        if isinstance(cause, (TypeError, ValueError)) and not isinstance(
+            cause, (json.JSONDecodeError, UnicodeDecodeError)
+        ):
+            raise _InputError(f"{path}: not a valid plan: {cause}") from error
+        raise _InputError("; ".join(error.violations)) from error
+
+
+def _message(error: Exception) -> str:
+    """Plain-text message of an error, without errno codes.
+
+    Parameters
+    ----------
+    error : Exception
+        The error to report.
+
+    Returns
+    -------
+    str
+        ``file: reason`` for a file-system error, the error's own text otherwise.
+    """
+    if isinstance(error, OSError) and error.filename and error.strerror:
+        return f"{error.filename}: {error.strerror.lower()}"
+    return str(error)
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -306,7 +361,7 @@ def _run(args: argparse.Namespace) -> int:
     int
         The exit code.
     """
-    plan = Plan.from_json(args.plan)
+    plan = _read(args.plan)
     _check_min_areas(plan, args.min_area)
     ctx = _context(plan, args)
     if args.command == "legalize":
@@ -344,6 +399,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         return stop.code if isinstance(stop.code, int) else 2
     try:
         return _run(args)
-    except (ArchluxError, OSError, _OptionError) as error:
-        print(f"archlux: error: {error}", file=sys.stderr)
+    except (ArchluxError, OSError, _InputError) as error:
+        print(f"archlux: error: {_message(error)}", file=sys.stderr)
         return 2
