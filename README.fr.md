@@ -72,6 +72,10 @@ Code de sortie 0 : valide (ou faisable) ; 1 : invalide (ou infaisable) ; 2 : err
 vérifiées avant tout calcul (voir le
 [tutoriel en ligne de commande](docs/tutorials/command-line.fr.md)).
 
+Pour découvrir toute la boucle en 10 minutes (lire, vérifier, corriger selon la
+réglementation française, rapporter, dessiner, exporter) : le notebook
+[`examples/ten_minutes.ipynb`](examples/ten_minutes.ipynb), exécuté en CI.
+
 > **Un plan produit par ce système est une proposition, jamais un document de projet.
 > La responsabilité de conception et de signature demeure celle d'un professionnel
 > habilité.**

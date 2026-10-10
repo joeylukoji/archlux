@@ -6,6 +6,9 @@ Install the core (without PyTorch):
 pip install archlux
 ```
 
+In a hurry? The [10-minute notebook](https://github.com/joeylukoji/archlux/blob/main/examples/ten_minutes.ipynb) runs the whole loop on a shipped example:
+read, check, repair under the French regulation, report, draw, export.
+
 ## One plan, one context, one repair
 
 The envelope and the rooms below are those of the published test corpus

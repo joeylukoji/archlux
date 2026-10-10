@@ -6,6 +6,10 @@ Installer le noyau (sans PyTorch) :
 pip install archlux
 ```
 
+Pressé ? Le [notebook « 10 minutes »](https://github.com/joeylukoji/archlux/blob/main/examples/ten_minutes.ipynb) parcourt toute la boucle sur un exemple
+livré : lire, vérifier, corriger selon la réglementation française, rapporter, dessiner,
+exporter.
+
 ## Un plan, un contexte, une correction
 
 L'enveloppe et les pièces ci-dessous sont celles du corpus de tests publié
