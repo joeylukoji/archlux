@@ -42,9 +42,14 @@ def _plan() -> Plan:
     )
 
 
+_ROOTED = r"^#\d+=IFC(?!PROPERTYSINGLEVALUE)\w+\('([^']*)'"
+"""First string argument of an entity, its GlobalId when it is an ``IfcRoot``. A single
+property value opens with its ``Name`` (``'LoadBearing'``), not a GlobalId."""
+
+
 def test_every_global_id_is_ifc_base64_and_unique(tmp_path: Path) -> None:
     to_ifc(_plan(), tmp_path / "plan.ifc", validate=True)
-    ids = re.findall(r"^#\d+=IFC\w+\('([^']*)'", (tmp_path / "plan.ifc").read_text(), re.M)
+    ids = re.findall(_ROOTED, (tmp_path / "plan.ifc").read_text(), re.M)
     assert ids and all(_GUID.match(i) for i in ids), ids
     assert len(ids) == len(set(ids))
 
@@ -113,7 +118,7 @@ def test_two_different_plans_share_no_global_id(tmp_path: Path) -> None:
     for k, plan in enumerate((first, second, first)):
         to_ifc(plan, tmp_path / f"{k}.ifc", validate=True)
         text = (tmp_path / f"{k}.ifc").read_text()
-        ids.append(set(re.findall(r"^#\d+=IFC\w+\('([^']*)'", text, re.M)))
+        ids.append(set(re.findall(_ROOTED, text, re.M)))
     assert not ids[0] & ids[1]
     assert ids[0] == ids[2]  # deterministic for one plan
 
@@ -127,8 +132,10 @@ def test_the_global_ids_do_not_depend_on_class_or_field_names(tmp_path: Path) ->
     assert project.group(1) == "0Iie9ISb$ViPPopaAp6Tto"
 
 
-_GOLDEN_SHA256 = "230697e34fe521d96ed76cdc5188ac4dd2aaa2f543785d2bf90595d0364e913d"
-"""SHA-256 of the golden export below, package version replaced by ``<version>``."""
+_GOLDEN_SHA256 = "e09d887805a56aee2ec7f03100ab783b0bc983881483f785e3a11c2ccd780d69"
+"""SHA-256 of the golden export below, package version replaced by ``<version>``. Changed
+on purpose by PLAN.md 5.1: every wall now carries ``Pset_WallCommon.LoadBearing``, so
+``Plan.from_ifc`` reads the structure back."""
 
 
 def test_the_export_of_a_certified_plan_is_byte_identical(tmp_path: Path) -> None:

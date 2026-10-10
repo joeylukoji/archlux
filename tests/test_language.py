@@ -324,6 +324,10 @@ MIGRATED: tuple[str, ...] = (
     "tests/unit/test_dxf_import.py",
     "docs/tutorials/dxf-import.md",
     "tests/unit/test_regulations.py",
+    "src/archlux/io/ifc_io.py",
+    "src/archlux/io/_footprint.py",
+    "tests/unit/test_ifc_import.py",
+    "tests/docs/test_notebook.py",
 )
 """Repository-relative paths that must contain no French prose."""
 

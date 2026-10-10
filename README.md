@@ -270,6 +270,7 @@ regulation comes from the options.
 ```text
 archlux verify plan.json --min-width 0.90 --min-area bedroom=9
 archlux legalize plan.json --tiling --min-width 0.90 -o fixed.json --svg fixed.svg --report
+archlux legalize plan.json --preset fr/new-collective-housing --report --lang fr --compare-svg compare.svg
 archlux feasible plan.json --min-area bedroom=9
 ```
 
@@ -670,6 +671,7 @@ The documentation site is still in French (translation: PLAN.md, track E22).
 |---|---|
 | [Gallery](docs/gallery/) | Worked examples |
 | [Tutorials](docs/tutorials/) | Guided walkthroughs |
+| [10-minute notebook](examples/ten_minutes.ipynb) | The whole loop on a shipped example, run in CI |
 | [Concepts](docs/concepts/) | The why rather than the how |
 | [API reference](docs/reference/) | Signatures |
 | [Limitations](docs/limitations.md) | What the system does not do |

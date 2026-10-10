@@ -1,4 +1,4 @@
-# Import a DXF drawing
+# Import a DXF or IFC drawing
 
 `Plan.from_dxf` reads a plan drawn in a CAD program, and `Structure.from_dxf` its
 load-bearing structure. Both need the extra `cad`: `pip install "archlux[cad]"`.
@@ -60,6 +60,32 @@ assert fixed.certificate is not None and fixed.certificate.geometry.valid
 Rooms are named `<type>-<n>`, numbered bottom to top, then left to right. The outline is
 the rooms' bounding box unless `outline_layer` names a layer holding one closed
 polyline.
+
+## From an IFC model
+
+`Plan.from_ifc` and `Structure.from_ifc` read one floor of a BIM model (extra `bim`:
+`pip install "archlux[bim]"`). Without a geometry kernel, only footprints computable
+exactly are accepted: a space whose `FootPrint` polyline, or whose vertical `Body`
+extrusion of a rectangle or straight profile, is an axis-aligned rectangle once placed.
+The type of a room is its `LongName`, else its `ObjectType`; its identifier is its
+`Name` when all are distinct. A wall is load-bearing when `Pset_WallCommon.LoadBearing`
+is true, and needs an `Axis` polyline; columns are `IfcColumn` origins. A model with
+spaces on several storeys needs `storey="..."`. Units come from the project.
+
+`Plan.to_ifc` writes `LoadBearing` on every wall, so an exported plan reads back with
+its structure:
+
+```python
+with_walls = ax.Plan.from_dxf("flat.dxf", load_bearing_layer="LOAD_BEARING")
+with_walls.to_ifc("flat.ifc")
+again = ax.Plan.from_ifc("flat.ifc")
+assert again.rooms == with_walls.rooms
+print([(wall.id, wall.load_bearing) for wall in ax.Structure.from_ifc("flat.ifc").load_bearing_walls])
+```
+
+```text
+[('load-bearing-1', True)]
+```
 
 ## From the command line
 

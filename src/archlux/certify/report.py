@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux._version import __version__
+from archlux.certify.repair import render_repair
 from archlux.types import INDICATOR_SENSE, Certificate, GeometricProof, Manifest, PerformanceBound
 
-__all__ = ["render"]
+__all__ = ["render", "render_repair"]
 
 _OUT_OF_SCOPE = (
     "Summer comfort, technical systems, materials: out of scope "

@@ -1,4 +1,4 @@
-# Importer un dessin DXF
+# Importer un dessin DXF ou IFC
 
 `Plan.from_dxf` lit un plan dessiné dans un logiciel de CAO, et `Structure.from_dxf` sa
 structure porteuse. Les deux demandent l'extra `cad` : `pip install "archlux[cad]"`.
@@ -62,6 +62,33 @@ assert fixed.certificate is not None and fixed.certificate.geometry.valid
 Les pièces sont nommées `<type>-<n>`, numérotées de bas en haut, puis de gauche à
 droite. Le contour est la boîte englobante des pièces, sauf si `outline_layer` désigne
 un calque portant une seule polyligne fermée.
+
+## Depuis une maquette IFC
+
+`Plan.from_ifc` et `Structure.from_ifc` lisent un niveau d'une maquette BIM (extra
+`bim` : `pip install "archlux[bim]"`). Sans noyau géométrique, seules les emprises
+calculables exactement sont acceptées : un espace dont la polyligne `FootPrint`, ou
+l'extrusion verticale `Body` d'un rectangle ou d'un profil droit, est un rectangle
+aligné sur les axes une fois placé. Le type d'une pièce est son `LongName`, sinon son
+`ObjectType` ; son identifiant est son `Name` quand tous sont distincts. Un mur est
+porteur quand `Pset_WallCommon.LoadBearing` est vrai, et doit avoir une polyligne
+`Axis` ; les poteaux sont les origines des `IfcColumn`. Une maquette avec des espaces
+sur plusieurs niveaux demande `storey="..."`. Les unités viennent du projet.
+
+`Plan.to_ifc` écrit `LoadBearing` sur chaque mur : un plan exporté se relit avec sa
+structure :
+
+```python
+with_walls = ax.Plan.from_dxf("flat.dxf", load_bearing_layer="LOAD_BEARING")
+with_walls.to_ifc("flat.ifc")
+again = ax.Plan.from_ifc("flat.ifc")
+assert again.rooms == with_walls.rooms
+print([(wall.id, wall.load_bearing) for wall in ax.Structure.from_ifc("flat.ifc").load_bearing_walls])
+```
+
+```text
+[('load-bearing-1', True)]
+```
 
 ## En ligne de commande
 

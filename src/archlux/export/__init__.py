@@ -10,12 +10,14 @@ from archlux.export.dxf import to_dxf
 from archlux.export.ifc import ExportReport, to_ifc
 from archlux.export.pathologies import PathologyDiagnostic, diagnose
 from archlux.export.survival import survival_rate
+from archlux.export.svg import compare as compare_svg
 from archlux.export.svg import render as render_svg
 from archlux.export.wilson import wilson_interval
 
 __all__ = [
     "ExportReport",
     "PathologyDiagnostic",
+    "compare_svg",
     "diagnose",
     "render_svg",
     "survival_rate",

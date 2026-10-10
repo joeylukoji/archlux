@@ -43,8 +43,24 @@ archlux verify fixed.json --min-width 0.90 --min-area bedroom=9
 ```
 
 `-o` écrit le plan corrigé (il peut écraser le fichier d'entrée), `--svg` un dessin,
-et `--report` affiche le même verdict pour le résultat, ou signale qu'il ne porte aucun
-certificat. `--tiling` ferme aussi les trous : les pièces pavent le contour.
+et `--compare-svg` le plan avant et après, côte à côte à la même échelle. `--report`
+affiche la correction pièce par pièce : la taille de chaque pièce avant et après, sa
+surface minimale et la marge restante, le déplacement de ses murs, le contrôle des
+largeurs, ce qui a limité la correction et, avec `--preset`, ce que la réglementation ne
+vérifie pas. `--lang fr` l'affiche en français. `--tiling` ferme aussi les trous : les
+pièces pavent le contour.
+
+```text
+PLAN REPAIR                                archlux 0.10.0
+
+Verdict: valid (exact check)
+Largest wall move: 0.50 m (living)
+
+ROOMS
+room                     before                  after                     minimum     margin    moved
+bed (bedroom)            3.50 x 3.00 = 10.50 m²  3.00 x 3.00 = 9.00 m²     7.00 m²   +2.00 m²   0.50 m
+living (living_room)     2.50 x 3.00 = 7.50 m²   3.00 x 3.00 = 9.00 m²     9.00 m²   +0.00 m²   0.50 m
+```
 
 ## Demander si le programme est faisable
 

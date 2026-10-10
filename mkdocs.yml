@@ -52,7 +52,7 @@ plugins:
             Calibrate a surrogate: Calibrer un substitut
             Train a surrogate: Entraîner un substitut
             Command line: Ligne de commande
-            Import a DXF drawing: Importer un dessin DXF
+            Import a DXF or IFC drawing: Importer un dessin DXF ou IFC
             Regulation presets: Préréglages réglementaires
             Concepts: Concepts
             The two guarantees: Les deux garanties
@@ -112,7 +112,7 @@ nav:
       - Calibrate a surrogate: tutorials/calibrate-a-surrogate.md
       - Train a surrogate: tutorials/train-a-surrogate.md
       - Command line: tutorials/command-line.md
-      - Import a DXF drawing: tutorials/dxf-import.md
+      - Import a DXF or IFC drawing: tutorials/dxf-import.md
       - Regulation presets: tutorials/regulation-presets.md
   - Concepts:
       - The two guarantees: concepts/two-guarantees.md
