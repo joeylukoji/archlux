@@ -10,7 +10,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ### Added — PLAN.md 5.3: examples
 
-- New `examples/`: three plans (`t2.json`, a small overlap; `t3_load_bearing.json`, a load-bearing wall crossed and a gap; `generated.json`, boxes overlapping and leaving holes as a generative model outputs them) and `legalize_examples.py` (18 lines), which legalizes all three.
+- New `examples/`: three plans (`t2.json`, a small overlap; `t3_load_bearing.json`, a load-bearing wall crossed and a gap; `generated.json`, boxes overlapping and leaving holes as a generative model outputs them) and `legalize_examples.py` (20 lines), which legalizes all three. CI type-checks `examples/` (`mypy src/ examples/`, and `files` in `[tool.mypy]`); the script guards `certificate is not None`, which mypy used to reject (PR #37 review).
 - New `tests/docs/test_examples_dir.py` runs the script and the command line on each example in CI.
 
 ### Added — PLAN.md 5.2: command line

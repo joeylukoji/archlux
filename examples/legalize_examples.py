@@ -15,5 +15,6 @@ for name in ("t2", "t3_load_bearing", "generated"):
     walls = tuple(w for w in plan.walls if w.load_bearing)
     ctx = ax.Context(ax.Structure(walls), ax.Orientation(0.0), regulation, outline=plan.outline)
     fixed = ax.legalize(plan, ctx, tiling=True)
+    assert fixed.certificate is not None  # legalize always certifies what it returns
     proof = fixed.certificate.geometry
     print(f"{name}: valid={proof.valid}, max displacement {proof.max_displacement:.2f} m")
