@@ -19,9 +19,6 @@ not replace a generator that respects the tiling condition. Both figures predate
 load-bearing wall constraints of batch 1.1 and will be measured again (PLAN.md, J7 and
 J8).
 
-The project is in development (`0.10.0.dev0`, no release yet). The public API is still
-partly French; it is being migrated to English ([ADR 0001](docs/adr/0001-english-first.md),
-[glossary](docs/glossary.md)).
 
 ---
 
