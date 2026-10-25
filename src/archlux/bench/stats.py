@@ -11,7 +11,7 @@ from scipy import stats as scipy_stats
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 
-__all__ = ["Interval", "holm", "paired_bootstrap", "power", "tost"]
+__all__ = ["Interval", "cluster_bootstrap_proportion", "holm", "paired_bootstrap", "power", "tost"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +62,66 @@ def paired_bootstrap(
     means = sample.mean(axis=1)
     lo, hi = np.quantile(means, [alpha / 2.0, 1.0 - alpha / 2.0])
     return Interval(value=float(diffs.mean()), low=float(lo), high=float(hi))
+
+
+def cluster_bootstrap_proportion(
+    successes: Sequence[bool],
+    clusters: Sequence[str],
+    *,
+    seed: int,
+    n_replications: int = 2000,
+    alpha: float = 0.05,
+) -> Interval:
+    """Bootstrap interval on a proportion, resampling **whole clusters**.
+
+    Sixteen corruptions of one dwelling, or eight azimuths of one plan, are not sixteen
+    or eight independent observations. A Wilson interval computed on the rows treats
+    them as such and comes out too narrow. Resampling the clusters (the dwellings, the
+    plans) with replacement keeps the within-cluster correlation inside each replicate.
+
+    Parameters
+    ----------
+    successes : Sequence[bool]
+        One outcome per row.
+    clusters : Sequence[str]
+        Cluster identifier of each row (the statistical unit: dwelling, source plan).
+    seed : int
+        Random seed. Mandatory: an implicit seed is a lost seed.
+    n_replications : int, optional
+        Number of bootstrap replicates.
+    alpha : float, optional
+        Error level of the percentile interval.
+
+    Returns
+    -------
+    Interval
+        Row-level proportion and its ``1 - alpha`` cluster-bootstrap interval.
+
+    Raises
+    ------
+    InvariantViolation
+        Lengths differ, empty sample, or ``n_replications < 1``.
+
+    Complexity
+    ----------
+    ``O(n_replications * k)`` for ``k`` clusters, after an ``O(n)`` grouping.
+    """
+    if len(successes) != len(clusters) or len(successes) < 1:
+        raise InvariantViolation(("successes and clusters must have the same length >= 1",))
+    if n_replications < 1:
+        raise InvariantViolation(("n_replications must be >= 1",))
+    names = sorted(set(clusters))
+    index = {name: i for i, name in enumerate(names)}
+    hits = np.zeros(len(names))
+    sizes = np.zeros(len(names))
+    for ok, name in zip(successes, clusters, strict=True):
+        hits[index[name]] += bool(ok)
+        sizes[index[name]] += 1
+    rng = np.random.default_rng(seed)
+    draws = rng.integers(0, len(names), size=(n_replications, len(names)))
+    rates = hits[draws].sum(axis=1) / sizes[draws].sum(axis=1)
+    lo, hi = np.quantile(rates, [alpha / 2.0, 1.0 - alpha / 2.0])
+    return Interval(value=float(hits.sum() / sizes.sum()), low=float(lo), high=float(hi))
 
 
 def tost(
