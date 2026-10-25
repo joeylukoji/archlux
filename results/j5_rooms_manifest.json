@@ -1,0 +1,288 @@
+{
+ "git": {
+  "commit": "1723a4c2ceb7314e4906d9b77bea6d19d3f183dd",
+  "dirty": true
+ },
+ "manifest": {
+  "version": "0.10.0.dev0",
+  "timestamp": "2026-10-25T18:38:11.516148+00:00",
+  "seed": 17,
+  "data_fingerprint": null,
+  "split": null,
+  "environment": [
+   [
+    "networkx",
+    "3.7"
+   ],
+   [
+    "numpy",
+    "2.5.3"
+   ],
+   [
+    "ortools",
+    "9.15.6755"
+   ],
+   [
+    "python",
+    "3.13.17"
+   ],
+   [
+    "scipy",
+    "1.18.1"
+   ],
+   [
+    "shapely",
+    "2.2.0"
+   ]
+  ],
+  "parameters": [],
+  "model": null
+ },
+ "platform": {
+  "system": "Linux",
+  "machine": "x86_64"
+ },
+ "seed": 17,
+ "command": "python experiments/j5_rooms.py results 400 5",
+ "parameters": {
+  "n_sources": 400,
+  "azimuths": 4,
+  "repetitions": 5,
+  "alpha": 0.1,
+  "policy": "legalize",
+  "fractions": [
+   0.4,
+   0.1,
+   0.25,
+   0.25
+  ],
+  "ensemble_k": 5,
+  "ensemble_pool": 200
+ },
+ "files": [
+  {
+   "path": "results/j5_rooms_raw.csv",
+   "sha256": "ed50db5cb920f726851350a5ffa330407b1deb9e5f96e465741ce054a79cce0f",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j5_ensemble_raw.csv",
+   "sha256": "169339a1a6f9e2bbd5fab869d2a08490cc3a5a723c8b84decaf52f2f8a092771",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j5_rooms.md",
+   "sha256": "280972e49e830e8b4a1af221b808c2fbd9eaac0699f837f94dcc208afdf02378",
+   "role": "output",
+   "redistributable": true
+  }
+ ],
+ "runs": {
+  "rooms": [
+   {
+    "repetition": 0,
+    "split_seed": 1252064497,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "affine_scale": 1.246658468011591,
+    "affine_offset": 13.29128124422626,
+    "validation_room_mae": 4.206525360423949,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_rooms": 1600,
+    "q_passive": 73.32038406084588,
+    "q_policy": 167.35929537058703,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "repetition": 1,
+    "split_seed": 973947618,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "affine_scale": 1.2521174523342231,
+    "affine_offset": 13.169747979617291,
+    "validation_room_mae": 4.3021249016995755,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_rooms": 1600,
+    "q_passive": 162.5147215201978,
+    "q_policy": 138.592648152319,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "repetition": 2,
+    "split_seed": 3437772283,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "affine_scale": 1.2524553445728508,
+    "affine_offset": 13.166605496802866,
+    "validation_room_mae": 4.535216088886276,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_rooms": 1600,
+    "q_passive": 104.39720619489222,
+    "q_policy": 161.10639444791192,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "repetition": 3,
+    "split_seed": 3070598075,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "affine_scale": 1.2484024537634166,
+    "affine_offset": 13.253220686938329,
+    "validation_room_mae": 4.367418005738328,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_rooms": 1600,
+    "q_passive": 116.15501797277489,
+    "q_policy": 166.88641942815408,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "repetition": 4,
+    "split_seed": 3641677283,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "affine_scale": 1.2554606926702068,
+    "affine_offset": 13.082298127655005,
+    "validation_room_mae": 4.422606415547375,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_rooms": 1600,
+    "q_passive": 87.05445194150555,
+    "q_policy": 188.5955985253936,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   }
+  ],
+  "ensemble": [
+   {
+    "validation_mae_raw": 1.0890225248785654,
+    "validation_mae_affine": 1.084211989803778,
+    "model": "affine",
+    "affine_scale": 1.003857275760467,
+    "affine_offset": -0.5429148757833596,
+    "repetition": 0,
+    "split_seed": 1252064497,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_variants": 400,
+    "q_passive": 2.2096980657603185,
+    "q_policy": 7.460180278973203,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "validation_mae_raw": 0.9221445724130032,
+    "validation_mae_affine": 0.9244576110149769,
+    "model": "raw",
+    "affine_scale": 1.0026795482924968,
+    "affine_offset": -0.4168743132066415,
+    "repetition": 1,
+    "split_seed": 973947618,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_variants": 400,
+    "q_passive": 2.5191844973194986,
+    "q_policy": 6.892071341870519,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "validation_mae_raw": 1.3191832270413966,
+    "validation_mae_affine": 1.2887755971582708,
+    "model": "affine",
+    "affine_scale": 1.0033398141071102,
+    "affine_offset": -0.47219764586241697,
+    "repetition": 2,
+    "split_seed": 3437772283,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_variants": 400,
+    "q_passive": 1.9730883759317268,
+    "q_policy": 6.450893317757325,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "validation_mae_raw": 1.1191540510697828,
+    "validation_mae_affine": 1.1531277659635344,
+    "model": "raw",
+    "affine_scale": 1.0050357619480283,
+    "affine_offset": -0.7226841652578005,
+    "repetition": 3,
+    "split_seed": 3070598075,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_variants": 400,
+    "q_passive": 1.9050986247390846,
+    "q_policy": 6.308633367519341,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   },
+   {
+    "validation_mae_raw": 1.2627247124503385,
+    "validation_mae_affine": 1.2583849862862841,
+    "model": "affine",
+    "affine_scale": 1.0052783307487752,
+    "affine_offset": -0.7982681240319734,
+    "repetition": 4,
+    "split_seed": 3641677283,
+    "n_sources_train": 160,
+    "n_sources_validation": 40,
+    "n_sources_calibration": 100,
+    "n_sources_test": 100,
+    "n_calibration_passive": 50,
+    "n_calibration_policy": 50,
+    "n_test_variants": 400,
+    "q_passive": 1.9969318936655678,
+    "q_policy": 6.340767777992118,
+    "guarantee_passive": "guaranteed: marginal, exchangeable sources",
+    "guarantee_passive_on_selected": "not guaranteed: the optimizer selected these plans through the surrogate",
+    "guarantee_policy": "guaranteed: marginal, exchangeable sources, policy frozen before calibration"
+   }
+  ]
+ }
+}

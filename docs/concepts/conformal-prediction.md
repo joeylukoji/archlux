@@ -85,6 +85,19 @@ conformal guarantee holds again for that policy, at the price of wider intervals
 (+21 % here). It holds for that frozen policy only: a policy re-tuned on these scores,
 or a change of surrogate, needs a new calibration.
 
+**Per room and with a varying \(\hat\sigma\)** (`experiments/j5_rooms.py`,
+`results/j5_rooms.md`): 400 typed four-room synthetic plans x 4 azimuths, 5
+repetitions, same reference. Per room (analytic surrogate rescaled per room, one
+calibration room per source): passive 91.1 %, passive on selected **59.2 %**, frozen
+policy 90.1 %. The drop is the same for every room type (58.6-59.7 %): it depends on
+orientation (south passive 79.8 %, policy south 80.8 %), not on the room type. Per plan
+with a bootstrap ensemble of 5 `DenseSurrogate` (\(\hat\sigma\) = spread of the
+members, the first that varies): passive 88.3 %, passive on selected **45.1 %**, frozen
+policy 90.3 %. With a more precise surrogate the selection effect gets larger, and the
+policy calibration still restores the marginal level, not the per-stratum one (policy,
+west 81.4 %, middle \(\hat\sigma\) tercile 81.9 %). Synthetic plans, closed-form
+reference: none of this measures daylight.
+
 **When the guarantee is not available**, the system says so rather than publish the
 nominal level: `bench.selection.guarantee` returns `refused` below
 `minimal_n_conformal(alpha)` and `not guaranteed` for a passive calibrator applied to

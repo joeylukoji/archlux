@@ -142,6 +142,15 @@ def test_the_generation_experiment_runs_on_a_mini_jsonl(
     assert "{'empty union': 1}" in summary
 
 
+def test_the_closed_form_b7_breakdown_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Spec 1.3 / P14: errors by orientation and room type, raw rows published."""
+    _run("j7_sd_groups.py", str(tmp_path), "20", monkeypatch=monkeypatch)
+    summary = (tmp_path / "j7_sd_groups.md").read_text(encoding="utf-8")
+    assert "| room_type | kitchen |" in summary
+    assert "not against simulations" in summary
+    assert (tmp_path / "j7_sd_groups_rooms_raw.csv").stat().st_size > 0
+
+
 def test_the_selection_and_reconciliation_experiments_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -41,6 +41,7 @@ from archlux.export.wilson import wilson_interval
 from archlux.geom.polytope import decision_vector
 from archlux.light.objective import Daylight
 from archlux.light.protocol import Surrogate
+from archlux.light.trust import FiniteDifferenceSurrogate
 from archlux.seeds import derive
 from archlux.types import Context, Orientation, Plan
 from archlux.uq.conformal import conformal_quantile
@@ -158,7 +159,12 @@ def calibrate_q(
 
 
 def configurations(
-    model: Surrogate, reference: Surrogate, q_hat: float, budgets: Sequence[float]
+    model: Surrogate,
+    reference: Surrogate,
+    q_hat: float,
+    budgets: Sequence[float],
+    *,
+    gradient_free: bool = False,
 ) -> dict[str, dict[str, object] | None]:
     """The configurations, as ``legalize`` keyword arguments (``None``: not legalized).
 
@@ -172,6 +178,11 @@ def configurations(
         Passive conformal quantile of ``model``.
     budgets : Sequence[float]
         Displacement budgets, metres.
+    gradient_free : bool, optional
+        Add ``fw_finite_difference``: the same surrogate, its analytic gradient replaced
+        by centred finite differences (:class:`~archlux.light.trust.
+        FiniteDifferenceSurrogate`), no penalty. Same values, no learned direction: it
+        isolates what the closed-form gradient contributes.
 
     Returns
     -------
@@ -192,6 +203,15 @@ def configurations(
             "objective": Daylight(reference, q_hat=0.0, pessimistic=False),
         },
     }
+    if gradient_free:
+        configs["fw_finite_difference"] = {
+            "tiling": True,
+            "objective": Daylight(
+                FiniteDifferenceSurrogate(base=model, target_indicator=model.indicator),
+                q_hat=0.0,
+                pessimistic=False,
+            ),
+        }
     for b in budgets:
         configs[f"fw_surrogate_budget_{b:g}"] = {
             "tiling": True,
