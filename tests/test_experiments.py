@@ -109,3 +109,13 @@ def test_the_generation_experiment_runs_on_a_mini_jsonl(
     summary = (tmp_path / "results" / "j8_mini.md").read_text(encoding="utf-8")
     assert summary.startswith("# Milestone 8")
     assert "{'empty union': 1}" in summary
+
+
+def test_the_selection_and_reconciliation_experiments_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Spec 1.4 / 1.8: small enough for the suite, same code path as the published run."""
+    _run("j5_selection.py", str(tmp_path), "80", "1", monkeypatch=monkeypatch)
+    assert "| policy | all |" in (tmp_path / "j5_selection.md").read_text(encoding="utf-8")
+    assert json.loads((tmp_path / "j5_selection_manifest.json").read_text())["runs"]
+    _run("reconcile.py", str(ROOT / "results"), monkeypatch=monkeypatch)
