@@ -1,0 +1,5 @@
+plans,rules,n,median_predicted_pct,median_reference_pct
+B9 plans,"B9 rules (no structure, no minimum area, 0.5 m)",48,17.2069,9.78315
+B9 plans,"ablation rules (80 % minimum areas, 1.0 m)",48,9.69931,7.24107
+synthetic 2x2 plans (ablation),"ablation rules (wall, 80 % areas, 1.0 m)",240,1.92542,0.861367
+synthetic 2x2 plans (ablation),"B9 rules (no structure, no minimum area, 0.5 m)",240,12.3593,3.96855
