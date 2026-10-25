@@ -152,9 +152,71 @@ the data, is the limiting factor.
 |---|---|
 | WKT → `Plan` loader (Swiss Dwellings / MSD) | `data/loaders.py` (does not exist) |
 | Projection of a WKT opening → `(wall_id, s, relative_width)` | same |
-| Radiance adapter behind `Surrogate` | `light/radiance.py`, `sim` extra |
+| Radiance runs on a glazed corpus | `light/radiance.py` exists (a `Reference`, not a `Surrogate`); no run has been made: the binaries are not installed in CI |
 | Transformer on tokens | `light/learned.py` — today `_charger_torch` always raises |
 | Coverage results on a real corpus | `results/` |
+
+## 7. Surrogate against reference, and how to run Radiance
+
+The code keeps the two apart in the types (`light.reference`):
+
+| | Surrogate | Reference |
+|---|---|---|
+| Protocol | `Surrogate`: `evaluate`, `gradient`, `uncertainty` | `Reference`: `measure` → `ReferenceMeasure` |
+| Returns | a prediction | a value with `unit`, `kind`, `engine`, `parameters` |
+| Shipped | `AnalyticSurrogate`, `SplitFluxOracle`, `DenseSurrogate` | `ClosedFormReference` (`kind="closed_form"`), `RadianceReference` (`kind="physical"`) |
+
+`light.evaluation.evaluate_surrogate` scores a surrogate on **held-out**
+plans only (it raises on any id used for training or tuning): MAE, relative
+error, bias, Pearson and Spearman, each with a bootstrap interval, overall and
+per orientation sector, room type and window configuration. Absolute errors
+are computed only when surrogate and reference share a unit; against Radiance
+(lux) a surrogate trained on the oracle's score is judged by correlation only.
+
+`light.evaluation.compare_before_after` takes the same plans before and after
+optimization and returns, per plan, the predicted gain, the reference gain,
+their gap and the displacement. `summarize_gains(...).claim` is
+`"confirmed"` only when **every** row was measured by a physical reference
+and the mean reference gain is positive; otherwise `"predicted"`. A gain
+measured by the closed-form oracle is `closed_form_only`, never confirmed.
+
+What the repository measures today (`results/j4_before_after.csv`, j4 network,
+16 held-out plans, 45° sectors, reference = oracle): mean predicted gain
+**9.1 %**, mean oracle gain **2.6 %**, so about 70 % of the announced
+gain is the surrogate's own; 9 of the 16 optimized plans are flagged out of
+distribution by `light.ood`. Until a physical reference has been run, a
+figure such as "+17.2 % daylight" must be written **predicted**.
+
+**Out of distribution.** `light.ood.fit_envelope` summarizes the training
+plans in descriptor space (Mahalanobis distance, ridge on the covariance) and
+sets its threshold by the finite-sample conformal quantile of a held-out
+calibration set; `flagged_prediction` attaches the verdict to a prediction.
+**Provenance.** `light.card.SurrogateCard` records the weights fingerprint,
+the training-data fingerprint and ids, the label engine and its parameters,
+the hyperparameters and the held-out metrics, and round-trips through JSON.
+
+**Running Radiance.** Install Radiance 5.4+ so that `oconv`, `rtrace` and
+`gensky` are on `PATH` (packages: `radiance` on Debian/Ubuntu, the NREL
+installers otherwise; `pip install` alone does not provide the binaries).
+Then:
+
+```bash
+python scripts/simulate.py --radiance        # -> results/j4_simulations_radiance.csv
+pytest tests/unit/test_light_reference.py    # runs the integration test
+```
+
+`RadianceReference` builds one closed box per room (opaque partitions,
+reflectances 0.2 / 0.5 / 0.8, glazing transmittance 0.6), cuts the openings of
+the `Glazing` into the room edges they lie on, rotates the plan
+counterclockwise by the azimuth (the convention of `AnalyticSurrogate`), and
+traces a 0.5 m work-plane grid at 0.8 m under one `gensky` sky (default: Bern,
+21 March, noon, clear with sun; `-ab 5 -ad 1024 -as 512 -ar 256 -aa 0.1`). It
+returns the area-weighted mean illuminance in lux and the mean per room. It
+is a **point-in-time illuminance**, not an LM-83 sDA (that needs an annual
+`rfluxmtx` / `dctimestep` run over an EPW file). It refuses, rather than
+returning zero, a plan without openings: the shipped synthetic corpus has
+none, so every row of the `--radiance` run is `not_measured` until a glazed
+corpus (MSD with windows, Swiss Dwellings) is loaded.
 
 **See also:** [Swiss Dwellings](swiss-dwellings.md), [MSD](msd.md),
 [CubiCasa5K](cubicasa.md), [synthetic](synthetic.md),
