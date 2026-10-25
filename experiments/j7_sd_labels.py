@@ -10,6 +10,8 @@ from pathlib import Path
 
 import numpy as np
 
+from archlux.bench.breakdown import breakdown, write_breakdown_rows
+from archlux.bench.breakdown import to_markdown as breakdown_table
 from archlux.data.loaders import (
     DEFAULT_SUN_COLUMN,
     label,
@@ -21,6 +23,7 @@ from archlux.geom.graph import deduce_order
 from archlux.geom.polytope import build_polytope, vectorize
 from archlux.light.analytic import AnalyticSurrogate
 from archlux.light.base import DenseSurrogate
+from archlux.light.evaluation import orientation_sector
 from archlux.light.protocol import Glazing
 from archlux.uq.conformal import ConformalCalibrator
 
@@ -132,6 +135,49 @@ report = (
 )
 Path("results").mkdir(exist_ok=True)
 Path("results/j7_sd_labels.md").write_text(report, encoding="utf-8")
+
+
+def openings_bucket(glazing: Glazing) -> str:
+    """Fenestration group of an apartment, by number of openings."""
+    n = len(glazing.openings)
+    return "0" if n == 0 else "1-2" if n <= 2 else "3-5" if n <= 5 else "6+"
+
+
+def dominant_type(apartment: object) -> str:
+    """Type of the largest room."""
+    rooms = apartment.plan.rooms  # type: ignore[attr-defined]
+    return max(rooms, key=lambda r: r.w * r.h).type
+
+
+# Raw test rows and the B7 breakdown by orientation, room type and glazing (spec 1.3):
+# the published table can then be recomputed from rows, clusters = sites.
+labels_te = {
+    "orientation": [orientation_sector(o.deg) for o in o_te],
+    "dominant_room_type": [dominant_type(a) for a in test],
+    "openings": [openings_bucket(b) for b in b_te],
+}
+sites_te = [a.site_id for a in test]
+preds_te = {
+    "constant": pred_null,
+    "analytic_affine": pred_ana,
+    "dense": pred_net,
+    "dense_glazing": pred_netb,
+}
+write_breakdown_rows(
+    Path("results/j7_sd_labels_raw.csv"),
+    [a.id for a in test],
+    sites_te,
+    preds_te,
+    y_te,
+    labels_te,
+)
+groups = "# B7 breakdown against Swiss Dwellings simulations\n\n"
+groups += f"Test set of `j7_sd_labels.md` ({len(test)} apartments, split by site, seed {SEED}); "
+groups += "intervals resample whole sites. Raw rows: `j7_sd_labels_raw.csv`.\n\n"
+for name, p in preds_te.items():
+    groups += f"## `{name}`\n\n"
+    groups += breakdown_table(breakdown(p, y_te, sites_te, labels_te, seed=SEED)) + "\n"
+Path("results/j7_sd_groups_sd.md").write_text(groups, encoding="utf-8")
 print("\nconstant   :", score(pred_null, y_te))
 print("analytic   :", score(pred_ana, y_te), f"[rescaled {slope:.4f}f{intercept:+.3f}]")
 print("perceptron :", score(pred_net, y_te))

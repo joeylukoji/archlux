@@ -43,24 +43,35 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def git_state(root: Path) -> dict[str, object]:
+def git_state(root: Path, *, ignore: Sequence[Path] = ()) -> dict[str, object]:
     """Commit and cleanliness of the working tree at ``root``.
 
     Parameters
     ----------
     root : Path
         Any directory inside the repository.
+    ignore : Sequence[Path], optional
+        Files whose modification does not count as dirty: the outputs the run itself just
+        rewrote. Without this, regenerating a tracked result always reads as a dirty tree,
+        and the flag no longer says whether the *code* that ran was committed.
 
     Returns
     -------
     dict
         ``commit`` (``None`` outside a repository or without ``git``) and ``dirty``
-        (uncommitted changes to tracked files: the commit alone does not identify the
-        code that ran).
+        (uncommitted changes to tracked files other than ``ignore``: the commit alone
+        does not identify the code that ran).
     """
     try:
         commit = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, check=True
+        ).stdout.strip()
+        top = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
         status = subprocess.run(
             ["git", "status", "--porcelain", "--untracked-files=no"],
@@ -71,7 +82,10 @@ def git_state(root: Path) -> dict[str, object]:
         ).stdout
     except (OSError, subprocess.CalledProcessError):
         return {"commit": None, "dirty": None}
-    return {"commit": commit, "dirty": bool(status.strip())}
+    skipped = {p.resolve() for p in ignore}
+    changed = [line[3:] for line in status.splitlines() if line.strip()]
+    dirty = [p for p in changed if (Path(top) / p).resolve() not in skipped]
+    return {"commit": commit, "dirty": bool(dirty)}
 
 
 def record(
@@ -101,7 +115,8 @@ def record(
     restricted : Sequence[Path], optional
         Inputs that may not be redistributed: hashed, flagged ``redistributable: false``.
     root : Path, optional
-        Directory inside the repository, for :func:`git_state`.
+        Directory inside the repository, for :func:`git_state` (which ignores
+        ``outputs``: the run just rewrote them).
 
     Returns
     -------
@@ -120,7 +135,7 @@ def record(
         for p in paths
     ]
     return {
-        "git": git_state(root),
+        "git": git_state(root, ignore=outputs),
         "manifest": manifest_to_dict(emit(seed=seed)),
         "platform": {"system": platform.system(), "machine": platform.machine()},
         "seed": seed,
