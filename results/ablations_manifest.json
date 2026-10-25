@@ -1,0 +1,85 @@
+{
+ "git": {
+  "commit": "905695f720230141d6f21f8e43b6146792a39b3b",
+  "dirty": true
+ },
+ "manifest": {
+  "version": "0.10.0.dev0",
+  "timestamp": "2026-10-25T12:55:43.974390+00:00",
+  "seed": 17,
+  "data_fingerprint": null,
+  "split": null,
+  "environment": [
+   [
+    "networkx",
+    "3.7"
+   ],
+   [
+    "numpy",
+    "2.5.3"
+   ],
+   [
+    "ortools",
+    "9.15.6755"
+   ],
+   [
+    "python",
+    "3.13.17"
+   ],
+   [
+    "scipy",
+    "1.18.1"
+   ],
+   [
+    "shapely",
+    "2.2.0"
+   ]
+  ],
+  "parameters": [],
+  "model": null
+ },
+ "platform": {
+  "system": "Linux",
+  "machine": "x86_64"
+ },
+ "seed": 17,
+ "command": "python experiments/ablations.py results 90 3",
+ "parameters": {
+  "n_plans": 90,
+  "n_inits": 3,
+  "amplitude_m": 0.25,
+  "q_hat": 660.1180368506849,
+  "alpha": 0.1,
+  "budgets_m": [
+   0.5,
+   1.0,
+   2.0,
+   3.0
+  ],
+  "configs": [
+   "initial",
+   "repair",
+   "fw_surrogate",
+   "fw_surrogate_no_penalty",
+   "fw_reference",
+   "fw_surrogate_budget_0.5",
+   "fw_surrogate_budget_1",
+   "fw_surrogate_budget_2",
+   "fw_surrogate_budget_3"
+  ]
+ },
+ "files": [
+  {
+   "path": "results/ablations_raw.csv",
+   "sha256": "0fb758ca4a3529871778e996dae8b09f1437f4cce8614b810b8610b1adabd83c",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/ablations.md",
+   "sha256": "bc521b6e96f17c068b071bda566ab8607f864b15c9ef87c8331bfc68ee309359",
+   "role": "output",
+   "redistributable": true
+  }
+ ]
+}

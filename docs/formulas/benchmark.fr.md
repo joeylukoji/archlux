@@ -61,6 +61,23 @@ Approximation par \(t\) non centrée, paramètre \(d\) de Cohen. Sert **avant**
 l'expérience à dimensionner \(n\) ; l'invoquer *après* un résultat non
 significatif (« power observée ») n'a pas de valeur inférentielle.
 
+### Bootstrap par grappe — l'unité statistique
+
+Seize corruptions d'un logement, ou huit azimuts d'un plan, sont **une** unité.
+`bench.stats.cluster_bootstrap_proportion` rééchantillonne les plans sources avec
+remise. L'unité de chaque banc figure dans `results/RECONCILIATION.md`.
+
+## Bancs de l'article et reproduction
+
+`experiments/reconcile.py` (`make reconcile`) recalcule chaque nombre publié (B1 à
+B9) depuis les fichiers bruts de `results/` et rend un verdict par nombre. `make
+reproduce` relance les bancs synthétiques (B1 à B5), la couverture après sélection
+(`experiments/j5_selection.py`), les ablations (`experiments/ablations.py`) et la
+réconciliation. Les bancs sur corpus (B6 à B9) et leurs commandes : voir la version
+anglaise de cette page. Chaque exécution écrit un enregistrement
+(`bench.repro.record`) : commit git, état du dépôt, versions, graine, paramètres,
+SHA-256 des entrées et sorties.
+
 ## Hypothèses
 
 - `evaluate_by` est un oracle **externe** — jamais le substitut qu'on optimise,

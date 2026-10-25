@@ -1,8 +1,22 @@
 # Figures of results/ (PLAN.md phase 2). The runner is portable: on Windows, call
 # `python scripts/results.py` directly with the same options.
 PYTHON ?= python
+# Empty when archlux is installed (pip install -e .); `make PYTHONPATH_SRC=PYTHONPATH=src`
+# otherwise.
+PYTHONPATH_SRC ?=
 
-.PHONY: results check-results results-corpus check-complexity
+.PHONY: results check-results results-corpus check-complexity reproduce reconcile
+
+# Every bench that runs without the restricted corpora (B1-B5, the selection protocol
+# and the ablations), then the reconciliation of the paper's numbers (B1-B9) with the
+# raw files. Corpus benches (B6-B9): see docs/formulas/benchmark.md, "Reproduce".
+reproduce: results
+	$(PYTHONPATH_SRC) $(PYTHON) experiments/j5_selection.py results 400 10
+	$(PYTHONPATH_SRC) $(PYTHON) experiments/ablations.py results 90 3
+	$(MAKE) reconcile
+
+reconcile:
+	$(PYTHONPATH_SRC) $(PYTHON) experiments/reconcile.py results
 
 results:
 	$(PYTHON) scripts/results.py

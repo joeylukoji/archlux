@@ -43,6 +43,13 @@ NOT EVALUABLE
   returns), the banner says "coverage NOT guaranteed" and the report asks for the
   plan to be re-evaluated with the oracle.
 - Nothing aggregates the two kinds into a single score.
+- The "selected" warning is measured, not just theoretical: on the synthetic protocol
+  of `results/j5_selection.md`, a passive calibration at 90 % covers 76.0 % of the plans
+  Frank-Wolfe chose. A calibration on the outputs of the frozen policy brings it back
+  to 91.3 %, with wider intervals ([conformal prediction](conformal-prediction.md)).
+- The reference the bound covers is the frozen closed-form oracle. A bound that holds
+  for that oracle is not evidence of a physical daylight gain; that needs an
+  independent simulation, not run here.
 
 ## What to remember
 

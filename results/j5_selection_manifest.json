@@ -1,7 +1,11 @@
 {
+ "git": {
+  "commit": "905695f720230141d6f21f8e43b6146792a39b3b",
+  "dirty": true
+ },
  "manifest": {
   "version": "0.10.0.dev0",
-  "timestamp": "2026-10-25T12:49:12.049058+00:00",
+  "timestamp": "2026-10-25T12:55:22.183611+00:00",
   "seed": 17,
   "data_fingerprint": null,
   "split": null,
@@ -31,22 +35,43 @@
     "2.2.0"
    ]
   ],
-  "parameters": [
-   [
-    "alpha",
-    "0.1"
-   ],
-   [
-    "n_sources",
-    "400"
-   ],
-   [
-    "repetitions",
-    "10"
-   ]
-  ],
+  "parameters": [],
   "model": null
  },
+ "platform": {
+  "system": "Linux",
+  "machine": "x86_64"
+ },
+ "seed": 17,
+ "command": "python experiments/j5_selection.py results 400 10",
+ "parameters": {
+  "n_sources": 400,
+  "azimuths": 4,
+  "repetitions": 10,
+  "alpha": 0.1,
+  "policy": "legalize",
+  "fractions": [
+   0.4,
+   0.1,
+   0.25,
+   0.25
+  ],
+  "surrogate": "AnalyticSurrogate+affine"
+ },
+ "files": [
+  {
+   "path": "results/j5_selection_raw.csv",
+   "sha256": "512b1391b6fd9e83af68eee1ba97798df7a7cbf0cbefb8d40a23ed93ba217c5f",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j5_selection.md",
+   "sha256": "65f00c54d6f3acc449d255ec820c4a0ffe6ec122c4384926c8fae3623b5e6540",
+   "role": "output",
+   "redistributable": true
+  }
+ ],
  "runs": [
   {
    "validation_mae_raw": 38.51472927395946,

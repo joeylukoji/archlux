@@ -81,6 +81,21 @@ def test_below_target_needs_several_repetitions(run) -> None:  # type: ignore[no
     assert all(math.isnan(s.rep_high) for s in summarize(one, seed=1))
 
 
+def test_same_seed_same_rows_other_seed_other_split() -> None:
+    kwargs = {
+        "base": AnalyticSurrogate(),
+        "oracle": SplitFluxOracle(),
+        "make_policy": _identity_policy,
+        "repetitions": 1,
+    }
+    variants = two_room_variants(80, seed=4)
+    first, _ = run_selection_protocol(variants, seed=9, **kwargs)
+    again, _ = run_selection_protocol(variants, seed=9, **kwargs)
+    other, _ = run_selection_protocol(variants, seed=10, **kwargs)
+    assert first == again
+    assert {r.source for r in first} != {r.source for r in other}
+
+
 def test_affine_rescaling_scales_value_gradient_and_sigma() -> None:
     base = AnalyticSurrogate()
     x, o = np.array([0.0, 0.0, 6.0, 4.5, 6.0, 0.0, 6.0, 4.5]), Orientation(30.0)
