@@ -78,7 +78,7 @@ from archlux.certify.proof import (
 from archlux.errors import ArchluxError, InvalidInput
 from archlux.geom.rectilinear import RectilinearRoom
 from archlux.tolerances import AREA_PROOF_M2, GAP_M2, OVERLAP_M2, SNAP_M, WALL_M
-from archlux.types import Context, Opening, Plan, Room, Wall
+from archlux.types import Context, Evidence, Opening, Plan, Room, ValidationSummary, Wall
 
 __all__ = [
     "NOT_COVERED",
@@ -104,8 +104,7 @@ ConstraintStatus = Literal["satisfied", "violated", "unknown"]
 Method = Literal["exact_rational", "geos_tolerance"]
 """How a result was obtained (see the module docstring)."""
 
-Evidence = Literal["exact", "numeric", "refused"]
-"""Nature of a whole report: exact arithmetic, numerical validation, or no validity."""
+# Evidence (nature of a whole report) is defined once, in archlux.types.
 
 NOT_COVERED: tuple[str, ...] = (
     "building code compliance",
@@ -388,6 +387,25 @@ class ValidationReport:
         lines.extend(f"  [n/a] {cid}: {why}" for cid, why in self.not_applicable)
         lines.append("Not established: " + ", ".join(self.scope))
         return "\n".join(lines)
+
+    def to_summary(self) -> ValidationSummary:
+        """The hashable summary attached to :attr:`archlux.types.Certificate.validation`.
+
+        Returns
+        -------
+        ValidationSummary
+            Evidence, fingerprint, satisfied and failing hard constraints, skipped
+            constraints and scope.
+        """
+        hard = [r for r in self.results if r.spec.kind == "hard"]
+        return ValidationSummary(
+            evidence=self.evidence,
+            plan_fingerprint=self.plan_fingerprint,
+            checked=tuple(r.spec.id for r in hard if r.status == "satisfied"),
+            failing=tuple(r.spec.id for r in hard if r.status != "satisfied"),
+            not_applicable=tuple(cid for cid, _ in self.not_applicable),
+            scope=self.scope,
+        )
 
     def to_dict(self) -> dict[str, object]:
         """Serialize to JSON-compatible values.

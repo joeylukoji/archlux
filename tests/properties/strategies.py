@@ -26,12 +26,14 @@ from archlux.types import (
     Manifest,
     ModelTrace,
     Opening,
+    OptimizationStatus,
     Orientation,
     PerformanceBound,
     Plan,
     Regulation,
     Room,
     Structure,
+    ValidationSummary,
     Wall,
 )
 
@@ -178,6 +180,39 @@ def _certificates() -> st.SearchStrategy[Certificate]:
             max_size=3,
         ).map(tuple),
         manifest=st.one_of(st.none(), _manifests()),
+        validation=st.one_of(st.none(), _validations()),
+        optimization=st.one_of(st.none(), _optimizations()),
+    )
+
+
+def _validations() -> st.SearchStrategy[ValidationSummary]:
+    """Summaries of the independent validator, refused or not."""
+    ids = st.lists(st.text(min_size=1, max_size=12), max_size=3).map(tuple)
+    passed = st.builds(
+        ValidationSummary,
+        evidence=st.sampled_from(["exact", "numeric"]),
+        plan_fingerprint=st.text(max_size=16),
+        checked=ids,
+        not_applicable=ids,
+        scope=ids,
+    )
+    refused = st.builds(
+        ValidationSummary,
+        evidence=st.just("refused"),
+        plan_fingerprint=st.text(max_size=16),
+        checked=ids,
+        failing=st.lists(st.text(min_size=1, max_size=12), min_size=1, max_size=3).map(tuple),
+    )
+    return st.one_of(passed, refused)
+
+
+def _optimizations() -> st.SearchStrategy[OptimizationStatus]:
+    """Frank-Wolfe stop statuses, an unknown (infinite) gap included."""
+    return st.builds(
+        OptimizationStatus,
+        status=st.sampled_from(["converged", "max_iter", "stalled", "untrusted_gradient"]),
+        iterations=st.integers(min_value=0, max_value=500),
+        gap=st.one_of(st.just(float("inf")), st.floats(min_value=0.0, max_value=1e3)),
     )
 
 

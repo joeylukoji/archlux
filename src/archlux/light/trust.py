@@ -517,6 +517,17 @@ class GuardedSurrogate:
     history: list[GradientTrust] = field(default_factory=list)
 
     @property
+    def refused(self) -> bool:
+        """Whether the last gradient was refused (read by Frank-Wolfe for its status).
+
+        Returns
+        -------
+        bool
+            ``True`` iff the latest verdict in :attr:`history` is not ``ok``.
+        """
+        return bool(self.history) and self.history[-1].status != "ok"
+
+    @property
     def indicator(self) -> Indicator:
         """Indicator of the wrapped surrogate.
 

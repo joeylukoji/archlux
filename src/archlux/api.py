@@ -26,7 +26,13 @@ import numpy as np
 from archlux._deprecation import renamed_parameters
 from archlux._log import event
 from archlux.arrays import FloatVector
-from archlux.certify.bound import bound_selected_plan, check_calibration
+from archlux.certify.bound import (
+    PolicyCalibration,
+    bound_policy_plan,
+    bound_selected_plan,
+    check_calibration,
+    policy_settings,
+)
 from archlux.certify.dual import translate_duals
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
@@ -55,7 +61,7 @@ from archlux.lmo.cuts import (
 from archlux.lmo.solver import LPSolution
 from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.tolerances import SNAP_M
-from archlux.types import Certificate, Context, GeometricProof, Plan
+from archlux.types import Certificate, Context, GeometricProof, OptimizationStatus, Plan
 from archlux.validation import resolve_outline, validate_inputs
 
 if TYPE_CHECKING:
@@ -64,7 +70,7 @@ if TYPE_CHECKING:
     from archlux.certify.bound import Calibration
     from archlux.solve.trace import Trace
 
-__all__ = ["gradient_distance", "legalize", "legalize_trace"]
+__all__ = ["gradient_distance", "legalize", "legalize_policy_settings", "legalize_trace"]
 
 _DUAL_THRESHOLD = 1e-9
 
@@ -357,7 +363,156 @@ class _Problem:
         )
 
 
-def _check_calibration(objective: Surrogate | None, calibration: Calibration | None) -> None:
+@dataclass(frozen=True, slots=True)
+class _Optimizer:
+    """Frank-Wolfe settings exposed by :func:`legalize` (defaults: the 1.x behaviour).
+
+    Attributes
+    ----------
+    max_iter : int
+        Iteration budget.
+    penalty : float
+        Weight of the proximity penalty ``penalty / 2 * ||x - x_ref||^2``.
+    stall_window : int or None
+        Stagnation window, or ``None`` for no stagnation stop.
+    """
+
+    max_iter: int = 50
+    penalty: float = 0.0
+    stall_window: int | None = None
+
+    def check(self) -> None:
+        """Refuse settings Frank-Wolfe would refuse, before any solving.
+
+        Raises
+        ------
+        InvalidInput
+            ``max_iter < 1``, a negative or non-finite ``penalty``, ``stall_window < 2``.
+        """
+        _check_count("max_iter", self.max_iter, low=1)
+        if not (np.isfinite(self.penalty) and self.penalty >= 0.0):
+            raise InvalidInput("penalty", f"must be finite and >= 0, got {self.penalty!r}")
+        if self.stall_window is not None:
+            _check_count("stall_window", self.stall_window, low=2)
+
+
+def _check_count(name: str, value: object, *, low: int) -> None:
+    """Refuse anything but an ``int`` (``bool`` excluded) of at least ``low``.
+
+    Parameters
+    ----------
+    name
+        Argument name, reported in the error.
+    value
+        Value passed.
+    low
+        Smallest allowed value.
+
+    Raises
+    ------
+    InvalidInput
+        ``value`` is not such an int.
+    """
+    if isinstance(value, bool) or not isinstance(value, int) or value < low:
+        raise InvalidInput(name, f"must be an int >= {low}, got {value!r}")
+
+
+def _check_policy(
+    calibration: Calibration | PolicyCalibration | None,
+    objective: Surrogate | None,
+    *,
+    budget: float | None,
+    tiling: bool,
+    optimizer: _Optimizer,
+) -> None:
+    """Refuse a policy calibration fitted for another policy than this call's.
+
+    Parameters
+    ----------
+    calibration
+        Calibration passed to :func:`legalize`.
+    objective
+        Surrogate to maximize.
+    budget, tiling, optimizer
+        Settings of this call.
+
+    Raises
+    ------
+    InvalidInput
+        The calibration's ``settings`` differ from :func:`policy_settings` of this call.
+    """
+    if not isinstance(calibration, PolicyCalibration):
+        return
+    expected = _policy_of(objective, budget=budget, tiling=tiling, optimizer=optimizer)
+    if calibration.settings != expected:
+        raise InvalidInput(
+            "calibration",
+            f"fitted for the policy {dict(calibration.settings)}, "
+            f"not for this call's {dict(expected)}",
+            "legalize with the settings the calibration was fitted for, or recalibrate",
+        )
+
+
+def _policy_of(
+    objective: object, *, budget: float | None, tiling: bool, optimizer: _Optimizer
+) -> tuple[tuple[str, str], ...]:
+    """:func:`policy_settings` of one call of :func:`legalize`.
+
+    Parameters
+    ----------
+    objective
+        Surrogate to maximize.
+    budget, tiling, optimizer
+        Settings of the call.
+
+    Returns
+    -------
+    tuple of (str, str)
+        The name of the policy this call runs.
+    """
+    return policy_settings(
+        objective,
+        budget=budget,
+        tiling=tiling,
+        max_iter=optimizer.max_iter,
+        penalty=optimizer.penalty,
+        stall_window=optimizer.stall_window,
+    )
+
+
+def legalize_policy_settings(
+    objective: Surrogate,
+    *,
+    budget: float | None = None,
+    tiling: bool = False,
+    max_iter: int = 50,
+    penalty: float = 0.0,
+    stall_window: int | None = None,
+) -> tuple[tuple[str, str], ...]:
+    """The ``settings`` to give :func:`archlux.certify.bound.calibrate_policy`.
+
+    Pass the very arguments the calibration runs of :func:`legalize` used; a
+    ``PolicyCalibration`` is then accepted by every later call with the same ones.
+
+    Parameters
+    ----------
+    objective : Surrogate
+        Objective of the frozen policy.
+    budget, tiling, max_iter, penalty, stall_window
+        As in :func:`legalize`.
+
+    Returns
+    -------
+    tuple of (str, str)
+        The policy's name.
+    """
+    optimizer = _Optimizer(max_iter=max_iter, penalty=penalty, stall_window=stall_window)
+    return _policy_of(objective, budget=budget, tiling=tiling, optimizer=optimizer)
+
+
+def _check_calibration(
+    objective: Surrogate | None, calibration: Calibration | PolicyCalibration | None
+) -> None:
     """Refuse a calibration that cannot bound the objective.
 
     Parameters
@@ -551,9 +706,10 @@ def _optimize_light(
     corrected: Plan,
     poly: Polytope,
     objective: Surrogate,
-    calibration: Calibration | None,
+    calibration: Calibration | PolicyCalibration | None,
     duals_l1: tuple[tuple[str, float], ...],
     trace: bool,
+    optimizer: _Optimizer,
 ) -> Plan:
     """Frank-Wolfe from the classic plan, inside the polytope, then the exact proof.
 
@@ -573,6 +729,8 @@ def _optimize_light(
         Duals of the L1 pass.
     trace
         Whether to keep the Frank-Wolfe trace.
+    optimizer
+        Frank-Wolfe settings.
 
     Returns
     -------
@@ -605,7 +763,10 @@ def _optimize_light(
         x0,
         glazing=glazing,
         budget=budget,
-        reference=problem.x_ref if budget is not None else None,
+        reference=problem.x_ref if budget is not None or optimizer.penalty else None,
+        max_iter=optimizer.max_iter,
+        penalty=optimizer.penalty,
+        stall_window=optimizer.stall_window,
     )
     best_plan = problem.decode(result.x, poly.index, template=corrected)
     proof = problem.prove(best_plan)
@@ -625,10 +786,18 @@ def _optimize_light(
     if calibration is not None:
         # Centred on the prediction mu, not on the pessimistic objective mu - q sigma.
         mu, sigma = point_prediction(objective, result.x, ctx.orientation, glazing=glazing)
-        performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
+        if isinstance(calibration, PolicyCalibration):
+            performance = bound_policy_plan(mu, calibration, uncertainty=sigma)
+        else:
+            performance = bound_selected_plan(mu, calibration, uncertainty=sigma)
+    optimization = OptimizationStatus(
+        status=result.status, iterations=result.iterations, gap=result.gap
+    )
     return replace(
         best_plan,
-        certificate=Certificate(geometry=proof, performance=performance, duals=duals),
+        certificate=Certificate(
+            geometry=proof, performance=performance, duals=duals, optimization=optimization
+        ),
         trace=result.trace if trace else None,
     )
 
@@ -671,7 +840,7 @@ def _plan_polytope(
     ctx: Context,
     *,
     objective: Surrogate | None,
-    calibration: Calibration | None,
+    calibration: Calibration | PolicyCalibration | None,
     budget: float | None,
     merges: tuple[RectilinearRoom, ...],
     tiling: bool,
@@ -777,13 +946,14 @@ def _legalize(
     ctx: Context,
     *,
     objective: Surrogate | None,
-    calibration: Calibration | None,
+    calibration: Calibration | PolicyCalibration | None,
     budget: float | None,
     trace: bool,
     merges: tuple[RectilinearRoom, ...],
     tiling: bool,
     repair_budget: int,
     stacklevel: int,
+    optimizer: _Optimizer,
 ) -> Plan:
     """Body shared by :func:`legalize` and :func:`legalize_trace`, without deprecation.
 
@@ -814,12 +984,16 @@ def _legalize(
         Repairs allowed when deducing the grid.
     stacklevel
         Stack depth for deprecation warnings.
+    optimizer
+        Frank-Wolfe settings (ignored in classic mode).
 
     Returns
     -------
     Plan
         The legalized plan, with its trace attached when requested.
     """
+    optimizer.check()
+    _check_policy(calibration, objective, budget=budget, tiling=tiling, optimizer=optimizer)
     problem = _plan_polytope(
         plan,
         ctx,
@@ -835,7 +1009,9 @@ def _legalize(
     if objective is None:
         final = _certify(corrected, proof, duals)
     else:
-        final = _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)
+        final = _optimize_light(
+            problem, corrected, poly, objective, calibration, duals, trace, optimizer
+        )
     return _validated(final, problem)
 
 
@@ -855,7 +1031,7 @@ def _validated(final: Plan, problem: _Problem) -> Plan:
     Returns
     -------
     Plan
-        ``final``, unchanged.
+        ``final``, its certificate carrying the validator's summary.
 
     Raises
     ------
@@ -868,7 +1044,9 @@ def _validated(final: Plan, problem: _Problem) -> Plan:
     if not report.valid:
         failing = [r for r in report.violated + report.unknown if r.spec.kind == "hard"]
         raise InvariantViolation(tuple(f"{r.spec.id}: {r.reason}" for r in failing))
-    return final
+    if final.certificate is None:  # every stage certifies; guard for the type checker
+        raise InvariantViolation(("legalize produced a plan without a certificate",))
+    return replace(final, certificate=replace(final.certificate, validation=report.to_summary()))
 
 
 @renamed_parameters({"fusions": "merges", "pavage": "tiling", "budget_reparation": "repair_budget"})
@@ -877,12 +1055,15 @@ def legalize(
     ctx: Context,
     *,
     objective: Surrogate | None = None,
-    calibration: Calibration | None = None,
+    calibration: Calibration | PolicyCalibration | None = None,
     budget: float | None = None,
     trace: bool = False,
     merges: tuple[RectilinearRoom, ...] = (),
     tiling: bool = False,
     repair_budget: int = 4,
+    max_iter: int = 50,
+    penalty: float = 0.0,
+    stall_window: int | None = None,
 ) -> Plan:
     """Correct a plan towards the closest valid plan, or the best performing one.
 
@@ -898,12 +1079,17 @@ def legalize(
         Load-bearing structure, orientation, outline, regulation.
     objective : Surrogate or None, optional
         Objective to maximize. ``None`` means geometric proximity.
-    calibration : Calibration or None, optional
+    calibration : Calibration, PolicyCalibration or None, optional
         Conformal calibration of ``objective`` (same indicator, scores normalized by
-        ``σ``). With it, ``certificat.performance`` holds the conformal interval of the
-        returned plan, labelled ``regime="selected"``: the optimizer chose the plan, so
-        the nominal coverage is **not** guaranteed and the report says so. Requires
-        ``objective``.
+        ``σ``). With a passive ``Calibration``, ``certificat.performance`` holds the
+        conformal interval of the returned plan, labelled ``regime="selected"``: the
+        optimizer chose the plan, so the nominal coverage is **not** guaranteed and the
+        report says so. With a :class:`~archlux.certify.bound.PolicyCalibration` (scores
+        on the outputs of this same frozen policy), the interval is labelled
+        ``regime="policy_calibrated"`` and its coverage holds marginally; a policy
+        calibration fitted under other settings (objective type, ``budget``,
+        ``tiling``, ``max_iter``, ``penalty``, ``stall_window``) raises ``InvalidInput``.
+        Requires ``objective``.
     budget : float or None, optional
         Maximum L-infinity displacement from the proposed plan, in metres, over the
         whole legalization (classic pass and Frank-Wolfe share it), checked by the proof.
@@ -950,6 +1136,17 @@ def legalize(
         budget becomes the limiting factor. ``0`` forbids any repair and accepts only an
         already consistent grid; a caller that must preserve the program room by room
         uses it to refuse rather than absorb a room into its neighbour.
+    max_iter : int, optional
+        Frank-Wolfe iteration budget (default 50). No effect in classic mode.
+    penalty : float, optional
+        Proximity penalty ``penalty / 2 * ||x - x_proposed||^2`` subtracted from the
+        surrogate during Frank-Wolfe (default 0: none). Trades predicted gain for
+        displacement (``docs/formulas/frank-wolfe.md``); the bound still uses the raw
+        prediction.
+    stall_window : int or None, optional
+        Stop Frank-Wolfe when the objective gains nothing over this many consecutive
+        steps (default ``None``: never). The stop status is in
+        ``certificate.optimization``.
 
     Returns
     -------
@@ -1054,6 +1251,7 @@ def legalize(
         tiling=tiling,
         repair_budget=repair_budget,
         stacklevel=4,
+        optimizer=_Optimizer(max_iter=max_iter, penalty=penalty, stall_window=stall_window),
     )
 
 
@@ -1062,11 +1260,14 @@ def legalize_trace(
     ctx: Context,
     *,
     objective: Surrogate | None = None,
-    calibration: Calibration | None = None,
+    calibration: Calibration | PolicyCalibration | None = None,
     budget: float | None = None,
     merges: tuple[RectilinearRoom, ...] = (),
     tiling: bool = False,
     repair_budget: int = 4,
+    max_iter: int = 50,
+    penalty: float = 0.0,
+    stall_window: int | None = None,
 ) -> tuple[Plan, Trace | None]:
     """Legalize a plan and return its Frank-Wolfe trace instead of attaching it.
 
@@ -1077,6 +1278,8 @@ def legalize_trace(
     Parameters
     ----------
     plan, ctx, objective, calibration, budget, merges, tiling, repair_budget
+        Exactly as :func:`legalize`.
+    max_iter, penalty, stall_window
         Exactly as :func:`legalize`.
 
     Returns
@@ -1124,5 +1327,6 @@ def legalize_trace(
         tiling=tiling,
         repair_budget=repair_budget,
         stacklevel=3,
+        optimizer=_Optimizer(max_iter=max_iter, penalty=penalty, stall_window=stall_window),
     )
     return replace(result, trace=None), cast("Trace | None", result.trace)

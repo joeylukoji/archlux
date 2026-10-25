@@ -245,7 +245,8 @@
         "regime": {
           "enum": [
             "exchangeable",
-            "selected"
+            "selected",
+            "policy_calibrated"
           ]
         }
       }
@@ -388,6 +389,84 @@
               "$ref": "#/$defs/manifest"
             }
           ]
+        },
+        "validation": {
+          "description": "Summary of the independent validator (archlux.certify.validate_plan). Optional: absent on certificates written before it existed.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence",
+            "plan_fingerprint",
+            "checked",
+            "failing",
+            "not_applicable",
+            "scope"
+          ],
+          "properties": {
+            "evidence": {
+              "enum": [
+                "exact",
+                "numeric",
+                "refused"
+              ]
+            },
+            "plan_fingerprint": {
+              "type": "string"
+            },
+            "checked": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "failing": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "not_applicable": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "scope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "optimization": {
+          "description": "How Frank-Wolfe stopped. Optional: absent in classic mode. A null gap means unknown (infinite).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "iterations",
+            "gap"
+          ],
+          "properties": {
+            "status": {
+              "type": "string"
+            },
+            "iterations": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "gap": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          }
         }
       }
     }

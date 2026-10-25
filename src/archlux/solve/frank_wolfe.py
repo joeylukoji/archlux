@@ -1163,7 +1163,28 @@ def frank_wolfe(
         if stop is not None:
             status = stop
             break
+    if status != "oracle_inconsistent" and _gradient_refused(surrogate):
+        status = "untrusted_gradient"
     return _result(run, status, budget=budget, parameters=parameters)
+
+
+def _gradient_refused(surrogate: Surrogate) -> bool:
+    """Whether the objective refused its last gradient (optional ``refused`` member).
+
+    ``solve`` may not import :mod:`archlux.light.trust`; a guarded objective says so
+    through this attribute instead, which ordinary surrogates do not have.
+
+    Parameters
+    ----------
+    surrogate
+        Objective of the run.
+
+    Returns
+    -------
+    bool
+        ``True`` iff ``surrogate.refused`` exists and is true.
+    """
+    return bool(getattr(surrogate, "refused", False))
 
 
 def _result(
