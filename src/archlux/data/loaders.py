@@ -471,6 +471,8 @@ def _opening_from_window(window: Polygon, walls: tuple[Wall, ...], rank: int) ->
     relative_width = width / length
     if not 0.0 < relative_width <= 1.0 or not 0.0 <= s <= 1.0:
         return None
+    if s - relative_width / 2 < -_EPS or s + relative_width / 2 > 1.0 + _EPS:
+        return None  # overhangs an end of its wall: the validator would refuse the plan
     return Opening(id=f"b{rank:04d}", wall_id=wall.id, s=s, relative_width=relative_width)
 
 

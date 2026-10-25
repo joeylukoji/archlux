@@ -30,6 +30,7 @@ from archlux.certify.bound import bound_selected_plan, check_calibration
 from archlux.certify.dual import translate_duals
 from archlux.certify.farkas import verify_infeasibility
 from archlux.certify.proof import verify_exactly
+from archlux.certify.validation import validate_plan
 from archlux.errors import GapNeedsTiling, Infeasible, InvalidInput, InvariantViolation
 from archlux.geom.graph import RelativeOrder, deduce_order
 from archlux.geom.polytope import (
@@ -52,7 +53,7 @@ from archlux.lmo.cuts import (
     solve_with_areas,
 )
 from archlux.lmo.solver import LPSolution
-from archlux.solve.frank_wolfe import frank_wolfe, restrict_to_budget
+from archlux.solve.frank_wolfe import frank_wolfe
 from archlux.tolerances import SNAP_M
 from archlux.types import Certificate, Context, GeometricProof, Plan
 from archlux.validation import resolve_outline, validate_inputs
@@ -590,15 +591,22 @@ def _optimize_light(
         corrected.rooms,
         minima=minimum_area_shares(corrected.rooms, merges, ctx.regulation),
     )
-    if budget is not None:
-        # Centred on the *proposed* plan, not on x0: the budget is spent once over the
-        # whole legalization (AUDIT.md §5.8 measured up to twice the budget).
-        poly_fw = restrict_to_budget(poly_fw, problem.x_ref, budget, keep=x0)
     # Glazing is not part of the decision vector: it is constant during the
     # optimization and passed through unchanged. Without it the surrogate only sees
     # rectangles and cannot predict real daylight (`docs/formulas/tokens.md`).
     glazing = Glazing(walls=corrected.walls, openings=corrected.openings)
-    result = frank_wolfe(poly_fw, objective, ctx.orientation, x0, glazing=glazing)
+    # The budget is centred on the *proposed* plan, not on x0: it is spent once over the
+    # whole legalization (AUDIT.md §5.8 measured up to twice the budget). Passing it
+    # here rather than through restrict_to_budget fills Trace.budget_active.
+    result = frank_wolfe(
+        poly_fw,
+        objective,
+        ctx.orientation,
+        x0,
+        glazing=glazing,
+        budget=budget,
+        reference=problem.x_ref if budget is not None else None,
+    )
     best_plan = problem.decode(result.x, poly.index, template=corrected)
     proof = problem.prove(best_plan)
     if not proof.valid:
@@ -825,8 +833,42 @@ def _legalize(
     )
     poly, corrected, proof, duals = _legalize_l1(problem)
     if objective is None:
-        return _certify(corrected, proof, duals)
-    return _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)
+        final = _certify(corrected, proof, duals)
+    else:
+        final = _optimize_light(problem, corrected, poly, objective, calibration, duals, trace)
+    return _validated(final, problem)
+
+
+def _validated(final: Plan, problem: _Problem) -> Plan:
+    """Re-check the final plan with the independent validator before returning it.
+
+    The exact proof already accepted the plan; this second pass reads only its
+    coordinates (no LP status, no polytope), so a solver bug cannot certify itself.
+
+    Parameters
+    ----------
+    final
+        Plan about to be returned.
+    problem
+        Problem being solved (proposed plan, context, budget, merges).
+
+    Returns
+    -------
+    Plan
+        ``final``, unchanged.
+
+    Raises
+    ------
+    InvariantViolation
+        If a hard constraint is violated or could not be checked.
+    """
+    report = validate_plan(
+        final, problem.ctx, reference=problem.plan, budget=problem.budget, merges=problem.merges
+    )
+    if not report.valid:
+        failing = [r for r in report.violated + report.unknown if r.spec.kind == "hard"]
+        raise InvariantViolation(tuple(f"{r.spec.id}: {r.reason}" for r in failing))
+    return final
 
 
 @renamed_parameters({"fusions": "merges", "pavage": "tiling", "budget_reparation": "repair_budget"})

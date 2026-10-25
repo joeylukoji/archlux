@@ -233,6 +233,7 @@ def test_impute_openings_is_off_by_default_and_on_when_asked(tmp_path: Path) -> 
     assert imputed.plan.openings[0].s == 0.5  # centred on its wall
     # A wall that already carries a window is left as observed.
     observed = tmp_path / "observed.csv"
-    _write_csv(observed, _two_room_apartment())
+    on_partition = ("a1", "opening", "WINDOW", box(3.9, 2.0, 4.1, 3.2))
+    _write_csv(observed, [*rows, on_partition])
     with_window = next(iter(load_msd(observed)))
     assert next(iter(load_msd(observed, impute_openings=True))).plan == with_window.plan
