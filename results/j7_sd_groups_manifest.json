@@ -1,0 +1,83 @@
+{
+ "git": {
+  "commit": "1723a4c2ceb7314e4906d9b77bea6d19d3f183dd",
+  "dirty": false
+ },
+ "manifest": {
+  "version": "0.10.0.dev0",
+  "timestamp": "2026-10-25T18:02:19.752751+00:00",
+  "seed": 17,
+  "data_fingerprint": null,
+  "split": null,
+  "environment": [
+   [
+    "networkx",
+    "3.7"
+   ],
+   [
+    "numpy",
+    "2.5.3"
+   ],
+   [
+    "ortools",
+    "9.15.6755"
+   ],
+   [
+    "python",
+    "3.13.17"
+   ],
+   [
+    "scipy",
+    "1.18.1"
+   ],
+   [
+    "shapely",
+    "2.2.0"
+   ]
+  ],
+  "parameters": [],
+  "model": null
+ },
+ "platform": {
+  "system": "Linux",
+  "machine": "x86_64"
+ },
+ "seed": 17,
+ "command": "python experiments/j7_sd_groups.py results 400",
+ "parameters": {
+  "n_sources": 400,
+  "azimuths": 4,
+  "fractions": [
+   0.5,
+   0.0,
+   0.0,
+   0.5
+  ],
+  "ensemble_k": 5,
+  "dense_epochs": 60,
+  "room_affine": [
+   1.2445094908752394,
+   13.336939115818135
+  ]
+ },
+ "files": [
+  {
+   "path": "results/j7_sd_groups_raw.csv",
+   "sha256": "3fbc603927975aadf290edfb0cfd1806a6727c4c73f7a3a56f38a469f5e4c3e2",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j7_sd_groups_rooms_raw.csv",
+   "sha256": "95183cfe68d3fb9745dde67fbb93f52ee7149a97d1bd4405d8aeb2ab42b2619d",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j7_sd_groups.md",
+   "sha256": "fff9327643c2ebc7400c3064c6663441fb72d49dc19f2ddce60bdf3a2cd39184",
+   "role": "output",
+   "redistributable": true
+  }
+ ]
+}

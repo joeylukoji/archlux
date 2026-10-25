@@ -63,6 +63,15 @@ prix d'intervalles 21 % plus larges. Sous le minimum conforme, `guarantee` rend
 `refused` ; `below_target` signale toute strate dont l'intervalle sur les répétitions
 reste sous \(1-\alpha\).
 
+**Par pièce et avec un \(\hat\sigma\) variable** (`experiments/j5_rooms.py`,
+`results/j5_rooms.md`) : 400 plans synthétiques typés à quatre pièces x 4 azimuts,
+5 répétitions. Par pièce : passive 91,1 %, passive sur plans sélectionnés **59,2 %**,
+politique figée 90,1 % ; la chute est la même pour chaque type de pièce (58,6-59,7 %),
+elle dépend de l'orientation. Par plan, ensemble bootstrap de 5 `DenseSurrogate` :
+passive 88,3 %, sur plans sélectionnés **45,1 %**, politique figée 90,3 %, mais
+seulement 81,4 % à l'ouest. Plans synthétiques, référence en forme close : aucune de
+ces valeurs ne mesure l'éclairement.
+
 ## Sens des indicateurs
 
 - sDA, UDI, vue : on publie la **borne inférieure** (`>=`).

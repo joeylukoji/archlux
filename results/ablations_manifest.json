@@ -1,11 +1,11 @@
 {
  "git": {
-  "commit": "905695f720230141d6f21f8e43b6146792a39b3b",
-  "dirty": true
+  "commit": "1723a4c2ceb7314e4906d9b77bea6d19d3f183dd",
+  "dirty": false
  },
  "manifest": {
   "version": "0.10.0.dev0",
-  "timestamp": "2026-10-25T12:55:43.974390+00:00",
+  "timestamp": "2026-10-25T18:05:24.393702+00:00",
   "seed": 17,
   "data_fingerprint": null,
   "split": null,
@@ -62,22 +62,33 @@
    "fw_surrogate",
    "fw_surrogate_no_penalty",
    "fw_reference",
+   "fw_finite_difference",
    "fw_surrogate_budget_0.5",
    "fw_surrogate_budget_1",
    "fw_surrogate_budget_2",
    "fw_surrogate_budget_3"
-  ]
+  ],
+  "ensemble_k": 5,
+  "ensemble_pool": 200,
+  "ensemble_calibration": 100,
+  "q_ensemble": 2.027566282475546
  },
  "files": [
   {
    "path": "results/ablations_raw.csv",
-   "sha256": "0fb758ca4a3529871778e996dae8b09f1437f4cce8614b810b8610b1adabd83c",
+   "sha256": "dd159b767f42f0ba0d8996d23ffe99f749f61a70068bff87a4a38a9062c94902",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/ablations_ensemble_raw.csv",
+   "sha256": "ea0d2083bdd8cc36af393aab6d7a23d868d1bdb2be43364c2544a7841c817ffb",
    "role": "output",
    "redistributable": true
   },
   {
    "path": "results/ablations.md",
-   "sha256": "bc521b6e96f17c068b071bda566ab8607f864b15c9ef87c8331bfc68ee309359",
+   "sha256": "0c64cbc975959d6632893f8a840d3dfd92b08114669abf1b011356afadc972c9",
    "role": "output",
    "redistributable": true
   }

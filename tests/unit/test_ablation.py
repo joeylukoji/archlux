@@ -24,7 +24,7 @@ def rows():  # type: ignore[no-untyped-def]
     model, reference = AnalyticSurrogate(), SplitFluxOracle()
     q = ab.calibrate_q(model, reference, list(zip(*two_room_vectors(20, seed=2), strict=True)))
     cases = ab.make_cases(generate_corpus(3, seed=17), _context, seed=17, n_inits=2)
-    configs = ab.configurations(model, reference, q, budgets=(0.05,))
+    configs = ab.configurations(model, reference, q, budgets=(0.05,), gradient_free=True)
     return ab.run_ablations(
         cases, configs, legalize_trace=ax.legalize_trace, model=model, reference=reference
     )
@@ -73,6 +73,13 @@ def test_record_hashes_files_and_flags_restricted_inputs(tmp_path: Path) -> None
     assert files["out.csv"]["sha256"] == repro.file_sha256(result)
     repro.write_record(tmp_path / "run.json", run)
     assert json.loads((tmp_path / "run.json").read_text())["seed"] == 17
+
+
+def test_gradient_free_row_runs_on_the_same_cases(rows) -> None:  # type: ignore[no-untyped-def]
+    fd = [r for r in rows if r.config == "fw_finite_difference"]
+    assert len(fd) == 6
+    assert all(r.valid for r in fd)
+    assert all(r.fw_status != "-" for r in fd)  # it did run Frank-Wolfe
 
 
 def test_git_state_of_this_repository() -> None:
