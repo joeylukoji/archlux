@@ -1,0 +1,124 @@
+{
+ "git": {
+  "commit": "a61db229932828d4babb882c7228e8f4712fac29",
+  "dirty": false
+ },
+ "manifest": {
+  "version": "0.10.0.dev0",
+  "timestamp": "2026-10-25T18:01:32.264745+00:00",
+  "seed": 17,
+  "data_fingerprint": null,
+  "split": null,
+  "environment": [
+   [
+    "networkx",
+    "3.7"
+   ],
+   [
+    "numpy",
+    "2.5.3"
+   ],
+   [
+    "ortools",
+    "9.15.6755"
+   ],
+   [
+    "python",
+    "3.13.17"
+   ],
+   [
+    "scipy",
+    "1.18.1"
+   ],
+   [
+    "shapely",
+    "2.2.0"
+   ]
+  ],
+  "parameters": [],
+  "model": null
+ },
+ "platform": {
+  "system": "Linux",
+  "machine": "x86_64"
+ },
+ "seed": 17,
+ "command": "python experiments/j9_review.py",
+ "parameters": {
+  "azimuths": [
+   0,
+   45,
+   90,
+   135,
+   180,
+   225,
+   270,
+   315
+  ],
+  "budgets_m": [
+   0.5,
+   1.0,
+   2.0,
+   3.0
+  ],
+  "penalties": [
+   0.0,
+   0.1,
+   1.0
+  ],
+  "min_areas_m2": [
+   4.0
+  ],
+  "repair_budget": 16,
+  "min_width_m": 0.5,
+  "surrogate": "AnalyticSurrogate(sDA)",
+  "reference": "SplitFluxOracle",
+  "quick": false,
+  "machine": {
+   "system": "Linux",
+   "release": "6.18.44-fc-v153",
+   "machine": "x86_64",
+   "processor": "x86_64",
+   "cpu_count": 4,
+   "python": "3.13.17"
+  }
+ },
+ "files": [
+  {
+   "path": "results/j9_inputs.json",
+   "sha256": "db165be4040d54813a45b4ba3b1adbe2b8215729580c22702e708a17d60f7495",
+   "role": "input",
+   "redistributable": true
+  },
+  {
+   "path": "results/j9_variants_raw.csv",
+   "sha256": "7fb8c3f150af3ee20f7054df528f926b255f767a6f474066fb50434a36074e57",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j9_old_variants.csv",
+   "sha256": "0442ccf8625a7509d238711cb948b08f17ef0d36700c79fdc65f4afb3dc0ec85",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j9_decomposition.csv",
+   "sha256": "320dadc3143f08d170bb859895226d8abfc00e569f2122da6ef87ac91d006c2d",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j9_timing_raw.csv",
+   "sha256": "5a356c6fb4119bb53077e7d606b037e3dd1edafe865ee71c3d8d0d775f4bb72f",
+   "role": "output",
+   "redistributable": true
+  },
+  {
+   "path": "results/j9_review.md",
+   "sha256": "5f72c26601bba446ad8599c4a89e6363371bb91754ae6fc5957bf8692296b0c0",
+   "role": "output",
+   "redistributable": true
+  }
+ ]
+}
