@@ -20,14 +20,24 @@ if TYPE_CHECKING:
     from archlux.certify.repair import render_repair as render_repair
     from archlux.certify.repair import room_changes as room_changes
     from archlux.certify.report import render as render
+    from archlux.certify.run import RunReport as RunReport
+    from archlux.certify.run import run_repair as run_repair
+    from archlux.certify.run import tally as tally
+    from archlux.certify.validation import ValidationReport as ValidationReport
+    from archlux.certify.validation import validate_plan as validate_plan
 
 __all__ = [
     "RoomChange",
+    "RunReport",
+    "ValidationReport",
     "build_bound",
     "render",
     "render_repair",
     "room_changes",
+    "run_repair",
+    "tally",
     "translate_duals",
+    "validate_plan",
     "verify_exactly",
 ]
 
@@ -37,6 +47,11 @@ _ATTRS = {
     "render_repair": "archlux.certify.repair",
     "room_changes": "archlux.certify.repair",
     "RoomChange": "archlux.certify.repair",
+    "RunReport": "archlux.certify.run",
+    "run_repair": "archlux.certify.run",
+    "tally": "archlux.certify.run",
+    "ValidationReport": "archlux.certify.validation",
+    "validate_plan": "archlux.certify.validation",
     "translate_duals": "archlux.certify.dual",
     "verify_exactly": "archlux.certify.proof",
 }
