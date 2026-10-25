@@ -36,6 +36,33 @@ Jin & Candès 2023 ; conforme pondéré, Fannjiang et al. 2022) est prévue en p
 6.4 du plan. Pour un plan échangeable, si un test d'échangeabilité rejette,
 `build_bound` rend `None` et le certificat porte `NOT EVALUABLE`.
 
+## Échangeabilité et données groupées
+
+Les variantes d'un même logement (azimuts, corruptions) ne sont pas échangeables
+entre elles. Les ensembles sont tirés sur les **plans sources**
+(`data.provenance.split_by_group`), `check_no_group_leakage` refuse une source
+présente dans deux ensembles, et chaque calibration ne garde **qu'une variante par
+source**. La garantie est **marginale** : elle ne dit rien d'une orientation donnée.
+
+## Mesuré : couverture après sélection
+
+Protocole `experiments/j5_selection.py` (`results/j5_selection.md`) : 400 plans
+sources synthétiques à deux pièces x 4 azimuts, 10 répétitions, \(\alpha = 0{,}10\),
+moyenne des répétitions et intervalle de Student à 95 % :
+
+| Procédure | Couverture | Largeur moyenne | Garantie |
+|---|--:|--:|---|
+| calibration passive, plans passifs | 88,6 % [85,9 ; 91,4] | 31,3 | oui |
+| calibration passive, plans choisis par Frank-Wolfe | **76,0 %** [71,9 ; 80,0] | 31,3 | **non** |
+| calibration sur les sorties de la politique figée | 91,3 % [88,2 ; 94,4] | 38,0 | oui, pour cette politique |
+
+La couverture passive ne se transporte pas aux plans sélectionnés. Calibrer sur les
+sorties de la politique figée (son \(\hat q\) vient de la moitié passive, la
+calibration de la politique d'une seconde moitié disjointe) rétablit la garantie, au
+prix d'intervalles 21 % plus larges. Sous le minimum conforme, `guarantee` rend
+`refused` ; `below_target` signale toute strate dont l'intervalle sur les répétitions
+reste sous \(1-\alpha\).
+
 ## Sens des indicateurs
 
 - sDA, UDI, vue : on publie la **borne inférieure** (`>=`).
@@ -49,6 +76,10 @@ Frank-Wolfe maximise \(J = \hat\mu - q̂\,\hat\sigma\), pas \(\hat\mu\). Là où
 \(\hat\sigma\) s'ouvre, \(J\) chute, l'optimiseur revient. Classe :
 `light.objective.Daylight`. Le flottant \(q̂\) est injecté : `light` n'importe
 pas `uq`.
+
+**Limite mesurée.** Tous les substituts livrés rendent un \(\hat\sigma\)
+**constant** : la pénalité est alors un décalage constant, sans effet sur le gradient,
+et l'optimiseur aboutit au même plan avec ou sans elle (`results/ablations.md`).
 
 Formule : [statistique](../formulas/statistics.md).
 Tutoriel : [calibrer un substitut](../tutorials/calibrate-a-surrogate.md).

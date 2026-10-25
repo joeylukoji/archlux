@@ -20,3 +20,20 @@ in `splits/v1/`. **Deduplicate before splitting**, never the other way round.
 
 The calibration set can only be read with a token issued **after** the weights
 are frozen (`uq.registry`).
+
+## Provenance and splits by source plan
+
+`data.provenance` keeps every sample traceable to the plan it came from:
+
+- `SampleId(source, corruption, variant, run)`, key `source/corruption/variant/run`:
+  the **source** is the dwelling, the statistical unit and the split key;
+- `split_by_group(sources, seed=...)`: train / validation / calibration / test drawn on
+  sources (40 / 10 / 25 / 25 % by default), ordered by a seeded hash so that adding a
+  source never reshuffles the others;
+- `check_no_group_leakage`: refuses a source present in two sets (eight azimuths of
+  one dwelling in calibration and test would make the coverage about seen plans);
+- `cross_split_near_duplicates`: near-duplicate source plans that ended up in
+  different sets (the check that deduplication ran before the split);
+- `FilterLog`: count before and after each filter, rendered as a table, so that a rate
+  always comes with its denominator (MSD: 1 247 read until 400 were kept; the loader's
+  `LoadStatistics` lists the rejection reasons).
