@@ -23,6 +23,11 @@ What is guaranteed here is **geometric**: every variant tiles its outline, and t
 certificate proves it. The daylight guarantee covers the frozen oracle, not an LM-83
 sDA (`docs/limitations.md`).
 
+The score printed is `AnalyticSurrogate(target_indicator="sDA")`, in m2-weighted points:
+it carries the label "sDA" but is not one, and the pages call it "surrogate score". The
+reviewed re-run, against the closed-form reference and with a budget / penalty /
+minimum-area sweep, is `j9_review.py` (inputs rebuilt by `j9_inputs.py`).
+
 Usage: j9_orientation.py [plans.jsonl] [n_plans] [budget_m]
 """
 
@@ -70,7 +75,7 @@ def main() -> None:
         f"`min_width = {DEFAULT_MIN_WIDTH:.2f} m`.\n",
         "**The optimized objective is not real daylight**: see the header of "
         "`experiments/j9_orientation.py`. What is guaranteed is geometric.\n",
-        "| plan | rooms | azimuth of the best sDA | gain | displacement | "
+        "| plan | rooms | azimuth of the best surrogate score | predicted gain | displacement | "
         "smallest side | valid variants |",
         "|---|--:|--:|--:|--:|--:|--:|",
     ]
@@ -110,7 +115,7 @@ def main() -> None:
             areas = [q.area for q in variant.rooms]
             scores.append((azimuth, before, after, moved, min(sides), min(areas), max(areas)))
             gain = 100 * (after - before) / max(abs(before), 1e-9)
-            panels.append((variant, f"{azimuth}° — sDA {after:.0f} ({gain:+.0f} %)"))
+            panels.append((variant, f"{azimuth}° — score {after:.0f} ({gain:+.0f} %)"))
 
         name = plan_json["id"]
         (ROOT / f"{name}.svg").write_text(
@@ -121,7 +126,8 @@ def main() -> None:
             f"# {name}: variants by azimuth\n",
             f"{len(valid.rooms)} rooms, characteristic side {diag.size:.2f} m, "
             f"budget {budget:.1f} m.\n",
-            "| azimuth | legalized sDA | variant sDA | gain | displacement | "
+            "| azimuth | legalized surrogate score | variant surrogate score | predicted gain | "
+            "displacement | "
             "smallest side | min area | max area |",
             "|--:|--:|--:|--:|--:|--:|--:|--:|",
         ]
