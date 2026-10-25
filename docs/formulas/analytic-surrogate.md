@@ -59,3 +59,12 @@ Constants: `FACTEUR_PROFONDEUR`, `HAUTEUR_LINTEAU`, `KAPPA_SUD`,
 Useful-depth rule: CIBSE, *Lighting Guide 10: Daylighting — a guide
 for designers*, London. Harmonics: [circular](circular.md).
 The vector protocol: `ARCHITECTURE.md` §10.
+
+## Surrogate, not reference
+
+This surrogate, the split-flux oracle and the trained networks are all
+**surrogates**: they predict. What they are checked against is a
+**reference** (`light.reference`), and every measure says which kind:
+`closed_form` (`ClosedFormReference`, the frozen oracle) or `physical`
+(`light.radiance.RadianceReference`). See
+[ground truth](../data/ground-truth.md) §7.

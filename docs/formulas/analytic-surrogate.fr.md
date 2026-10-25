@@ -59,3 +59,11 @@ Constantes : `FACTEUR_PROFONDEUR`, `HAUTEUR_LINTEAU`, `KAPPA_SUD`,
 Règle de profondeur utile : CIBSE, *Lighting Guide 10 : Daylighting — a guide
 for designers*, Londres. Harmoniques : [circulaire](circular.md).
 Le protocole vectoriel : `ARCHITECTURE.md` §10.
+
+## Substitut, pas référence
+
+Ce substitut, l'oracle split-flux et les réseaux entraînés **prédisent**. Ils
+sont comparés à une **référence** (`light.reference`) dont chaque mesure dit
+la nature : `closed_form` (`ClosedFormReference`, l'oracle figé) ou `physical`
+(`light.radiance.RadianceReference`). Voir
+[vérité terrain](../data/ground-truth.md) §7.

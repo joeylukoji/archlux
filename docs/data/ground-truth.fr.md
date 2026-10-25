@@ -152,9 +152,37 @@ est le facteur limitant.
 |---|---|
 | Chargeur WKT → `Plan` (Swiss Dwellings / MSD) | `data/loaders.py` (n'existe pas) |
 | Projection ouverture WKT → `(wall_id, s, relative_width)` | idem |
-| Adaptateur Radiance derrière `Surrogate` | `light/radiance.py`, extra `sim` |
+| Simulations Radiance sur un corpus vitré | `light/radiance.py` existe (une `Reference`, pas un `Surrogate`) ; aucune simulation lancée : binaires absents de la CI |
 | Transformeur sur jetons | `light/learned.py` — aujourd'hui `_charger_torch` lève toujours |
 | Résultats de couverture sur corpus réel | `results/` |
+
+## 7. Substitut contre référence, et lancer Radiance
+
+Le code sépare les deux dans les types (`light.reference`) : un `Surrogate`
+prédit ; une `Reference` mesure et renvoie une `ReferenceMeasure` qui porte
+`unit`, `kind` (`"closed_form"` pour l'oracle figé, `"physical"` pour
+`RadianceReference`), `engine` et `parameters`.
+
+`evaluate_surrogate` n'évalue que des plans tenus à l'écart (il refuse tout
+identifiant d'entraînement ou de réglage) ; `compare_before_after` donne, plan
+par plan, le gain prédit, le gain de référence, leur écart et le déplacement.
+`summarize_gains(...).claim` ne vaut `"confirmed"` que si une référence
+**physique** a mesuré chaque plan. Mesure actuelle
+(`results/j4_before_after.csv`, référence = oracle) : gain prédit moyen
+**9,1 %**, gain de l'oracle **2,6 %** ; 9 plans optimisés sur 16 signalés hors
+distribution (`light.ood`). Un chiffre comme « +17,2 % » reste donc **prédit**.
+
+Pour lancer Radiance : installer Radiance 5.4+ (`oconv`, `rtrace`, `gensky`
+sur le `PATH`), puis :
+
+```bash
+python scripts/simulate.py --radiance        # -> results/j4_simulations_radiance.csv
+pytest tests/unit/test_light_reference.py    # runs the integration test
+```
+
+La mesure est un
+éclairement ponctuel moyen (lux), pas un sDA LM-83 ; un plan sans ouverture
+est refusé, et le corpus synthétique n'en a aucune.
 
 **Voir aussi :** [Swiss Dwellings](swiss-dwellings.md), [MSD](msd.md),
 [CubiCasa5K](cubicasa.md), [synthétique](synthetic.md),
