@@ -60,6 +60,7 @@ plugins:
             The shared oracle: L'oracle partagé
             Why not an image: Pourquoi pas une image
             Conformal prediction: Prédiction conforme
+            Independent validation: Validation indépendante
             Formulas: Formules
             Catalogue: Catalogue
             Relative order: Ordre relatif
@@ -120,6 +121,7 @@ nav:
       - The shared oracle: concepts/shared-oracle.md
       - Why not an image: concepts/why-not-an-image.md
       - Conformal prediction: concepts/conformal-prediction.md
+      - Independent validation: concepts/independent-validation.md
   - Formulas:
       - Catalogue: formulas/index.md
       - Relative order: formulas/relative-order.md
