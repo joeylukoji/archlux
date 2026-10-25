@@ -44,6 +44,7 @@ import platform
 import statistics
 import sys
 import time
+from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -614,7 +615,12 @@ def report(
         f"{len(timing)} runs ({len({t['plan'] for t in timing})} plans x "
         f"{len(AZIMUTHS)} azimuths), raw rows in `j9_timing_raw.csv`, machine in "
         "`j9_review_manifest.json`. These are not necessarily the 20 plans of the "
-        "article, which did not name them.\n",
+        "article, which did not name them. Outcome of the L1 pass without tiling: "
+        + ", ".join(
+            f"{k} {v}" for k, v in sorted(Counter(str(t["l1_status"]) for t in timing).items())
+        )
+        + " (a refusal is timed like a success: on generated plans the first row "
+        "times how long the L1 pass takes to refuse).\n",
         "| stage | n | median (ms) | p90 (ms) | max (ms) |",
         "|---|--:|--:|--:|--:|",
     ]
