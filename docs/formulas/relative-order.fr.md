@@ -51,6 +51,45 @@ d'ordre. 15 pièces : \(\sim 210\) contraintes brutes, \(\sim 30\) après réduc
 une pièce séparée seulement sur l'autre axe disparaîtrait, et le polytope perdrait
 ses bornes.
 
+## Portée : une seule topologie, fixée
+
+**Comment la séquence de contraintes est produite.** Une fois, à partir du plan
+**proposé**, par `deduce_order` (et `WallSide` pour les murs porteurs, les coutures des
+pièces fusionnées pour `merges=`, la grille de `deduce_grid` avec `tiling=True`). Elle
+n'est jamais régénérée pendant la résolution : la passe L1 classique et Frank-Wolfe
+travaillent tous deux dans le polytope de cet unique ordre, et Frank-Wolfe fige en plus
+les contacts saturés par la passe L1 (`freeze_contacts`).
+
+**Ce qu'elle peut représenter.** Tout plan qui conserve, pour chaque paire de pièces,
+le côté de l'arête choisie ci-dessus (« \(A\) à gauche de \(B\) », « \(A\) sous \(B\) »),
+chaque pièce du bon côté de chaque mur porteur et (avec `merges=`) l'ordre de découpe de
+chaque pièce fusionnée. Dans cet ensemble, le solveur ne change **que les dimensions et
+les positions**.
+
+**Ce qu'elle ne peut pas représenter.** Tout ce qui change la topologie : échanger deux
+pièces, faire passer une pièce de la gauche d'une autre au-dessus d'elle, créer ou
+supprimer une adjacence que l'ordre interdit, ajouter, supprimer, fusionner ou scinder
+une pièce, transformer un L en Z, ou faire traverser un mur porteur à une pièce. La
+méthode est une légalisation de la topologie du générateur, pas une recherche
+d'agencement : un plan dont le défaut ne peut disparaître que par un changement
+topologique est hors de sa portée, par construction.
+
+**Comment l'infaisabilité est détectée, et ce qu'elle signifie.** Un refus est toujours
+typé, jamais un « au mieux » silencieux :
+
+| Exception | Détectée par | Signifie |
+|---|---|---|
+| `InconsistentOrder` | un cycle dans le graphe de contraintes (`build_graph`) | l'ordre lui-même est contradictoire |
+| `MissingSeparation` | une paire sans arête | l'ordre ne sépare pas deux pièces |
+| `Infeasible` avec certificat de Farkas | le PL L1 (`lmo.solver.solve`), certificat vérifié exactement | **pour cet ordre**, le programme ne tient pas dans l'enveloppe ; un autre ordre le pourrait |
+| `Infeasible` venant de `restrict_to_budget` | la boîte de budget manque les bornes d'une variable | le budget de déplacement est trop petit pour ce plan |
+| `GapNeedsTiling` | la preuve exacte ne trouve qu'un jour | relancer avec `tiling=True` |
+| `GridNotRecoverable` | `deduce_grid` | les pièces ne tombent pas dans les cellules d'une grille |
+
+Un certificat de Farkas prouve l'infaisabilité **du polytope de l'ordre proposé**, pas
+du programme de pièces : il ne dit pas qu'aucun plan valide n'existe, seulement qu'aucun
+n'existe avec cette topologie.
+
 ## Cas d'utilisation
 
 | Faire | Ne pas faire |

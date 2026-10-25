@@ -43,6 +43,15 @@ crosses its interior (so a room merely bounded by the wall is accepted)."""
 CUTS_LENGTH_M: Final = 1e-6
 """Length tolerance of the cutting-plane loop (``lmo.coupes._TOLERANCE_LONGUEUR``)."""
 
+FW_FEASIBILITY_M: Final = 1e-6
+"""How far a Frank-Wolfe start or oracle vertex may violate its domain (``solve``).
+
+The start comes out of an LP and meets its rows only up to the solver tolerance (about
+1e-7 m); beyond this value it is not a point of the domain and Frank-Wolfe refuses it.
+The same value tells a tight constraint at the returned point (``Trace.active_bounds``),
+and, multiplied by the L1 norm of the gradient, bounds the negative gap an optimal
+vertex may show from LP noise alone."""
+
 # --- Areas (square metres) -----------------------------------------------------------
 
 OVERLAP_M2: Final = 1e-9

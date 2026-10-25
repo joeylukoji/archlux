@@ -30,6 +30,11 @@ stays linear.
 - The decomposition of an L is not unique in general: **without the convention
   above, the results are not reproducible.**
 
+**Topology.** The decomposition is fixed once, on the proposed plan. The solver keeps
+it: an L stays an L (the order of the sub-rectangle ends is kept and every seam keeps
+at least `min_width`), it cannot become a Z, split, or absorb a neighbour. See
+[relative order](relative-order.md), "Scope: one fixed topology".
+
 ## Code
 
 | Symbol | Function |

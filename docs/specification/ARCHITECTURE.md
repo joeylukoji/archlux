@@ -284,7 +284,7 @@ archlux/
 │   ├── types.py
 │   ├── geom/{graph,polytope,tiling,grid,grid_repair,rectilinear,diagnostic}.py
 │   ├── lmo/{solver,cuts}.py
-│   ├── solve/{frank_wolfe,trace}.py
+│   ├── solve/{frank_wolfe,trace,displacement,sweep}.py
 │   ├── light/{protocol,analytic,learned,base,tokens,objective,split_flux,validation}.py
 │   ├── orient/circular.py
 │   ├── uq/{conformal,registry,drift,reliability}.py
