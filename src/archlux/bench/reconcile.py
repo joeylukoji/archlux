@@ -208,7 +208,8 @@ def _flags(rows: Sequence[dict[str, str]], key: str) -> np.ndarray:
     numpy.ndarray
         ``rows[i][key] == "True"`` for every row.
     """
-    return _column(rows, key) == "True"
+    flags: np.ndarray = _column(rows, key) == "True"
+    return flags
 
 
 def _n(rows: Sequence[dict[str, str]], key: str) -> int:
@@ -817,12 +818,13 @@ def _b9_rows(root: Path) -> list[tuple[str, float, float, float, float]]:
     pattern = re.compile(
         r"\| (\d+)° \| [\d.]+ \| [\d.]+ \| \+?(-?[\d.]+) % \| ([\d.]+) m \| ([\d.]+) m"
     )
-    out = []
+    out: list[tuple[str, float, float, float, float]] = []
     for path in sorted((root / "orientation").glob("hd*.md")):
         for line in path.read_text(encoding="utf-8").splitlines():
             m = pattern.match(line)
             if m:
-                out.append((path.stem, *(float(g) for g in m.groups())))
+                azimuth, gain, displacement, side = (float(g) for g in m.groups())
+                out.append((path.stem, azimuth, gain, displacement, side))
     return out
 
 

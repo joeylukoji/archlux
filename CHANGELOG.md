@@ -8,6 +8,24 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — scientific-review corrections (validator, Frank–Wolfe audit, surrogate reliability, conformal after selection)
+
+- **Independent validator.** `archlux.certify.validate_plan` / `ValidationReport` re-check the final plan constraint by constraint from its coordinates alone (schema: id, hard/soft, severity, method, tolerance; `satisfied` / `violated` / `unknown` with measure and reason). A hard constraint violated or unknown refuses validity. Evidence is labelled `exact` (rational arithmetic against declared tolerances) or `numeric` (GEOS with tolerance); every report lists what it never establishes (building code, accessibility, fire safety, constructibility, daylight), is bound to the checked plan by fingerprint and round-trips through JSON. `legalize` now runs it on every plan it returns and raises `InvariantViolation` otherwise.
+- **Run outcomes.** `archlux.certify.run_repair` / `RunReport` / `tally`: every attempt is `repaired`, `rejected`, `infeasible` or `computation_failure` ("no certified solution found"), with initial/final violations, objective, predicted bound, displacement, iterations, stop status and timing; `tally` counts outcomes over all input plans.
+- **Frank–Wolfe audit.** The start point and every oracle vertex are checked against the domain (new status `oracle_inconsistent`, tolerance `tolerances.FW_FEASIBILITY_M`); opt-in stagnation stop (`stall_window`, status `stalled`); `FrankWolfeResult.converged`, `.objective`; `reference=` and `penalty=` (quadratic proximity penalty, the calibrated `value` stays the raw surrogate); `Trace.parameters`, `active_bounds`, `budget_active`, `displacements`, `objectives`. New `solve.displacement` (`measure_displacement`, `summarize`, `count_saturated`) and `solve.sweep` (iteration × displacement budget × penalty grids). Fixed-topology scope of the relative order documented. Defaults unchanged.
+- **Surrogate vs reference.** `archlux.light.reference` (`Reference`, `ReferenceMeasure`, `ClosedFormReference`), `archlux.light.radiance` (`RadianceReference`, physical, needs the Radiance binaries), `archlux.light.evaluation` (`evaluate_surrogate` on held-out plans, `compare_before_after`: a gain is "confirmed" only when a physical reference measured it), `archlux.light.ood` (out-of-distribution flag), `archlux.light.card` (`SurrogateCard`), `archlux.light.trust` (`gradient_reliability`, `step_gain_audit`, `gradient_trust`, `GuardedSurrogate`, `FiniteDifferenceSurrogate`); `experiments/j4_reliability.py`.
+- **Conformal after selection, data traceability, reproducibility.** `bench.reconcile` with `results/RECONCILIATION.md` (B1–B9 recomputed from raw files, verdict per number); `bench.stats.cluster_bootstrap_proportion`; `data.provenance` (ids per source plan / corruption / variant / run, split by source plan, leakage and near-duplicate checks, filter counts); `bench.selection` (passive, passive-on-selected and frozen-policy calibrations); `bench.ablation`; `bench.repro` run records; `make reproduce`, `make reconcile`.
+
+### Changed
+
+- `scripts/validate_gradient.py` checks all four azimuths (it checked south only) and now exits with an error: sign agreement is below 0.80 at 90° and 270°.
+- The MSD loader drops an opening that overhangs an end of the wall it is snapped to (it was kept, centred at the wall's end).
+
+### Measured
+
+- A passive conformal calibration at 90 % covers 76.0 % [71.9 ; 80.0] of the plans Frank–Wolfe selected (synthetic, 400 plans × 4 azimuths, 10 repetitions); calibrating on the frozen policy's outputs restores 91.3 % with 21 % wider intervals.
+- On 16 optimized plans, about 70 % of the predicted gain is the surrogate's own error against the closed-form oracle; predicted and realised gains share their sign on 55 % of Frank–Wolfe steps. No physical (Radiance) confirmation exists yet.
+
 ### Added — PLAN.md 5.1 (optional part): IFC import
 
 - New `Plan.from_ifc(path, *, storey=None, default_type=None)` and `Structure.from_ifc(path, *, storey=None)`, over `archlux.io.ifc_io` (`load_ifc_plan`, `load_ifc_structure`), with the existing extra `bim` (ifcopenshell), imported at call time.

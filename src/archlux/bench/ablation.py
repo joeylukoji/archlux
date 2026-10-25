@@ -256,18 +256,30 @@ def _run_one(
     """
     head: dict[str, Any] = {"config": name, "source": case.source, "init": case.init}
     head["azimuth"] = case.context.orientation.deg
-    idle = {"iterations": 0, "fw_status": "-"}
+    idle: dict[str, Any] = {"iterations": 0, "fw_status": "-"}
     if kwargs is None:
         s, r = _values(case.plan, case.context, model, reference)
         valid = verify_exactly(case.plan, case.context).valid
-        values = {"valid": valid, "surrogate": s, "reference": r, "displacement": 0.0}
+        values: dict[str, Any] = {
+            "valid": valid,
+            "surrogate": s,
+            "reference": r,
+            "displacement": 0.0,
+        }
         return AblationRow(**head, status="ok", **values, **idle)
     try:
         out, trace = legalize_trace(case.plan, case.context, **kwargs)
     except ArchluxError as error:
         nan = float("nan")
-        values = {"valid": False, "surrogate": nan, "reference": nan, "displacement": nan}
-        return AblationRow(**head, status=type(error).__name__, **values, **idle)
+        failed: dict[str, Any] = {
+            "valid": False,
+            "surrogate": nan,
+            "reference": nan,
+            "displacement": nan,
+        }
+        return AblationRow(**head, status=type(error).__name__, **failed, **idle)
+    if out.certificate is None:  # legalize always certifies; guard for the type checker
+        raise InvariantViolation(("legalize returned a plan without a certificate",))
     proof = out.certificate.geometry
     s, r = _values(out, case.context, model, reference)
     return AblationRow(

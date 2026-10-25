@@ -510,7 +510,7 @@ def _choose_model(
         )
     }
     model: Surrogate = fitted if mae["affine"] < mae["raw"] else base
-    record = {
+    record: dict[str, object] = {
         "validation_mae_raw": mae["raw"],
         "validation_mae_affine": mae["affine"],
         "model": "affine" if model is fitted else "raw",
