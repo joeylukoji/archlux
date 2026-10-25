@@ -30,11 +30,13 @@ from archlux.types import (
     Manifest,
     ModelTrace,
     Opening,
+    OptimizationStatus,
     PerformanceBound,
     Plan,
     Point,
     Regime,
     Room,
+    ValidationSummary,
     Wall,
 )
 
@@ -388,7 +390,7 @@ def _certificate_to_dict(certificate: Certificate | None) -> dict[str, Any] | No
         return None
     performance = certificate.performance
     manifest = certificate.manifest
-    return {
+    out: dict[str, Any] = {
         "geometry": _proof_to_dict(certificate.geometry),
         # An explicit `None` rather than an absent key: "no performance guarantee" is
         # information, not a serialization oversight.
@@ -396,6 +398,94 @@ def _certificate_to_dict(certificate: Certificate | None) -> dict[str, Any] | No
         "duals": [[label, cost] for label, cost in certificate.duals],
         "manifest": None if manifest is None else manifest_to_dict(manifest),
     }
+    # Written only when present, so that certificates without them keep their bytes.
+    if certificate.validation is not None:
+        out["validation"] = _validation_to_dict(certificate.validation)
+    if certificate.optimization is not None:
+        out["optimization"] = _optimization_to_dict(certificate.optimization)
+    return out
+
+
+def _validation_to_dict(summary: ValidationSummary) -> dict[str, Any]:
+    """Serialize the validator's summary.
+
+    Parameters
+    ----------
+    summary
+        Summary to serialize.
+
+    Returns
+    -------
+    dict
+        Its JSON form, lists for the tuples.
+    """
+    return {
+        "evidence": summary.evidence,
+        "plan_fingerprint": summary.plan_fingerprint,
+        "checked": list(summary.checked),
+        "failing": list(summary.failing),
+        "not_applicable": list(summary.not_applicable),
+        "scope": list(summary.scope),
+    }
+
+
+def _validation_from_dict(data: Any) -> ValidationSummary:
+    """Rebuild the validator's summary; its invariants are re-checked.
+
+    Parameters
+    ----------
+    data
+        JSON form of a summary.
+
+    Returns
+    -------
+    ValidationSummary
+        The summary.
+    """
+    return ValidationSummary(
+        evidence=data["evidence"],
+        plan_fingerprint=str(data["plan_fingerprint"]),
+        checked=tuple(str(c) for c in data["checked"]),
+        failing=tuple(str(c) for c in data["failing"]),
+        not_applicable=tuple(str(c) for c in data["not_applicable"]),
+        scope=tuple(str(c) for c in data["scope"]),
+    )
+
+
+def _optimization_to_dict(status: OptimizationStatus) -> dict[str, Any]:
+    """Serialize the Frank-Wolfe stop status; an infinite gap becomes ``None``.
+
+    Parameters
+    ----------
+    status
+        Status to serialize.
+
+    Returns
+    -------
+    dict
+        Its JSON form (strict JSON has no infinity).
+    """
+    gap = status.gap if math.isfinite(status.gap) else None
+    return {"status": status.status, "iterations": status.iterations, "gap": gap}
+
+
+def _optimization_from_dict(data: Any) -> OptimizationStatus:
+    """Rebuild the Frank-Wolfe stop status; ``None`` gap reads back as ``inf``.
+
+    Parameters
+    ----------
+    data
+        JSON form of a status.
+
+    Returns
+    -------
+    OptimizationStatus
+        The status.
+    """
+    gap = math.inf if data["gap"] is None else _real(data["gap"], "optimization.gap")
+    return OptimizationStatus(
+        status=str(data["status"]), iterations=int(data["iterations"]), gap=gap
+    )
 
 
 def _certificate_from_dict(data: Any) -> Certificate | None:
@@ -415,11 +505,14 @@ def _certificate_from_dict(data: Any) -> Certificate | None:
         return None
     performance = data["performance"]
     manifest = data["manifest"]
+    validation, optimization = data.get("validation"), data.get("optimization")
     return Certificate(
         geometry=_proof_from_dict(data["geometry"]),
         performance=None if performance is None else _bound_from_dict(performance),
         duals=tuple((str(label), _real(cost, f"dual {label}")) for label, cost in data["duals"]),
         manifest=None if manifest is None else _manifest_from_dict(manifest),
+        validation=None if validation is None else _validation_from_dict(validation),
+        optimization=None if optimization is None else _optimization_from_dict(optimization),
     )
 
 

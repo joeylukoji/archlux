@@ -13,7 +13,7 @@ que le système est conçu pour rendre difficile.
 | **Vérification** | Inspection finie, \(O(n^2)\) | Couverture \(\ge 1-\alpha\) sur un jeu de calibration |
 | **Peut être fausse ?** | Non (à la tolérance d'arrondi près) | Oui, dans au plus \(\alpha\) des cas |
 | **Type** | `GeometricProof` — aucun champ de probabilité | `PerformanceBound` — `coverage`, `n_calibration` et `regime` obligatoires |
-| **Bandeau** | `[EXACT]` | `[PREDICTION: coverage 90 %]` (plan échangeable) ou `[PREDICTION: selected plan, coverage NOT guaranteed]` |
+| **Bandeau** | `[EXACT]`, ou `[NUMERIC]` quand une vérification repose sur la virgule flottante ([validation indépendante](independent-validation.md)) | `[PREDICTION: coverage 90 %]` (plan échangeable), `[PREDICTION: policy-calibrated, coverage 90 %]` (calibration sur les sorties de la politique figée) ou `[PREDICTION: selected plan, coverage NOT guaranteed]` |
 
 La géométrie est un prédicat sur des rectangles : on peut le recompter. La lumière
 est un oracle **gelé** (`SplitFluxOracle`, split-flux BRE) : la borne dit « au moins

@@ -13,7 +13,7 @@ designed to make hard.
 | **Check** | Finite inspection, \(O(n^2)\) | Coverage \(\ge 1-\alpha\) on a calibration set |
 | **Can it be wrong?** | No (up to the rounding tolerance) | Yes, in at most \(\alpha\) of the cases |
 | **Type** | `GeometricProof` — no probability field | `PerformanceBound` — `coverage`, `n_calibration` and `regime` mandatory |
-| **Banner** | `[EXACT]` | `[PREDICTION: coverage 90 %]` (exchangeable plan) or `[PREDICTION: selected plan, coverage NOT guaranteed]` |
+| **Banner** | `[EXACT]`, or `[NUMERIC]` when a check relied on floating point ([independent validation](independent-validation.md)) | `[PREDICTION: coverage 90 %]` (exchangeable plan), `[PREDICTION: policy-calibrated, coverage 90 %]` (calibrated on the frozen policy's outputs) or `[PREDICTION: selected plan, coverage NOT guaranteed]` |
 
 The geometry is a predicate on rectangles: it can be recounted. Daylight is a
 **frozen** oracle (`SplitFluxOracle`, BRE split-flux): the bound says "at least nine

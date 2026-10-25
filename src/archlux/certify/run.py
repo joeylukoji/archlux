@@ -170,6 +170,15 @@ class RunReport:
         disagreement...).
     parameters : tuple of (str, str)
         Options passed to ``legalize``, as text, for reproduction.
+    ood_distance : float or None
+        Distance of the returned plan to the surrogate's training distribution, when an
+        ``ood_check`` was given (:meth:`archlux.light.ood.FeatureEnvelope.check`).
+    ood_uncertain : bool or None
+        Whether that check flags the prediction as uncertain (out of distribution).
+    gain_status : str or None
+        How the predicted gain stands against the reference
+        (:data:`archlux.light.evaluation.GainStatus`: ``closed_form_only`` while the
+        reference is the frozen formula, never ``confirmed`` without a physical one).
     """
 
     plan_id: str
@@ -190,6 +199,9 @@ class RunReport:
     error_type: str | None = None
     warnings: tuple[str, ...] = ()
     parameters: tuple[tuple[str, str], ...] = field(default=())
+    ood_distance: float | None = None
+    ood_uncertain: bool | None = None
+    gain_status: str | None = None
 
     @property
     def certified(self) -> bool:
@@ -257,6 +269,9 @@ class RunReport:
             "error_type": self.error_type,
             "warnings": list(self.warnings),
             "parameters": [list(pair) for pair in self.parameters],
+            "ood_distance": self.ood_distance,
+            "ood_uncertain": self.ood_uncertain,
+            "gain_status": self.gain_status,
         }
 
     def to_json(self) -> str:
@@ -312,6 +327,9 @@ class RunReport:
             error_type=_str_or_none(data["error_type"]),
             warnings=tuple(str(w) for w in warnings),
             parameters=tuple((str(k), str(v)) for k, v in parameters),
+            ood_distance=_float_or_none(data.get("ood_distance")),
+            ood_uncertain=_bool_or_none(data.get("ood_uncertain")),
+            gain_status=_str_or_none(data.get("gain_status")),
         )
         if data.get("certificate_status") != report.certificate_status:
             raise InvalidInput(
@@ -403,6 +421,60 @@ def _unpack(returned: object) -> tuple[Plan, object | None]:
     raise InvariantViolation((f"legalize returned {type(returned).__name__}, not a Plan",))
 
 
+_OOD_WARNING = "returned plan outside the surrogate's training distribution: prediction uncertain"
+
+
+def _bool_or_none(value: object) -> bool | None:
+    if value is None:
+        return None
+    if not isinstance(value, bool):
+        raise InvalidInput("report.ood_uncertain", f"expected a bool or null, got {value!r}")
+    return value
+
+
+def _optimization_fields(plan: Plan) -> dict[str, object]:
+    """Iterations and stop status from the certificate, when no trace was requested.
+
+    Parameters
+    ----------
+    plan : Plan
+        Returned plan.
+
+    Returns
+    -------
+    dict
+        ``iterations`` and ``stop_status`` (empty in classic mode).
+    """
+    status = None if plan.certificate is None else plan.certificate.optimization
+    if status is None:
+        return {}
+    return {"iterations": status.iterations, "stop_status": status.status}
+
+
+def _ood_fields(plan: Plan, ood_check: Callable[[Plan], object] | None) -> dict[str, object]:
+    """Distance and flag of an out-of-distribution check of the returned plan.
+
+    Parameters
+    ----------
+    plan : Plan
+        Returned plan.
+    ood_check : callable or None
+        Returns an object with ``distance`` and ``uncertain`` (an ``OODVerdict``).
+
+    Returns
+    -------
+    dict
+        ``ood_distance`` and ``ood_uncertain`` (empty without a check).
+    """
+    if ood_check is None:
+        return {}
+    verdict = ood_check(plan)
+    return {
+        "ood_distance": float(getattr(verdict, "distance")),  # noqa: B009 - duck-typed verdict
+        "ood_uncertain": bool(getattr(verdict, "uncertain")),  # noqa: B009
+    }
+
+
 def _trace_fields(trace: object | None) -> dict[str, object]:
     """Objective values, iteration count and stop status of a Frank-Wolfe trace.
 
@@ -462,6 +534,8 @@ def run_repair(
     merges: tuple[RectilinearRoom, ...] = (),
     extra: tuple[ExtraConstraint, ...] = (),
     reference_value: float | None = None,
+    ood_check: Callable[[Plan], object] | None = None,
+    gain_status: str | None = None,
     clock: Callable[[], float] = time.perf_counter,
     **options: object,
 ) -> RunReport:
@@ -486,6 +560,13 @@ def run_repair(
         Constraints added during optimization, re-checked on the final plan.
     reference_value : float or None, optional
         Value of an independent reference (simulation) of the returned plan, if run.
+    ood_check : callable or None, optional
+        ``plan -> verdict`` with ``distance`` and ``uncertain``, run on the returned plan
+        (wrap :meth:`archlux.light.ood.FeatureEnvelope.check`; ``certify`` does not import
+        ``light``).
+    gain_status : str or None, optional
+        Status of the predicted gain from
+        :func:`archlux.light.evaluation.compare_before_after`, copied into the report.
     clock : callable, optional
         Time source, injectable for tests.
     **options : object
@@ -525,7 +606,12 @@ def run_repair(
         )
     elapsed = clock() - start
     final = validate_plan(result, ctx, reference=plan, budget=budget, merges=merges, extra=extra)
-    fields = {**_trace_fields(trace), **_bound_fields(result)}
+    fields = {
+        **_optimization_fields(result),
+        **_trace_fields(trace),
+        **_bound_fields(result),
+        **_ood_fields(result, ood_check),
+    }
     status: RunStatus = "repaired" if final.valid else "computation_failure"
     failed = [r.spec.id for r in (*final.violated, *final.unknown) if r.spec.kind == "hard"]
     reason = (
@@ -541,7 +627,9 @@ def run_repair(
         max_displacement_m=max_displacement(result, plan),
         total_displacement_m=_total_displacement(result, plan),
         elapsed_s=elapsed,
-        warnings=_warnings(result, final, fields.get("stop_status")),
+        warnings=_warnings(result, final, fields.get("stop_status"))
+        + (_OOD_WARNING,) * bool(fields.get("ood_uncertain")),
+        gain_status=gain_status,
         **common,  # type: ignore[arg-type]
         **fields,  # type: ignore[arg-type]
     )

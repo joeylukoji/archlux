@@ -39,6 +39,7 @@ __all__ = [
     "Manifest",
     "ModelTrace",
     "Opening",
+    "OptimizationStatus",
     "Orientation",
     "PerformanceBound",
     "Plan",
@@ -46,6 +47,7 @@ __all__ = [
     "Regulation",
     "Room",
     "Structure",
+    "ValidationSummary",
     "Wall",
     "indicator_sign",
     "vectorize",
@@ -753,7 +755,7 @@ class GeometricProof:
             )
 
 
-Regime = Literal["exchangeable", "selected"]
+Regime = Literal["exchangeable", "selected", "policy_calibrated"]
 """Under which assumption a conformal bound was computed (PLAN.md batch 1.6).
 
 - ``"exchangeable"``: the plan is exchangeable with the calibration set (for example a
@@ -762,9 +764,15 @@ Regime = Literal["exchangeable", "selected"]
   Exchangeability is broken twice, by distribution shift and by the winner's curse (the
   argmax goes where the surrogate overestimates), so the nominal coverage is **not**
   guaranteed until the chosen plan is re-evaluated by the oracle (AUDIT.md §5.3).
+- ``"policy_calibrated"``: the plan was chosen by the optimizer, but the calibration
+  scores were computed on the outputs of **that same frozen policy** (same surrogate,
+  same settings), run on input plans exchangeable with this one. The nominal coverage
+  then holds again, marginally over such inputs (``results/j5_selection.md``: 91.3 %
+  measured for a 90 % target, on synthetic two-room plans). It says nothing about a
+  plan produced with other settings, which :func:`archlux.legalize` refuses.
 """
 
-REGIMES: tuple[Regime, ...] = ("exchangeable", "selected")
+REGIMES: tuple[Regime, ...] = ("exchangeable", "selected", "policy_calibrated")
 
 
 @dataclass(frozen=True, slots=True)
@@ -798,14 +806,15 @@ class PerformanceBound:
 
     @property
     def coverage_guaranteed(self) -> bool:
-        """True only when the nominal coverage holds: an exchangeable plan.
+        """True only when the nominal coverage holds (marginally, see :data:`Regime`).
 
         Returns
         -------
         bool
-            ``True`` only in the exchangeable regime.
+            ``True`` in the exchangeable and policy-calibrated regimes, ``False`` for a
+            selected plan bounded by a passive calibration.
         """
-        return self.regime == "exchangeable"
+        return self.regime in ("exchangeable", "policy_calibrated")
 
 
 @dataclass(frozen=True, slots=True)
@@ -865,6 +874,101 @@ class Manifest:
     model: ModelTrace | None = None
 
 
+Evidence = Literal["exact", "numeric", "refused"]
+"""Nature of a geometric validation (:class:`archlux.certify.validation.ValidationReport`).
+
+- ``"exact"``: every hard constraint settled in exact rational arithmetic against a
+  declared tolerance;
+- ``"numeric"``: at least one relied on a floating-point computation with tolerance
+  (GEOS): a numerical validation, not a proof;
+- ``"refused"``: a hard constraint is violated or could not be checked.
+"""
+
+
+@dataclass(frozen=True, slots=True)
+class ValidationSummary:
+    """What the independent validator established on the returned plan, in brief.
+
+    Built by :meth:`archlux.certify.validation.ValidationReport.to_summary`; the full
+    report (one measure per constraint) is recomputed on demand by
+    :func:`archlux.certify.validate_plan`. Hashable, unlike the report.
+
+    Attributes
+    ----------
+    evidence : {"exact", "numeric", "refused"}
+        See :data:`Evidence`.
+    plan_fingerprint : str
+        Fingerprint of the plan checked: the summary is about that geometry only.
+    checked : tuple of str
+        Identifiers of the hard constraints found satisfied.
+    failing : tuple of str
+        Identifiers of the hard constraints violated or unknown.
+    not_applicable : tuple of str
+        Identifiers of the constraints skipped (no budget, no opening...).
+    scope : tuple of str
+        What the validation never establishes (building code, fire safety, daylight...).
+    """
+
+    evidence: Evidence
+    plan_fingerprint: str
+    checked: tuple[str, ...] = ()
+    failing: tuple[str, ...] = ()
+    not_applicable: tuple[str, ...] = ()
+    scope: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Refuse an unknown evidence, or a non-refused summary with failing checks."""
+        if self.evidence not in ("exact", "numeric", "refused"):
+            raise InvalidInput("evidence", f"unknown evidence {self.evidence!r}")
+        if (self.evidence == "refused") != bool(self.failing):
+            raise InvalidInput("evidence", "refused if and only if a hard check fails")
+
+    @property
+    def valid(self) -> bool:
+        """``True`` iff no hard constraint failed.
+
+        Returns
+        -------
+        bool
+            The validator's verdict.
+        """
+        return self.evidence != "refused"
+
+
+@dataclass(frozen=True, slots=True)
+class OptimizationStatus:
+    """How the Frank-Wolfe run that produced the plan stopped.
+
+    A plan from a run that did not converge is still geometrically valid (every iterate
+    stays in the domain) but must not be described as optimised.
+
+    Attributes
+    ----------
+    status : str
+        Stop status (:data:`archlux.solve.trace.StopStatus`).
+    iterations : int
+        Iterations run.
+    gap : float
+        Frank-Wolfe gap at the returned point (``inf`` when unknown). A stationarity
+        measure, never an optimality certificate (no shipped surrogate is concave).
+    """
+
+    status: str
+    iterations: int
+    gap: float
+
+    @property
+    def converged(self) -> bool:
+        """Whether the run reached its stationarity tolerance.
+
+        Returns
+        -------
+        bool
+            ``True`` only for the ``converged`` status.
+        """
+        return self.status == "converged"
+
+
 @dataclass(frozen=True, slots=True)
 class Certificate:
     """Exact proof + optional probabilistic bound + dual diagnostic.
@@ -877,12 +981,19 @@ class Certificate:
     duaux : tuple of (str, float)
         Dual prices **already translated** through ``Polytope.origins``:
         ``("load-bearing wall p1 at x = 6 m: ...", 4.1)``. Never a bare row index.
+    validation : ValidationSummary or None
+        Verdict of the independent validator on the returned plan (``None`` on
+        certificates built before it existed, or by hand).
+    optimization : OptimizationStatus or None
+        How Frank-Wolfe stopped; ``None`` in classic mode (no optimization).
     """
 
     geometry: GeometricProof
     performance: PerformanceBound | None = None
     duals: tuple[tuple[str, float], ...] = ()
     manifest: Manifest | None = None
+    validation: ValidationSummary | None = None
+    optimization: OptimizationStatus | None = None
 
     def report(self) -> str:
         """Render the certificate as text, ``[EXACT]`` and ``[PREDICTION]`` sections.

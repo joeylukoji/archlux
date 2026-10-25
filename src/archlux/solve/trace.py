@@ -22,6 +22,7 @@ StopStatus = Literal[
     "max_iter",
     "oracle_inconsistent",
     "stalled",
+    "untrusted_gradient",
 ]
 """Why Frank-Wolfe stopped.
 
@@ -32,7 +33,11 @@ StopStatus = Literal[
 - ``oracle_inconsistent``: the oracle said "optimal" but its vertex is outside the
   domain, or worse than the current point (a negative gap): it was not used;
 - ``stalled``: the objective gained less than ``stall_tol`` over ``stall_window``
-  consecutive steps (only when ``stall_window`` is set).
+  consecutive steps (only when ``stall_window`` is set);
+- ``untrusted_gradient``: the objective refused its own last gradient (it exposes
+  ``refused = True``, as :class:`archlux.light.trust.GuardedSurrogate` does when the sign
+  agreement with its reference falls below the threshold) and returned a zero one, so
+  the run stopped where it was. A zero gap there is not stationarity.
 
 Only ``converged`` means the run reached its stationarity tolerance. Every status
 returns a point of the domain: the **geometric** validity never depends on the status,
