@@ -15,19 +15,46 @@ if TYPE_CHECKING:
 
 __all__ = ["Iteration", "StopStatus", "Trace"]
 
-StopStatus = Literal["converged", "line_search_failed", "lp_not_optimal", "max_iter"]
+StopStatus = Literal[
+    "converged",
+    "line_search_failed",
+    "lp_not_optimal",
+    "max_iter",
+    "oracle_inconsistent",
+    "stalled",
+]
 """Why Frank-Wolfe stopped.
 
 - ``converged``: the gap fell below the tolerance;
-- ``line_search_failed``: no step along the chosen direction improved the surrogate;
+- ``line_search_failed``: no step along the chosen direction improved the objective;
 - ``lp_not_optimal``: the linear oracle did not return an optimum;
-- ``max_iter``: the iteration budget ran out.
+- ``max_iter``: the iteration budget ran out;
+- ``oracle_inconsistent``: the oracle said "optimal" but its vertex is outside the
+  domain, or worse than the current point (a negative gap): it was not used;
+- ``stalled``: the objective gained less than ``stall_tol`` over ``stall_window``
+  consecutive steps (only when ``stall_window`` is set).
+
+Only ``converged`` means the run reached its stationarity tolerance. Every status
+returns a point of the domain: the **geometric** validity never depends on the status,
+the stationarity claim always does.
 """
 
 
 @dataclass(frozen=True, slots=True)
 class Iteration:
-    """State of the solver at one iteration."""
+    """State of the solver at one iteration.
+
+    Attributes
+    ----------
+    value : float
+        Surrogate value at ``x``.
+    displacement : float
+        ``max |x - reference|`` in metres, the L-infinity distance to the reference of
+        the run (the proposed plan when given, the start otherwise).
+    objective : float or None
+        Objective Frank-Wolfe actually maximised at ``x``: the surrogate minus the
+        displacement penalty. ``None`` means no penalty, i.e. equal to ``value``.
+    """
 
     k: int
     value: float
@@ -37,6 +64,8 @@ class Iteration:
     lp_ms: float
     n_cuts: int
     x: FloatVector
+    displacement: float = 0.0
+    objective: float | None = None
 
     # --- French names, deprecated until 1.0.0 (ADR 0001) ---------------------------
 
@@ -111,11 +140,28 @@ class Trace:
 
     ``final_gap`` is the Frank-Wolfe gap at the returned point; the per-iteration gaps
     describe the point *before* each step.
+
+    Attributes
+    ----------
+    parameters : tuple of (str, str)
+        Every setting of the run, sorted by name, as strings: with the iterates, what
+        it takes to replay the run (``max_iter``, ``tol``, ``budget``, ``strategy``...).
+    active_bounds : tuple of str
+        Constraints tight at the returned point, up to ``tolerances.FW_FEASIBILITY_M``:
+        ``"<column>:lower"`` / ``"<column>:upper"`` for variable bounds (budget box
+        included) and ``"row:<origin>"`` for rows of ``A``. What stopped the run when
+        the surrogate still wanted to move.
+    budget_active : tuple of str
+        Columns whose displacement from the reference equals the budget at the returned
+        point: the budget, not the geometry, is binding there. Empty without a budget.
     """
 
     iterations: tuple[Iteration, ...]
     status: StopStatus
     final_gap: float
+    parameters: tuple[tuple[str, str], ...] = ()
+    active_bounds: tuple[str, ...] = ()
+    budget_active: tuple[str, ...] = ()
 
     @property
     def total_lp_ms(self) -> float:
@@ -163,6 +209,41 @@ class Trace:
             The surrogate value of each iteration.
         """
         return tuple(step.value for step in self.iterations)
+
+    @property
+    def objectives(self) -> tuple[float, ...]:
+        """Penalised objective, in order; equal to :attr:`values` without a penalty.
+
+        Returns
+        -------
+        tuple of float
+            The objective Frank-Wolfe maximised, at each iteration.
+        """
+        return tuple(
+            step.value if step.objective is None else step.objective for step in self.iterations
+        )
+
+    @property
+    def displacements(self) -> tuple[float, ...]:
+        """L-infinity distance of each iterate to the reference, in metres.
+
+        Returns
+        -------
+        tuple of float
+            ``max |x_k - reference|`` for every iteration.
+        """
+        return tuple(step.displacement for step in self.iterations)
+
+    @property
+    def converged(self) -> bool:
+        """Whether the run reached its stationarity tolerance (``status == "converged"``).
+
+        Returns
+        -------
+        bool
+            ``True`` only for ``converged``.
+        """
+        return self.status == "converged"
 
     # --- French names, deprecated until 1.0.0 (ADR 0001) ---------------------------
 

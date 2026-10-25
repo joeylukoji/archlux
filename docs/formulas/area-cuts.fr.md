@@ -144,6 +144,15 @@ largeur contre de la hauteur.
 Comme Frank-Wolfe n'a plus besoin des coupes tangentes, ses appels au PL gardent le
 démarrage à chaud (les coupes le désactivaient, AUDIT.md Q-C2).
 
+## Après l'optimisation : la contrainte d'origine
+
+Aucune des deux approximations n'est la contrainte. Quoi que rende le solveur, le plan
+décodé est revérifié sur \(w h \ge a\) elle-même par `certify.proof.verify_exactly`
+(arithmétique rationnelle sur un contour aligné sur les axes, GEOS à tolérances
+déclarées sinon ; tolérance de surface `tolerances.AREA_PROOF_M2`), et un déficit est
+une `InvariantViolation`, jamais un plan renvoyé. `lmo.cuts.violated_areas` fait le même
+contrôle en virgule flottante sur un vecteur de décision brut.
+
 ## Source
 
 - Boyd & Vandenberghe (2004), §3.1.5–3.1.6.

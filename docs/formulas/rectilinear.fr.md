@@ -30,6 +30,12 @@ reste linéaire.
 - La décomposition d'un L n'est pas unique en général : **sans la convention
   ci-dessus, les résultats ne sont pas reproductibles.**
 
+**Topologie.** La décomposition est fixée une fois, sur le plan proposé. Le solveur la
+conserve : un L reste un L (l'ordre des extrémités des sous-rectangles est gardé et
+chaque couture garde au moins `min_width`), il ne peut devenir un Z, se scinder, ni
+absorber un voisin. Voir [ordre relatif](relative-order.md), « Portée : une seule
+topologie, fixée ».
+
 ## Code
 
 | Symbole | Fonction |

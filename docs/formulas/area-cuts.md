@@ -140,6 +140,15 @@ shape of a room whose area is tight; the chords let it trade width for height.
 Since Frank-Wolfe no longer needs tangent cuts, its LP calls keep the warm start
 (the cuts used to disable it, AUDIT.md Q-C2).
 
+## After the optimization: the original constraint
+
+Neither approximation is the constraint. Whatever the solver returns, the decoded plan
+is checked again against \(w h \ge a\) itself by `certify.proof.verify_exactly`
+(rational arithmetic on an axis-aligned outline, GEOS with declared tolerances
+otherwise; area tolerance `tolerances.AREA_PROOF_M2`), and a shortfall is an
+`InvariantViolation`, never a returned plan. `lmo.cuts.violated_areas` gives the
+same check in floating point for a raw decision vector.
+
 ## Source
 
 - Boyd & Vandenberghe (2004), §3.1.5–3.1.6.
