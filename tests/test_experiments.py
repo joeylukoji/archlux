@@ -71,6 +71,16 @@ def test_the_msd_experiments_run_on_a_mini_corpus(
         rows = list(csv.DictReader(handle))
     assert {r["plan_id"] for r in rows} == {"a0", "a1", "a2"}
     assert {r["pavage"] for r in rows} == {"False", "True"}
+    # Spec 1.7 / 1.10: every attempt carries its outcome and the independent verdict.
+    assert {r["outcome"] for r in rows} <= {
+        "repaired",
+        "rejected",
+        "infeasible",
+        "computation_failure",
+    }
+    repaired = [r for r in rows if r["outcome"] == "repaired"]
+    assert repaired and all(r["validator_valid"] == "True" for r in repaired)
+    assert all(r["evidence"] in {"exact", "numeric"} and r["n_rooms_after"] for r in repaired)
     summary = tmp_path / "j7_repair.md"
     _run(
         "j7_msd_summary.py",
@@ -80,7 +90,10 @@ def test_the_msd_experiments_run_on_a_mini_corpus(
     )
     assert "| all faults |" in summary.read_text(encoding="utf-8")
     _run("j7_msd_idempotence.py", str(msd), "3", str(tmp_path), monkeypatch=monkeypatch)
-    assert "valid after legalize: 3/3" in (tmp_path / "j7_msd_idempotence.md").read_text()
+    idempotence = (tmp_path / "j7_msd_idempotence.md").read_text()
+    assert "valid after legalize: 3/3" in idempotence
+    assert "(apartment a" in idempotence  # the maximum displacement is attributed
+    assert (tmp_path / "j7_msd_idempotence_raw.csv").read_text().count("\n") == 4
 
 
 def test_the_msd_summary_rebuilds_the_published_table(
@@ -93,6 +106,24 @@ def test_the_msd_summary_rebuilds_the_published_table(
     table = out.read_text(encoding="utf-8")
     assert "| all faults | 4796 | 35.9 % | 93.0 % | **93.9 %** | [93.2, 94.5] |" in table
     assert "| fault retrecir | 1196 | 10.0 % | 97.6 % | **98.0 %** | [97.0, 98.6] |" in table
+    # The whole published page is generated, the outcome table included (no "no
+    # infeasible program" sentence typed by hand next to 270 infeasible rows).
+    assert table == (ROOT / "results" / "j7_repair.md").read_text(encoding="utf-8")
+    assert "| infeasible (Farkas) | 0 | 270 |" in table
+
+
+def test_the_pooled_generation_summary_is_reproduced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``results/j8_pooled.md`` names mode, budget and width of every rate (B8)."""
+    for name in ("etoile", "plausible", "divers"):
+        raw = f"j8_{name}_raw.csv"
+        (tmp_path / raw).write_bytes((ROOT / "results" / raw).read_bytes())
+    _run("j8_summary.py", str(tmp_path), monkeypatch=monkeypatch)
+    page = (tmp_path / "j8_pooled.md").read_text(encoding="utf-8")
+    assert page == (ROOT / "results" / "j8_pooled.md").read_text(encoding="utf-8")
+    assert "| `pavage` | 0 | 0.50 m | 740 | **7** (0.9 %) |" in page
+    assert "| `pavage` | 16 | 0.50 m | 740 | **145** (19.6 %) |" in page
 
 
 def test_the_generation_experiment_runs_on_a_mini_jsonl(

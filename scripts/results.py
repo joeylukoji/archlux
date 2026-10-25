@@ -32,6 +32,7 @@ SYNTHETIC: dict[str, tuple[str, ...]] = {
         "j3_orientation_min12.svg",
     ),
     "j4_gradient.py": ("j4_gradient.csv",),
+    "j4_reliability.py": ("j4_reliability.csv", "j4_before_after.csv"),
     "j5_coverage.py": ("j5_coverage.csv",),
     "j6_active.py": ("j6_active.csv",),
     "j6_ifc.py": ("j6_ifc.csv",),
@@ -88,6 +89,7 @@ def corpus(msd: Path | None, hd: Path | None, label: str) -> None:
         _run("j7_msd_idempotence.py", str(msd), "400", str(out))
     if hd is not None:
         _run("j8_generation.py", str(hd), str(10**9), label)
+        _run("j8_summary.py", str(out))
         _run("j9_orientation.py", str(hd))
 
 

@@ -88,7 +88,10 @@ particular model.
 
 Rate of plans **certified valid** after correction, 95 % Wilson intervals.
 
-Regulation `min_width = 0.50 m`; see the next section, this choice is decisive.
+Regulation `min_width = 0.50 m` in every row; see the next section, this choice is decisive.
+Pooled over the 740 plans at budget 0: 7 / 740 = 0.9 % (`min_width = 0.50 m`). Statistical
+unit: the generated plan; *etoile* and *plausible* share their 320 programme slots, so
+pooled intervals resample slots ([`j8_pooled.md`](j8_pooled.md)).
 
 | mode | budget | etoile (n=320) | plausible (n=320) | divers (n=100) |
 |---|--:|--:|--:|--:|
@@ -155,7 +158,9 @@ is a wrong dimension and is absorbed in one step. Here the rate triples between 
 
 It is **not** connectivity: plans in one piece are not repaired better (16.7 % at 1
 fragment against 70.7 % at 4, on unbalanced counts). It is the number of rooms, through
-the size of the grid:
+the size of the grid. **Setting of this table: budget 16, `min_width = 0.00 m`** (no width
+floor, so these rates count plans that lost a room). The same table at the nominal
+`min_width = 0.50 m`, and the intact share, are generated in [`j8_pooled.md`](j8_pooled.md):
 
 | rooms | etoile | plausible | divers | median cells |
 |--:|--:|--:|--:|--:|
@@ -198,8 +203,12 @@ rooms overlap; the chain, which has the fewest edges, does have the worst overla
 
 ### The remaining failures are named, and 13 are proven
 
-At budget 16, 112 to 116 grid refusals remain (the bounded repair is not enough) and
-**13 certified infeasibilities**. These are not crashes: the Farkas certificate is a
+At budget 16 and `min_width = 0.00 m`, 112 to 116 grid refusals remain per set (the
+bounded repair is not enough) and **13 certified infeasibilities** per set (*etoile*,
+*plausible*; 3 for *divers*). At the nominal `min_width = 0.50 m` the grid refusals are the
+same (266 over the 740 plans) but the infeasibilities rise to 143, 147 and 39 (329 in all):
+the width floor turns the degenerate exits into proven infeasibilities. Counts per setting:
+[`j8_pooled.md`](j8_pooled.md). These are not crashes: the Farkas certificate is a
 sparse vector with 2 to 3 non-zero components out of 45, and the origins name the
 minimal conflict, for example `separation horizontale p000|p003 ; contour
 droit p000`. At a large budget, the repaired grid ends up contradicting the
