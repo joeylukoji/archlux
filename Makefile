@@ -5,7 +5,7 @@ PYTHON ?= python
 # otherwise.
 PYTHONPATH_SRC ?=
 
-.PHONY: results check-results results-corpus check-complexity reproduce reconcile
+.PHONY: results check-results results-corpus check-complexity reproduce reconcile paper
 
 # Every bench that runs without the restricted corpora (B1-B5, the selection protocol
 # and the ablations), then the reconciliation of the paper's numbers (B1-B9) with the
@@ -14,6 +14,11 @@ reproduce: results
 	$(PYTHONPATH_SRC) $(PYTHON) experiments/j5_selection.py results 400 10
 	$(PYTHONPATH_SRC) $(PYTHON) experiments/ablations.py results 90 3
 	$(MAKE) reconcile
+
+# Every number of the paper's tables from the raw files, in one command (PLAN.md
+# phase 6 exit gate). Corpus benches still need `make results-corpus` first.
+paper: reproduce
+	@echo "paper tables: results/*.md and results/RECONCILIATION.md"
 
 reconcile:
 	$(PYTHONPATH_SRC) $(PYTHON) experiments/reconcile.py results

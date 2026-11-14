@@ -1,0 +1,5 @@
+# Every change is reviewed by a maintainer. The oracle (lmo) and the certificate
+# (certify) carry the project's guarantees: a change there is a major version.
+*                 @joeylukoji
+/src/archlux/lmo/     @joeylukoji
+/src/archlux/certify/ @joeylukoji

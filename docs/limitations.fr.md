@@ -9,7 +9,9 @@ vérifie pas.
 Les indicateurs produits sont des **estimations de phase amont**. Ils ne se substituent
 pas à une étude thermique ou d'éclairement réglementaire. La borne du jalon 5 couvre
 l'oracle gelé (`SplitFluxOracle` split-flux / analytique), **pas** un sDA LM-83
-(Radiance). Extra `sim` : vide volontairement.
+(Radiance). Extra `sim` : vide volontairement ; `archlux.light.radiance.RadianceReference`
+appelle les binaires Radiance quand ils sont installés, mais aucune mesure physique n'a
+encore été publiée.
 
 ## Sur une sortie de générateur, le plan valide le plus proche n'est pas proche
 

@@ -1,0 +1,39 @@
+{
+  "case": "t3_load_bearing",
+  "max_displacement_m": 0.1,
+  "rooms": [
+    {
+      "h": 1.96,
+      "id": "bathroom",
+      "type": "bathroom",
+      "w": 5.0,
+      "x": 6.0,
+      "y": 7.04
+    },
+    {
+      "h": 4.04,
+      "id": "bedroom-1",
+      "type": "bedroom",
+      "w": 5.0,
+      "x": 6.0,
+      "y": 0.0
+    },
+    {
+      "h": 3.0,
+      "id": "bedroom-2",
+      "type": "bedroom",
+      "w": 5.0,
+      "x": 6.0,
+      "y": 4.04
+    },
+    {
+      "h": 9.0,
+      "id": "living",
+      "type": "living_room",
+      "w": 6.0,
+      "x": 0.0,
+      "y": 0.0
+    }
+  ],
+  "valid": true
+}

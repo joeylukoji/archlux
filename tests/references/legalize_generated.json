@@ -1,0 +1,47 @@
+{
+  "case": "generated",
+  "max_displacement_m": 0.3,
+  "rooms": [
+    {
+      "h": 5.3,
+      "id": "p000",
+      "type": "living_room",
+      "w": 4.3,
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "h": 3.4,
+      "id": "p001",
+      "type": "bedroom",
+      "w": 3.7,
+      "x": 4.3,
+      "y": 0.0
+    },
+    {
+      "h": 1.9,
+      "id": "p002",
+      "type": "kitchen",
+      "w": 3.7,
+      "x": 4.3,
+      "y": 3.4
+    },
+    {
+      "h": 2.7,
+      "id": "p003",
+      "type": "bathroom",
+      "w": 2.4,
+      "x": 0.0,
+      "y": 5.3
+    },
+    {
+      "h": 2.7,
+      "id": "p004",
+      "type": "bedroom",
+      "w": 5.6,
+      "x": 2.4,
+      "y": 5.3
+    }
+  ],
+  "valid": true
+}

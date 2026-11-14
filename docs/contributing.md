@@ -1,7 +1,7 @@
 # Contributing
 
 The contribution guide (governance, review, versions, dependency rules)
-is at the root of the repository: [`CONTRIBUTING.md`](https://github.com/ORG/archlux/blob/main/CONTRIBUTING.md).
+is at the root of the repository: [`CONTRIBUTING.md`](https://github.com/joeylukoji/archlux/blob/main/CONTRIBUTING.md).
 
 Non-negotiable summary:
 

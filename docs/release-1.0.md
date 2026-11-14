@@ -18,8 +18,8 @@ admissibility conditions of the journals (public history, third-party use).
 
 ## To do outside the code (maintainers)
 
-1. Replace `ORG/archlux` in `CITATION.cff`, `README`, `docs/contributing.md`
-   with the real public URL.
+1. Done: `CITATION.cff`, `README` and `docs/contributing.md` point to
+   `joeylukoji/archlux`.
 2. Tag `v1.0.0` and archive (Zenodo / Software Heritage) → DOI in
    `CITATION.cff`.
 3. Publish the distribution on the package index (`twine` / Trusted Publishing).
@@ -71,7 +71,7 @@ A change of behaviour of `lmo` or `certify` → **major** version
              with conformally bounded daylight surrogates},
   version = {1.0.0},
   year    = {2026},
-  url     = {https://github.com/ORG/archlux},
+  url     = {https://github.com/joeylukoji/archlux},
   license = {Apache-2.0}
 }
 ```

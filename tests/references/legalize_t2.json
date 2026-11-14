@@ -1,0 +1,31 @@
+{
+  "case": "t2",
+  "max_displacement_m": 0.08,
+  "rooms": [
+    {
+      "h": 2.5,
+      "id": "bathroom",
+      "type": "bathroom",
+      "w": 3.5,
+      "x": 5.0,
+      "y": 4.5
+    },
+    {
+      "h": 4.5,
+      "id": "bedroom",
+      "type": "bedroom",
+      "w": 3.5,
+      "x": 5.0,
+      "y": 0.0
+    },
+    {
+      "h": 7.0,
+      "id": "living",
+      "type": "living_room",
+      "w": 5.0,
+      "x": 0.0,
+      "y": 0.0
+    }
+  ],
+  "valid": true
+}

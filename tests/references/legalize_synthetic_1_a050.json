@@ -1,0 +1,39 @@
+{
+  "case": "synthetic_1_a050",
+  "max_displacement_m": 0.5,
+  "rooms": [
+    {
+      "h": 3.05,
+      "id": "ne",
+      "type": "living_room",
+      "w": 6.65,
+      "x": 5.35,
+      "y": 5.95
+    },
+    {
+      "h": 3.05,
+      "id": "nw",
+      "type": "bathroom",
+      "w": 5.35,
+      "x": 0.0,
+      "y": 5.95
+    },
+    {
+      "h": 5.95,
+      "id": "se",
+      "type": "kitchen",
+      "w": 6.65,
+      "x": 5.35,
+      "y": 0.0
+    },
+    {
+      "h": 5.95,
+      "id": "sw",
+      "type": "bedroom",
+      "w": 5.35,
+      "x": 0.0,
+      "y": 0.0
+    }
+  ],
+  "valid": true
+}

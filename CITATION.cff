@@ -9,8 +9,8 @@ abstract: >-
   l'oracle gelé employé, pas pour un sDA LM-83.
 version: "0.10.0.dev0"
 license: Apache-2.0
-repository-code: "https://github.com/ORG/archlux"
-url: "https://github.com/ORG/archlux"
+repository-code: "https://github.com/joeylukoji/archlux"
+url: "https://github.com/joeylukoji/archlux"
 keywords:
   - floor-plan
   - daylight
@@ -24,6 +24,6 @@ preferred-citation:
   title: "archlux: geometric legalization of generated floor plans with conformally bounded daylight surrogates"
   version: "0.10.0.dev0"
   year: 2026
-  url: "https://github.com/ORG/archlux"
+  url: "https://github.com/joeylukoji/archlux"
   authors:
     - name: "archlux contributors"

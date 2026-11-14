@@ -9,7 +9,9 @@ check.
 The indicators produced are **early-design estimates**. They do not replace a
 regulatory thermal or daylight study. The bound of milestone 5 covers
 the frozen oracle (`SplitFluxOracle` split-flux / analytic), **not** an LM-83 sDA
-(Radiance). `sim` extra: empty on purpose.
+(Radiance). `sim` extra: empty on purpose; `archlux.light.radiance.RadianceReference`
+calls the Radiance binaries when they are installed, but no physical measurement has
+been published yet.
 
 ## On a generator output, the closest valid plan is not close
 

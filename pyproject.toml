@@ -20,6 +20,10 @@ dependencies = [
     "ortools>=9.8",
 ]
 
+[project.urls]
+Homepage = "https://github.com/joeylukoji/archlux"
+Issues = "https://github.com/joeylukoji/archlux/issues"
+
 [project.scripts]
 archlux = "archlux.cli:main"
 
@@ -148,4 +152,4 @@ branch = true
 # Ratchet, single source of the threshold (CI reads it): never regress below the measured level. Raised at each PLAN.md phase
 # gate until 95 % (phase 4).
 precision = 1
-fail_under = 88.8
+fail_under = 92.5

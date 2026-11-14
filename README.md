@@ -3,7 +3,7 @@
 > **Repair a generated floor plan into a geometrically valid one while keeping its
 > daylight. Geometry is proved; daylight is bounded.**
 
-[![CI](https://github.com/ORG/archlux/actions/workflows/ci.yml/badge.svg)](https://github.com/ORG/archlux/actions)
+[![CI](https://github.com/joeylukoji/archlux/actions/workflows/ci.yml/badge.svg)](https://github.com/joeylukoji/archlux/actions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 
@@ -695,7 +695,7 @@ never import `torch`. A public function without a docstring is not finished.
   title   = {archlux: geometric legalization of generated floor plans
              with conformally bounded daylight surrogates},
   year    = {2026},
-  url     = {https://github.com/ORG/archlux},
+  url     = {https://github.com/joeylukoji/archlux},
   version = {0.10.0.dev0}
 }
 ```

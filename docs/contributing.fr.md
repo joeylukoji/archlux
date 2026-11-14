@@ -1,7 +1,7 @@
 # Contribuer
 
 Le guide de contribution (gouvernance, revue, versions, règles de dépendance)
-est à la racine du dépôt : [`CONTRIBUTING.md`](https://github.com/ORG/archlux/blob/main/CONTRIBUTING.md).
+est à la racine du dépôt : [`CONTRIBUTING.md`](https://github.com/joeylukoji/archlux/blob/main/CONTRIBUTING.md).
 
 Résumé non négociable :
 
