@@ -43,7 +43,7 @@ dev = [
     # Bounded: derandomized examples, hence strict xfails, depend on the version.
     "hypothesis>=6.100,<7",
     # Pinned with the ruff-pre-commit rev: format output changes between minors.
-    "ruff==0.14.10",
+    "ruff==0.17.4",
     "mypy>=1.10",
     # Validates the published JSON schema of plans (PLAN.md phase 2, J1).
     "jsonschema>=4.20",
