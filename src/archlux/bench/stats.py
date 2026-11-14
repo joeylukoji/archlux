@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -11,7 +12,16 @@ from scipy import stats as scipy_stats
 from archlux._deprecation import Alias, lazy_aliases, renamed_parameters
 from archlux.errors import InvariantViolation
 
-__all__ = ["Interval", "cluster_bootstrap_proportion", "holm", "paired_bootstrap", "power", "tost"]
+__all__ = [
+    "Interval",
+    "benjamini_hochberg",
+    "cluster_bootstrap_proportion",
+    "holm",
+    "nadeau_bengio",
+    "paired_bootstrap",
+    "power",
+    "tost",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -226,6 +236,101 @@ def holm(p_values: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]:
     rejections = np.empty(m, dtype=bool)
     rejections[order] = sorted_rejections
     return tuple(bool(v) for v in rejections)
+
+
+def benjamini_hochberg(p_values: Sequence[float], *, q: float = 0.05) -> tuple[bool, ...]:
+    """Benjamini-Hochberg step-up procedure: controls the false discovery rate.
+
+    Weaker than :func:`holm` (which controls the family-wise error rate), and the right
+    choice when several hypotheses are screened and a share of false discoveries is
+    acceptable. Valid under independence or positive regression dependence.
+
+    Parameters
+    ----------
+    p_values : Sequence[float]
+        The ``m`` p-values of the family, in ``[0, 1]``.
+    q : float, optional
+        Targeted false discovery rate.
+
+    Returns
+    -------
+    tuple of bool
+        ``rejected[i]`` for each p-value, **in input order**.
+
+    Raises
+    ------
+    InvariantViolation
+        Empty family, ``q`` outside ``]0, 1[``, or a p-value outside ``[0, 1]``.
+
+    Examples
+    --------
+    >>> from archlux.bench.stats import benjamini_hochberg
+    >>> benjamini_hochberg([0.01, 0.02, 0.03, 0.5])
+    (True, True, True, False)
+    """
+    p = np.asarray(p_values, dtype=float)
+    if p.size == 0:
+        raise InvariantViolation(("empty family of p-values",))
+    if not 0.0 < q < 1.0:
+        raise InvariantViolation((f"q outside ]0, 1[: {q}",))
+    if bool(np.any(p < 0.0) or np.any(p > 1.0)) or bool(np.any(np.isnan(p))):
+        raise InvariantViolation(("p-values outside [0, 1]",))
+    m = p.size
+    order = np.argsort(p, kind="stable")
+    below = p[order] <= q * np.arange(1, m + 1) / m
+    # Step-up: every hypothesis up to the LAST rank under its threshold is rejected.
+    last = int(np.max(np.nonzero(below)[0])) + 1 if bool(np.any(below)) else 0
+    rejections = np.zeros(m, dtype=bool)
+    rejections[order[:last]] = True
+    return tuple(bool(v) for v in rejections)
+
+
+def nadeau_bengio(
+    differences: Sequence[float], *, n_train: int, n_test: int
+) -> tuple[float, float]:
+    """Corrected resampled t-test (Nadeau & Bengio, 2003).
+
+    Repeated train/test splits share their data, so the per-split differences are
+    correlated and the naive t-test is far too optimistic. The correction inflates the
+    variance by ``1/J + n_test/n_train`` instead of ``1/J``.
+
+    Parameters
+    ----------
+    differences : Sequence[float]
+        Score difference between two methods on each of the ``J`` resampled splits.
+    n_train, n_test : int
+        Sizes of the training and test sets of one split.
+
+    Returns
+    -------
+    tuple of float
+        ``(t, p)``: the corrected statistic and its two-sided p-value (``J - 1``
+        degrees of freedom).
+
+    Raises
+    ------
+    InvariantViolation
+        Fewer than two differences, a non-finite difference, or a non-positive size.
+
+    Examples
+    --------
+    >>> from archlux.bench.stats import nadeau_bengio
+    >>> t, p = nadeau_bengio([0.02, 0.03, 0.01, 0.04, 0.02], n_train=80, n_test=20)
+    >>> round(t, 2), p < 0.05
+    (3.14, True)
+    """
+    d = np.asarray(differences, dtype=float).ravel()
+    if d.size < 2 or not bool(np.all(np.isfinite(d))):
+        raise InvariantViolation(("need at least two finite differences",))
+    if n_train <= 0 or n_test <= 0:
+        raise InvariantViolation((f"sizes must be positive: {n_train}, {n_test}",))
+    j = d.size
+    variance = float(np.var(d, ddof=1))
+    mean = float(np.mean(d))
+    if variance == 0.0:
+        return (math.copysign(math.inf, mean) if mean else 0.0, 0.0 if mean else 1.0)
+    statistic = mean / math.sqrt((1.0 / j + n_test / n_train) * variance)
+    return statistic, float(2.0 * scipy_stats.t.sf(abs(statistic), j - 1))
 
 
 @renamed_parameters({"effet": "effect"})

@@ -17,6 +17,7 @@ from archlux.types import Regime
 from archlux.uq.conformal import ConformalCalibrator, conformal_quantile
 
 __all__ = [
+    "ACCEPTANCE_BAND",
     "CoverageReport",
     "crps",
     "measure_coverage",
@@ -182,6 +183,10 @@ def stratify_by_orientation(
     return {k: np.flatnonzero(bins == k) for k in range(n_sectors)}
 
 
+ACCEPTANCE_BAND: tuple[float, float] = (0.86, 0.94)
+"""Two-sided acceptance band of the empirical coverage at ``alpha = 0.10``, fixed a priori."""
+
+
 @dataclass(frozen=True, slots=True)
 class CoverageReport:
     """Empirical coverage of conformal intervals on a sample, and how wide they are.
@@ -208,6 +213,33 @@ class CoverageReport:
     target_std: float
     coverage_low: float
     coverage_high: float
+
+    def within(self, band: tuple[float, float] = ACCEPTANCE_BAND) -> bool:
+        """Two-sided acceptance: coverage inside ``band``, bounds included.
+
+        Over-coverage is as much a calibration failure as under-coverage: an interval
+        that covers 99 % when 90 % is announced is too wide to say anything.
+
+        Parameters
+        ----------
+        band : tuple of float, optional
+            ``(low, high)``; default :data:`ACCEPTANCE_BAND`, fixed a priori for
+            ``alpha = 0.10``.
+
+        Returns
+        -------
+        bool
+            ``low <= coverage <= high``.
+
+        Raises
+        ------
+        InvariantViolation
+            If ``band`` is not ``0 <= low <= high <= 1``.
+        """
+        low, high = band
+        if not 0.0 <= low <= high <= 1.0:
+            raise InvariantViolation((f"invalid acceptance band: {band}",))
+        return low <= self.coverage <= high
 
     @property
     def width_over_std(self) -> float:

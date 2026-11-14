@@ -5,6 +5,7 @@ from __future__ import annotations
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.uq.conformal import Calibration, ConformalCalibrator, bound, conformal_quantile
 from archlux.uq.drift import DriftDiagnostic, DriftReport, check_drift, measure_drift
+from archlux.uq.region import TrustRadius, chebyshev_displacement, trust_radius
 from archlux.uq.registry import (
     CalibrationToken,
     DataManagement,
@@ -21,7 +22,9 @@ __all__ = [
     "DataManagement",
     "DriftDiagnostic",
     "DriftReport",
+    "TrustRadius",
     "bound",
+    "chebyshev_displacement",
     "check_drift",
     "conformal_quantile",
     "crps",
@@ -31,6 +34,7 @@ __all__ = [
     "open_calibration",
     "reliability_diagram",
     "stratify_by_orientation",
+    "trust_radius",
 ]
 
 __getattr__ = lazy_aliases(

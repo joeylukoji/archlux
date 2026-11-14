@@ -25,6 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXPERIMENTS = ROOT / "experiments"
 SYNTHETIC: dict[str, tuple[str, ...]] = {
+    "b1_naive.py": ("b1_naive_raw.csv",),
     "j2_validity.py": ("j2_validity_raw.csv",),
     "j3_orientation.py": (
         "j3_orientation.csv",
