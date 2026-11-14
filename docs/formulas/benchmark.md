@@ -132,12 +132,16 @@ stop status are recorded per run instead.
 | B7 (Swiss Dwellings) | `experiments/j7_sd_labels.py`, `j7_sd_per_room.py` | Swiss Dwellings, not redistributed |
 | B8 (HouseDiffusion) | `make results-corpus HD=plans.jsonl LABEL=etoile` (and `plausible`, `divers`) | generated plans |
 | B9 | `experiments/j9_orientation.py` | generated plans |
+| B3 extended (continuous gradient measures) | `python experiments/b3_gradient_continuous.py results` | none |
+| B8 failure classes | `python experiments/b8_failures.py results` | `results/j8_*_raw.csv` |
+| B9 in three states (Radiance if installed) | `python experiments/b9_three_states.py results` | none |
+| coverage over 200 draws | `python experiments/j5_coverage.py results 200` then `j5_coverage_summary.py results 200` | none |
 
 Every new run writes a record (`bench.repro.record`): git commit and dirty flag,
 dependency versions, platform, seed, command, every algorithm parameter, and the
 SHA-256 of its inputs and outputs (restricted corpora hashed and flagged
-`redistributable: false`). The B9 timing table of the paper has **no** raw file: it
-cannot be reproduced from `results/` until the timing rows are published.
+`redistributable: false`). The B9 timing rows are in `results/j9_timing_raw.csv` (written by
+`experiments/j9_review.py`, one machine).
 
 ## Assumptions
 

@@ -199,6 +199,12 @@ def _parser() -> argparse.ArgumentParser:
             metavar="DEG",
             help="azimuth of the plan, in degrees, taken modulo 360 (default 0)",
         )
+    commands.choices["verify"].add_argument(
+        "--functional",
+        action="store_true",
+        help="also print the functional checks (topology, openings, facade); "
+        "informative, never changes the exit code",
+    )
     legalize = commands.choices["legalize"]
     legalize.add_argument("-o", "--output", help="write the legalized plan here (JSON)")
     legalize.add_argument("--svg", help="write an SVG drawing of the legalized plan here")
@@ -403,6 +409,30 @@ def _message(error: Exception) -> str:
     return str(error)
 
 
+def _functional(plan: Plan, ctx: Context) -> str:
+    """Functional checks of ``plan``, one line each, then what they do not cover.
+
+    Parameters
+    ----------
+    plan : Plan
+        Plan to check.
+    ctx : Context
+        Its context.
+
+    Returns
+    -------
+    str
+        The text printed by ``verify --functional``.
+    """
+    from archlux.certify.functional import check_functional
+
+    report = check_functional(plan, ctx)
+    lines = ["functional checks (not part of the certificate):"]
+    lines += [f"  {c.id}: {c.status} - {c.detail}" for c in report.checks]
+    lines.append("  not checked: " + "; ".join(report.not_checked))
+    return "\n".join(lines)
+
+
 def _run(args: argparse.Namespace) -> int:
     """Read the plan and dispatch to the subcommand.
 
@@ -428,6 +458,8 @@ def _run(args: argparse.Namespace) -> int:
         proof = verify_exactly(plan, ctx)
         narrow = _narrow_rooms(plan, args.min_width)
         print(_describe(proof, narrow))
+        if args.functional:
+            print(_functional(plan, ctx))
         return 0 if proof.valid and not narrow else 1
     from archlux.feasibility import is_feasible
 

@@ -8,6 +8,16 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Added — technical audit corrections (Audit_technique_ArchLux)
+
+- **Gradient (2.1).** `GradientAgreement` carries `pearson`, `spearman`, `mean_angle_deg` and `median_norm_error`; `experiments/b3_gradient_continuous.py` scores 8 azimuths x 3 amplitudes and two typologies (`results/b3_gradient_continuous.csv`).
+- **Physical check (2.2).** `archlux.light.three_states` (`compare_three_states`, `facade_glazing`) keeps each plan in three states — generated, classic legalization, archlux optimization — measured by one reference; `experiments/b9_three_states.py` uses Radiance when installed and the labelled closed form otherwise. Closed form on B9: median predicted gain 17.2 %, measured 9.8 %, sign contradicted on 2/48.
+- **Outcomes and B8 failures (2.3).** `archlux.certify.outcome` maps a run to repaired / repaired with strong deformation / not repairable (failure class + advice) / invalid input / computation failure. `experiments/b8_failures.py` (`results/b8_failures.md`): 105 of the 145 B8 repairs move more than 25 % of the side.
+- **Coverage (2.4).** `j5_coverage.py` takes a draw count; over 200 draws the selected regime covers 87.8 % [87.3 ; 88.4] against 90.1 % [89.7 ; 90.5], Wilcoxon p = 5.6e-13 (`results/j5_coverage_200.md`).
+- **Functional checks (3).** `archlux.certify.functional.check_functional`: topology, required adjacencies, openings on facades, habitable rooms on a facade, program; reported apart from the certificate, with what it never checks. `archlux verify --functional`.
+- **Reproducibility (4).** `REPRODUCING.md`; edge-case and determinism tests (`tests/unit/test_audit_corrections.py`).
+
+
 ### Added — scientific-review corrections (validator, Frank–Wolfe audit, surrogate reliability, conformal after selection)
 
 - **Independent validator.** `archlux.certify.validate_plan` / `ValidationReport` re-check the final plan constraint by constraint from its coordinates alone (schema: id, hard/soft, severity, method, tolerance; `satisfied` / `violated` / `unknown` with measure and reason). A hard constraint violated or unknown refuses validity. Evidence is labelled `exact` (rational arithmetic against declared tolerances) or `numeric` (GEOS with tolerance); every report lists what it never establishes (building code, accessibility, fire safety, constructibility, daylight), is bound to the checked plan by fingerprint and round-trips through JSON. `legalize` now runs it on every plan it returns and raises `InvariantViolation` otherwise.
