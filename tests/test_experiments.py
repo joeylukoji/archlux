@@ -25,6 +25,9 @@ from tests.unit.test_loaders import _write_csv
 ROOT = Path(__file__).resolve().parents[1]
 SYNTHETIC = {
     "b1_naive.py": ("b1_naive_raw.csv",),
+    "b3_gradient_continuous.py": ("b3_gradient_continuous.csv",),
+    "b9_three_states.py": ("b9_three_states.csv",),
+    "b8_failures.py": ("b8_failures.md",),
     "j2_validity.py": ("j2_validity_raw.csv",),
     "j3_orientation.py": ("j3_orientation.csv", "j3_orientation_min12.svg"),
     "j4_gradient.py": ("j4_gradient.csv",),

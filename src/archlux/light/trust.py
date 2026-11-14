@@ -35,6 +35,8 @@ import numpy as np
 from archlux._log import event
 from archlux.errors import InvalidSurrogate
 from archlux.light.evaluation import EvaluationCase, orientation_sector
+from archlux.light.evaluation import _pearson as pearson
+from archlux.light.evaluation import _spearman as spearman
 
 if TYPE_CHECKING:
     from archlux.arrays import FloatVector
@@ -158,6 +160,16 @@ class GradientAgreement:
         Non-flat coordinates the sign agreement is computed on.
     step : float
         Finite-difference half-width, in metres.
+    pearson, spearman : float
+        Correlations between declared and finite-difference partial derivatives, all
+        coordinates of all points pooled (AUDIT 2.1: a continuous measure, not only a
+        share of signs); ``nan`` below three coordinates.
+    mean_angle_deg : float
+        Mean angle between the two vectors, in degrees (0 = same direction, 90 =
+        orthogonal, 180 = opposite); ``nan`` if every pair is null.
+    median_norm_error : float
+        Median relative error of the gradient norm, ``| |g| - |t| | / |t|``; ``nan`` if
+        every reference slope is null.
     """
 
     sign_agreement: float
@@ -165,6 +177,10 @@ class GradientAgreement:
     n_points: int
     n_coordinates: int
     step: float
+    pearson: float = float("nan")
+    spearman: float = float("nan")
+    mean_angle_deg: float = float("nan")
+    median_norm_error: float = float("nan")
 
 
 def _compare(declared: np.ndarray, target: np.ndarray) -> tuple[list[bool], float | None]:
@@ -223,6 +239,8 @@ def gradient_agreement(
     panes = list(glazing) if glazing is not None else [None] * len(points)
     matches: list[bool] = []
     cosines: list[float] = []
+    declared_all: list[np.ndarray] = []
+    target_all: list[np.ndarray] = []
     for x, o, g in zip(points, orientations, panes, strict=True):
         vector = np.asarray(x, dtype=float).ravel()
         declared = np.asarray(surrogate.gradient(vector, o, glazing=g), dtype=float).ravel()
@@ -231,13 +249,49 @@ def gradient_agreement(
         matches.extend(m)
         if c is not None:
             cosines.append(c)
+        declared_all.append(declared)
+        target_all.append(target)
     return GradientAgreement(
         sign_agreement=float(np.mean(matches)) if matches else float("nan"),
         mean_cosine=float(np.mean(cosines)) if cosines else float("nan"),
         n_points=len(points),
         n_coordinates=len(matches),
         step=step,
+        **_continuous_measures(declared_all, target_all, cosines),
     )
+
+
+def _continuous_measures(
+    declared: list[np.ndarray], target: list[np.ndarray], cosines: list[float]
+) -> dict[str, float]:
+    """Correlations, mean angle and median norm error of declared vs reference gradients.
+
+    Parameters
+    ----------
+    declared, target : list of numpy.ndarray
+        Declared gradients and finite-difference slopes, one pair per point.
+    cosines : list of float
+        Cosine of each non-null pair.
+
+    Returns
+    -------
+    dict of str to float
+        ``pearson``, ``spearman``, ``mean_angle_deg`` and ``median_norm_error``.
+    """
+    flat_d = np.concatenate(declared) if declared else np.empty(0)
+    flat_t = np.concatenate(target) if target else np.empty(0)
+    angles = np.degrees(np.arccos(np.clip(cosines, -1.0, 1.0))) if cosines else np.empty(0)
+    errors = [
+        abs(float(np.linalg.norm(d)) - nt) / nt
+        for d, t in zip(declared, target, strict=True)
+        if (nt := float(np.linalg.norm(t))) > _TINY
+    ]
+    return {
+        "pearson": pearson(flat_d, flat_t),
+        "spearman": spearman(flat_d, flat_t),
+        "mean_angle_deg": float(np.mean(angles)) if angles.size else float("nan"),
+        "median_norm_error": float(np.median(errors)) if errors else float("nan"),
+    }
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,5 +1,6 @@
-"""Milestone 5 coverage over 20 calibrations (PLAN.md phase 2): held-out ("exchangeable")
-and Frank-Wolfe-chosen ("selected") plans, Clopper-Pearson intervals, width vs spread."""
+"""Milestone 5 coverage over 20 calibrations, or argv[2] (PLAN.md phase 2): held-out
+("exchangeable") and Frank-Wolfe-chosen ("selected") plans, Clopper-Pearson
+intervals, width vs spread."""
 
 import csv
 import sys
@@ -17,7 +18,9 @@ from archlux.seeds import derive
 from archlux.uq.conformal import ConformalCalibrator
 from archlux.uq.reliability import measure_coverage
 
-OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / "j5_coverage.csv"
+RUNS = int(sys.argv[2]) if len(sys.argv) > 2 else 20  # AUDIT 2.4: rerun with more draws
+SUFFIX = "" if RUNS == 20 else f"_{RUNS}"
+OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "results") / f"j5_coverage{SUFFIX}.csv"
 model, oracle = AnalyticSurrogate(), SplitFluxOracle()
 
 
@@ -42,7 +45,7 @@ def chosen(xs: tuple, orientations: tuple, q: float) -> tuple:
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.writer(handle, lineterminator="\n")
     writer.writerow(("run", "regime", "n", "coverage", "low", "high", "mean_width", "target_std"))
-    for run in range(20):  # named sub-seeds: no stream shared between runs or samples
+    for run in range(RUNS):  # named sub-seeds: no stream shared between runs or samples
         cal = ConformalCalibrator()
         cal.fit(*columns(*two_room_vectors(220, seed=derive(17, f"cal/{run}"))), alpha=0.10)
         starts, orientations = two_room_vectors(80, seed=derive(17, f"starts/{run}"))

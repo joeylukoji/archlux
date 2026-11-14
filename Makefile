@@ -13,6 +13,8 @@ PYTHONPATH_SRC ?=
 reproduce: results
 	$(PYTHONPATH_SRC) $(PYTHON) experiments/j5_selection.py results 400 10
 	$(PYTHONPATH_SRC) $(PYTHON) experiments/ablations.py results 90 3
+	$(PYTHONPATH_SRC) $(PYTHON) experiments/j5_coverage.py results 200
+	$(PYTHONPATH_SRC) $(PYTHON) experiments/j5_coverage_summary.py results 200
 	$(MAKE) reconcile
 
 # Every number of the paper's tables from the raw files, in one command (PLAN.md
