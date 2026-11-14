@@ -99,7 +99,9 @@ def test_legalize_with_a_refused_gradient_keeps_the_l1_plan() -> None:
     out = ax.legalize(plan, ctx, objective=guard)
     l1 = ax.legalize(plan, ctx)
     assert guard.refusals >= 1
-    assert [(r.w, r.h) for r in out.rooms] == pytest.approx([(r.w, r.h) for r in l1.rooms])
+    assert [d for r in out.rooms for d in (r.w, r.h)] == pytest.approx(
+        [d for r in l1.rooms for d in (r.w, r.h)]
+    )
     assert out.certificate is not None and out.certificate.geometry.valid
 
 
@@ -110,8 +112,8 @@ def test_the_gradient_free_baseline_matches_the_analytic_gradient() -> None:
     plan, ctx = _context(45.0)
     by_fd = ax.legalize(plan, ctx, objective=FiniteDifferenceSurrogate(ORACLE))
     by_oracle = ax.legalize(plan, ctx, objective=ORACLE)
-    assert [(r.w, r.h) for r in by_fd.rooms] == pytest.approx(
-        [(r.w, r.h) for r in by_oracle.rooms], abs=1e-3
+    assert [d for r in by_fd.rooms for d in (r.w, r.h)] == pytest.approx(
+        [d for r in by_oracle.rooms for d in (r.w, r.h)], abs=1e-3
     )
 
 
