@@ -9,6 +9,7 @@ over a local, greedy correction; the result is checked by the same exact validat
 
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 
 from archlux.types import Plan, Room
@@ -83,7 +84,7 @@ def _candidates(current: float, low: float, high: float, size: float, step: floa
         Every grid position ``low + k * step`` that keeps the room inside the box, sorted
         by distance to ``current``.
     """
-    count = int((high - size - low) / step + _TOLERANCE_M)
+    count = math.floor((high - size - low) / step + _TOLERANCE_M)
     grid = [low + k * step for k in range(count + 1)]
     return sorted(grid, key=lambda v: (abs(v - current), v))
 
@@ -142,8 +143,10 @@ def _first_free(
             break
         for y in _candidates(room.y, y_low, y_high, room.h, step):
             cost = max(abs(x - room.x), abs(y - room.y))
+            if cost >= best_cost:
+                break
             candidate = replace(room, x=round(x, 9), y=round(y, 9))
-            if cost < best_cost and not _overlaps(candidate, placed):
+            if not _overlaps(candidate, placed):
                 best, best_cost = candidate, cost
                 break
     return best

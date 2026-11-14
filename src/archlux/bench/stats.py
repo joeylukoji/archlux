@@ -241,7 +241,8 @@ def holm(p_values: Sequence[float], *, alpha: float = 0.05) -> tuple[bool, ...]:
 def benjamini_hochberg(p_values: Sequence[float], *, q: float = 0.05) -> tuple[bool, ...]:
     """Benjamini-Hochberg step-up procedure: controls the false discovery rate.
 
-    Weaker than :func:`holm` (which controls the family-wise error rate), and the right
+    A less strict error control than :func:`holm` (which controls the family-wise
+    error rate), hence more discoveries, and the right
     choice when several hypotheses are screened and a share of false discoveries is
     acceptable. Valid under independence or positive regression dependence.
 
@@ -305,7 +306,8 @@ def nadeau_bengio(
     -------
     tuple of float
         ``(t, p)``: the corrected statistic and its two-sided p-value (``J - 1``
-        degrees of freedom).
+        degrees of freedom). Constant differences give ``(+-inf, 0.0)``, or
+        ``(0.0, 1.0)`` when they are all zero.
 
     Raises
     ------
@@ -327,7 +329,7 @@ def nadeau_bengio(
     j = d.size
     variance = float(np.var(d, ddof=1))
     mean = float(np.mean(d))
-    if variance == 0.0:
+    if variance <= (np.finfo(float).eps * max(abs(mean), 1.0)) ** 2:
         return (math.copysign(math.inf, mean) if mean else 0.0, 0.0 if mean else 1.0)
     statistic = mean / math.sqrt((1.0 / j + n_test / n_train) * variance)
     return statistic, float(2.0 * scipy_stats.t.sf(abs(statistic), j - 1))
