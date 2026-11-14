@@ -417,6 +417,9 @@ def _b3(root: Path) -> list[Claim]:
     src = "j4_gradient.csv"
     rows = _rows(root / src)
     claims = []
+    # The dense row changed with the 2026-11 training fix of ``DenseSurrogate.fit``
+    # (was 1/4, values 0.68, 0.50, 1.00, 0.67); the article must print the new figure.
+    printed = {"dense": "2/4 (0 and 180 deg)", "analytic_untrained": "1/4 (180 deg)"}
     for name in ("dense", "analytic_untrained"):
         sub = [r for r in rows if r["surrogate"] == name]
         signs = [float(r["sign_agreement"]) for r in sub]
@@ -425,7 +428,7 @@ def _b3(root: Path) -> list[Claim]:
             Claim(
                 "B3",
                 f"azimuths reaching sign agreement 0.80 ({name})",
-                "1/4 (180 deg)",
+                printed[name],
                 f"{passed}/{len(sub)}; values {', '.join(f'{s:.2f}' for s in signs)}",
                 src,
                 "sign_agreement >= 0.80",
@@ -440,7 +443,7 @@ def _b3(root: Path) -> list[Claim]:
         Claim(
             "B3",
             "MAE dense vs analytic, factor",
-            "1.19 vs 37.29, factor 31",
+            "1.55 vs 37.29, factor 24",  # 1.19, factor 31 before the 2026-11 fix
             f"{mae['dense']:.2f} vs {mae['analytic_untrained']:.2f}, factor {ratio:.1f}",
             src,
             "mae_test",
@@ -540,7 +543,7 @@ def _b5(root: Path) -> list[Claim]:
         Claim(
             "B5",
             "active vs random: favourable campaigns, medians, p",
-            "16/30; 11.77 vs 11.04; p = 0.53",
+            "16/30; 10.86 vs 10.37; p = 0.67",  # 11.77 vs 11.04, p = 0.53 before 2026-11
             f"{wins}/{len(rows)}; {statistics.median(active):.2f} vs "
             f"{statistics.median(rand):.2f}; p = {p:.2f}",
             "j6_active.csv",

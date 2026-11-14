@@ -23,7 +23,7 @@ of freedom** (the two cut coordinates). The `mae_reseau = 0,0175` against
 training set**: a successful regression on a deterministic function, without noise.
 These two numbers no longer reproduce with the shipped code (the same script gives
 0.33 and 41.9); on a test set, in phase 2 (`results/j4_gradient.csv`, review
-[j4](../revues/j4.md)), the network's error is 1.19 against 37.3.
+[j4](../revues/j4.md)), the network's error is 1.55 against 37.3 (1.19 before the 2026-11 training fix).
 
 !!! danger "What this means for a paper"
     This is **not** a learning result. No reviewer will accept
@@ -182,9 +182,14 @@ measured by the closed-form oracle is `closed_form_only`, never confirmed.
 
 What the repository measures today (`results/j4_before_after.csv`, j4 network,
 16 held-out plans, 45° sectors, reference = oracle): mean predicted gain
-**9.1 %**, mean oracle gain **2.6 %**, so about 70 % of the announced
-gain is the surrogate's own; 9 of the 16 optimized plans are flagged out of
-distribution by `light.ood`. Until a physical reference has been run, a
+**2.3 %**, mean oracle gain **1.5 %**, so about a third of the announced gain
+is the surrogate's own; 4 of the 16 optimized plans are flagged out of
+distribution by `light.ood`. Before the 2026-11 training fix of
+`DenseSurrogate` the same run gave 9.1 % predicted, 2.6 % realised, 9 out of
+distribution: the network now announces gains it delivers, but seed 17 is its
+worst draw. Over seeds 100–115 (256 optimizations) the mean oracle gain is
+4.38 % against 4.53 % before the fix, a difference a paired Wilcoxon test does
+not separate from zero (p = 0.06). Until a physical reference has been run, a
 figure such as "+17.2 % daylight" must be written **predicted**.
 
 **Out of distribution.** `light.ood.fit_envelope` summarizes the training

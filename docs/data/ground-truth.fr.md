@@ -23,7 +23,7 @@ de liberté** (les deux coordonnées de coupe). Le `mae_reseau = 0,0175` contre
 d'entraînement** : une régression réussie sur une fonction déterministe, sans bruit.
 Ces deux chiffres ne se reproduisent plus avec le code livré (le même script donne
 0,33 et 41,9) ; sur un jeu de test, en phase 2 (`results/j4_gradient.csv`, revue
-[j4](../revues/j4.md)), l'erreur du réseau est 1,19 contre 37,3.
+[j4](../revues/j4.md)), l'erreur du réseau est 1,55 contre 37,3 (1,19 avant la correction d'entraînement de 2026-11).
 
 !!! danger "Ce que cela veut dire pour un article"
     Ce n'est **pas** un résultat d'apprentissage. Aucun relecteur n'acceptera
@@ -169,8 +169,12 @@ par plan, le gain prédit, le gain de référence, leur écart et le déplacemen
 `summarize_gains(...).claim` ne vaut `"confirmed"` que si une référence
 **physique** a mesuré chaque plan. Mesure actuelle
 (`results/j4_before_after.csv`, référence = oracle) : gain prédit moyen
-**9,1 %**, gain de l'oracle **2,6 %** ; 9 plans optimisés sur 16 signalés hors
-distribution (`light.ood`). Un chiffre comme « +17,2 % » reste donc **prédit**.
+**2,3 %**, gain de l'oracle **1,5 %** ; 4 plans optimisés sur 16 signalés hors
+distribution (`light.ood`). Avant la correction d'entraînement de 2026-11 : 9,1 %
+prédit, 2,6 % réalisé, 9 hors distribution. La graine 17 est le pire tirage du
+réseau actuel ; sur les graines 100 à 115 (256 optimisations), le gain de
+l'oracle vaut 4,38 % contre 4,53 % avant, écart non significatif (Wilcoxon
+apparié, p = 0,06). Un chiffre comme « +17,2 % » reste donc **prédit**.
 
 Pour lancer Radiance : installer Radiance 5.4+ (`oconv`, `rtrace`, `gensky`
 sur le `PATH`), puis :

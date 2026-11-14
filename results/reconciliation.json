@@ -123,8 +123,8 @@
  {
   "bench": "B3",
   "quantity": "azimuths reaching sign agreement 0.80 (dense)",
-  "article": "1/4 (180 deg)",
-  "recomputed": "1/4; values 0.68, 0.50, 1.00, 0.67",
+  "article": "2/4 (0 and 180 deg)",
+  "recomputed": "2/4; values 0.97, 0.69, 1.00, 0.67",
   "source": "j4_gradient.csv",
   "formula": "sign_agreement >= 0.80",
   "unit": "20 perturbation points per azimuth, one plan family",
@@ -145,8 +145,8 @@
  {
   "bench": "B3",
   "quantity": "MAE dense vs analytic, factor",
-  "article": "1.19 vs 37.29, factor 31",
-  "recomputed": "1.19 vs 37.29, factor 31.2",
+  "article": "1.55 vs 37.29, factor 24",
+  "recomputed": "1.55 vs 37.29, factor 24.1",
   "source": "j4_gradient.csv",
   "formula": "mae_test",
   "unit": "80 test plans",
@@ -189,8 +189,8 @@
  {
   "bench": "B5",
   "quantity": "active vs random: favourable campaigns, medians, p",
-  "article": "16/30; 11.77 vs 11.04; p = 0.53",
-  "recomputed": "16/30; 11.77 vs 11.04; p = 0.53",
+  "article": "16/30; 10.86 vs 10.37; p = 0.67",
+  "recomputed": "16/30; 10.86 vs 10.37; p = 0.67",
   "source": "j6_active.csv",
   "formula": "width_active < width_random; Wilcoxon paired",
   "unit": "campaign (seed), 30 paired campaigns",

@@ -8,6 +8,14 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Changed — `DenseSurrogate.fit`: trustworthy gradient
+
+- Descriptors that are constant in training or move when the whole plan is translated are frozen (infinite scale, kept by `save`/`load`); weight decay `WEIGHT_DECAY / n` per step (`WEIGHT_DECAY = 0.5`); cosine decay of the step from `lr` to 0. Cause found by diagnosis: the network fitted noise on absolute-position descriptors, giving a spurious slope along every room `x`, `y`, and a constant step left the last iterate noisy.
+- Gradient: factorial study, 10 800 runs with independent seeds (4 plan families, `n` in {36, 100, 400}, epochs in {40, 150, 300}, `lr` in {0.03, 0.1, 0.2}, 100 seeds per cell), runs with sign agreement > 0.80 against `SplitFluxOracle` from 69.7 % to 99.7 %. B3 (dense): sign agreement 0.844 → 0.908, mean angle 33° → 23°.
+- Optimization: realised Frank-Wolfe gain of `j4_reliability.py` over seeds 100–115, 4.53 % → 4.38 % (paired Wilcoxon p = 0.06, not significant). Seed 17, the published one, is the network's worst draw: 2.6 % → 1.5 % realised, but the announced gain falls from 9.1 % to 2.3 % and out-of-distribution outputs from 9 to 4. A decay of 1.0, chosen on gradient sign alone, cost a full point of realised gain; hence 0.5.
+- Regenerated: `b3_gradient_continuous.csv`, `j4_gradient.csv` (test MAE 1.19 → 1.55 on its one-parameter family), `j4_reliability.csv`, `j4_before_after.csv`, `j6_active.csv`. The oracle is still a closed form: this says the learning chain is sound, nothing about daylight.
+- Paper figures moved, updated in `bench/reconcile.py` and `results/RECONCILIATION.md` (the article text must follow): B3 dense azimuths at 0.80 1/4 → 2/4, MAE 1.19 vs 37.29 (factor 31) → 1.55 vs 37.29 (factor 24); B5 active vs random 16/30, medians 11.77 vs 11.04, p = 0.53 → 16/30, 10.86 vs 10.37, p = 0.67 (conclusion unchanged: no significant difference).
+
 ### Added — technical audit corrections (Audit_technique_ArchLux)
 
 - **Gradient (2.1).** `GradientAgreement` carries `pearson`, `spearman`, `mean_angle_deg` and `median_norm_error`; `experiments/b3_gradient_continuous.py` scores 8 azimuths x 3 amplitudes and two typologies (`results/b3_gradient_continuous.csv`).

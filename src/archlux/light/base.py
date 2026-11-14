@@ -44,6 +44,52 @@ SIGMA_FLOOR = 0.02
 """Floor of the predictive sigma, in the unit of the indicator. Same status: workshop value.
 """
 
+WEIGHT_DECAY = 0.5
+"""L2 decay of the residual network, divided by the training-set size at every SGD step.
+
+The ``1/n`` scaling is the maximum-a-posteriori form (sum of losses + prior): the prior
+dominates with 36 plans and fades with 400, instead of biasing large training sets.
+Chosen on two criteria, because one alone misleads. Gradient sign: among {0, 0.03, 0.1,
+0.2, 0.3, 0.5, 1}, 0.5 is the smallest value keeping ``sign_agreement > 0.80`` in every
+run of a factorial grid (4 plan families, ``n`` in {36, 400}, 40 or 150 epochs, ``lr`` in
+{0.03, 0.1, 0.2}, 5 seeds). Optimization: on the Frank-Wolfe benchmark of
+``experiments/j4_reliability.py`` over 16 seeds, 1.0 cut the realised gain from 4.4 % to
+3.4 % by shrinking the residual back to the analytic surrogate; 0.5 is not
+distinguishable from the undecayed network (paired Wilcoxon, p = 0.06).
+"""
+
+_TRANSLATION_PROBE = (1.7, -2.3)
+"""Shift applied to every room to detect the descriptors that depend on absolute position."""
+
+
+def _translation_dependent(x: np.ndarray, orientation: Orientation) -> np.ndarray:
+    """Mask of the descriptors that change when the whole plan is translated.
+
+    Daylight does not depend on where the plan sits in its coordinate frame, so these
+    descriptors (mean absolute ``x``, ``y`` of the rooms and their orientation
+    products) carry no physical signal. Left in, the network fits noise on them and its
+    gradient gets a spurious slope along every room position: this was the main cause
+    of sign disagreements against the frozen oracle. The analytic base keeps all the
+    *relative* position information.
+
+    Parameters
+    ----------
+    x
+        Decision vector of any training plan.
+    orientation
+        Azimuth of that plan.
+
+    Returns
+    -------
+    numpy.ndarray
+        Boolean mask, ``True`` for the descriptors to freeze.
+    """
+    plan = np.asarray(x, dtype=float).ravel()
+    shift = np.zeros_like(plan)
+    shift[0::4], shift[1::4] = _TRANSLATION_PROBE
+    moved = descriptors(plan + shift, orientation) - descriptors(plan, orientation)
+    return np.asarray(np.abs(moved) > 1e-9)
+
 
 @lru_cache(maxsize=len(INDICATOR_SENSE))
 def _analytic(indicator: Indicator) -> AnalyticSurrogate:
@@ -396,6 +442,12 @@ class DenseSurrogate:
         the network learns the residual to this **rescaled** base. ``a = 1``, ``b = 0``
         restores exactly the earlier behaviour.
 
+        Three choices keep the *gradient* of the result trustworthy, not only its value:
+        descriptors that depend on absolute position are frozen
+        (:func:`_translation_dependent`), weights decay by :data:`WEIGHT_DECAY`, and the
+        step follows a cosine decay from ``lr`` to zero. Without them, sign agreement
+        with ``SplitFluxOracle`` fell below 0.80 in 30 % of a 10 800-run factorial study.
+
         Parameters
         ----------
         xs
@@ -435,7 +487,13 @@ class DenseSurrogate:
         )
         self.mu = feats.mean(axis=0)
         self.sigma = feats.std(axis=0)
-        self.sigma[self.sigma < _EPS] = 1.0
+        # An infinite scale freezes a descriptor at 0 after normalization, and the
+        # frozen state survives ``save``/``load`` without a new archive key. Two kinds
+        # are frozen. Constant in training: the network has no data for that slope and
+        # would keep the sign of its random initialization (in ``j4_gradient.py`` the
+        # mean room width is always 6). Translation-dependent: no physical signal.
+        self.sigma[self.sigma < _EPS] = np.inf
+        self.sigma[_translation_dependent(xs[0], orientations[0])] = np.inf
         feats = (feats - self.mu) / self.sigma
         self.mu_y = float(np.mean(residuals))
         self.sigma_y = max(float(np.std(residuals)), _EPS)
@@ -450,7 +508,11 @@ class DenseSurrogate:
         self.W3 = rng.normal(0.0, 1.0 / math.sqrt(k), size=(k,))
         self.b3 = 0.0
         n = feats.shape[0]
-        for _ in range(epochs):
+        for epoch in range(epochs):
+            # Cosine decay to zero: a constant step leaves the last iterate rattling
+            # around the minimum, and that noise shows up as wrong gradient signs.
+            step = lr * 0.5 * (1.0 + math.cos(math.pi * epoch / epochs))
+            keep = 1.0 - step * WEIGHT_DECAY / n
             order = rng.permutation(n)
             for index in order:
                 feat = feats[index]
@@ -459,12 +521,15 @@ class DenseSurrogate:
                 d_y = _huber_derivative(residual)
                 d_h2 = d_y * self.W3 * (1.0 - h2 * h2)
                 d_h1 = (d_h2 @ self.W2.T) * (1.0 - h1 * h1)
-                self.W3 -= lr * d_y * h2
-                self.b3 -= lr * d_y
-                self.W2 -= lr * np.outer(h1, d_h2)
-                self.b2 -= lr * d_h2
-                self.W1 -= lr * np.outer(feat, d_h1)
-                self.b1 -= lr * d_h1
+                self.W1 *= keep
+                self.W2 *= keep
+                self.W3 *= keep
+                self.W3 -= step * d_y * h2
+                self.b3 -= step * d_y
+                self.W2 -= step * np.outer(h1, d_h2)
+                self.b2 -= step * d_h2
+                self.W1 -= step * np.outer(feat, d_h1)
+                self.b1 -= step * d_h1
 
     @renamed_parameters({"chemin": "path"})
     def save(self, path: Path) -> str:

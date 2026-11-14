@@ -46,9 +46,13 @@ réalisé). Mesures avec le réseau de j4 contre l'oracle split-flux figé
 
 | Plans | Accord de signe (tous) | Secteurs de 45° au-dessus de 0,80 |
 |---|--:|--:|
-| 80 plans tenus à l'écart | 0,827 | 4 / 8 |
-| 16 sorties de Frank-Wolfe | 0,935 | 6 / 7 présents |
-| 125 pas de Frank-Wolfe, signe du gain prédit contre réalisé | **0,552** | — |
+| 80 plans tenus à l'écart | 0,930 (0,827 avant la correction d'entraînement de 2026-11) | 6 / 8 (avant : 4 / 8) |
+| 16 sorties de Frank-Wolfe | 0,954 (0,935 avant) | 6 / 7 présents |
+| 137 pas de Frank-Wolfe, signe du gain prédit contre réalisé | **0,314** (0,552 avant) | — |
+
+La graine 17 est la pire des 17 graines pour l'audit pas à pas : sur les
+graines 100 à 115, l'accord moyen vaut 0,581 avec le réseau actuel contre
+0,613 avant la correction, à peine mieux qu'un pile ou face dans les deux cas.
 
 `GuardedSurrogate` refuse un gradient dont l'accord est sous le seuil : il
 renvoie un gradient nul (Frank-Wolfe s'arrête) ou lève `UntrustedGradient`.

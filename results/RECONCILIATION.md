@@ -19,13 +19,13 @@ Cluster-bootstrap intervals resample the statistical unit (plan, dwelling), seed
 | B2 | displacement range without A_min | 7.1 to 34.0 m | 7.05 to 34.00 m | **consistent** | 1 plan x 8 azimuths: n = 1 independent plan (illustrative only) | `j3_orientation.csv` |
 | B2 | median displacement without / with A_min | 17.3 m -> 10.8 m | 17.27 m -> 10.80 m | **consistent** | 1 plan x 8 azimuths: n = 1 independent plan (illustrative only) | `j3_orientation.csv` |
 | B2 | smallest room with A_min = 12 m2 | above 12.0 m2 | 12.03 m2 | **consistent** | 1 plan x 8 azimuths: n = 1 independent plan (illustrative only) | `j3_orientation.csv` |
-| B3 | azimuths reaching sign agreement 0.80 (dense) | 1/4 (180 deg) | 1/4; values 0.68, 0.50, 1.00, 0.67 | **consistent** | 20 perturbation points per azimuth, one plan family | `j4_gradient.csv` |
+| B3 | azimuths reaching sign agreement 0.80 (dense) | 2/4 (0 and 180 deg) | 2/4; values 0.97, 0.69, 1.00, 0.67 | **consistent** | 20 perturbation points per azimuth, one plan family | `j4_gradient.csv` |
 | B3 | azimuths reaching sign agreement 0.80 (analytic_untrained) | 1/4 (180 deg) | 1/4; values 0.67, 0.67, 1.00, 0.67 | **consistent** | 20 perturbation points per azimuth, one plan family | `j4_gradient.csv` |
-| B3 | MAE dense vs analytic, factor | 1.19 vs 37.29, factor 31 | 1.19 vs 37.29, factor 31.2 | **consistent** | 80 test plans | `j4_gradient.csv` |
+| B3 | MAE dense vs analytic, factor | 1.55 vs 37.29, factor 24 | 1.55 vs 37.29, factor 24.1 | **consistent** | 80 test plans | `j4_gradient.csv` |
 | B4 | coverage, exchangeable | 89.8 % mean, 91.1 % median, 83.2-94.3, sd 3.2, 16/20 in band | 89.8 % mean, 91.1 % median, 83.2-94.3, sd 3.2, 16/20 in band; width/sd(target) 4.66 | **consistent** | run (calibration draw): 20 runs; n = 280 plans per run, 220 calibration plans | `j5_coverage.csv` |
 | B4 | coverage, selected | 87.8 % mean, 88.8 % median, 78.8-95.0, sd 4.7, 10/20 in band | 87.8 % mean, 88.8 % median, 78.8-95.0, sd 4.7, 10/20 in band; width/sd(target) 4.38 | **consistent** | run (calibration draw): 20 runs; n = 80 plans per run, 220 calibration plans | `j5_coverage.csv` |
 | B4 | paired Wilcoxon passive vs selected | p = 0.09 | p = 0.089 | **consistent** | run, 20 pairs | `j5_coverage.csv` |
-| B5 | active vs random: favourable campaigns, medians, p | 16/30; 11.77 vs 11.04; p = 0.53 | 16/30; 11.77 vs 11.04; p = 0.53 | **consistent** | campaign (seed), 30 paired campaigns | `j6_active.csv` |
+| B5 | active vs random: favourable campaigns, medians, p | 16/30; 10.86 vs 10.37; p = 0.67 | 16/30; 10.86 vs 10.37; p = 0.67 | **consistent** | campaign (seed), 30 paired campaigns | `j6_active.csv` |
 | B5 | IFC export without validator error | 90/90 [95.9 ; 100] | 90/90 [95.9 ; 100.0] | **consistent** | synthetic plan, 90 | `j6_ifc.csv` |
 | B6 | dwellings read / kept | 1 247 read, 400 kept (32.1 %) | 1247 read, 400 kept (32.1 %) | **ambiguous** | dwelling, 400 (MSD corpus not redistributed) | `j7_msd_idempotence.md` |
 | B6 | valid before / after legalize (idempotence) | 398/400 before, 400/400 after | 398/400 before, 400/400 after | **ambiguous** | dwelling, 400 (MSD corpus not redistributed) | `j7_msd_idempotence.md` |

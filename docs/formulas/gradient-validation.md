@@ -54,14 +54,17 @@ Measured with the j4 network, the frozen split-flux oracle as reference
 
 | Plans | Sign agreement (all) | Sectors of 45° passing 0.80 |
 |---|--:|--:|
-| 80 held-out | 0.827 | 4 / 8 (0°, 45°, 90°, 270° fail) |
-| 16 Frank-Wolfe outputs | 0.935 | 6 / 7 present (90° fails) |
-| 125 Frank-Wolfe steps, predicted vs realised gain sign | **0.552** | — |
+| 80 held-out | 0.930 (0.827 before the 2026-11 training fix) | 6 / 8 (90°, 270° fail; before: 4 / 8) |
+| 16 Frank-Wolfe outputs | 0.954 (was 0.935) | 6 / 7 present (90° fails) |
+| 137 Frank-Wolfe steps, predicted vs realised gain sign | **0.314** (was 0.552) | — |
 
 The amplitude barely changes these numbers: the oracle is smooth at these
-scales. The step audit is the most telling: the sign of the gain the
-surrogate announced for a step matches the sign of the realised gain only
-slightly more often than a coin flip.
+scales. The step audit is the most telling, and seed 17 is the worst of 17
+seeds for it: over seeds 100–115 the step agreement averages 0.581 with the
+current network against 0.613 before the fix, both barely better than a coin
+flip. The 90° and 270° failures on held-out plans cannot be fixed by
+learning: the 36 training plans vary along the single cut `c`, while the check
+perturbs each coordinate alone (`docs/revues/j4.md`).
 
 **Run-time refusal.** `gradient_trust` returns `"ok"` or `"refuse"` (sign
 agreement below the threshold, or a flat reference) without raising.
