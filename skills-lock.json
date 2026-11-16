@@ -19,6 +19,13 @@
       "skillPath": "plugins/python-development/skills/python-design-patterns/SKILL.md",
       "computedHash": "a8f1eebda28a169f366da393b6a2f836583022b4ca3f2c330eabde1e5cccb08b"
     },
+    "refactor": {
+      "source": "github/awesome-copilot",
+      "commit": "dc0083dbe22133bfa7ce3500dee85e187e0cd47a",
+      "sourceType": "github",
+      "skillPath": "skills/refactor/SKILL.md",
+      "computedHash": "135501448a53aa6515fe0e1b72496947e5a24eb9493c3df4c929692fc4753da0"
+    },
     "review-and-refactor": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
