@@ -15,7 +15,7 @@ from pathlib import Path
 import archlux as ax
 from archlux.certify import run_repair, verify_exactly
 from archlux.data.corruption import corrupt
-from archlux.data.synthetic import MAX_SIZE, generate_corpus
+from archlux.data.synthetic import MAX_SIZE, b1_context, generate_corpus
 from archlux.seeds import derive
 
 SEED = 17
@@ -24,24 +24,11 @@ FIELDS = ("plan_id", "amplitude_m", "pavage", "valid_before", "status", "valid_a
 CHECK = ("outcome", "validator_valid", "evidence", "refused_constraints")
 
 
-def context(plan: ax.Plan) -> ax.Context:
-    cut = next(r.x + r.w for r in plan.rooms if r.id == "sw")
-    wall = ax.Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), load_bearing=True)
-    kinds = sorted({r.type for r in plan.rooms})
-    minima = tuple((t, 0.8 * min(r.w * r.h for r in plan.rooms if r.type == t)) for t in kinds)
-    return ax.Context(
-        structure=ax.Structure((wall,)),
-        orientation=ax.Orientation(0.0),
-        outline=plan.outline,
-        regulation=ax.Regulation(minima, 1.0),
-    )
-
-
 with OUT.open("w", newline="", encoding="utf-8") as handle:
     writer = csv.DictWriter(handle, (*FIELDS, "max_displacement_m", *CHECK), lineterminator="\n")
     writer.writeheader()
     for plan_id, plan in sorted(generate_corpus(MAX_SIZE, seed=SEED).items()):
-        ctx = context(plan)
+        ctx = b1_context(plan)
         for amplitude in (0.1, 0.25, 0.5):
             seed = derive(SEED, f"j2/{plan_id}/{amplitude}")
             faulty, _ = corrupt(plan, seed=seed, amplitude=amplitude)

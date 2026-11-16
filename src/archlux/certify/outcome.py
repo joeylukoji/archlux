@@ -23,7 +23,10 @@ from typing import Literal
 from archlux.certify.run import RunReport
 from archlux.errors import InvariantViolation
 
-__all__ = ["FAILURE_CLASSES", "OUTCOMES", "PlanOutcome", "outcome"]
+__all__ = ["FAILURE_CLASSES", "OUTCOMES", "STRONG_DEFORMATION", "PlanOutcome", "outcome"]
+
+STRONG_DEFORMATION = 0.25
+"""Largest move, as a share of the plan's side, above which a repair is a strong deformation."""
 
 Outcome = Literal[
     "repaired",
@@ -121,7 +124,7 @@ def _repaired(report: RunReport, side_m: float, strong: float) -> PlanOutcome:
     return PlanOutcome("repaired", None, share, f"certified valid; largest move {moved:.2f} m")
 
 
-def outcome(report: RunReport, *, side_m: float, strong: float = 0.25) -> PlanOutcome:
+def outcome(report: RunReport, *, side_m: float, strong: float = STRONG_DEFORMATION) -> PlanOutcome:
     """Map a repair report to the answer a user gets.
 
     Parameters
@@ -133,7 +136,7 @@ def outcome(report: RunReport, *, side_m: float, strong: float = 0.25) -> PlanOu
         metres, strictly positive.
     strong : float, optional
         Relative displacement above which a repair counts as a strong deformation
-        (default 0.25).
+        (default :data:`STRONG_DEFORMATION`).
 
     Returns
     -------

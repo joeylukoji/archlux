@@ -12,11 +12,10 @@ from __future__ import annotations
 import math
 from dataclasses import replace
 
+from archlux.tolerances import CONTACT_M as _TOLERANCE_M
 from archlux.types import Plan, Room
 
 __all__ = ["naive_repair"]
-
-_TOLERANCE_M = 1e-9
 
 
 def _overlaps(room: Room, others: list[Room]) -> bool:

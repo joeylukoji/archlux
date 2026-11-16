@@ -11,11 +11,12 @@ import numpy as np
 from archlux._deprecation import Alias, lazy_aliases
 from archlux.errors import InvariantViolation
 from archlux.seeds import derive
-from archlux.types import Orientation, Plan, Room
+from archlux.types import Context, Orientation, Plan, Regulation, Room, Structure, Wall
 
 __all__ = [
     "MAX_SIZE",
     "TWO_ROOM_OUTLINE",
+    "b1_context",
     "generate_corpus",
     "two_room_plan",
     "two_room_vectors",
@@ -30,6 +31,44 @@ _N_CUTS_Y = 9
 
 MAX_SIZE = _N_CUTS_X * _N_CUTS_Y
 """Number of distinct cuts of the grid: beyond this, the corpus would repeat."""
+
+
+def b1_context(plan: Plan, *, min_width: float = 1.0) -> Context:
+    """The B1 context of a corpus plan: load-bearing wall on its cut, minima at 80 %.
+
+    Shared by ``experiments/j2_validity.py``, ``experiments/b1_naive.py`` and the
+    reference cases, so that the three read the same benchmark.
+
+    Parameters
+    ----------
+    plan : Plan
+        A plan of :func:`generate_corpus` (it has a room ``sw``).
+    min_width : float, optional
+        Minimum room width in metres (default 1.0).
+
+    Returns
+    -------
+    Context
+        A load-bearing wall at the east side of ``sw``, orientation 0, the plan's
+        outline, and a minimum area per room type of 80 % of its smallest room.
+
+    Examples
+    --------
+    >>> plan = generate_corpus(1, seed=17)["syn-0000"]
+    >>> ctx = b1_context(plan)
+    >>> ctx.structure.load_bearing_walls[0].load_bearing, ctx.regulation.min_width
+    (True, 1.0)
+    """
+    cut = next(r.x + r.w for r in plan.rooms if r.id == "sw")
+    wall = Wall(id="lb", a=(cut, 0.0), b=(cut, 9.0), load_bearing=True)
+    kinds = sorted({r.type for r in plan.rooms})
+    minima = tuple((t, 0.8 * min(r.w * r.h for r in plan.rooms if r.type == t)) for t in kinds)
+    return Context(
+        structure=Structure((wall,)),
+        orientation=Orientation(0.0),
+        outline=plan.outline,
+        regulation=Regulation(minima, min_width),
+    )
 
 
 def _rng(seed: int, name: str) -> np.random.Generator:

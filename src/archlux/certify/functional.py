@@ -21,11 +21,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from archlux.tolerances import FUNCTIONAL_CONTACT_M as _TOL
 from archlux.types import Context, Plan, Point, Room, Wall
 
 __all__ = ["FUNCTIONAL_NOT_CHECKED", "FunctionalCheck", "FunctionalReport", "check_functional"]
-
-_TOL = 1e-6
 
 FUNCTIONAL_NOT_CHECKED: tuple[str, ...] = (
     "door positions and swings (doors are not modelled; only wall stretches wide enough)",

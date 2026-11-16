@@ -34,9 +34,7 @@ import numpy as np
 
 from archlux._log import event
 from archlux.errors import InvalidSurrogate
-from archlux.light.evaluation import EvaluationCase, orientation_sector
-from archlux.light.evaluation import _pearson as pearson
-from archlux.light.evaluation import _spearman as spearman
+from archlux.light.evaluation import EvaluationCase, orientation_sector, pearson, spearman
 
 if TYPE_CHECKING:
     from archlux.arrays import FloatVector

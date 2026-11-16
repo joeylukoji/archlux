@@ -52,6 +52,12 @@ The same value tells a tight constraint at the returned point (``Trace.active_bo
 and, multiplied by the L1 norm of the gradient, bounds the negative gap an optimal
 vertex may show from LP noise alone."""
 
+FUNCTIONAL_CONTACT_M: Final = 1e-6
+"""Gap under which two rooms share a wall, or a room side lies on the outline, in the
+functional checks (``certify.functional``). Looser than ``CONTACT_M``: it reads plans
+returned by the LP, whose contacts hold only up to the solver tolerance (about 1e-7 m),
+and it decides usability, not validity."""
+
 # --- Areas (square metres) -----------------------------------------------------------
 
 OVERLAP_M2: Final = 1e-9

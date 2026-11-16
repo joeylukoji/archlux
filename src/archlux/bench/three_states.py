@@ -10,13 +10,14 @@ CSV rows.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
+from dataclasses import replace
 from typing import Any
 
 import numpy as np
 
 from archlux.io.json_io import from_dict
 from archlux.light.three_states import ThreeStates, facade_glazing
-from archlux.types import Context, Orientation, Plan, Regulation, Structure
+from archlux.types import Context, Orientation, Plan, Regulation, Structure, vectorize
 
 __all__ = ["HEADER", "b9_cases", "rows"]
 
@@ -35,23 +36,20 @@ HEADER = (
 """Columns written by :func:`rows`."""
 
 
-def _vector(plan: Plan, ids: list[str]) -> np.ndarray:
-    """``(x, y, w, h)`` of the rooms ``ids``, in that order.
+def _vector(plan: Plan) -> np.ndarray:
+    """``(x, y, w, h)`` of the rooms sorted by id: one layout for the three states.
 
     Parameters
     ----------
     plan : Plan
         Plan to flatten.
-    ids : list of str
-        Room order shared by the three states.
 
     Returns
     -------
     numpy.ndarray
-        The flat vector.
+        :func:`archlux.types.vectorize` of the plan with its rooms sorted by id.
     """
-    rooms = {r.id: r for r in plan.rooms}
-    return np.array([v for i in ids for v in (rooms[i].x, rooms[i].y, rooms[i].w, rooms[i].h)])
+    return vectorize(replace(plan, rooms=tuple(sorted(plan.rooms, key=lambda r: r.id))))
 
 
 def b9_cases(
@@ -84,7 +82,7 @@ def b9_cases(
     cases = []
     for name in sorted(plans):
         proposed = from_dict(dict(plans[name]["proposed"]))
-        glazing, ids = facade_glazing(proposed.outline), sorted(r.id for r in proposed.rooms)
+        glazing = facade_glazing(proposed.outline)
         kinds = tuple(sorted({r.type for r in proposed.rooms}))
         for azimuth in range(0, 360, 45):
             ctx = Context(
@@ -96,7 +94,7 @@ def b9_cases(
             )
             classic = legalize(proposed, ctx, tiling=True, repair_budget=16)
             best = legalize(classic, ctx, objective=objective, budget=budget)
-            x0, x1, x2 = (_vector(p, ids) for p in (proposed, classic, best))
+            x0, x1, x2 = (_vector(p) for p in (proposed, classic, best))
             cases.append((f"{name}/{azimuth}", x0, x1, x2, ctx.orientation, glazing))
     return cases
 
