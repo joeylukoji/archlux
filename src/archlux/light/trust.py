@@ -261,6 +261,30 @@ def gradient_agreement(
     )
 
 
+def _denoised(values: np.ndarray) -> np.ndarray:
+    """Round to nine digits relative to the largest magnitude, so that ranks ignore noise.
+
+    Partial derivatives of coordinates the reference does not depend on come out at
+    about 1e-17 with a sign set by the processor's floating-point kernels; ranked as
+    they are, they move the Spearman correlation from one machine to another. Below
+    ``1e-9`` of the largest derivative they are ties.
+
+    Parameters
+    ----------
+    values : numpy.ndarray
+        Pooled partial derivatives.
+
+    Returns
+    -------
+    numpy.ndarray
+        The values rounded on that relative grid (unchanged when all are zero).
+    """
+    scale = float(np.max(np.abs(values))) if values.size else 0.0
+    if scale <= _TINY:
+        return values
+    return np.round(values / scale, 9) * scale + 0.0
+
+
 def _continuous_measures(
     declared: list[np.ndarray], target: list[np.ndarray], cosines: list[float]
 ) -> dict[str, float]:
@@ -278,8 +302,8 @@ def _continuous_measures(
     dict of str to float
         ``pearson``, ``spearman``, ``mean_angle_deg`` and ``median_norm_error``.
     """
-    flat_d = np.concatenate(declared) if declared else np.empty(0)
-    flat_t = np.concatenate(target) if target else np.empty(0)
+    flat_d = _denoised(np.concatenate(declared)) if declared else np.empty(0)
+    flat_t = _denoised(np.concatenate(target)) if target else np.empty(0)
     angles = np.degrees(np.arccos(np.clip(cosines, -1.0, 1.0))) if cosines else np.empty(0)
     errors = [
         abs(float(np.linalg.norm(d)) - nt) / nt

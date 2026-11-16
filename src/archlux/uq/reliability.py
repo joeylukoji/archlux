@@ -202,6 +202,8 @@ class CoverageReport:
     target_std : float
         Standard deviation of the truths (``ddof=1``): an interval wider than this says
         less than "somewhere in the usual range" (PLAN.md phase 2, J5).
+    alpha : float
+        Level of the calibrator the intervals came from.
     coverage_low, coverage_high : float
         Clopper-Pearson 95 % interval of ``coverage`` (``ARCHITECTURE.md`` §7: a metric
         is never a bare scalar). It is about this sample only, given the calibration.
@@ -213,8 +215,9 @@ class CoverageReport:
     target_std: float
     coverage_low: float
     coverage_high: float
+    alpha: float = 0.10
 
-    def within(self, band: tuple[float, float] = ACCEPTANCE_BAND) -> bool:
+    def within(self, band: tuple[float, float] | None = None) -> bool:
         """Two-sided acceptance: coverage inside ``band``, bounds included.
 
         Over-coverage is as much a calibration failure as under-coverage: an interval
@@ -223,8 +226,8 @@ class CoverageReport:
         Parameters
         ----------
         band : tuple of float, optional
-            ``(low, high)``; default :data:`ACCEPTANCE_BAND`, fixed a priori for
-            ``alpha = 0.10``.
+            ``(low, high)``. Default :data:`ACCEPTANCE_BAND`, which was fixed a priori
+            for ``alpha = 0.10`` only: at any other level the band must be given.
 
         Returns
         -------
@@ -234,8 +237,15 @@ class CoverageReport:
         Raises
         ------
         InvariantViolation
-            If ``band`` is not ``0 <= low <= high <= 1``.
+            If ``band`` is not ``0 <= low <= high <= 1``, or if it is omitted while the
+            report was computed at another level than ``alpha = 0.10``.
         """
+        if band is None:
+            if not math.isclose(self.alpha, 0.10):
+                raise InvariantViolation(
+                    (f"no default acceptance band at alpha={self.alpha}: pass band=",)
+                )
+            band = ACCEPTANCE_BAND
         low, high = band
         if not 0.0 <= low <= high <= 1.0:
             raise InvariantViolation((f"invalid acceptance band: {band}",))
@@ -309,6 +319,7 @@ def measure_coverage(
         target_std=float(np.std(y, ddof=1)),
         coverage_low=float(beta.ppf(0.025, k, n - k + 1)) if k > 0 else 0.0,
         coverage_high=float(beta.ppf(0.975, k + 1, n - k)) if k < n else 1.0,
+        alpha=calibrator.alpha,
     )
 
 
