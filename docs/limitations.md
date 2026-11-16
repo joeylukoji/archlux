@@ -65,6 +65,12 @@ quantify, not what it provides.
 Details, protocol and before / after comparisons plan by plan:
 `results/j8_generation.md` and `results/visuals/`.
 
+**Most repairs are strong deformations.** Of the 145 generated plans repaired at budget
+16, 105 move a wall by more than 25 % of the plan's side; only 40 of 740 (5.4 %) are
+repaired while staying close to the generated plan (`results/b8_failures.md`, by
+failure class, conditioning, topology and size). `certify.outcome` reports such a plan
+as `repaired_strong_deformation`, never as a plain repair.
+
 ## The surrogate predicts at the wrong granularity
 
 **This is the deepest limitation of the project, and it is measured.**
@@ -143,6 +149,20 @@ The certificate says so: the bound of a plan returned by `legalize` carries
 percentage. For an exchangeable plan, if drift is detected, the certificate
 shows `NOT EVALUABLE` rather than a misleading interval.
 
+Measured over 200 calibration draws (synthetic two-room plans, α = 0.10), selection
+lowers the coverage from 90.1 % [89.7 ; 90.5] to 87.8 % [87.3 ; 88.4]; the paired
+difference, 2.2 points, is significant (Wilcoxon p = 5.6e-13), while 20 draws could not
+detect it (`results/j5_coverage_200.md`).
+
+## The daylight gain is a gain of the model
+
+No physical simulation has measured an optimized plan yet. In three states (generated,
+classic legalization, archlux optimization) and against the frozen closed form, the
+surrogate announces a median gain of 17.2 % on the B9 plans where the closed form sees
+9.8 %, and the closed form contradicts the sign of the gain on 2 of 48 variants
+(`results/b9_three_states.csv`). The same script uses Radiance as soon as its binaries
+are installed: until then, every gain is labelled `closed_form_only`.
+
 ## Load-bearing structure: what is and is not certified
 
 Since 0.10 (ADR-7), the certificate proves that **no room crosses a load-bearing wall**,
@@ -178,6 +198,9 @@ advice** nor an administrative certificate of compliance.
   every third-party BIM tool without reprocessing.
 - That a 90 % conformal coverage on the frozen oracle holds for another climate,
   another use, or another generator outside the calibration distribution.
+- That a plan is usable: `check_functional` tests circulation, openings on facades,
+  facade access and the program, and lists what it never checks (door positions,
+  accessibility clearances, fire safety, ventilation and overheating).
 
 > A plan produced by this system is a proposal, never a project document.
 
