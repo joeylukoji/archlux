@@ -42,6 +42,8 @@ __all__ = [
     "compare_before_after",
     "evaluate_surrogate",
     "orientation_sector",
+    "pearson",
+    "spearman",
     "summarize_gains",
 ]
 
@@ -177,7 +179,7 @@ def orientation_sector(deg: float, width: float = 90.0) -> str:
     return f"{centre:g}"
 
 
-def _pearson(a: np.ndarray, b: np.ndarray) -> float:
+def pearson(a: np.ndarray, b: np.ndarray) -> float:
     """Pearson correlation, ``nan`` below three points or for a constant sample.
 
     Parameters
@@ -217,7 +219,7 @@ def _ranks(a: np.ndarray) -> np.ndarray:
     return ranks
 
 
-def _spearman(a: np.ndarray, b: np.ndarray) -> float:
+def spearman(a: np.ndarray, b: np.ndarray) -> float:
     """Spearman rank correlation.
 
     Parameters
@@ -230,7 +232,7 @@ def _spearman(a: np.ndarray, b: np.ndarray) -> float:
     float
         The correlation of the ranks, or ``nan``.
     """
-    return _pearson(_ranks(a), _ranks(b)) if a.size >= 3 else float("nan")
+    return pearson(_ranks(a), _ranks(b)) if a.size >= 3 else float("nan")
 
 
 def _bootstrap(
@@ -359,8 +361,8 @@ def _summary(
         mae=_bootstrap(absolute[0], pred, ref, rng),
         relative_error=_bootstrap(absolute[1], pred, ref, rng),
         bias=_bootstrap(absolute[2], pred, ref, rng),
-        pearson=_bootstrap(_pearson, pred, ref, rng),
-        spearman=_bootstrap(_spearman, pred, ref, rng),
+        pearson=_bootstrap(pearson, pred, ref, rng),
+        spearman=_bootstrap(spearman, pred, ref, rng),
     )
 
 

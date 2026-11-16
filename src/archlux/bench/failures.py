@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Mapping
 
+from archlux.certify.outcome import STRONG_DEFORMATION
 from archlux.export.wilson import wilson_interval
 
 __all__ = ["CLASSES", "classify_row", "failure_table"]
@@ -27,7 +28,7 @@ CLASSES: tuple[str, ...] = (
 _STATUS = {"infaisable": "contradictory_constraints", "trame": "grid_budget_exceeded"}
 
 
-def classify_row(row: Mapping[str, str], *, strong: float = 0.25) -> str:
+def classify_row(row: Mapping[str, str], *, strong: float = STRONG_DEFORMATION) -> str:
     """Class of one raw B8 row.
 
     Parameters
@@ -56,7 +57,7 @@ def classify_row(row: Mapping[str, str], *, strong: float = 0.25) -> str:
 
 
 def failure_table(
-    rows: Iterable[Mapping[str, str]], *, by: str, strong: float = 0.25
+    rows: Iterable[Mapping[str, str]], *, by: str, strong: float = STRONG_DEFORMATION
 ) -> list[tuple[str, int, dict[str, int], tuple[float, float]]]:
     """Counts per class, for each value of the column ``by``.
 
