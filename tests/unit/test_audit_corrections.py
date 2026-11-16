@@ -258,3 +258,30 @@ def test_an_opening_flush_with_the_wall_end_is_accepted_and_one_beyond_is_refuse
     assert check_functional(flush, _ctx()).passed
     with pytest.raises(ax.ArchluxError):
         Opening(id="w", wall_id="s", s=1.2, relative_width=0.2)
+
+
+# review fixes ------------------------------------------------------------------------------
+def test_spearman_ignores_numerical_noise_on_null_derivatives() -> None:
+    from archlux.light.trust import _continuous_measures
+
+    signal = np.array([3.0, 1.0, 2.0])
+    noise_a, noise_b = np.array([1e-17, -1e-17]), np.array([-1e-17, 1e-17])
+    a = _continuous_measures([np.r_[signal, noise_a]], [np.r_[signal, noise_b]], [1.0])
+    assert a["spearman"] == pytest.approx(1.0)
+
+
+def test_the_default_acceptance_band_is_refused_at_another_level() -> None:
+    from archlux.uq.reliability import CoverageReport
+
+    report = CoverageReport(
+        n=10,
+        coverage=0.9,
+        mean_width=1.0,
+        target_std=1.0,
+        coverage_low=0.5,
+        coverage_high=1.0,
+        alpha=0.05,
+    )
+    with pytest.raises(InvariantViolation, match=r"alpha=0\.05"):
+        report.within()
+    assert report.within((0.93, 0.97)) is False
