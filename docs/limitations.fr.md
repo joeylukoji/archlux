@@ -65,6 +65,12 @@ qu'il fournit.
 Détail, protocole et comparaisons avant / après plan par plan :
 `results/j8_generation.md` et `results/visuals/`.
 
+**La plupart des réparations déforment fortement.** Sur les 145 plans générés réparés au
+budget 16, 105 déplacent un mur de plus de 25 % du côté du plan ; seuls 40 sur 740
+(5,4 %) sont réparés en restant proches du plan généré (`results/b8_failures.md`, par
+cause d'échec, conditionnement, topologie et taille). `certify.outcome` rend un tel
+plan comme `repaired_strong_deformation`, jamais comme une simple réparation.
+
 ## Le substitut prédit à la mauvaise granularité
 
 **C'est la limite la plus profonde du projet, et elle est mesurée.**
@@ -143,6 +149,20 @@ Le certificat le dit : la borne d'un plan rendu par `legalize` porte
 pourcentage. Pour un plan échangeable, si la dérive est détectée, le certificat
 affiche `NOT EVALUABLE` plutôt qu'un intervalle trompeur.
 
+Mesurée sur 200 tirages de calibration (plans synthétiques à deux pièces, α = 0,10), la
+sélection fait passer la couverture de 90,1 % [89,7 ; 90,5] à 87,8 % [87,3 ; 88,4] ;
+l'écart apparié, 2,2 points, est significatif (Wilcoxon p = 5,6e-13), alors que 20
+tirages ne pouvaient pas le détecter (`results/j5_coverage_200.md`).
+
+## Le gain d'éclairement est un gain du modèle
+
+Aucune simulation physique n'a encore mesuré un plan optimisé. En trois états (plan
+généré, légalisation classique, optimisation archlux) et face à la forme close gelée, le
+substitut annonce un gain médian de 17,2 % sur les plans de B9 là où la forme close voit
+9,8 %, et la forme close contredit le signe du gain sur 2 variantes sur 48
+(`results/b9_three_states.csv`). Le même script utilise Radiance dès que ses binaires
+sont installés : d'ici là, chaque gain est étiqueté `closed_form_only`.
+
 ## Structure porteuse : ce qui est certifié et ce qui ne l'est pas
 
 Depuis 0.10 (ADR-7), le certificat prouve qu'**aucune pièce ne traverse un mur
@@ -181,6 +201,9 @@ juridique** ni une attestation de conformité administrative.
   tout outil BIM tiers sans retraitement.
 - Qu'une couverture conforme à 90 % sur l'oracle gelé vaut pour un autre climat,
   un autre usage, ou un autre générateur hors distribution de calibration.
+- Qu'un plan est utilisable : `check_functional` teste la circulation, les ouvertures
+  en façade, l'accès à la façade et le programme, et liste ce qu'il ne vérifie jamais
+  (position des portes, dégagements d'accessibilité, incendie, ventilation et surchauffe).
 
 > Un plan produit par ce système est une proposition, jamais un document de projet.
 
