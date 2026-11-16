@@ -68,6 +68,8 @@ archlux/
 │   │   ├── protocol.py          #      Surrogate Protocol — 3 methods
 │   │   ├── analytic.py          #      closed forms, no learning
 │   │   ├── learned.py           #      LearnedSurrogate: refuses .pt weights, the transformer does not exist
+│   │   ├── trust.py             #      gradient agreement: signs, correlations, angle, norm error
+│   │   ├── three_states.py      #  ◆   generated / classic / optimized, measured by ONE reference
 │   │   └── validation.py        #      validate_gradient() — mandatory before use
 │   │
 │   ├── solve/                   # [3] DETERMINISTIC
@@ -79,18 +81,26 @@ archlux/
 │   ├── uq/                      # uncertainty quantification
 │   │   ├── conformal.py         #     quantile ceil((n+1)(1−α))/n
 │   │   ├── registry.py          #     ★ access token to the calibration set
+│   │   ├── region.py            #  ◆  trust radius read off the calibration displacements
+│   │   ├── reliability.py       #     coverage report, two-sided acceptance band (α = 0.10)
 │   │   └── drift.py             #     exchangeability check
 │   │
 │   ├── certify/                 # [4] DETERMINISTIC
 │   │   ├── proof.py             #     EXACT verification, independent of the solver (preuve.py: deprecated aliases)
 │   │   ├── bound.py             #     assembly of the probabilistic guarantee
 │   │   ├── dual.py              #     dual prices → architect's language
-│   │   └── report.py            #     rendering, two separate sections
+│   │   ├── report.py            #     rendering, two separate sections
+│   │   ├── run.py               #     RunReport: one repair attempt, its status and timing
+│   │   ├── outcome.py           #  ◆  what the user is told: repaired / strong deformation / not repairable / invalid
+│   │   └── functional.py        #  ◆  topology, openings, facade, program — NEVER part of the certificate
 │   │
 │   ├── bench/                   # leaf of the tree: nobody imports it
 │   │   ├── protocol.py          #     ★ fixed 60/20/20 split
 │   │   ├── manifest.py          #     ★ reproducibility manifest
-│   │   └── seeds.py             #     ★ deterministic seed derivation
+│   │   ├── seeds.py             #     ★ deterministic seed derivation
+│   │   ├── naive.py             #  ◆  naive local repair, the baseline of B1
+│   │   ├── failures.py          #  ◆  B8 repair rates by failure class
+│   │   └── three_states.py      #  ◆  B9 cases in three states (legalize injected)
 │   │
 │   └── io/json_io.py            # versioned JSON schema, deterministic serialization
 │
@@ -111,6 +121,7 @@ archlux/
 ```
 
 ★ = addition to §11 of `ARCHITECTURE.md`, justified in §7 of this document.
+◆ = added by the technical audit corrections (2026-11), listed in `ARCHITECTURE.md` §11.
 
 ---
 
@@ -179,6 +190,49 @@ Classically legalized plan ──► x₀
 
 What this diagram shows: **`lmo` has not changed by one line** between the two modes.
 It is the property that the test `test_lmo_n_importe_jamais_light` protects.
+
+The radius of the trust region (`budget=`) can be read off the calibration set rather
+than set by hand: `uq.trust_radius(displacements, alpha)` is the conformal quantile of
+the Chebyshev displacements of the calibration plans from their generated plans.
+
+### 3.3 What the user is told — outcome and functional checks
+
+```
+run_repair(plan, ctx, legalize=...) ──► RunReport (status, error_type, displacement)
+        │
+        ▼
+certify.outcome(report, side_m)
+        ├── repaired                       (largest move ≤ 25 % of the side)
+        ├── repaired_strong_deformation    (valid, but no longer the generated plan)
+        ├── not_repairable ── class + advice: contradictory constraints (Farkas) ·
+        │                     grid budget exceeded · gap needs tiling · impossible topology
+        ├── invalid_input
+        └── computation_failure            (a bug: never expected)
+
+certified Plan ──► certify.check_functional(plan, ctx)
+                       topology · adjacencies · openings on facades · facade · program
+                       + FUNCTIONAL_NOT_CHECKED (doors, accessibility, fire, ventilation…)
+                   reported NEXT TO the certificate: a functional failure never makes a
+                   certified plan invalid, and a certificate never implies usability
+```
+
+### 3.4 Physical check — three states, one reference
+
+```
+generated plan ──► legalize(tiling)          ──► classic plan ──► legalize(objective, budget)
+      │                                               │                    │
+      ▼                                               ▼                    ▼
+   x_initial                                      x_classic           x_optimized
+      └───────────────┬───────────────────────────────┴────────────────────┘
+                      ▼           same openings (facade_glazing), orientation, settings
+      light.compare_three_states(surrogate, reference)
+                      │
+   reference = RadianceReference   (physical, when oconv/rtrace/gensky are installed)
+             | ClosedFormReference (labelled closed_form: never "confirms" a gain)
+                      ▼
+   predicted gain vs measured gain per plan, status confirmed / contradicted /
+   closed_form_only / predicted_only
+```
 
 ---
 

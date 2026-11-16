@@ -104,7 +104,7 @@ measuring a cold LP.
 | `active` | selection of plans to simulate (uncertainty × density) | no |
 | `export` | IFC / DXF, pathologies, survival rate (Wilson) | no |
 | `feasibility` | existence of a valid plan (Farkas), without daylight | no |
-| `certify` | exact verification + bound + translation of the duals | no |
+| `certify` | exact verification + bound + translation of the duals; run reports, user outcomes and functional checks, kept **apart** from the certificate | no |
 | `bench` | protocol, seeds, manifests, run/report/stats | no |
 | `data` | corpus, dedup, frozen split | no |
 
@@ -285,15 +285,15 @@ archlux/
 │   ├── geom/{graph,polytope,tiling,grid,grid_repair,rectilinear,diagnostic}.py
 │   ├── lmo/{solver,cuts}.py
 │   ├── solve/{frank_wolfe,trace,displacement,sweep}.py
-│   ├── light/{protocol,analytic,learned,base,tokens,objective,split_flux,validation}.py
+│   ├── light/{protocol,analytic,learned,base,tokens,objective,split_flux,validation,trust,three_states}.py
 │   ├── orient/circular.py
-│   ├── uq/{conformal,registry,drift,reliability}.py
-│   ├── certify/{proof,farkas,bound,dual,report}.py
+│   ├── uq/{conformal,registry,drift,reliability,region}.py
+│   ├── certify/{proof,farkas,bound,dual,report,run,validation,outcome,functional}.py
 │   ├── feasibility/__init__.py
 │   ├── active/{loop,density,selection}.py
 │   ├── data/{loaders,corruption,splits,dedup,imputation,synthetic,generated}.py
 │   ├── export/{ifc,dxf,svg,pathologies,survival,wilson}.py
-│   ├── bench/{seeds,manifest,protocol,report,run,stats,generation}.py
+│   ├── bench/{seeds,manifest,protocol,report,run,stats,generation,naive,failures,three_states}.py
 │   ├── io/json_io.py
 │   └── …                    # French module names (`geom/pavage.py`, `lmo/coupes.py`,
 │                            #   `certify/preuve.py`, …): deprecated shims (ADR 0001)
