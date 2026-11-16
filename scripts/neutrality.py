@@ -52,12 +52,21 @@ SEED = 17
 DECIMALS = 6
 
 
+_EXACT_HASHES = frozenset({"plan_fingerprint"})
+"""Keys holding a hash of the exact coordinates: rounding cannot reach inside them, so
+the last bit of an LP solution (which differs between platforms) would flip the
+fingerprint. Their presence is kept, their value is not."""
+
+
 def _canonical(value: object) -> object:
     """Rounded floats, so that the last bit of an LP solution cannot flip a hash."""
     if isinstance(value, float):
         return round(value, DECIMALS) + 0.0
     if isinstance(value, dict):
-        return {key: _canonical(item) for key, item in value.items()}
+        return {
+            key: "<hash of exact coordinates>" if key in _EXACT_HASHES else _canonical(item)
+            for key, item in value.items()
+        }
     if isinstance(value, list | tuple):
         return [_canonical(item) for item in value]
     return value

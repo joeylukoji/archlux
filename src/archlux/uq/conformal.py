@@ -159,6 +159,23 @@ def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
 
 
 def _indicator(indicator_name: str) -> Indicator:
+    """Check that ``indicator_name`` is a known indicator.
+
+    Parameters
+    ----------
+    indicator_name : str
+        Name read from a calibration or a caller.
+
+    Returns
+    -------
+    Indicator
+        The same name, typed.
+
+    Raises
+    ------
+    InvariantViolation
+        If the indicator is not in ``INDICATOR_SENSE``.
+    """
     if indicator_name not in INDICATOR_SENSE:
         raise InvariantViolation((f"unknown indicator: {indicator_name!r}",))
     return indicator_name  # type: ignore[return-value]
@@ -199,6 +216,23 @@ def dataset_fingerprint(
 
 
 def _regime(regime: str) -> Regime:
+    """Check that ``regime`` is one of :data:`archlux.types.REGIMES`.
+
+    Parameters
+    ----------
+    regime : str
+        ``"exchangeable"`` or ``"selected"``.
+
+    Returns
+    -------
+    Regime
+        The same regime, typed.
+
+    Raises
+    ------
+    InvariantViolation
+        If the regime is unknown.
+    """
     # Matching by equality types the result on every mypy version, without an ignore.
     for known in REGIMES:
         if regime == known:

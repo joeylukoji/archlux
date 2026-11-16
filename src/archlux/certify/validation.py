@@ -993,6 +993,19 @@ def _check_walls(plan: Plan, ctx: Context) -> ConstraintResult:
 
 
 def _wall_length(wall: Wall) -> float:
+    """Length of a wall, exact for an axis-aligned one.
+
+    Parameters
+    ----------
+    wall : Wall
+        Wall to measure.
+
+    Returns
+    -------
+    float
+        ``|dx| + |dy|`` when the wall is axis-aligned (no square root), else
+        ``wall.length``.
+    """
     (ax, ay), (bx, by) = wall.a, wall.b
     return float(abs(bx - ax) + abs(by - ay)) if ax == bx or ay == by else wall.length
 
@@ -1125,6 +1138,21 @@ def _check_not_crossed(
 
 
 def _wall_index(plan: Plan, ctx: Context) -> dict[str, Wall]:
+    """Every wall an opening may refer to, by id.
+
+    Parameters
+    ----------
+    plan : Plan
+        Plan whose walls are indexed.
+    ctx : Context
+        Context whose load-bearing walls are indexed first.
+
+    Returns
+    -------
+    dict of str to Wall
+        Load-bearing walls of the structure, then the plan's walls (which win on a
+        shared id).
+    """
     return {w.id: w for w in (*ctx.structure.load_bearing_walls, *plan.walls)}
 
 

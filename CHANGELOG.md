@@ -8,6 +8,11 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnement s
 
 ## [Non publie]
 
+### Fixed — CI back to green
+
+- `scripts/neutrality.py`: the certificate's `validation.plan_fingerprint` (added on 2026-10-25) hashes the exact coordinates, which the rounding of the neutrality fingerprint cannot reach; the last bit of the LP solution differs between Linux and Windows, so the Windows job failed from that day. The key is kept, its value is masked; the reference is re-recorded (geometry fingerprint unchanged: no behaviour change).
+- Docstring coverage back above the 95 % gate (four private helpers documented).
+
 ### Changed — `DenseSurrogate.fit`: trustworthy gradient
 
 - Descriptors that are constant in training or move when the whole plan is translated are frozen (infinite scale, kept by `save`/`load`); weight decay `WEIGHT_DECAY / n` per step (`WEIGHT_DECAY = 0.5`); cosine decay of the step from `lr` to 0. Cause found by diagnosis: the network fitted noise on absolute-position descriptors, giving a spurious slope along every room `x`, `y`, and a constant step left the last iterate noisy.
